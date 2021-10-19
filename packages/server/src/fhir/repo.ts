@@ -251,7 +251,8 @@ export class Repository {
         versionId: randomUUID(),
         lastUpdated: this.getLastUpdated(resource),
         project: this.getProjectId(updated),
-        author: this.getAuthor(updated)
+        author: this.getAuthor(updated),
+        account: this.getAccount(existing, updated)
       }
     }
 
@@ -554,7 +555,7 @@ export class Repository {
       id: resource.id,
       lastUpdated: meta.lastUpdated,
       deleted: false,
-      compartments: getCompartments(resource),
+      compartments: this.getCompartments(resource),
       content
     };
 
@@ -573,6 +574,39 @@ export class Repository {
       lastUpdated: meta.lastUpdated,
       content
     }).execute(client);
+  }
+
+  /**
+   * Builds a list of compartments for the resource.
+   * FHIR compartments are used for two purposes.
+   * 1) Search narrowing (i.e., /Patient/123/Observation searches within the patient compartment).
+   * 2) Access controls.
+   * @param resource The resource.
+   * @returns The list of compartments for the resource.
+   */
+  private getCompartments(resource: Resource): string[] {
+    const result = new Set<string>();
+
+    if (resource.meta?.project) {
+      result.add(resource.meta.project);
+    }
+
+    if (this.context.accessPolicy?.compartment) {
+      const accessPolicyCompartmentId = resolveId(this.context.accessPolicy.compartment);
+      if (accessPolicyCompartmentId) {
+        result.add(accessPolicyCompartmentId);
+      }
+    }
+
+    const patientCompartmentProperties = getPatientCompartmentProperties(resource.resourceType);
+    if (patientCompartmentProperties) {
+      const patientId = getPatientId(resource, patientCompartmentProperties);
+      if (patientId) {
+        result.add(patientId);
+      }
+    }
+
+    return Array.from(result);
   }
 
   /**
@@ -713,6 +747,29 @@ export class Repository {
   }
 
   /**
+   * Returns the author reference string (resourceType/id).
+   * If the current context is a ClientApplication, handles "on behalf of".
+   * Otherwise uses the current context profile.
+   * @param resource The FHIR resource.
+   * @returns
+   */
+  private getAccount(existing: Resource | undefined, updated: Resource): Reference | undefined {
+    const account = updated.meta?.account;
+    if (account && this.canWriteMeta()) {
+      // If the user specifies an account, allow it if they have permission.
+      return account;
+    }
+
+    if (this.context.accessPolicy?.compartment) {
+      // If the user access policy specifies a comparment, then use it as the accoun.
+      return this.context.accessPolicy?.compartment;
+    }
+
+    // Otherwise, default to the existing value.
+    return existing?.meta?.account;
+  }
+
+  /**
    * Determines if the current user can manually set the ID field.
    * This is very powerful, and reserved for the system account.
    * @returns True if the current user can manually set the ID field.
@@ -795,32 +852,6 @@ export class Repository {
     const { adminClientId } = getConfig();
     return !!adminClientId && this.context.author.reference === 'ClientApplication/' + adminClientId;
   }
-}
-
-/**
- * Builds a list of compartments for the resource.
- * FHIR compartments are used for two purposes.
- * 1) Search narrowing (i.e., /Patient/123/Observation searches within the patient compartment).
- * 2) Access controls.
- * @param resource The resource.
- * @returns The list of compartments for the resource.
- */
-export function getCompartments(resource: Resource): string[] {
-  const result = new Set<string>();
-
-  if (resource.meta?.project) {
-    result.add(resource.meta.project);
-  }
-
-  const patientCompartmentProperties = getPatientCompartmentProperties(resource.resourceType);
-  if (patientCompartmentProperties) {
-    const patientId = getPatientId(resource, patientCompartmentProperties);
-    if (patientId) {
-      result.add(patientId);
-    }
-  }
-
-  return Array.from(result);
 }
 
 /**
