@@ -14,6 +14,7 @@ const diagnosticReport: DiagnosticReport = {
     { reference: 'Observation/3' },
     { reference: 'Observation/4' },
     { reference: 'Observation/5' },
+    { reference: 'Observation/6' },
   ]
 };
 
@@ -82,6 +83,26 @@ const observation5: Observation = {
   interpretation: [{}]
 };
 
+const observation6: Observation = {
+  resourceType: 'Observation',
+  component: [
+    {
+      valueQuantity: {
+        value: 110,
+        unit: 'mmHg',
+        system: 'http://unitsofmeasure.org'
+      }
+    },
+    {
+      valueQuantity: {
+        value: 75,
+        unit: 'mmHg',
+        system: 'http://unitsofmeasure.org'
+      }
+    }
+  ]
+};
+
 const mockRouter = {
   push: (path: string, state: any) => {
     alert('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
@@ -105,6 +126,8 @@ function mockFetch(url: string, options: any): Promise<any> {
     result = observation4;
   } else if (url.endsWith('/Observation/5')) {
     result = observation5;
+  } else if (url.endsWith('/Observation/6')) {
+    result = observation6;
   }
 
   const response: any = {
@@ -146,6 +169,7 @@ describe('DiagnosticReportDisplay', () => {
       setup({ value: diagnosticReport });
     });
     expect(screen.getByText('Diagnostic Report')).not.toBeUndefined();
+    expect(screen.getByText('110/75'));
   });
 
   test('Renders by reference', async () => {
@@ -153,6 +177,7 @@ describe('DiagnosticReportDisplay', () => {
       setup({ value: { reference: 'DiagnosticReport/123' } });
     });
     expect(screen.getByText('Diagnostic Report')).not.toBeUndefined();
+    expect(screen.getByText('110/75'));
   });
 
 });
