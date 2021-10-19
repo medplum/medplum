@@ -735,6 +735,9 @@ export class Repository {
    * @returns True if the current user can read the specified resource type.
    */
   private canReadResourceType(resourceType: string): boolean {
+    if (this.isSystem() || this.isAdmin()) {
+      return true;
+    }
     if (publicResourceTypes.includes(resourceType)) {
       return true;
     }
@@ -757,6 +760,9 @@ export class Repository {
    * @returns True if the current user can write the specified resource type.
    */
   private canWriteResourceType(resourceType: string): boolean {
+    if (this.isSystem() || this.isAdmin()) {
+      return true;
+    }
     if (publicResourceTypes.includes(resourceType)) {
       return false;
     }
