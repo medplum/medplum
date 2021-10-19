@@ -96,7 +96,6 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
   const profile = getDefaultProfile(memberships);
   const refreshSecret = request.remember ? generateSecret(48) : undefined;
 
-  // TODO: Add user accessPolicy
   return repo.createResource<Login>({
     resourceType: 'Login',
     client: createReference(client as ClientApplication),
@@ -203,7 +202,7 @@ export async function finalizeLogin(login: Login): Promise<LoginResult> {
 
   let project = undefined;
   if (login?.project) {
-    const [projectOutcome, projectResource] = await repo.readReference(login?.project as Reference<Project>);
+    const [projectOutcome, projectResource] = await repo.readReference(login.project);
     assertOk(projectOutcome);
     project = projectResource;
   }

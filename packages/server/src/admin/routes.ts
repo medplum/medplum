@@ -1,7 +1,7 @@
 import { allOk, assertOk, badRequest, Bundle, BundleEntry, getStatus, Operator, Project, ProjectMembership, Reference, User } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
-import { repo, Repository, sendOutcome } from '../fhir';
+import { repo, sendOutcome } from '../fhir';
 import { authenticateToken } from '../oauth';
 import { createStructureDefinitions } from '../seeds/structuredefinitions';
 import { createValueSetElements } from '../seeds/valuesets';
@@ -87,7 +87,7 @@ adminRouter.post('/projects/:projectId/members/:membershipId', asyncWrap(async (
   }
 
   const resource = req.body;
-  const [outcome, result] = await (res.locals.repo as Repository).updateResource(resource);
+  const [outcome, result] = await repo.updateResource(resource);
   assertOk(outcome);
   res.status(getStatus(outcome)).json(result);
 }));

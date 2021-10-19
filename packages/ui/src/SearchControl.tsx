@@ -92,10 +92,9 @@ export function SearchControl(props: SearchControlProps) {
           props.onLoad(new SearchLoadEvent(response));
         }
       })
-      .catch(outcome => {
-        console.log('search error', outcome);
+      .catch(reason => {
         setState({ ...stateRef.current, searchResponse: undefined });
-        setOutcome(outcome);
+        setOutcome(reason);
       });
   }
 
