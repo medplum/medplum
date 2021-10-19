@@ -3,10 +3,14 @@
  * Do not edit manually.
  */
 
+import { EnrollmentRequest } from './EnrollmentRequest';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -105,7 +109,7 @@ export interface EnrollmentResponse {
   /**
    * Original request resource reference.
    */
-  readonly request?: Reference;
+  readonly request?: Reference<EnrollmentRequest>;
 
   /**
    * Processing status: error, complete.
@@ -126,11 +130,11 @@ export interface EnrollmentResponse {
   /**
    * The Insurer who produced this adjudicated response.
    */
-  readonly organization?: Reference;
+  readonly organization?: Reference<Organization>;
 
   /**
    * The practitioner who is responsible for the services rendered to the
    * patient.
    */
-  readonly requestProvider?: Reference;
+  readonly requestProvider?: Reference<Practitioner | PractitionerRole | Organization>;
 }

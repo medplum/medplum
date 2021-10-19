@@ -1,11 +1,6 @@
 import { isOk, JsonWebKey, Operator } from '@medplum/core';
 import { randomBytes } from 'crypto';
-import { fromKeyLike } from 'jose/jwk/from_key_like';
-import { parseJwk } from 'jose/jwk/parse';
-import { SignJWT } from 'jose/jwt/sign';
-import { jwtVerify, JWTVerifyOptions } from 'jose/jwt/verify';
-import { JWK, JWSHeaderParameters, JWTPayload, KeyLike } from 'jose/types';
-import { generateKeyPair } from 'jose/util/generate_key_pair';
+import { exportJWK, generateKeyPair, importJWK, JWK, JWSHeaderParameters, JWTPayload, jwtVerify, JWTVerifyOptions, KeyLike, SignJWT } from 'jose';
 import { MedplumServerConfig } from '../config';
 import { repo } from '../fhir';
 import { logger } from '../logger';
@@ -105,7 +100,7 @@ export async function initKeys(config: MedplumServerConfig) {
     // https://github.com/panva/jose/blob/HEAD/docs/functions/util_generate_key_pair.generatekeypair.md
     logger.info('No keys found.  Creating new key...');
     const keyResult = await generateKeyPair(ALG);
-    const jwk = await fromKeyLike(keyResult.privateKey);
+    const jwk = await exportJWK(keyResult.privateKey);
     const [createOutcome, createResult] = await repo.createResource<JsonWebKey>({
       resourceType: 'JsonWebKey',
       active: true,
@@ -139,12 +134,12 @@ export async function initKeys(config: MedplumServerConfig) {
     jwks.keys.push(publicKey);
 
     // Convert from JWK to PKCS and add to the collection of public keys
-    publicKeys[jwk.id as string] = await parseJwk(publicKey) as KeyLike;
+    publicKeys[jwk.id as string] = await importJWK(publicKey) as KeyLike;
   }
 
   // Use the first key as the signing key
   signingKeyId = jsonWebKeys[0].id;
-  signingKey = await parseJwk({
+  signingKey = await importJWK({
     ...jsonWebKeys[0],
     alg: ALG,
     use: 'sig',

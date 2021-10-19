@@ -3,7 +3,7 @@ import React from 'react';
 import { ResourceTimeline } from './ResourceTimeline';
 
 export interface EncounterTimelineProps {
-  encounter: Encounter | Reference;
+  encounter: Encounter | Reference<Encounter>;
 }
 
 export function EncounterTimeline(props: EncounterTimelineProps): JSX.Element {
@@ -33,17 +33,17 @@ export function EncounterTimeline(props: EncounterTimelineProps): JSX.Element {
           }
         ];
       }}
-      createCommunication={(resource: Resource, sender: ProfileResource, text: string) => ({
+      createCommunication={(resource: Encounter, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
         encounter: createReference(resource),
-        subject: (resource as Encounter).subject,
+        subject: resource.subject,
         sender: createReference(sender),
         payload: [{ contentString: text }]
       })}
-      createMedia={(resource: Resource, operator: ProfileResource, content: Attachment) => ({
+      createMedia={(resource: Encounter, operator: ProfileResource, content: Attachment) => ({
         resourceType: 'Media',
         encounter: createReference(resource),
-        subject: (resource as Encounter).subject,
+        subject: resource.subject,
         operator: createReference(operator),
         content
       })}

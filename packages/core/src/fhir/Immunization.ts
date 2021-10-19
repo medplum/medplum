@@ -5,10 +5,19 @@
 
 import { Annotation } from './Annotation';
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
+import { DiagnosticReport } from './DiagnosticReport';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -119,13 +128,13 @@ export interface Immunization {
   /**
    * The patient who either received or did not receive the immunization.
    */
-  readonly patient?: Reference;
+  readonly patient?: Reference<Patient>;
 
   /**
    * The visit or admission or other contact between patient and health
    * care provider the immunization was performed as part of.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * Date vaccine administered or was to be administered.
@@ -160,12 +169,12 @@ export interface Immunization {
    * The service delivery location where the vaccine administration
    * occurred.
    */
-  readonly location?: Reference;
+  readonly location?: Reference<Location>;
 
   /**
    * Name of vaccine manufacturer.
    */
-  readonly manufacturer?: Reference;
+  readonly manufacturer?: Reference<Organization>;
 
   /**
    * Lot number of the  vaccine product.
@@ -212,7 +221,7 @@ export interface Immunization {
    * Condition, Observation or DiagnosticReport that supports why the
    * immunization was administered.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport>[];
 
   /**
    * Indication if a dose is considered to be subpotent. By default, a dose
@@ -370,7 +379,7 @@ export interface ImmunizationPerformer {
   /**
    * The practitioner or organization who performed the action.
    */
-  readonly actor?: Reference;
+  readonly actor?: Reference<Practitioner | PractitionerRole | Organization>;
 }
 
 /**
@@ -424,7 +433,7 @@ export interface ImmunizationProtocolApplied {
    * Indicates the authority who published the protocol (e.g. ACIP) that is
    * being followed.
    */
-  readonly authority?: Reference;
+  readonly authority?: Reference<Organization>;
 
   /**
    * The vaccine preventable disease the dose is being administered
@@ -502,7 +511,7 @@ export interface ImmunizationReaction {
   /**
    * Details of the reaction.
    */
-  readonly detail?: Reference;
+  readonly detail?: Reference<Observation>;
 
   /**
    * Self-reported indicator.

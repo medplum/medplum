@@ -5,8 +5,10 @@
 
 import { CodeableConcept } from './CodeableConcept';
 import { Extension } from './Extension';
+import { MedicinalProductIngredient } from './MedicinalProductIngredient';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
 import { ProdCharacteristic } from './ProdCharacteristic';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
@@ -114,12 +116,12 @@ export interface MedicinalProductManufactured {
    * Manufacturer of the item (Note that this should be named
    * &quot;manufacturer&quot; but it currently causes technical issues).
    */
-  readonly manufacturer?: Reference[];
+  readonly manufacturer?: Reference<Organization>[];
 
   /**
    * Ingredient.
    */
-  readonly ingredient?: Reference[];
+  readonly ingredient?: Reference<MedicinalProductIngredient>[];
 
   /**
    * Dimensions, color etc.

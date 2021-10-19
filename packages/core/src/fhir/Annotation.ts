@@ -4,7 +4,11 @@
  */
 
 import { Extension } from './Extension';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 
 /**
  * Base StructureDefinition for Annotation Type: A  text note which also
@@ -31,7 +35,7 @@ export interface Annotation {
   /**
    * The individual responsible for making the annotation.
    */
-  readonly authorReference?: Reference;
+  readonly authorReference?: Reference<Practitioner | Patient | RelatedPerson | Organization>;
 
   /**
    * The individual responsible for making the annotation.

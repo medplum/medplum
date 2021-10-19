@@ -6,13 +6,18 @@
 import { Age } from './Age';
 import { Annotation } from './Annotation';
 import { CodeableConcept } from './CodeableConcept';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Range } from './Range';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -157,12 +162,12 @@ export interface AllergyIntolerance {
   /**
    * The patient who has the allergy or intolerance.
    */
-  readonly patient?: Reference;
+  readonly patient?: Reference<Patient>;
 
   /**
    * The encounter when the allergy or intolerance was asserted.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * Estimated or actual date,  date-time, or age when allergy or
@@ -205,12 +210,12 @@ export interface AllergyIntolerance {
    * Individual who recorded the record and takes responsibility for its
    * content.
    */
-  readonly recorder?: Reference;
+  readonly recorder?: Reference<Practitioner | PractitionerRole | Patient | RelatedPerson>;
 
   /**
    * The source of the information about the allergy that is recorded.
    */
-  readonly asserter?: Reference;
+  readonly asserter?: Reference<Patient | RelatedPerson | Practitioner | PractitionerRole>;
 
   /**
    * Represents the date and/or time of the last known occurrence of a

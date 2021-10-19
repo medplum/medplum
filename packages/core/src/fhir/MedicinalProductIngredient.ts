@@ -8,6 +8,7 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
 import { Ratio } from './Ratio';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -113,7 +114,7 @@ export interface MedicinalProductIngredient {
   /**
    * Manufacturer of this Ingredient.
    */
-  readonly manufacturer?: Reference[];
+  readonly manufacturer?: Reference<Organization>[];
 
   /**
    * A specified substance that comprises this ingredient.

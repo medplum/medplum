@@ -71,17 +71,15 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
 
   const scope = req.body.scope as string;
 
+  // TODO: Add user accessPolicy
   const [loginOutcome, login] = await repo.createResource<Login>({
     resourceType: 'Login',
     client: createReference(client),
     profile: createReference(client),
     authTime: new Date().toISOString(),
-    defaultProject: {
+    project: {
       reference: 'Project/' + client.meta?.project
     },
-    compartments: [{
-      reference: 'Project/' + client.meta?.project
-    }],
     scope
   });
 

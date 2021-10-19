@@ -23,6 +23,15 @@ function mockFetch(url: string, options: any): Promise<any> {
         { profile: 'Practitioner/456', name: 'Alice Smith' }
       ]
     };
+  } else if (options.method === 'GET' && url.endsWith('/Practitioner/456')) {
+    result = {
+      resourceType: 'Practitioner',
+      id: '456',
+      name: [{
+        given: ['Alice'],
+        family: 'Smith'
+      }]
+    };
   }
 
   const response: any = {

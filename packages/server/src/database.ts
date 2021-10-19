@@ -5,6 +5,7 @@ import * as v2 from './migrations/v2';
 import * as v3 from './migrations/v3';
 import * as v4 from './migrations/v4';
 import * as v5 from './migrations/v5';
+import * as v6 from './migrations/v6';
 
 let pool: Pool | undefined;
 
@@ -78,5 +79,10 @@ async function migrate(client: PoolClient): Promise<void> {
   if (version < 5) {
     await v5.run(client);
     await client.query('UPDATE "DatabaseMigration" SET "version"=5 WHERE "id"=1');
+  }
+
+  if (version < 6) {
+    await v6.run(client);
+    await client.query('UPDATE "DatabaseMigration" SET "version"=6 WHERE "id"=1');
   }
 }

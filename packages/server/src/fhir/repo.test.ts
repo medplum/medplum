@@ -1,4 +1,4 @@
-import { Account, assertOk, Communication, createReference, Encounter, getReferenceString, isOk, Login, Observation, Operator, Patient, Reference, RegisterRequest, SearchParameter, ServiceRequest } from '@medplum/core';
+import { AccessPolicy, Account, assertOk, Communication, createReference, Encounter, getReferenceString, isOk, Login, Observation, Operator, Patient, Reference, RegisterRequest, SearchParameter, ServiceRequest } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
@@ -724,7 +724,7 @@ describe('FHIR Repo', () => {
     assertOk(loginOutcome1);
     expect(login1).not.toBeUndefined();
 
-    const repo1 = getRepoForLogin(login1 as Login);
+    const repo1 = await getRepoForLogin(login1 as Login);
     const [patientOutcome1, patient1] = await repo1.createResource<Patient>({
       resourceType: 'Patient'
     });
@@ -763,10 +763,135 @@ describe('FHIR Repo', () => {
     assertOk(loginOutcome2);
     expect(login2).not.toBeUndefined();
 
-    const repo2 = getRepoForLogin(login2 as Login);
+    const repo2 = await getRepoForLogin(login2 as Login);
     const [patientOutcome3, patient3] = await repo2.readResource('Patient', patient1?.id as string);
     expect(patientOutcome3.id).toEqual('not-found');
     expect(patient3).toBeUndefined();
+  });
+
+  test('Access policy restricting read', async () => {
+    const [createOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      birthDate: '1970-01-01'
+    });
+    assertOk(createOutcome);
+    expect(patient).not.toBeUndefined();
+
+    // Empty access policy effectively blocks all reads and writes
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy'
+    };
+
+    const repo2 = new Repository({
+      project: MEDPLUM_PROJECT_ID,
+      author: {
+        reference: 'Practitioner/123'
+      },
+      accessPolicy
+    });
+
+    const [readOutcome] = await repo2.readResource('Patient', patient?.id as string);
+    expect(readOutcome.id).toEqual('access-denied');
+  });
+
+  test('Access policy restricting search', async () => {
+    // Empty access policy effectively blocks all reads and writes
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy'
+    };
+
+    const repo2 = new Repository({
+      project: MEDPLUM_PROJECT_ID,
+      author: {
+        reference: 'Practitioner/123'
+      },
+      accessPolicy
+    });
+
+    const [searchOutcome] = await repo2.search({ resourceType: 'Patient' });
+    expect(searchOutcome.id).toEqual('access-denied');
+  });
+
+  test('Access policy allows public resources', async () => {
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy'
+    };
+
+    const repo2 = new Repository({
+      project: MEDPLUM_PROJECT_ID,
+      author: {
+        reference: 'Practitioner/123'
+      },
+      accessPolicy
+    });
+
+    const [searchOutcome] = await repo2.search({ resourceType: 'StructureDefinition' });
+    expect(searchOutcome.id).toEqual('ok');
+  });
+
+  test('Access policy restricting write', async () => {
+    const [createOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      birthDate: '1970-01-01'
+    });
+    assertOk(createOutcome);
+    expect(patient).not.toBeUndefined();
+
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [{
+        resourceType: 'Patient',
+        readonly: true
+      }]
+    };
+
+    const repo2 = new Repository({
+      project: MEDPLUM_PROJECT_ID,
+      author: {
+        reference: 'Practitioner/123'
+      },
+      accessPolicy
+    });
+
+    const [readOutcome] = await repo2.readResource('Patient', patient?.id as string);
+    assertOk(readOutcome);
+
+    const [writeOutcome] = await repo2.updateResource(patient as Patient);
+    expect(writeOutcome.id).toEqual('access-denied');
+  });
+
+  test('Access policy restricting delete', async () => {
+    const [createOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      birthDate: '1970-01-01'
+    });
+    assertOk(createOutcome);
+    expect(patient).not.toBeUndefined();
+
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [{
+        resourceType: 'Patient',
+        readonly: true
+      }]
+    };
+
+    const repo2 = new Repository({
+      project: MEDPLUM_PROJECT_ID,
+      author: {
+        reference: 'Practitioner/123'
+      },
+      accessPolicy
+    });
+
+    const [readOutcome] = await repo2.readResource('Patient', patient?.id as string);
+    assertOk(readOutcome);
+
+    const [deleteOutcome] = await repo2.deleteResource('Patient', patient?.id as string);
+    expect(deleteOutcome.id).toEqual('access-denied');
   });
 
   test('Search birthDate after delete', async () => {

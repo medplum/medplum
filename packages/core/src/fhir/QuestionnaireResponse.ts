@@ -4,14 +4,25 @@
  */
 
 import { Attachment } from './Attachment';
+import { CarePlan } from './CarePlan';
 import { Coding } from './Coding';
+import { Device } from './Device';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { Procedure } from './Procedure';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
+import { ServiceRequest } from './ServiceRequest';
 
 /**
  * A structured set of questions and their answers. The questions are
@@ -108,14 +119,14 @@ export interface QuestionnaireResponse {
    * intake assessment or a decision support recommendation to assess for
    * post-partum depression.
    */
-  readonly basedOn?: Reference[];
+  readonly basedOn?: Reference<CarePlan | ServiceRequest>[];
 
   /**
    * A procedure or observation that this questionnaire was performed as
    * part of the execution of.  For example, the surgery a checklist was
    * executed as part of.
    */
-  readonly partOf?: Reference[];
+  readonly partOf?: Reference<Observation | Procedure>[];
 
   /**
    * The Questionnaire that defines and organizes the questions for which
@@ -134,13 +145,13 @@ export interface QuestionnaireResponse {
    * organization, practitioner, device, etc.  This is who/what the answers
    * apply to, but is not necessarily the source of information.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Resource>;
 
   /**
    * The Encounter during which this questionnaire response was created or
    * to which the creation of this record is tightly associated.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * The date and/or time that this set of answers were last changed.
@@ -151,12 +162,12 @@ export interface QuestionnaireResponse {
    * Person who received the answers to the questions in the
    * QuestionnaireResponse and recorded them in the system.
    */
-  readonly author?: Reference;
+  readonly author?: Reference<Device | Practitioner | PractitionerRole | Patient | RelatedPerson | Organization>;
 
   /**
    * The person who answered the questions about the subject.
    */
-  readonly source?: Reference;
+  readonly source?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson>;
 
   /**
    * A group or question item from the original questionnaire for which
@@ -345,7 +356,7 @@ export interface QuestionnaireResponseItemAnswer {
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
-  readonly valueReference?: Reference;
+  readonly valueReference?: Reference<Resource>;
 
   /**
    * Nested groups and/or questions found within this particular answer.

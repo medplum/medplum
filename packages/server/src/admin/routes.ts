@@ -1,4 +1,4 @@
-import { allOk, assertOk, badRequest, Bundle, BundleEntry, Operator, Project, ProjectMembership, Reference, User } from '@medplum/core';
+import { allOk, assertOk, badRequest, Bundle, BundleEntry, getStatus, Operator, Project, ProjectMembership, Reference, User } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { repo, sendOutcome } from '../fhir';
@@ -29,7 +29,7 @@ adminRouter.get('/projects', asyncWrap(async (req: Request, res: Response) => {
 
   const projects = [];
   for (const membership of memberships) {
-    const [projectOutcome, project] = await repo.readReference<Project>(membership.project as Reference)
+    const [projectOutcome, project] = await repo.readReference(membership.project as Reference<Project>)
     assertOk(projectOutcome);
     projects.push({
       id: project?.id,
@@ -64,6 +64,32 @@ adminRouter.get('/projects/:projectId', asyncWrap(async (req: Request, res: Resp
     },
     members
   });
+}));
+
+adminRouter.get('/projects/:projectId/members/:membershipId', asyncWrap(async (req: Request, res: Response) => {
+  const projectDetails = await verifyProjectAdmin(req, res);
+  if (!projectDetails) {
+    res.sendStatus(404);
+    return;
+  }
+
+  const { membershipId } = req.params;
+  const [outcome, membership] = await repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+  assertOk(outcome);
+  res.status(getStatus(outcome)).json(membership);
+}));
+
+adminRouter.post('/projects/:projectId/members/:membershipId', asyncWrap(async (req: Request, res: Response) => {
+  const projectDetails = await verifyProjectAdmin(req, res);
+  if (!projectDetails) {
+    res.sendStatus(404);
+    return;
+  }
+
+  const resource = req.body;
+  const [outcome, result] = await repo.updateResource(resource);
+  assertOk(outcome);
+  res.status(getStatus(outcome)).json(result);
 }));
 
 adminRouter.post('/super/valuesets', asyncWrap(async (req: Request, res: Response) => {

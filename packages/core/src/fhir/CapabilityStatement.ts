@@ -9,6 +9,7 @@ import { ContactDetail } from './ContactDetail';
 import { Extension } from './Extension';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 import { UsageContext } from './UsageContext';
@@ -404,7 +405,7 @@ export interface CapabilityStatementImplementation {
    * The organization responsible for the management of the instance and
    * oversight of the data on the server at the specified URL.
    */
-  readonly custodian?: Reference;
+  readonly custodian?: Reference<Organization>;
 }
 
 /**

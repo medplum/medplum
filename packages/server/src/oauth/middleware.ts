@@ -29,7 +29,7 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
     res.locals.user = claims.username;
     res.locals.profile = claims.profile;
     res.locals.scope = claims.scope;
-    res.locals.repo = getRepoForLogin(login);
+    res.locals.repo = await getRepoForLogin(login);
   } catch (err) {
     logger.error('verify error', err);
     res.sendStatus(401);

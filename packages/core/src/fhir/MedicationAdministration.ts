@@ -5,14 +5,29 @@
 
 import { Annotation } from './Annotation';
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
+import { Device } from './Device';
+import { DiagnosticReport } from './DiagnosticReport';
+import { Encounter } from './Encounter';
+import { EpisodeOfCare } from './EpisodeOfCare';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { Medication } from './Medication';
+import { MedicationRequest } from './MedicationRequest';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { Procedure } from './Procedure';
+import { Provenance } from './Provenance';
 import { Quantity } from './Quantity';
 import { Ratio } from './Ratio';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -119,7 +134,7 @@ export interface MedicationAdministration {
   /**
    * A larger event of which this particular event is a component or step.
    */
-  readonly partOf?: Reference[];
+  readonly partOf?: Reference<MedicationAdministration | Procedure>[];
 
   /**
    * Will generally be set to show that the administration has been
@@ -154,24 +169,24 @@ export interface MedicationAdministration {
    * attribute carrying a code that identifies the medication from a known
    * list of medications.
    */
-  readonly medicationReference?: Reference;
+  readonly medicationReference?: Reference<Medication>;
 
   /**
    * The person or animal or group receiving the medication.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group>;
 
   /**
    * The visit, admission, or other contact between patient and health care
    * provider during which the medication administration was performed.
    */
-  readonly context?: Reference;
+  readonly context?: Reference<Encounter | EpisodeOfCare>;
 
   /**
    * Additional information (for example, patient height and weight) that
    * supports the administration of the medication.
    */
-  readonly supportingInformation?: Reference[];
+  readonly supportingInformation?: Reference<Resource>[];
 
   /**
    * A specific date/time or interval of time during which the
@@ -204,19 +219,19 @@ export interface MedicationAdministration {
    * Condition or observation that supports why the medication was
    * administered.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport>[];
 
   /**
    * The original request, instruction or authority to perform the
    * administration.
    */
-  readonly request?: Reference;
+  readonly request?: Reference<MedicationRequest>;
 
   /**
    * The device used in administering the medication to the patient.  For
    * example, a particular infusion pump.
    */
-  readonly device?: Reference[];
+  readonly device?: Reference<Device>[];
 
   /**
    * Extra information about the medication administration that is not
@@ -234,7 +249,7 @@ export interface MedicationAdministration {
    * A summary of the events of interest that have occurred, such as when
    * the administration was verified.
    */
-  readonly eventHistory?: Reference[];
+  readonly eventHistory?: Reference<Provenance>[];
 }
 
 /**
@@ -384,5 +399,5 @@ export interface MedicationAdministrationPerformer {
   /**
    * Indicates who or what performed the medication administration.
    */
-  readonly actor?: Reference;
+  readonly actor?: Reference<Practitioner | PractitionerRole | Patient | RelatedPerson | Device>;
 }

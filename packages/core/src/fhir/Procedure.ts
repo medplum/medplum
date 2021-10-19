@@ -5,15 +5,34 @@
 
 import { Age } from './Age';
 import { Annotation } from './Annotation';
+import { CarePlan } from './CarePlan';
 import { CodeableConcept } from './CodeableConcept';
+import { Composition } from './Composition';
+import { Condition } from './Condition';
+import { Device } from './Device';
+import { DiagnosticReport } from './DiagnosticReport';
+import { DocumentReference } from './DocumentReference';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
+import { Medication } from './Medication';
+import { MedicationAdministration } from './MedicationAdministration';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Range } from './Range';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
+import { ServiceRequest } from './ServiceRequest';
+import { Substance } from './Substance';
 
 /**
  * An action that is or was performed on or for a patient. This can be a
@@ -123,13 +142,13 @@ export interface Procedure {
    * A reference to a resource that contains details of the request for
    * this procedure.
    */
-  readonly basedOn?: Reference[];
+  readonly basedOn?: Reference<CarePlan | ServiceRequest>[];
 
   /**
    * A larger event of which this particular procedure is a component or
    * step.
    */
-  readonly partOf?: Reference[];
+  readonly partOf?: Reference<Procedure | Observation | MedicationAdministration>[];
 
   /**
    * A code specifying the state of the procedure. Generally, this will be
@@ -157,13 +176,13 @@ export interface Procedure {
   /**
    * The person, animal or group on which the procedure was performed.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group>;
 
   /**
    * The Encounter during which this Procedure was created or performed or
    * to which the creation of this record is tightly associated.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * Estimated or actual date, date-time, period, or age when the procedure
@@ -209,12 +228,12 @@ export interface Procedure {
    * Individual who recorded the record and takes responsibility for its
    * content.
    */
-  readonly recorder?: Reference;
+  readonly recorder?: Reference<Patient | RelatedPerson | Practitioner | PractitionerRole>;
 
   /**
    * Individual who is making the procedure statement.
    */
-  readonly asserter?: Reference;
+  readonly asserter?: Reference<Patient | RelatedPerson | Practitioner | PractitionerRole>;
 
   /**
    * Limited to &quot;real&quot; people rather than equipment.
@@ -225,7 +244,7 @@ export interface Procedure {
    * The location where the procedure actually happened.  E.g. a newborn at
    * home, a tracheostomy at a restaurant.
    */
-  readonly location?: Reference;
+  readonly location?: Reference<Location>;
 
   /**
    * The coded reason why the procedure was performed. This may be a coded
@@ -236,7 +255,7 @@ export interface Procedure {
   /**
    * The justification of why the procedure was performed.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Observation | Procedure | DiagnosticReport | DocumentReference>[];
 
   /**
    * Detailed and structured anatomical location information. Multiple
@@ -254,7 +273,7 @@ export interface Procedure {
    * This could be a histology result, pathology report, surgical report,
    * etc.
    */
-  readonly report?: Reference[];
+  readonly report?: Reference<DiagnosticReport | DocumentReference | Composition>[];
 
   /**
    * Any complications that occurred during the procedure, or in the
@@ -268,7 +287,7 @@ export interface Procedure {
    * Any complications that occurred during the procedure, or in the
    * immediate post-performance period.
    */
-  readonly complicationDetail?: Reference[];
+  readonly complicationDetail?: Reference<Condition>[];
 
   /**
    * If the procedure required specific follow up - e.g. removal of
@@ -294,7 +313,7 @@ export interface Procedure {
    * Identifies medications, devices and any other substance used as part
    * of the procedure.
    */
-  readonly usedReference?: Reference[];
+  readonly usedReference?: Reference<Device | Medication | Substance>[];
 
   /**
    * Identifies coded items that were used as part of the procedure.
@@ -352,7 +371,7 @@ export interface ProcedureFocalDevice {
   /**
    * The device that was manipulated (changed) during the procedure.
    */
-  readonly manipulated?: Reference;
+  readonly manipulated?: Reference<Device>;
 }
 
 /**
@@ -404,10 +423,10 @@ export interface ProcedurePerformer {
   /**
    * The practitioner who was involved in the procedure.
    */
-  readonly actor?: Reference;
+  readonly actor?: Reference<Practitioner | PractitionerRole | Organization | Patient | RelatedPerson | Device>;
 
   /**
    * The organization the device or practitioner was acting on behalf of.
    */
-  readonly onBehalfOf?: Reference;
+  readonly onBehalfOf?: Reference<Organization>;
 }

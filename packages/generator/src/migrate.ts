@@ -6,11 +6,12 @@ import { FileBuilder } from './filebuilder';
 
 const structureDefinitions = { types: {} } as IndexedStructureDefinition;
 const searchParams = readJson('fhir/r4/search-parameters.json');
-const v5Builder = new FileBuilder();
+const v6Builder = new FileBuilder();
 
 export function main() {
   buildStructureDefinitions('profiles-types.json');
   buildStructureDefinitions('profiles-resources.json');
+  buildStructureDefinitions('profiles-medplum.json');
   writeMigrations();
 }
 
@@ -33,8 +34,8 @@ function buildStructureDefinitions(fileName: string): void {
 function writeMigrations(): void {
   const b = new FileBuilder();
   buildMigrationUp(b);
-  // writeFileSync(resolve(__dirname, '../../server/src/migrations/v1.ts'), b.toString(), 'utf8');
-  writeFileSync(resolve(__dirname, '../../server/src/migrations/v5.ts'), v5Builder.toString(), 'utf8');
+  // writeFileSync(resolve(__dirname, '../../server/src/migrations/init.ts'), b.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../server/src/migrations/v6.ts'), v6Builder.toString(), 'utf8');
 }
 
 function buildMigrationUp(b: FileBuilder): void {
@@ -43,13 +44,17 @@ function buildMigrationUp(b: FileBuilder): void {
   b.append('export async function run(client: PoolClient) {');
   b.indentCount++;
 
-  v5Builder.append('import { PoolClient } from \'pg\';');
-  v5Builder.newLine();
-  v5Builder.append('export async function run(client: PoolClient) {');
-  v5Builder.indentCount++;
+  v6Builder.append('import { PoolClient } from \'pg\';');
+  v6Builder.newLine();
+  v6Builder.append('export async function run(client: PoolClient) {');
+  v6Builder.indentCount++;
 
   for (const [resourceType, typeSchema] of Object.entries(structureDefinitions.types)) {
     buildCreateTables(b, resourceType, typeSchema);
+
+    if (resourceType === 'AccessPolicy') {
+      buildCreateTables(v6Builder, resourceType, typeSchema);
+    }
   }
 
   buildAddressTable(b);
@@ -60,8 +65,8 @@ function buildMigrationUp(b: FileBuilder): void {
   b.indentCount--;
   b.append('}');
 
-  v5Builder.indentCount--;
-  v5Builder.append('}');
+  v6Builder.indentCount--;
+  v6Builder.append('}');
 }
 
 function isResourceType(typeSchema: TypeSchema): boolean {
@@ -94,8 +99,6 @@ function buildCreateTables(b: FileBuilder, resourceType: string, fhirType: TypeS
     '"deleted" BOOLEAN NOT NULL DEFAULT FALSE',
     '"compartments" UUID[] NOT NULL',
   ];
-
-  v5Builder.append(`await client.query('ALTER TABLE "${resourceType}" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE');`);
 
   columns.push(...buildSearchColumns(resourceType));
 

@@ -4,12 +4,21 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { Coverage } from './Coverage';
+import { Device } from './Device';
 import { Extension } from './Extension';
+import { HealthcareService } from './HealthcareService';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -123,7 +132,7 @@ export interface Account {
    * subject, the expenses were ultimately incurred by the subject of the
    * Account.
    */
-  readonly subject?: Reference[];
+  readonly subject?: Reference<Patient | Device | Practitioner | PractitionerRole | Location | HealthcareService | Organization>[];
 
   /**
    * The date range of services associated with this account.
@@ -140,7 +149,7 @@ export interface Account {
    * Indicates the service area, hospital, department, etc. with
    * responsibility for managing the Account.
    */
-  readonly owner?: Reference;
+  readonly owner?: Reference<Organization>;
 
   /**
    * Provides additional information about what the account tracks and how
@@ -157,7 +166,7 @@ export interface Account {
   /**
    * Reference to a parent Account.
    */
-  readonly partOf?: Reference;
+  readonly partOf?: Reference<Account>;
 }
 
 /**
@@ -209,7 +218,7 @@ export interface AccountCoverage {
    * the sequence of the coverages in the account could be important when
    * processing billing.
    */
-  readonly coverage?: Reference;
+  readonly coverage?: Reference<Coverage>;
 
   /**
    * The priority of the coverage in the context of this account.
@@ -261,7 +270,7 @@ export interface AccountGuarantor {
   /**
    * The entity who is responsible.
    */
-  readonly party?: Reference;
+  readonly party?: Reference<Patient | RelatedPerson | Organization>;
 
   /**
    * A guarantor may be placed on credit hold or otherwise have their role

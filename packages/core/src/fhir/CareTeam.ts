@@ -5,13 +5,21 @@
 
 import { Annotation } from './Annotation';
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
 import { ContactPoint } from './ContactPoint';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -125,13 +133,13 @@ export interface CareTeam {
    * Identifies the patient or group whose intended care is handled by the
    * team.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group>;
 
   /**
    * The Encounter during which this CareTeam was created or to which the
    * creation of this record is tightly associated.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * Indicates when the team did (or is intended to) come into effect and
@@ -153,12 +161,12 @@ export interface CareTeam {
   /**
    * Condition(s) that this care team addresses.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition>[];
 
   /**
    * The organization responsible for the care team.
    */
-  readonly managingOrganization?: Reference[];
+  readonly managingOrganization?: Reference<Organization>[];
 
   /**
    * A central contact detail for the care team (that applies to all
@@ -224,12 +232,12 @@ export interface CareTeamParticipant {
    * The specific person or organization who is participating/expected to
    * participate in the care team.
    */
-  readonly member?: Reference;
+  readonly member?: Reference<Practitioner | PractitionerRole | RelatedPerson | Patient | Organization | CareTeam>;
 
   /**
    * The organization of the practitioner.
    */
-  readonly onBehalfOf?: Reference;
+  readonly onBehalfOf?: Reference<Organization>;
 
   /**
    * Indicates when the specific member or organization did (or is intended

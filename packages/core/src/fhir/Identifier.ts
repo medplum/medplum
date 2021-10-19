@@ -5,6 +5,7 @@
 
 import { CodeableConcept } from './CodeableConcept';
 import { Extension } from './Extension';
+import { Organization } from './Organization';
 import { Period } from './Period';
 import { Reference } from './Reference';
 
@@ -62,5 +63,5 @@ export interface Identifier {
   /**
    * Organization that issued/manages the identifier.
    */
-  readonly assigner?: Reference;
+  readonly assigner?: Reference<Organization>;
 }

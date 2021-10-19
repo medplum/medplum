@@ -12,8 +12,12 @@ import { HumanName } from './HumanName';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -189,12 +193,12 @@ export interface Patient {
   /**
    * Patient's nominated care provider.
    */
-  readonly generalPractitioner?: Reference[];
+  readonly generalPractitioner?: Reference<Organization | Practitioner | PractitionerRole>[];
 
   /**
    * Organization that is the custodian of the patient record.
    */
-  readonly managingOrganization?: Reference;
+  readonly managingOrganization?: Reference<Organization>;
 
   /**
    * Link to another patient resource that concerns the same actual
@@ -331,7 +335,7 @@ export interface PatientContact {
    * Organization on behalf of which the contact is acting or for which the
    * contact is working.
    */
-  readonly organization?: Reference;
+  readonly organization?: Reference<Organization>;
 
   /**
    * The period during which this contact person or organization is valid
@@ -384,7 +388,7 @@ export interface PatientLink {
   /**
    * The other patient resource that the link refers to.
    */
-  readonly other?: Reference;
+  readonly other?: Reference<Patient | RelatedPerson>;
 
   /**
    * The type of link between this patient resource and another patient

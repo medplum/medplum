@@ -10,6 +10,7 @@ import { DataRequirement } from './DataRequirement';
 import { Duration } from './Duration';
 import { Expression } from './Expression';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
@@ -188,7 +189,7 @@ export interface PlanDefinition {
    * A code or group definition that describes the intended subject of the
    * plan definition.
    */
-  readonly subjectReference?: Reference;
+  readonly subjectReference?: Reference<Group>;
 
   /**
    * The date  (and optionally time) when the plan definition was
@@ -432,7 +433,7 @@ export interface PlanDefinitionAction {
    * A code or group definition that describes the intended subject of the
    * action and its children, if any.
    */
-  readonly subjectReference?: Reference;
+  readonly subjectReference?: Reference<Group>;
 
   /**
    * A description of when the action should be triggered.

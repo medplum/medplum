@@ -27,7 +27,7 @@ async function main() {
   logger.debug('Workers initialized');
 
   const app = await initApp(express());
-  app.listen(5000); 
+  app.listen(5000);
 }
 
 main();

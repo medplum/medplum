@@ -3,12 +3,15 @@
  * Do not edit manually.
  */
 
+import { Consent } from './Consent';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Patient } from './Patient';
 import { Period } from './Period';
 import { Reference } from './Reference';
+import { ResearchStudy } from './ResearchStudy';
 import { Resource } from './Resource';
 
 /**
@@ -112,12 +115,12 @@ export interface ResearchSubject {
   /**
    * Reference to the study the subject is participating in.
    */
-  readonly study?: Reference;
+  readonly study?: Reference<ResearchStudy>;
 
   /**
    * The record of the person or animal who is involved in the study.
    */
-  readonly individual?: Reference;
+  readonly individual?: Reference<Patient>;
 
   /**
    * The name of the arm in the study the subject is expected to follow as
@@ -135,5 +138,5 @@ export interface ResearchSubject {
    * A record of the patient's informed agreement to participate in the
    * study.
    */
-  readonly consent?: Reference;
+  readonly consent?: Reference<Consent>;
 }

@@ -4,6 +4,7 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { DocumentReference } from './DocumentReference';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
@@ -178,7 +179,7 @@ export interface SubstanceReferenceInformationClassification {
   /**
    * Todo.
    */
-  readonly source?: Reference[];
+  readonly source?: Reference<DocumentReference>[];
 }
 
 /**
@@ -234,7 +235,7 @@ export interface SubstanceReferenceInformationGene {
   /**
    * Todo.
    */
-  readonly source?: Reference[];
+  readonly source?: Reference<DocumentReference>[];
 }
 
 /**
@@ -290,7 +291,7 @@ export interface SubstanceReferenceInformationGeneElement {
   /**
    * Todo.
    */
-  readonly source?: Reference[];
+  readonly source?: Reference<DocumentReference>[];
 }
 
 /**
@@ -381,5 +382,5 @@ export interface SubstanceReferenceInformationTarget {
   /**
    * Todo.
    */
-  readonly source?: Reference[];
+  readonly source?: Reference<DocumentReference>[];
 }

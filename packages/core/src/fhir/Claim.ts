@@ -5,16 +5,32 @@
 
 import { Address } from './Address';
 import { Attachment } from './Attachment';
+import { ClaimResponse } from './ClaimResponse';
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
+import { Coverage } from './Coverage';
+import { Device } from './Device';
+import { DeviceRequest } from './DeviceRequest';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
+import { MedicationRequest } from './MedicationRequest';
 import { Meta } from './Meta';
 import { Money } from './Money';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { Procedure } from './Procedure';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
+import { ServiceRequest } from './ServiceRequest';
+import { VisionPrescription } from './VisionPrescription';
 
 /**
  * A provider issued list of professional services and products which
@@ -136,7 +152,7 @@ export interface Claim {
    * supplied or are being considered and for whom actual or forecast
    * reimbursement is sought.
    */
-  readonly patient?: Reference;
+  readonly patient?: Reference<Patient>;
 
   /**
    * The period for which charges are being submitted.
@@ -152,18 +168,18 @@ export interface Claim {
    * Individual who created the claim, predetermination or
    * preauthorization.
    */
-  readonly enterer?: Reference;
+  readonly enterer?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * The Insurer who is target of the request.
    */
-  readonly insurer?: Reference;
+  readonly insurer?: Reference<Organization>;
 
   /**
    * The provider which is responsible for the claim, predetermination or
    * preauthorization.
    */
-  readonly provider?: Reference;
+  readonly provider?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * The provider-required urgency of processing the request. Typical
@@ -187,14 +203,14 @@ export interface Claim {
    * Prescription to support the dispensing of pharmacy, device or vision
    * products.
    */
-  readonly prescription?: Reference;
+  readonly prescription?: Reference<DeviceRequest | MedicationRequest | VisionPrescription>;
 
   /**
    * Original prescription which has been superseded by this prescription
    * to support the dispensing of pharmacy services, medications or
    * products.
    */
-  readonly originalPrescription?: Reference;
+  readonly originalPrescription?: Reference<DeviceRequest | MedicationRequest | VisionPrescription>;
 
   /**
    * The party to be reimbursed for cost of the products and services
@@ -205,12 +221,12 @@ export interface Claim {
   /**
    * A reference to a referral resource.
    */
-  readonly referral?: Reference;
+  readonly referral?: Reference<ServiceRequest>;
 
   /**
    * Facility where the services were provided.
    */
-  readonly facility?: Reference;
+  readonly facility?: Reference<Location>;
 
   /**
    * The members of the team who provided the products and services.
@@ -320,7 +336,7 @@ export interface ClaimAccident {
   /**
    * The physical location of the accident event.
    */
-  readonly locationReference?: Reference;
+  readonly locationReference?: Reference<Location>;
 }
 
 /**
@@ -371,7 +387,7 @@ export interface ClaimCareTeam {
   /**
    * Member of the team who provided the product or service.
    */
-  readonly provider?: Reference;
+  readonly provider?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * The party who is billing and/or responsible for the claimed products
@@ -447,7 +463,7 @@ export interface ClaimDiagnosis {
    * The nature of illness or problem in a coded form or as a reference to
    * an external defined Condition.
    */
-  readonly diagnosisReference?: Reference;
+  readonly diagnosisReference?: Reference<Condition>;
 
   /**
    * When the condition was observed or the relative ranking.
@@ -533,7 +549,7 @@ export interface ClaimInsurance {
    * to locate the patient's actual coverage within the insurer's
    * information system.
    */
-  readonly coverage?: Reference;
+  readonly coverage?: Reference<Coverage>;
 
   /**
    * A business agreement number established between the provider and the
@@ -552,7 +568,7 @@ export interface ClaimInsurance {
    * The result of the adjudication of the line items for the Coverage
    * specified in this insurance.
    */
-  readonly claimResponse?: Reference;
+  readonly claimResponse?: Reference<ClaimResponse>;
 }
 
 /**
@@ -677,7 +693,7 @@ export interface ClaimItem {
   /**
    * Where the product or service was provided.
    */
-  readonly locationReference?: Reference;
+  readonly locationReference?: Reference<Location>;
 
   /**
    * The number of repetitions of a service or product.
@@ -708,7 +724,7 @@ export interface ClaimItem {
   /**
    * Unique Device Identifiers associated with this line item.
    */
-  readonly udi?: Reference[];
+  readonly udi?: Reference<Device>[];
 
   /**
    * Physical service site on the patient (limb, tooth, etc.).
@@ -725,7 +741,7 @@ export interface ClaimItem {
    * The Encounters during which this Claim was created or to which the
    * creation of this record is tightly associated.
    */
-  readonly encounter?: Reference[];
+  readonly encounter?: Reference<Encounter>[];
 
   /**
    * A claim detail line. Either a simple (a product or service) or a
@@ -839,7 +855,7 @@ export interface ClaimItemDetail {
   /**
    * Unique Device Identifiers associated with this line item.
    */
-  readonly udi?: Reference[];
+  readonly udi?: Reference<Device>[];
 
   /**
    * A claim detail line. Either a simple (a product or service) or a
@@ -953,7 +969,7 @@ export interface ClaimItemDetailSubDetail {
   /**
    * Unique Device Identifiers associated with this line item.
    */
-  readonly udi?: Reference[];
+  readonly udi?: Reference<Device>[];
 }
 
 /**
@@ -1006,7 +1022,7 @@ export interface ClaimPayee {
    * Reference to the individual or organization to whom any payment will
    * be made.
    */
-  readonly party?: Reference;
+  readonly party?: Reference<Practitioner | PractitionerRole | Organization | Patient | RelatedPerson>;
 }
 
 /**
@@ -1075,12 +1091,12 @@ export interface ClaimProcedure {
    * The code or reference to a Procedure resource which identifies the
    * clinical intervention performed.
    */
-  readonly procedureReference?: Reference;
+  readonly procedureReference?: Reference<Procedure>;
 
   /**
    * Unique Device Identifiers associated with this line item.
    */
-  readonly udi?: Reference[];
+  readonly udi?: Reference<Device>[];
 }
 
 /**
@@ -1127,7 +1143,7 @@ export interface ClaimRelated {
   /**
    * Reference to a related claim.
    */
-  readonly claim?: Reference;
+  readonly claim?: Reference<Claim>;
 
   /**
    * A code to convey how the claims are related.
@@ -1243,7 +1259,7 @@ export interface ClaimSupportingInfo {
    * etc. including references to the data or the actual inclusion of the
    * data.
    */
-  readonly valueReference?: Reference;
+  readonly valueReference?: Reference<Resource>;
 
   /**
    * Provides the reason in the situation where a reason code is required

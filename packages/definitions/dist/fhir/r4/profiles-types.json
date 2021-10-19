@@ -21954,6 +21954,18 @@
           "type" : [{
             "code" : "Reference"
           }]
+        },
+        {
+          "id" : "Meta.account",
+          "path" : "Meta.account",
+          "short" : "Optional account reference that can be used for sub-project compartments.",
+          "definition" : "Optional account reference that can be used for sub-project compartments.",
+          "comment" : "Optional account reference that can be used for sub-project compartments.",
+          "min" : 0,
+          "max" : "1",
+          "type" : [{
+            "code" : "Reference"
+          }]
         }]
       },
       "differential" : {

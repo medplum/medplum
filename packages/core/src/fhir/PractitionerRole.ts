@@ -5,11 +5,16 @@
 
 import { CodeableConcept } from './CodeableConcept';
 import { ContactPoint } from './ContactPoint';
+import { Endpoint } from './Endpoint';
 import { Extension } from './Extension';
+import { HealthcareService } from './HealthcareService';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -115,12 +120,12 @@ export interface PractitionerRole {
    * Practitioner that is able to provide the defined services for the
    * organization.
    */
-  readonly practitioner?: Reference;
+  readonly practitioner?: Reference<Practitioner>;
 
   /**
    * The organization where the Practitioner performs the roles associated.
    */
-  readonly organization?: Reference;
+  readonly organization?: Reference<Organization>;
 
   /**
    * Roles which this practitioner is authorized to perform for the
@@ -136,13 +141,13 @@ export interface PractitionerRole {
   /**
    * The location(s) at which this practitioner provides care.
    */
-  readonly location?: Reference[];
+  readonly location?: Reference<Location>[];
 
   /**
    * The list of healthcare services that this worker provides for this
    * role's Organization/Location(s).
    */
-  readonly healthcareService?: Reference[];
+  readonly healthcareService?: Reference<HealthcareService>[];
 
   /**
    * Contact details that are specific to the role/location/service.
@@ -173,7 +178,7 @@ export interface PractitionerRole {
    * Technical endpoints providing access to services operated for the
    * practitioner with this role.
    */
-  readonly endpoint?: Reference[];
+  readonly endpoint?: Reference<Endpoint>[];
 }
 
 /**

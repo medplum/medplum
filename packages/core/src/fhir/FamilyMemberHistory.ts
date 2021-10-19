@@ -4,13 +4,20 @@
  */
 
 import { Age } from './Age';
+import { AllergyIntolerance } from './AllergyIntolerance';
 import { Annotation } from './Annotation';
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
+import { DiagnosticReport } from './DiagnosticReport';
+import { DocumentReference } from './DocumentReference';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { QuestionnaireResponse } from './QuestionnaireResponse';
 import { Range } from './Range';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -132,7 +139,7 @@ export interface FamilyMemberHistory {
   /**
    * The person who this history concerns.
    */
-  readonly patient?: Reference;
+  readonly patient?: Reference<Patient>;
 
   /**
    * The date (and possibly time) when the family member history was
@@ -235,7 +242,7 @@ export interface FamilyMemberHistory {
    * Indicates a Condition, Observation, AllergyIntolerance, or
    * QuestionnaireResponse that justifies this family member history event.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Observation | AllergyIntolerance | QuestionnaireResponse | DiagnosticReport | DocumentReference>[];
 
   /**
    * This property allows a non condition-specific note to the made about

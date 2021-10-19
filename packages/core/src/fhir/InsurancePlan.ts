@@ -6,12 +6,15 @@
 import { Address } from './Address';
 import { CodeableConcept } from './CodeableConcept';
 import { ContactPoint } from './ContactPoint';
+import { Endpoint } from './Endpoint';
 import { Extension } from './Extension';
 import { HumanName } from './HumanName';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Money } from './Money';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
 import { Period } from './Period';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
@@ -139,20 +142,20 @@ export interface InsurancePlan {
    * third-party payers, or health plan sponsors comonly referred to as
    * 'payers'.
    */
-  readonly ownedBy?: Reference;
+  readonly ownedBy?: Reference<Organization>;
 
   /**
    * An organization which administer other services such as underwriting,
    * customer service and/or claims processing on behalf of the health
    * insurance product owner.
    */
-  readonly administeredBy?: Reference;
+  readonly administeredBy?: Reference<Organization>;
 
   /**
    * The geographic region in which a health insurance product's benefits
    * apply.
    */
-  readonly coverageArea?: Reference[];
+  readonly coverageArea?: Reference<Location>[];
 
   /**
    * The contact for the health insurance product for a certain purpose.
@@ -163,12 +166,12 @@ export interface InsurancePlan {
    * The technical endpoints providing access to services operated for the
    * health insurance product.
    */
-  readonly endpoint?: Reference[];
+  readonly endpoint?: Reference<Endpoint>[];
 
   /**
    * Reference to the network included in the health insurance product.
    */
-  readonly network?: Reference[];
+  readonly network?: Reference<Organization>[];
 
   /**
    * Details about the coverage offered by the insurance product.
@@ -292,7 +295,7 @@ export interface InsurancePlanCoverage {
   /**
    * Reference to the network that providing the type of coverage.
    */
-  readonly network?: Reference[];
+  readonly network?: Reference<Organization>[];
 
   /**
    * Specific benefits under this type of coverage.
@@ -465,12 +468,12 @@ export interface InsurancePlanPlan {
    * The geographic region in which a health insurance plan's benefits
    * apply.
    */
-  readonly coverageArea?: Reference[];
+  readonly coverageArea?: Reference<Location>[];
 
   /**
    * Reference to the network that providing the type of coverage.
    */
-  readonly network?: Reference[];
+  readonly network?: Reference<Organization>[];
 
   /**
    * Overall costs associated with the plan.

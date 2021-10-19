@@ -4,11 +4,18 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { Device } from './Device';
 import { Extension } from './Extension';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 import { Signature } from './Signature';
 
@@ -109,7 +116,7 @@ export interface Provenance {
    * target if multiple resources were created/updated by the same
    * activity.
    */
-  readonly target?: Reference[];
+  readonly target?: Reference<Resource>[];
 
   /**
    * The period during which the activity occurred.
@@ -136,7 +143,7 @@ export interface Provenance {
   /**
    * Where the activity occurred, if relevant.
    */
-  readonly location?: Reference;
+  readonly location?: Reference<Location>;
 
   /**
    * The reason that the activity was taking place.
@@ -223,12 +230,12 @@ export interface ProvenanceAgent {
   /**
    * The individual, device or organization that participated in the event.
    */
-  readonly who?: Reference;
+  readonly who?: Reference<Practitioner | PractitionerRole | RelatedPerson | Patient | Device | Organization>;
 
   /**
    * The individual, device, or organization for whom the change was made.
    */
-  readonly onBehalfOf?: Reference;
+  readonly onBehalfOf?: Reference<Practitioner | PractitionerRole | RelatedPerson | Patient | Device | Organization>;
 }
 
 /**
@@ -280,7 +287,7 @@ export interface ProvenanceEntity {
    * Identity of the  Entity used. May be a logical or physical uri and
    * maybe absolute or relative.
    */
-  readonly what?: Reference;
+  readonly what?: Reference<Resource>;
 
   /**
    * The entity is attributed to an agent to express the agent's

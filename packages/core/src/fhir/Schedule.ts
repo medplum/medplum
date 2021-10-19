@@ -4,12 +4,19 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { Device } from './Device';
 import { Extension } from './Extension';
+import { HealthcareService } from './HealthcareService';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -126,7 +133,7 @@ export interface Schedule {
    * Slots that reference this schedule resource provide the availability
    * details to these referenced resource(s).
    */
-  readonly actor?: Reference[];
+  readonly actor?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Device | HealthcareService | Location>[];
 
   /**
    * The period of time that the slots that reference this Schedule

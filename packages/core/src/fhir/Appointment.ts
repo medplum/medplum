@@ -4,13 +4,26 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
+import { Device } from './Device';
 import { Extension } from './Extension';
+import { HealthcareService } from './HealthcareService';
 import { Identifier } from './Identifier';
+import { ImmunizationRecommendation } from './ImmunizationRecommendation';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { Procedure } from './Procedure';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
+import { ServiceRequest } from './ServiceRequest';
+import { Slot } from './Slot';
 
 /**
  * A booking of a healthcare event among patient(s), practitioner(s),
@@ -153,7 +166,7 @@ export interface Appointment {
    * indication will typically be a Condition (with other resources
    * referenced in the evidence.detail), or a Procedure.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Procedure | Observation | ImmunizationRecommendation>[];
 
   /**
    * The priority of the appointment. Can be used to make informed
@@ -173,7 +186,7 @@ export interface Appointment {
    * Additional information to support the appointment provided when making
    * the appointment.
    */
-  readonly supportingInformation?: Reference[];
+  readonly supportingInformation?: Reference<Resource>[];
 
   /**
    * Date/Time that the appointment is to take place.
@@ -200,7 +213,7 @@ export interface Appointment {
    * The slots from the participants' schedules that will be filled by the
    * appointment.
    */
-  readonly slot?: Reference[];
+  readonly slot?: Reference<Slot>[];
 
   /**
    * The date that this appointment was initially created. This could be
@@ -227,7 +240,7 @@ export interface Appointment {
    * The service request this appointment is allocated to assess (e.g.
    * incoming referral or procedure request).
    */
-  readonly basedOn?: Reference[];
+  readonly basedOn?: Reference<ServiceRequest>[];
 
   /**
    * List of participants involved in the appointment.
@@ -295,7 +308,7 @@ export interface AppointmentParticipant {
    * A Person, Location/HealthcareService or Device that is participating
    * in the appointment.
    */
-  readonly actor?: Reference;
+  readonly actor?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Device | HealthcareService | Location>;
 
   /**
    * Whether this participant is required to be present at the meeting.

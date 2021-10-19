@@ -6,6 +6,7 @@
 import { Address } from './Address';
 import { CodeableConcept } from './CodeableConcept';
 import { ContactPoint } from './ContactPoint';
+import { Endpoint } from './Endpoint';
 import { Extension } from './Extension';
 import { HumanName } from './HumanName';
 import { Identifier } from './Identifier';
@@ -139,7 +140,7 @@ export interface Organization {
   /**
    * The organization of which this organization forms a part.
    */
-  readonly partOf?: Reference;
+  readonly partOf?: Reference<Organization>;
 
   /**
    * Contact for the organization for a certain purpose.
@@ -150,7 +151,7 @@ export interface Organization {
    * Technical endpoints providing access to services operated for the
    * organization.
    */
-  readonly endpoint?: Reference[];
+  readonly endpoint?: Reference<Endpoint>[];
 }
 
 /**

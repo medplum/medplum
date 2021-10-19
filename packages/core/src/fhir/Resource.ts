@@ -3,6 +3,7 @@
  * Do not edit manually.
  */
 
+import { AccessPolicy } from './AccessPolicy';
 import { Account } from './Account';
 import { ActivityDefinition } from './ActivityDefinition';
 import { AdverseEvent } from './AdverseEvent';
@@ -158,7 +159,8 @@ import { ValueSet } from './ValueSet';
 import { VerificationResult } from './VerificationResult';
 import { VisionPrescription } from './VisionPrescription';
 
-export type Resource = Account
+export type Resource = AccessPolicy
+  | Account
   | ActivityDefinition
   | AdverseEvent
   | AllergyIntolerance

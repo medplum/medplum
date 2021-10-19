@@ -5,11 +5,18 @@
 
 import { CodeableConcept } from './CodeableConcept';
 import { Coding } from './Coding';
+import { Device } from './Device';
 import { Extension } from './Extension';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -213,7 +220,7 @@ export interface AuditEventAgent {
   /**
    * Reference to who this agent is that was involved in the event.
    */
-  readonly who?: Reference;
+  readonly who?: Reference<PractitionerRole | Practitioner | Organization | Device | Patient | RelatedPerson>;
 
   /**
    * Alternative agent Identifier. For a human, this should be a user
@@ -237,7 +244,7 @@ export interface AuditEventAgent {
   /**
    * Where the event occurred.
    */
-  readonly location?: Reference;
+  readonly location?: Reference<Location>;
 
   /**
    * The policy or plan that authorized the activity being recorded.
@@ -364,7 +371,7 @@ export interface AuditEventEntity {
    * Identifies a specific instance of the entity. The reference should be
    * version specific.
    */
-  readonly what?: Reference;
+  readonly what?: Reference<Resource>;
 
   /**
    * The type of the object that was involved in this audit event.
@@ -516,7 +523,7 @@ export interface AuditEventSource {
   /**
    * Identifier of the source where the event was detected.
    */
-  readonly observer?: Reference;
+  readonly observer?: Reference<PractitionerRole | Practitioner | Organization | Device | Patient | RelatedPerson>;
 
   /**
    * Code specifying the type of source where event originated.

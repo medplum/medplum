@@ -5,13 +5,21 @@
 
 import { Address } from './Address';
 import { Attachment } from './Attachment';
+import { Claim } from './Claim';
 import { CodeableConcept } from './CodeableConcept';
+import { CommunicationRequest } from './CommunicationRequest';
+import { Coverage } from './Coverage';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Money } from './Money';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -136,7 +144,7 @@ export interface ClaimResponse {
    * supplied or are being considered and for whom actual for facast
    * reimbursement is sought.
    */
-  readonly patient?: Reference;
+  readonly patient?: Reference<Patient>;
 
   /**
    * The date this resource was created.
@@ -147,18 +155,18 @@ export interface ClaimResponse {
    * The party responsible for authorization, adjudication and
    * reimbursement.
    */
-  readonly insurer?: Reference;
+  readonly insurer?: Reference<Organization>;
 
   /**
    * The provider which is responsible for the claim, predetermination or
    * preauthorization.
    */
-  readonly requestor?: Reference;
+  readonly requestor?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * Original request resource reference.
    */
-  readonly request?: Reference;
+  readonly request?: Reference<Claim>;
 
   /**
    * The outcome of the claim, predetermination, or preauthorization
@@ -241,7 +249,7 @@ export interface ClaimResponse {
   /**
    * Request for additional supporting or authorizing information.
    */
-  readonly communicationRequest?: Reference[];
+  readonly communicationRequest?: Reference<CommunicationRequest>[];
 
   /**
    * Financial instruments for reimbursement for the health care products
@@ -317,7 +325,7 @@ export interface ClaimResponseAddItem {
    * The providers who are authorized for the services rendered to the
    * patient.
    */
-  readonly provider?: Reference[];
+  readonly provider?: Reference<Practitioner | PractitionerRole | Organization>[];
 
   /**
    * When the value is a group code then this item collects a set of
@@ -362,7 +370,7 @@ export interface ClaimResponseAddItem {
   /**
    * Where the product or service was provided.
    */
-  readonly locationReference?: Reference;
+  readonly locationReference?: Reference<Location>;
 
   /**
    * The number of repetitions of a service or product.
@@ -732,7 +740,7 @@ export interface ClaimResponseInsurance {
    * to locate the patient's actual coverage within the insurer's
    * information system.
    */
-  readonly coverage?: Reference;
+  readonly coverage?: Reference<Coverage>;
 
   /**
    * A business agreement number established between the provider and the
@@ -744,7 +752,7 @@ export interface ClaimResponseInsurance {
    * The result of the adjudication of the line items for the Coverage
    * specified in this insurance.
    */
-  readonly claimResponse?: Reference;
+  readonly claimResponse?: Reference<ClaimResponse>;
 }
 
 /**

@@ -5,12 +5,19 @@
 
 import { CodeableConcept } from './CodeableConcept';
 import { Coding } from './Coding';
+import { DocumentReference } from './DocumentReference';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { MarketingStatus } from './MarketingStatus';
+import { MedicinalProductIndication } from './MedicinalProductIndication';
+import { MedicinalProductPackaged } from './MedicinalProductPackaged';
+import { MedicinalProductPharmaceutical } from './MedicinalProductPharmaceutical';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
+import { ResearchStudy } from './ResearchStudy';
 import { Resource } from './Resource';
 
 /**
@@ -153,33 +160,33 @@ export interface MedicinalProduct {
   /**
    * Pharmaceutical aspects of product.
    */
-  readonly pharmaceuticalProduct?: Reference[];
+  readonly pharmaceuticalProduct?: Reference<MedicinalProductPharmaceutical>[];
 
   /**
    * Package representation for the product.
    */
-  readonly packagedMedicinalProduct?: Reference[];
+  readonly packagedMedicinalProduct?: Reference<MedicinalProductPackaged>[];
 
   /**
    * Supporting documentation, typically for regulatory submission.
    */
-  readonly attachedDocument?: Reference[];
+  readonly attachedDocument?: Reference<DocumentReference>[];
 
   /**
    * A master file for to the medicinal product (e.g. Pharmacovigilance
    * System Master File).
    */
-  readonly masterFile?: Reference[];
+  readonly masterFile?: Reference<DocumentReference>[];
 
   /**
    * A product specific contact, person (in a role), or an organization.
    */
-  readonly contact?: Reference[];
+  readonly contact?: Reference<Organization | PractitionerRole>[];
 
   /**
    * Clinical trials or studies that this product is involved in.
    */
-  readonly clinicalTrial?: Reference[];
+  readonly clinicalTrial?: Reference<ResearchStudy>[];
 
   /**
    * The product's name, including full name and possibly coded parts.
@@ -269,12 +276,12 @@ export interface MedicinalProductManufacturingBusinessOperation {
   /**
    * The manufacturer or establishment associated with the process.
    */
-  readonly manufacturer?: Reference[];
+  readonly manufacturer?: Reference<Organization>[];
 
   /**
    * A regulator which oversees the operation.
    */
-  readonly regulator?: Reference;
+  readonly regulator?: Reference<Organization>;
 }
 
 /**
@@ -504,7 +511,7 @@ export interface MedicinalProductSpecialDesignation {
   /**
    * Condition for which the medicinal use applies.
    */
-  readonly indicationReference?: Reference;
+  readonly indicationReference?: Reference<MedicinalProductIndication>;
 
   /**
    * For example granted, pending, expired or withdrawn.

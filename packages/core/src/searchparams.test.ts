@@ -12,6 +12,7 @@ describe('SearchParameterDetails', () => {
   beforeAll(() => {
     buildStructureDefinitions('profiles-types.json');
     buildStructureDefinitions('profiles-resources.json');
+    buildStructureDefinitions('profiles-medplum.json');
   });
 
   test('Get details', () => {

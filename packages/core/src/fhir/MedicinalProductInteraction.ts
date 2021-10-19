@@ -5,10 +5,14 @@
 
 import { CodeableConcept } from './CodeableConcept';
 import { Extension } from './Extension';
+import { Medication } from './Medication';
+import { MedicinalProduct } from './MedicinalProduct';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { ObservationDefinition } from './ObservationDefinition';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { Substance } from './Substance';
 
 /**
  * The interactions of the medicinal product with other medicinal
@@ -95,7 +99,7 @@ export interface MedicinalProductInteraction {
   /**
    * The medication for which this is a described interaction.
    */
-  readonly subject?: Reference[];
+  readonly subject?: Reference<MedicinalProduct | Medication | Substance>[];
 
   /**
    * The interaction described.
@@ -173,7 +177,7 @@ export interface MedicinalProductInteractionInteractant {
   /**
    * The specific medication, food or laboratory test that interacts.
    */
-  readonly itemReference?: Reference;
+  readonly itemReference?: Reference<MedicinalProduct | Medication | Substance | ObservationDefinition>;
 
   /**
    * The specific medication, food or laboratory test that interacts.

@@ -6,12 +6,21 @@
 import { Attachment } from './Attachment';
 import { CodeableConcept } from './CodeableConcept';
 import { Coding } from './Coding';
+import { Device } from './Device';
+import { Encounter } from './Encounter';
+import { EpisodeOfCare } from './EpisodeOfCare';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -144,7 +153,7 @@ export interface DocumentReference {
    * even a group of subjects (such as a document about a herd of farm
    * animals, or a set of patients that share a common exposure).
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Practitioner | Group | Device>;
 
   /**
    * When the document reference was created.
@@ -155,19 +164,19 @@ export interface DocumentReference {
    * Identifies who is responsible for adding the information to the
    * document.
    */
-  readonly author?: Reference[];
+  readonly author?: Reference<Practitioner | PractitionerRole | Organization | Device | Patient | RelatedPerson>[];
 
   /**
    * Which person or organization authenticates that this document is
    * valid.
    */
-  readonly authenticator?: Reference;
+  readonly authenticator?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * Identifies the organization or group who is responsible for ongoing
    * maintenance of and access to the document.
    */
-  readonly custodian?: Reference;
+  readonly custodian?: Reference<Organization>;
 
   /**
    * Relationships that this document has with other document references
@@ -300,7 +309,7 @@ export interface DocumentReferenceContext {
    * Describes the clinical encounter or type of care that the document
    * content is associated with.
    */
-  readonly encounter?: Reference[];
+  readonly encounter?: Reference<Encounter | EpisodeOfCare>[];
 
   /**
    * This list of codes represents the main clinical acts, such as a
@@ -332,13 +341,13 @@ export interface DocumentReferenceContext {
    * The Patient Information as known when the document was published. May
    * be a reference to a version specific, or contained.
    */
-  readonly sourcePatientInfo?: Reference;
+  readonly sourcePatientInfo?: Reference<Patient>;
 
   /**
    * Related identifiers or resources associated with the
    * DocumentReference.
    */
-  readonly related?: Reference[];
+  readonly related?: Reference<Resource>[];
 }
 
 /**
@@ -390,5 +399,5 @@ export interface DocumentReferenceRelatesTo {
   /**
    * The target document of this relationship.
    */
-  readonly target?: Reference;
+  readonly target?: Reference<DocumentReference>;
 }

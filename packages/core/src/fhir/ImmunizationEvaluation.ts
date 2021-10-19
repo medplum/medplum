@@ -6,8 +6,11 @@
 import { CodeableConcept } from './CodeableConcept';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
+import { Immunization } from './Immunization';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -108,7 +111,7 @@ export interface ImmunizationEvaluation {
   /**
    * The individual for whom the evaluation is being done.
    */
-  readonly patient?: Reference;
+  readonly patient?: Reference<Patient>;
 
   /**
    * The date the evaluation of the vaccine administration event was
@@ -119,7 +122,7 @@ export interface ImmunizationEvaluation {
   /**
    * Indicates the authority who published the protocol (e.g. ACIP).
    */
-  readonly authority?: Reference;
+  readonly authority?: Reference<Organization>;
 
   /**
    * The vaccine preventable disease the dose is being evaluated against.
@@ -129,7 +132,7 @@ export interface ImmunizationEvaluation {
   /**
    * The vaccine administration event being evaluated.
    */
-  readonly immunizationEvent?: Reference;
+  readonly immunizationEvent?: Reference<Immunization>;
 
   /**
    * Indicates if the dose is valid or not valid with respect to the

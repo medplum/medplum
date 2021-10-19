@@ -7,30 +7,44 @@ import { Address } from './Address';
 import { Age } from './Age';
 import { Annotation } from './Annotation';
 import { Attachment } from './Attachment';
+import { CareTeam } from './CareTeam';
+import { ClaimResponse } from './ClaimResponse';
 import { CodeableConcept } from './CodeableConcept';
 import { Coding } from './Coding';
 import { ContactDetail } from './ContactDetail';
 import { ContactPoint } from './ContactPoint';
 import { Contributor } from './Contributor';
 import { Count } from './Count';
+import { Coverage } from './Coverage';
 import { DataRequirement } from './DataRequirement';
+import { Device } from './Device';
 import { Distance } from './Distance';
 import { Dosage } from './Dosage';
 import { Duration } from './Duration';
+import { Encounter } from './Encounter';
 import { Expression } from './Expression';
 import { Extension } from './Extension';
+import { Group } from './Group';
+import { HealthcareService } from './HealthcareService';
 import { HumanName } from './HumanName';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Money } from './Money';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
 import { ParameterDefinition } from './ParameterDefinition';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { Provenance } from './Provenance';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Ratio } from './Ratio';
 import { Reference } from './Reference';
 import { RelatedArtifact } from './RelatedArtifact';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 import { SampledData } from './SampledData';
 import { Signature } from './Signature';
@@ -146,7 +160,7 @@ export interface Task {
    * based on a ServiceRequest (= BasedOn), a task is created to fulfill a
    * procedureRequest ( = FocusOn ) to collect a specimen from a patient.
    */
-  readonly basedOn?: Reference[];
+  readonly basedOn?: Reference<Resource>[];
 
   /**
    * An identifier that links together multiple tasks and other requests
@@ -157,7 +171,7 @@ export interface Task {
   /**
    * Task that this particular task is part of.
    */
-  readonly partOf?: Reference[];
+  readonly partOf?: Reference<Task>[];
 
   /**
    * The current status of the task.
@@ -201,19 +215,19 @@ export interface Task {
    * The request being actioned or the resource being manipulated by this
    * task.
    */
-  readonly focus?: Reference;
+  readonly focus?: Reference<Resource>;
 
   /**
    * The entity who benefits from the performance of the service specified
    * in the task (e.g., the patient).
    */
-  readonly for?: Reference;
+  readonly for?: Reference<Resource>;
 
   /**
    * The healthcare event  (e.g. a patient and healthcare provider
    * interaction) during which this task was created.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * Identifies the time action was first taken against the task (start)
@@ -235,7 +249,7 @@ export interface Task {
   /**
    * The creator of the task.
    */
-  readonly requester?: Reference;
+  readonly requester?: Reference<Device | Organization | Patient | Practitioner | PractitionerRole | RelatedPerson>;
 
   /**
    * The kind of participant that should perform the task.
@@ -246,12 +260,12 @@ export interface Task {
    * Individual organization or Device currently responsible for task
    * execution.
    */
-  readonly owner?: Reference;
+  readonly owner?: Reference<Practitioner | PractitionerRole | Organization | CareTeam | HealthcareService | Patient | Device | RelatedPerson>;
 
   /**
    * Principal physical location where the this task is performed.
    */
-  readonly location?: Reference;
+  readonly location?: Reference<Location>;
 
   /**
    * A description or code indicating why this task needs to be performed.
@@ -261,13 +275,13 @@ export interface Task {
   /**
    * A resource reference indicating why this task needs to be performed.
    */
-  readonly reasonReference?: Reference;
+  readonly reasonReference?: Reference<Resource>;
 
   /**
    * Insurance plans, coverage extensions, pre-authorizations and/or
    * pre-determinations that may be relevant to the Task.
    */
-  readonly insurance?: Reference[];
+  readonly insurance?: Reference<Coverage | ClaimResponse>[];
 
   /**
    * Free-text information captured about the task as it progresses.
@@ -279,7 +293,7 @@ export interface Task {
    * identify key state transitions or updates that are likely to be
    * relevant to a user looking at the current version of the task.
    */
-  readonly relevantHistory?: Reference[];
+  readonly relevantHistory?: Reference<Provenance>[];
 
   /**
    * If the Task.focus is a request resource and the task is seeking
@@ -952,5 +966,5 @@ export interface TaskRestriction {
    * For requests that are targeted to more than on potential
    * recipient/target, for whom is fulfillment sought?
    */
-  readonly recipient?: Reference[];
+  readonly recipient?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Group | Organization>[];
 }

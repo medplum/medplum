@@ -10,6 +10,7 @@ import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { Schedule } from './Schedule';
 
 /**
  * A slot of time on a schedule that may be available for booking
@@ -128,7 +129,7 @@ export interface Slot {
    * The schedule resource that this slot defines an interval of status
    * information.
    */
-  readonly schedule?: Reference;
+  readonly schedule?: Reference<Schedule>;
 
   /**
    * busy | free | busy-unavailable | busy-tentative | entered-in-error.

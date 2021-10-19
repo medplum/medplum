@@ -4,11 +4,18 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { Device } from './Device';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -124,7 +131,7 @@ export interface DocumentManifest {
    * If the documents cross more than one subject, then more than one
    * subject is allowed here (unusual use case).
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Practitioner | Group | Device>;
 
   /**
    * When the document manifest was created for submission to the server
@@ -137,13 +144,13 @@ export interface DocumentManifest {
    * Identifies who is the author of the manifest. Manifest author is not
    * necessarly the author of the references included.
    */
-  readonly author?: Reference[];
+  readonly author?: Reference<Practitioner | PractitionerRole | Organization | Device | Patient | RelatedPerson>[];
 
   /**
    * A patient, practitioner, or organization for which this set of
    * documents is intended.
    */
-  readonly recipient?: Reference[];
+  readonly recipient?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Organization>[];
 
   /**
    * Identifies the source system, application, or software that produced
@@ -160,7 +167,7 @@ export interface DocumentManifest {
   /**
    * The list of Resources that consist of the parts of this manifest.
    */
-  readonly content?: Reference[];
+  readonly content?: Reference<Resource>[];
 
   /**
    * Related identifiers or resources associated with the DocumentManifest.
@@ -218,5 +225,5 @@ export interface DocumentManifestRelated {
    * Related Resource to this DocumentManifest. For example, Order,
    * ServiceRequest,  Procedure, EligibilityRequest, etc.
    */
-  readonly ref?: Reference;
+  readonly ref?: Reference<Resource>;
 }

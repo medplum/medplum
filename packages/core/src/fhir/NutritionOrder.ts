@@ -3,12 +3,17 @@
  * Do not edit manually.
  */
 
+import { AllergyIntolerance } from './AllergyIntolerance';
 import { Annotation } from './Annotation';
 import { CodeableConcept } from './CodeableConcept';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Quantity } from './Quantity';
 import { Ratio } from './Ratio';
 import { Reference } from './Reference';
@@ -139,13 +144,13 @@ export interface NutritionOrder {
    * The person (patient) who needs the nutrition order for an oral diet,
    * nutritional supplement and/or enteral or formula feeding.
    */
-  readonly patient?: Reference;
+  readonly patient?: Reference<Patient>;
 
   /**
    * An encounter that provides additional information about the healthcare
    * context in which this request is made.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * The date and time that this nutrition order was requested.
@@ -156,13 +161,13 @@ export interface NutritionOrder {
    * The practitioner that holds legal responsibility for ordering the
    * diet, nutritional supplement, or formula feedings.
    */
-  readonly orderer?: Reference;
+  readonly orderer?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * A link to a record of allergies or intolerances  which should be
    * included in the nutrition order.
    */
-  readonly allergyIntolerance?: Reference[];
+  readonly allergyIntolerance?: Reference<AllergyIntolerance>[];
 
   /**
    * This modifier is used to convey order-specific modifiers about the

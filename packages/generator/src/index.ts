@@ -30,6 +30,7 @@ const fhirTypesMap: Record<string, FhirType> = {};
 export function main() {
   buildStructureDefinitions('profiles-types.json');
   buildStructureDefinitions('profiles-resources.json');
+  buildStructureDefinitions('profiles-medplum.json');
 
   for (const [resourceType, definition] of Object.entries(structureDefinitions.types)) {
     const fhirType = buildType(resourceType, definition);
@@ -207,10 +208,7 @@ function buildImports(fhirType: FhirType, includedTypes: Set<string>, referenced
 
   for (const property of fhirType.properties) {
     for (const typeScriptProperty of getTypeScriptProperties(property)) {
-      const cleanName = cleanReferencedType(typeScriptProperty.typeName);
-      if (cleanName) {
-        referencedTypes.add(cleanName);
-      }
+      cleanReferencedType(typeScriptProperty.typeName).forEach(cleanName => referencedTypes.add(cleanName));
     }
   }
 
@@ -223,18 +221,24 @@ function buildImports(fhirType: FhirType, includedTypes: Set<string>, referenced
   }
 }
 
-function cleanReferencedType(typeName: string): string | undefined {
+function cleanReferencedType(typeName: string): string[] {
   if (typeName === 'T') {
-    return 'Resource';
+    return ['Resource'];
   }
 
   if (typeName.startsWith('\'') ||
     isLowerCase(typeName.charAt(0)) ||
     typeName === 'BundleEntry<T>[]') {
-    return undefined;
+    return [];
   }
 
-  return typeName.replace('[]', '');
+  if (typeName.startsWith('Reference<')) {
+    const start = typeName.indexOf('<') + 1;
+    const end = typeName.indexOf('>');
+    return ['Reference', ...typeName.substring(start, end).split(' | ')];
+  }
+
+  return [typeName.replace('[]', '')];
 }
 
 function getTypeScriptProperties(property: Property): { name: string, typeName: string }[] {
@@ -333,12 +337,22 @@ function getTypeScriptTypeForProperty(property: Property, typeDefinition: Elemen
     case 'BackboneElement':
       baseType = property.resourceType + capitalize(property.name);
       break;
+
+    case 'Reference':
+      if (typeDefinition.targetProfile && typeDefinition.targetProfile.length > 0) {
+        baseType += '<';
+        for (const targetProfile of typeDefinition.targetProfile) {
+          if (!baseType.endsWith('<')) {
+            baseType += ' | ';
+          }
+          baseType += targetProfile.split('/').pop();
+        }
+        baseType += '>';
+      }
+      break;
   }
 
   if (property.definition.max === '*') {
-    if (baseType.includes(' | ')) {
-      return `(${baseType})[]`;
-    }
     return baseType + '[]';
   }
   return baseType;

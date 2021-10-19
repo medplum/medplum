@@ -5,14 +5,17 @@
 
 import { CodeableConcept } from './CodeableConcept';
 import { ContactDetail } from './ContactDetail';
+import { Device } from './Device';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
+import { Medication } from './Medication';
 import { Meta } from './Meta';
 import { Money } from './Money';
 import { Narrative } from './Narrative';
 import { Period } from './Period';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { Substance } from './Substance';
 import { UsageContext } from './UsageContext';
 
 /**
@@ -250,7 +253,7 @@ export interface ChargeItemDefinition {
    * The defined billing details in this resource pertain to the given
    * product instance(s).
    */
-  readonly instance?: Reference[];
+  readonly instance?: Reference<Medication | Substance | Device>[];
 
   /**
    * Expressions that describe applicability criteria for the billing code.

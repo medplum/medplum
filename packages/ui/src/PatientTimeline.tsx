@@ -3,7 +3,7 @@ import React from 'react';
 import { ResourceTimeline } from './ResourceTimeline';
 
 export interface PatientTimelineProps {
-  patient: Patient | Reference;
+  patient: Patient | Reference<Patient>;
 }
 
 export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
@@ -51,13 +51,13 @@ export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
           }
         ];
       }}
-      createCommunication={(resource: Resource, sender: ProfileResource, text: string) => ({
+      createCommunication={(resource: Patient, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
         subject: createReference(resource),
         sender: createReference(sender),
         payload: [{ contentString: text }]
       })}
-      createMedia={(resource: Resource, operator: ProfileResource, content: Attachment) => ({
+      createMedia={(resource: Patient, operator: ProfileResource, content: Attachment) => ({
         resourceType: 'Media',
         subject: createReference(resource),
         operator: createReference(operator),

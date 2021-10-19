@@ -83,4 +83,10 @@ export interface Meta {
    * The individual, device or organization who initiated the last change.
    */
   readonly author?: Reference;
+
+  /**
+   * Optional account reference that can be used for sub-project
+   * compartments.
+   */
+  readonly account?: Reference;
 }

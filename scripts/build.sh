@@ -25,7 +25,7 @@ npm run build --workspace=packages/server
 
 # Test
 #npx jest --runInBand
-node --expose-gc --max_old_space_size=4096 ./node_modules/jest/bin/jest.js --runInBand --logHeapUsage
+node --expose-gc --trace-uncaught --max_old_space_size=4096 ./node_modules/jest/bin/jest.js --runInBand --logHeapUsage
 
 # Lint
 npm run lint --workspaces

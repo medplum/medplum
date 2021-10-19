@@ -5,6 +5,7 @@
 
 import { Attachment } from './Attachment';
 import { CodeableConcept } from './CodeableConcept';
+import { DocumentReference } from './DocumentReference';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
@@ -14,6 +15,12 @@ import { Range } from './Range';
 import { Ratio } from './Ratio';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { Substance } from './Substance';
+import { SubstanceNucleicAcid } from './SubstanceNucleicAcid';
+import { SubstancePolymer } from './SubstancePolymer';
+import { SubstanceProtein } from './SubstanceProtein';
+import { SubstanceReferenceInformation } from './SubstanceReferenceInformation';
+import { SubstanceSourceMaterial } from './SubstanceSourceMaterial';
 
 /**
  * The detailed description of a substance, typically at a level beyond
@@ -125,7 +132,7 @@ export interface SubstanceSpecification {
   /**
    * Supporting literature.
    */
-  readonly source?: Reference[];
+  readonly source?: Reference<DocumentReference>[];
 
   /**
    * Textual comment about this record of a substance.
@@ -146,7 +153,7 @@ export interface SubstanceSpecification {
   /**
    * General information detailing this substance.
    */
-  readonly referenceInformation?: Reference;
+  readonly referenceInformation?: Reference<SubstanceReferenceInformation>;
 
   /**
    * Structural information.
@@ -178,22 +185,22 @@ export interface SubstanceSpecification {
   /**
    * Data items specific to nucleic acids.
    */
-  readonly nucleicAcid?: Reference;
+  readonly nucleicAcid?: Reference<SubstanceNucleicAcid>;
 
   /**
    * Data items specific to polymers.
    */
-  readonly polymer?: Reference;
+  readonly polymer?: Reference<SubstancePolymer>;
 
   /**
    * Data items specific to proteins.
    */
-  readonly protein?: Reference;
+  readonly protein?: Reference<SubstanceProtein>;
 
   /**
    * Material or taxonomic/anatomical source for the substance.
    */
-  readonly sourceMaterial?: Reference;
+  readonly sourceMaterial?: Reference<SubstanceSourceMaterial>;
 }
 
 /**
@@ -260,7 +267,7 @@ export interface SubstanceSpecificationCode {
   /**
    * Supporting literature.
    */
-  readonly source?: Reference[];
+  readonly source?: Reference<DocumentReference>[];
 }
 
 /**
@@ -438,7 +445,7 @@ export interface SubstanceSpecificationName {
   /**
    * Supporting literature.
    */
-  readonly source?: Reference[];
+  readonly source?: Reference<DocumentReference>[];
 }
 
 /**
@@ -558,7 +565,7 @@ export interface SubstanceSpecificationProperty {
    * A substance upon which a defining property depends (e.g. for
    * solubility: in water, in alcohol).
    */
-  readonly definingSubstanceReference?: Reference;
+  readonly definingSubstanceReference?: Reference<SubstanceSpecification | Substance>;
 
   /**
    * A substance upon which a defining property depends (e.g. for
@@ -622,7 +629,7 @@ export interface SubstanceSpecificationRelationship {
    * A pointer to another substance, as a resource or just a
    * representational code.
    */
-  readonly substanceReference?: Reference;
+  readonly substanceReference?: Reference<SubstanceSpecification>;
 
   /**
    * A pointer to another substance, as a resource or just a
@@ -684,7 +691,7 @@ export interface SubstanceSpecificationRelationship {
   /**
    * Supporting literature.
    */
-  readonly source?: Reference[];
+  readonly source?: Reference<DocumentReference>[];
 }
 
 /**
@@ -763,7 +770,7 @@ export interface SubstanceSpecificationStructure {
   /**
    * Supporting literature.
    */
-  readonly source?: Reference[];
+  readonly source?: Reference<DocumentReference>[];
 
   /**
    * Molecular structural representation.

@@ -8,9 +8,11 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
 import { Ratio } from './Ratio';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { Substance } from './Substance';
 
 /**
  * This resource is primarily used for the identification and definition
@@ -120,7 +122,7 @@ export interface Medication {
    * This is not intended to represent the distributor of a medication
    * product.
    */
-  readonly manufacturer?: Reference;
+  readonly manufacturer?: Reference<Organization>;
 
   /**
    * Describes the form of the item.  Powder; tablets; capsule.
@@ -248,7 +250,7 @@ export interface MedicationIngredient {
    * The actual ingredient - either a substance (simple ingredient) or
    * another medication of a medication.
    */
-  readonly itemReference?: Reference;
+  readonly itemReference?: Reference<Substance | Medication>;
 
   /**
    * Indication of whether this ingredient affects the therapeutic action

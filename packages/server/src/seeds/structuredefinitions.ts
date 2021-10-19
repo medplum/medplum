@@ -10,8 +10,11 @@ import { logger } from '../logger';
 export async function createStructureDefinitions(): Promise<void> {
   const client = getClient();
   client.query('DELETE FROM "StructureDefinition"');
+  await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+  await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+}
 
-  const structureDefinitions = readJson('fhir/r4/profiles-resources.json') as Bundle;
+async function createStructureDefinitionsForBundle(structureDefinitions: Bundle): Promise<void> {
   for (const entry of (structureDefinitions.entry as BundleEntry[])) {
     const resource = entry.resource as Resource;
 

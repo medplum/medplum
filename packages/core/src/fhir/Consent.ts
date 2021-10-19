@@ -4,14 +4,25 @@
  */
 
 import { Attachment } from './Attachment';
+import { CareTeam } from './CareTeam';
 import { CodeableConcept } from './CodeableConcept';
 import { Coding } from './Coding';
+import { Contract } from './Contract';
+import { Device } from './Device';
+import { DocumentReference } from './DocumentReference';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { QuestionnaireResponse } from './QuestionnaireResponse';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -123,7 +134,7 @@ export interface Consent {
   /**
    * The patient/healthcare consumer to whom this consent applies.
    */
-  readonly patient?: Reference;
+  readonly patient?: Reference<Patient>;
 
   /**
    * When this  Consent was issued / created / indexed.
@@ -137,13 +148,13 @@ export interface Consent {
    * any obligations or limitations on authorizations and enforcement of
    * prohibitions.
    */
-  readonly performer?: Reference[];
+  readonly performer?: Reference<Organization | Patient | Practitioner | RelatedPerson | PractitionerRole>[];
 
   /**
    * The organization that manages the consent, and the framework within
    * which it is executed.
    */
-  readonly organization?: Reference[];
+  readonly organization?: Reference<Organization>[];
 
   /**
    * The source on which this consent statement is based. The source might
@@ -159,7 +170,7 @@ export interface Consent {
    * links back to such a source, a reference to a document repository
    * (e.g. XDS) that stores the original consent document.
    */
-  readonly sourceReference?: Reference;
+  readonly sourceReference?: Reference<Consent | DocumentReference | Contract | QuestionnaireResponse>;
 
   /**
    * The references to the policies that are included in this consent
@@ -401,7 +412,7 @@ export interface ConsentProvisionActor {
    * use group to identify a set of actors by some property they share
    * (e.g. 'admitting officers').
    */
-  readonly reference?: Reference;
+  readonly reference?: Reference<Device | Group | CareTeam | Organization | Patient | Practitioner | RelatedPerson | PractitionerRole>;
 }
 
 /**
@@ -455,7 +466,7 @@ export interface ConsentProvisionData {
    * A reference to a specific resource that defines which resources are
    * covered by this consent.
    */
-  readonly reference?: Reference;
+  readonly reference?: Reference<Resource>;
 }
 
 /**
@@ -509,7 +520,7 @@ export interface ConsentVerification {
    * Who verified the instruction (Patient, Relative or other Authorized
    * Person).
    */
-  readonly verifiedWith?: Reference;
+  readonly verifiedWith?: Reference<Patient | RelatedPerson>;
 
   /**
    * Date verification was collected.

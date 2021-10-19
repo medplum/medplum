@@ -4,15 +4,23 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { Device } from './Device';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
+import { Medication } from './Medication';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
+import { Substance } from './Substance';
 
 /**
  * Represents a defined collection of entities that may be discussed or
@@ -144,7 +152,7 @@ export interface Group {
    * Entity responsible for defining and maintaining Group characteristics
    * and/or registered members.
    */
-  readonly managingEntity?: Reference;
+  readonly managingEntity?: Reference<Organization | RelatedPerson | Practitioner | PractitionerRole>;
 
   /**
    * Identifies traits whose presence r absence is shared by members of the
@@ -292,7 +300,7 @@ export interface GroupMember {
    * consistent with Group.type. If the entity is another group, then the
    * type must be the same.
    */
-  readonly entity?: Reference;
+  readonly entity?: Reference<Patient | Practitioner | PractitionerRole | Device | Medication | Substance | Group>;
 
   /**
    * The period that the member was in the group, if known.

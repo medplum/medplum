@@ -6,6 +6,7 @@
 import { CodeableConcept } from './CodeableConcept';
 import { ContactDetail } from './ContactDetail';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
@@ -168,7 +169,7 @@ export interface EventDefinition {
    * A code or group definition that describes the intended subject of the
    * event definition.
    */
-  readonly subjectReference?: Reference;
+  readonly subjectReference?: Reference<Group>;
 
   /**
    * The date  (and optionally time) when the event definition was

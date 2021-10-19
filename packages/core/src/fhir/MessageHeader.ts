@@ -6,9 +6,14 @@
 import { CodeableConcept } from './CodeableConcept';
 import { Coding } from './Coding';
 import { ContactPoint } from './ContactPoint';
+import { Device } from './Device';
 import { Extension } from './Extension';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { OperationOutcome } from './OperationOutcome';
+import { Organization } from './Organization';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -124,14 +129,14 @@ export interface MessageHeader {
    * Identifies the sending system to allow the use of a trust
    * relationship.
    */
-  readonly sender?: Reference;
+  readonly sender?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * The person or device that performed the data entry leading to this
    * message. When there is more than one candidate, pick the most proximal
    * to the message. Can provide other enterers in extensions.
    */
-  readonly enterer?: Reference;
+  readonly enterer?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * The logical author of the message - the person or device that decided
@@ -139,7 +144,7 @@ export interface MessageHeader {
    * candidate, pick the most proximal to the MessageHeader. Can provide
    * other authors in extensions.
    */
-  readonly author?: Reference;
+  readonly author?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * The source application from which this message originated.
@@ -151,7 +156,7 @@ export interface MessageHeader {
    * contents of the message. The implication is that the message event
    * happened under the policies of the responsible party.
    */
-  readonly responsible?: Reference;
+  readonly responsible?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * Coded indication of the cause for the event - indicates  a reason for
@@ -169,7 +174,7 @@ export interface MessageHeader {
    * The actual data of the message - a reference to the root/focus class
    * of the event.
    */
-  readonly focus?: Reference[];
+  readonly focus?: Reference<Resource>[];
 
   /**
    * Permanent link to the MessageDefinition for this message.
@@ -226,7 +231,7 @@ export interface MessageHeaderDestination {
    * Identifies the target end system in situations where the initial
    * message transmission is to an intermediary system.
    */
-  readonly target?: Reference;
+  readonly target?: Reference<Device>;
 
   /**
    * Indicates where the message should be routed to.
@@ -238,7 +243,7 @@ export interface MessageHeaderDestination {
    * person or department when routing to a specific application isn't
    * sufficient.
    */
-  readonly receiver?: Reference;
+  readonly receiver?: Reference<Practitioner | PractitionerRole | Organization>;
 }
 
 /**
@@ -297,7 +302,7 @@ export interface MessageHeaderResponse {
   /**
    * Full details of any issues found in the message.
    */
-  readonly details?: Reference;
+  readonly details?: Reference<OperationOutcome>;
 }
 
 /**

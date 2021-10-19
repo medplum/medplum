@@ -4,15 +4,29 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { Condition } from './Condition';
+import { Device } from './Device';
+import { DiagnosticReport } from './DiagnosticReport';
+import { DocumentReference } from './DocumentReference';
 import { Extension } from './Extension';
+import { HealthcareService } from './HealthcareService';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
+import { Medication } from './Medication';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
+import { Substance } from './Substance';
 import { Timing } from './Timing';
 
 /**
@@ -133,7 +147,7 @@ export interface SupplyRequest {
    * resource representing the details of the item or a code that
    * identifies the item from a known list.
    */
-  readonly itemReference?: Reference;
+  readonly itemReference?: Reference<Medication | Substance | Device>;
 
   /**
    * The amount that is being ordered of the indicated item.
@@ -169,12 +183,12 @@ export interface SupplyRequest {
   /**
    * The device, practitioner, etc. who initiated the request.
    */
-  readonly requester?: Reference;
+  readonly requester?: Reference<Practitioner | PractitionerRole | Organization | Patient | RelatedPerson | Device>;
 
   /**
    * Who is intended to fulfill the request.
    */
-  readonly supplier?: Reference[];
+  readonly supplier?: Reference<Organization | HealthcareService>[];
 
   /**
    * The reason why the supply item was requested.
@@ -184,17 +198,17 @@ export interface SupplyRequest {
   /**
    * The reason why the supply item was requested.
    */
-  readonly reasonReference?: Reference[];
+  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
 
   /**
    * Where the supply is expected to come from.
    */
-  readonly deliverFrom?: Reference;
+  readonly deliverFrom?: Reference<Organization | Location>;
 
   /**
    * Where the supply is destined to go.
    */
-  readonly deliverTo?: Reference;
+  readonly deliverTo?: Reference<Organization | Location | Patient>;
 }
 
 /**

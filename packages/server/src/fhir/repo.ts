@@ -1,4 +1,4 @@
-import { allOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, getSearchParameterDetails, gone, isGone, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
+import { accessDenied, AccessPolicy, allOk, assertOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, getSearchParameterDetails, gone, isGone, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import { applyPatch, Operation } from 'fast-json-patch';
@@ -6,6 +6,7 @@ import validator from 'validator';
 import { getConfig } from '../config';
 import { MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from '../constants';
 import { getClient } from '../database';
+import { logger } from '../logger';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
 import { validateResource, validateResourceType } from './schema';
@@ -37,7 +38,7 @@ export interface RepositoryContext {
    * If the compartments array is provided,
    * all queries will be restricted to those compartments.
    */
-  compartments?: Reference[];
+  accessPolicy?: AccessPolicy;
 
   /**
    * Optional flag for system administrators,
@@ -98,13 +99,9 @@ const lookupTables: LookupTable[] = [
  */
 export class Repository {
   private readonly context: RepositoryContext;
-  private readonly compartmentIds: string[] | undefined;
 
   constructor(context: RepositoryContext) {
     this.context = context;
-    this.compartmentIds = context.compartments
-      ?.map(c => c.reference?.split('/')[1])
-      ?.filter(c => !!c) as string[] | undefined;
   }
 
   async createResource<T extends Resource>(resource: T): RepositoryResult<T> {
@@ -129,13 +126,17 @@ export class Repository {
       return [validateOutcome, undefined];
     }
 
+    if (!this.canReadResourceType(resourceType)) {
+      return [accessDenied, undefined];
+    }
+
     const client = getClient();
     const builder = new SelectQuery(resourceType)
       .column('content')
       .column('deleted')
       .where('id', Operator.EQUALS, id);
 
-    this.addCompartments(builder);
+    this.addCompartments(builder, resourceType);
 
     const rows = await builder.execute(client);
     if (rows.length === 0) {
@@ -149,7 +150,7 @@ export class Repository {
     return [allOk, JSON.parse(rows[0].content as string)];
   }
 
-  async readReference<T extends Resource>(reference: Reference): RepositoryResult<T> {
+  async readReference<T extends Resource>(reference: Reference<T>): RepositoryResult<T> {
     const parts = reference.reference?.split('/');
     if (!parts || parts.length !== 2) {
       return [badRequest('Invalid reference'), undefined];
@@ -217,6 +218,10 @@ export class Repository {
       return [badRequest('Missing id'), undefined];
     }
 
+    if (!this.canWriteResourceType(resourceType)) {
+      return [accessDenied, undefined];
+    }
+
     const [existingOutcome, existing] = await this.readResource<T>(resourceType, id);
     if (!isOk(existingOutcome) && !isNotFound(existingOutcome) && !isGone(existingOutcome)) {
       return [existingOutcome, undefined];
@@ -253,6 +258,7 @@ export class Repository {
     try {
       await this.write(result);
     } catch (error) {
+      logger.debug('Write error: ' + error);
       return [badRequest((error as Error).message), undefined];
     }
 
@@ -263,6 +269,10 @@ export class Repository {
     const [readOutcome, resource] = await this.readResource(resourceType, id);
     if (!isOk(readOutcome)) {
       return [readOutcome, undefined];
+    }
+
+    if (!this.canWriteResourceType(resourceType)) {
+      return [accessDenied, undefined];
     }
 
     const client = getClient();
@@ -308,13 +318,17 @@ export class Repository {
       return [validateOutcome, undefined];
     }
 
+    if (!this.canReadResourceType(resourceType)) {
+      return [accessDenied, undefined];
+    }
+
     const client = getClient();
     const builder = new SelectQuery(resourceType)
       .column({ tableName: resourceType, columnName: 'id' })
       .column({ tableName: resourceType, columnName: 'content' });
 
     this.addDeletedFilter(builder);
-    this.addCompartments(builder);
+    this.addCompartments(builder, resourceType);
     this.addJoins(builder, searchRequest);
     this.addSearchFilters(builder, searchRequest);
     this.addSortRules(builder, searchRequest);
@@ -349,7 +363,7 @@ export class Repository {
       .raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id") AS "count"`)
 
     this.addDeletedFilter(builder);
-    this.addCompartments(builder);
+    this.addCompartments(builder, searchRequest.resourceType);
     this.addJoins(builder, searchRequest);
     this.addSearchFilters(builder, searchRequest);
     const rows = await builder.execute(client);
@@ -367,10 +381,30 @@ export class Repository {
   /**
    * Adds compartment restrictions to the query.
    * @param builder The select query builder.
+   * @param resourceType The resource type for compartments.
    */
-  private addCompartments(builder: SelectQuery): void {
-    if (this.compartmentIds && this.compartmentIds.length > 0) {
-      builder.where('compartments', Operator.ARRAY_CONTAINS, this.compartmentIds, 'UUID[]');
+  private addCompartments(builder: SelectQuery, resourceType: string): void {
+    if (publicResourceTypes.includes(resourceType)) {
+      return;
+    }
+
+    const compartmentIds = [];
+
+    if (this.context.accessPolicy?.resource) {
+      for (const policy of this.context.accessPolicy.resource) {
+        if (policy.resourceType === resourceType) {
+          const policyCompartmentId = resolveId(policy.compartment);
+          if (policyCompartmentId) {
+            compartmentIds.push(policyCompartmentId);
+          }
+        }
+      }
+    } else if (this.context.project !== undefined && this.context.project !== MEDPLUM_PROJECT_ID) {
+      compartmentIds.push(this.context.project);
+    }
+
+    if (compartmentIds.length > 0) {
+      builder.where('compartments', Operator.ARRAY_CONTAINS, compartmentIds, 'UUID[]');
     }
   }
 
@@ -695,6 +729,56 @@ export class Repository {
     return this.isSystem() || this.isAdmin() || this.isClientApplication();
   }
 
+  /**
+   * Determines if the current user can read the specified resource type.
+   * @param resourceType The resource type.
+   * @returns True if the current user can read the specified resource type.
+   */
+  private canReadResourceType(resourceType: string): boolean {
+    if (this.isSystem() || this.isAdmin()) {
+      return true;
+    }
+    if (publicResourceTypes.includes(resourceType)) {
+      return true;
+    }
+    if (!this.context.accessPolicy) {
+      return true;
+    }
+    if (this.context.accessPolicy.resource) {
+      for (const resourcePolicy of this.context.accessPolicy.resource) {
+        if (resourcePolicy.resourceType === resourceType) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Determines if the current user can write the specified resource type.
+   * @param resourceType The resource type.
+   * @returns True if the current user can write the specified resource type.
+   */
+  private canWriteResourceType(resourceType: string): boolean {
+    if (this.isSystem() || this.isAdmin()) {
+      return true;
+    }
+    if (publicResourceTypes.includes(resourceType)) {
+      return false;
+    }
+    if (!this.context.accessPolicy) {
+      return true;
+    }
+    if (this.context.accessPolicy.resource) {
+      for (const resourcePolicy of this.context.accessPolicy.resource) {
+        if (resourcePolicy.resourceType === resourceType) {
+          return !resourcePolicy.readonly;
+        }
+      }
+    }
+    return false;
+  }
+
   private isSystem(): boolean {
     return this.context.author.reference === 'system';
   }
@@ -849,12 +933,20 @@ function resolveId(reference: Reference | undefined): string | undefined {
  * @param login The user login.
  * @returns A repository configured for the login details.
  */
-export function getRepoForLogin(login: Login): Repository {
+export async function getRepoForLogin(login: Login): Promise<Repository> {
+  let accessPolicy = undefined;
+
+  if (login.accessPolicy) {
+    const [accessPolicyOutcome, accessPolicyResource] = await repo.readReference(login.accessPolicy);
+    assertOk(accessPolicyOutcome);
+    accessPolicy = accessPolicyResource as AccessPolicy;
+  }
+
   return new Repository({
-    project: resolveId(login.defaultProject) as string,
+    project: resolveId(login.project) as string,
     author: login.profile as Reference,
-    compartments: login.compartments,
-    admin: login.admin
+    admin: login.admin,
+    accessPolicy
   });
 }
 

@@ -9,6 +9,7 @@ import {
 } from '@medplum/ui';
 import React from 'react';
 import { Route, Router, Switch } from 'react-router-dom';
+import { EditMembershipPage } from './admin/EditMembershipPage';
 import { InvitePage } from './admin/InvitePage';
 import { ProjectPage } from './admin/ProjectPage';
 import { ProjectsPage } from './admin/ProjectsPage';
@@ -56,7 +57,8 @@ export function App() {
             {
               title: 'Admin',
               links: [
-                { label: 'Projects', href: '/admin/projects' }
+                { label: 'Projects', href: '/admin/projects' },
+                { label: 'AccessPolicy', href: '/AccessPolicy' }
               ]
             },
             {
@@ -87,6 +89,7 @@ export function App() {
         <Route exact path="/admin/projects"><ProjectsPage /></Route>
         <Route exact path="/admin/projects/:id"><ProjectPage /></Route>
         <Route exact path="/admin/projects/:id/invite"><InvitePage /></Route>
+        <Route exact path="/admin/projects/:projectId/members/:membershipId"><EditMembershipPage /></Route>
         <Route exact path="/:resourceType/new"><CreateResourcePage /></Route>
         <Route exact path="/:resourceType/:id/:tab?"><ResourcePage /></Route>
         <Route exact path="/:resourceType?"><HomePage /></Route>

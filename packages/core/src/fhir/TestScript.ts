@@ -231,7 +231,7 @@ export interface TestScript {
   /**
    * Reference to the profile to be used for validation.
    */
-  readonly profile?: Reference[];
+  readonly profile?: Reference<Resource>[];
 
   /**
    * Variable is set based either on element value in response body or on
@@ -370,7 +370,7 @@ export interface TestScriptFixture {
    * Reference to the resource (containing the contents of the resource
    * needed for operations).
    */
-  readonly resource?: Reference;
+  readonly resource?: Reference<Resource>;
 }
 
 /**

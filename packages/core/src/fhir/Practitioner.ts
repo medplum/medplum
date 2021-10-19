@@ -12,6 +12,7 @@ import { HumanName } from './HumanName';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
 import { Period } from './Period';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -218,5 +219,5 @@ export interface PractitionerQualification {
   /**
    * Organization that regulates and issues the qualification.
    */
-  readonly issuer?: Reference;
+  readonly issuer?: Reference<Organization>;
 }

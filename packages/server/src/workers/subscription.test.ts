@@ -476,7 +476,7 @@ describe('Subscription Worker', () => {
     const [searchOutcome, bundle] = await repo.search<AuditEvent>({
       resourceType: 'AuditEvent',
       filters: [{
-        code: 'source',
+        code: 'entity',
         operator: Operator.EQUALS,
         value: getReferenceString(subscription as Subscription)
       }]
@@ -534,7 +534,7 @@ describe('Subscription Worker', () => {
     const [searchOutcome, bundle] = await repo.search<AuditEvent>({
       resourceType: 'AuditEvent',
       filters: [{
-        code: 'source',
+        code: 'entity',
         operator: Operator.EQUALS,
         value: getReferenceString(subscription as Subscription)
       }]

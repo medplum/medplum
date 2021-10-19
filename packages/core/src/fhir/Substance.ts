@@ -186,7 +186,7 @@ export interface SubstanceIngredient {
   /**
    * Another substance that is a component of this substance.
    */
-  readonly substanceReference?: Reference;
+  readonly substanceReference?: Reference<Substance>;
 }
 
 /**

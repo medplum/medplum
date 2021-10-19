@@ -9,6 +9,7 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Patient } from './Patient';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -137,5 +138,5 @@ export interface BodyStructure {
   /**
    * The person to which the body site belongs.
    */
-  readonly patient?: Reference;
+  readonly patient?: Reference<Patient>;
 }

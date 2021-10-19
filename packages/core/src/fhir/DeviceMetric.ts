@@ -4,6 +4,7 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { Device } from './Device';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
@@ -118,7 +119,7 @@ export interface DeviceMetric {
    * and that contains administrative device information such as
    * manufacturer, serial number, etc.
    */
-  readonly source?: Reference;
+  readonly source?: Reference<Device>;
 
   /**
    * Describes the link to the  Device that this DeviceMetric belongs to
@@ -128,7 +129,7 @@ export interface DeviceMetric {
    * client application to distinguish DeviceMetrics that have the same
    * type, but should be interpreted based on their containment location.
    */
-  readonly parent?: Reference;
+  readonly parent?: Reference<Device>;
 
   /**
    * Indicates current operational state of the device. For example: On,

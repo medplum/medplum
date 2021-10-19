@@ -5,12 +5,17 @@
 
 import { CodeableConcept } from './CodeableConcept';
 import { Extension } from './Extension';
+import { Medication } from './Medication';
+import { MedicinalProduct } from './MedicinalProduct';
+import { MedicinalProductUndesirableEffect } from './MedicinalProductUndesirableEffect';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Population } from './Population';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { Substance } from './Substance';
+import { SubstanceSpecification } from './SubstanceSpecification';
 
 /**
  * Indication for the Medicinal Product.
@@ -96,7 +101,7 @@ export interface MedicinalProductIndication {
   /**
    * The medication for which this is an indication.
    */
-  readonly subject?: Reference[];
+  readonly subject?: Reference<MedicinalProduct | Medication>[];
 
   /**
    * The disease, symptom or procedure that is the indication for
@@ -134,7 +139,7 @@ export interface MedicinalProductIndication {
   /**
    * Describe the undesirable effects of the medicinal product.
    */
-  readonly undesirableEffect?: Reference[];
+  readonly undesirableEffect?: Reference<MedicinalProductUndesirableEffect>[];
 
   /**
    * The population group to which this applies.
@@ -201,5 +206,5 @@ export interface MedicinalProductIndicationOtherTherapy {
    * product or class of products) as part of an indication or
    * contraindication.
    */
-  readonly medicationReference?: Reference;
+  readonly medicationReference?: Reference<MedicinalProduct | Medication | Substance | SubstanceSpecification>;
 }

@@ -5,14 +5,23 @@
 
 import { Age } from './Age';
 import { Annotation } from './Annotation';
+import { ClinicalImpression } from './ClinicalImpression';
 import { CodeableConcept } from './CodeableConcept';
+import { DiagnosticReport } from './DiagnosticReport';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Range } from './Range';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -140,13 +149,13 @@ export interface Condition {
    * Indicates the patient or group who the condition record is associated
    * with.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group>;
 
   /**
    * The Encounter during which this Condition was created or to which the
    * creation of this record is tightly associated.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * Estimated or actual date or date-time  the condition began, in the
@@ -228,12 +237,12 @@ export interface Condition {
    * Individual who recorded the record and takes responsibility for its
    * content.
    */
-  readonly recorder?: Reference;
+  readonly recorder?: Reference<Practitioner | PractitionerRole | Patient | RelatedPerson>;
 
   /**
    * Individual who is making the condition statement.
    */
-  readonly asserter?: Reference;
+  readonly asserter?: Reference<Practitioner | PractitionerRole | Patient | RelatedPerson>;
 
   /**
    * Clinical stage or grade of a condition. May include formal severity
@@ -307,7 +316,7 @@ export interface ConditionEvidence {
   /**
    * Links to other relevant information, including pathology reports.
    */
-  readonly detail?: Reference[];
+  readonly detail?: Reference<Resource>[];
 }
 
 /**
@@ -361,7 +370,7 @@ export interface ConditionStage {
    * Reference to a formal record of the evidence on which the staging
    * assessment is based.
    */
-  readonly assessment?: Reference[];
+  readonly assessment?: Reference<ClinicalImpression | DiagnosticReport | Observation>[];
 
   /**
    * The kind of staging, such as pathological or clinical staging.

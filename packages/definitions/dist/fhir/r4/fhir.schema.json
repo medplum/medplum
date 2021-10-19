@@ -158,7 +158,8 @@
       "Login": "#/definitions/Login",
       "PasswordChangeRequest": "#/definitions/PasswordChangeRequest",
       "JsonWebKey": "#/definitions/JsonWebKey",
-      "Bot": "#/definitions/Bot"
+      "Bot": "#/definitions/Bot",
+      "AccessPolicy": "#/definitions/AccessPolicy"
     }
   },
   "oneOf": [
@@ -623,6 +624,9 @@
     },
     {
       "$ref": "#/definitions/Bot"
+    },
+    {
+      "$ref": "#/definitions/AccessPolicy"
     }
   ],
   "definitions": {
@@ -1089,6 +1093,9 @@
         },
         {
           "$ref": "#/definitions/Bot"
+        },
+        {
+          "$ref": "#/definitions/AccessPolicy"
         }
       ]
     },
@@ -61071,12 +61078,9 @@
           "description": "User that is granted access to the project.",
           "$ref": "#/definitions/Reference"
         },
-        "compartments": {
-          "description": "Collection of compartments that the user has been granted access.",
-          "items": {
-            "$ref": "#/definitions/Reference"
-          },
-          "type": "array"
+        "accessPolicy": {
+          "description": "User that is granted access to the project.",
+          "$ref": "#/definitions/Reference"
         },
         "admin": {
           "description": "Whether this user is a project administrator.",
@@ -61086,8 +61090,7 @@
       "required": [
         "project",
         "user",
-        "profile",
-        "compartments"
+        "profile"
       ]
     },
     "ClientApplication": {
@@ -61283,8 +61286,12 @@
           },
           "type": "array"
         },
-        "defaultProject": {
+        "project": {
           "description": "Reference to the default project for the duration of the login.",
+          "$ref": "#/definitions/Reference"
+        },
+        "accessPolicy": {
+          "description": "Collection of compartments that the user has been granted access.  This is a flattened collection of all ProjectMembership compartments at the time of login.",
           "$ref": "#/definitions/Reference"
         },
         "admin": {
@@ -61491,6 +61498,81 @@
         "code": {
           "description": "Bot logic script.",
           "$ref": "#/definitions/string"
+        }
+      }
+    },
+    "AccessPolicy": {
+      "description": "Access control policy.",
+      "properties": {
+        "resourceType": {
+          "description": "This is a AccessPolicy resource",
+          "const": "AccessPolicy"
+        },
+        "id": {
+          "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "$ref": "#/definitions/id"
+        },
+        "meta": {
+          "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+          "$ref": "#/definitions/Meta"
+        },
+        "implicitRules": {
+          "description": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+          "$ref": "#/definitions/uri"
+        },
+        "_implicitRules": {
+          "description": "Extensions for implicitRules",
+          "$ref": "#/definitions/Element"
+        },
+        "language": {
+          "description": "The base language in which the resource is written.",
+          "$ref": "#/definitions/code"
+        },
+        "_language": {
+          "description": "Extensions for language",
+          "$ref": "#/definitions/Element"
+        },
+        "name": {
+          "description": "A name associated with the AccessPolicy.",
+          "$ref": "#/definitions/string"
+        },
+        "resource": {
+          "description": "Access details for a resource type.",
+          "items": {
+            "$ref": "#/definitions/AccessPolicy_Resource"
+          },
+          "type": "array"
+        }
+      }
+    },
+    "AccessPolicy_Resource": {
+      "description": "Access details for a resource type.",
+      "properties": {
+        "resourceType": {
+          "description": "The resource type.",
+          "$ref": "#/definitions/string"
+        },
+        "compartment": {
+          "description": "Optional compartment restriction for the resource type.",
+          "$ref": "#/definitions/Reference"
+        },
+        "readonly": {
+          "description": "Optional flag to indicate that the resource type is read-only.",
+          "$ref": "#/definitions/boolean"
+        },
+        "hiddenFields": {
+          "description": "Optional list of hidden fields.  Hidden fields are not readable or writeable.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
+        },
+        "readonlyFields": {
+          "description": "Optional list of read-only fields.  Read-only fields are readable but not writeable.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
         }
       }
     }

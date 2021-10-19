@@ -152,13 +152,13 @@ describe('ResourceTimeline', () => {
     await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
   });
 
-  const setup = (args: ResourceTimelineProps) => {
+  function setup<T extends Resource>(args: ResourceTimelineProps<T>) {
     return render(
       <MedplumProvider medplum={medplum} router={mockRouter}>
         <ResourceTimeline {...args} />
       </MedplumProvider>
     );
-  };
+  }
 
   test('Renders reference', async () => {
     setup({
@@ -194,7 +194,7 @@ describe('ResourceTimeline', () => {
     setup({
       value: encounter,
       buildSearchRequests: buildEncounterSearch,
-      createCommunication: (resource: Resource, sender: ProfileResource, text: string) => ({
+      createCommunication: (resource: Encounter, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
         encounter: createReference(resource),
         subject: (resource as Encounter).subject,
@@ -233,7 +233,7 @@ describe('ResourceTimeline', () => {
       value: encounter,
       buildSearchRequests: buildEncounterSearch,
       createCommunication: jest.fn(),
-      createMedia: (resource: Resource, operator: ProfileResource, content: Attachment) => ({
+      createMedia: (resource: Encounter, operator: ProfileResource, content: Attachment) => ({
         resourceType: 'Media',
         encounter: createReference(resource),
         subject: (resource as Encounter).subject,

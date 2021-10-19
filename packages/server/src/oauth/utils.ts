@@ -1,7 +1,6 @@
 import { allOk, assertOk, badRequest, ClientApplication, createReference, getDateProperty, getReferenceString, isNotFound, isOk, Login, notFound, OperationOutcome, Operator, ProfileResource, Project, ProjectMembership, Reference, Resource, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
-import { JWTPayload } from 'jose/types';
-import { PUBLIC_PROJECT_ID } from '../constants';
+import { JWTPayload } from 'jose';
 import { repo, RepositoryResult } from '../fhir';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
 
@@ -93,8 +92,7 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     return [badRequest('Project memberships not found', 'email'), undefined];
   }
 
-  const compartments = user.admin ? [] : getCompartments(memberships);
-  const project = getDefaultProject(memberships);
+  const project = user.admin ? undefined : getDefaultProject(memberships);
   const profile = getDefaultProfile(memberships);
   const refreshSecret = request.remember ? generateSecret(48) : undefined;
 
@@ -103,8 +101,7 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     client: createReference(client as ClientApplication),
     user: createReference(user),
     profile,
-    defaultProject: project,
-    compartments,
+    project,
     authTime: new Date().toISOString(),
     code: generateSecret(16),
     cookie: generateSecret(16),
@@ -113,6 +110,7 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     nonce: request.nonce,
     codeChallenge: request.codeChallenge,
     codeChallengeMethod: request.codeChallengeMethod,
+    accessPolicy: memberships[0].accessPolicy,
     admin: user.admin
   });
 }
@@ -199,11 +197,15 @@ export async function finalizeLogin(login: Login): Promise<LoginResult> {
   const [tokensOutcome, tokens] = await getAuthTokens(login);
   assertOk(tokensOutcome);
 
-  const [profileOutcome, profile] = await repo.readReference<ProfileResource>(login?.profile as Reference);
+  const [profileOutcome, profile] = await repo.readReference(login?.profile as Reference<ProfileResource>);
   assertOk(profileOutcome);
 
-  const [projectOutcome, project] = await repo.readReference<Project>(login?.defaultProject as Reference);
-  assertOk(projectOutcome);
+  let project = undefined;
+  if (login?.project) {
+    const [projectOutcome, projectResource] = await repo.readReference(login.project);
+    assertOk(projectOutcome);
+    project = projectResource;
+  }
 
   return {
     tokens: tokens as TokenResult,
@@ -322,21 +324,7 @@ async function getUserMemberships(user: User): Promise<ProjectMembership[] | und
   return memberships?.entry?.map(entry => entry.resource as ProjectMembership);
 }
 
-function getCompartments(memberships: ProjectMembership[]): Reference[] {
-  const compartments: Reference[] = [{
-    reference: 'Project/' + PUBLIC_PROJECT_ID
-  }];
-
-  for (const membership of memberships) {
-    if (membership.compartments) {
-      compartments.push(...membership.compartments);
-    }
-  }
-
-  return compartments;
-}
-
-function getDefaultProfile(memberships: ProjectMembership[]): Reference | undefined {
+function getDefaultProfile(memberships: ProjectMembership[]): Reference<ProfileResource> | undefined {
   for (const membership of memberships) {
     if (membership.profile) {
       return membership.profile;
@@ -345,7 +333,7 @@ function getDefaultProfile(memberships: ProjectMembership[]): Reference | undefi
   return undefined;
 }
 
-function getDefaultProject(memberships: ProjectMembership[]): Reference | undefined {
+function getDefaultProject(memberships: ProjectMembership[]): Reference<Project> | undefined {
   for (const membership of memberships) {
     if (membership.project) {
       return membership.project;

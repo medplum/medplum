@@ -3,8 +3,14 @@
  * Do not edit manually.
  */
 
+import { AccessPolicy } from './AccessPolicy';
 import { Meta } from './Meta';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
+import { Project } from './Project';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
+import { User } from './User';
 
 /**
  * Medplum project membership. A project membership grants a user access
@@ -46,23 +52,29 @@ export interface ProjectMembership {
   /**
    * Project where the memberships are available.
    */
-  readonly project?: Reference;
+  readonly project?: Reference<Project>;
 
   /**
    * User that is granted access to the project.
    */
-  readonly user?: Reference;
+  readonly user?: Reference<User>;
 
   /**
    * Reference to the resource that represents the user profile within the
    * project.
    */
-  readonly profile?: Reference;
+  readonly profile?: Reference<Patient | Practitioner | RelatedPerson>;
 
   /**
-   * Collection of compartments that the user has been granted access.
+   * Optional account reference that can be used for sub-project
+   * compartments.
    */
-  readonly compartments?: Reference[];
+  readonly account?: Reference;
+
+  /**
+   * The access policy for the user within the project memebership.
+   */
+  readonly accessPolicy?: Reference<AccessPolicy>;
 
   /**
    * Whether this user is a project administrator.

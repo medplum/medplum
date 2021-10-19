@@ -1,4 +1,4 @@
-import { Bundle, IndexedStructureDefinition, Resource, SearchRequest } from '@medplum/core';
+import { Bundle, IndexedStructureDefinition, OperationOutcome, Resource, SearchRequest } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Loading } from './Loading';
@@ -68,6 +68,7 @@ export function SearchControl(props: SearchControlProps) {
   const medplum = useMedplum();
   const router = useMedplumRouter();
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
+  const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
 
   const [state, setState] = useState<SearchControlState>({
     selected: {},
@@ -83,12 +84,17 @@ export function SearchControl(props: SearchControlProps) {
   stateRef.current = state;
 
   function requestResources() {
+    setOutcome(undefined);
     medplum.search(props.search)
       .then(response => {
         setState({ ...stateRef.current, searchResponse: response });
         if (props.onLoad) {
           props.onLoad(new SearchLoadEvent(response));
         }
+      })
+      .catch(reason => {
+        setState({ ...stateRef.current, searchResponse: undefined });
+        setOutcome(reason);
       });
   }
 
@@ -334,6 +340,11 @@ export function SearchControl(props: SearchControlProps) {
       </table>
       {resources?.length === 0 && (
         <div data-testid="empty-search" className="medplum-empty-search">No results</div>
+      )}
+      {outcome && (
+        <div data-testid="search-error" className="medplum-empty-search">
+          <pre style={{ textAlign: 'left' }}>{JSON.stringify(outcome, undefined, 2)}</pre>
+        </div>
       )}
       <SearchPopupMenu
         schema={schema}

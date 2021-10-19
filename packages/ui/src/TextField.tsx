@@ -16,7 +16,7 @@ export interface TextFieldProps {
   testid?: string;
 }
 
-export const TextField = (props: TextFieldProps) => {
+export function TextField(props: TextFieldProps) {
   const className = props.size || '';
   const issues = getIssuesForExpression(props.outcome, props.name);
   const invalid = issues && issues.length > 0;
@@ -36,7 +36,7 @@ export const TextField = (props: TextFieldProps) => {
       data-testid={props.testid}
     />
   );
-};
+}
 
 export interface SelectProps {
   name?: string;
@@ -50,7 +50,7 @@ export interface SelectProps {
   outcome?: OperationOutcome
 }
 
-export const Select = (props: SelectProps) => {
+export function Select(props: SelectProps) {
   const className = props.size || '';
   const issues = getIssuesForExpression(props.outcome, props.name);
   const invalid = issues && issues.length > 0;
@@ -68,4 +68,4 @@ export const Select = (props: SelectProps) => {
       aria-describedby={invalid ? props.name + '-errors' : ''}
     >{props.children}</select>
   );
-};
+}

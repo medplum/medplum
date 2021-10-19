@@ -5,10 +5,17 @@
 
 import { Annotation } from './Annotation';
 import { CodeableConcept } from './CodeableConcept';
+import { Device } from './Device';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -126,12 +133,12 @@ export interface List {
    * The common subject (or patient) of the resources that are in the list
    * if there is one.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group | Device | Location>;
 
   /**
    * The encounter that is the context in which this list was created.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * The date that the list was prepared.
@@ -143,7 +150,7 @@ export interface List {
    * were. Where the list was created by a human, this is the same as the
    * author of the list.
    */
-  readonly source?: Reference;
+  readonly source?: Reference<Practitioner | PractitionerRole | Patient | Device>;
 
   /**
    * What order applies to the items in the list.
@@ -225,5 +232,5 @@ export interface ListEntry {
   /**
    * A reference to the actual resource from which data was derived.
    */
-  readonly item?: Reference;
+  readonly item?: Reference<Resource>;
 }

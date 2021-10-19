@@ -5,14 +5,28 @@
 
 import { Annotation } from './Annotation';
 import { Attachment } from './Attachment';
+import { CarePlan } from './CarePlan';
+import { CareTeam } from './CareTeam';
 import { CodeableConcept } from './CodeableConcept';
+import { Device } from './Device';
+import { DeviceMetric } from './DeviceMetric';
+import { Encounter } from './Encounter';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
+import { ServiceRequest } from './ServiceRequest';
+import { Specimen } from './Specimen';
 
 /**
  * A photo, video, or audio recording acquired or used in healthcare. The
@@ -108,12 +122,12 @@ export interface Media {
    * A procedure that is fulfilled in whole or in part by the creation of
    * this media.
    */
-  readonly basedOn?: Reference[];
+  readonly basedOn?: Reference<ServiceRequest | CarePlan>[];
 
   /**
    * A larger event of which this particular event is a component or step.
    */
-  readonly partOf?: Reference[];
+  readonly partOf?: Reference<Resource>[];
 
   /**
    * The current state of the {{title}}.
@@ -141,12 +155,12 @@ export interface Media {
   /**
    * Who/What this Media is a record of.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Practitioner | PractitionerRole | Group | Device | Specimen | Location>;
 
   /**
    * The encounter that establishes the context for this media.
    */
-  readonly encounter?: Reference;
+  readonly encounter?: Reference<Encounter>;
 
   /**
    * The date and time(s) at which the media was collected.
@@ -167,7 +181,7 @@ export interface Media {
   /**
    * The person who administered the collection of the image.
    */
-  readonly operator?: Reference;
+  readonly operator?: Reference<Practitioner | PractitionerRole | Organization | CareTeam | Patient | Device | RelatedPerson>;
 
   /**
    * Describes why the event occurred in coded or textual form.
@@ -189,7 +203,7 @@ export interface Media {
   /**
    * The device used to collect the media.
    */
-  readonly device?: Reference;
+  readonly device?: Reference<Device | DeviceMetric | Device>;
 
   /**
    * Height of the image in pixels (photo/video).

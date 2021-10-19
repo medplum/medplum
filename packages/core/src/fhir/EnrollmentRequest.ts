@@ -3,10 +3,15 @@
  * Do not edit manually.
  */
 
+import { Coverage } from './Coverage';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -110,21 +115,21 @@ export interface EnrollmentRequest {
   /**
    * The Insurer who is target  of the request.
    */
-  readonly insurer?: Reference;
+  readonly insurer?: Reference<Organization>;
 
   /**
    * The practitioner who is responsible for the services rendered to the
    * patient.
    */
-  readonly provider?: Reference;
+  readonly provider?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * Patient Resource.
    */
-  readonly candidate?: Reference;
+  readonly candidate?: Reference<Patient>;
 
   /**
    * Reference to the program or plan identification, underwriter or payor.
    */
-  readonly coverage?: Reference;
+  readonly coverage?: Reference<Coverage>;
 }

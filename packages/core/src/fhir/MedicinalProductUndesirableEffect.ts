@@ -5,6 +5,8 @@
 
 import { CodeableConcept } from './CodeableConcept';
 import { Extension } from './Extension';
+import { Medication } from './Medication';
+import { MedicinalProduct } from './MedicinalProduct';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Population } from './Population';
@@ -95,7 +97,7 @@ export interface MedicinalProductUndesirableEffect {
   /**
    * The medication for which this is an indication.
    */
-  readonly subject?: Reference[];
+  readonly subject?: Reference<MedicinalProduct | Medication>[];
 
   /**
    * The symptom, condition or undesirable effect.

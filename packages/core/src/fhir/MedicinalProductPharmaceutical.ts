@@ -4,9 +4,11 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { DeviceDefinition } from './DeviceDefinition';
 import { Duration } from './Duration';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
+import { MedicinalProductIngredient } from './MedicinalProductIngredient';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Quantity } from './Quantity';
@@ -114,12 +116,12 @@ export interface MedicinalProductPharmaceutical {
   /**
    * Ingredient.
    */
-  readonly ingredient?: Reference[];
+  readonly ingredient?: Reference<MedicinalProductIngredient>[];
 
   /**
    * Accompanying device.
    */
-  readonly device?: Reference[];
+  readonly device?: Reference<DeviceDefinition>[];
 
   /**
    * Characteristics e.g. a products onset of action.

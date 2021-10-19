@@ -74,6 +74,21 @@ describe('Admin routes', () => {
     expect(res2.body.project).not.toBeUndefined();
     expect(res2.body.members).not.toBeUndefined();
     expect(res2.body.members.length).toEqual(1);
+
+    const res3 = await request(app)
+      .get('/admin/projects/' + res.body.project.id + '/members/' + res2.body.members[0].membershipId)
+      .set('Authorization', 'Bearer ' + res.body.accessToken);
+
+    expect(res3.status).toBe(200);
+    expect(res3.body.resourceType).toEqual('ProjectMembership');
+
+    const res4 = await request(app)
+      .post('/admin/projects/' + res.body.project.id + '/members/' + res2.body.members[0].membershipId)
+      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .type('json')
+      .send(res3.body);
+
+    expect(res4.status).toBe(304);
   });
 
   test('Get project access denied', async () => {
@@ -105,13 +120,39 @@ describe('Admin routes', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.project).not.toBeUndefined();
 
+    // Try to access Alice's project using Alices's access token
+    // Should succeed
+    const res3 = await request(app)
+      .get('/admin/projects/' + res.body.project.id)
+      .set('Authorization', 'Bearer ' + res.body.accessToken);
+
+    expect(res3.status).toBe(200);
+
     // Try to access Alice's project using Bob's access token
     // Should fail
-    const res3 = await request(app)
+    const res4 = await request(app)
       .get('/admin/projects/' + res.body.project.id)
       .set('Authorization', 'Bearer ' + res2.body.accessToken);
 
-    expect(res3.status).toBe(404);
+    expect(res4.status).toBe(404);
+
+    // Try to access Alice's project members using Bob's access token
+    // Should fail
+    const res5 = await request(app)
+      .get('/admin/projects/' + res.body.project.id + '/members/' + res3.body.members[0].membershipId)
+      .set('Authorization', 'Bearer ' + res2.body.accessToken);
+
+    expect(res5.status).toBe(404);
+
+    // Try to edit Alice's project members using Bob's access token
+    // Should fail
+    const res6 = await request(app)
+      .post('/admin/projects/' + res.body.project.id + '/members/' + res3.body.members[0].membershipId)
+      .set('Authorization', 'Bearer ' + res2.body.accessToken)
+      .type('json')
+      .send({ resourceType: 'ProjectMembership' });
+
+    expect(res6.status).toBe(404);
   });
 
   test('Rebuild ValueSetElements as super admin', async () => {

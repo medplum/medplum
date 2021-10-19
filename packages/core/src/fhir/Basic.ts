@@ -8,7 +8,12 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -111,7 +116,7 @@ export interface Basic {
    * Identifies the patient, practitioner, device or any other resource
    * that is the &quot;focus&quot; of this resource.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Resource>;
 
   /**
    * Identifies when the resource was first created.
@@ -121,5 +126,5 @@ export interface Basic {
   /**
    * Indicates who was responsible for creating the resource instance.
    */
-  readonly author?: Reference;
+  readonly author?: Reference<Practitioner | PractitionerRole | Patient | RelatedPerson | Organization>;
 }

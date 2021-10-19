@@ -12,6 +12,7 @@ import { HumanName } from './HumanName';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Patient } from './Patient';
 import { Period } from './Period';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -112,7 +113,7 @@ export interface RelatedPerson {
   /**
    * The patient this person is related to.
    */
-  readonly patient?: Reference;
+  readonly patient?: Reference<Patient>;
 
   /**
    * The nature of the relationship between a patient and the related

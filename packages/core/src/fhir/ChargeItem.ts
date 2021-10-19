@@ -3,17 +3,38 @@
  * Do not edit manually.
  */
 
+import { Account } from './Account';
 import { Annotation } from './Annotation';
+import { CareTeam } from './CareTeam';
 import { CodeableConcept } from './CodeableConcept';
+import { Device } from './Device';
+import { DiagnosticReport } from './DiagnosticReport';
+import { Encounter } from './Encounter';
+import { EpisodeOfCare } from './EpisodeOfCare';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { ImagingStudy } from './ImagingStudy';
+import { Immunization } from './Immunization';
+import { Medication } from './Medication';
+import { MedicationAdministration } from './MedicationAdministration';
+import { MedicationDispense } from './MedicationDispense';
 import { Meta } from './Meta';
 import { Money } from './Money';
 import { Narrative } from './Narrative';
+import { Observation } from './Observation';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
+import { Procedure } from './Procedure';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
+import { Substance } from './Substance';
+import { SupplyDelivery } from './SupplyDelivery';
 import { Timing } from './Timing';
 
 /**
@@ -128,7 +149,7 @@ export interface ChargeItem {
    * ChargeItems can be grouped to larger ChargeItems covering the whole
    * set.
    */
-  readonly partOf?: Reference[];
+  readonly partOf?: Reference<ChargeItem>[];
 
   /**
    * A code that identifies the charge, like a billing code.
@@ -139,13 +160,13 @@ export interface ChargeItem {
    * The individual or set of individuals the action is being or was
    * performed on.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Group>;
 
   /**
    * The encounter or episode of care that establishes the context for this
    * event.
    */
-  readonly context?: Reference;
+  readonly context?: Reference<Encounter | EpisodeOfCare>;
 
   /**
    * Date/time(s) or duration when the charged service was applied.
@@ -171,17 +192,17 @@ export interface ChargeItem {
   /**
    * The organization requesting the service.
    */
-  readonly performingOrganization?: Reference;
+  readonly performingOrganization?: Reference<Organization>;
 
   /**
    * The organization performing the service.
    */
-  readonly requestingOrganization?: Reference;
+  readonly requestingOrganization?: Reference<Organization>;
 
   /**
    * The financial cost center permits the tracking of charge attribution.
    */
-  readonly costCenter?: Reference;
+  readonly costCenter?: Reference<Organization>;
 
   /**
    * Quantity of which the charge item has been serviced.
@@ -215,7 +236,7 @@ export interface ChargeItem {
   /**
    * The device, practitioner, etc. who entered the charge item.
    */
-  readonly enterer?: Reference;
+  readonly enterer?: Reference<Practitioner | PractitionerRole | Organization | Patient | Device | RelatedPerson>;
 
   /**
    * Date the charge item was entered.
@@ -230,13 +251,14 @@ export interface ChargeItem {
   /**
    * Indicated the rendered service that caused this charge.
    */
-  readonly service?: Reference[];
+  readonly service?: Reference<DiagnosticReport | ImagingStudy | Immunization | MedicationAdministration |
+      MedicationDispense | Observation | Procedure | SupplyDelivery>[];
 
   /**
    * Identifies the device, food, drug or other product being charged
    * either by type code or reference to an instance.
    */
-  readonly productReference?: Reference;
+  readonly productReference?: Reference<Device | Medication | Substance>;
 
   /**
    * Identifies the device, food, drug or other product being charged
@@ -247,7 +269,7 @@ export interface ChargeItem {
   /**
    * Account into which this ChargeItems belongs.
    */
-  readonly account?: Reference[];
+  readonly account?: Reference<Account>[];
 
   /**
    * Comments made about the event by the performer, subject or other
@@ -258,7 +280,7 @@ export interface ChargeItem {
   /**
    * Further information supporting this charge.
    */
-  readonly supportingInformation?: Reference[];
+  readonly supportingInformation?: Reference<Resource>[];
 }
 
 /**
@@ -312,5 +334,5 @@ export interface ChargeItemPerformer {
    * The device, practitioner, etc. who performed or participated in the
    * service.
    */
-  readonly actor?: Reference;
+  readonly actor?: Reference<Practitioner | PractitionerRole | Organization | CareTeam | Patient | Device | RelatedPerson>;
 }

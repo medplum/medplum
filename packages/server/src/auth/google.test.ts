@@ -6,8 +6,8 @@ import { closeDatabase, initDatabase } from '../database';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 
-jest.mock('jose/jwt/verify', () => {
-  const original = jest.requireActual('jose/jwt/verify');
+jest.mock('jose', () => {
+  const original = jest.requireActual('jose');
   return {
     ...original,
     jwtVerify: jest.fn(() => ({

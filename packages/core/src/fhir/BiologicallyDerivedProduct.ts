@@ -8,9 +8,15 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { ServiceRequest } from './ServiceRequest';
+import { Substance } from './Substance';
 
 /**
  * A material substance originating from a biological entity intended to
@@ -123,7 +129,7 @@ export interface BiologicallyDerivedProduct {
   /**
    * Procedure request to obtain this biologically derived product.
    */
-  readonly request?: Reference[];
+  readonly request?: Reference<ServiceRequest>[];
 
   /**
    * Number of discrete units within this product.
@@ -133,7 +139,7 @@ export interface BiologicallyDerivedProduct {
   /**
    * Parent product (if any).
    */
-  readonly parent?: Reference[];
+  readonly parent?: Reference<BiologicallyDerivedProduct>[];
 
   /**
    * How this product was collected.
@@ -203,13 +209,13 @@ export interface BiologicallyDerivedProductCollection {
   /**
    * Healthcare professional who is performing the collection.
    */
-  readonly collector?: Reference;
+  readonly collector?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * The patient or entity, such as a hospital or vendor in the case of a
    * processed/manipulated/manufactured product, providing the product.
    */
-  readonly source?: Reference;
+  readonly source?: Reference<Patient | Organization>;
 
   /**
    * Time of product collection.
@@ -335,7 +341,7 @@ export interface BiologicallyDerivedProductProcessing {
   /**
    * Substance added during processing.
    */
-  readonly additive?: Reference;
+  readonly additive?: Reference<Substance>;
 
   /**
    * Time of processing.

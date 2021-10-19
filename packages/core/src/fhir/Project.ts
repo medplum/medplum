@@ -5,6 +5,7 @@
 
 import { Meta } from './Meta';
 import { Reference } from './Reference';
+import { User } from './User';
 
 export interface Project {
 
@@ -50,7 +51,7 @@ export interface Project {
   readonly description?: string;
 
   /**
-   * A name associated with the Project.
+   * The user who owns the project.
    */
-  readonly owner?: Reference;
+  readonly owner?: Reference<User>;
 }

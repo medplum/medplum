@@ -3,12 +3,20 @@
  * Do not edit manually.
  */
 
+import { Appointment } from './Appointment';
 import { CodeableConcept } from './CodeableConcept';
+import { Device } from './Device';
 import { Extension } from './Extension';
+import { HealthcareService } from './HealthcareService';
 import { Identifier } from './Identifier';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Patient } from './Patient';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -104,7 +112,7 @@ export interface AppointmentResponse {
   /**
    * Appointment that this response is replying to.
    */
-  readonly appointment?: Reference;
+  readonly appointment?: Reference<Appointment>;
 
   /**
    * Date/Time that the appointment is to take place, or requested new
@@ -128,7 +136,7 @@ export interface AppointmentResponse {
    * A Person, Location, HealthcareService, or Device that is participating
    * in the appointment.
    */
-  readonly actor?: Reference;
+  readonly actor?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Device | HealthcareService | Location>;
 
   /**
    * Participation status of the participant. When the status is declined

@@ -6,15 +6,6 @@
   "transform": {
     "^.+\\.(js|ts)$": "ts-jest"
   },
-  "moduleNameMapper": {
-    "jose/jwk/from_key_like": "<rootDir>/../../node_modules/jose/dist/node/cjs/jwk/from_key_like.js",
-    "jose/jwk/parse": "<rootDir>/../../node_modules/jose/dist/node/cjs/jwk/parse.js",
-    "jose/jwks/remote": "<rootDir>/../../node_modules/jose/dist/node/cjs/jwks/remote.js",
-    "jose/jwt/sign": "<rootDir>/../../node_modules/jose/dist/node/cjs/jwt/sign.js",
-    "jose/jwt/verify": "<rootDir>/../../node_modules/jose/dist/node/cjs/jwt/verify.js",
-    "jose/util/generate_key_pair": "<rootDir>/../../node_modules/jose/dist/node/cjs/util/generate_key_pair.js",
-    "jose/webcrypto/types": "<rootDir>/../../node_modules/jose/dist/node/cjs/webcrypto/types.js"
-  },
   "moduleFileExtensions": [
     "ts",
     "js",

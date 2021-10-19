@@ -9,6 +9,10 @@ import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Money } from './Money';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { PaymentReconciliation } from './PaymentReconciliation';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -107,12 +111,12 @@ export interface PaymentNotice {
   /**
    * Reference of resource for which payment is being made.
    */
-  readonly request?: Reference;
+  readonly request?: Reference<Resource>;
 
   /**
    * Reference of response to resource for which payment is being made.
    */
-  readonly response?: Reference;
+  readonly response?: Reference<Resource>;
 
   /**
    * The date when this resource was created.
@@ -123,12 +127,12 @@ export interface PaymentNotice {
    * The practitioner who is responsible for the services rendered to the
    * patient.
    */
-  readonly provider?: Reference;
+  readonly provider?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * A reference to the payment which is the subject of this notice.
    */
-  readonly payment?: Reference;
+  readonly payment?: Reference<PaymentReconciliation>;
 
   /**
    * The date when the above payment action occurred.
@@ -139,12 +143,12 @@ export interface PaymentNotice {
    * The party who will receive or has received payment that is the subject
    * of this notification.
    */
-  readonly payee?: Reference;
+  readonly payee?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * The party who is notified of the payment status.
    */
-  readonly recipient?: Reference;
+  readonly recipient?: Reference<Organization>;
 
   /**
    * The amount sent to the payee.

@@ -6,8 +6,11 @@
 import { CodeableConcept } from './CodeableConcept';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
+import { MedicinalProduct } from './MedicinalProduct';
+import { MedicinalProductPackaged } from './MedicinalProductPackaged';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
 import { Period } from './Period';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -102,7 +105,7 @@ export interface MedicinalProductAuthorization {
   /**
    * The medicinal product that is being authorized.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<MedicinalProduct | MedicinalProductPackaged>;
 
   /**
    * The country in which the marketing authorization has been granted.
@@ -169,12 +172,12 @@ export interface MedicinalProductAuthorization {
   /**
    * Marketing Authorization Holder.
    */
-  readonly holder?: Reference;
+  readonly holder?: Reference<Organization>;
 
   /**
    * Medicines Regulatory Agency.
    */
-  readonly regulator?: Reference;
+  readonly regulator?: Reference<Organization>;
 
   /**
    * The regulatory procedure for granting or amending a marketing

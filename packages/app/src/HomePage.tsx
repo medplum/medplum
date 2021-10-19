@@ -76,6 +76,7 @@ export function getDefaultSearchForResourceType(resourceType: string): SearchReq
     case 'Patient':
       fields.push('name', 'birthDate', 'gender');
       break;
+    case 'AccessPolicy':
     case 'Practitioner':
     case 'Project':
     case 'Organization':

@@ -4,13 +4,22 @@
  */
 
 import { CodeableConcept } from './CodeableConcept';
+import { Device } from './Device';
 import { Extension } from './Extension';
+import { Group } from './Group';
 import { Identifier } from './Identifier';
+import { List } from './List';
+import { Location } from './Location';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Patient } from './Patient';
 import { Period } from './Period';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
+import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
 
 /**
@@ -129,7 +138,7 @@ export interface MeasureReport {
    * Optional subject identifying the individual or individuals the report
    * is for.
    */
-  readonly subject?: Reference;
+  readonly subject?: Reference<Patient | Practitioner | PractitionerRole | Location | Device | RelatedPerson | Group>;
 
   /**
    * The date this measure report was generated.
@@ -139,7 +148,7 @@ export interface MeasureReport {
   /**
    * The individual, location, or organization that is reporting the data.
    */
-  readonly reporter?: Reference;
+  readonly reporter?: Reference<Practitioner | PractitionerRole | Location | Organization>;
 
   /**
    * The reporting period for which the report was calculated.
@@ -162,7 +171,7 @@ export interface MeasureReport {
    * A reference to a Bundle containing the Resources that were used in the
    * calculation of this measure.
    */
-  readonly evaluatedResource?: Reference[];
+  readonly evaluatedResource?: Reference<Resource>[];
 }
 
 /**
@@ -287,7 +296,7 @@ export interface MeasureReportGroupPopulation {
    * This element refers to a List of subject level MeasureReport
    * resources, one for each subject in this population.
    */
-  readonly subjectResults?: Reference;
+  readonly subjectResults?: Reference<List>;
 }
 
 /**
@@ -518,5 +527,5 @@ export interface MeasureReportGroupStratifierStratumPopulation {
    * This element refers to a List of subject level MeasureReport
    * resources, one for each subject in this population in this stratum.
    */
-  readonly subjectResults?: Reference;
+  readonly subjectResults?: Reference<List>;
 }
