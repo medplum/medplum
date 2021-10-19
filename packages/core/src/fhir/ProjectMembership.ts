@@ -74,7 +74,7 @@ export interface ProjectMembership {
   /**
    * The access policy for the user within the project memebership.
    */
-  readonly accessPolicy?: Reference<AccessPolicy>[];
+  readonly accessPolicy?: Reference<AccessPolicy>;
 
   /**
    * Whether this user is a project administrator.

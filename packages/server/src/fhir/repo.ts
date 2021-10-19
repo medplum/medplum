@@ -1,4 +1,4 @@
-import { AccessPolicy, allOk, assertOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, getSearchParameterDetails, gone, isGone, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
+import { accessDenied, AccessPolicy, allOk, assertOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, getSearchParameterDetails, gone, isGone, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import { applyPatch, Operation } from 'fast-json-patch';
@@ -126,6 +126,10 @@ export class Repository {
       return [validateOutcome, undefined];
     }
 
+    if (!this.canReadResourceType(resourceType)) {
+      return [accessDenied, undefined];
+    }
+
     const client = getClient();
     const builder = new SelectQuery(resourceType)
       .column('content')
@@ -214,6 +218,10 @@ export class Repository {
       return [badRequest('Missing id'), undefined];
     }
 
+    if (!this.canWriteResourceType(resourceType)) {
+      return [accessDenied, undefined];
+    }
+
     const [existingOutcome, existing] = await this.readResource<T>(resourceType, id);
     if (!isOk(existingOutcome) && !isNotFound(existingOutcome) && !isGone(existingOutcome)) {
       return [existingOutcome, undefined];
@@ -258,6 +266,10 @@ export class Repository {
   }
 
   async deleteResource(resourceType: string, id: string): RepositoryResult<undefined> {
+    if (!this.canReadResourceType(resourceType)) {
+      return [accessDenied, undefined];
+    }
+
     const [readOutcome, resource] = await this.readResource(resourceType, id);
     if (!isOk(readOutcome)) {
       return [readOutcome, undefined];
@@ -304,6 +316,10 @@ export class Repository {
     const validateOutcome = validateResourceType(resourceType);
     if (!isOk(validateOutcome)) {
       return [validateOutcome, undefined];
+    }
+
+    if (!this.canReadResourceType(resourceType)) {
+      return [accessDenied, undefined];
     }
 
     const client = getClient();
@@ -368,6 +384,10 @@ export class Repository {
    * @param resourceType The resource type for compartments.
    */
   private addCompartments(builder: SelectQuery, resourceType: string): void {
+    if (publicResourceTypes.includes(resourceType)) {
+      return;
+    }
+
     const compartmentIds = [];
 
     if (this.context.accessPolicy?.resource) {
@@ -707,6 +727,50 @@ export class Repository {
    */
   private canWriteMeta(): boolean {
     return this.isSystem() || this.isAdmin() || this.isClientApplication();
+  }
+
+  /**
+   * Determines if the current user can read the specified resource type.
+   * @param resourceType The resource type.
+   * @returns True if the current user can read the specified resource type.
+   */
+  private canReadResourceType(resourceType: string): boolean {
+    if (publicResourceTypes.includes(resourceType)) {
+      return true;
+    }
+    if (!this.context.accessPolicy) {
+      return true;
+    }
+    if (this.context.accessPolicy.resource) {
+      for (const resourcePolicy of this.context.accessPolicy.resource) {
+        if (resourcePolicy.resourceType === resourceType) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Determines if the current user can write the specified resource type.
+   * @param resourceType The resource type.
+   * @returns True if the current user can write the specified resource type.
+   */
+  private canWriteResourceType(resourceType: string): boolean {
+    if (publicResourceTypes.includes(resourceType)) {
+      return false;
+    }
+    if (!this.context.accessPolicy) {
+      return true;
+    }
+    if (this.context.accessPolicy.resource) {
+      for (const resourcePolicy of this.context.accessPolicy.resource) {
+        if (resourcePolicy.resourceType === resourceType) {
+          return !resourcePolicy.readonly;
+        }
+      }
+    }
+    return false;
   }
 
   private isSystem(): boolean {

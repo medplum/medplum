@@ -12,7 +12,7 @@ export interface ButtonProps {
   testid?: string;
 }
 
-export const Button = (props: ButtonProps) => {
+export function Button(props: ButtonProps) {
   const className = 'btn' +
     ((props.primary || props.type === 'submit') ? ' btn-primary' : '') +
     (props.danger ? ' btn-danger' : '') +
@@ -26,4 +26,4 @@ export const Button = (props: ButtonProps) => {
       data-testid={props.testid}
     >{props.children}</button>
   );
-};
+}

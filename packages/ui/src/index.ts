@@ -37,6 +37,7 @@ export * from './QuestionnaireUtils';
 export * from './ReferenceInput';
 export * from './ResourceArrayDisplay';
 export * from './ResourceArrayInput';
+export * from './ResourceBadge';
 export * from './ResourceBlame';
 export * from './ResourceForm';
 export * from './ResourceHistoryTable';

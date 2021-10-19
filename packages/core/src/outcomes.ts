@@ -5,6 +5,7 @@ const CREATED_ID = 'created';
 const GONE_ID = 'gone';
 const NOT_MODIFIED_ID = 'not-modified';
 const NOT_FOUND_ID = 'not-found';
+const ACCESS_DENIED = 'access-denied';
 
 export const allOk: OperationOutcome = {
   resourceType: 'OperationOutcome',
@@ -66,6 +67,18 @@ export const gone: OperationOutcome = {
   }]
 };
 
+export const accessDenied: OperationOutcome = {
+  resourceType: 'OperationOutcome',
+  id: ACCESS_DENIED,
+  issue: [{
+    severity: 'error',
+    code: 'access-denied',
+    details: {
+      text: 'Access Denied'
+    }
+  }]
+}
+
 export function badRequest(details: string, expression?: string): OperationOutcome {
   return {
     resourceType: 'OperationOutcome',
@@ -99,6 +112,8 @@ export function getStatus(outcome: OperationOutcome): number {
     return 201;
   } else if (outcome.id === NOT_MODIFIED_ID) {
     return 304;
+  } else if (outcome.id === ACCESS_DENIED) {
+    return 403;
   } else if (outcome.id === NOT_FOUND_ID) {
     return 404;
   } else if (outcome.id === GONE_ID) {

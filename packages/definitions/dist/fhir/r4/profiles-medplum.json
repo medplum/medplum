@@ -367,7 +367,7 @@
             "path" : "ProjectMembership.accessPolicy",
             "definition" : "The access policy for the user within the project memebership.",
             "min" : 0,
-            "max" : "*",
+            "max" : "1",
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
@@ -1093,6 +1093,16 @@
             "max" : "1",
             "type" : [{
               "code" : "code"
+            }]
+          },
+          {
+            "id" : "AccessPolicy.name",
+            "path" : "AccessPolicy.name",
+            "definition" : "A name associated with the AccessPolicy.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
             }]
           },
           {

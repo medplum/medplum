@@ -1,10 +1,9 @@
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/ui';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { act } from 'react-dom/test-utils';
 import { MemoryRouter, Route, Switch } from 'react-router-dom';
-import { ProjectPage } from './ProjectPage';
+import { EditMembershipPage } from './EditMembershipPage';
 
 const mockRouter = {
   push: (path: string, state: any) => {
@@ -22,15 +21,6 @@ function mockFetch(url: string, options: any): Promise<any> {
       members: [
         { profile: 'Practitioner/456', name: 'Alice Smith' }
       ]
-    };
-  } else if (options.method === 'GET' && url.endsWith('/Practitioner/456')) {
-    result = {
-      resourceType: 'Practitioner',
-      id: '456',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }]
     };
   }
 
@@ -58,23 +48,39 @@ const setup = (url: string) => {
     <MedplumProvider medplum={medplum} router={mockRouter}>
       <MemoryRouter initialEntries={[url]} initialIndex={0}>
         <Switch>
-          <Route exact path="/admin/projects/:id"><ProjectPage /></Route>
+        <Route exact path="/admin/projects/:projectId/members/:membershipId"><EditMembershipPage /></Route>
         </Switch>
       </MemoryRouter>
     </MedplumProvider>
   );
 };
 
-describe('ProjectPage', () => {
+describe('EditMembershipPage', () => {
 
   test('Renders', async () => {
-    setup('/admin/projects/123');
+    setup('/admin/projects/123/members/456');
 
     await act(async () => {
-      await waitFor(() => screen.getByText('Alice Smith'));
+      await waitFor(() => screen.getByText('Edit'));
     });
 
-    expect(screen.getByText('Alice Smith')).not.toBeUndefined();
+    expect(screen.getByText('Edit')).not.toBeUndefined();
+  });
+
+  test('Submit success', async () => {
+    setup('/admin/projects/123/members/456');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Edit'));
+    });
+
+    expect(screen.getByText('Edit')).not.toBeUndefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Edit'));
+    });
+
+    expect(screen.getByTestId('success')).not.toBeUndefined();
   });
 
 });

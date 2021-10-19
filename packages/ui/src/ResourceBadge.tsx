@@ -9,11 +9,11 @@ export interface ResourceBadgeProps {
   link?: boolean;
 }
 
-export const ResourceBadge = (props: ResourceBadgeProps) => {
+export function ResourceBadge(props: ResourceBadgeProps) {
   return (
     <div className="medplum-resource-badge">
       <Avatar size="small" value={props.value} link={props.link} />
       <ResourceName value={props.value} link={props.link} />
     </div>
   );
-};
+}

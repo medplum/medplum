@@ -1,4 +1,4 @@
-import { Button, Document, Loading, useMedplum } from '@medplum/ui';
+import { Document, Loading, MedplumLink, ResourceBadge, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -37,17 +37,18 @@ export function ProjectPage() {
       <table className="table">
         <thead>
           <tr>
-            <th>ID</th>
             <th>Name</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {result.members.map((member: any) => (
             <tr key={member.profile}>
-              <td><a href={'/' + member.profile}>{member.name}</a></td>
               <td>
-                <Button>Promote</Button>
-                <Button>Remove</Button>
+                <ResourceBadge value={{ reference: member.profile }} link={true} />
+              </td>
+              <td>
+                <MedplumLink to={`/admin/projects/${id}/members/${member.membershipId}`}>Edit</MedplumLink>
               </td>
             </tr>
           ))}

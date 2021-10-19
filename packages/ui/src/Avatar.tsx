@@ -1,9 +1,9 @@
 import { getDisplayString, getImageSrc, Reference, Resource } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
-import './Avatar.css';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
 import { useResource } from './useResource';
+import './Avatar.css';
 
 export interface AvatarProps {
   size?: 'xsmall' | 'small' | 'medium' | 'large';
@@ -14,7 +14,7 @@ export interface AvatarProps {
   link?: boolean;
 }
 
-export const Avatar = (props: AvatarProps) => {
+export function Avatar(props: AvatarProps) {
   const medplum = useMedplum();
   const resource = useResource(props.value);
   const [imageUrl, setImageUrl] = useState<string | undefined>(props.src);
@@ -48,7 +48,7 @@ export const Avatar = (props: AvatarProps) => {
       )}
     </div>
   );
-};
+}
 
 function getInitials(text: string): string {
   return text.split(' ').map(n => n[0]).join('');

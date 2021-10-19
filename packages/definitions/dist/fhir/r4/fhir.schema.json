@@ -61290,6 +61290,10 @@
           "description": "Reference to the default project for the duration of the login.",
           "$ref": "#/definitions/Reference"
         },
+        "accessPolicy": {
+          "description": "Collection of compartments that the user has been granted access.  This is a flattened collection of all ProjectMembership compartments at the time of login.",
+          "$ref": "#/definitions/Reference"
+        },
         "admin": {
           "description": "Whether this login has system administrator privileges.",
           "$ref": "#/definitions/boolean"
@@ -61527,6 +61531,10 @@
         "_language": {
           "description": "Extensions for language",
           "$ref": "#/definitions/Element"
+        },
+        "name": {
+          "description": "A name associated with the AccessPolicy.",
+          "$ref": "#/definitions/string"
         },
         "resource": {
           "description": "Access details for a resource type.",
