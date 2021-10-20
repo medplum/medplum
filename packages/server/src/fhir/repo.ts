@@ -579,7 +579,7 @@ export class Repository {
   }
 
   /**
-   * Builds a list of compartments for the resource.
+   * Builds a list of compartments for the resource for writing.
    * FHIR compartments are used for two purposes.
    * 1) Search narrowing (i.e., /Patient/123/Observation searches within the patient compartment).
    * 2) Access controls.
@@ -593,11 +593,8 @@ export class Repository {
       result.add(resource.meta.project);
     }
 
-    if (this.context.accessPolicy?.compartment) {
-      const accessPolicyCompartmentId = resolveId(this.context.accessPolicy.compartment);
-      if (accessPolicyCompartmentId) {
-        result.add(accessPolicyCompartmentId);
-      }
+    if (resource.meta?.account) {
+      result.add(resolveId(resource.meta.account) as string);
     }
 
     const patientId = getPatientCompartmentId(resource);
@@ -767,7 +764,7 @@ export class Repository {
     const patientId = getPatientCompartmentId(updated);
     if (patientId) {
       // If the resource is in a patient compartment, then lookup the patient.
-      const [patientOutcome, patient] = await repo.readResource('Patient', 'x');
+      const [patientOutcome, patient] = await repo.readResource('Patient', patientId);
       if (isOk(patientOutcome) && patient?.meta?.account) {
         // If the patient has an account, then use it as the resource account.
         return patient.meta.account;
