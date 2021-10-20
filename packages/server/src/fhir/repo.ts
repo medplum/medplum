@@ -168,6 +168,7 @@ export class Repository {
     const rows = await new SelectQuery(resourceType + '_History')
       .column('content')
       .where('id', Operator.EQUALS, id)
+      .limit(100)
       .execute(client);
 
     return [allOk, {
