@@ -130,6 +130,11 @@ function matchesCriteria(resource: Resource, subscription: Subscription): boolea
     return false;
   }
 
+  if (subscription.meta?.account && resource.meta?.account?.reference !== subscription.meta.account.reference) {
+    logger.debug('Ignore resource in different account compartment');
+    return false;
+  }
+
   if (!matchesChannelType(subscription)) {
     logger.debug(`Ignore subscription without recognized channel type`);
     return false;

@@ -358,6 +358,44 @@ describe('Subscription Worker', () => {
     expect(queue.add).not.toHaveBeenCalled();
   });
 
+  test('Ignore resource changes in different account compartment', async () => {
+    const project = randomUUID();
+    const account = 'Organization/' + randomUUID();
+
+    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      meta: {
+        project,
+        account: {
+          reference: account
+        }
+      },
+      status: 'active',
+      criteria: 'Patient',
+      channel: {
+        type: 'rest-hook',
+        endpoint: 'https://example.com/subscription'
+      }
+    });
+    expect(subscriptionOutcome.id).toEqual('created');
+    expect(subscription).not.toBeUndefined();
+
+    const queue = (Queue as any).mock.instances[0];
+    queue.add.mockClear();
+
+    const [patientOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      meta: {
+        project
+      },
+      name: [{ given: ['Alice'], family: 'Smith' }]
+    });
+
+    expect(patientOutcome.id).toEqual('created');
+    expect(patient).not.toBeUndefined();
+    expect(queue.add).not.toHaveBeenCalled();
+  });
+
   test('Retry on 400', async () => {
     const url = 'https://example.com/subscription';
 
