@@ -155,6 +155,44 @@ function isEmpty(v: any): boolean {
   return (t === 'string' && v === '') || (t === 'object' && Object.keys(v).length === 0);
 }
 
+/**
+ * Resource equality.
+ * Ignores meta.versionId and meta.lastUpdated.
+ * See: https://dmitripavlutin.com/how-to-compare-objects-in-javascript/#4-deep-equality
+ * @param object1 The first object.
+ * @param object2 The second object.
+ * @returns True if the objects are equal.
+ */
+export function deepEquals(object1: any, object2: any, path?: string): boolean {
+  let keys1 = Object.keys(object1);
+  let keys2 = Object.keys(object2);
+  if (path === 'meta') {
+    keys1 = keys1.filter(k => k !== 'versionId' && k !== 'lastUpdated');
+    keys2 = keys2.filter(k => k !== 'versionId' && k !== 'lastUpdated');
+  }
+  if (keys1.length !== keys2.length) {
+    return false;
+  }
+  for (const key of keys1) {
+    const val1 = object1[key];
+    const val2 = object2[key];
+    if (isObject(val1) && isObject(val2)) {
+      if (!deepEquals(val1, val2, key)) {
+        return false;
+      }
+    } else {
+      if (val1 !== val2) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+function isObject(object: any): boolean {
+  return object !== null && typeof object === 'object';
+}
+
 // Precompute hex octets
 // See: https://stackoverflow.com/a/55200387
 const byteToHex: string[] = [];

@@ -1,4 +1,4 @@
-import { accessDenied, AccessPolicy, allOk, assertOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, Filter, getSearchParameterDetails, gone, isGone, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
+import { accessDenied, AccessPolicy, allOk, assertOk, badRequest, Bundle, CompartmentDefinition, CompartmentDefinitionResource, created, deepEquals, Filter, getSearchParameterDetails, gone, isGone, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { randomUUID } from 'crypto';
 import { applyPatch, Operation } from 'fast-json-patch';
@@ -241,11 +241,9 @@ export class Repository {
       }
     };
 
-    if (stringify(existing) === stringify(updated)) {
+    if (existing && deepEquals(existing, updated)) {
       return [notModified, existing as T];
     }
-
-    const account = await this.getAccount(existing, updated);
 
     const result: T = {
       ...updated,
@@ -254,9 +252,13 @@ export class Repository {
         versionId: randomUUID(),
         lastUpdated: this.getLastUpdated(resource),
         project: this.getProjectId(updated),
-        author: this.getAuthor(updated),
-        account
+        author: this.getAuthor(updated)
       }
+    }
+
+    const account = await this.getAccount(existing, updated);
+    if (account) {
+      (result.meta as any).account = account;
     }
 
     try {
@@ -762,13 +764,15 @@ export class Repository {
       return this.context.accessPolicy?.compartment;
     }
 
-    const patientId = getPatientCompartmentId(updated);
-    if (patientId) {
-      // If the resource is in a patient compartment, then lookup the patient.
-      const [patientOutcome, patient] = await repo.readResource('Patient', patientId);
-      if (isOk(patientOutcome) && patient?.meta?.account) {
-        // If the patient has an account, then use it as the resource account.
-        return patient.meta.account;
+    if (updated.resourceType !== 'Patient') {
+      const patientId = getPatientCompartmentId(updated);
+      if (patientId) {
+        // If the resource is in a patient compartment, then lookup the patient.
+        const [patientOutcome, patient] = await repo.readResource('Patient', patientId);
+        if (isOk(patientOutcome) && patient?.meta?.account) {
+          // If the patient has an account, then use it as the resource account.
+          return patient.meta.account;
+        }
       }
     }
 
