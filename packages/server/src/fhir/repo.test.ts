@@ -1058,21 +1058,53 @@ describe('FHIR Repo', () => {
     });
     assertOk(outcome2);
     expect(patient).not.toBeUndefined();
-    expect(patient?.meta?.account?.reference).toEqual(account);
 
     // The Patient should have the account value set
+    expect(patient?.meta?.account?.reference).toEqual(account);
 
     // Create an Observation using the ClientApplication
+    const [outcome3, observation] = await clientRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      subject: createReference(patient as Patient),
+      code: {
+        text: 'test'
+      },
+      valueString: 'positive'
+    });
+    assertOk(outcome3);
+    expect(observation).not.toBeUndefined();
 
     // The Observation should have the account value set
+    expect(observation?.meta?.account?.reference).toEqual(account);
 
     // Create a Patient outside of the account
+    const [outcome4, patient2] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Peggy'], family: 'Bundy' }],
+      birthDate: '1975-11-11'
+    });
+    assertOk(outcome4);
+    expect(patient2).not.toBeUndefined();
 
     // The ClientApplication should not be able to access it
+    const [outcome5] = await clientRepo.readResource<Patient>('Patient', patient2?.id as string);
+    expect(outcome5.id).toEqual('not-found');
 
     // Create an Observation outside of the account
+    const [outcome6, observation2] = await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      subject: createReference(patient2 as Patient),
+      code: {
+        text: 'test'
+      },
+      valueString: 'positive'
+    });
+    assertOk(outcome6);
+    expect(observation2).not.toBeUndefined();
 
     // The ClientApplication should not be able to access it
+    const [outcome7] = await clientRepo.readResource<Observation>('Observation', observation2?.id as string);
+    expect(outcome7.id).toEqual('not-found');
   });
 
   test('Search birthDate after delete', async () => {

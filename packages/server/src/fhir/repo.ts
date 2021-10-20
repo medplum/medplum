@@ -600,43 +600,12 @@ export class Repository {
       }
     }
 
-    // const patientCompartmentProperties = getPatientCompartmentProperties(resource.resourceType);
-    // if (patientCompartmentProperties) {
-    //   const patientId = getPatientId(resource, patientCompartmentProperties);
-    //   if (patientId) {
-    //     result.add(patientId);
-    //   }
-    // }
-    const patientId = this.getPatientCompartmentId(resource);
+    const patientId = getPatientCompartmentId(resource);
     if (patientId) {
       result.add(patientId);
     }
 
     return Array.from(result);
-  }
-
-  /**
-   * Returns the patient compartment ID for a resource.
-   * If the resource is in a patient compartment (i.e., an Observation about the patient),
-   * then return the patient ID.
-   * If the resource is not in a patient compartment (i.e., a StructureDefinition),
-   * then return undefined. 
-   * @param resource The resource to inspect.
-   * @returns The patient ID if found; undefined otherwise.
-   */
-  private getPatientCompartmentId(resource: Resource): string | undefined {
-    if (resource.resourceType === 'Patient') {
-      return resource.id;
-    }
-    const patientCompartmentProperties = getPatientCompartmentProperties(resource.resourceType);
-    if (patientCompartmentProperties) {
-      // const patientId = getPatientId(resource, patientCompartmentProperties);
-      // if (patientId) {
-      //   result.add(patientId);
-      // }
-      return getPatientId(resource, patientCompartmentProperties);
-    }
-    return undefined;
   }
 
   /**
@@ -795,7 +764,7 @@ export class Repository {
       return this.context.accessPolicy?.compartment;
     }
 
-    const patientId = this.getPatientCompartmentId(updated);
+    const patientId = getPatientCompartmentId(updated);
     if (patientId) {
       // If the resource is in a patient compartment, then lookup the patient.
       const [patientOutcome, patient] = await repo.readResource('Patient', 'x');
@@ -843,7 +812,7 @@ export class Repository {
     }
     if (this.context.accessPolicy.resource) {
       for (const resourcePolicy of this.context.accessPolicy.resource) {
-        if (resourcePolicy.resourceType === resourceType) {
+        if (resourcePolicy.resourceType === resourceType || resourcePolicy.resourceType === '*') {
           return true;
         }
       }
@@ -868,7 +837,7 @@ export class Repository {
     }
     if (this.context.accessPolicy.resource) {
       for (const resourcePolicy of this.context.accessPolicy.resource) {
-        if (resourcePolicy.resourceType === resourceType) {
+        if (resourcePolicy.resourceType === resourceType || resourcePolicy.resourceType === '*') {
           return !resourcePolicy.readonly;
         }
       }
@@ -911,11 +880,50 @@ function getPatientCompartmentProperties(resourceType: string): string[] | undef
   return undefined;
 }
 
+/**
+ * Returns the list of patient resource types.
+ * See: https://www.hl7.org/fhir/compartmentdefinition-patient.html
+ * @returns List of resource types in the patient compartment.
+ */
+function getPatientCompartmentResourceTypes(): string[] {
+  const result = ['Patient'];
+  const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
+  for (const resource of resourceList) {
+    if (resource.code && resource.param) {
+      // Only add resource definitions with a 'param' value
+      // The param value defines the eligible properties
+      // If param is missing, it means the resource type is not in the compartment
+      result.push(resource.code);
+    }
+  }
+  return result;
+}
+
 function getPatientCompartments(): CompartmentDefinition {
   if (!patientCompartment) {
     patientCompartment = readJson('fhir/r4/compartmentdefinition-patient.json') as CompartmentDefinition;
   }
   return patientCompartment;
+}
+
+/**
+ * Returns the patient compartment ID for a resource.
+ * If the resource is in a patient compartment (i.e., an Observation about the patient),
+ * then return the patient ID.
+ * If the resource is not in a patient compartment (i.e., a StructureDefinition),
+ * then return undefined.
+ * @param resource The resource to inspect.
+ * @returns The patient ID if found; undefined otherwise.
+ */
+function getPatientCompartmentId(resource: Resource): string | undefined {
+  if (resource.resourceType === 'Patient') {
+    return resource.id;
+  }
+  const patientCompartmentProperties = getPatientCompartmentProperties(resource.resourceType);
+  if (patientCompartmentProperties) {
+    return getPatientId(resource, patientCompartmentProperties);
+  }
+  return undefined;
 }
 
 /**
@@ -1026,17 +1034,7 @@ export async function getRepoForLogin(login: Login): Promise<Repository> {
       const [profileOutcome, profileResource] = await repo.readReference(login.profile);
       assertOk(profileOutcome);
       if (profileResource?.meta?.account) {
-        const compartment = profileResource?.meta?.account;
-        accessPolicy = {
-          resourceType: 'AccessPolicy',
-          compartment,
-          resource: [
-            {
-              resourceType: 'Patient',
-              compartment
-            }
-          ]
-        };
+        accessPolicy = buildSyntheticAccessPolicy(profileResource.meta.account);
       }
     }
   }
@@ -1047,6 +1045,31 @@ export async function getRepoForLogin(login: Login): Promise<Repository> {
     admin: login.admin,
     accessPolicy
   });
+}
+
+/**
+ * Builds a synthetic access policy for the specified compartment/account.
+ * This is used for automated accounts, such as Bot, ClientApplication, and Subscription.
+ * For any patient-related resource, the access policy is restricted to the account.
+ * For any non-patient-related resource, the access policy is restricted to the project.
+ * @param compartment The compartment reference.
+ * @returns A synthetic access policy for the compartment.
+ */
+function buildSyntheticAccessPolicy(compartment: Reference): AccessPolicy {
+  const patientResourceTypes = getPatientCompartmentResourceTypes();
+  return {
+    resourceType: 'AccessPolicy',
+    compartment,
+    resource: [
+      ...patientResourceTypes.map(t => ({
+        resourceType: t,
+        compartment
+      })),
+      {
+        resourceType: '*'
+      }
+    ]
+  };
 }
 
 export const repo = new Repository({
