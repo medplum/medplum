@@ -1106,6 +1106,16 @@
             }]
           },
           {
+            "id" : "AccessPolicy.compartment",
+            "path" : "AccessPolicy.compartment",
+            "definition" : "Optional compartment for newly created resources.  If this field is set, any resources created by a user with this access policy will automatically be included in the specified compartment.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference"
+            }]
+          },
+          {
             "id" : "AccessPolicy.resource",
             "path" : "AccessPolicy.resource",
             "definition" : "Access details for a resource type.",

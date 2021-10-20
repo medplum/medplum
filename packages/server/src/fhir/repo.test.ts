@@ -894,6 +894,134 @@ describe('FHIR Repo', () => {
     expect(deleteOutcome.id).toEqual('access-denied');
   });
 
+  test('Access policy set compartment', async () => {
+    const orgId = randomUUID();
+
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      compartment: {
+        reference: 'Organization/' + orgId
+      },
+      resource: [{
+        resourceType: 'Patient',
+        compartment: {
+          reference: 'Organization/' + orgId
+        }
+      }]
+    };
+
+    const repo = new Repository({
+      project: MEDPLUM_PROJECT_ID,
+      author: {
+        reference: 'Practitioner/123'
+      },
+      accessPolicy
+    });
+
+    const [createOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      birthDate: '1970-01-01'
+    });
+    assertOk(createOutcome);
+    expect(patient).not.toBeUndefined();
+    expect(patient?.meta?.account).not.toBeUndefined();
+
+    const [readOutcome, readPatient] = await repo.readResource('Patient', patient?.id as string);
+    assertOk(readOutcome);
+    expect(readPatient).not.toBeUndefined();
+    expect(readPatient?.meta?.account).not.toBeUndefined();
+  });
+
+  test('Access policy restrict compartment', async () => {
+    const org1 = randomUUID();
+    const org2 = randomUUID();
+
+    const accessPolicy1: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      compartment: {
+        reference: 'Organization/' + org1
+      },
+      resource: [{
+        resourceType: 'Patient',
+        compartment: {
+          reference: 'Organization/' + org1
+        }
+      }]
+    };
+
+    const accessPolicy2: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      compartment: {
+        reference: 'Organization/' + org2
+      },
+      resource: [{
+        resourceType: 'Patient',
+        compartment: {
+          reference: 'Organization/' + org2
+        }
+      }]
+    };
+
+    const repo1 = new Repository({
+      project: MEDPLUM_PROJECT_ID,
+      author: {
+        reference: 'Practitioner/123'
+      },
+      accessPolicy: accessPolicy1
+    });
+
+    const repo2 = new Repository({
+      project: MEDPLUM_PROJECT_ID,
+      author: {
+        reference: 'Practitioner/123'
+      },
+      accessPolicy: accessPolicy2
+    });
+
+    const [createOutcome1, patient1] = await repo1.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      birthDate: '1970-01-01'
+    });
+    assertOk(createOutcome1);
+    expect(patient1).not.toBeUndefined();
+    expect(patient1?.meta?.account).not.toBeUndefined();
+    expect(patient1?.meta?.account?.reference).toEqual('Organization/' + org1);
+
+    const [readOutcome1, readPatient1] = await repo1.readResource('Patient', patient1?.id as string);
+    assertOk(readOutcome1);
+    expect(readPatient1).not.toBeUndefined();
+    expect(readPatient1?.meta?.account).not.toBeUndefined();
+
+    const [createOutcome2, patient2] = await repo2.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      birthDate: '1970-01-01'
+    });
+    assertOk(createOutcome2);
+    expect(patient2).not.toBeUndefined();
+    expect(patient2?.meta?.account).not.toBeUndefined();
+    expect(patient2?.meta?.account?.reference).toEqual('Organization/' + org2);
+
+    const [readOutcome2, readPatient2] = await repo2.readResource('Patient', patient2?.id as string);
+    assertOk(readOutcome2);
+    expect(readPatient2).not.toBeUndefined();
+    expect(readPatient2?.meta?.account).not.toBeUndefined();
+
+    // Try to read patient1 with repo2
+    // This should fail
+    const [readOutcome3, readPatient3] = await repo2.readResource('Patient', patient1?.id as string);
+    expect(readOutcome3.id).toEqual('not-found');
+    expect(readPatient3).toBeUndefined();
+
+    // Try to read patient2 with repo1
+    // This should fail
+    const [readOutcome4, readPatient4] = await repo1.readResource('Patient', patient2?.id as string);
+    expect(readOutcome4.id).toEqual('not-found');
+    expect(readPatient4).toBeUndefined();
+  });
+
   test('Search birthDate after delete', async () => {
     const [createOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',

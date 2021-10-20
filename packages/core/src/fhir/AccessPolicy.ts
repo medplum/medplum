@@ -44,6 +44,18 @@ export interface AccessPolicy {
   readonly language?: string;
 
   /**
+   * A name associated with the AccessPolicy.
+   */
+  readonly name?: string;
+
+  /**
+   * Optional compartment for newly created resources.  If this field is
+   * set, any resources created by a user with this access policy will
+   * automatically be included in the specified compartment.
+   */
+  readonly compartment?: Reference;
+
+  /**
    * Access details for a resource type.
    */
   readonly resource?: AccessPolicyResource[];
