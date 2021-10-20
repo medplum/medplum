@@ -1,7 +1,7 @@
-import { DiagnosticReport, Observation, ObservationReferenceRange, Reference } from '@medplum/core';
+import { DiagnosticReport, Observation, ObservationComponent, ObservationReferenceRange, Reference } from '@medplum/core';
 import React from 'react';
-import { MedplumLink } from './MedplumLink';
 import { CodeableConceptDisplay } from './CodeableConceptDisplay';
+import { MedplumLink } from './MedplumLink';
 import { useResource } from './useResource';
 import './DiagnosticReportDisplay.css';
 
@@ -68,8 +68,8 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
           <CodeableConceptDisplay value={observation.code} />
         </MedplumLink>
       </td>
-      <td>{observation.valueQuantity?.unit}</td>
-      <td>{observation.valueQuantity?.value ?? observation.valueString}</td>
+      <td>{getUnitsDisplayString(observation)}</td>
+      <td>{getValueDisplayString(observation)}</td>
       <td><ReferenceRangeDisplay value={observation.referenceRange} /></td>
       <td>
         {observation.interpretation && observation.interpretation.length > 0 && (
@@ -78,6 +78,34 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
       </td>
     </tr>
   );
+}
+
+function getUnitsDisplayString(observation: Observation | ObservationComponent): string | undefined {
+  if (observation.valueQuantity?.unit) {
+    return observation.valueQuantity.unit;
+  }
+
+  if ('component' in observation && observation.component) {
+    return observation.component.map(c => getUnitsDisplayString(c)).join('/');
+  }
+
+  return undefined;
+}
+
+function getValueDisplayString(observation: Observation | ObservationComponent): string | number | undefined {
+  if (observation.valueQuantity?.value) {
+    return observation.valueQuantity.value;
+  }
+
+  if (observation.valueString) {
+    return observation.valueString;
+  }
+
+  if ('component' in observation && observation.component) {
+    return observation.component.map(c => getValueDisplayString(c)).join('/');
+  }
+
+  return undefined;
 }
 
 interface ReferenceRangeProps {
