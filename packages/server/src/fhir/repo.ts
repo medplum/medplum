@@ -244,6 +244,8 @@ export class Repository {
       return [notModified, existing as T];
     }
 
+    const account = await this.getAccount(existing, updated);
+
     const result: T = {
       ...updated,
       meta: {
@@ -252,7 +254,7 @@ export class Repository {
         lastUpdated: this.getLastUpdated(resource),
         project: this.getProjectId(updated),
         author: this.getAuthor(updated),
-        account: this.getAccount(existing, updated)
+        account
       }
     }
 
@@ -577,7 +579,7 @@ export class Repository {
   }
 
   /**
-   * Builds a list of compartments for the resource.
+   * Builds a list of compartments for the resource for writing.
    * FHIR compartments are used for two purposes.
    * 1) Search narrowing (i.e., /Patient/123/Observation searches within the patient compartment).
    * 2) Access controls.
@@ -591,19 +593,13 @@ export class Repository {
       result.add(resource.meta.project);
     }
 
-    if (this.context.accessPolicy?.compartment) {
-      const accessPolicyCompartmentId = resolveId(this.context.accessPolicy.compartment);
-      if (accessPolicyCompartmentId) {
-        result.add(accessPolicyCompartmentId);
-      }
+    if (resource.meta?.account) {
+      result.add(resolveId(resource.meta.account) as string);
     }
 
-    const patientCompartmentProperties = getPatientCompartmentProperties(resource.resourceType);
-    if (patientCompartmentProperties) {
-      const patientId = getPatientId(resource, patientCompartmentProperties);
-      if (patientId) {
-        result.add(patientId);
-      }
+    const patientId = getPatientCompartmentId(resource);
+    if (patientId) {
+      result.add(patientId);
     }
 
     return Array.from(result);
@@ -753,7 +749,7 @@ export class Repository {
    * @param resource The FHIR resource.
    * @returns
    */
-  private getAccount(existing: Resource | undefined, updated: Resource): Reference | undefined {
+  private async getAccount(existing: Resource | undefined, updated: Resource): Promise<Reference | undefined> {
     const account = updated.meta?.account;
     if (account && this.canWriteMeta()) {
       // If the user specifies an account, allow it if they have permission.
@@ -761,8 +757,18 @@ export class Repository {
     }
 
     if (this.context.accessPolicy?.compartment) {
-      // If the user access policy specifies a comparment, then use it as the accoun.
+      // If the user access policy specifies a comparment, then use it as the account.
       return this.context.accessPolicy?.compartment;
+    }
+
+    const patientId = getPatientCompartmentId(updated);
+    if (patientId) {
+      // If the resource is in a patient compartment, then lookup the patient.
+      const [patientOutcome, patient] = await repo.readResource('Patient', patientId);
+      if (isOk(patientOutcome) && patient?.meta?.account) {
+        // If the patient has an account, then use it as the resource account.
+        return patient.meta.account;
+      }
     }
 
     // Otherwise, default to the existing value.
@@ -803,7 +809,7 @@ export class Repository {
     }
     if (this.context.accessPolicy.resource) {
       for (const resourcePolicy of this.context.accessPolicy.resource) {
-        if (resourcePolicy.resourceType === resourceType) {
+        if (resourcePolicy.resourceType === resourceType || resourcePolicy.resourceType === '*') {
           return true;
         }
       }
@@ -828,7 +834,7 @@ export class Repository {
     }
     if (this.context.accessPolicy.resource) {
       for (const resourcePolicy of this.context.accessPolicy.resource) {
-        if (resourcePolicy.resourceType === resourceType) {
+        if (resourcePolicy.resourceType === resourceType || resourcePolicy.resourceType === '*') {
           return !resourcePolicy.readonly;
         }
       }
@@ -871,11 +877,50 @@ function getPatientCompartmentProperties(resourceType: string): string[] | undef
   return undefined;
 }
 
+/**
+ * Returns the list of patient resource types.
+ * See: https://www.hl7.org/fhir/compartmentdefinition-patient.html
+ * @returns List of resource types in the patient compartment.
+ */
+function getPatientCompartmentResourceTypes(): string[] {
+  const result = ['Patient'];
+  const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
+  for (const resource of resourceList) {
+    if (resource.code && resource.param) {
+      // Only add resource definitions with a 'param' value
+      // The param value defines the eligible properties
+      // If param is missing, it means the resource type is not in the compartment
+      result.push(resource.code);
+    }
+  }
+  return result;
+}
+
 function getPatientCompartments(): CompartmentDefinition {
   if (!patientCompartment) {
     patientCompartment = readJson('fhir/r4/compartmentdefinition-patient.json') as CompartmentDefinition;
   }
   return patientCompartment;
+}
+
+/**
+ * Returns the patient compartment ID for a resource.
+ * If the resource is in a patient compartment (i.e., an Observation about the patient),
+ * then return the patient ID.
+ * If the resource is not in a patient compartment (i.e., a StructureDefinition),
+ * then return undefined.
+ * @param resource The resource to inspect.
+ * @returns The patient ID if found; undefined otherwise.
+ */
+function getPatientCompartmentId(resource: Resource): string | undefined {
+  if (resource.resourceType === 'Patient') {
+    return resource.id;
+  }
+  const patientCompartmentProperties = getPatientCompartmentProperties(resource.resourceType);
+  if (patientCompartmentProperties) {
+    return getPatientId(resource, patientCompartmentProperties);
+  }
+  return undefined;
 }
 
 /**
@@ -965,12 +1010,30 @@ function resolveId(reference: Reference | undefined): string | undefined {
  * @returns A repository configured for the login details.
  */
 export async function getRepoForLogin(login: Login): Promise<Repository> {
-  let accessPolicy = undefined;
+  let accessPolicy: AccessPolicy | undefined = undefined;
 
   if (login.accessPolicy) {
     const [accessPolicyOutcome, accessPolicyResource] = await repo.readReference(login.accessPolicy);
     assertOk(accessPolicyOutcome);
     accessPolicy = accessPolicyResource as AccessPolicy;
+  }
+
+  // If the resource is an "actor" resource,
+  // then look it up for a synthetic access policy.
+  // Actor resources: Bot, ClientApplication, Subscription
+  // Synthetic access policy:
+  // If the profile has a profile.meta.account,
+  // Always write with account as the compartment
+  // Always read with the account as a filter
+  if (login.profile) {
+    const profileType = login.profile.reference;
+    if (profileType && (profileType.startsWith('Bot') || profileType.startsWith('ClientApplication') || profileType.startsWith('Subscription'))) {
+      const [profileOutcome, profileResource] = await repo.readReference(login.profile);
+      assertOk(profileOutcome);
+      if (profileResource?.meta?.account) {
+        accessPolicy = buildSyntheticAccessPolicy(profileResource.meta.account);
+      }
+    }
   }
 
   return new Repository({
@@ -979,6 +1042,31 @@ export async function getRepoForLogin(login: Login): Promise<Repository> {
     admin: login.admin,
     accessPolicy
   });
+}
+
+/**
+ * Builds a synthetic access policy for the specified compartment/account.
+ * This is used for automated accounts, such as Bot, ClientApplication, and Subscription.
+ * For any patient-related resource, the access policy is restricted to the account.
+ * For any non-patient-related resource, the access policy is restricted to the project.
+ * @param compartment The compartment reference.
+ * @returns A synthetic access policy for the compartment.
+ */
+function buildSyntheticAccessPolicy(compartment: Reference): AccessPolicy {
+  const patientResourceTypes = getPatientCompartmentResourceTypes();
+  return {
+    resourceType: 'AccessPolicy',
+    compartment,
+    resource: [
+      ...patientResourceTypes.map(t => ({
+        resourceType: t,
+        compartment
+      })),
+      {
+        resourceType: '*'
+      }
+    ]
+  };
 }
 
 export const repo = new Repository({

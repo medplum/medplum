@@ -1,4 +1,4 @@
-import { AccessPolicy, Account, assertOk, Communication, createReference, Encounter, getReferenceString, isOk, Login, Observation, Operator, Patient, Reference, RegisterRequest, SearchParameter, ServiceRequest } from '@medplum/core';
+import { AccessPolicy, Account, assertOk, ClientApplication, Communication, createReference, Encounter, getReferenceString, isOk, Login, Observation, Operator, Patient, Reference, RegisterRequest, SearchParameter, ServiceRequest } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
@@ -1020,6 +1020,91 @@ describe('FHIR Repo', () => {
     const [readOutcome4, readPatient4] = await repo1.readResource('Patient', patient2?.id as string);
     expect(readOutcome4.id).toEqual('not-found');
     expect(readPatient4).toBeUndefined();
+  });
+
+  test('ClientApplication with account restriction', async () => {
+    const project = randomUUID();
+    const account = 'Organization/' + randomUUID();
+
+    // Create a ClientApplication with an account value
+    const [outcome1, clientApplication] = await repo.createResource<ClientApplication>({
+      resourceType: 'ClientApplication',
+      secret: 'foo',
+      redirectUri: 'https://example.com/',
+      meta: {
+        account: {
+          reference: account
+        }
+      }
+    });
+    assertOk(outcome1);
+    expect(clientApplication).not.toBeUndefined();
+
+    // Create a repo for the ClientApplication
+    // Use getRepoForLogin to generate the synthetic access policy
+    const clientRepo = await getRepoForLogin({
+      resourceType: 'Login',
+      project: {
+        reference: 'Project/' + project
+      },
+      profile: createReference(clientApplication as ClientApplication)
+    });
+
+    // Create a Patient using the ClientApplication
+    const [outcome2, patient] = await clientRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Al'], family: 'Bundy' }],
+      birthDate: '1975-12-12'
+    });
+    assertOk(outcome2);
+    expect(patient).not.toBeUndefined();
+
+    // The Patient should have the account value set
+    expect(patient?.meta?.account?.reference).toEqual(account);
+
+    // Create an Observation using the ClientApplication
+    const [outcome3, observation] = await clientRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      subject: createReference(patient as Patient),
+      code: {
+        text: 'test'
+      },
+      valueString: 'positive'
+    });
+    assertOk(outcome3);
+    expect(observation).not.toBeUndefined();
+
+    // The Observation should have the account value set
+    expect(observation?.meta?.account?.reference).toEqual(account);
+
+    // Create a Patient outside of the account
+    const [outcome4, patient2] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Peggy'], family: 'Bundy' }],
+      birthDate: '1975-11-11'
+    });
+    assertOk(outcome4);
+    expect(patient2).not.toBeUndefined();
+
+    // The ClientApplication should not be able to access it
+    const [outcome5] = await clientRepo.readResource<Patient>('Patient', patient2?.id as string);
+    expect(outcome5.id).toEqual('not-found');
+
+    // Create an Observation outside of the account
+    const [outcome6, observation2] = await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      subject: createReference(patient2 as Patient),
+      code: {
+        text: 'test'
+      },
+      valueString: 'positive'
+    });
+    assertOk(outcome6);
+    expect(observation2).not.toBeUndefined();
+
+    // The ClientApplication should not be able to access it
+    const [outcome7] = await clientRepo.readResource<Observation>('Observation', observation2?.id as string);
+    expect(outcome7.id).toEqual('not-found');
   });
 
   test('Search birthDate after delete', async () => {
