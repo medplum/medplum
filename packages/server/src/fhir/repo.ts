@@ -244,6 +244,8 @@ export class Repository {
       return [notModified, existing as T];
     }
 
+    const account = await this.getAccount(existing, updated);
+
     const result: T = {
       ...updated,
       meta: {
@@ -252,7 +254,7 @@ export class Repository {
         lastUpdated: this.getLastUpdated(resource),
         project: this.getProjectId(updated),
         author: this.getAuthor(updated),
-        account: this.getAccount(existing, updated)
+        account
       }
     }
 
@@ -598,15 +600,43 @@ export class Repository {
       }
     }
 
-    const patientCompartmentProperties = getPatientCompartmentProperties(resource.resourceType);
-    if (patientCompartmentProperties) {
-      const patientId = getPatientId(resource, patientCompartmentProperties);
-      if (patientId) {
-        result.add(patientId);
-      }
+    // const patientCompartmentProperties = getPatientCompartmentProperties(resource.resourceType);
+    // if (patientCompartmentProperties) {
+    //   const patientId = getPatientId(resource, patientCompartmentProperties);
+    //   if (patientId) {
+    //     result.add(patientId);
+    //   }
+    // }
+    const patientId = this.getPatientCompartmentId(resource);
+    if (patientId) {
+      result.add(patientId);
     }
 
     return Array.from(result);
+  }
+
+  /**
+   * Returns the patient compartment ID for a resource.
+   * If the resource is in a patient compartment (i.e., an Observation about the patient),
+   * then return the patient ID.
+   * If the resource is not in a patient compartment (i.e., a StructureDefinition),
+   * then return undefined. 
+   * @param resource The resource to inspect.
+   * @returns The patient ID if found; undefined otherwise.
+   */
+  private getPatientCompartmentId(resource: Resource): string | undefined {
+    if (resource.resourceType === 'Patient') {
+      return resource.id;
+    }
+    const patientCompartmentProperties = getPatientCompartmentProperties(resource.resourceType);
+    if (patientCompartmentProperties) {
+      // const patientId = getPatientId(resource, patientCompartmentProperties);
+      // if (patientId) {
+      //   result.add(patientId);
+      // }
+      return getPatientId(resource, patientCompartmentProperties);
+    }
+    return undefined;
   }
 
   /**
@@ -753,7 +783,7 @@ export class Repository {
    * @param resource The FHIR resource.
    * @returns
    */
-  private getAccount(existing: Resource | undefined, updated: Resource): Reference | undefined {
+  private async getAccount(existing: Resource | undefined, updated: Resource): Promise<Reference | undefined> {
     const account = updated.meta?.account;
     if (account && this.canWriteMeta()) {
       // If the user specifies an account, allow it if they have permission.
@@ -761,8 +791,18 @@ export class Repository {
     }
 
     if (this.context.accessPolicy?.compartment) {
-      // If the user access policy specifies a comparment, then use it as the accoun.
+      // If the user access policy specifies a comparment, then use it as the account.
       return this.context.accessPolicy?.compartment;
+    }
+
+    const patientId = this.getPatientCompartmentId(updated);
+    if (patientId) {
+      // If the resource is in a patient compartment, then lookup the patient.
+      const [patientOutcome, patient] = await repo.readResource('Patient', 'x');
+      if (isOk(patientOutcome) && patient?.meta?.account) {
+        // If the patient has an account, then use it as the resource account.
+        return patient.meta.account;
+      }
     }
 
     // Otherwise, default to the existing value.
@@ -965,12 +1005,40 @@ function resolveId(reference: Reference | undefined): string | undefined {
  * @returns A repository configured for the login details.
  */
 export async function getRepoForLogin(login: Login): Promise<Repository> {
-  let accessPolicy = undefined;
+  let accessPolicy: AccessPolicy | undefined = undefined;
 
   if (login.accessPolicy) {
     const [accessPolicyOutcome, accessPolicyResource] = await repo.readReference(login.accessPolicy);
     assertOk(accessPolicyOutcome);
     accessPolicy = accessPolicyResource as AccessPolicy;
+  }
+
+  // If the resource is an "actor" resource,
+  // then look it up for a synthetic access policy.
+  // Actor resources: Bot, ClientApplication, Subscription
+  // Synthetic access policy:
+  // If the profile has a profile.meta.account,
+  // Always write with account as the compartment
+  // Always read with the account as a filter
+  if (login.profile) {
+    const profileType = login.profile.reference;
+    if (profileType && (profileType.startsWith('Bot') || profileType.startsWith('ClientApplication') || profileType.startsWith('Subscription'))) {
+      const [profileOutcome, profileResource] = await repo.readReference(login.profile);
+      assertOk(profileOutcome);
+      if (profileResource?.meta?.account) {
+        const compartment = profileResource?.meta?.account;
+        accessPolicy = {
+          resourceType: 'AccessPolicy',
+          compartment,
+          resource: [
+            {
+              resourceType: 'Patient',
+              compartment
+            }
+          ]
+        };
+      }
+    }
   }
 
   return new Repository({

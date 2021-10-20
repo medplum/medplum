@@ -1,4 +1,4 @@
-import { AccessPolicy, Account, assertOk, Communication, createReference, Encounter, getReferenceString, isOk, Login, Observation, Operator, Patient, Reference, RegisterRequest, SearchParameter, ServiceRequest } from '@medplum/core';
+import { AccessPolicy, Account, assertOk, ClientApplication, Communication, createReference, Encounter, getReferenceString, isOk, Login, Observation, Operator, Patient, Reference, RegisterRequest, SearchParameter, ServiceRequest } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
@@ -1020,6 +1020,59 @@ describe('FHIR Repo', () => {
     const [readOutcome4, readPatient4] = await repo1.readResource('Patient', patient2?.id as string);
     expect(readOutcome4.id).toEqual('not-found');
     expect(readPatient4).toBeUndefined();
+  });
+
+  test('ClientApplication with account restriction', async () => {
+    const project = randomUUID();
+    const account = 'Organization/' + randomUUID();
+
+    // Create a ClientApplication with an account value
+    const [outcome1, clientApplication] = await repo.createResource<ClientApplication>({
+      resourceType: 'ClientApplication',
+      secret: 'foo',
+      redirectUri: 'https://example.com/',
+      meta: {
+        account: {
+          reference: account
+        }
+      }
+    });
+    assertOk(outcome1);
+    expect(clientApplication).not.toBeUndefined();
+
+    // Create a repo for the ClientApplication
+    // Use getRepoForLogin to generate the synthetic access policy
+    const clientRepo = await getRepoForLogin({
+      resourceType: 'Login',
+      project: {
+        reference: 'Project/' + project
+      },
+      profile: createReference(clientApplication as ClientApplication)
+    });
+
+    // Create a Patient using the ClientApplication
+    const [outcome2, patient] = await clientRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Al'], family: 'Bundy' }],
+      birthDate: '1975-12-12'
+    });
+    assertOk(outcome2);
+    expect(patient).not.toBeUndefined();
+    expect(patient?.meta?.account?.reference).toEqual(account);
+
+    // The Patient should have the account value set
+
+    // Create an Observation using the ClientApplication
+
+    // The Observation should have the account value set
+
+    // Create a Patient outside of the account
+
+    // The ClientApplication should not be able to access it
+
+    // Create an Observation outside of the account
+
+    // The ClientApplication should not be able to access it
   });
 
   test('Search birthDate after delete', async () => {
