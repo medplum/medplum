@@ -1,4 +1,4 @@
-import { arrayBufferToBase64, arrayBufferToHex, createReference, getDateProperty, getDisplayString, getImageSrc, isProfileResource, stringify } from './utils';
+import { arrayBufferToBase64, arrayBufferToHex, capitalize, createReference, deepEquals, getDateProperty, getDisplayString, getImageSrc, isLowerCase, isProfileResource, stringify } from './utils';
 
 if (typeof btoa === 'undefined') {
   global.btoa = function (str) {
@@ -9,18 +9,23 @@ if (typeof btoa === 'undefined') {
 describe('Core Utils', () => {
 
   test('Create reference', () => {
-    const reference = createReference({
+    expect(createReference({
       resourceType: 'Patient',
       id: '123',
       name: [{
         given: ['Alice'],
         family: 'Smith'
       }]
+    })).toMatchObject({
+      reference: 'Patient/123',
+      display: 'Alice Smith'
     });
 
-    expect(reference).not.toBeUndefined();
-    expect(reference.display).toEqual('Alice Smith');
-    expect(reference.reference).toEqual('Patient/123');
+    expect(createReference({
+      resourceType: 'Device', id: '123'
+    })).toMatchObject({
+      reference: 'Device/123'
+    });
   });
 
   test('isProfileResource', () => {
@@ -96,6 +101,69 @@ describe('Core Utils', () => {
     expect(stringify({ x: null })).toEqual('{}');
     expect(stringify({ x: {} })).toEqual('{}');
     expect(stringify({ x: { y: 'z' } })).toEqual('{"x":{"y":"z"}}');
+    expect(stringify({x: 2}, true)).toEqual('{\n  "x": 2\n}');
+  });
+
+  test('Deep equals', () => {
+    // Numbers
+    expect(deepEquals({ value: 0 }, { value: 0 })).toEqual(true);
+    expect(deepEquals({ value: 0 }, { value: 1 })).toEqual(false);
+    expect(deepEquals({ value: 0 }, { value: true })).toEqual(false);
+    expect(deepEquals({ value: 0 }, { value: 'x' })).toEqual(false);
+    expect(deepEquals({ value: 0 }, { value: {} })).toEqual(false);
+
+    // Booleans
+    expect(deepEquals({ value: true }, { value: true })).toEqual(true);
+    expect(deepEquals({ value: true }, { value: false })).toEqual(false);
+    expect(deepEquals({ value: true }, { value: 0 })).toEqual(false);
+    expect(deepEquals({ value: true }, { value: 'x' })).toEqual(false);
+    expect(deepEquals({ value: true }, { value: {} })).toEqual(false);
+
+    // Strings
+    expect(deepEquals({ value: 'x' }, { value: 'x' })).toEqual(true);
+    expect(deepEquals({ value: 'x' }, { value: 'y' })).toEqual(false);
+    expect(deepEquals({ value: 'x' }, { value: 0 })).toEqual(false);
+    expect(deepEquals({ value: 'x' }, { value: true })).toEqual(false);
+    expect(deepEquals({ value: 'x' }, { value: {} })).toEqual(false);
+
+    // Objects
+    expect(deepEquals({ value: {} }, { value: {} })).toEqual(true);
+    expect(deepEquals({ value: { x: 1 } }, { value: { x: 1 } })).toEqual(true);
+    expect(deepEquals({ value: { x: 1, y: '2' } }, { value: { x: 1, y: '2' } })).toEqual(true);
+    expect(deepEquals({ value: { x: 1, y: '2' } }, { value: { y: '2', x: 1 } })).toEqual(true);
+    expect(deepEquals({ value: { x: 1, y: '2', z: { n: 1 } } }, { value: { x: 1, y: '2', z: { n: 1 } } })).toEqual(true);
+    expect(deepEquals({ value: { x: 1, y: '2', z: { n: 1 } } }, { value: { y: '2', x: 1, z: { n: 1 } } })).toEqual(true);
+    expect(deepEquals({ value: { x: 1 } }, { value: { x: 2 } })).toEqual(false);
+    expect(deepEquals({ value: { x: 1 } }, { value: { y: 1 } })).toEqual(false);
+
+    // Arrays
+    expect(deepEquals({ value: [] }, { value: [] })).toEqual(true);
+    expect(deepEquals({ value: [1, 2, 3] }, { value: [1, 2, 3] })).toEqual(true);
+    expect(deepEquals({ value: [] }, { value: [1] })).toEqual(false);
+    expect(deepEquals({ value: [1, 2, 3] }, { value: [1, 2] })).toEqual(false);
+    expect(deepEquals({ value: [] }, { value: [true] })).toEqual(false);
+    expect(deepEquals({ value: [] }, { value: [{}] })).toEqual(false);
+
+    // Resources
+    expect(deepEquals({ resourceType: 'Patient' }, { resourceType: 'Patient' })).toEqual(true);
+    expect(deepEquals({ resourceType: 'Patient' }, { resourceType: 'Observation' })).toEqual(false);
+    expect(deepEquals({ resourceType: 'Patient' }, { resourceType: 'Patient', x: 'y' })).toEqual(false);
+    expect(deepEquals({ resourceType: 'Patient', x: 'y' }, { resourceType: 'Patient' })).toEqual(false);
+    expect(deepEquals(
+      { resourceType: 'Patient', meta: { versionId: '1' } },
+      { resourceType: 'Patient', meta: { versionId: '1' } })).toEqual(true);
+    expect(deepEquals(
+      { resourceType: 'Patient', meta: { lastUpdated: '1' } },
+      { resourceType: 'Patient', meta: { lastUpdated: '1' } })).toEqual(true);
+  });
+
+  test('Capitalize', () => {
+    expect(capitalize('foo')).toEqual('Foo');
+  });
+
+  test('isLowerCase', () => {
+    expect(isLowerCase('a')).toEqual(true);
+    expect(isLowerCase('A')).toEqual(false);
   });
 
 });
