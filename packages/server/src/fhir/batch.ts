@@ -50,7 +50,7 @@ async function processBatchEntry(repo: Repository, entry: BundleEntry): Promise<
 
   // Pass in dummy host for parsing purposes.
   // The host is ignored.
-  const url = new URL(entry.request.url as string, 'https://example.com/');
+  const url = new URL(entry.request.url, 'https://example.com/');
 
   switch (entry.request.method) {
     case 'GET':
@@ -108,7 +108,7 @@ async function processCreateResource(repo: Repository, resource: Resource | unde
 
 async function processPut(repo: Repository, entry: BundleEntry, url: URL): Promise<BundleEntry> {
   const path = url.pathname.split('/');
-  if (path.length === 2) {
+  if (path.length === 3) {
     return processUpdateResource(repo, entry.resource);
   }
   return buildBundleResponse(notFound);
@@ -127,7 +127,7 @@ function buildBundleResponse(outcome: OperationOutcome, resource?: Resource, ful
     response: {
       outcome: outcome,
       status: getStatus(outcome).toString(),
-      location: isOk(outcome) && resource?.id ? getReferenceString(resource as Resource) : undefined
+      location: isOk(outcome) && resource?.id ? getReferenceString(resource) : undefined
     },
     resource: (full && resource) || undefined
   };
