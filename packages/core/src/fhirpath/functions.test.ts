@@ -1,5 +1,5 @@
+import { Atom } from './atoms';
 import { functions } from './functions';
-import { Atom } from './parse';
 
 const isEven: Atom = {
   eval: num => num % 2 === 0

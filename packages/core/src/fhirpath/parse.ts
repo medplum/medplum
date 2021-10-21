@@ -1,11 +1,7 @@
-import { stringify } from '../utils';
+import { Atom, BinaryOperatorAtom, ConcatAtom, ContainsAtom, DotAtom, EmptySetAtom, EqualsAtom, EquivalentAtom, FhirPathAtom, FunctionAtom, InAtom, IsAtom, LiteralAtom, NotEqualsAtom, NotEquivalentAtom, OrAtom, SymbolAtom, UnaryOperatorAtom, UnionAtom, XorAtom } from './atoms';
+import { parseDateString } from './date';
 import { functions } from './functions';
 import { Token, tokenizer } from './tokenize';
-import { applyMaybeArray, fhirPathEquals, fhirPathIs, toBoolean } from './utils';
-
-export interface Atom {
-  eval(context: any): any;
-}
 
 interface PrefixParselet {
   parse(parser: Parser, token: Token): Atom;
@@ -161,200 +157,6 @@ const enum Precedence {
   MaximumPrecedence = 100
 }
 
-export class FhirPathAtom implements Atom {
-  constructor(
-    public readonly original: string,
-    public readonly child: Atom) { }
-
-  eval(context: any): any[] {
-    try {
-      const result = applyMaybeArray(context, e => this.child.eval(e));
-      if (Array.isArray(result)) {
-        return result.flat();
-      } else if (result === undefined || result === null) {
-        return [];
-      } else {
-        return [result];
-      }
-    } catch (error) {
-      throw new Error(`FhirPathError on "${this.original}": ${error}`);
-    }
-  }
-  toString(): string {
-    return this.child.toString();
-  }
-}
-
-class LiteralAtom implements Atom {
-  constructor(public readonly value: any) { }
-  eval(): any {
-    return this.value;
-  }
-  toString(): string {
-    return this.value.toString();
-  }
-}
-
-class SymbolAtom implements Atom {
-  constructor(public readonly name: string) { }
-  eval(context: any): any {
-    return applyMaybeArray(context, e => e.resourceType === this.name ? e : e[this.name]);
-  }
-  toString(): string {
-    return this.name;
-  }
-}
-
-class EmptySetAtom implements Atom {
-  eval(): any {
-    return [];
-  }
-}
-
-class UnaryOperatorAtom implements Atom {
-  constructor(
-    public readonly child: Atom,
-    public readonly impl: (x: any) => any) { }
-
-  eval(context: any): any {
-    return this.impl(this.child.eval(context));
-  }
-}
-
-class BinaryOperatorAtom implements Atom {
-  constructor(
-    public readonly left: Atom,
-    public readonly right: Atom,
-    public readonly impl: (x: any, y: any) => any) { }
-
-  eval(context: any): any {
-    // return this.impl(this.left.eval(context), this.right.eval(context));
-    const leftValue = this.left.eval(context);
-    const rightValue = this.right.eval(context);
-    // console.log('eval BinaryOperatorAtom', leftValue, rightValue, this.impl);
-    return applyMaybeArray(leftValue, (value) => this.impl(value, rightValue));
-    // return applyMaybeArray(x, (value) => fhirPathEquals(value, y));
-  }
-
-  toString(): string {
-    return '(' + this.left.toString() + ' ' + this.impl.toString() + ' ' + this.right.toString() + ')';
-  }
-}
-
-class DotAtom implements Atom {
-  constructor(public readonly left: Atom, public readonly right: Atom) { }
-  eval(context: any): Atom {
-    return this.right.eval(this.left.eval(context));
-  }
-  toString() {
-    return this.left.toString() + '.' + this.right.toString();
-  }
-}
-
-class UnionAtom implements Atom {
-  constructor(public readonly left: Atom, public readonly right: Atom) { }
-  eval(context: any): any {
-    const leftResult = this.left.eval(context);
-    const rightResult = this.right.eval(context);
-    if (leftResult && rightResult) {
-      return [leftResult, rightResult].flat();
-    }
-    return leftResult || rightResult;
-  }
-}
-
-class EqualsAtom implements Atom {
-  constructor(
-    public readonly left: Atom,
-    public readonly right: Atom) { }
-
-  eval(context: any): any {
-    // const typeName = (this.right as SymbolAtom).name;
-    // // return applyMaybeArray(this.left.eval(context), e => e?.resourceType === desiredResourceType ? e : undefined);
-    // return applyMaybeArray(this.left.eval(context), e => fhirPathIs(e, typeName));
-    // return toBoolean(this.left.eval(context)) || toBoolean(this.right.eval(context));
-    const leftValue = this.left.eval(context);
-    const rightValue = this.right.eval(context);
-    return fhirPathEquals(leftValue, rightValue);
-  }
-}
-
-class IsAtom implements Atom {
-  constructor(
-    public readonly left: Atom,
-    public readonly right: Atom) { }
-
-  eval(context: any): any {
-    const typeName = (this.right as SymbolAtom).name;
-    // return applyMaybeArray(this.left.eval(context), e => e?.resourceType === desiredResourceType ? e : undefined);
-    return applyMaybeArray(this.left.eval(context), e => fhirPathIs(e, typeName));
-  }
-}
-
-class OrAtom implements Atom {
-  constructor(
-    public readonly left: Atom,
-    public readonly right: Atom) { }
-
-  eval(context: any): any {
-    const leftValue = this.left.eval(context);
-    if (toBoolean(leftValue)) {
-      return leftValue;
-    }
-
-    const rightValue = this.right.eval(context);
-    if (toBoolean(rightValue)) {
-      return rightValue;
-    }
-
-    return [];
-  }
-}
-
-class XorAtom implements Atom {
-  constructor(
-    public readonly left: Atom,
-    public readonly right: Atom) { }
-
-  eval(context: any): any {
-    const leftValue = this.left.eval(context);
-    // if (toBoolean(leftValue)) {
-    //   return leftValue;
-    // }
-
-    const rightValue = this.right.eval(context);
-    // if (toBoolean(rightValue)) {
-    //   return rightValue;
-    // }
-    
-    const leftBoolean = toBoolean(leftValue);
-    const rightBoolean = toBoolean(rightValue);
-
-    if (leftBoolean !== rightBoolean) {
-      return true;
-    }
-    return [];
-
-    // return [];
-    // return toBoolean(leftValue) === toBoolean(rightValue) ? 
-  }
-}
-
-class FunctionAtom implements Atom {
-  constructor(
-    public readonly name: string,
-    public readonly args: Atom[],
-    public readonly impl: (context: any[], ...a: Atom[]) => any[]
-  ) { }
-  eval(context: any): any {
-    if (context === undefined) {
-      return undefined;
-    }
-    const input = Array.isArray(context) ? context : [context];
-    return this.impl(input, ...this.args);
-  }
-}
-
 const PARENTHESES_PARSELET: PrefixParselet = {
   parse(parser: Parser) {
     const expr = parser.parse();
@@ -368,7 +170,6 @@ const PARENTHESES_PARSELET: PrefixParselet = {
 const FUNCTION_CALL_PARSELET: InfixParselet = {
   parse(parser: Parser, left: Atom) {
     if (!(left instanceof SymbolAtom)) {
-      console.log('Wanted symbol atom, got', left, left.toString());
       throw new Error('Unexpected parentheses');
     }
 
@@ -379,6 +180,7 @@ const FUNCTION_CALL_PARSELET: InfixParselet = {
     const args = [];
     while (!parser.match(')')) {
       args.push(parser.parse());
+      parser.match(',');
     }
 
     return new FunctionAtom(left.name, args, functions[left.name]);
@@ -388,7 +190,8 @@ const FUNCTION_CALL_PARSELET: InfixParselet = {
 
 const parserBuilder = new ParserBuilder()
   .registerPrefix('String', { parse: (_, token) => new LiteralAtom(token.value.substring(1, token.value.length - 1)) })
-  .registerPrefix('DateTime', { parse: (_, token) => new LiteralAtom(new Date(token.value.substring(1))) })
+  // .registerPrefix('DateTime', { parse: (_, token) => new LiteralAtom(new Date(token.value.substring(1))) })
+  .registerPrefix('DateTime', { parse: (_, token) => new LiteralAtom(parseDateString(token.value.substring(1))) })
   .registerPrefix('Quantity', { parse: (_, token) => new LiteralAtom(parseFloat(token.value)) })
   .registerPrefix('Number', { parse: (_, token) => new LiteralAtom(parseFloat(token.value)) })
   .registerPrefix('Symbol', {
@@ -419,13 +222,14 @@ const parserBuilder = new ParserBuilder()
   //   console.log('equals', x, y, typeof x, typeof y, fhirPathEquals(x, y));
   //   return fhirPathEquals(x, y);
   // }))
-  .infixLeft('!=', Precedence.NotEquals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => !fhirPathEquals(x, y)))
+  // .infixLeft('!=', Precedence.NotEquals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => !fhirPathEquals(x, y)))
+  .infixLeft('!=', Precedence.Equals, (left, _, right) => new NotEqualsAtom(left, right))
   // .infixLeft('!=', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => {
   //   console.log('not equals', x, y, !fhirPathEquals(x, y));
   //   return !fhirPathEquals(x, y);
   // }))
-  .infixLeft('~', Precedence.Equivalent, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => stringify(x) === stringify(y)))
-  .infixLeft('!~', Precedence.NotEquivalent, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => stringify(x) !== stringify(y)))
+  .infixLeft('~', Precedence.Equivalent, (left, _, right) => new EquivalentAtom(left, right))
+  .infixLeft('!~', Precedence.NotEquivalent, (left, _, right) => new NotEquivalentAtom(left, right))
   // .infixLeft('!~', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => {
   //   console.log('not equivalent', x, y, stringify(x), stringify(y), stringify(x) !== stringify(y));
   //   // return x !== y;
@@ -439,22 +243,52 @@ const parserBuilder = new ParserBuilder()
   .infixLeft('<=', Precedence.LessThanOrEquals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x <= y))
   .infixLeft('>', Precedence.GreaterThan, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x > y))
   .infixLeft('>=', Precedence.GreaterThanOrEquals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x >= y))
+  // .infixLeft('>=', Precedence.GreaterThanOrEquals, (left, _, right) => {
+  //   return new BinaryOperatorAtom(left, right, (x, y) => { 
+  //     console.log('greater than or equal', x, y);
+  //     return x >= y;
+  //   });
+  // })
+  .infixLeft('&', Precedence.Ampersand, (left, _, right) => new ConcatAtom(left, right))
+  // .infixLeft('&', Precedence.Ampersand, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => {
+  //   console.log('concat', x, y);
+  //   const result = [];
+  //   if (x) {
+  //     if (Array.isArray(x)) {
+  //       result.push(...x);
+  //     } else {
+  //       result.push(x);
+  //     }
+  //   }
+  //   if (y) {
+  //     if (Array.isArray(y)) {
+  //       result.push(...y);
+  //     } else {
+  //       result.push(y);
+  //     }
+  //   }
+  //   return result;
+  // }))
   .infixLeft('Symbol', Precedence.Is, (left: Atom, symbol: Token, right: Atom) => {
     switch (symbol.value) {
       case 'and':
         return new BinaryOperatorAtom(left, right, (x, y) => x && y);
       case 'as':
         return new BinaryOperatorAtom(left, right, (x) => x);
+      case 'contains':
+        return new ContainsAtom(left, right);
       case 'div':
         return new BinaryOperatorAtom(left, right, (x, y) => (x / y) | 0);
+      case 'in':
+        return new InAtom(left, right);
       case 'is':
         return new IsAtom(left, right);
       case 'mod':
         return new BinaryOperatorAtom(left, right, (x, y) => x % y);
       case 'or':
         return new OrAtom(left, right);
-        case 'xor':
-          return new XorAtom(left, right);
+      case 'xor':
+        return new XorAtom(left, right);
       default:
         throw new Error('Cannot use ' + symbol.value + ' as infix operator');
     }
@@ -465,6 +299,7 @@ export function parseFhirPath(input: string): FhirPathAtom {
     // return new FhirPathAtom(input, parserBuilder.construct(input).parse());
     const result = new FhirPathAtom(input, parserBuilder.construct(input).parse());
     // console.log('result', result);
+    // console.log('result', JSON.stringify(result, undefined, 2));
     // console.log('result', result.toString());
     return result;
   } catch (error) {

@@ -1,4 +1,4 @@
-import { Atom } from './parse';
+import { Atom } from './atoms';
 import { fhirPathIs, toBoolean } from './utils';
 
 /**
@@ -415,7 +415,28 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
 
   convertsToQuantity: stub,
 
-  toString: stub,
+  /**
+   * Returns the string representation of the input.
+   * 
+   * If the input collection contains a single item, this function will return a single String if:
+   * 
+   *  1) the item in the input collection is a String
+   *  2) the item in the input collection is an Integer, Decimal, Date, Time, DateTime, or Quantity the output will contain its String representation
+   *  3) the item is a Boolean, where true results in 'true' and false in 'false'.
+   * 
+   * If the item is not one of the above types, the result is false.
+   * 
+   * See: https://hl7.org/fhirpath/#tostring-string
+   * 
+   * @param input The input collection.
+   * @returns The string representation of the input.
+   */
+  toString(input: any[]): string | boolean {
+    if (input.length === 0 || input.length > 1) {
+      return false;
+    }
+    return input[0].toString();
+  },
 
   convertsToString: stub,
 
@@ -451,7 +472,16 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
   },
 
   /**
-   *
+   * Returns the part of the string starting at position start (zero-based). If length is given, will return at most length number of characters from the input string.
+   * 
+   * If start lies outside the length of the string, the function returns empty ({ }). If there are less remaining characters in the string than indicated by length, the function returns just the remaining characters.
+   * 
+   * If the input or start is empty, the result is empty.
+   * 
+   * If an empty length is provided, the behavior is the same as if length had not been provided.
+   * 
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   * 
    * @param input The input collection.
    * @returns The index of the substring.
    */
@@ -776,6 +806,7 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
    */
 
   trace(input: any[], nameAtom: Atom): any[] {
+    console.log('trace', input, nameAtom);
     return input;
   },
 
@@ -840,7 +871,6 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
       }
       return null;
     });
-    console.log('type function', result);
     return result;
   },
 
@@ -875,7 +905,7 @@ function applyStringFunc<T>(func: (str: string, ...args: any[]) => T, input: any
   if (typeof value !== 'string') {
     throw new Error('String function cannot be called with non-string');
   }
-  return [func(value, argsAtoms.map(atom => atom.eval(undefined)))];
+  return [func(value, argsAtoms.map(atom => atom && atom.eval(undefined)))];
 }
 
 function applyMathFunc(func: (x: number, ...args: any[]) => number, input: any[], ...argsAtoms: Atom[]): number[] {

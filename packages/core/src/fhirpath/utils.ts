@@ -25,6 +25,10 @@ export function isEmptyArray(obj: any): boolean {
   return Array.isArray(obj) && obj.length === 0;
 }
 
+export function isFalsy(obj: any): boolean {
+  return !obj || isEmptyArray(obj);
+}
+
 /**
  * Converts any object into a boolean.
  * @param obj Any value or array of values.
@@ -42,6 +46,9 @@ export function toBoolean(obj: any): boolean {
  */
 export function fhirPathEquals(x: any, y: any): boolean | [] {
   // console.log('fhirPathEquals', x, y);
+  if (isFalsy(x) && isFalsy(y)) {
+    return true;
+  }
   if (isEmptyArray(x) || isEmptyArray(y)) {
     return [];
   }
