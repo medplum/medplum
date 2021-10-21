@@ -5,7 +5,7 @@ import { loadTestConfig } from '../config';
 import { MEDPLUM_CLIENT_APPLICATION_ID, MEDPLUM_PROJECT_ID } from '../constants';
 import { closeDatabase, initDatabase } from '../database';
 import { tryLogin } from '../oauth';
-import { createBatch } from './batch';
+import { processBatch } from './batch';
 import { getPatientId, getRepoForLogin, repo, Repository } from './repo';
 
 describe('FHIR Repo', () => {
@@ -668,15 +668,23 @@ describe('FHIR Repo', () => {
   });
 
   test('Filter and sort on same search parameter', async () => {
-    const [createOutcome, createBundle] = await createBatch(repo, {
+    const [createOutcome, createBundle] = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [{
+        request: {
+          method: 'POST',
+          url: 'Patient'
+        },
         resource: {
           resourceType: 'Patient',
           name: [{ given: ['Marge'], family: 'Simpson' }]
         }
       }, {
+        request: {
+          method: 'POST',
+          url: 'Patient'
+        },
         resource: {
           resourceType: 'Patient',
           name: [{ given: ['Homer'], family: 'Simpson' }]

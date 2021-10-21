@@ -1,8 +1,10 @@
-import { allOk, badRequest, Bundle, BundleEntry, getStatus, isOk } from '@medplum/core';
+import { allOk, badRequest, Bundle, BundleEntry, getReferenceString, getStatus, isOk, notFound, OperationOutcome, Resource } from '@medplum/core';
 import { randomUUID } from 'crypto';
+import { URL } from 'url';
 import { Repository, RepositoryResult } from './repo';
+import { parseSearchRequest } from './search';
 
-export async function createBatch(repo: Repository, bundle: Bundle): RepositoryResult<Bundle> {
+export async function processBatch(repo: Repository, bundle: Bundle): RepositoryResult<Bundle> {
   const bundleType = bundle.type;
   if (!bundleType) {
     return [badRequest('Missing bundle type'), undefined];
@@ -17,33 +19,118 @@ export async function createBatch(repo: Repository, bundle: Bundle): RepositoryR
     return [badRequest('Missing bundle entry'), undefined];
   }
 
-  const result: Bundle = {
-    resourceType: 'Bundle',
-    entry: []
-  };
-
   const ids = findIds(entries);
   const rewritten = rewriteIdsInObject(bundle, ids);
+  const resultEntries: BundleEntry[] = [];
 
   for (const entry of rewritten.entry) {
-    let resource = entry.resource;
-    if (!resource) {
-      continue;
-    }
-    if (!resource.id) {
-      resource = { ...resource, id: randomUUID() };
-    }
-    const [updateOutcome, updateResource] = await repo.updateResource(resource);
-    (result.entry as BundleEntry[]).push({
-      response: {
-        outcome: updateOutcome,
-        status: getStatus(updateOutcome).toString(),
-        location: isOk(updateOutcome) ? updateResource.resourceType + '/' + updateResource.id : undefined
-      }
-    });
+    resultEntries.push(await processBatchEntry(repo, entry));
   }
 
+  const result: Bundle = {
+    resourceType: 'Bundle',
+    entry: resultEntries
+  };
+
   return [allOk, result];
+}
+
+async function processBatchEntry(repo: Repository, entry: BundleEntry): Promise<BundleEntry> {
+  if (!entry.request) {
+    return buildBundleResponse(badRequest('Missing entry.request'));
+  }
+
+  if (!entry.request.method) {
+    return buildBundleResponse(badRequest('Missing entry.request.method'));
+  }
+
+  if (!entry.request.url) {
+    return buildBundleResponse(badRequest('Missing entry.request.url'));
+  }
+
+  // Pass in dummy host for parsing purposes.
+  // The host is ignored.
+  const url = new URL(entry.request.url, 'https://example.com/');
+
+  switch (entry.request.method) {
+    case 'GET':
+      return processGet(repo, entry, url);
+
+    case 'POST':
+      return processPost(repo, entry, url);
+
+    case 'PUT':
+      return processPut(repo, entry, url);
+
+    default:
+      return buildBundleResponse(badRequest('Unsupported entry.request.method'));
+  }
+}
+
+async function processGet(repo: Repository, entry: BundleEntry, url: URL): Promise<BundleEntry> {
+  const path = url.pathname.split('/');
+  if (path.length === 2) {
+    return processSearch(repo, url, path[1]);
+  }
+  if (path.length === 3) {
+    return processReadResource(repo, path[1], path[2]);
+  }
+  return buildBundleResponse(notFound);
+}
+
+async function processSearch(repo: Repository, url: URL, resourceType: string): Promise<BundleEntry> {
+  const query = Object.fromEntries(url.searchParams.entries()) as Record<string, string>;
+  const [outcome, bundle] = await repo.search(parseSearchRequest(resourceType, query));
+  return buildBundleResponse(outcome, bundle, true);
+}
+
+async function processReadResource(repo: Repository, resourceType: string, id: string): Promise<BundleEntry> {
+  const [outcome, resource] = await repo.readResource(resourceType, id);
+  return buildBundleResponse(outcome, resource, true);
+}
+
+async function processPost(repo: Repository, entry: BundleEntry, url: URL): Promise<BundleEntry> {
+  const path = url.pathname.split('/');
+  if (path.length === 2) {
+    return processCreateResource(repo, entry.resource);
+  }
+  return buildBundleResponse(notFound);
+}
+
+async function processCreateResource(repo: Repository, resource: Resource | undefined): Promise<BundleEntry> {
+  if (!resource) {
+    return buildBundleResponse(badRequest('Missing entry.resource'));
+  }
+
+  const [outcome, result] = await repo.createResource(resource);
+  return buildBundleResponse(outcome, result);
+}
+
+async function processPut(repo: Repository, entry: BundleEntry, url: URL): Promise<BundleEntry> {
+  const path = url.pathname.split('/');
+  if (path.length === 3) {
+    return processUpdateResource(repo, entry.resource);
+  }
+  return buildBundleResponse(notFound);
+}
+
+async function processUpdateResource(repo: Repository, resource: Resource | undefined): Promise<BundleEntry> {
+  if (!resource) {
+    return buildBundleResponse(badRequest('Missing entry.resource'));
+  }
+  const [outcome, result] = await repo.updateResource(resource);
+  return buildBundleResponse(outcome, result);
+}
+
+function buildBundleResponse(outcome: OperationOutcome, resource?: Resource, full?: boolean): BundleEntry {
+  return {
+    response: {
+      outcome: outcome,
+      status: getStatus(outcome).toString(),
+      location: isOk(outcome) && resource?.id ? getReferenceString(resource) : undefined
+    },
+    resource: (full && resource) || undefined
+  };
 }
 
 interface OutputId {
