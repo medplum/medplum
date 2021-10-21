@@ -672,11 +672,19 @@ describe('FHIR Repo', () => {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [{
+        request: {
+          method: 'GET',
+          url: 'Patient'
+        },
         resource: {
           resourceType: 'Patient',
           name: [{ given: ['Marge'], family: 'Simpson' }]
         }
       }, {
+        request: {
+          method: 'GET',
+          url: 'Patient'
+        },
         resource: {
           resourceType: 'Patient',
           name: [{ given: ['Homer'], family: 'Simpson' }]
