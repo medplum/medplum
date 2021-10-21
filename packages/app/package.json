@@ -1,6 +1,6 @@
 {
   "name": "@medplum/app",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "description": "Medplum App",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -24,8 +24,8 @@
     "@babel/preset-env": "7.15.8",
     "@babel/preset-react": "7.14.5",
     "@babel/preset-typescript": "7.15.0",
-    "@medplum/core": "0.1.6",
-    "@medplum/ui": "0.1.6",
+    "@medplum/core": "0.2.0",
+    "@medplum/ui": "0.2.0",
     "@testing-library/react": "12.1.2",
     "@types/react": "17.0.30",
     "@types/react-dom": "17.0.9",
