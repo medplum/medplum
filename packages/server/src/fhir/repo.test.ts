@@ -1,4 +1,4 @@
-import { AccessPolicy, Account, assertOk, ClientApplication, Communication, createReference, Encounter, getReferenceString, isOk, Login, Observation, Operator, Patient, Reference, RegisterRequest, SearchParameter, ServiceRequest } from '@medplum/core';
+import { AccessPolicy, assertOk, ClientApplication, Communication, createReference, Encounter, getReferenceString, isOk, Login, Observation, Operator, Patient, RegisterRequest, SearchParameter, ServiceRequest } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
@@ -6,7 +6,7 @@ import { MEDPLUM_CLIENT_APPLICATION_ID, MEDPLUM_PROJECT_ID } from '../constants'
 import { closeDatabase, initDatabase } from '../database';
 import { tryLogin } from '../oauth';
 import { processBatch } from './batch';
-import { getPatientId, getRepoForLogin, repo, Repository } from './repo';
+import { getRepoForLogin, repo, Repository } from './repo';
 
 describe('FHIR Repo', () => {
 
@@ -179,18 +179,6 @@ describe('FHIR Repo', () => {
     const [outcome4, resource4] = await repo.readReference({ reference: 'Patient/123/foo' });
     expect(outcome4.id).not.toBe('ok');
     expect(resource4).toBeUndefined();
-  });
-
-  test('getPatientId', () => {
-    expect(getPatientId({ subject: [] as Reference[] } as Account, ['subject'])).toBeUndefined();
-    expect(getPatientId({ subject: [{}] } as Account, ['subject'])).toBeUndefined();
-    expect(getPatientId({ subject: [{ reference: 'Device/123' }] } as Account, ['subject'])).toBeUndefined();
-    expect(getPatientId({ subject: [{ reference: 'Patient/123' }] } as Account, ['subject'])).toBe('123');
-
-    expect(getPatientId({} as Observation, ['subject'])).toBeUndefined();
-    expect(getPatientId({ subject: {} } as Observation, ['subject'])).toBeUndefined();
-    expect(getPatientId({ subject: { reference: 'Device/123' } } as Observation, ['subject'])).toBeUndefined();
-    expect(getPatientId({ subject: { reference: 'Patient/123' } } as Observation, ['subject'])).toBe('123');
   });
 
   test('Update patient', async () => {
