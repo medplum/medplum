@@ -190,7 +190,6 @@ describe('Batch', () => {
     expect(isOk(outcome)).toBe(true);
     expect(bundle).not.toBeUndefined();
     expect(bundle?.entry).not.toBeUndefined();
-    console.log(JSON.stringify(bundle, undefined, 2));
 
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
