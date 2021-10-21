@@ -673,7 +673,7 @@ describe('FHIR Repo', () => {
       type: 'batch',
       entry: [{
         request: {
-          method: 'GET',
+          method: 'POST',
           url: 'Patient'
         },
         resource: {
@@ -682,7 +682,7 @@ describe('FHIR Repo', () => {
         }
       }, {
         request: {
-          method: 'GET',
+          method: 'POST',
           url: 'Patient'
         },
         resource: {
