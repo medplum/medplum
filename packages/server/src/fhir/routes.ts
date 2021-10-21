@@ -4,7 +4,7 @@ import { graphqlHTTP } from 'express-graphql';
 import { Operation } from 'fast-json-patch';
 import { asyncWrap } from '../async';
 import { authenticateToken } from '../oauth';
-import { createBatch } from './batch';
+import { processBatch } from './batch';
 import { binaryRouter } from './binary';
 import { expandOperator } from './expand';
 import { getRootSchema } from './graphql';
@@ -74,7 +74,7 @@ fhirRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
     return;
   }
   const repo = res.locals.repo as Repository;
-  const [outcome, result] = await createBatch(repo, bundle);
+  const [outcome, result] = await processBatch(repo, bundle);
   assertOk(outcome);
   res.status(getStatus(outcome)).json(result);
 }));
