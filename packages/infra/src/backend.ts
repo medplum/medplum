@@ -42,7 +42,7 @@ export class BackEnd extends cdk.Construct {
       instanceProps: {
         vpc: vpc,
         vpcSubnets: {
-          subnetType: ec2.SubnetType.PRIVATE,
+          subnetType: ec2.SubnetType.PRIVATE_WITH_NAT,
         },
       }
     });
@@ -172,7 +172,7 @@ export class BackEnd extends cdk.Construct {
       taskDefinition: taskDefinition,
       assignPublicIp: false,
       vpcSubnets: {
-        subnetType: ec2.SubnetType.PRIVATE
+        subnetType: ec2.SubnetType.PRIVATE_WITH_NAT
       },
       desiredCount: 1,
       securityGroup: securityGroup,
