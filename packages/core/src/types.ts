@@ -22,7 +22,6 @@ export enum PropertyType {
   Distance = 'Distance',
   Dosage = 'Dosage',
   Duration = 'Duration',
-  ElementDefinition = 'ElementDefinition',
   Expression = 'Expression',
   Extension = 'Extension',
   HumanName = 'HumanName',
