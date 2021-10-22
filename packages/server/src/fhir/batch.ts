@@ -1,7 +1,7 @@
 import { allOk, badRequest, Bundle, BundleEntry, getReferenceString, getStatus, isOk, notFound, OperationOutcome, Resource } from '@medplum/core';
 import { URL } from 'url';
 import { Repository, RepositoryResult } from './repo';
-import { parseSearchRequest } from './search';
+import { parseSearchUrl } from './search';
 
 /**
  * Processes a FHIR batch request.
@@ -117,7 +117,7 @@ class BatchProcessor {
   private async processGet(url: URL): Promise<BundleEntry> {
     const path = url.pathname.split('/');
     if (path.length === 2) {
-      return this.processSearch(url, path[1]);
+      return this.processSearch(url);
     }
     if (path.length === 3) {
       return this.processReadResource(path[1], path[2]);
@@ -129,12 +129,10 @@ class BatchProcessor {
    * Process a batch search request.
    * @param repo The FHIR repository.
    * @param url The entry request URL.
-   * @param resourceType The FHIR resource type.
    * @returns The bundle entry response.
    */
-  private async processSearch(url: URL, resourceType: string): Promise<BundleEntry> {
-    const query = Object.fromEntries(url.searchParams.entries()) as Record<string, string>;
-    const [outcome, bundle] = await this.repo.search(parseSearchRequest(resourceType, query));
+  private async processSearch(url: URL): Promise<BundleEntry> {
+    const [outcome, bundle] = await this.repo.search(parseSearchUrl(url));
     return buildBundleResponse(outcome, bundle, true);
   }
 
@@ -167,6 +165,11 @@ class BatchProcessor {
 
   /**
    * Process a batch create request.
+   *
+   * Handles conditional create using "ifNoneExist".
+   *
+   * See: https://www.hl7.org/fhir/http.html#cond-update
+   *
    * @param entry The bundle entry.
    * @returns The bundle entry response.
    */
@@ -175,11 +178,44 @@ class BatchProcessor {
       return buildBundleResponse(badRequest('Missing entry.resource'));
     }
 
-    const [outcome, result] = await this.repo.createResource(entry.resource);
-    if (entry.fullUrl && isOk(outcome) && result) {
+    if (!entry.resource.resourceType) {
+      return buildBundleResponse(badRequest('Missing entry.resource.resourceType'));
+    }
+
+    let outcome: OperationOutcome | undefined = undefined;
+    let result: Resource | undefined = undefined;
+
+    if (entry.request?.ifNoneExist) {
+      const baseUrl = `https://example.com/${entry.resource.resourceType}`;
+      const searchUrl = new URL('?' + entry.request.ifNoneExist, baseUrl);
+      const [searchOutcome, searchBundle] = await this.repo.search(parseSearchUrl(searchUrl));
+      if (!isOk(searchOutcome)) {
+        return buildBundleResponse(searchOutcome);
+      }
+      const entries = searchBundle?.entry as BundleEntry[];
+      if (entries.length > 1) {
+        return buildBundleResponse(badRequest('Multiple matches'));
+      }
+      if (entries.length === 1) {
+        outcome = allOk;
+        result = entries[0].resource;
+      }
+    }
+
+    if (!result) {
+      const [createOutcome, createResult] = await this.repo.createResource(entry.resource);
+      if (!isOk(createOutcome)) {
+        return buildBundleResponse(createOutcome);
+      }
+      outcome = createOutcome;
+      result = createResult;
+    }
+
+    if (entry.fullUrl && result) {
       this.addReplacementId(entry.fullUrl, result);
     }
-    return buildBundleResponse(outcome, result);
+
+    return buildBundleResponse(outcome as OperationOutcome, result);
   }
 
   /**
@@ -211,25 +247,17 @@ class BatchProcessor {
   }
 
   private addReplacementId(fullUrl: string, resource: Resource): void {
-    if (!fullUrl?.startsWith('urn:uuid:')) {
-      return;
+    if (fullUrl?.startsWith('urn:uuid:')) {
+      this.ids[fullUrl] = resource;
     }
-
-    const inputId = fullUrl.substring('urn:uuid:'.length);
-
-    // Direct ID: replace local value with generated ID
-    this.ids[inputId] = resource;
-
-    // Reference: replace prefixed value with reference string
-    this.ids[fullUrl] = resource;
   }
 
-  private rewriteIds(input: any, forceFull?: boolean): any {
+  private rewriteIds(input: any): any {
     if (Array.isArray(input)) {
       return this.rewriteIdsInArray(input);
     }
     if (typeof input === 'string') {
-      return this.rewriteIdsInString(input, forceFull);
+      return this.rewriteIdsInString(input);
     }
     if (typeof input === 'object') {
       return this.rewriteIdsInObject(input);
@@ -243,22 +271,13 @@ class BatchProcessor {
 
   private rewriteIdsInObject(input: any): any {
     return Object.fromEntries(
-      Object.entries(input).map(
-        ([k, v]) => [k, this.rewriteIds(v, k === 'reference')]
-      )
+      Object.entries(input).map(([k, v]) => [k, this.rewriteIds(v)])
     );
   }
 
-  private rewriteIdsInString(input: string, forceFull?: boolean) {
+  private rewriteIdsInString(input: string) {
     const resource = this.ids[input];
-    if (!resource) {
-      return input;
-    }
-    if (input.startsWith('urn:uuid:') || forceFull) {
-      return `${resource.resourceType}/${resource.id}`
-    } else {
-      return resource.id;
-    }
+    return resource ? getReferenceString(resource) : input;
   }
 }
 
