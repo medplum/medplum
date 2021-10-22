@@ -1,125 +1,284 @@
 import { allOk, badRequest, Bundle, BundleEntry, getReferenceString, getStatus, isOk, notFound, OperationOutcome, Resource } from '@medplum/core';
-import { randomUUID } from 'crypto';
 import { URL } from 'url';
 import { Repository, RepositoryResult } from './repo';
-import { parseSearchRequest } from './search';
+import { parseSearchUrl } from './search';
 
+/**
+ * Processes a FHIR batch request.
+ *
+ * See: https://www.hl7.org/fhir/http.html#transaction
+ *
+ * @param repo The FHIR repository.
+ * @param bundle The input bundle.
+ * @returns The bundle response.
+ */
 export async function processBatch(repo: Repository, bundle: Bundle): RepositoryResult<Bundle> {
-  const bundleType = bundle.type;
-  if (!bundleType) {
-    return [badRequest('Missing bundle type'), undefined];
-  }
-
-  if (bundleType !== 'batch' && bundleType !== 'transaction') {
-    return [badRequest('Unrecognized bundle type'), undefined];
-  }
-
-  const entries = bundle.entry;
-  if (!entries) {
-    return [badRequest('Missing bundle entry'), undefined];
-  }
-
-  const ids = findIds(entries);
-  const rewritten = rewriteIdsInObject(bundle, ids);
-  const resultEntries: BundleEntry[] = [];
-
-  for (const entry of rewritten.entry) {
-    resultEntries.push(await processBatchEntry(repo, entry));
-  }
-
-  const result: Bundle = {
-    resourceType: 'Bundle',
-    entry: resultEntries
-  };
-
-  return [allOk, result];
+  return new BatchProcessor(repo, bundle).processBatch();
 }
 
-async function processBatchEntry(repo: Repository, entry: BundleEntry): Promise<BundleEntry> {
-  if (!entry.request) {
-    return buildBundleResponse(badRequest('Missing entry.request'));
+/**
+ * The BatchProcessor class contains the state for processing a batch/transaction bundle.
+ * In particular, it tracks rewritten ID's as necessary.
+ */
+class BatchProcessor {
+  private readonly ids: Record<string, Resource>;
+
+  /**
+   * Creates a batch processor.
+   * @param repo The FHIR repository.
+   * @param bundle The input bundle.
+   */
+  constructor(
+    private readonly repo: Repository,
+    private readonly bundle: Bundle
+  ) {
+    this.ids = {};
   }
 
-  if (!entry.request.method) {
-    return buildBundleResponse(badRequest('Missing entry.request.method'));
+  /**
+   * Processes a FHIR batch request.
+   * @param repo The FHIR repository.
+   * @param bundle The input bundle.
+   * @returns The bundle response.
+   */
+  async processBatch(): RepositoryResult<Bundle> {
+    const bundleType = this.bundle.type;
+    if (!bundleType) {
+      return [badRequest('Missing bundle type'), undefined];
+    }
+
+    if (bundleType !== 'batch' && bundleType !== 'transaction') {
+      return [badRequest('Unrecognized bundle type'), undefined];
+    }
+
+    const entries = this.bundle.entry;
+    if (!entries) {
+      return [badRequest('Missing bundle entry'), undefined];
+    }
+
+    const resultEntries: BundleEntry[] = [];
+    for (const entry of entries) {
+      const rewritten = this.rewriteIdsInObject(entry);
+      resultEntries.push(await this.processBatchEntry(rewritten));
+    }
+
+    const result: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch-response',
+      entry: resultEntries
+    };
+
+    return [allOk, result];
   }
 
-  if (!entry.request.url) {
-    return buildBundleResponse(badRequest('Missing entry.request.url'));
+  /**
+   * Processes a single entry from a FHIR batch request.
+   * @param entry The bundle entry.
+   * @returns The bundle entry response.
+   */
+  private async processBatchEntry(entry: BundleEntry): Promise<BundleEntry> {
+    if (!entry.request) {
+      return buildBundleResponse(badRequest('Missing entry.request'));
+    }
+
+    if (!entry.request.method) {
+      return buildBundleResponse(badRequest('Missing entry.request.method'));
+    }
+
+    if (!entry.request.url) {
+      return buildBundleResponse(badRequest('Missing entry.request.url'));
+    }
+
+    // Pass in dummy host for parsing purposes.
+    // The host is ignored.
+    const url = new URL(entry.request.url, 'https://example.com/');
+
+    switch (entry.request.method) {
+      case 'GET':
+        return this.processGet(url);
+
+      case 'POST':
+        return this.processPost(entry, url);
+
+      case 'PUT':
+        return this.processPut(entry, url);
+
+      default:
+        return buildBundleResponse(badRequest('Unsupported entry.request.method'));
+    }
   }
 
-  // Pass in dummy host for parsing purposes.
-  // The host is ignored.
-  const url = new URL(entry.request.url, 'https://example.com/');
-
-  switch (entry.request.method) {
-    case 'GET':
-      return processGet(repo, entry, url);
-
-    case 'POST':
-      return processPost(repo, entry, url);
-
-    case 'PUT':
-      return processPut(repo, entry, url);
-
-    default:
-      return buildBundleResponse(badRequest('Unsupported entry.request.method'));
-  }
-}
-
-async function processGet(repo: Repository, entry: BundleEntry, url: URL): Promise<BundleEntry> {
-  const path = url.pathname.split('/');
-  if (path.length === 2) {
-    return processSearch(repo, url, path[1]);
-  }
-  if (path.length === 3) {
-    return processReadResource(repo, path[1], path[2]);
-  }
-  return buildBundleResponse(notFound);
-}
-
-async function processSearch(repo: Repository, url: URL, resourceType: string): Promise<BundleEntry> {
-  const query = Object.fromEntries(url.searchParams.entries()) as Record<string, string>;
-  const [outcome, bundle] = await repo.search(parseSearchRequest(resourceType, query));
-  return buildBundleResponse(outcome, bundle, true);
-}
-
-async function processReadResource(repo: Repository, resourceType: string, id: string): Promise<BundleEntry> {
-  const [outcome, resource] = await repo.readResource(resourceType, id);
-  return buildBundleResponse(outcome, resource, true);
-}
-
-async function processPost(repo: Repository, entry: BundleEntry, url: URL): Promise<BundleEntry> {
-  const path = url.pathname.split('/');
-  if (path.length === 2) {
-    return processCreateResource(repo, entry.resource);
-  }
-  return buildBundleResponse(notFound);
-}
-
-async function processCreateResource(repo: Repository, resource: Resource | undefined): Promise<BundleEntry> {
-  if (!resource) {
-    return buildBundleResponse(badRequest('Missing entry.resource'));
+  /**
+   * Process a batch GET request.
+   * This dispatches to search, read, etc.
+   * @param url The entry request URL.
+   * @returns The bundle entry response.
+   */
+  private async processGet(url: URL): Promise<BundleEntry> {
+    const path = url.pathname.split('/');
+    if (path.length === 2) {
+      return this.processSearch(url);
+    }
+    if (path.length === 3) {
+      return this.processReadResource(path[1], path[2]);
+    }
+    return buildBundleResponse(notFound);
   }
 
-  const [outcome, result] = await repo.createResource(resource);
-  return buildBundleResponse(outcome, result);
-}
-
-async function processPut(repo: Repository, entry: BundleEntry, url: URL): Promise<BundleEntry> {
-  const path = url.pathname.split('/');
-  if (path.length === 3) {
-    return processUpdateResource(repo, entry.resource);
+  /**
+   * Process a batch search request.
+   * @param repo The FHIR repository.
+   * @param url The entry request URL.
+   * @returns The bundle entry response.
+   */
+  private async processSearch(url: URL): Promise<BundleEntry> {
+    const [outcome, bundle] = await this.repo.search(parseSearchUrl(url));
+    return buildBundleResponse(outcome, bundle, true);
   }
-  return buildBundleResponse(notFound);
-}
 
-async function processUpdateResource(repo: Repository, resource: Resource | undefined): Promise<BundleEntry> {
-  if (!resource) {
-    return buildBundleResponse(badRequest('Missing entry.resource'));
+  /**
+   * Process a batch read request.
+   * @param repo The FHIR respostory.
+   * @param resourceType The FHIR resource type.
+   * @param id The FHIR resource ID.
+   * @returns The bundle entry response.
+   */
+  private async processReadResource(resourceType: string, id: string): Promise<BundleEntry> {
+    const [outcome, resource] = await this.repo.readResource(resourceType, id);
+    return buildBundleResponse(outcome, resource, true);
   }
-  const [outcome, result] = await repo.updateResource(resource);
-  return buildBundleResponse(outcome, result);
+
+  /**
+   * Process a batch POST request.
+   * This dispatches to create, etc.
+   * @param entry The bundle entry.
+   * @param url The entry request URL.
+   * @returns The bundle entry response.
+   */
+  private async processPost(entry: BundleEntry, url: URL): Promise<BundleEntry> {
+    const path = url.pathname.split('/');
+    if (path.length === 2) {
+      return this.processCreateResource(entry);
+    }
+    return buildBundleResponse(notFound);
+  }
+
+  /**
+   * Process a batch create request.
+   *
+   * Handles conditional create using "ifNoneExist".
+   *
+   * See: https://www.hl7.org/fhir/http.html#cond-update
+   *
+   * @param entry The bundle entry.
+   * @returns The bundle entry response.
+   */
+  private async processCreateResource(entry: BundleEntry): Promise<BundleEntry> {
+    if (!entry.resource) {
+      return buildBundleResponse(badRequest('Missing entry.resource'));
+    }
+
+    if (!entry.resource.resourceType) {
+      return buildBundleResponse(badRequest('Missing entry.resource.resourceType'));
+    }
+
+    let outcome: OperationOutcome | undefined = undefined;
+    let result: Resource | undefined = undefined;
+
+    if (entry.request?.ifNoneExist) {
+      const baseUrl = `https://example.com/${entry.resource.resourceType}`;
+      const searchUrl = new URL('?' + entry.request.ifNoneExist, baseUrl);
+      const [searchOutcome, searchBundle] = await this.repo.search(parseSearchUrl(searchUrl));
+      if (!isOk(searchOutcome)) {
+        return buildBundleResponse(searchOutcome);
+      }
+      const entries = searchBundle?.entry as BundleEntry[];
+      if (entries.length > 1) {
+        return buildBundleResponse(badRequest('Multiple matches'));
+      }
+      if (entries.length === 1) {
+        outcome = allOk;
+        result = entries[0].resource;
+      }
+    }
+
+    if (!result) {
+      const [createOutcome, createResult] = await this.repo.createResource(entry.resource);
+      if (!isOk(createOutcome)) {
+        return buildBundleResponse(createOutcome);
+      }
+      outcome = createOutcome;
+      result = createResult;
+    }
+
+    if (entry.fullUrl && result) {
+      this.addReplacementId(entry.fullUrl, result);
+    }
+
+    return buildBundleResponse(outcome as OperationOutcome, result);
+  }
+
+  /**
+   * Process a batch PUT request.
+   * This dispatches to update, etc.
+   * @param entry The bundle entry.
+   * @param url The entry request URL.
+   * @returns The bundle entry response.
+   */
+  private async processPut(entry: BundleEntry, url: URL): Promise<BundleEntry> {
+    const path = url.pathname.split('/');
+    if (path.length === 3) {
+      return this.processUpdateResource(entry.resource);
+    }
+    return buildBundleResponse(notFound);
+  }
+
+  /**
+   * Process a batch update request.
+   * @param resource The FHIR resource.
+   * @returns The bundle entry response.
+   */
+  private async processUpdateResource(resource: Resource | undefined): Promise<BundleEntry> {
+    if (!resource) {
+      return buildBundleResponse(badRequest('Missing entry.resource'));
+    }
+    const [outcome, result] = await this.repo.updateResource(resource);
+    return buildBundleResponse(outcome, result);
+  }
+
+  private addReplacementId(fullUrl: string, resource: Resource): void {
+    if (fullUrl?.startsWith('urn:uuid:')) {
+      this.ids[fullUrl] = resource;
+    }
+  }
+
+  private rewriteIds(input: any): any {
+    if (Array.isArray(input)) {
+      return this.rewriteIdsInArray(input);
+    }
+    if (typeof input === 'string') {
+      return this.rewriteIdsInString(input);
+    }
+    if (typeof input === 'object') {
+      return this.rewriteIdsInObject(input);
+    }
+    return input;
+  }
+
+  private rewriteIdsInArray(input: any[]): any[] {
+    return input.map(item => this.rewriteIds(item));
+  }
+
+  private rewriteIdsInObject(input: any): any {
+    return Object.fromEntries(
+      Object.entries(input).map(([k, v]) => [k, this.rewriteIds(v)])
+    );
+  }
+
+  private rewriteIdsInString(input: string) {
+    const resource = this.ids[input];
+    return resource ? getReferenceString(resource) : input;
+  }
 }
 
 function buildBundleResponse(outcome: OperationOutcome, resource?: Resource, full?: boolean): BundleEntry {
@@ -131,76 +290,4 @@ function buildBundleResponse(outcome: OperationOutcome, resource?: Resource, ful
     },
     resource: (full && resource) || undefined
   };
-}
-
-interface OutputId {
-  resourceType: string;
-  id: string;
-}
-
-function findIds(entries: BundleEntry[]): Record<string, OutputId> {
-  const result: Record<string, OutputId> = {};
-
-  for (const entry of entries) {
-    const resource = entry.resource;
-    if (!resource) {
-      continue;
-    }
-
-    const fullUrl = entry.fullUrl;
-    if (!fullUrl?.startsWith('urn:uuid:')) {
-      continue;
-    }
-
-    const inputId = fullUrl.substring('urn:uuid:'.length);
-    const output = {
-      resourceType: resource.resourceType,
-      id: randomUUID()
-    };
-
-    // Direct ID: replace local value with generated ID
-    result[inputId] = output;
-
-    // Reference: replace prefixed value with reference string
-    result[fullUrl] = output;
-  }
-
-  return result;
-}
-
-function rewriteIds(input: any, ids: Record<string, OutputId>, forceFull?: boolean): any {
-  if (Array.isArray(input)) {
-    return rewriteIdsInArray(input, ids);
-  }
-  if (typeof input === 'string') {
-    return rewriteIdsInString(input, ids, forceFull);
-  }
-  if (typeof input === 'object') {
-    return rewriteIdsInObject(input, ids);
-  }
-  return input;
-}
-
-function rewriteIdsInArray(input: any[], ids: Record<string, OutputId>): any[] {
-  return input.map(item => rewriteIds(item, ids));
-}
-
-function rewriteIdsInObject(input: any, ids: Record<string, OutputId>): any {
-  return Object.fromEntries(
-    Object.entries(input).map(
-      ([k, v]) => [k, rewriteIds(v, ids, k === 'reference')]
-    )
-  );
-}
-
-function rewriteIdsInString(input: string, ids: Record<string, OutputId>, forceFull?: boolean) {
-  const resource = ids[input];
-  if (!resource) {
-    return input;
-  }
-  if (input.startsWith('urn:uuid:') || forceFull) {
-    return `${resource.resourceType}/${resource.id}`
-  } else {
-    return resource.id;
-  }
 }

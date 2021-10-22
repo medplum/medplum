@@ -1,5 +1,6 @@
-import { assertOk, Bundle, BundleEntry, isOk, OperationOutcome, Patient } from '@medplum/core';
+import { assertOk, Bundle, BundleEntry, isOk, Observation, OperationOutcome, Patient } from '@medplum/core';
 import { randomUUID } from 'crypto';
+import { Repository } from '.';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { processBatch } from './batch';
@@ -49,10 +50,28 @@ describe('Batch', () => {
   });
 
   test('Process batch success', async () => {
+    const authorId = randomUUID();
+    const projectId = randomUUID();
     const patientId = randomUUID();
     const observationId = randomUUID();
 
-    const [outcome, bundle] = await processBatch(repo, {
+    // Be sure to act as a user without 'write meta' permissions.
+    // Need to verify that normal users can link urn:uuid requests.
+    const userRepo = new Repository({
+      author: {
+        reference: 'Practitioner/' + authorId
+      },
+      project: projectId,
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [
+          { resourceType: 'Patient' },
+          { resourceType: 'Observation' }
+        ]
+      }
+    });
+
+    const [outcome, bundle] = await processBatch(userRepo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -77,7 +96,7 @@ describe('Batch', () => {
             resourceType: 'Observation',
             id: observationId,
             subject: {
-              reference: 'Patient/' + patientId
+              reference: 'urn:uuid:' + patientId
             },
             code: {
               text: 'test'
@@ -103,6 +122,7 @@ describe('Batch', () => {
 
     expect(isOk(outcome)).toBe(true);
     expect(bundle).not.toBeUndefined();
+    expect(bundle?.type).toEqual('batch-response');
     expect(bundle?.entry).not.toBeUndefined();
 
     const results = bundle?.entry as BundleEntry[];
@@ -113,6 +133,15 @@ describe('Batch', () => {
     expect(results[2].resource).not.toBeUndefined();
     expect((results[2].resource as Bundle).entry?.length).toEqual(1);
     expect(results[3].response?.status).toEqual('404');
+
+    const [patientOutcome, patient] = await userRepo.readReference({ reference: results[0].response?.location as string });
+    expect(isOk(patientOutcome)).toBe(true);
+    expect(patient).not.toBeUndefined();
+
+    const [observationOutcome, observation] = await userRepo.readReference({ reference: results[1].response?.location as string });
+    expect(isOk(observationOutcome)).toBe(true);
+    expect(observation).not.toBeUndefined();
+    expect((observation as Observation).subject?.reference).toEqual('Patient/' + patient?.id);
   });
 
   test('Process batch create success', async () => {
@@ -162,6 +191,265 @@ describe('Batch', () => {
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
+  });
+
+  test('Process batch create missing resourceType', async () => {
+    const [outcome, bundle] = await processBatch(repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'POST',
+            url: 'Patient'
+          },
+          resource: {} as any
+        }
+      ]
+    });
+
+    expect(isOk(outcome)).toBe(true);
+    expect(bundle).not.toBeUndefined();
+    expect(bundle?.entry).not.toBeUndefined();
+
+    const results = bundle?.entry as BundleEntry[];
+    expect(results.length).toEqual(1);
+    expect(results[0].response?.status).toEqual('400');
+  });
+
+  test('Process batch create missing required properties', async () => {
+    const [outcome, bundle] = await processBatch(repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'POST',
+            url: 'Observation'
+          },
+          resource: {
+            resourceType: 'Observation'
+          }
+        }
+      ]
+    });
+
+    expect(isOk(outcome)).toBe(true);
+    expect(bundle).not.toBeUndefined();
+    expect(bundle?.entry).not.toBeUndefined();
+
+    const results = bundle?.entry as BundleEntry[];
+    expect(results.length).toEqual(1);
+    expect(results[0].response?.status).toEqual('400');
+  });
+
+  test('Process batch create ignore http fullUrl', async () => {
+    const [outcome, bundle] = await processBatch(repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          fullUrl: 'https://example.com/ignore-this',
+          request: {
+            method: 'POST',
+            url: 'Patient'
+          },
+          resource: {
+            resourceType: 'Patient'
+          }
+        }
+      ]
+    });
+
+    expect(isOk(outcome)).toBe(true);
+    expect(bundle).not.toBeUndefined();
+    expect(bundle?.entry).not.toBeUndefined();
+
+    const results = bundle?.entry as BundleEntry[];
+    expect(results.length).toEqual(1);
+    expect(results[0].response?.status).toEqual('201');
+  });
+
+  test('Process batch create does not rewrite identifier', async () => {
+    const id = randomUUID();
+
+    const [outcome, bundle] = await processBatch(repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          fullUrl: 'urn:uuid:' + id,
+          request: {
+            method: 'POST',
+            url: 'Patient'
+          },
+          resource: {
+            resourceType: 'Patient',
+            id,
+            identifier: [{
+              system: 'https://github.com/synthetichealth/synthea',
+              value: id
+            }]
+          }
+        }
+      ]
+    });
+
+    expect(isOk(outcome)).toBe(true);
+    expect(bundle).not.toBeUndefined();
+    expect(bundle?.entry).not.toBeUndefined();
+
+    const results = bundle?.entry as BundleEntry[];
+    expect(results.length).toEqual(1);
+    expect(results[0].response?.status).toEqual('201');
+
+    const [readOutcome, readResult] = await repo.readReference({ reference: results[0].response?.location as string });
+    expect(isOk(readOutcome)).toBe(true);
+    expect(readResult).not.toBeUndefined();
+    expect((readResult as Patient).identifier?.[0]?.value).toEqual(id);
+  });
+
+  test('Process batch create ifNoneExist success', async () => {
+    const identifier = randomUUID();
+
+    const [outcome, bundle] = await processBatch(repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'POST',
+            url: 'Patient',
+            ifNoneExist: 'identifier=' + identifier
+          },
+          resource: {
+            resourceType: 'Patient',
+            identifier: [{
+              system: 'test',
+              value: identifier
+            }]
+          }
+        },
+        {
+          request: {
+            method: 'POST',
+            url: 'Patient',
+            ifNoneExist: 'identifier=' + identifier
+          },
+          resource: {
+            resourceType: 'Patient',
+            identifier: [{
+              system: 'test',
+              value: identifier
+            }]
+          }
+        }
+      ]
+    });
+
+    expect(isOk(outcome)).toBe(true);
+    expect(bundle).not.toBeUndefined();
+    expect(bundle?.entry).not.toBeUndefined();
+
+    const results = bundle?.entry as BundleEntry[];
+    expect(results.length).toEqual(2);
+    expect(results[0].response?.status).toEqual('201');
+    expect(results[1].response?.status).toEqual('200');
+    expect(results[1].response?.location).toEqual(results[0].response?.location);
+  });
+
+  test('Process batch create ifNoneExist invalid resource type', async () => {
+    const identifier = randomUUID();
+
+    const [outcome, bundle] = await processBatch(repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'POST',
+            url: 'XXX',
+            ifNoneExist: 'identifier=' + identifier
+          },
+          resource: {
+            resourceType: 'XXX'
+          } as any
+        }
+      ]
+    });
+
+    expect(isOk(outcome)).toBe(true);
+    expect(bundle).not.toBeUndefined();
+    expect(bundle?.entry).not.toBeUndefined();
+
+    const results = bundle?.entry as BundleEntry[];
+    expect(results.length).toEqual(1);
+    expect(results[0].response?.status).toEqual('400');
+  });
+
+  test('Process batch create ifNoneExist multiple matches', async () => {
+    const identifier = randomUUID();
+
+    // This is a bit contrived...
+    // First, intentionally create 2 patients with duplicate identifiers
+    // Then, the 3rd entry use ifNoneExists
+    // The search will return 2 patients, which causes the entry to fail
+    const [outcome, bundle] = await processBatch(repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'POST',
+            url: 'Patient'
+          },
+          resource: {
+            resourceType: 'Patient',
+            identifier: [{
+              system: 'test',
+              value: identifier
+            }]
+          }
+        },
+        {
+          request: {
+            method: 'POST',
+            url: 'Patient'
+          },
+          resource: {
+            resourceType: 'Patient',
+            identifier: [{
+              system: 'test',
+              value: identifier
+            }]
+          }
+        },
+        {
+          request: {
+            method: 'POST',
+            url: 'Patient',
+            ifNoneExist: 'identifier=' + identifier
+          },
+          resource: {
+            resourceType: 'Patient',
+            identifier: [{
+              system: 'test',
+              value: identifier
+            }]
+          }
+        }
+      ]
+    });
+
+    expect(isOk(outcome)).toBe(true);
+    expect(bundle).not.toBeUndefined();
+    expect(bundle?.entry).not.toBeUndefined();
+
+    const results = bundle?.entry as BundleEntry[];
+    expect(results.length).toEqual(3);
+    expect(results[0].response?.status).toEqual('201');
+    expect(results[1].response?.status).toEqual('201');
+    expect(results[2].response?.status).toEqual('400');
   });
 
   test('Process batch update', async () => {
