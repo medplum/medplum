@@ -1,5 +1,6 @@
-import { assertOk, Bundle, BundleEntry, isOk, OperationOutcome, Patient } from '@medplum/core';
+import { assertOk, Bundle, BundleEntry, isOk, Observation, OperationOutcome, Patient } from '@medplum/core';
 import { randomUUID } from 'crypto';
+import { Repository } from '.';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { processBatch } from './batch';
@@ -49,10 +50,28 @@ describe('Batch', () => {
   });
 
   test('Process batch success', async () => {
+    const authorId = randomUUID();
+    const projectId = randomUUID();
     const patientId = randomUUID();
     const observationId = randomUUID();
 
-    const [outcome, bundle] = await processBatch(repo, {
+    // Be sure to act as a user without "write meta" permissions.
+    // Need to verify that normal users can link urn:uuid requests.
+    const userRepo = new Repository({
+      author: {
+        reference: 'Practitioner/' + authorId
+      },
+      project: projectId,
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [
+          { resourceType: 'Patient' },
+          { resourceType: 'Observation' }
+        ]
+      }
+    });
+
+    const [outcome, bundle] = await processBatch(userRepo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -77,7 +96,7 @@ describe('Batch', () => {
             resourceType: 'Observation',
             id: observationId,
             subject: {
-              reference: 'Patient/' + patientId
+              reference: 'urn:uuid:' + patientId
             },
             code: {
               text: 'test'
@@ -103,6 +122,7 @@ describe('Batch', () => {
 
     expect(isOk(outcome)).toBe(true);
     expect(bundle).not.toBeUndefined();
+    expect(bundle?.type).toEqual('batch-response');
     expect(bundle?.entry).not.toBeUndefined();
 
     const results = bundle?.entry as BundleEntry[];
@@ -113,6 +133,15 @@ describe('Batch', () => {
     expect(results[2].resource).not.toBeUndefined();
     expect((results[2].resource as Bundle).entry?.length).toEqual(1);
     expect(results[3].response?.status).toEqual('404');
+
+    const [patientOutcome, patient] = await userRepo.readReference({ reference: results[0].response?.location as string });
+    expect(isOk(patientOutcome)).toBe(true);
+    expect(patient).not.toBeUndefined();
+
+    const [observationOutcome, observation] = await userRepo.readReference({ reference: results[1].response?.location as string });
+    expect(isOk(observationOutcome)).toBe(true);
+    expect(observation).not.toBeUndefined();
+    expect((observation as Observation).subject?.reference).toEqual('Patient/' + patient?.id);
   });
 
   test('Process batch create success', async () => {
