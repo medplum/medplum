@@ -27,8 +27,21 @@ export class BackEnd extends cdk.Construct {
 
     const name = 'prod';
 
+    // VPC Flow Logs
+    const vpcFlowLogs = new logs.LogGroup(this, 'VpcFlowLogs', {
+      logGroupName: '/medplum/flowlogs/' + name,
+      removalPolicy: cdk.RemovalPolicy.DESTROY
+    });
+
     // VPC
-    const vpc = new ec2.Vpc(this, 'VPC');
+    const vpc = new ec2.Vpc(this, 'VPC', {
+      flowLogs: {
+        'cloudwatch': {
+          destination: ec2.FlowLogDestination.toCloudWatchLogs(vpcFlowLogs),
+          trafficType: ec2.FlowLogTrafficType.ALL
+        }
+      }
+    });
 
     // RDS
     const rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
@@ -44,10 +57,9 @@ export class BackEnd extends cdk.Construct {
         vpcSubnets: {
           subnetType: ec2.SubnetType.PRIVATE_WITH_NAT,
         },
-      }
+      },
+      cloudwatchLogsExports: ['postgresql']
     });
-
-    rdsCluster.connections.allowDefaultPortFromAnyIpv4();
 
     // Redis
     // Important: For HIPAA compliance, you must specify TransitEncryptionEnabled as true, an AuthToken, and a CacheSubnetGroup.
@@ -61,7 +73,6 @@ export class BackEnd extends cdk.Construct {
       description: 'Redis Security Group',
       allowAllOutbound: false,
     });
-    redisSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(6379));
 
     const redisPassword = new secretsmanager.Secret(this, 'RedisPassword', {
       generateSecretString: {
@@ -160,7 +171,7 @@ export class BackEnd extends cdk.Construct {
     });
 
     // Security Groups
-    const securityGroup = new ec2.SecurityGroup(this, 'ServiceSecurityGroup', {
+    const fargateSecurityGroup = new ec2.SecurityGroup(this, 'ServiceSecurityGroup', {
       allowAllOutbound: true,
       securityGroupName: 'MedplumSecurityGroup',
       vpc: vpc,
@@ -175,7 +186,7 @@ export class BackEnd extends cdk.Construct {
         subnetType: ec2.SubnetType.PRIVATE_WITH_NAT
       },
       desiredCount: 1,
-      securityGroup: securityGroup,
+      securityGroup: fargateSecurityGroup,
     });
 
     // Load Balancer Target Group
@@ -198,16 +209,6 @@ export class BackEnd extends cdk.Construct {
       http2Enabled: true
     });
 
-    // HTTP Listener
-    // Redirect HTTP to HTTPS
-    loadBalancer.addListener('HttpListener', {
-      port: 80,
-      defaultAction: elbv2.ListenerAction.redirect({
-        protocol: 'HTTPS',
-        port: '443'
-      })
-    });
-
     // HTTPS Listener
     // Forward to the target group
     loadBalancer.addListener('HttpsListener', {
@@ -218,6 +219,12 @@ export class BackEnd extends cdk.Construct {
       sslPolicy: elbv2.SslPolicy.FORWARD_SECRECY_TLS12_RES_GCM,
       defaultAction: elbv2.ListenerAction.forward([targetGroup])
     });
+
+    // Grant RDS access to the fargate group
+    rdsCluster.connections.allowDefaultPortFrom(fargateSecurityGroup);
+
+    // Grant Redis access to the fargate group
+    redisSecurityGroup.addIngressRule(fargateSecurityGroup, ec2.Port.tcp(6379));
 
     // Route 53
     const zone = route53.HostedZone.fromLookup(this, 'Zone', { domainName: DOMAIN_NAME });
