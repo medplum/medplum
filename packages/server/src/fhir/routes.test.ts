@@ -42,12 +42,27 @@ describe('FHIR Routes', () => {
     await closeDatabase();
   });
 
-  test('Get CapabilityStatement', async () => {
+  test('Get CapabilityStatement anonymously', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/metadata`);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toEqual('CapabilityStatement');
+  });
+
+  test('Get CapabilityStatement authenticated', async () => {
     const res = await request(app)
       .get(`/fhir/R4/metadata`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
     expect(res.body.resourceType).toEqual('CapabilityStatement');
+  });
+
+  test('Get SMART-on-FHIR configuration', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/.well-known/smart-configuration`);
+    expect(res.status).toBe(200);
+    expect(res.body.authorization_endpoint).not.toBeUndefined();
+    expect(res.body.token_endpoint).not.toBeUndefined();
   });
 
   test('Invalid JSON', async () => {

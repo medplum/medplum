@@ -3,6 +3,7 @@ import { NextFunction, Request, Response, Router } from 'express';
 import { graphqlHTTP } from 'express-graphql';
 import { Operation } from 'fast-json-patch';
 import { asyncWrap } from '../async';
+import { getConfig } from '../config';
 import { authenticateToken } from '../oauth';
 import { processBatch } from './batch';
 import { binaryRouter } from './binary';
@@ -15,7 +16,6 @@ import { validateResource } from './schema';
 import { parseSearchRequest } from './search';
 
 export const fhirRouter = Router();
-fhirRouter.use(authenticateToken);
 
 // OperationOutcome interceptor
 fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
@@ -46,24 +46,65 @@ fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+// Public routes do not require authentication
+const publicRoutes = Router();
+fhirRouter.use(publicRoutes);
+
 // Metadata / CapabilityStatement
-fhirRouter.get('/metadata', (req: Request, res: Response) => {
+publicRoutes.get('/metadata', (req: Request, res: Response) => {
   res.status(200).json(getCapabilityStatement());
 });
 
+// SMART-on-FHIR configuration
+// See:
+// 1) https://www.hl7.org/fhir/smart-app-launch/conformance/index.html
+// 2) https://www.hl7.org/fhir/uv/bulkdata/authorization/index.html
+publicRoutes.get('/.well-known/smart-configuration', (req: Request, res: Response) => {
+  const config = getConfig();
+  res.status(200).json({
+    'authorization_endpoint': config.authorizeUrl,
+    'token_endpoint': config.tokenUrl,
+    'capabilities': [
+      'client-confidential-symmetric',
+      'client-public',
+      'context-banner',
+      'context-ehr-patient',
+      'context-standalone-patient',
+      'context-style',
+      'launch-ehr',
+      'launch-standalone',
+      'permission-offline',
+      'permission-patient',
+      'permission-user',
+      'sso-openid-connect'
+    ],
+    'token_endpoint_auth_methods': [
+      'private_key_jwt'
+    ],
+    'token_endpoint_auth_signing_alg_values_supported': [
+      'RS256'
+    ]
+  });
+});
+
+// Protected routes require authentication
+const protectedRoutes = Router();
+fhirRouter.use(authenticateToken);
+fhirRouter.use(protectedRoutes);
+
 // Binary routes
-fhirRouter.use('/Binary/', binaryRouter);
+protectedRoutes.use('/Binary/', binaryRouter);
 
 // ValueSet $expand operation
-fhirRouter.get('/ValueSet/([$]|%24)expand', expandOperator);
+protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
 
 // GraphQL
-fhirRouter.use('/([$]|%24)graphql', graphqlHTTP(() => ({
+protectedRoutes.use('/([$]|%24)graphql', graphqlHTTP(() => ({
   schema: getRootSchema()
 })));
 
 // Create batch
-fhirRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
+protectedRoutes.post('/', asyncWrap(async (req: Request, res: Response) => {
   if (!isFhirJsonContentType(req)) {
     res.status(400).send('Unsupported content type');
     return;
@@ -80,7 +121,7 @@ fhirRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
 }));
 
 // Search
-fhirRouter.get('/:resourceType', asyncWrap(async (req: Request, res: Response) => {
+protectedRoutes.get('/:resourceType', asyncWrap(async (req: Request, res: Response) => {
   const { resourceType } = req.params;
   const repo = res.locals.repo as Repository;
   const query = req.query as Record<string, string | undefined>;
@@ -90,7 +131,7 @@ fhirRouter.get('/:resourceType', asyncWrap(async (req: Request, res: Response) =
 }));
 
 // Create resource
-fhirRouter.post('/:resourceType', asyncWrap(async (req: Request, res: Response) => {
+protectedRoutes.post('/:resourceType', asyncWrap(async (req: Request, res: Response) => {
   if (!isFhirJsonContentType(req)) {
     res.status(400).send('Unsupported content type');
     return;
@@ -108,7 +149,7 @@ fhirRouter.post('/:resourceType', asyncWrap(async (req: Request, res: Response) 
 }));
 
 // Read resource by ID
-fhirRouter.get('/:resourceType/:id', asyncWrap(async (req: Request, res: Response) => {
+protectedRoutes.get('/:resourceType/:id', asyncWrap(async (req: Request, res: Response) => {
   const { resourceType, id } = req.params;
   const repo = res.locals.repo as Repository;
   const [outcome, resource] = await repo.readResource(resourceType, id);
@@ -117,7 +158,7 @@ fhirRouter.get('/:resourceType/:id', asyncWrap(async (req: Request, res: Respons
 }));
 
 // Read resource history
-fhirRouter.get('/:resourceType/:id/_history', asyncWrap(async (req: Request, res: Response) => {
+protectedRoutes.get('/:resourceType/:id/_history', asyncWrap(async (req: Request, res: Response) => {
   const { resourceType, id } = req.params;
   const repo = res.locals.repo as Repository;
   const [outcome, bundle] = await repo.readHistory(resourceType, id);
@@ -126,7 +167,7 @@ fhirRouter.get('/:resourceType/:id/_history', asyncWrap(async (req: Request, res
 }));
 
 // Read resource version by version ID
-fhirRouter.get('/:resourceType/:id/_history/:vid', asyncWrap(async (req: Request, res: Response) => {
+protectedRoutes.get('/:resourceType/:id/_history/:vid', asyncWrap(async (req: Request, res: Response) => {
   const { resourceType, id, vid } = req.params;
   const repo = res.locals.repo as Repository;
   const [outcome, resource] = await repo.readVersion(resourceType, id, vid);
@@ -135,7 +176,7 @@ fhirRouter.get('/:resourceType/:id/_history/:vid', asyncWrap(async (req: Request
 }));
 
 // Update resource
-fhirRouter.put('/:resourceType/:id', asyncWrap(async (req: Request, res: Response) => {
+protectedRoutes.put('/:resourceType/:id', asyncWrap(async (req: Request, res: Response) => {
   if (!isFhirJsonContentType(req)) {
     res.status(400).send('Unsupported content type');
     return;
@@ -157,7 +198,7 @@ fhirRouter.put('/:resourceType/:id', asyncWrap(async (req: Request, res: Respons
 }));
 
 // Delete resource
-fhirRouter.delete('/:resourceType/:id', asyncWrap(async (req: Request, res: Response) => {
+protectedRoutes.delete('/:resourceType/:id', asyncWrap(async (req: Request, res: Response) => {
   const { resourceType, id } = req.params;
   const repo = res.locals.repo as Repository;
   const [outcome, resource] = await repo.deleteResource(resourceType, id);
@@ -166,7 +207,7 @@ fhirRouter.delete('/:resourceType/:id', asyncWrap(async (req: Request, res: Resp
 }));
 
 // Patch resource
-fhirRouter.patch('/:resourceType/:id', asyncWrap(async (req: Request, res: Response) => {
+protectedRoutes.patch('/:resourceType/:id', asyncWrap(async (req: Request, res: Response) => {
   if (!req.is('application/json-patch+json')) {
     res.status(400).send('Unsupported content type');
     return;
@@ -180,7 +221,7 @@ fhirRouter.patch('/:resourceType/:id', asyncWrap(async (req: Request, res: Respo
 }));
 
 // Validate create resource
-fhirRouter.post('/:resourceType/([$])validate', asyncWrap(async (req: Request, res: Response) => {
+protectedRoutes.post('/:resourceType/([$])validate', asyncWrap(async (req: Request, res: Response) => {
   if (!isFhirJsonContentType(req)) {
     res.status(400).send('Unsupported content type');
     return;
