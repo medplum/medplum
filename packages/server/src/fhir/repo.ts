@@ -331,7 +331,7 @@ export class Repository {
     this.addSearchFilters(builder, searchRequest);
     this.addSortRules(builder, searchRequest);
 
-    const count = searchRequest.count || 10;
+    const count = searchRequest.count || 20;
     const page = searchRequest.page || 0;
     builder.limit(count);
     builder.offset(count * page);

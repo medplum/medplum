@@ -1,6 +1,6 @@
 import { formatSearchQuery, parseSearchDefinition, SearchRequest } from '@medplum/core';
 import { Loading, SearchControl } from '@medplum/ui';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { history } from './history';
 
@@ -8,28 +8,28 @@ export function HomePage() {
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>(parseSearchDefinition(location));
 
-  const searchRef = useRef<SearchRequest>();
-  searchRef.current = search;
-
   useEffect(() => {
     const parsedSearch = parseSearchDefinition(location);
-    if (parsedSearch.resourceType) {
-      setDefaultResourceType(parsedSearch.resourceType);
-      if (parsedSearch.fields && parsedSearch.fields.length > 0) {
-        setDefaultSearchForResourceType(parsedSearch);
-      }
-    }
-    setSearch(parsedSearch);
-  }, [location]);
 
-  useEffect(() => {
-    if (!search.resourceType) {
-      goToSearch(getDefaultSearch());
+    if (parsedSearch.resourceType && parsedSearch.fields && parsedSearch.fields.length > 0) {
+      // If the URL has a resourceType and fields,
+      // use that
+      setDefaultResourceType(parsedSearch.resourceType);
+      setDefaultSearchForResourceType(parsedSearch);
+      setSearch(parsedSearch);
+
+    } else if (parsedSearch.resourceType) {
+      // If the URL has a resourceType but no fields,
+      // use the default search for that resourceType
+      setDefaultResourceType(parsedSearch.resourceType);
+      setSearch(getDefaultSearchForResourceType(parsedSearch.resourceType));
+
+    } else {
+      // Otherwise, use the default search
+      setSearch(getDefaultSearch());
     }
-    if (!search.fields || search.fields.length === 0) {
-      goToSearch(getDefaultSearchForResourceType(search.resourceType));
-    }
-  }, [search]);
+
+  }, [location]);
 
   if (!search.resourceType) {
     return <Loading />;
@@ -40,16 +40,17 @@ export function HomePage() {
       checkboxesEnabled={true}
       search={search}
       onClick={e => history.push(`/${e.resource.resourceType}/${e.resource.id}`)}
-      onChange={e => goToSearch(e.definition)}
+      onChange={e => {
+        if (e.definition.resourceType && e.definition.fields && e.definition.fields.length > 0) {
+          goToSearch(e.definition);
+        }
+      }}
     />
   );
 }
 
 function goToSearch(search: SearchRequest): void {
-  history.push({
-    pathname: `/${search.resourceType}`,
-    search: formatSearchQuery(search)
-  });
+  history.push(`/${search.resourceType}${formatSearchQuery(search)}`);
 }
 
 function getDefaultSearch(): SearchRequest {
@@ -102,7 +103,9 @@ export function getDefaultSearchForResourceType(resourceType: string): SearchReq
     sortRules: [{
       code: '_lastUpdated',
       descending: true
-    }]
+    }],
+    page: 0,
+    count: 20
   };
 }
 
