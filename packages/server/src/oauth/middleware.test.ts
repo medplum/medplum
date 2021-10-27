@@ -50,7 +50,7 @@ describe('Auth middleware', () => {
     });
 
     const res = await request(app)
-      .get(`/fhir/R4/metadata`)
+      .get('/fhir/R4/Patient')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
   });
@@ -66,7 +66,7 @@ describe('Auth middleware', () => {
     });
 
     const res = await request(app)
-      .get(`/fhir/R4/metadata`)
+      .get('/fhir/R4/Patient')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(401);
   });
@@ -95,27 +95,27 @@ describe('Auth middleware', () => {
     });
 
     const res = await request(app)
-      .get(`/fhir/R4/metadata`)
+      .get('/fhir/R4/Patient')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(401);
   });
 
   test('No auth header', async () => {
     const res = await request(app)
-      .get(`/fhir/R4/metadata`);
+      .get('/fhir/R4/Patient');
     expect(res.status).toBe(401);
   });
 
   test('Unrecognized auth header', async () => {
     const res = await request(app)
-      .get(`/fhir/R4/metadata`)
+      .get('/fhir/R4/Patient')
       .set('Authorization', 'foo');
     expect(res.status).toBe(401);
   });
 
   test('Invalid bearer token', async () => {
     const res = await request(app)
-      .get(`/fhir/R4/metadata`)
+      .get('/fhir/R4/Patient')
       .set('Authorization', 'Bearer foo');
     expect(res.status).toBe(401);
   });
