@@ -110,8 +110,30 @@ const setup = (url = '/Patient') => {
 
 describe('HomePage', () => {
 
-  test('Renders', async () => {
-    setup();
+  test('Renders default page', async () => {
+    setup('/');
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    const control = screen.getByTestId('search-control');
+    expect(control).not.toBeUndefined();
+  });
+
+  test('Renders with resourceType', async () => {
+    setup('/Patient');
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    const control = screen.getByTestId('search-control');
+    expect(control).not.toBeUndefined();
+  });
+
+  test('Renders with resourceType and fields', async () => {
+    setup('/Patient?_fields=id,_lastUpdated,name,birthDate,gender');
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
