@@ -4,77 +4,6 @@ import { ComponentsObject, OpenAPIObject, ReferenceObject, SchemaObject, Securit
 import { getConfig } from './config';
 import { getSchemaDefinitions } from './fhir';
 
-const whitelist = [
-  'Account',
-  'Account_Coverage',
-  'Account_Guarantor',
-  'ActivityDefinition',
-  'Address',
-  'Age',
-  'Annotation',
-  'Attachment',
-  'CodeableConcept',
-  'Coding',
-  'ContactDetail',
-  'ContactPoint',
-  'Contributor',
-  'Count',
-  'DataRequirement',
-  'DataRequirement_CodeFilter',
-  'DataRequirement_DateFilter',
-  'DataRequirement_Sort',
-  'Distance',
-  'Dosage',
-  'Dosage_DoseAndRate',
-  'Duration',
-  'Element',
-  'Expression',
-  'Extension',
-  'HumanName',
-  'Identifier',
-  'Meta',
-  'Money',
-  'Narrative',
-  'Observation',
-  'Observation_Component',
-  'Observation_ReferenceRange',
-  'ParameterDefinition',
-  'Patient',
-  'Period',
-  'Quantity',
-  'Range',
-  'Ratio',
-  'Reference',
-  'RelatedArtifact',
-  'ResourceList',
-  'SampledData',
-  'Signature',
-  'Timing',
-  'Timing_Repeat',
-  'TriggerDefinition',
-  'UsageContext',
-  'base64Binary',
-  'base64Binary',
-  'boolean',
-  'canonical',
-  'code',
-  'dateTime',
-  'decimal',
-  'id',
-  'instant',
-  'integer',
-  'markdown',
-  'positiveInt',
-  'string',
-  'time',
-  'time',
-  'unsignedInt',
-  'unsignedInt',
-  'uri',
-  'url',
-  'xhtml',
-];
-
 type SchemaMap = { [schema: string]: SchemaObject | ReferenceObject; };
 
 let cachedSpec: any;
@@ -94,6 +23,7 @@ function buildSpec(): any {
   const result = buildBaseSpec();
   const definitions = getSchemaDefinitions();
   Object.entries(definitions).forEach(([name, definition]) => buildFhirType(result, name, definition));
+  buildPaths(result);
   return result;
 }
 
@@ -167,13 +97,17 @@ function buildSecurity(): SecurityRequirementObject[] {
  * @param typeDefinition The FHIR type definition.
  */
 function buildFhirType(result: OpenAPIObject, typeName: string, typeDefinition: JSONSchema4): void {
-  if (whitelist.includes(typeName)) {
-    buildSchema(result, typeName, typeDefinition);
-    if (hasEndpoint(typeDefinition)) {
-      buildTags(result, typeName, typeDefinition);
-      buildPaths(result, typeName);
-    }
+  buildSchema(result, typeName, typeDefinition);
+  if (hasEndpoint(typeDefinition)) {
+    buildTags(result, typeName, typeDefinition);
   }
+
+  ((result.components as ComponentsObject).schemas as SchemaMap)['Resource'] = {
+    oneOf: [
+      { $ref: '#/components/schemas/Patient' },
+      { $ref: '#/components/schemas/Observation' },
+    ]
+  };
 }
 
 /**
@@ -194,7 +128,13 @@ function buildSchema(result: OpenAPIObject, typeName: string, typeDefinition: JS
  * @returns The OpenAPI type definition.
  */
 function buildObjectSchema(name: string, definition: JSONSchema4): SchemaObject {
-  return JSON.parse(JSON.stringify(definition, refReplacer));
+  const result = JSON.parse(JSON.stringify(definition, refReplacer));
+  const resourceTypeProperty = result.properties?.resourceType;
+  if (resourceTypeProperty && resourceTypeProperty.const) {
+    delete resourceTypeProperty.const;
+    resourceTypeProperty.type = 'string';
+  }
+  return result;
 }
 
 /**
@@ -234,39 +174,45 @@ function buildTags(result: OpenAPIObject, typeName: string, typeDefinition: JSON
 /**
  * Builds the paths for a FHIR resource type.
  * @param result The OpenAPI specification output.
- * @param resourceType The FHIR resource type.
  */
-function buildPaths(result: OpenAPIObject, resourceType: string): void {
-  result.paths[`/fhir/R4/${resourceType}`] = {
-    get: buildSearchPath(resourceType),
-    post: buildCreatePath(resourceType)
+function buildPaths(result: OpenAPIObject): void {
+  result.paths[`/fhir/R4/{resourceType}`] = {
+    get: buildSearchPath(),
+    post: buildCreatePath()
   };
 
-  result.paths[`/fhir/R4/${resourceType}/{id}`] = {
-    get: buildReadPath(resourceType),
-    put: buildUpdatePath(resourceType),
-    delete: buildDeletePath(resourceType),
-    patch: buildPatchPath(resourceType)
+  result.paths[`/fhir/R4/{resourceType}/{id}`] = {
+    get: buildReadPath(),
+    put: buildUpdatePath(),
+    delete: buildDeletePath(),
+    patch: buildPatchPath()
   };
 
-  result.paths[`/fhir/R4/${resourceType}/{id}/_history`] = {
-    get: buildReadHistoryPath(resourceType)
+  result.paths[`/fhir/R4/{resourceType}/{id}/_history`] = {
+    get: buildReadHistoryPath()
   };
 
-  result.paths[`/fhir/R4/${resourceType}/{id}/_history/{versionId}`] = {
-    get: buildReadVersionPath(resourceType)
+  result.paths[`/fhir/R4/{resourceType}/{id}/_history/{versionId}`] = {
+    get: buildReadVersionPath()
   };
 }
 
-function buildSearchPath(resourceType: string): any {
+function buildSearchPath(): any {
   return {
-    tags: [resourceType],
-    summary: 'Search ' + resourceType,
-    description: 'Search ' + resourceType,
-    operationId: 'search' + resourceType,
-    security: {
-      OAuth2: ['openid']
-    },
+    summary: 'Search',
+    description: 'Search',
+    operationId: 'search',
+    parameters: [
+      {
+        name: 'resourceType',
+        in: 'path',
+        description: 'Resource Type',
+        required: true,
+        schema: {
+          type: 'string'
+        }
+      }
+    ],
     responses: {
       '200': {
         description: 'Success',
@@ -282,21 +228,28 @@ function buildSearchPath(resourceType: string): any {
   };
 }
 
-function buildCreatePath(resourceType: string): any {
+function buildCreatePath(): any {
   return {
-    tags: [resourceType],
-    summary: 'Create ' + resourceType,
-    description: 'Create ' + resourceType,
-    operationId: 'create' + resourceType,
-    security: {
-      OAuth2: ['openid']
-    },
+    summary: 'Create Resource',
+    description: 'Create Resource',
+    operationId: 'createResource',
+    parameters: [
+      {
+        name: 'resourceType',
+        in: 'path',
+        description: 'Resource Type',
+        required: true,
+        schema: {
+          type: 'string'
+        }
+      }
+    ],
     requestBody: {
-      description: 'Create ' + resourceType,
+      description: 'Create Resource',
       content: {
         'application/fhir+json': {
           schema: {
-            $ref: '#/components/schemas/' + resourceType
+            $ref: '#/components/schemas/Resource'
           }
         }
       },
@@ -308,7 +261,7 @@ function buildCreatePath(resourceType: string): any {
         content: {
           'application/fhir+json': {
             schema: {
-              $ref: '#/components/schemas/' + resourceType
+              $ref: '#/components/schemas/Resource'
             }
           }
         }
@@ -317,20 +270,25 @@ function buildCreatePath(resourceType: string): any {
   };
 }
 
-function buildReadPath(resourceType: string): any {
+function buildReadPath(): any {
   return {
-    tags: [resourceType],
-    summary: 'Read ' + resourceType,
-    description: 'Read ' + resourceType,
-    operationId: 'read' + resourceType,
-    security: {
-      OAuth2: ['openid']
-    },
+    summary: 'Read Resource',
+    description: 'Read Resource',
+    operationId: 'readResource',
     parameters: [
+      {
+        name: 'resourceType',
+        in: 'path',
+        description: 'Resource Type',
+        required: true,
+        schema: {
+          type: 'string'
+        }
+      },
       {
         name: 'id',
         in: 'path',
-        description: resourceType + ' ID',
+        description: 'Resource ID',
         required: true,
         schema: {
           type: 'string',
@@ -344,7 +302,7 @@ function buildReadPath(resourceType: string): any {
         content: {
           'application/fhir+json': {
             schema: {
-              $ref: '#/components/schemas/' + resourceType
+              $ref: '#/components/schemas/Resource'
             }
           }
         }
@@ -353,20 +311,25 @@ function buildReadPath(resourceType: string): any {
   };
 }
 
-function buildReadHistoryPath(resourceType: string): any {
+function buildReadHistoryPath(): any {
   return {
-    tags: [resourceType],
-    summary: 'Read ' + resourceType + ' History',
-    description: 'Read ' + resourceType + ' History',
-    operationId: 'read' + resourceType + 'History',
-    security: {
-      OAuth2: ['openid']
-    },
+    summary: 'Read Resource History',
+    description: 'Read Resource History',
+    operationId: 'readResourceHistory',
     parameters: [
+      {
+        name: 'resourceType',
+        in: 'path',
+        description: 'Resource Type',
+        required: true,
+        schema: {
+          type: 'string'
+        }
+      },
       {
         name: 'id',
         in: 'path',
-        description: resourceType + ' ID',
+        description: 'Resource ID',
         required: true,
         schema: {
           type: 'string',
@@ -389,20 +352,35 @@ function buildReadHistoryPath(resourceType: string): any {
   };
 }
 
-function buildReadVersionPath(resourceType: string): any {
+function buildReadVersionPath(): any {
   return {
-    tags: [resourceType],
-    summary: 'Read ' + resourceType + ' Version',
-    description: 'Read ' + resourceType + ' Version',
-    operationId: 'read' + resourceType + 'Version',
-    security: {
-      OAuth2: ['openid']
-    },
+    summary: 'Read Version',
+    description: 'Read Version',
+    operationId: 'readVersion',
     parameters: [
+      {
+        name: 'resourceType',
+        in: 'path',
+        description: 'Resource Type',
+        required: true,
+        schema: {
+          type: 'string'
+        }
+      },
       {
         name: 'id',
         in: 'path',
-        description: resourceType + ' ID',
+        description: 'Resource ID',
+        required: true,
+        schema: {
+          type: 'string',
+          format: 'uuid'
+        }
+      },
+      {
+        name: 'versionId',
+        in: 'path',
+        description: 'Version ID',
         required: true,
         schema: {
           type: 'string',
@@ -416,7 +394,7 @@ function buildReadVersionPath(resourceType: string): any {
         content: {
           'application/fhir+json': {
             schema: {
-              $ref: '#/components/schemas/' + resourceType
+              $ref: '#/components/schemas/Resource'
             }
           }
         }
@@ -425,20 +403,25 @@ function buildReadVersionPath(resourceType: string): any {
   };
 }
 
-function buildUpdatePath(resourceType: string): any {
+function buildUpdatePath(): any {
   return {
-    tags: [resourceType],
-    summary: 'Update ' + resourceType,
-    description: 'Update ' + resourceType,
-    operationId: 'update' + resourceType,
-    security: {
-      OAuth2: ['openid']
-    },
+    summary: 'Update Resource',
+    description: 'Update Resource',
+    operationId: 'updateResource',
     parameters: [
+      {
+        name: 'resourceType',
+        in: 'path',
+        description: 'Resource Type',
+        required: true,
+        schema: {
+          type: 'string'
+        }
+      },
       {
         name: 'id',
         in: 'path',
-        description: resourceType + ' ID',
+        description: 'Resource ID',
         required: true,
         schema: {
           type: 'string',
@@ -447,11 +430,11 @@ function buildUpdatePath(resourceType: string): any {
       }
     ],
     requestBody: {
-      description: 'Update ' + resourceType,
+      description: 'Update Resource',
       content: {
         'application/fhir+json': {
           schema: {
-            $ref: '#/components/schemas/' + resourceType
+            $ref: '#/components/schemas/Resource'
           }
         }
       },
@@ -463,7 +446,7 @@ function buildUpdatePath(resourceType: string): any {
         content: {
           'application/fhir+json': {
             schema: {
-              $ref: '#/components/schemas/' + resourceType
+              $ref: '#/components/schemas/Resource'
             }
           }
         }
@@ -472,20 +455,25 @@ function buildUpdatePath(resourceType: string): any {
   };
 }
 
-function buildDeletePath(resourceType: string): any {
+function buildDeletePath(): any {
   return {
-    tags: [resourceType],
-    summary: 'Delete ' + resourceType,
-    description: 'Delete ' + resourceType,
-    operationId: 'delete' + resourceType,
-    security: {
-      OAuth2: ['openid']
-    },
+    summary: 'Delete Resource',
+    description: 'Delete Resource',
+    operationId: 'deleteResource',
     parameters: [
+      {
+        name: 'resourceType',
+        in: 'path',
+        description: 'Resource Type',
+        required: true,
+        schema: {
+          type: 'string'
+        }
+      },
       {
         name: 'id',
         in: 'path',
-        description: resourceType + ' ID',
+        description: 'Resource ID',
         required: true,
         schema: {
           type: 'string',
@@ -501,20 +489,25 @@ function buildDeletePath(resourceType: string): any {
   };
 }
 
-function buildPatchPath(resourceType: string): any {
+function buildPatchPath(): any {
   return {
-    tags: [resourceType],
-    summary: 'Patch ' + resourceType,
-    description: 'Patch ' + resourceType,
-    operationId: 'patch' + resourceType,
-    security: {
-      OAuth2: ['openid']
-    },
+    summary: 'Patch Resource',
+    description: 'Patch Resource',
+    operationId: 'patchResource',
     parameters: [
+      {
+        name: 'resourceType',
+        in: 'path',
+        description: 'Resource Type',
+        required: true,
+        schema: {
+          type: 'string'
+        }
+      },
       {
         name: 'id',
         in: 'path',
-        description: resourceType + ' ID',
+        description: 'Resource ID',
         required: true,
         schema: {
           type: 'string',
