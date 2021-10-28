@@ -20,6 +20,10 @@ docker-compose up
 
 Open browser to <https://localhost:8443/>
 
+Test the Docker localhost URL:  <http://host.docker.internal:5000/>
+
+Be sure to logout between each test by visiting <http://host.docker.internal:5000/oauth2/logout>
+
 ## SMART-on-FHIR Certification
 
 https://smarthealthit.org/
@@ -35,6 +39,10 @@ docker-compose up
 ```
 
 Open browser to <http://localhost:4567/>
+
+Test the Docker localhost URL:  <http://host.docker.internal:5000/>
+
+Be sure to logout between each test by visiting <http://host.docker.internal:5000/oauth2/logout>
 
 ### Inferno notes
 

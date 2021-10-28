@@ -178,6 +178,21 @@ describe('OAuth2 Token', () => {
     expect(res.body.error_description).toBe('Invalid code');
   });
 
+  test('Token for authorization_code with invalid client ID', async () => {
+    const res = await request(app)
+      .post('/oauth2/token')
+      .type('form')
+      .send({
+        grant_type: 'authorization_code',
+        client_id: 'INVALID',
+        code: '',
+        code_verifier: 'xyz'
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Missing code');
+  });
+
   test('Authorization code token success', async () => {
     const params = new URLSearchParams({
       response_type: 'code',
@@ -207,6 +222,48 @@ describe('OAuth2 Token', () => {
       .type('form')
       .send({
         grant_type: 'authorization_code',
+        code: location.searchParams.get('code'),
+        code_verifier: 'xyz'
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).not.toBeUndefined();
+    expect(res2.body.access_token).not.toBeUndefined();
+    expect(res2.body.refresh_token).not.toBeUndefined();
+  });
+
+  test('Authorization code token success with client ID', async () => {
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: client.id as string,
+      redirect_uri: 'https://example.com',
+      scope: 'openid',
+      code_challenge: 'xyz',
+      code_challenge_method: 'plain'
+    });
+    const res = await request(app)
+      .post('/oauth2/authorize?' + params.toString())
+      .type('form')
+      .send({
+        email: 'admin@medplum.com',
+        password: 'admin',
+        nonce: 'asdf',
+        state: 'xyz'
+      });
+    expect(res.status).toBe(302);
+    expect(res.headers.location).not.toBeUndefined();
+
+    const location = new URL(res.headers.location);
+    expect(location.searchParams.get('error')).toBeNull();
+
+    const res2 = await request(app)
+      .post('/oauth2/token')
+      .type('form')
+      .send({
+        grant_type: 'authorization_code',
+        client_id: client.id as string,
         code: location.searchParams.get('code'),
         code_verifier: 'xyz'
       });
