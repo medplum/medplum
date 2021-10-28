@@ -235,6 +235,7 @@ export async function getAuthTokens(login: Login): Promise<[OperationOutcome, To
   const idToken = await generateIdToken({
     client_id: clientId,
     login_id: login.id as string,
+    fhirUser: login.profile?.reference,
     sub: userId,
     nonce: login.nonce as string,
     auth_time: (getDateProperty(login.authTime) as Date).getTime() / 1000

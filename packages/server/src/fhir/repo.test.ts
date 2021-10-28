@@ -19,6 +19,21 @@ describe('FHIR Repo', () => {
     await closeDatabase();
   });
 
+  test('Read resource with undefined id', async () => {
+    const [outcome] = await repo.readResource('Patient', undefined as any as string);
+    expect(isOk(outcome)).toBe(false);
+  });
+
+  test('Read resource with blank id', async () => {
+    const [outcome] = await repo.readResource('Patient', '');
+    expect(isOk(outcome)).toBe(false);
+  });
+
+  test('Read resource with invalid id', async () => {
+    const [outcome] = await repo.readResource('Patient', 'x');
+    expect(isOk(outcome)).toBe(false);
+  });
+
   test('Patient resource with identifier', async () => {
     const identifier = randomUUID();
 
