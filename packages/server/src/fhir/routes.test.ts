@@ -61,6 +61,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .get(`/fhir/R4/.well-known/smart-configuration`);
     expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toEqual('application/json; charset=utf-8');
     expect(res.body.authorization_endpoint).not.toBeUndefined();
     expect(res.body.token_endpoint).not.toBeUndefined();
   });

@@ -110,7 +110,7 @@ export class Repository {
   }
 
   async readResource<T extends Resource>(resourceType: string, id: string): RepositoryResult<T> {
-    if (!validator.isUUID(id)) {
+    if (!id || !validator.isUUID(id)) {
       return [badRequest('Invalid UUID'), undefined];
     }
 

@@ -61,30 +61,32 @@ publicRoutes.get('/metadata', (req: Request, res: Response) => {
 // 2) https://www.hl7.org/fhir/uv/bulkdata/authorization/index.html
 publicRoutes.get('/.well-known/smart-configuration', (req: Request, res: Response) => {
   const config = getConfig();
-  res.status(200).json({
-    'authorization_endpoint': config.authorizeUrl,
-    'token_endpoint': config.tokenUrl,
-    'capabilities': [
-      'client-confidential-symmetric',
-      'client-public',
-      'context-banner',
-      'context-ehr-patient',
-      'context-standalone-patient',
-      'context-style',
-      'launch-ehr',
-      'launch-standalone',
-      'permission-offline',
-      'permission-patient',
-      'permission-user',
-      'sso-openid-connect'
-    ],
-    'token_endpoint_auth_methods': [
-      'private_key_jwt'
-    ],
-    'token_endpoint_auth_signing_alg_values_supported': [
-      'RS256'
-    ]
-  });
+  res.status(200)
+    .contentType('application/json')
+    .json({
+      'authorization_endpoint': config.authorizeUrl,
+      'token_endpoint': config.tokenUrl,
+      'capabilities': [
+        'client-confidential-symmetric',
+        'client-public',
+        'context-banner',
+        'context-ehr-patient',
+        'context-standalone-patient',
+        'context-style',
+        'launch-ehr',
+        'launch-standalone',
+        'permission-offline',
+        'permission-patient',
+        'permission-user',
+        'sso-openid-connect'
+      ],
+      'token_endpoint_auth_methods': [
+        'private_key_jwt'
+      ],
+      'token_endpoint_auth_signing_alg_values_supported': [
+        'RS256'
+      ]
+    });
 });
 
 // Protected routes require authentication

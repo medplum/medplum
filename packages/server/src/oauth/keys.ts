@@ -22,6 +22,8 @@ export interface MedplumBaseClaims extends JWTPayload {
 export interface MedplumIdTokenClaims extends MedplumBaseClaims {
   name?: string;
 
+  fhirUser?: string;
+
   nonce: string;
 }
 

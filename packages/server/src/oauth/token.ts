@@ -135,6 +135,10 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
 
   const login = searchResult.entry[0].resource as Login;
 
+  if (req.body.client_id && login.client?.reference !== 'ClientApplication/' + req.body.client_id) {
+    return sendTokenError(res, 'invalid_request', 'Invalid client');
+  }
+
   if (login.granted) {
     await revokeLogin(login);
     return sendTokenError(res, 'invalid_grant', 'Token already granted');
