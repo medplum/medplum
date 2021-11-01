@@ -58,6 +58,9 @@ export class BackEnd extends cdk.Construct {
           subnetType: ec2.SubnetType.PRIVATE_WITH_NAT,
         },
       },
+      backup: {
+        retention: cdk.Duration.days(7)
+      },
       cloudwatchLogsExports: ['postgresql']
     });
 
