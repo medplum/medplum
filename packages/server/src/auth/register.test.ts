@@ -248,4 +248,82 @@ describe('Register', () => {
     expect(res8.body.entry.length).toEqual(0);
   });
 
+  test('GraphQL is restricted to project', async () => {
+    // User1 registers
+    // User1 creates a patient
+    // User2 registers
+    // User2 should not see User1 patients in search
+    // User2 should not be able to see User1 patients by GraphQL
+    const res = await request(app)
+      .post('/auth/register')
+      .type('json')
+      .send({
+        firstName: 'User1',
+        lastName: 'User1',
+        projectName: 'User1 Project',
+        email: `user1-${randomUUID()}@example.com`,
+        password: 'password!@#'
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.profile).not.toBeUndefined();
+
+    const patient: Patient = {
+      resourceType: 'Patient',
+      name: [{
+        given: ['Patient1'],
+        family: 'Patient1'
+      }]
+    };
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .type('json')
+      .send(patient);
+
+    expect(res2.status).toBe(201);
+
+    const res3 = await request(app)
+      .post('/auth/register')
+      .type('json')
+      .send({
+        firstName: 'User2',
+        lastName: 'User2',
+        projectName: 'User2 Project',
+        email: `user2-${randomUUID()}@example.com`,
+        password: 'password!@#'
+      });
+
+    expect(res3.status).toBe(200);
+    expect(res3.body.profile).not.toBeUndefined();
+
+    // Try to access User1 patient using User2 directly
+    // This should fail
+    const res4 = await request(app)
+      .get(`/fhir/R4/Patient/${res2.body.id}`)
+      .set('Authorization', 'Bearer ' + res3.body.accessToken);
+    expect(res4.status).toBe(404);
+
+    // Try to access User1 patient using User2 graphql
+    // This should fail
+    const res5 = await request(app)
+      .post(`/fhir/R4/$graphql`)
+      .set('Authorization', 'Bearer ' + res3.body.accessToken)
+      .type('json')
+      .send({
+        query: `{
+          PatientList(name:"Patient1") {
+            name {
+              family
+            }
+          }
+        }`
+      });
+    expect(res5.status).toBe(200);
+    expect(res5.body.data).not.toBeUndefined();
+    expect(res5.body.data.PatientList).not.toBeUndefined();
+    expect(res5.body.data.PatientList.length).toEqual(0);
+  });
+
 });
