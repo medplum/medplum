@@ -10,6 +10,7 @@ const config = {
   tagline: 'Healthcare infrastructure',
   url: 'https://docs.medplum.com',
   baseUrl: '/',
+  trailingSlash: false,
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
