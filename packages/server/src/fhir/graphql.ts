@@ -16,7 +16,7 @@ import {
   GraphQLUnionType
 } from 'graphql';
 import { JSONSchema4 } from 'json-schema';
-import { repo } from './repo';
+import { Repository } from './repo';
 import { getResourceTypes, getSchemaDefinition } from './schema';
 import { getSearchParameters } from './search';
 
@@ -213,6 +213,7 @@ function getRefString(property: any): string | undefined {
 async function resolveBySearch(source: any, args: any, ctx: any, info: GraphQLResolveInfo): Promise<Resource[] | undefined> {
   const fieldName = info.fieldName;
   const resourceType = fieldName.substr(0, fieldName.length - 4);
+  const repo = ctx.res.locals.repo as Repository;
   const [outcome, bundle] = await repo.search({
     resourceType,
     filters: Object.entries(args).map(e => ({
@@ -237,6 +238,7 @@ async function resolveBySearch(source: any, args: any, ctx: any, info: GraphQLRe
  * @implements {GraphQLFieldResolver}
  */
 async function resolveById(source: any, args: any, ctx: any, info: GraphQLResolveInfo): Promise<Resource | undefined> {
+  const repo = ctx.res.locals.repo as Repository;
   const [outcome, resource] = await repo.readResource(info.fieldName, args.id);
   assertOk(outcome);
   return resource;
@@ -252,7 +254,8 @@ async function resolveById(source: any, args: any, ctx: any, info: GraphQLResolv
  * @returns Promise to read the resoure(s) for the query.
  * @implements {GraphQLFieldResolver}
  */
-async function resolveByReference(source: any): Promise<Resource | undefined> {
+async function resolveByReference(source: any, args: any, ctx: any): Promise<Resource | undefined> {
+  const repo = ctx.res.locals.repo as Repository;
   const [outcome, resource] = await repo.readReference(source as Reference);
   assertOk(outcome);
   return resource;
