@@ -1,9 +1,14 @@
+const path = require('path');
 const DotenvPlugin = require('dotenv-webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = (env, argv) => ({
   entry: './src/index.tsx',
   devtool: argv.mode === 'production' ? 'source-map' : 'eval-source-map',
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: '[name].[contenthash].js'
+  },
   module: {
     rules: [
       {

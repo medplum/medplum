@@ -118,7 +118,7 @@ function getSearchParameterType(searchParam: SearchParameter, propertyType: stri
   return type;
 }
 
-function getExpressionForResourceType(resourceType: string, expression: string): string | undefined {
+export function getExpressionForResourceType(resourceType: string, expression: string): string | undefined {
   const expressions = expression.split(' | ');
   for (const e of expressions) {
     const simplified = simplifyExpression(e);
