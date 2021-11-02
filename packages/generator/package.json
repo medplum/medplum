@@ -16,6 +16,7 @@
     "lint": "eslint src/ --ext .ts,.tsx",
     "generate": "ts-node src/index.ts",
     "migrate": "ts-node src/migrate.ts",
+    "docs": "ts-node src/docs.ts",
     "test": "jest"
   },
   "devDependencies": {
