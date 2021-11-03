@@ -268,6 +268,39 @@ describe('ResourcePage', () => {
     expect(screen.getByTestId('resource-json')).not.toBeUndefined();
   });
 
+  test('JSON submit with meta', async () => {
+    setup('/Practitioner/123/json');
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('resource-json'));
+    });
+
+    await act(async () => {
+      fireEvent.change(
+        screen.getByTestId('resource-json'),
+        {
+          target: {
+            value: JSON.stringify({
+              resourceType: 'Practitioner',
+              id: '123',
+              meta: {
+                lastUpdated: '2020-01-01T00:00:00.000Z',
+                author: {
+                  reference: 'Practitioner/111'
+                }
+              }
+            })
+          }
+        });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(screen.getByTestId('resource-json')).not.toBeUndefined();
+  });
+
   test('Patient timeline', async () => {
     setup('/Patient/123/timeline');
 
