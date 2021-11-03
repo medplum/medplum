@@ -1,9 +1,6 @@
-import { Bundle, BundleEntry, createReference, ElementDefinition, Operator, Reference, Resource } from '@medplum/core';
+import { createReference, ElementDefinition, Reference, Resource } from '@medplum/core';
 import React, { useRef, useState } from 'react';
-import { Autocomplete } from './Autocomplete';
-import { Avatar } from './Avatar';
-import { useMedplum } from './MedplumProvider';
-import { ResourceName } from './ResourceName';
+import { ResourceInput } from './ResourceInput';
 
 export interface ReferenceInputProps {
   property?: ElementDefinition;
@@ -15,7 +12,6 @@ export interface ReferenceInputProps {
 export function ReferenceInput(props: ReferenceInputProps) {
   const targetTypes = getTargetTypes(props.property);
   const initialResourceType = getInitialResourceType(props.defaultValue, targetTypes);
-  const medplum = useMedplum();
   const [value, setValue] = useState<Reference | undefined>(props.defaultValue);
   const [resourceType, setResourceType] = useState<string | undefined>(initialResourceType);
 
@@ -61,39 +57,12 @@ export function ReferenceInput(props: ReferenceInputProps) {
           </td>
           <td>
             {resourceType && (
-              <Autocomplete
-                loadOptions={(input: string): Promise<(Reference | Resource)[]> => {
-                  return medplum.search({
-                    resourceType: resourceTypeRef.current as string,
-                    filters: [{
-                      code: 'name',
-                      operator: Operator.EQUALS,
-                      value: input
-                    }]
-                  })
-                    .then((bundle: Bundle) => (bundle.entry as BundleEntry[]).map(entry => entry.resource as Resource));
-                }}
-                getId={(item: Reference | Resource) => {
-                  if ('resourceType' in item) {
-                    return item.id as string;
-                  }
-                  if ('reference' in item) {
-                    return item.reference as string;
-                  }
-                  return item.toString();
-                }}
-                getIcon={(item: Reference | Resource) => <Avatar value={item} />}
-                getDisplay={(item: Reference | Resource) => <ResourceName value={item} />}
+              <ResourceInput
+                resourceType={resourceType}
                 name={props.name + '-id'}
-                defaultValue={props.defaultValue ? [props.defaultValue] : undefined}
-                onChange={(items: (Reference | Resource)[]) => {
-                  if (items.length > 0) {
-                    if ('resourceType' in items[0]) {
-                      setValueHelper(createReference(items[0]));
-                    } else if ('reference' in items[0]) {
-                      setValueHelper(items[0]);
-                    }
-                  }
+                defaultValue={props.defaultValue}
+                onChange={(item: Resource) => {
+                  setValueHelper(createReference(item));
                 }}
               />
             )}

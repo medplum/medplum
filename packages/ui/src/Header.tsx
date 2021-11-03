@@ -1,13 +1,12 @@
-import { Bundle, BundleEntry, getDisplayString, HumanName, Operator, Resource } from '@medplum/core';
+import { getDisplayString, HumanName, Patient } from '@medplum/core';
 import React, { useState } from 'react';
-import { Autocomplete } from './Autocomplete';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { MedplumLink } from './MedplumLink';
 import { useMedplumContext } from './MedplumProvider';
 import { Popup } from './Popup';
-import { ResourceName } from './ResourceName';
+import { ResourceInput } from './ResourceInput';
 import './Header.css';
 
 export interface HeaderProps {
@@ -48,30 +47,13 @@ export function Header(props: HeaderProps) {
             Medplum
           </MedplumLink>
           {context.profile && (
-            <Autocomplete
+            <ResourceInput
+              resourceType="Patient"
               name="search"
               className="medplum-nav-search-container"
               placeholder="Search"
-              loadOptions={(input: string): Promise<Resource[]> => {
-                return medplum.search({
-                  resourceType: 'Patient',
-                  filters: [{
-                    code: 'name',
-                    operator: Operator.CONTAINS,
-                    value: input
-                  }]
-                })
-                  .then((bundle: Bundle) => (bundle.entry as BundleEntry[]).map(entry => entry.resource as Resource));
-              }}
-              getId={(item: Resource) => {
-                return item.id as string;
-              }}
-              getIcon={(item: Resource) => <Avatar value={item} />}
-              getDisplay={(item: Resource) => <ResourceName value={item} />}
-              onChange={(items: (Resource)[]) => {
-                if (items.length > 0) {
-                  router.push(`/${items[0].resourceType}/${items[0].id}`);
-                }
+              onChange={(patient: Patient) => {
+                router.push(`/${patient.resourceType}/${patient.id}`);
               }}
             />
           )}

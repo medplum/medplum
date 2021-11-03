@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { killEvent } from './utils/dom';
 import './Autocomplete.css';
+import { killEvent } from './utils/dom';
 
 export interface AutocompleteProps<T> {
   name: string;
@@ -14,6 +14,7 @@ export interface AutocompleteProps<T> {
   getId: (item: T) => string;
   getIcon?: (item: T) => JSX.Element;
   getDisplay: (item: T) => JSX.Element;
+  getHelpText?: (item: T) => string | undefined;
   onChange?: (values: T[]) => void;
   onCreateNew?: () => void;
 }
@@ -300,9 +301,18 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
               onClick={e => handleDropDownClick(e, option)}
             >
               {props.getIcon && (
-                <div className="medplum-autocomplete-icon">{props.getIcon(option)}</div>
+                <div className="medplum-autocomplete-icon">
+                  {props.getIcon(option)}
+                </div>
               )}
-              <div className="medplum-autocomplete-label">{props.getDisplay(option)}</div>
+              <div className="medplum-autocomplete-label">
+                {props.getDisplay(option)}
+                {props.getHelpText && (
+                  <div className="medplum-autocomplete-help-text">
+                    {props.getHelpText(option)}
+                  </div>
+                )}
+              </div>
             </div>
           ))}
           {props.onCreateNew && (

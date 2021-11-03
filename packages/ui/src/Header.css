@@ -82,6 +82,7 @@ div.medplum-nav-search-container {
   display: inline-block;
   list-style: none;
   white-space: nowrap;
+  user-select: none;
 }
 
 .medplum-nav-search-container>ul>li.choice {
