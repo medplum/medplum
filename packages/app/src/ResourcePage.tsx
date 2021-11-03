@@ -148,7 +148,7 @@ export function ResourcePage() {
                 resource={value}
                 resourceHistory={historyBundle}
                 onSubmit={(resource: Resource) => {
-                  medplum.update(resource)
+                  medplum.update(cleanResource(resource))
                     .then(loadResource)
                     .catch(setError);
                 }}
@@ -253,4 +253,28 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
       );
   }
   return null;
+}
+
+/**
+ * Cleans a resource of unwanted meta values.
+ * For most users, this will not matter, because meta values are set by the server.
+ * However, some administrative users are allowed to specify some meta values.
+ * The admin use case is sepcial though, and unwanted here on the resource page.
+ * @param resource The input resource.
+ * @returns The cleaned output resource.
+ */
+function cleanResource(resource: Resource): Resource {
+  let meta = resource.meta;
+  if (meta) {
+    meta = {
+      ...meta,
+      lastUpdated: undefined,
+      versionId: undefined,
+      author: undefined
+    };
+  }
+  return {
+    ...resource,
+    meta
+  };
 }

@@ -1,4 +1,4 @@
-import { Bundle, MedplumClient, notFound, Patient, Practitioner, Questionnaire, User } from '@medplum/core';
+import { Bot, Bundle, DiagnosticReport, MedplumClient, notFound, Patient, Practitioner, Questionnaire, User } from '@medplum/core';
 import { MedplumProvider } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -92,7 +92,23 @@ const questionnaire: Questionnaire = {
     text: 'Hello',
     type: 'string'
   }]
-}
+};
+
+const bot: Bot = {
+  resourceType: 'Bot',
+  id: '123',
+  name: 'Test Bot',
+  code: 'console.log("hello world");'
+};
+
+const diagnosticReport: DiagnosticReport = {
+  resourceType: 'DiagnosticReport',
+  id: '123',
+  status: 'final',
+  result: [
+    { reference: 'Observation/123' }
+  ]
+};
 
 const mockRouter = {
   push: (path: string, state: any) => {
@@ -130,6 +146,10 @@ function mockFetch(url: string, options: any): Promise<any> {
     result = notFound
   } else if (method === 'GET' && url.endsWith('/fhir/R4/Questionnaire/123')) {
     result = questionnaire;
+  } else if (method === 'GET' && url.includes('/fhir/R4/Bot/123')) {
+    result = bot;
+  } else if (method === 'GET' && url.includes('/fhir/R4/DiagnosticReport/123')) {
+    result = diagnosticReport;
   }
 
   const response: any = {
@@ -282,6 +302,26 @@ describe('ResourcePage', () => {
     });
 
     expect(screen.getByText('Preview')).not.toBeUndefined();
+  });
+
+  test('Bot editor', async () => {
+    setup('/Bot/123/editor');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Editor'));
+    });
+
+    expect(screen.getByText('Editor')).not.toBeUndefined();
+  });
+
+  test('DiagnosticReport display', async () => {
+    setup('/DiagnosticReport/123/report');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Report'));
+    });
+
+    expect(screen.getByText('Report')).not.toBeUndefined();
   });
 
 });

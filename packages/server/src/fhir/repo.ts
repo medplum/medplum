@@ -245,7 +245,7 @@ export class Repository {
         versionId: randomUUID(),
         lastUpdated: this.getLastUpdated(resource),
         project: this.getProjectId(updated),
-        author: this.getAuthor(updated)
+        author: this.getAuthor(resource)
       }
     }
 
@@ -719,16 +719,18 @@ export class Repository {
   }
 
   /**
-   * Returns the author reference string (resourceType/id).
-   * If the current context is a ClientApplication, handles "on behalf of".
+   * Returns the author reference.
+   * If the current context is allowed to write meta,
+   * and the provided resource includes an author reference,
+   * then use the provided value.
    * Otherwise uses the current context profile.
    * @param resource The FHIR resource.
    * @returns
    */
   private getAuthor(resource: Resource): Reference {
     // If the resource has an author (whether provided or from existing),
-    // and the current context is a ClientApplication (i.e., OAuth client credentials),
-    // then allow the ClientApplication to act on behalf of another user.
+    // and the current context is allowed to write meta,
+    // then use the provided value.
     const author = resource.meta?.author;
     if (author && this.canWriteMeta()) {
       return author;
