@@ -22,6 +22,13 @@ $ npx docasaurus build
 
 This command generates static content into the `build` directory.
 
+The FHIR resource pages are generated automatically.  In the rare event that they need to be rebuilt, do the following
+
+```
+cd packages/generator
+npm run docs
+```
+
 ### Deployment
 
 Deployment scripts can be found in `scripts/deploy-docs.sh`  
