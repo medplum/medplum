@@ -22,6 +22,7 @@ npm run build --workspace=packages/ui
 npm run build --workspace=packages/app
 npm run build --workspace=packages/graphiql
 npm run build --workspace=packages/server
+npm run build --workspace=packages/docs
 
 # Test
 #npx jest --runInBand

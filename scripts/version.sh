@@ -23,6 +23,7 @@ set_version () {
 set_version "packages/app/package.json"
 set_version "packages/core/package.json"
 set_version "packages/definitions/package.json"
+set_version "packages/docs/package.json"
 set_version "packages/generator/package.json"
 set_version "packages/graphiql/package.json"
 set_version "packages/infra/package.json"

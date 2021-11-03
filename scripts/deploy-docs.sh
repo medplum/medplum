@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-pushd docs/build
+pushd packages/docs/build
 
 # Copy all non-HTML assets
 # Mark as public and cached forever
