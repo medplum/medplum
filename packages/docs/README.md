@@ -17,11 +17,11 @@ This command starts a local development server and opens up a browser window. Mo
 ### Build
 
 ```
-TODO
+$ npx docasaurus build
 ```
 
-This command generates static content into the `build` directory and can be served using any static contents hosting service.
+This command generates static content into the `build` directory.
 
 ### Deployment
 
-Deployment scripts can be found in the medplum/scripts directory.  
+Deployment scripts can be found in `scripts/deploy-docs.sh`  
