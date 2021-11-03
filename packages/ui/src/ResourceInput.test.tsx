@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { randomUUID } from 'crypto';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
-import { ReferenceInput, ReferenceInputProps } from './ReferenceInput';
+import { ResourceInput, ResourceInputProps } from './ResourceInput';
 
 const mockRouter = {
   push: (path: string, state: any) => {
@@ -31,7 +31,14 @@ function mockSearch(): Bundle {
         name: [{
           given: ['Bob'],
           family: 'Jones'
-        }]
+        }],
+        birthDate: '1955-05-05'
+      }
+    }, {
+      resource: {
+        resourceType: 'Organization',
+        id: randomUUID(),
+        name: 'Random Org'
       }
     }]
   };
@@ -85,15 +92,15 @@ const medplum = new MedplumClient({
   fetch: mockFetch
 });
 
-const setup = (args: ReferenceInputProps) => {
+const setup = (args: ResourceInputProps) => {
   return render(
     <MedplumProvider medplum={medplum} router={mockRouter}>
-      <ReferenceInput {...args} />
+      <ResourceInput {...args} />
     </MedplumProvider>
   );
 };
 
-describe('ReferenceInput', () => {
+describe('ResourceInput', () => {
 
   beforeAll(async () => {
     await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
@@ -110,97 +117,31 @@ describe('ReferenceInput', () => {
     jest.useRealTimers();
   });
 
-  test('Renders empty property', () => {
+  test('Renders empty', () => {
     setup({
-      name: 'foo',
-      property: {}
+      resourceType: 'Patient',
+      name: 'foo'
     });
-    expect(screen.getByTestId('reference-input-resource-type-input')).not.toBeUndefined();
+    expect(screen.getByTestId('autocomplete')).not.toBeUndefined();
   });
 
-  test('Renders default value resource type', () => {
-    setup({
-      name: 'foo',
-      property: {},
-      defaultValue: {
-        reference: 'Patient/123'
-      }
-    });
-    expect(screen.getByTestId('reference-input-resource-type-input')).not.toBeUndefined();
-    expect((screen.getByTestId('reference-input-resource-type-input') as HTMLInputElement).value).toBe('Patient');
-  });
-
-  test('Change resource type without target types', async () => {
-    setup({
-      name: 'foo',
-      property: {
-        type: [{
-          code: 'subject'
-        }]
-      }
-    });
-
+  test('Renders default value', async () => {
     await act(async () => {
-      fireEvent.change(screen.getByTestId('reference-input-resource-type-input'), { target: { value: 'Practitioner' } });
+      setup({
+        resourceType: 'Patient',
+        name: 'foo',
+        defaultValue: {
+          reference: 'Patient/123'
+        }
+      });
     });
-
-    expect(screen.getByTestId('reference-input-resource-type-input')).not.toBeUndefined();
-  });
-
-  test('Renders property with target types', () => {
-    setup({
-      name: 'foo',
-      property: {
-        type: [{
-          code: 'subject',
-          targetProfile: [
-            'Patient',
-            'Practitioner'
-          ]
-        }]
-      }
-    });
-    expect(screen.getByTestId('reference-input-resource-type-select')).not.toBeUndefined();
-  });
-
-  test('Change resource type with target types', async () => {
-    setup({
-      name: 'foo',
-      property: {
-        type: [{
-          code: 'subject',
-          targetProfile: [
-            'Patient',
-            'Practitioner'
-          ]
-        }]
-      }
-    });
-
-    await act(async () => {
-      fireEvent.change(screen.getByTestId('reference-input-resource-type-select'), { target: { value: 'Practitioner' } });
-    });
-
-    expect(screen.getByTestId('reference-input-resource-type-select')).not.toBeUndefined();
+    expect(screen.getByTestId('autocomplete')).not.toBeUndefined();
   });
 
   test('Use autocomplete', async () => {
     setup({
-      name: 'foo',
-      property: {
-        type: [{
-          code: 'subject',
-          targetProfile: [
-            'Patient',
-            'Practitioner'
-          ]
-        }]
-      }
-    });
-
-    // Select "Patient" resource type
-    await act(async () => {
-      fireEvent.change(screen.getByTestId('reference-input-resource-type-select'), { target: { value: 'Patient' } });
+      resourceType: 'Patient',
+      name: 'foo'
     });
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
@@ -228,22 +169,9 @@ describe('ReferenceInput', () => {
     const onChange = jest.fn();
 
     setup({
+      resourceType: 'Patient',
       name: 'foo',
-      property: {
-        type: [{
-          code: 'subject',
-          targetProfile: [
-            'Patient',
-            'Practitioner'
-          ]
-        }]
-      },
       onChange
-    });
-
-    // Select "Patient" resource type
-    await act(async () => {
-      fireEvent.change(screen.getByTestId('reference-input-resource-type-select'), { target: { value: 'Patient' } });
     });
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;

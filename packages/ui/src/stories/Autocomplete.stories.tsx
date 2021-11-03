@@ -99,3 +99,17 @@ export const Prefilled = () => (
     />
   </Document>
 );
+
+export const HelpText = () => (
+  <Document>
+    <Autocomplete
+      name="foo"
+      loadOptions={search}
+      getId={(option: string) => option}
+      getDisplay={(option: string) => (
+        <div>{option}</div>
+      )}
+      getHelpText={(option: string) => option.length + ' chars'}
+    />
+  </Document>
+);

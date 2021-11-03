@@ -20,13 +20,21 @@ export function Avatar(props: AvatarProps) {
   const [imageUrl, setImageUrl] = useState<string | undefined>(props.src);
 
   useEffect(() => {
+    let isMounted = true;
     if (resource) {
       const attachmentUrl = getImageSrc(resource);
       if (attachmentUrl) {
-        medplum.readCachedBlobAsObjectUrl(attachmentUrl).then(url => setImageUrl(url));
+        medplum.readCachedBlobAsObjectUrl(attachmentUrl)
+          .then(url => {
+            if (isMounted) {
+              setImageUrl(url);
+            }
+          });
       }
     }
-
+    return () => {
+      isMounted = false;
+    };
   }, [resource]);
 
   const className = props.size ? 'medplum-avatar ' + props.size : 'medplum-avatar';
