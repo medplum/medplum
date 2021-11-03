@@ -118,13 +118,15 @@ describe('ReferenceInput', () => {
     expect(screen.getByTestId('reference-input-resource-type-input')).not.toBeUndefined();
   });
 
-  test('Renders default value resource type', () => {
-    setup({
-      name: 'foo',
-      property: {},
-      defaultValue: {
-        reference: 'Patient/123'
-      }
+  test('Renders default value resource type', async () => {
+    await act(async () => {
+      setup({
+        name: 'foo',
+        property: {},
+        defaultValue: {
+          reference: 'Patient/123'
+        }
+      });
     });
     expect(screen.getByTestId('reference-input-resource-type-input')).not.toBeUndefined();
     expect((screen.getByTestId('reference-input-resource-type-input') as HTMLInputElement).value).toBe('Patient');
