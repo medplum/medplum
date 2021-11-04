@@ -114,6 +114,31 @@ describe('Register', () => {
     expect(res2.status).toBe(200);
   });
 
+  test('Default ClientApplication', async () => {
+    const res = await request(app)
+      .post('/auth/register')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'Hamilton Project',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#'
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.profile).not.toBeUndefined();
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/ClientApplication`)
+      .set('Authorization', 'Bearer ' + res.body.accessToken);
+
+    expect(res2.status).toBe(200);
+    expect(res2.body.entry).toHaveLength(1);
+    expect(res2.body.entry[0].resource.resourceType).toBe('ClientApplication');
+    expect(res2.body.entry[0].resource.name).toBe('Hamilton Project Default Client');
+  });
+
   test('Can create a ClientApplication', async () => {
     const res = await request(app)
       .post('/auth/register')
