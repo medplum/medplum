@@ -106,13 +106,6 @@ const schema: IndexedStructureDefinition = {
   }
 };
 
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 function mockFetch(url: string, options: any): Promise<any> {
   const response: any = {
     request: {
@@ -141,7 +134,7 @@ describe('ResourcePropertyInput', () => {
 
   function setup(props: ResourcePropertyInputProps) {
     return render(
-      <MedplumProvider medplum={medplum} router={mockRouter}>
+      <MedplumProvider medplum={medplum}>
         <ResourcePropertyInput {...props} />
       </MedplumProvider>
     );

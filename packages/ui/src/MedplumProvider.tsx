@@ -5,7 +5,7 @@ const reactContext = createContext(undefined as MedplumContext | undefined);
 
 export interface MedplumProviderProps {
   medplum: MedplumClient;
-  router: MedplumRouter;
+  router?: MedplumRouter;
   children: React.ReactNode;
 }
 
@@ -66,9 +66,18 @@ export function useMedplumRouter(): MedplumRouter {
 }
 
 /**
+ * Returns the current Medplum user profile (if signed in).
+ * This is a shortcut for useMedplumContext().profile.
+ * @returns The current user profile.
+ */
+export function useMedplumProfile(): ProfileResource | undefined {
+  return useMedplumContext().profile;
+}
+
+/**
  * Creates the auth object that handles user state.
  */
-function createMedplumContext(medplum: MedplumClient, router: MedplumRouter): MedplumContext {
+function createMedplumContext(medplum: MedplumClient, router: MedplumRouter | undefined): MedplumContext {
   const [state, setState] = useState({
     profile: medplum.getProfile(),
     loading: false
@@ -84,5 +93,19 @@ function createMedplumContext(medplum: MedplumClient, router: MedplumRouter): Me
     return () => medplum.removeEventListeneer('change', eventListener);
   }, []);
 
-  return { ...state, medplum, router };
+  return {
+    ...state,
+    medplum,
+    router: router ?? NOOP_ROUTER
+  };
 }
+
+/**
+ * Default "no-op" router.
+ * Most applications will provide their own router.
+ * This is a simple implementation that can be used for testing.
+ */
+const NOOP_ROUTER: MedplumRouter = {
+  push: () => undefined,
+  listen: () => (() => undefined)
+};

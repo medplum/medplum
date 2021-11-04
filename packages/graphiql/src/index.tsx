@@ -1,5 +1,5 @@
 import { MedplumClient } from '@medplum/core';
-import { Document, MedplumProvider, SignInForm, useMedplumContext } from '@medplum/ui';
+import { Document, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/ui';
 import GraphiQL from 'graphiql';
 import React from 'react';
 import { render } from 'react-dom';
@@ -45,7 +45,7 @@ const router = {
 };
 
 function App() {
-  const profile = useMedplumContext().profile;
+  const profile = useMedplumProfile();
   return profile ? (
     <GraphiQL
       fetcher={async graphQLParams => medplum.graphql(graphQLParams)}

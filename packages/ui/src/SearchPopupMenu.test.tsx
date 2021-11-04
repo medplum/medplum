@@ -42,13 +42,6 @@ const schema: IndexedStructureDefinition = {
 
 describe('SearchPopupMenu', () => {
 
-  const mockRouter = {
-    push: (path: string, state: any) => {
-      console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-    },
-    listen: () => (() => undefined) // Return mock "unlisten" handler
-  }
-
   function mockFetch(url: string, options: any): Promise<any> {
     const response: any = {
       request: {
@@ -74,7 +67,7 @@ describe('SearchPopupMenu', () => {
 
   function setup(props: SearchPopupMenuProps) {
     return render(
-      <MedplumProvider medplum={medplum} router={mockRouter}>
+      <MedplumProvider medplum={medplum}>
         <SearchPopupMenu {...props} />
       </MedplumProvider>
     );

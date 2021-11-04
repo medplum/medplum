@@ -4,13 +4,6 @@ import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
 import { Timeline, TimelineItem } from './Timeline';
 
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 const medplum = new MedplumClient({
   baseUrl: 'https://example.com/',
   clientId: 'my-client-id',
@@ -25,7 +18,7 @@ describe('Timeline', () => {
     };
 
     render(
-      <MedplumProvider medplum={medplum} router={mockRouter}>
+      <MedplumProvider medplum={medplum}>
         <Timeline>
           <TimelineItem resource={resource}>test</TimelineItem>
         </Timeline>
@@ -43,7 +36,7 @@ describe('Timeline', () => {
     };
 
     render(
-      <MedplumProvider medplum={medplum} router={mockRouter}>
+      <MedplumProvider medplum={medplum}>
         <Timeline>
           <TimelineItem resource={resource} socialEnabled={true}>test</TimelineItem>
         </Timeline>

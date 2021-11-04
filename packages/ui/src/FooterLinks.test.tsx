@@ -6,13 +6,6 @@ import { FooterLinks } from './FooterLinks';
 import { MedplumLink } from './MedplumLink';
 import { MedplumProvider } from './MedplumProvider';
 
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 const medplum = new MedplumClient({
   baseUrl: 'https://example.com/',
   clientId: 'my-client-id',
@@ -25,7 +18,7 @@ describe('FooterLinks', () => {
     const onHelp = jest.fn();
 
     render(
-      <MedplumProvider medplum={medplum} router={mockRouter}>
+      <MedplumProvider medplum={medplum}>
         <FooterLinks>
           <MedplumLink onClick={onHelp}>Help</MedplumLink>
         </FooterLinks>

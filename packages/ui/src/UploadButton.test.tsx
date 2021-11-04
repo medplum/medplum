@@ -4,13 +4,6 @@ import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
 import { UploadButton, UploadButtonProps } from './UploadButton';
 
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 function mockFetch(url: string, options: any): Promise<any> {
   const response: any = {
     request: {
@@ -39,7 +32,7 @@ describe('UploadButton', () => {
 
   const setup = (args?: UploadButtonProps) => {
     return render(
-      <MedplumProvider medplum={medplum} router={mockRouter}>
+      <MedplumProvider medplum={medplum}>
         <UploadButton onUpload={attachment => console.log('upload', attachment)} {...args} />
       </MedplumProvider>
     );

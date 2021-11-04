@@ -50,13 +50,6 @@ const historyBundle: Bundle = {
   ]
 }
 
-const mockRouter = {
-  push: (path: string, state: any) => {
-    alert('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 function mockFetch(url: string, options: any): Promise<any> {
   const response: any = {
     request: {
@@ -86,7 +79,7 @@ describe('ResourceHistoryTable', () => {
 
   const setup = (args: ResourceHistoryTableProps) => {
     return render(
-      <MedplumProvider medplum={medplum} router={mockRouter}>
+      <MedplumProvider medplum={medplum}>
         <ResourceHistoryTable {...args} />
       </MedplumProvider>
     );
