@@ -1,6 +1,6 @@
 {
   "name": "@medplum/generator",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Medplum Code Generator",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -20,7 +20,7 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/core": "0.2.0",
-    "@medplum/definitions": "0.2.0"
+    "@medplum/core": "0.2.1",
+    "@medplum/definitions": "0.2.1"
   }
 }

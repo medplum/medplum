@@ -1,6 +1,6 @@
 {
   "name": "@medplum/graphiql",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Medplum GraphiQL",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -25,8 +25,8 @@
     "@babel/preset-env": "7.16.0",
     "@babel/preset-react": "7.16.0",
     "@babel/preset-typescript": "7.16.0",
-    "@medplum/core": "0.2.0",
-    "@medplum/ui": "0.2.0",
+    "@medplum/core": "0.2.1",
+    "@medplum/ui": "0.2.1",
     "babel-loader": "8.2.3",
     "css-loader": "6.5.0",
     "dotenv-webpack": "7.0.3",
