@@ -12,7 +12,13 @@ function mockFetch(url: string, options: any): Promise<any> {
     const { email, password } = JSON.parse(options.body);
     if (email === 'admin@medplum.com' && password === 'admin') {
       status = 301;
-      result = {};
+      result = {
+        profile: {
+          resourceType: 'Practitioner',
+          id: '123',
+          name: [{ given: ['Medplum'], family: ['Admin'] }],
+        }
+      };
     } else if (email !== 'admin@medplum.com') {
       result = {
         resourceType: 'OperationOutcome',
@@ -57,6 +63,8 @@ const medplum = new MedplumClient({
 });
 
 const setup = (args?: SignInFormProps) => {
+  medplum.signOut();
+
   const props = {
     onSuccess: jest.fn(),
     ...args
@@ -96,6 +104,25 @@ describe('SignInForm', () => {
     });
 
     expect(success).toBe(true);
+  });
+
+  test('Submit success without callback', async () => {
+    setup({});
+    expect(medplum.getProfile()).toBeUndefined();
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('email'), { target: { value: 'admin@medplum.com' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('password'), { target: { value: 'admin' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('submit'));
+    });
+
+    expect(medplum.getProfile()).not.toBeUndefined();
   });
 
   test('User not found', async () => {
