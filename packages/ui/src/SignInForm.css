@@ -27,3 +27,7 @@
   justify-content: center;
   border-top: thin solid var(--medplum-gray-200);
 }
+
+.medplum-signin-google-icon {
+  margin-right: 8px;
+}

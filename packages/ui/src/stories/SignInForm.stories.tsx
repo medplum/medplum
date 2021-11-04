@@ -1,7 +1,6 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Button } from '../Button';
-import { Document } from '../Document';
 import { FooterLinks } from '../FooterLinks';
 import { useMedplumContext } from '../MedplumProvider';
 import { SignInForm } from '../SignInForm';
@@ -14,7 +13,7 @@ export default {
 export function Basic() {
   const ctx = useMedplumContext();
   return (
-    <Document width={450}>
+    <>
       {ctx.profile ? (
         <div>
           <pre>User: {JSON.stringify(ctx.profile)}</pre>
@@ -25,14 +24,14 @@ export function Basic() {
       ) : (
         <SignInForm onSuccess={() => alert('Signed in!')} />
       )}
-    </Document>
+    </>
   );
 }
 
 export function WithLinks() {
   const ctx = useMedplumContext();
   return (
-    <Document width={450}>
+    <>
       {ctx.profile ? (
         <div>
           <pre>User: {JSON.stringify(ctx.profile)}</pre>
@@ -47,7 +46,7 @@ export function WithLinks() {
           onRegister={() => alert('Register')}
         />
       )}
-    </Document>
+    </>
   );
 }
 
@@ -55,7 +54,7 @@ export function WithFooter() {
   const ctx = useMedplumContext();
   return (
     <>
-      <Document width={450}>
+      <>
         {ctx.profile ? (
           <div>
             <pre>User: {JSON.stringify(ctx.profile)}</pre>
@@ -70,7 +69,7 @@ export function WithFooter() {
             onRegister={() => alert('Register')}
           />
         )}
-      </Document>
+      </>
       <FooterLinks>
         <a href="#">Help</a>
         <a href="#">Terms</a>
@@ -84,7 +83,7 @@ export function WithGoogle() {
   const ctx = useMedplumContext();
   return (
     <>
-      <Document width={450}>
+      <>
         {ctx.profile ? (
           <div>
             <pre>User: {JSON.stringify(ctx.profile)}</pre>
@@ -100,7 +99,7 @@ export function WithGoogle() {
             googleClientId="xyz"
           />
         )}
-      </Document>
+      </>
       <FooterLinks>
         <a href="#">Help</a>
         <a href="#">Terms</a>
