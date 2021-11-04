@@ -104,7 +104,7 @@ export async function addSubscriptionJobs(resource: Resource): Promise<void> {
     // Never send subscriptions for audit events
     return;
   }
-  const subscriptions = await getSubscriptions();
+  const subscriptions = await getSubscriptions(resource);
   logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
   for (const subscription of subscriptions) {
     if (matchesCriteria(resource, subscription)) {
@@ -125,11 +125,6 @@ export async function addSubscriptionJobs(resource: Resource): Promise<void> {
  * @returns True if the resource matches the subscription criteria.
  */
 function matchesCriteria(resource: Resource, subscription: Subscription): boolean {
-  if (resource.meta?.project !== subscription.meta?.project) {
-    logger.debug('Ignore resource in different project');
-    return false;
-  }
-
   if (subscription.meta?.account && resource.meta?.account?.reference !== subscription.meta.account.reference) {
     logger.debug('Ignore resource in different account compartment');
     return false;
@@ -228,16 +223,24 @@ function addSubscriptionJobData(job: SubscriptionJobData): void {
 
 /**
  * Loads the list of all subscriptions in this repository.
+ * @param resource The resource that was created or updated.
  * @returns The list of all subscriptions in this repository.
  */
-async function getSubscriptions(): Promise<Subscription[]> {
+async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
   const [outcome, bundle] = await repo.search<Subscription>({
     resourceType: 'Subscription',
-    filters: [{
-      code: 'status',
-      operator: Operator.EQUALS,
-      value: 'active'
-    }]
+    filters: [
+      {
+        code: '_project',
+        operator: Operator.EQUALS,
+        value: resource.meta?.project as string
+      },
+      {
+        code: 'status',
+        operator: Operator.EQUALS,
+        value: 'active'
+      }
+    ]
   });
   assertOk(outcome);
   return (bundle?.entry as BundleEntry<Subscription>[]).map(e => e.resource as Subscription);

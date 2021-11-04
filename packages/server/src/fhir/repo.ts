@@ -7,7 +7,7 @@ import { MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from '../constants';
 import { getClient } from '../database';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
-import { getPatientId, getPatientCompartmentResourceTypes } from './patient';
+import { getPatientCompartmentResourceTypes, getPatientId } from './patient';
 import { validateResource, validateResourceType } from './schema';
 import { getSearchParameter, getSearchParameters } from './search';
 import { InsertQuery, Operator, SelectQuery } from './sql';
@@ -450,6 +450,11 @@ export class Repository {
    */
   private addSearchFilter(builder: SelectQuery, searchRequest: SearchRequest, filter: Filter): void {
     const resourceType = searchRequest.resourceType;
+
+    if (this.trySpecialSearchParameter(builder, resourceType, filter)) {
+      return;
+    }
+
     const param = getSearchParameter(resourceType, filter.code);
     if (!param || !param.code) {
       return;
@@ -471,6 +476,35 @@ export class Repository {
     } else {
       builder.where(details.columnName, Operator.EQUALS, filter.value);
     }
+  }
+
+  /**
+   * Returns true if the search parameter code is a special search parameter.
+   *
+   * See: https://www.hl7.org/fhir/search.html#all
+   *
+   * @param builder The client query builder.
+   * @param resourceType The resource type.
+   * @param filter The search filter.
+   * @returns True if the search parameter is a special code.
+   */
+  private trySpecialSearchParameter(builder: SelectQuery, resourceType: string, filter: Filter): boolean {
+    const code = filter.code;
+    if (!code.startsWith('_')) {
+      return false;
+    }
+
+    const op = fhirOperatorToSqlOperator(filter.operator);
+
+    if (code === '_id') {
+      builder.where({ tableName: resourceType, columnName: 'id' }, op, filter.value);
+    } else if (code === '_lastUpdated') {
+      builder.where({ tableName: resourceType, columnName: 'lastUpdated' }, op, filter.value);
+    } else if (code === '_project') {
+      builder.where('compartments', Operator.ARRAY_CONTAINS, [filter.value], 'UUID[]');
+    }
+
+    return true;
   }
 
   private addStringSearchFilter(builder: SelectQuery, details: SearchParameterDetails, filter: Filter): void {
@@ -868,6 +902,32 @@ export class Repository {
  */
 function resolveId(reference: Reference | undefined): string | undefined {
   return reference?.reference?.split('/')[1];
+}
+
+/**
+ * Converts a FHIR search operator into a SQL operator.
+ * Only works for simple conversions.
+ * For complex conversions, need to build custom SQL.
+ * @param fhirOperator The FHIR operator.
+ * @returns The equivalent SQL operator.
+ */
+function fhirOperatorToSqlOperator(fhirOperator: FhirOperator): Operator {
+  switch (fhirOperator) {
+    case FhirOperator.EQUALS:
+      return Operator.EQUALS;
+    case FhirOperator.NOT_EQUALS:
+      return Operator.NOT_EQUALS;
+    case FhirOperator.GREATER_THAN:
+      return Operator.GREATER_THAN;
+    case FhirOperator.GREATER_THAN_OR_EQUALS:
+      return Operator.GREATER_THAN_OR_EQUALS;
+    case FhirOperator.LESS_THAN:
+      return Operator.LESS_THAN;
+    case FhirOperator.LESS_THAN_OR_EQUALS:
+      return Operator.LESS_THAN_OR_EQUALS;
+    default:
+      throw new Error(`Unknown FHIR operator: ${fhirOperator}`);
+  }
 }
 
 /**

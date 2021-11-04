@@ -1,4 +1,4 @@
-import { AccessPolicy, assertOk, ClientApplication, Communication, createReference, Encounter, getReferenceString, isOk, Login, Observation, Operator, Patient, RegisterRequest, SearchParameter, ServiceRequest } from '@medplum/core';
+import { AccessPolicy, assertOk, Bundle, ClientApplication, Communication, createReference, Encounter, getReferenceString, isOk, Login, Observation, Operator, Patient, RegisterRequest, Resource, SearchParameter, ServiceRequest } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
@@ -1196,4 +1196,181 @@ describe('FHIR Repo', () => {
     expect(searchResult2?.entry?.length).toEqual(0);
   });
 
+  test('Filter by _id', async () => {
+    // Unique family name to isolate the test
+    const family = randomUUID();
+
+    const [createOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family }]
+    });
+    assertOk(createOutcome);
+    expect(patient).not.toBeUndefined();
+
+    const [searchOutcome1, searchResult1] = await repo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: '_id',
+          operator: Operator.EQUALS,
+          value: patient?.id as string
+        }
+      ]
+    });
+
+    expect(searchOutcome1.id).toEqual('ok');
+    expect(searchResult1?.entry?.length).toEqual(1);
+    expect(bundleContains(searchResult1 as Bundle, patient as Patient)).toEqual(true);
+
+    const [searchOutcome2, searchResult2] = await repo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: family
+        },
+        {
+          code: '_id',
+          operator: Operator.NOT_EQUALS,
+          value: patient?.id as string
+        }
+      ]
+    });
+
+    expect(searchOutcome2.id).toEqual('ok');
+    expect(searchResult2?.entry?.length).toEqual(0);
+
+  });
+
+  test('Filter by _lastUpdated', async () => {
+    // Create 2 patients
+    // One with a _lastUpdated of 1 second ago
+    // One with a _lastUpdated of 2 seconds ago
+    const family = randomUUID();
+    const now = new Date();
+    const nowMinus1Second = new Date(now.getTime() - 1000);
+    const nowMinus2Seconds = new Date(now.getTime() - 2000);
+    const nowMinus3Seconds = new Date(now.getTime() - 3000);
+
+    const [outcome1, patient1] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family }],
+      meta: {
+        lastUpdated: nowMinus1Second.toISOString()
+      }
+    });
+    assertOk(outcome1);
+    expect(patient1).not.toBeUndefined();
+
+    const [outcome2, patient2] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family }],
+      meta: {
+        lastUpdated: nowMinus2Seconds.toISOString()
+      }
+    });
+    assertOk(outcome2);
+    expect(patient2).not.toBeUndefined();
+
+    // Greater than (newer than) 2 seconds ago should only return patient 1
+    const [searchOutcome1, searchResult1] = await repo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: family
+        },
+        {
+          code: '_lastUpdated',
+          operator: Operator.GREATER_THAN,
+          value: nowMinus2Seconds.toISOString()
+        }
+      ]
+    });
+
+    expect(searchOutcome1.id).toEqual('ok');
+    expect(bundleContains(searchResult1 as Bundle, patient1 as Patient)).toEqual(true);
+    expect(bundleContains(searchResult1 as Bundle, patient2 as Patient)).toEqual(false);
+
+    // Greater than (newer than) or equal to 2 seconds ago should return both patients
+    const [searchOutcome2, searchResult2] = await repo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: family
+        },
+        {
+          code: '_lastUpdated',
+          operator: Operator.GREATER_THAN_OR_EQUALS,
+          value: nowMinus2Seconds.toISOString()
+        }
+      ]
+    });
+
+    expect(searchOutcome2.id).toEqual('ok');
+    expect(bundleContains(searchResult2 as Bundle, patient1 as Patient)).toEqual(true);
+    expect(bundleContains(searchResult2 as Bundle, patient2 as Patient)).toEqual(true);
+
+    // Less than (older than) to 1 seconds ago should only return patient 2
+    const [searchOutcome3, searchResult3] = await repo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: family
+        },
+        {
+          code: '_lastUpdated',
+          operator: Operator.GREATER_THAN,
+          value: nowMinus3Seconds.toISOString()
+        },
+        {
+          code: '_lastUpdated',
+          operator: Operator.LESS_THAN,
+          value: nowMinus1Second.toISOString()
+        }
+      ]
+    });
+
+    expect(searchOutcome3.id).toEqual('ok');
+    expect(bundleContains(searchResult3 as Bundle, patient1 as Patient)).toEqual(false);
+    expect(bundleContains(searchResult3 as Bundle, patient2 as Patient)).toEqual(true);
+
+    // Less than (older than) or equal to 1 seconds ago should return both patients
+    const [searchOutcome4, searchResult4] = await repo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: family
+        },
+        {
+          code: '_lastUpdated',
+          operator: Operator.GREATER_THAN,
+          value: nowMinus3Seconds.toISOString()
+        },
+        {
+          code: '_lastUpdated',
+          operator: Operator.LESS_THAN_OR_EQUALS,
+          value: nowMinus1Second.toISOString()
+        }
+      ]
+    });
+
+    expect(searchOutcome4.id).toEqual('ok');
+    expect(bundleContains(searchResult4 as Bundle, patient1 as Patient)).toEqual(true);
+    expect(bundleContains(searchResult4 as Bundle, patient2 as Patient)).toEqual(true);
+  });
+
 });
+
+
+function bundleContains(bundle: Bundle, resource: Resource): boolean {
+  return !!bundle.entry?.some(entry => entry.resource?.id === resource.id);
+}
