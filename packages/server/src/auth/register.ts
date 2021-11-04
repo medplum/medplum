@@ -1,4 +1,4 @@
-import { assertOk, badRequest, BundleEntry, createReference, Login, Operator, ProfileResource, Project, User } from '@medplum/core';
+import { assertOk, badRequest, BundleEntry, ClientApplication, createReference, Login, Operator, ProfileResource, Project, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
@@ -6,7 +6,7 @@ import { body, validationResult } from 'express-validator';
 import { MEDPLUM_CLIENT_APPLICATION_ID } from '../constants';
 import { invalidRequest, repo, sendOutcome } from '../fhir';
 import { logger } from '../logger';
-import { getAuthTokens, tryLogin } from '../oauth';
+import { generateSecret, getAuthTokens, tryLogin } from '../oauth';
 import { createPractitioner, createProjectMembership } from './utils';
 
 export interface RegisterRequest {
@@ -74,6 +74,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
   const project = await createProject(request, user);
   const practitioner = await createPractitioner(request, project);
   await createProjectMembership(user, project, practitioner, true);
+  await createClientApplication(project);
   return {
     project,
     profile: practitioner
@@ -119,4 +120,21 @@ async function createProject(request: RegisterRequest, user: User): Promise<Proj
   assertOk(outcome);
   logger.info('Created: ' + (result as Project).id);
   return result as Project;
+}
+
+async function createClientApplication(project: Project): Promise<ClientApplication> {
+  logger.info('Create default client ' + project.name);
+  const [outcome, result] = await repo.createResource<ClientApplication>({
+    resourceType: 'ClientApplication',
+    name: project.name + ' Default Client',
+    description: 'Default client for ' + project.name,
+    secret: generateSecret(32),
+    redirectUri: 'https://example.com/',
+    meta: {
+      project: project.id
+    }
+  });
+  assertOk(outcome);
+  logger.info('Created: ' + (result as ClientApplication).id);
+  return result as ClientApplication;
 }
