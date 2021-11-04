@@ -6,13 +6,6 @@ import { act } from 'react-dom/test-utils';
 import { Header, HeaderProps } from './Header';
 import { MedplumProvider } from './MedplumProvider';
 
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 function mockSearch(): Bundle {
   return {
     resourceType: 'Bundle',
@@ -116,7 +109,7 @@ const medplum = new MedplumClient({
 
 function setup(props?: HeaderProps) {
   render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
+    <MedplumProvider medplum={medplum}>
       <Header {...props} />
     </MedplumProvider>
   );

@@ -5,13 +5,6 @@ import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
 import { ResourceInput, ResourceInputProps } from './ResourceInput';
 
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 function mockSearch(): Bundle {
   return {
     resourceType: 'Bundle',
@@ -94,7 +87,7 @@ const medplum = new MedplumClient({
 
 const setup = (args: ResourceInputProps) => {
   return render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
+    <MedplumProvider medplum={medplum}>
       <ResourceInput {...args} />
     </MedplumProvider>
   );

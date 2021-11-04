@@ -5,6 +5,7 @@ import {
   FooterLinks,
   Header,
   useMedplum,
+  useMedplumProfile,
   useMedplumRouter
 } from '@medplum/ui';
 import React from 'react';
@@ -27,7 +28,7 @@ import { SignInPage } from './SignInPage';
 export function App() {
   const medplum = useMedplum();
   const router = useMedplumRouter();
-  const profile = medplum.getProfile();
+  const profile = useMedplumProfile();
   return (
     <Router history={history}>
       <CssBaseline />

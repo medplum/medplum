@@ -72,13 +72,6 @@ const newMedia: Media = {
   }
 };
 
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 function mockFetch(url: string, options: any): Promise<any> {
   const method = options.method ?? 'GET';
   let result: any;
@@ -154,7 +147,7 @@ describe('ResourceTimeline', () => {
 
   function setup<T extends Resource>(args: ResourceTimelineProps<T>) {
     return render(
-      <MedplumProvider medplum={medplum} router={mockRouter}>
+      <MedplumProvider medplum={medplum}>
         <ResourceTimeline {...args} />
       </MedplumProvider>
     );

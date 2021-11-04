@@ -4,13 +4,6 @@ import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
 import { SignInForm, SignInFormProps } from './SignInForm';
 
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 function mockFetch(url: string, options: any): Promise<any> {
   let status = 404;
   let result: any;
@@ -69,7 +62,7 @@ const setup = (args?: SignInFormProps) => {
     ...args
   };
   return render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
+    <MedplumProvider medplum={medplum}>
       <SignInForm {...props} />
     </MedplumProvider>
   );

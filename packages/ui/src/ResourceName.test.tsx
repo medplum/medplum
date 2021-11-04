@@ -14,13 +14,6 @@ const patient: Patient = {
   }]
 };
 
-const mockRouter = {
-  push: (path: string, state: any) => {
-    alert('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 function mockFetch(url: string, options: any): Promise<any> {
   const response: any = {
     request: {
@@ -50,7 +43,7 @@ describe('ResourceName', () => {
 
   const setup = (args: ResourceNameProps) => {
     return render(
-      <MedplumProvider medplum={medplum} router={mockRouter}>
+      <MedplumProvider medplum={medplum}>
         <ResourceName {...args} />
       </MedplumProvider>
     );

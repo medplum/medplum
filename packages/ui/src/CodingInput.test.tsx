@@ -11,13 +11,6 @@ const statusProperty: ElementDefinition = {
   }
 };
 
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 const valueSet: ValueSet = {
   resourceType: 'ValueSet',
   expansion: {
@@ -75,7 +68,7 @@ describe('CodingInput', () => {
 
   test('Renders', () => {
     render(
-      <MedplumProvider medplum={medplum} router={mockRouter}>
+      <MedplumProvider medplum={medplum}>
         <CodingInput property={statusProperty} name="test" />
       </MedplumProvider>
     );
@@ -85,7 +78,7 @@ describe('CodingInput', () => {
 
   test('Renders Coding default value', () => {
     render(
-      <MedplumProvider medplum={medplum} router={mockRouter}>
+      <MedplumProvider medplum={medplum}>
         <CodingInput property={statusProperty} name="test" defaultValue={{ code: 'abc' }} />
       </MedplumProvider>
     );
@@ -96,7 +89,7 @@ describe('CodingInput', () => {
 
   test('Searches for results', async () => {
     render(
-      <MedplumProvider medplum={medplum} router={mockRouter}>
+      <MedplumProvider medplum={medplum}>
         <CodingInput property={statusProperty} name="test" />
       </MedplumProvider>
     );

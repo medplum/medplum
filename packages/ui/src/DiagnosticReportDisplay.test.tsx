@@ -103,13 +103,6 @@ const observation6: Observation = {
   ]
 };
 
-const mockRouter = {
-  push: (path: string, state: any) => {
-    alert('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 function mockFetch(url: string, options: any): Promise<any> {
   let result = {};
 
@@ -158,7 +151,7 @@ describe('DiagnosticReportDisplay', () => {
 
   const setup = (args: DiagnosticReportDisplayProps) => {
     return render(
-      <MedplumProvider medplum={medplum} router={mockRouter}>
+      <MedplumProvider medplum={medplum}>
         <DiagnosticReportDisplay {...args} />
       </MedplumProvider>
     );

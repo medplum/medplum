@@ -7,11 +7,6 @@ import { MenuItem } from './MenuItem';
 import { MenuSeparator } from './MenuSeparator';
 import { SubMenu } from './SubMenu';
 
-const mockRouter = {
-  push: () => undefined,
-  listen: () => (() => undefined)
-}
-
 const medplum = new MedplumClient({
   baseUrl: 'https://example.com/',
   clientId: 'my-client-id',
@@ -20,7 +15,7 @@ const medplum = new MedplumClient({
 
 const setup = (children: React.ReactNode) => {
   return render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
+    <MedplumProvider medplum={medplum}>
       {children}
     </MedplumProvider>
   );

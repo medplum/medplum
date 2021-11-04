@@ -4,13 +4,6 @@ import React from 'react';
 import { AttachmentDisplay, AttachmentDisplayProps } from './AttachmentDisplay';
 import { MedplumProvider } from './MedplumProvider';
 
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 function mockFetch(url: string, options: any): Promise<any> {
   const result: any = {};
 
@@ -36,7 +29,7 @@ const medplum = new MedplumClient({
 
 const setup = (args?: AttachmentDisplayProps) => {
   return render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
+    <MedplumProvider medplum={medplum}>
       <AttachmentDisplay {...args} />
     </MedplumProvider>
   );

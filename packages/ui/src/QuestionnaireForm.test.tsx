@@ -4,13 +4,6 @@ import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
 import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 function mockFetch(url: string, options: any): Promise<any> {
   let result: any;
 
@@ -49,7 +42,7 @@ const medplum = new MedplumClient({
 
 const setup = (args: QuestionnaireFormProps) => {
   return render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
+    <MedplumProvider medplum={medplum}>
       <QuestionnaireForm {...args} />
     </MedplumProvider>
   );
