@@ -93,11 +93,11 @@ import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/ui';
 ```
 
-Add the Medplum client using the Client Application ID from before:
+Add the Medplum client using the Client Application ID from before.  Be sure to replace `YOUR_CLIENT_ID_HERE` with the actual client ID.
 
 ```tsx
 const medplum = new MedplumClient({
-  clientId: '46705d5a-d0db-41b1-ae31-a8f5abe6135b'
+  clientId: 'YOUR_CLIENT_ID_HERE'
 });
 ```
 
@@ -123,7 +123,7 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 
 const medplum = new MedplumClient({
-  clientId: '46705d5a-d0db-41b1-ae31-a8f5abe6135b'
+  clientId: 'YOUR_CLIENT_ID_HERE'
 });
 
 ReactDOM.render(
@@ -151,14 +151,14 @@ Add a few Medplum imports:
 import { PatientTimeline, SignInForm, useMedplumProfile } from '@medplum/ui';
 ```
 
-Replace the App function with the following:
+Replace the App function with the following.  Be sure to replace `YOUR_PATIENT_ID_HERE` with the actual patient ID.
 
 ```tsx
 function App() {
   const profile = useMedplumProfile();
   return profile ? (
     <div className="App">
-      <PatientTimeline patient={{ reference: 'Patient/c178421e-53bd-4381-887e-fbaabc8bc6fb' }} />
+      <PatientTimeline patient={{ reference: 'Patient/YOUR_PATIENT_ID_HERE' }} />
     </div>
   ) : (
     <SignInForm />
@@ -177,7 +177,7 @@ This is a React hook that gets the current user profile.  If the user is logged 
 ```tsx
   return profile ? (
     <div className="App">
-      <PatientTimeline patient={{ reference: 'Patient/c178421e-53bd-4381-887e-fbaabc8bc6fb' }} />
+      <PatientTimeline patient={{ reference: 'Patient/YOUR_PATIENT_ID_HERE' }} />
     </div>
   )
 ```
