@@ -17,8 +17,8 @@ import { ReferenceInput } from './ReferenceInput';
 import { useResource } from './useResource';
 
 export interface QuestionnaireFormProps {
-  questionnaire: Reference | Questionnaire;
-  onSubmit: (formData: any) => void;
+  questionnaire: Questionnaire | Reference<Questionnaire>;
+  onSubmit: (response: QuestionnaireResponse) => void;
 }
 
 export function QuestionnaireForm(props: QuestionnaireFormProps) {

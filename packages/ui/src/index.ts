@@ -32,6 +32,7 @@ export * from './MedplumProvider';
 export * from './MenuItem';
 export * from './PatientTimeline';
 export * from './Popup';
+export * from './QuestionnaireBuilder';
 export * from './QuestionnaireForm';
 export * from './QuestionnaireUtils';
 export * from './ReferenceInput';
