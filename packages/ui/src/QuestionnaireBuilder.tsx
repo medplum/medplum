@@ -13,7 +13,7 @@ export interface QuestionnaireBuilderProps {
 }
 
 export function QuestionnaireBuilder(props: QuestionnaireBuilderProps) {
-  const defaultValue = useResource(props.questionnaire) as Questionnaire | undefined;
+  const defaultValue = useResource(props.questionnaire);
   const [value, setValue] = useState<Questionnaire>();
   const [selectedKey, setSelectedKey] = useState<string>();
 
@@ -34,9 +34,7 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps) {
           item={value}
           selectedKey={selectedKey}
           setSelectedKey={setSelectedKey}
-          onChange={(newValue) => {
-            setValue(newValue as Questionnaire);
-          }}
+          onChange={setValue}
         />
         <Button type="submit" size="large">OK</Button>
       </Form>
@@ -70,25 +68,25 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     props.setSelectedKey((props.item as any).__key);
   }
 
-  function changeItem(item: QuestionnaireItem) {
+  function changeItem(changedItem: QuestionnaireItem) {
     const curr = itemRef.current as T;
     props.onChange({
       ...curr,
-      item: curr.item?.map((i) => ((i as any).__key === (item as any).__key ? item : i)),
+      item: curr.item?.map((i) => ((i as any).__key === (changedItem as any).__key ? changedItem : i)),
     } as T);
   }
 
-  function addItem(item: QuestionnaireItem) {
+  function addItem(addedItem: QuestionnaireItem) {
     props.onChange({
       ...props.item,
-      item: [...(props.item?.item ?? []), item],
+      item: [...(props.item?.item ?? []), addedItem],
     });
   }
 
-  function removeItem(item: QuestionnaireItem) {
+  function removeItem(removedItem: QuestionnaireItem) {
     props.onChange({
       ...props.item,
-      item: props.item?.item?.filter(i => i !== item)
+      item: props.item?.item?.filter(i => i !== removedItem)
     });
   }
 
@@ -133,10 +131,23 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
                 defaultValue={item.type}
                 onChange={(e) => changeProperty('type', e.target.value)}
               >
-                <option></option>
                 <option>display</option>
-                <option>string</option>
-                <option>number</option>
+                <optgroup label="question">
+                  <option>boolean</option>
+                  <option>decimal</option>
+                  <option>integer</option>
+                  <option>date</option>
+                  <option>dateTime</option>
+                  <option>time</option>
+                  <option>string</option>
+                  <option>text</option>
+                  <option>url</option>
+                  <option>choice</option>
+                  <option>open-choice</option>
+                  <option>attachment</option>
+                  <option>reference</option>
+                  <option>quantity</option>
+                </optgroup>
               </select>
             </>
           )}

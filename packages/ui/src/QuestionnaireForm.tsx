@@ -1,16 +1,10 @@
-import { createReference, ElementDefinition, getReferenceString, ProfileResource, PropertyType, Questionnaire, QuestionnaireItem, QuestionnaireResponse, QuestionnaireResponseItem, Reference } from '@medplum/core';
+import { createReference, ElementDefinition, getReferenceString, ProfileResource, Questionnaire, QuestionnaireItem, QuestionnaireResponse, QuestionnaireResponseItem, Reference } from '@medplum/core';
 import React from 'react';
-import { AddressInput } from './AddressInput';
 import { AttachmentInput } from './AttachmentInput';
 import { Button } from './Button';
-import { CodeableConceptInput } from './CodeableConceptInput';
-import { CodeInput } from './CodeInput';
 import { CodingInput } from './CodingInput';
-import { ContactPointInput } from './ContactPointInput';
 import { Form } from './Form';
 import { FormSection } from './FormSection';
-import { HumanNameInput } from './HumanNameInput';
-import { IdentifierInput } from './IdentifierInput';
 import { useMedplum } from './MedplumProvider';
 import { QuestionnaireItemType } from './QuestionnaireUtils';
 import { ReferenceInput } from './ReferenceInput';
@@ -24,7 +18,7 @@ export interface QuestionnaireFormProps {
 export function QuestionnaireForm(props: QuestionnaireFormProps) {
   const medplum = useMedplum();
   const source = medplum.getProfile();
-  const questionnaire = useResource(props.questionnaire) as Questionnaire | undefined;
+  const questionnaire = useResource(props.questionnaire);
 
   if (!questionnaire) {
     return null;
@@ -86,7 +80,7 @@ interface QuestionnaireFormItemProps {
 function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element | null {
   const item = props.item;
 
-  const type = item.type as QuestionnaireItemType | PropertyType;
+  const type = item.type as QuestionnaireItemType;
   if (!type) {
     return null;
   }
@@ -102,6 +96,7 @@ function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element |
 
   switch (type) {
     case QuestionnaireItemType.group:
+    case QuestionnaireItemType.display:
       return (
         <div>
           <h3>{item.text}</h3>
@@ -110,66 +105,59 @@ function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element |
           )}
         </div>
       );
-    case PropertyType.SystemString:
-    case PropertyType.string:
+    case QuestionnaireItemType.boolean:
       return (
-        <input type="text" name={name} data-testid={name} defaultValue={initial?.valueString} />
+        <input type="checkbox" name={name} value="true" checked={initial?.valueBoolean} />
       );
-    case PropertyType.date:
-      return (
-        <input type="date" name={name} data-testid={name} defaultValue={initial?.valueDate} />
-      );
-    case PropertyType.dateTime:
-    case PropertyType.instant:
-      return (
-        <input type="datetime-local" name={name} data-testid={name} defaultValue={initial?.valueDateTime} />
-      );
-    case PropertyType.time:
-      return (
-        <input type="time" name={name} data-testid={name} defaultValue={initial?.valueTime} />
-      );
-    case PropertyType.uri:
-    case PropertyType.url:
-      return (
-        <input type="url" name={name} data-testid={name} defaultValue={initial?.valueUri} />
-      );
-    case PropertyType.decimal:
+    case QuestionnaireItemType.decimal:
       return (
         <input type="number" name={name} data-testid={name} defaultValue={initial?.valueDecimal} />
       );
-    case PropertyType.integer:
-    case PropertyType.positiveInt:
-    case PropertyType.unsignedInt:
+    case QuestionnaireItemType.integer:
       return (
         <input type="number" name={name} data-testid={name} defaultValue={initial?.valueInteger} />
       );
-    case PropertyType.code:
-      return <CodeInput property={property} name={name} defaultValue={initial?.valueString} />;
-    case PropertyType.boolean:
+    case QuestionnaireItemType.date:
       return (
-        <input type="checkbox" name={name} value="true" />
+        <input type="date" name={name} data-testid={name} defaultValue={initial?.valueDate} />
       );
-    case PropertyType.markdown:
+    case QuestionnaireItemType.dateTime:
       return (
-        <textarea name={name} />
+        <input type="datetime-local" name={name} data-testid={name} defaultValue={initial?.valueDateTime} />
       );
-    case PropertyType.Address:
-      return <AddressInput name={name} />;
-    case PropertyType.Attachment:
-      return <AttachmentInput name={name} />;
-    case PropertyType.CodeableConcept:
-      return <CodeableConceptInput property={property} name={name} />;
-    case PropertyType.Coding:
-      return <CodingInput property={property} name={name} defaultValue={initial?.valueCoding} />;
-    case PropertyType.ContactPoint:
-      return <ContactPointInput name={name} />;
-    case PropertyType.HumanName:
-      return <HumanNameInput name={name} />;
-    case PropertyType.Identifier:
-      return <IdentifierInput name={name} />;
-    case PropertyType.canonical:
-    case PropertyType.Reference:
-      return <ReferenceInput property={property} name={name} defaultValue={initial?.valueReference} />;
+    case QuestionnaireItemType.time:
+      return (
+        <input type="time" name={name} data-testid={name} defaultValue={initial?.valueTime} />
+      );
+    case QuestionnaireItemType.string:
+      return (
+        <input type="text" name={name} data-testid={name} defaultValue={initial?.valueString} />
+      );
+    case QuestionnaireItemType.text:
+      return (
+        <input type="text" name={name} data-testid={name} defaultValue={initial?.valueString} />
+      );
+    case QuestionnaireItemType.url:
+      return (
+        <input type="url" name={name} data-testid={name} defaultValue={initial?.valueUri} />
+      );
+    case QuestionnaireItemType.choice:
+    case QuestionnaireItemType.openChoice:
+      return (
+        <CodingInput property={property} name={name} defaultValue={initial?.valueCoding} />
+      );
+    case QuestionnaireItemType.attachment:
+      return (
+        <AttachmentInput name={name} defaultValue={initial?.valueAttachment} />
+      );
+    case QuestionnaireItemType.reference:
+      return (
+        <ReferenceInput property={property} name={name} defaultValue={initial?.valueReference} />
+      );
+    case QuestionnaireItemType.quantity:
+      return (
+        <input type="number" name={name} data-testid={name} defaultValue={initial?.valueQuantity?.value} />
+      );
   }
 
   return null;
