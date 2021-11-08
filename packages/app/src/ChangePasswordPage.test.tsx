@@ -82,7 +82,7 @@ describe('ChangePasswordPage', () => {
       fireEvent.click(screen.getByTestId('submit'));
     });
 
-    expect(screen.getByTestId('success')).not.toBeUndefined();
+    expect(screen.getByTestId('success')).toBeInTheDocument();
   });
 
   test('Wrong old password', async () => {
@@ -98,7 +98,7 @@ describe('ChangePasswordPage', () => {
       fireEvent.click(screen.getByTestId('submit'));
     });
 
-    expect(screen.getByText('Incorrect password')).not.toBeUndefined();
+    expect(screen.getByText('Incorrect password')).toBeInTheDocument();
   });
 
 });

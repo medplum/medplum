@@ -74,7 +74,7 @@ describe('ProjectPage', () => {
       await waitFor(() => screen.getByText('Alice Smith'));
     });
 
-    expect(screen.getByText('Alice Smith')).not.toBeUndefined();
+    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
   });
 
 });

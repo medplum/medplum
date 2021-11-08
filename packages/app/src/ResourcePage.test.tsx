@@ -197,7 +197,7 @@ describe('ResourcePage', () => {
       await waitFor(() => screen.getByText('Resource not found'));
     });
 
-    expect(screen.getByText('Resource not found')).not.toBeUndefined();
+    expect(screen.getByText('Resource not found')).toBeInTheDocument();
   });
 
   test('Details tab renders', async () => {
@@ -207,7 +207,7 @@ describe('ResourcePage', () => {
       await waitFor(() => screen.getByText('Resource Type'));
     });
 
-    expect(screen.getByText('Resource Type')).not.toBeUndefined();
+    expect(screen.getByText('Resource Type')).toBeInTheDocument();
   });
 
   test('Edit tab renders', async () => {
@@ -217,7 +217,7 @@ describe('ResourcePage', () => {
       await waitFor(() => screen.getByText('Edit'));
     });
 
-    expect(screen.getByText('Edit')).not.toBeUndefined();
+    expect(screen.getByText('Edit')).toBeInTheDocument();
   });
 
   test('History tab renders', async () => {
@@ -227,7 +227,7 @@ describe('ResourcePage', () => {
       await waitFor(() => screen.getByText('History'));
     });
 
-    expect(screen.getByText('History')).not.toBeUndefined();
+    expect(screen.getByText('History')).toBeInTheDocument();
   });
 
   test('Blame tab renders', async () => {
@@ -237,7 +237,7 @@ describe('ResourcePage', () => {
       await waitFor(() => screen.getByText('Blame'));
     });
 
-    expect(screen.getByText('Blame')).not.toBeUndefined();
+    expect(screen.getByText('Blame')).toBeInTheDocument();
   });
 
   test('JSON tab renders', async () => {
@@ -247,7 +247,7 @@ describe('ResourcePage', () => {
       await waitFor(() => screen.getByTestId('resource-json'));
     });
 
-    expect(screen.getByTestId('resource-json')).not.toBeUndefined();
+    expect(screen.getByTestId('resource-json')).toBeInTheDocument();
   });
 
   test('JSON submit', async () => {
@@ -265,7 +265,7 @@ describe('ResourcePage', () => {
       fireEvent.click(screen.getByText('OK'));
     });
 
-    expect(screen.getByTestId('resource-json')).not.toBeUndefined();
+    expect(screen.getByTestId('resource-json')).toBeInTheDocument();
   });
 
   test('JSON submit with meta', async () => {
@@ -298,7 +298,7 @@ describe('ResourcePage', () => {
       fireEvent.click(screen.getByText('OK'));
     });
 
-    expect(screen.getByTestId('resource-json')).not.toBeUndefined();
+    expect(screen.getByTestId('resource-json')).toBeInTheDocument();
   });
 
   test('Patient timeline', async () => {
@@ -308,13 +308,13 @@ describe('ResourcePage', () => {
       await waitFor(() => screen.getByText('Timeline'));
     });
 
-    expect(screen.getByText('Timeline')).not.toBeUndefined();
+    expect(screen.getByText('Timeline')).toBeInTheDocument();
 
     // Expect identifiers
-    expect(screen.getByText('abc')).not.toBeUndefined();
-    expect(screen.getByText('123')).not.toBeUndefined();
-    expect(screen.getByText('def')).not.toBeUndefined();
-    expect(screen.getByText('456')).not.toBeUndefined();
+    expect(screen.getByText('abc')).toBeInTheDocument();
+    expect(screen.getByText('123')).toBeInTheDocument();
+    expect(screen.getByText('def')).toBeInTheDocument();
+    expect(screen.getByText('456')).toBeInTheDocument();
   });
 
   test('Encounter timeline', async () => {
@@ -324,7 +324,7 @@ describe('ResourcePage', () => {
       await waitFor(() => screen.getByText('Timeline'));
     });
 
-    expect(screen.getByText('Timeline')).not.toBeUndefined();
+    expect(screen.getByText('Timeline')).toBeInTheDocument();
   });
 
   test('Questionnaire preview', async () => {
@@ -334,7 +334,7 @@ describe('ResourcePage', () => {
       await waitFor(() => screen.getByText('Preview'));
     });
 
-    expect(screen.getByText('Preview')).not.toBeUndefined();
+    expect(screen.getByText('Preview')).toBeInTheDocument();
   });
 
   test('Bot editor', async () => {
@@ -344,7 +344,7 @@ describe('ResourcePage', () => {
       await waitFor(() => screen.getByText('Editor'));
     });
 
-    expect(screen.getByText('Editor')).not.toBeUndefined();
+    expect(screen.getByText('Editor')).toBeInTheDocument();
   });
 
   test('DiagnosticReport display', async () => {
@@ -354,7 +354,7 @@ describe('ResourcePage', () => {
       await waitFor(() => screen.getByText('Report'));
     });
 
-    expect(screen.getByText('Report')).not.toBeUndefined();
+    expect(screen.getByText('Report')).toBeInTheDocument();
   });
 
 });

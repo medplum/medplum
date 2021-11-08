@@ -64,7 +64,7 @@ describe('EditMembershipPage', () => {
       await waitFor(() => screen.getByText('Edit'));
     });
 
-    expect(screen.getByText('Edit')).not.toBeUndefined();
+    expect(screen.getByText('Edit')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
@@ -74,13 +74,13 @@ describe('EditMembershipPage', () => {
       await waitFor(() => screen.getByText('Edit'));
     });
 
-    expect(screen.getByText('Edit')).not.toBeUndefined();
+    expect(screen.getByText('Edit')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Edit'));
     });
 
-    expect(screen.getByTestId('success')).not.toBeUndefined();
+    expect(screen.getByTestId('success')).toBeInTheDocument();
   });
 
 });

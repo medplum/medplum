@@ -54,7 +54,7 @@ describe('PatientHeader', () => {
       }]
     });
 
-    expect(screen.getByText('Alice Smith')).not.toBeUndefined();
+    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
   });
 
   test('Renders identifiers', async () => {
@@ -70,10 +70,10 @@ describe('PatientHeader', () => {
       ]
     });
 
-    expect(screen.getByText('abc')).not.toBeUndefined();
-    expect(screen.getByText('123')).not.toBeUndefined();
-    expect(screen.getByText('def')).not.toBeUndefined();
-    expect(screen.getByText('456')).not.toBeUndefined();
+    expect(screen.getByText('abc')).toBeInTheDocument();
+    expect(screen.getByText('123')).toBeInTheDocument();
+    expect(screen.getByText('def')).toBeInTheDocument();
+    expect(screen.getByText('456')).toBeInTheDocument();
   });
 
   test('Male avatar', async () => {
@@ -136,7 +136,7 @@ describe('PatientHeader', () => {
       birthDate: birthDate.toISOString().substring(0, 10)
     });
 
-    expect(screen.getByText('030Y')).not.toBeUndefined();
+    expect(screen.getByText('030Y')).toBeInTheDocument();
   });
 
   test('Age in years day before birthday', async () => {
@@ -154,7 +154,7 @@ describe('PatientHeader', () => {
       birthDate: birthDate.toISOString().substring(0, 10)
     });
 
-    expect(screen.getByText('029Y')).not.toBeUndefined();
+    expect(screen.getByText('029Y')).toBeInTheDocument();
   });
 
   test('Age in months day after birthday', async () => {
@@ -172,7 +172,7 @@ describe('PatientHeader', () => {
       birthDate: birthDate.toISOString().substring(0, 10)
     });
 
-    expect(screen.getByText('020M')).not.toBeUndefined();
+    expect(screen.getByText('020M')).toBeInTheDocument();
   });
 
   test('Age in months day before birthday', async () => {
@@ -190,7 +190,7 @@ describe('PatientHeader', () => {
       birthDate: birthDate.toISOString().substring(0, 10)
     });
 
-    expect(screen.getByText('019M')).not.toBeUndefined();
+    expect(screen.getByText('019M')).toBeInTheDocument();
   });
 
 });
