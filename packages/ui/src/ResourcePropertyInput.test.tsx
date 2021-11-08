@@ -238,7 +238,7 @@ describe('ResourcePropertyInput', () => {
       property: patientManagingOrganizationProperty,
       name: 'managingOrganization'
     });
-    expect(screen.getByTestId('autocomplete')).not.toBeUndefined();
+    expect(screen.getByTestId('autocomplete')).toBeInTheDocument();
   });
 
 });

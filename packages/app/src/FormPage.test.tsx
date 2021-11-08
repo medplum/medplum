@@ -102,7 +102,7 @@ describe('FormPage', () => {
       await waitFor(() => screen.getByTestId('error'));
     });
 
-    expect(screen.getByTestId('error')).not.toBeUndefined();
+    expect(screen.getByTestId('error')).toBeInTheDocument();
   });
 
   test('Form renders', async () => {
@@ -112,7 +112,7 @@ describe('FormPage', () => {
       await waitFor(() => screen.getByText('First question'));
     });
 
-    expect(screen.getByText('First question')).not.toBeUndefined();
+    expect(screen.getByText('First question')).toBeInTheDocument();
   });
 
   test('Submit', async () => {
@@ -126,7 +126,7 @@ describe('FormPage', () => {
       fireEvent.click(screen.getByText('OK'));
     });
 
-    expect(screen.getByText('First question')).not.toBeUndefined();
+    expect(screen.getByText('First question')).toBeInTheDocument();
   });
 
 });

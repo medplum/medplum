@@ -90,7 +90,7 @@ describe('ResetPasswordPage', () => {
       fireEvent.click(screen.getByTestId('submit'));
     });
 
-    expect(screen.getByTestId('success')).not.toBeUndefined();
+    expect(screen.getByTestId('success')).toBeInTheDocument();
   });
 
 });

@@ -6,7 +6,7 @@ describe('AddressDisplay', () => {
 
   test('Renders', () => {
     render(<AddressDisplay value={{ line: ['123 main st'], city: 'Happy' }} />);
-    expect(screen.getByText('123 main st, Happy')).not.toBeUndefined();
+    expect(screen.getByText('123 main st, Happy')).toBeInTheDocument();
   });
 
   test('Renders undefined value', () => {

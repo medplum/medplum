@@ -134,7 +134,7 @@ describe('Header', () => {
 
   test('Renders', () => {
     setup();
-    expect(screen.getByTestId('header')).not.toBeUndefined();
+    expect(screen.getByTestId('header')).toBeInTheDocument();
   });
 
   test('Renders sidebar links', async () => {

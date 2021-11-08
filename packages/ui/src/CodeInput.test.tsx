@@ -73,7 +73,7 @@ describe('CodeInput', () => {
       </MedplumProvider>
     );
 
-    expect(screen.getByTestId('autocomplete')).not.toBeUndefined();
+    expect(screen.getByTestId('autocomplete')).toBeInTheDocument();
   });
 
   test('Renders string default value', () => {
@@ -83,7 +83,7 @@ describe('CodeInput', () => {
       </MedplumProvider>
     );
 
-    expect(screen.getByTestId('autocomplete')).not.toBeUndefined();
+    expect(screen.getByTestId('autocomplete')).toBeInTheDocument();
     expect(screen.getByText('xyz')).not.toBeUndefined();
   });
 

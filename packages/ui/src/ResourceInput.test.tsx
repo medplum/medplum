@@ -115,7 +115,7 @@ describe('ResourceInput', () => {
       resourceType: 'Patient',
       name: 'foo'
     });
-    expect(screen.getByTestId('autocomplete')).not.toBeUndefined();
+    expect(screen.getByTestId('autocomplete')).toBeInTheDocument();
   });
 
   test('Renders default value', async () => {
@@ -128,7 +128,7 @@ describe('ResourceInput', () => {
         }
       });
     });
-    expect(screen.getByTestId('autocomplete')).not.toBeUndefined();
+    expect(screen.getByTestId('autocomplete')).toBeInTheDocument();
   });
 
   test('Use autocomplete', async () => {

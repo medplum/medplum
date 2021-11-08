@@ -144,7 +144,7 @@ describe('SignInForm', () => {
       await waitFor(() => screen.getByTestId('text-field-error'));
     });
 
-    expect(screen.getByTestId('text-field-error')).not.toBeUndefined();
+    expect(screen.getByTestId('text-field-error')).toBeInTheDocument();
   });
 
   test('Incorrect password', async () => {
@@ -162,7 +162,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByTestId('submit'));
     });
 
-    expect(screen.getByTestId('text-field-error')).not.toBeUndefined();
+    expect(screen.getByTestId('text-field-error')).toBeInTheDocument();
   });
 
   test('Forgot password', async () => {

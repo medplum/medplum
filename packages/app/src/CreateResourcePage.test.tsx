@@ -122,7 +122,7 @@ describe('CreateResourcePage', () => {
       await waitFor(() => screen.getByText('New Practitioner'));
     });
 
-    expect(screen.getByText('New Practitioner')).not.toBeUndefined();
+    expect(screen.getByText('New Practitioner')).toBeInTheDocument();
   });
 
 

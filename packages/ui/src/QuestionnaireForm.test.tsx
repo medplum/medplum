@@ -61,7 +61,7 @@ describe('QuestionnaireForm', () => {
       },
       onSubmit: jest.fn()
     });
-    expect(screen.getByTestId('questionnaire-form')).not.toBeUndefined();
+    expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
   });
 
   test('Render groups', async () => {
@@ -101,7 +101,7 @@ describe('QuestionnaireForm', () => {
       onSubmit: jest.fn()
     });
 
-    expect(screen.getByTestId('questionnaire-form')).not.toBeUndefined();
+    expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
     expect(screen.getByText('Group 1')).not.toBeUndefined();
     expect(screen.getByText('Group 2')).not.toBeUndefined();
   });
@@ -143,7 +143,7 @@ describe('QuestionnaireForm', () => {
       onSubmit
     });
 
-    expect(screen.getByTestId('questionnaire-form')).not.toBeUndefined();
+    expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
     expect(screen.queryByTestId('q4')).toBeFalsy();
     expect(screen.queryByTestId('q5')).toBeFalsy();
 

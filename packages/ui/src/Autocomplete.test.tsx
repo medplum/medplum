@@ -87,7 +87,7 @@ describe('Autocomplete', () => {
       await waitFor(() => screen.getByTestId('selected'));
     });
 
-    expect(screen.getByTestId('selected')).not.toBeUndefined();
+    expect(screen.getByTestId('selected')).toBeInTheDocument();
 
     // Press "Backspace"
     await act(async () => {

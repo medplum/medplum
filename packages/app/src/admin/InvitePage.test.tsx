@@ -64,7 +64,7 @@ describe('InvitePage', () => {
       await waitFor(() => screen.getByText('Invite'));
     });
 
-    expect(screen.getByText('Invite')).not.toBeUndefined();
+    expect(screen.getByText('Invite')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
@@ -74,7 +74,7 @@ describe('InvitePage', () => {
       await waitFor(() => screen.getByText('Invite'));
     });
 
-    expect(screen.getByText('Invite')).not.toBeUndefined();
+    expect(screen.getByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('firstName'), { target: { value: 'George' } });
@@ -86,7 +86,7 @@ describe('InvitePage', () => {
       fireEvent.click(screen.getByText('Invite'));
     });
 
-    expect(screen.getByTestId('success')).not.toBeUndefined();
+    expect(screen.getByTestId('success')).toBeInTheDocument();
   });
 
 });

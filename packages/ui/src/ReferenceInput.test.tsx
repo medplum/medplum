@@ -108,7 +108,7 @@ describe('ReferenceInput', () => {
       name: 'foo',
       property: {}
     });
-    expect(screen.getByTestId('reference-input-resource-type-input')).not.toBeUndefined();
+    expect(screen.getByTestId('reference-input-resource-type-input')).toBeInTheDocument();
   });
 
   test('Renders default value resource type', async () => {
@@ -121,7 +121,7 @@ describe('ReferenceInput', () => {
         }
       });
     });
-    expect(screen.getByTestId('reference-input-resource-type-input')).not.toBeUndefined();
+    expect(screen.getByTestId('reference-input-resource-type-input')).toBeInTheDocument();
     expect((screen.getByTestId('reference-input-resource-type-input') as HTMLInputElement).value).toBe('Patient');
   });
 
@@ -139,7 +139,7 @@ describe('ReferenceInput', () => {
       fireEvent.change(screen.getByTestId('reference-input-resource-type-input'), { target: { value: 'Practitioner' } });
     });
 
-    expect(screen.getByTestId('reference-input-resource-type-input')).not.toBeUndefined();
+    expect(screen.getByTestId('reference-input-resource-type-input')).toBeInTheDocument();
   });
 
   test('Renders property with target types', () => {
@@ -155,7 +155,7 @@ describe('ReferenceInput', () => {
         }]
       }
     });
-    expect(screen.getByTestId('reference-input-resource-type-select')).not.toBeUndefined();
+    expect(screen.getByTestId('reference-input-resource-type-select')).toBeInTheDocument();
   });
 
   test('Change resource type with target types', async () => {
@@ -176,7 +176,7 @@ describe('ReferenceInput', () => {
       fireEvent.change(screen.getByTestId('reference-input-resource-type-select'), { target: { value: 'Practitioner' } });
     });
 
-    expect(screen.getByTestId('reference-input-resource-type-select')).not.toBeUndefined();
+    expect(screen.getByTestId('reference-input-resource-type-select')).toBeInTheDocument();
   });
 
   test('Use autocomplete', async () => {

@@ -60,7 +60,7 @@ describe('ProjectsPage', () => {
       await waitFor(() => screen.getByText('Project 123'));
     });
 
-    expect(screen.getByText('Project 123')).not.toBeUndefined();
+    expect(screen.getByText('Project 123')).toBeInTheDocument();
   });
 
 });
