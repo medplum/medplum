@@ -1,8 +1,10 @@
 import { MedplumClient, PropertyType } from '@medplum/core';
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import each from 'jest-each';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
 import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
+import { QuestionnaireItemType } from './QuestionnaireUtils';
 
 function mockFetch(url: string, options: any): Promise<any> {
   let result: any;
@@ -71,30 +73,30 @@ describe('QuestionnaireForm', () => {
         item: [{
           linkId: 'group1',
           text: 'Group 1',
-          type: 'group',
+          type: QuestionnaireItemType.group,
           item: [{
             linkId: 'question1',
             text: 'Question 1',
-            type: 'string'
+            type: QuestionnaireItemType.string
           },
           {
             linkId: 'question2',
             text: 'Question 2',
-            type: 'string'
+            type: QuestionnaireItemType.string
           }]
         }, {
           linkId: 'group2',
           text: 'Group 2',
-          type: 'group',
+          type: QuestionnaireItemType.group,
           item: [{
             linkId: 'question3',
             text: 'Question 3',
-            type: 'string'
+            type: QuestionnaireItemType.string
           },
           {
             linkId: 'question4',
             text: 'Question 4',
-            type: 'string'
+            type: QuestionnaireItemType.string
           }]
         }]
       },
@@ -115,22 +117,22 @@ describe('QuestionnaireForm', () => {
         item: [
           {
             linkId: 'q1',
-            type: PropertyType.string,
+            type: QuestionnaireItemType.string,
             text: 'q1'
           },
           {
             linkId: 'q2',
-            type: PropertyType.integer,
-            text: 'q1'
+            type: QuestionnaireItemType.integer,
+            text: 'q2'
           },
           {
             linkId: 'q3',
-            type: PropertyType.date,
+            type: QuestionnaireItemType.date,
             text: 'q3'
           },
           {
             linkId: '', // Silently ignore missing linkId
-            type: PropertyType.string,
+            type: QuestionnaireItemType.string,
             text: 'q4'
           },
           {
@@ -144,13 +146,13 @@ describe('QuestionnaireForm', () => {
     });
 
     expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
-    expect(screen.queryByTestId('q4')).toBeFalsy();
-    expect(screen.queryByTestId('q5')).toBeFalsy();
+    expect(screen.queryByLabelText('q4')).toBeFalsy();
+    expect(screen.queryByLabelText('q5')).toBeFalsy();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('q1'), { target: { value: 'a1' } });
-      fireEvent.change(screen.getByTestId('q2'), { target: { value: '2' } });
-      fireEvent.change(screen.getByTestId('q3'), { target: { value: '2023-03-03' } });
+      fireEvent.change(screen.getByLabelText('q1'), { target: { value: 'a1' } });
+      fireEvent.change(screen.getByLabelText('q2'), { target: { value: '2' } });
+      fireEvent.change(screen.getByLabelText('q3'), { target: { value: '2023-03-03' } });
     });
 
     expect(screen.getByText('OK')).not.toBeUndefined();
@@ -160,6 +162,131 @@ describe('QuestionnaireForm', () => {
     });
 
     expect(onSubmit).toBeCalled();
+  });
+
+  each([
+    [QuestionnaireItemType.decimal, 'number', '123.456'],
+    [QuestionnaireItemType.integer, 'number', '123'],
+    [QuestionnaireItemType.date, 'date', '2020-01-01'],
+    [QuestionnaireItemType.dateTime, 'datetime-local', '2020-01-01T12:01:01.000'],
+    [QuestionnaireItemType.time, 'time', '12:01:01'],
+    [QuestionnaireItemType.string, 'text', 'hello'],
+    [QuestionnaireItemType.text, 'textarea', 'lorem ipsum'],
+    [QuestionnaireItemType.url, 'url', 'https://example.com/'],
+    [QuestionnaireItemType.quantity, 'number', '123'],
+  ]).test('%s question', async (propertyType: PropertyType, inputType: string, value: string) => {
+    setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [{
+          linkId: 'q1',
+          type: propertyType,
+          text: 'q1'
+        }]
+      },
+      onSubmit: jest.fn()
+    });
+
+    const input = screen.getByLabelText('q1') as HTMLInputElement;
+    expect(input).toBeInTheDocument();
+    expect(input.type).toEqual(inputType);
+
+    await act(async () => {
+      fireEvent.change(input, { target: { value } });
+    });
+
+    expect(input.value).toBe(value);
+  });
+
+  test('Boolean input', async () => {
+    setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [{
+          linkId: 'q1',
+          type: QuestionnaireItemType.boolean,
+          text: 'q1'
+        }]
+      },
+      onSubmit: jest.fn()
+    });
+
+    const input = screen.getByLabelText('q1') as HTMLInputElement;
+    expect(input).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(input);
+    });
+
+    expect(input.checked).toBe(true);
+  });
+
+  test('Choice input', async () => {
+    setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [{
+          linkId: 'q1',
+          type: QuestionnaireItemType.choice,
+          text: 'q1'
+        }]
+      },
+      onSubmit: jest.fn()
+    });
+
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    expect(input).toBeInTheDocument();
+  });
+
+  test('Open choice input', async () => {
+    setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [{
+          linkId: 'q1',
+          type: QuestionnaireItemType.openChoice,
+          text: 'q1'
+        }]
+      },
+      onSubmit: jest.fn()
+    });
+
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    expect(input).toBeInTheDocument();
+  });
+
+  test('Attachment input', async () => {
+    setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [{
+          linkId: 'q1',
+          type: QuestionnaireItemType.attachment,
+          text: 'q1'
+        }]
+      },
+      onSubmit: jest.fn()
+    });
+
+    const input = screen.getByTestId('attachment-input');
+    expect(input).toBeInTheDocument();
+  });
+
+  test('Reference input', async () => {
+    setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [{
+          linkId: 'q1',
+          type: QuestionnaireItemType.reference,
+          text: 'q1'
+        }]
+      },
+      onSubmit: jest.fn()
+    });
+
+    const input = screen.getByTestId('reference-input-resource-type-input');
+    expect(input).toBeInTheDocument();
   });
 
 });

@@ -154,4 +154,215 @@ describe('QuestionnaireBuilder', () => {
     expect(onSubmit).toBeCalled();
   });
 
+  test('Edit a question text', async () => {
+    const onSubmit = jest.fn();
+
+    setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [{
+          linkId: 'question1',
+          text: 'Question 1',
+          type: 'string'
+        }]
+      },
+      onSubmit
+    });
+
+    expect(screen.getByText('Question 1')).not.toBeUndefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Question 1'));
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByDisplayValue('Question 1'), { target: { value: 'Renamed' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(onSubmit).toBeCalled();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      resourceType: 'Questionnaire',
+      item: [{
+        linkId: 'question1',
+        text: 'Renamed',
+        type: 'string'
+      }]
+    });
+
+  });
+
+  test('Add item', async () => {
+    const onSubmit = jest.fn();
+
+    setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        title: 'My questionnaire',
+        item: [{
+          linkId: 'question1',
+          text: 'Question 1',
+          type: 'string'
+        }]
+      },
+      onSubmit
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('My questionnaire'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add item'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(onSubmit).toBeCalled();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      resourceType: 'Questionnaire',
+      item: [{
+        linkId: 'question1',
+        text: 'Question 1',
+        type: 'string'
+      }, {
+        text: 'Question',
+        type: 'string'
+      }]
+    });
+
+  });
+
+  test('Remove item', async () => {
+    const onSubmit = jest.fn();
+
+    setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        title: 'My questionnaire',
+        item: [{
+          linkId: 'question1',
+          text: 'Question 1',
+          type: 'string'
+        }, {
+          linkId: 'question2',
+          text: 'Question 2',
+          type: 'string'
+        }]
+      },
+      onSubmit
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Question 1'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Remove'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(onSubmit).toBeCalled();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      resourceType: 'Questionnaire',
+      item: [{
+        linkId: 'question2',
+        text: 'Question 2',
+        type: 'string'
+      }]
+    });
+
+  });
+
+  test('Add group', async () => {
+    const onSubmit = jest.fn();
+
+    setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        title: 'My questionnaire',
+        item: [{
+          linkId: 'question1',
+          text: 'Question 1',
+          type: 'string'
+        }]
+      },
+      onSubmit
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('My questionnaire'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add group'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(onSubmit).toBeCalled();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      resourceType: 'Questionnaire',
+      item: [{
+        linkId: 'question1',
+        text: 'Question 1',
+        type: 'string'
+      }, {
+        type: 'group'
+      }]
+    });
+
+  });
+
+  test('Change title', async () => {
+    const onSubmit = jest.fn();
+
+    setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        title: 'My questionnaire',
+        item: [{
+          linkId: 'question1',
+          text: 'Question 1',
+          type: 'string'
+        }]
+      },
+      onSubmit
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('My questionnaire'));
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByDisplayValue('My questionnaire'), { target: { value: 'Renamed' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(onSubmit).toBeCalled();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      resourceType: 'Questionnaire',
+      title: 'Renamed',
+      item: [{
+        linkId: 'question1',
+        text: 'Question 1',
+        type: 'string'
+      }]
+    });
+
+  });
+
 });

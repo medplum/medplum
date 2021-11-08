@@ -65,7 +65,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
       {props.items.map(item => item.type === QuestionnaireItemType.group ? (
         <QuestionnaireFormItem key={item.linkId} item={item} />
       ) : (
-        <FormSection key={item.linkId} title={item.text || ''}>
+        <FormSection key={item.linkId} htmlFor={item.linkId} title={item.text || ''}>
           <QuestionnaireFormItem item={item} />
         </FormSection>
       ))}
@@ -107,39 +107,39 @@ function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element |
       );
     case QuestionnaireItemType.boolean:
       return (
-        <input type="checkbox" name={name} value="true" checked={initial?.valueBoolean} />
+        <input type="checkbox" id={name} name={name} value="true" defaultChecked={initial?.valueBoolean} />
       );
     case QuestionnaireItemType.decimal:
       return (
-        <input type="number" name={name} data-testid={name} defaultValue={initial?.valueDecimal} />
+        <input type="number" id={name} name={name} defaultValue={initial?.valueDecimal} />
       );
     case QuestionnaireItemType.integer:
       return (
-        <input type="number" name={name} data-testid={name} defaultValue={initial?.valueInteger} />
+        <input type="number" id={name} name={name} defaultValue={initial?.valueInteger} />
       );
     case QuestionnaireItemType.date:
       return (
-        <input type="date" name={name} data-testid={name} defaultValue={initial?.valueDate} />
+        <input type="date" id={name} name={name} defaultValue={initial?.valueDate} />
       );
     case QuestionnaireItemType.dateTime:
       return (
-        <input type="datetime-local" name={name} data-testid={name} defaultValue={initial?.valueDateTime} />
+        <input type="datetime-local" id={name} name={name} step="1" defaultValue={initial?.valueDateTime} />
       );
     case QuestionnaireItemType.time:
       return (
-        <input type="time" name={name} data-testid={name} defaultValue={initial?.valueTime} />
+        <input type="time" id={name} name={name} defaultValue={initial?.valueTime} />
       );
     case QuestionnaireItemType.string:
       return (
-        <input type="text" name={name} data-testid={name} defaultValue={initial?.valueString} />
+        <input type="text" id={name} name={name} defaultValue={initial?.valueString} />
       );
     case QuestionnaireItemType.text:
       return (
-        <input type="text" name={name} data-testid={name} defaultValue={initial?.valueString} />
+        <textarea id={name} name={name} defaultValue={initial?.valueString} />
       );
     case QuestionnaireItemType.url:
       return (
-        <input type="url" name={name} data-testid={name} defaultValue={initial?.valueUri} />
+        <input type="url" id={name} name={name} defaultValue={initial?.valueUri} />
       );
     case QuestionnaireItemType.choice:
     case QuestionnaireItemType.openChoice:
@@ -156,7 +156,7 @@ function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element |
       );
     case QuestionnaireItemType.quantity:
       return (
-        <input type="number" name={name} data-testid={name} defaultValue={initial?.valueQuantity?.value} />
+        <input type="number" id={name} name={name} defaultValue={initial?.valueQuantity?.value} />
       );
   }
 
