@@ -1,0 +1,45 @@
+
+.medplum-questionnaire-builder .section {
+  position: relative;
+  margin: 4px;
+  padding: 4px;
+  border: 1px dashed blue;
+  border-radius: 8px;
+}
+
+.medplum-questionnaire-builder .section:hover {
+  background-color: rgba(128, 128, 128, 0.07);
+}
+
+.medplum-questionnaire-builder .section.editing {
+  margin: 8px 4px 8px 4px;
+  padding: 4px 4px 14px 4px;
+  border: 1px dashed red;
+  border-radius: 8px;
+}
+
+.medplum-questionnaire-builder .section.editing input,
+.medplum-questionnaire-builder .section.editing select {
+  margin: 2px 4px;
+}
+
+.medplum-questionnaire-builder .top-actions {
+  top: 0;
+}
+
+.medplum-questionnaire-builder .bottom-actions {
+  bottom: 0;
+}
+
+.medplum-questionnaire-builder .top-actions,
+.medplum-questionnaire-builder .bottom-actions {
+  position: absolute;
+  right: 0;
+}
+
+.medplum-questionnaire-builder .top-actions a,
+.medplum-questionnaire-builder .bottom-actions a {
+  font-size: 9px;
+  color: red;
+  margin: 0 6px 4px 0;
+}

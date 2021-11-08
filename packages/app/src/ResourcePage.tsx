@@ -21,6 +21,7 @@ import {
   Loading,
   MedplumLink,
   PatientTimeline,
+  QuestionnaireBuilder,
   QuestionnaireForm,
   ResourceBlame,
   ResourceForm,
@@ -238,6 +239,13 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
             <DefaultResourceTimeline resource={props.resource} />
           );
       }
+    case 'builder':
+      return (
+        <QuestionnaireBuilder
+          questionnaire={props.resource as Questionnaire}
+          onSubmit={props.onSubmit}
+        />
+      );
     case 'preview':
       return (
         <QuestionnaireForm

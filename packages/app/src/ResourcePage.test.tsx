@@ -327,6 +327,16 @@ describe('ResourcePage', () => {
     expect(screen.getByText('Timeline')).toBeInTheDocument();
   });
 
+  test('Questionnaire builder', async () => {
+    setup('/Questionnaire/123/builder');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('OK'));
+    });
+
+    expect(screen.getByText('OK')).not.toBeUndefined();
+  });
+
   test('Questionnaire preview', async () => {
     setup('/Questionnaire/123/preview');
 
