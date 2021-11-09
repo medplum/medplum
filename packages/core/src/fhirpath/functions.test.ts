@@ -1,11 +1,13 @@
+import { Atom, LiteralAtom } from './atoms';
 import { functions } from './functions';
-import { Atom } from './parse';
 
 const isEven: Atom = {
   eval: num => num % 2 === 0
 };
 
 describe('FHIRPath functions', () => {
+
+  // 5.1 Existence
 
   test('empty', () => {
     expect(functions.empty([])).toEqual(true);
@@ -92,12 +94,16 @@ describe('FHIRPath functions', () => {
     expect(functions.isDistinct(['a', 'a'])).toEqual(false);
   });
 
+  // 5.2. Filtering and projection
+
   test('where', () => {
     expect(functions.where([], isEven)).toEqual([]);
     expect(functions.where([1], isEven)).toEqual([]);
     expect(functions.where([1, 2], isEven)).toEqual([2]);
     expect(functions.where([1, 2, 3, 4], isEven)).toEqual([2, 4]);
   });
+
+  // 5.3 Subsetting
 
   test('single', () => {
     expect(functions.single([])).toEqual([]);
@@ -175,6 +181,116 @@ describe('FHIRPath functions', () => {
     expect(functions.take([1, 2, 3], num2)).toEqual([1, 2]);
   });
 
+  // 5.4. Combining
+
+  // 5.5. Conversion
+
+  test('toBoolean', () => {
+    expect(functions.toBoolean([])).toEqual([]);
+    expect(functions.toBoolean([true])).toEqual([true]);
+    expect(functions.toBoolean([false])).toEqual([false]);
+    expect(functions.toBoolean([1])).toEqual([true]);
+    expect(() => functions.toBoolean([1, 2])).toThrow();
+    expect(functions.toBoolean(['true'])).toEqual([true]);
+    expect(functions.toBoolean(['false'])).toEqual([false]);
+    expect(functions.toBoolean(['xyz'])).toEqual([]);
+    expect(functions.toBoolean([{}])).toEqual([true]);
+  });
+
+  test('toInteger', () => {
+    expect(functions.toInteger([])).toEqual([]);
+    expect(functions.toInteger([true])).toEqual([1]);
+    expect(functions.toInteger([false])).toEqual([0]);
+    expect(functions.toInteger([0])).toEqual([0]);
+    expect(functions.toInteger([1])).toEqual([1]);
+    expect(() => functions.toInteger([1, 2])).toThrow();
+    expect(functions.toInteger(['1'])).toEqual([1]);
+    expect(functions.toInteger(['true'])).toEqual([]);
+    expect(functions.toInteger(['false'])).toEqual([]);
+    expect(functions.toInteger(['xyz'])).toEqual([]);
+    expect(functions.toInteger([{}])).toEqual([]);
+  });
+
+  test('convertsToInteger', () => {
+    expect(functions.convertsToInteger([])).toEqual([]);
+    expect(functions.convertsToInteger([true])).toEqual([true]);
+    expect(functions.convertsToInteger([false])).toEqual([true]);
+    expect(functions.convertsToInteger([0])).toEqual([true]);
+    expect(functions.convertsToInteger([1])).toEqual([true]);
+    expect(() => functions.convertsToInteger([1, 2])).toThrow();
+    expect(functions.convertsToInteger(['1'])).toEqual([true]);
+    expect(functions.convertsToInteger(['true'])).toEqual([false]);
+    expect(functions.convertsToInteger(['false'])).toEqual([false]);
+    expect(functions.convertsToInteger(['xyz'])).toEqual([false]);
+    expect(functions.convertsToInteger([{}])).toEqual([false]);
+  });
+
+  test('toString', () => {
+    const toString = functions.toString as any as (input: any[]) => string[];
+    expect(toString([])).toEqual([]);
+    expect(() => toString([1, 2])).toThrow();
+    expect(toString([true])).toEqual(['true']);
+    expect(toString([false])).toEqual(['false']);
+    expect(toString([0])).toEqual(['0']);
+    expect(toString([1])).toEqual(['1']);
+    expect(toString(['1'])).toEqual(['1']);
+    expect(toString(['true'])).toEqual(['true']);
+    expect(toString(['false'])).toEqual(['false']);
+    expect(toString(['xyz'])).toEqual(['xyz']);
+  });
+
+  test('convertsToString', () => {
+    expect(functions.convertsToString([])).toEqual([]);
+    expect(() => functions.convertsToString([1, 2])).toThrow();
+    expect(functions.convertsToString([true])).toEqual([true]);
+    expect(functions.convertsToString([false])).toEqual([true]);
+    expect(functions.convertsToString([0])).toEqual([true]);
+    expect(functions.convertsToString([1])).toEqual([true]);
+    expect(functions.convertsToString(['1'])).toEqual([true]);
+    expect(functions.convertsToString(['true'])).toEqual([true]);
+    expect(functions.convertsToString(['false'])).toEqual([true]);
+    expect(functions.convertsToString(['xyz'])).toEqual([true]);
+    expect(functions.convertsToString([{}])).toEqual([true]);
+  });
+
+  // 5.6. String Manipulation.
+
+  test('indexOf', () => {
+    expect(functions.indexOf(['apple'], new LiteralAtom('a'))).toEqual([0]);
+  });
+
+  test('replace', () => {
+    expect(functions.replace(['banana'], new LiteralAtom('nana'), new LiteralAtom('tman'))).toEqual(['batman']);
+  });
+
+  test('matches', () => {
+    expect(functions.matches(['apple'], new LiteralAtom('a'))).toEqual([true]);
+  });
+
+  test('replaceMatches', () => {
+    expect(functions.replaceMatches(['banana'], new LiteralAtom('nana'), new LiteralAtom('tman'))).toEqual(['batman']);
+  });
+
+  // 5.7. Math
+
+  // 5.8. Tree navigation
+
+  // 5.9. Utility functions
+
+  test('now', () => {
+    expect(functions.now()[0]).toBeInstanceOf(Date);
+  });
+
+  test('timeOfDay', () => {
+    expect(functions.timeOfDay()[0]).toBeInstanceOf(Date);
+  });
+
+  test('today', () => {
+    expect(functions.today()[0]).toBeInstanceOf(Date);
+  });
+
+  // Other
+
   test('resolve', () => {
     expect(functions.resolve(['Patient/123'])).toEqual([{ resourceType: 'Patient', id: '123' }]);
     expect(functions.resolve([{ reference: 'Patient/123' }])).toEqual([{ resourceType: 'Patient', id: '123' }]);
@@ -183,6 +299,18 @@ describe('FHIRPath functions', () => {
 
   test('as', () => {
     expect(functions.as([{ resourceType: 'Patient', id: '123' }])).toEqual([{ resourceType: 'Patient', id: '123' }]);
+  });
+
+  // 12. Formal Specifications
+
+  test('type', () => {
+    expect(functions.type([true]))
+      .toEqual([{ namespace: 'System', name: 'Boolean' }]);
+    expect(functions.type([123]))
+      .toEqual([{ namespace: 'System', name: 'Integer' }]);
+    expect(functions.type([{ resourceType: 'Patient', id: '123' }]))
+      .toEqual([{ namespace: 'FHIR', name: 'Patient' }]);
+    expect(functions.type([{}])).toEqual([null]);
   });
 
 });

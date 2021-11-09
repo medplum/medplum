@@ -1,10 +1,7 @@
+import { Atom, BinaryOperatorAtom, ConcatAtom, ContainsAtom, DotAtom, EmptySetAtom, EqualsAtom, EquivalentAtom, FhirPathAtom, FunctionAtom, InAtom, IsAtom, LiteralAtom, NotEqualsAtom, NotEquivalentAtom, OrAtom, SymbolAtom, UnaryOperatorAtom, UnionAtom, XorAtom } from './atoms';
+import { parseDateString } from './date';
 import { functions } from './functions';
 import { Token, tokenizer } from './tokenize';
-import { applyMaybeArray } from './utils';
-
-export interface Atom {
-  eval(context: any): any;
-}
 
 interface PrefixParselet {
   parse(parser: Parser, token: Token): Atom;
@@ -48,16 +45,6 @@ class ParserBuilder {
     });
   }
 
-  public infixRight(tokenType: string, precedence: number, builder: (left: Atom, token: Token, right: Atom) => Atom): ParserBuilder {
-    return this.registerInfix(tokenType, {
-      parse(parser, left, token) {
-        const right = parser.parse(precedence - 1)
-        return builder(left, token, right)
-      },
-      precedence
-    });
-  }
-
   public construct(input: string): Parser {
     return new Parser(tokenizer.tokenize(input), this.prefixParselets, this.infixParselets);
   }
@@ -80,7 +67,7 @@ class Parser {
     return true;
   }
 
-  public parse(precedence = 0): Atom {
+  public parse(precedence = Precedence.MaximumPrecedence): Atom {
     const token = this.consume();
     const prefix = this.prefixParselets[token.id];
     if (!prefix) {
@@ -89,7 +76,7 @@ class Parser {
 
     let left = prefix.parse(this, token);
 
-    while (precedence < this.getPrecedence()) {
+    while (precedence > this.getPrecedence()) {
       const next = this.consume();
       const infix = this.infixParselets[next.id];
       left = infix.parse(this, left, next);
@@ -101,13 +88,13 @@ class Parser {
   private getPrecedence(): number {
     const nextToken = this.look();
     if (!nextToken) {
-      return 0;
+      return Precedence.MaximumPrecedence;
     }
     const parser = this.infixParselets[nextToken.id];
     if (parser) {
       return parser.precedence;
     }
-    return 0;
+    return Precedence.MaximumPrecedence;
   }
 
   private consume(): Token {
@@ -122,116 +109,41 @@ class Parser {
   }
 }
 
+/**
+ * Operator precedence
+ * See: https://hl7.org/fhirpath/#operator-precedence
+ */
 const enum Precedence {
-  Union = 1,
-  Equals = 2,
-  AddSub = 3,
-  MulDiv = 4,
-  Exp = 5,
-  Negate = 6,
-  Dot = 7,
-  FunctionCall = 8
-}
-
-export class FhirPathAtom implements Atom {
-  constructor(
-    public readonly original: string,
-    public readonly child: Atom) { }
-
-  eval(context: any): any[] {
-    try {
-      const result = applyMaybeArray(context, e => this.child.eval(e));
-      if (Array.isArray(result)) {
-        return result.flat();
-      } else if (result === undefined || result === null) {
-        return [];
-      } else {
-        return [result];
-      }
-    } catch (error) {
-      throw new Error(`FhirPathError on "${this.original}": ${error}`);
-    }
-  }
-}
-
-class LiteralAtom implements Atom {
-  constructor(public readonly value: any) { }
-  eval(): any {
-    return this.value;
-  }
-}
-
-class SymbolAtom implements Atom {
-  constructor(public readonly name: string) { }
-  eval(context: any): any {
-    return applyMaybeArray(context, e => e.resourceType === this.name ? e : e[this.name]);
-  }
-}
-
-class UnaryOperatorAtom implements Atom {
-  constructor(
-    public readonly child: Atom,
-    public readonly impl: (x: any) => any) { }
-
-  eval(context: any): any {
-    return this.impl(this.child.eval(context));
-  }
-}
-
-class BinaryOperatorAtom implements Atom {
-  constructor(
-    public readonly left: Atom,
-    public readonly right: Atom,
-    public readonly impl: (x: any, y: any) => any) { }
-
-  eval(context: any): any {
-    return this.impl(this.left.eval(context), this.right.eval(context));
-  }
-}
-
-class DotAtom implements Atom {
-  constructor(public readonly left: Atom, public readonly right: Atom) { }
-  eval(context: any): Atom {
-    return this.right.eval(this.left.eval(context));
-  }
-}
-
-class UnionAtom implements Atom {
-  constructor(public readonly left: Atom, public readonly right: Atom) { }
-  eval(context: any): any {
-    const leftResult = this.left.eval(context);
-    const rightResult = this.right.eval(context);
-    if (leftResult && rightResult) {
-      return [leftResult, rightResult].flat();
-    }
-    return leftResult || rightResult;
-  }
-}
-
-class IsAtom implements Atom {
-  constructor(
-    public readonly left: Atom,
-    public readonly right: Atom) { }
-
-  eval(context: any): any {
-    const desiredResourceType = (this.right as SymbolAtom).name;
-    return applyMaybeArray(this.left.eval(context), e => e?.resourceType === desiredResourceType ? e : undefined);
-  }
-}
-
-class FunctionAtom implements Atom {
-  constructor(
-    public readonly name: string,
-    public readonly args: Atom[],
-    public readonly impl: (context: any[], ...a: Atom[]) => any[]
-  ) { }
-  eval(context: any): any {
-    if (context === undefined) {
-      return undefined;
-    }
-    const input = Array.isArray(context) ? context : [context];
-    return this.impl(input, ...this.args);
-  }
+  FunctionCall = 0,
+  Dot = 1,
+  Indexer = 2,
+  UnaryAdd = 3,
+  UnarySubtract = 3,
+  Multiply = 4,
+  Divide = 4,
+  IntegerDivide = 4,
+  Modulo = 4,
+  Add = 5,
+  Subtract = 5,
+  Ampersand = 5,
+  Is = 6,
+  As = 6,
+  Union = 7,
+  GreaterThan = 8,
+  GreaterThanOrEquals = 8,
+  LessThan = 8,
+  LessThanOrEquals = 8,
+  Equals = 9,
+  Equivalent = 9,
+  NotEquals = 9,
+  NotEquivalent = 9,
+  In = 10,
+  Contains = 10,
+  And = 11,
+  Xor = 12,
+  Or = 12,
+  Implies = 13,
+  MaximumPrecedence = 100
 }
 
 const PARENTHESES_PARSELET: PrefixParselet = {
@@ -257,6 +169,7 @@ const FUNCTION_CALL_PARSELET: InfixParselet = {
     const args = [];
     while (!parser.match(')')) {
       args.push(parser.parse());
+      parser.match(',');
     }
 
     return new FunctionAtom(left.name, args, functions[left.name]);
@@ -265,28 +178,60 @@ const FUNCTION_CALL_PARSELET: InfixParselet = {
 };
 
 const parserBuilder = new ParserBuilder()
-  .registerPrefix('StringLiteral', { parse: (_, token) => new LiteralAtom(token.value.substring(1, token.value.length - 1)) })
+  .registerPrefix('String', { parse: (_, token) => new LiteralAtom(token.value.substring(1, token.value.length - 1)) })
+  .registerPrefix('DateTime', { parse: (_, token) => new LiteralAtom(parseDateString(token.value.substring(1))) })
+  .registerPrefix('Quantity', { parse: (_, token) => new LiteralAtom(parseFloat(token.value)) })
   .registerPrefix('Number', { parse: (_, token) => new LiteralAtom(parseFloat(token.value)) })
-  .registerPrefix('Symbol', { parse: (_, token) => new SymbolAtom(token.value) })
+  .registerPrefix('Symbol', {
+    parse: (_, token) => {
+      if (token.value === 'false') {
+        return new LiteralAtom(false);
+      }
+      if (token.value === 'true') {
+        return new LiteralAtom(true);
+      }
+      return new SymbolAtom(token.value);
+    }
+  })
+  .registerPrefix('EmptySet', { parse: () => new EmptySetAtom() })
   .registerPrefix('(', PARENTHESES_PARSELET)
   .registerInfix('(', FUNCTION_CALL_PARSELET)
-  .prefix('-', Precedence.Negate, (_, right) => new UnaryOperatorAtom(right, x => -x))
+  .prefix('-', Precedence.UnarySubtract, (_, right) => new UnaryOperatorAtom(right, x => -x))
   .infixLeft('.', Precedence.Dot, (left, _, right) => new DotAtom(left, right))
-  .infixRight('^', Precedence.Exp, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x ** y))
-  .infixLeft('/', Precedence.MulDiv, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x / y))
-  .infixLeft('*', Precedence.MulDiv, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x * y))
-  .infixLeft('+', Precedence.AddSub, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x + y))
-  .infixLeft('-', Precedence.AddSub, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x - y))
+  .infixLeft('/', Precedence.Divide, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x / y))
+  .infixLeft('*', Precedence.Multiply, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x * y))
+  .infixLeft('+', Precedence.Add, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x + y))
+  .infixLeft('-', Precedence.Subtract, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x - y))
   .infixLeft('|', Precedence.Union, (left, _, right) => new UnionAtom(left, right))
-  .infixLeft('=', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x === y))
-  .infixLeft('Symbol', Precedence.Union, (left: Atom, symbol: Token, right: Atom) => {
+  .infixLeft('=', Precedence.Equals, (left, _, right) => new EqualsAtom(left, right))
+  .infixLeft('!=', Precedence.Equals, (left, _, right) => new NotEqualsAtom(left, right))
+  .infixLeft('~', Precedence.Equivalent, (left, _, right) => new EquivalentAtom(left, right))
+  .infixLeft('!~', Precedence.NotEquivalent, (left, _, right) => new NotEquivalentAtom(left, right))
+  .infixLeft('<', Precedence.LessThan, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x < y))
+  .infixLeft('<=', Precedence.LessThanOrEquals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x <= y))
+  .infixLeft('>', Precedence.GreaterThan, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x > y))
+  .infixLeft('>=', Precedence.GreaterThanOrEquals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x >= y))
+  .infixLeft('&', Precedence.Ampersand, (left, _, right) => new ConcatAtom(left, right))
+  .infixLeft('Symbol', Precedence.Is, (left: Atom, symbol: Token, right: Atom) => {
     switch (symbol.value) {
-      case 'as':
-        return new BinaryOperatorAtom(left, right, (x) => x);
-      case 'is':
-        return new IsAtom(left, right);
       case 'and':
         return new BinaryOperatorAtom(left, right, (x, y) => x && y);
+      case 'as':
+        return new BinaryOperatorAtom(left, right, (x) => x);
+      case 'contains':
+        return new ContainsAtom(left, right);
+      case 'div':
+        return new BinaryOperatorAtom(left, right, (x, y) => (x / y) | 0);
+      case 'in':
+        return new InAtom(left, right);
+      case 'is':
+        return new IsAtom(left, right);
+      case 'mod':
+        return new BinaryOperatorAtom(left, right, (x, y) => x % y);
+      case 'or':
+        return new OrAtom(left, right);
+      case 'xor':
+        return new XorAtom(left, right);
       default:
         throw new Error('Cannot use ' + symbol.value + ' as infix operator');
     }
