@@ -286,9 +286,6 @@ export class FunctionAtom implements Atom {
     public readonly impl: (context: any[], ...a: Atom[]) => any[]
   ) { }
   eval(context: any): any {
-    if (context === undefined) {
-      return undefined;
-    }
     const input = Array.isArray(context) ? context : [context];
     return this.impl(input, ...this.args);
   }

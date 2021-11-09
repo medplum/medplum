@@ -10,7 +10,7 @@ const stub = (input: any[]) => input;
  * Collection of FHIRPath functions.
  * See: https://hl7.org/fhirpath/#functions
  */
-export const functions: Record<string, (input: any[], ...args: Atom[]) => any> = {
+export const functions: Record<string, (...args: any[]) => any> = {
 
   /*
    * 5.1 Existence
@@ -367,14 +367,27 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
 
   iif: stub,
 
+  /**
+   * Converts an input collection to a boolean.
+   *
+   * If the input collection contains a single item, this function will return a single boolean if:
+   *   1) the item is a Boolean
+   *   2) the item is an Integer and is equal to one of the possible integer representations of Boolean values
+   *   3) the item is a Decimal that is equal to one of the possible decimal representations of Boolean values
+   *   4) the item is a String that is equal to one of the possible string representations of Boolean values
+   *
+   * If the item is not one the above types, or the item is a String, Integer, or Decimal, but is not equal to one of the possible values convertible to a Boolean, the result is empty.
+   *
+   * See: https://hl7.org/fhirpath/#toboolean-boolean
+   *
+   * @param input
+   * @returns
+   */
   toBoolean(input: any[]): boolean[] {
     if (input.length === 0) {
       return [];
     }
-    if (input.length > 1) {
-      throw new Error('Cannot call toBoolean with multiple items');
-    }
-    const value = input[0];
+    const [value] = validateInput(input, 1);
     if (typeof value === 'boolean') {
       return [value];
     }
@@ -397,66 +410,73 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
 
   /**
    * Returns the integer representation of the input.
-   * 
+   *
    * If the input collection contains a single item, this function will return a single integer if:
    *   1) the item is an Integer
    *   2) the item is a String and is convertible to an integer
    *   3) the item is a Boolean, where true results in a 1 and false results in a 0.
-   * 
+   *
    * If the item is not one the above types, the result is empty.
-   * 
+   *
    * If the item is a String, but the string is not convertible to an integer (using the regex format (\\+|-)?\d+), the result is empty.
-   * 
+   *
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
-   * 
+   *
    * If the input collection is empty, the result is empty.
-   * 
+   *
    * See: https://hl7.org/fhirpath/#tointeger-integer
-   * 
+   *
    * @param input The input collection.
    * @returns The string representation of the input.
    */
-  toInteger(input: any[]): number | boolean {
-    if (input.length === 0 || input.length > 1) {
-      return false;
+  toInteger(input: any[]): number[] {
+    if (input.length === 0) {
+      return [];
     }
-    const value = input[0];
+    const [value] = validateInput(input, 1);
     if (typeof value === 'number') {
-      return value;
+      return [value];
     }
-    if (typeof value === 'string' && value.match(/^(\+|-)?\d+$/)) {
-      return parseInt(input[0], 10);
+    if (typeof value === 'string' && value.match(/^[+-]?\d+$/)) {
+      return [parseInt(input[0], 10)];
     }
     if (typeof value === 'boolean') {
-      return value ? 1 : 0;
+      return [value ? 1 : 0];
     }
-    return false;
+    return [];
   },
 
   /**
    * Returns true if the input can be converted to string.
-   * 
+   *
    * If the input collection contains a single item, this function will return true if:
    *   1) the item is an Integer
    *   2) the item is a String and is convertible to an Integer
    *   3) the item is a Boolean
    *   4) If the item is not one of the above types, or the item is a String, but is not convertible to an Integer (using the regex format (\\+|-)?\d+), the result is false.
-   * 
+   *
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
-   * 
+   *
    * If the input collection is empty, the result is empty.
-   * 
+   *
    * See: https://hl7.org/fhirpath/#convertstointeger-boolean
-   * 
+   *
    * @param input The input collection.
-   * @returns 
+   * @returns
    */
-  convertsToInteger(input: any[]): boolean {
-    if (input.length === 0 || input.length > 1) {
-      return false;
+  convertsToInteger(input: any[]): boolean[] {
+    if (input.length === 0) {
+      return [];
     }
-    const value = input[0];
-    return value !== null && value !== undefined && (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean');
+    const [value] = validateInput(input, 1);
+    return [
+      value !== null &&
+      value !== undefined &&
+      (
+        typeof value === 'number' ||
+        (typeof value === 'string' && !!value.match(/^[+-]?\d+$/)) ||
+        typeof value === 'boolean'
+      )];
   },
 
   toDate: stub,
@@ -477,52 +497,54 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
 
   /**
    * Returns the string representation of the input.
-   * 
+   *
    * If the input collection contains a single item, this function will return a single String if:
-   * 
+   *
    *  1) the item in the input collection is a String
    *  2) the item in the input collection is an Integer, Decimal, Date, Time, DateTime, or Quantity the output will contain its String representation
    *  3) the item is a Boolean, where true results in 'true' and false in 'false'.
-   * 
+   *
    * If the item is not one of the above types, the result is false.
-   * 
+   *
    * See: https://hl7.org/fhirpath/#tostring-string
-   * 
+   *
    * @param input The input collection.
    * @returns The string representation of the input.
    */
-  toString(input: any[]): string | boolean {
-    if (input.length === 0 || input.length > 1) {
-      return false;
+  toString(input: any[]): string[] {
+    if (input.length === 0) {
+      return [];
     }
-    return input[0].toString();
+    const [value] = validateInput(input, 1);
+    return [value.toString()];
   },
 
   /**
    * Returns true if the input can be converted to string.
-   * 
+   *
    * If the input collection contains a single item, this function will return true if:
    *   1) the item is a String
    *   2) the item is an Integer, Decimal, Date, Time, or DateTime
    *   3) the item is a Boolean
    *   4) the item is a Quantity
-   * 
+   *
    * If the item is not one of the above types, the result is false.
-   * 
+   *
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
-   * 
+   *
    * If the input collection is empty, the result is empty.
-   * 
+   *
    * See: https://hl7.org/fhirpath/#tostring-string
-   * 
+   *
    * @param input The input collection.
-   * @returns 
+   * @returns
    */
-  convertsToString(input: any[]): boolean {
-    if (input.length === 0 || input.length > 1) {
-      return false;
+  convertsToString(input: any[]): boolean[] {
+    if (input.length === 0) {
+      return [];
     }
-    return input[0] !== null && input[0] !== undefined;
+    const [value] = validateInput(input, 1);
+    return [value !== null && value !== undefined];
   },
 
   toTime: stub,
@@ -558,15 +580,15 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
 
   /**
    * Returns the part of the string starting at position start (zero-based). If length is given, will return at most length number of characters from the input string.
-   * 
+   *
    * If start lies outside the length of the string, the function returns empty ({ }). If there are less remaining characters in the string than indicated by length, the function returns just the remaining characters.
-   * 
+   *
    * If the input or start is empty, the result is empty.
-   * 
+   *
    * If an empty length is provided, the behavior is the same as if length had not been provided.
-   * 
+   *
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
-   * 
+   *
    * @param input The input collection.
    * @returns The index of the substring.
    */
@@ -943,8 +965,26 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
     return context;
   },
 
-  type(input: any[]): any {
-    const result = input.map(value => {
+  /*
+   * 12. Formal Specifications
+   */
+
+  /**
+   * Returns the type of the input.
+   *
+   * 12.2. Model Information
+   *
+   * The model information returned by the reflection function type() is specified as an 
+   * XML Schema document (xsd) and included in this specification at the following link:
+   * https://hl7.org/fhirpath/modelinfo.xsd
+   *
+   * See: https://hl7.org/fhirpath/#model-information
+   *
+   * @param input The input collection.
+   * @returns
+   */
+  type(input: any[]): any[] {
+    return input.map(value => {
       if (typeof value === 'boolean') {
         return { namespace: 'System', name: 'Boolean' };
       }
@@ -956,7 +996,6 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
       }
       return null;
     });
-    return result;
   },
 
   is(input: any[], typeAtom: Atom): boolean[] {
@@ -983,26 +1022,27 @@ function applyStringFunc<T>(func: (str: string, ...args: any[]) => T, input: any
   if (input.length === 0) {
     return input;
   }
-  if (input.length > 1) {
-    throw new Error('String function cannot be called with multiple items');
-  }
-  const value = input[0];
+  const [value] = validateInput(input, 1);
   if (typeof value !== 'string') {
     throw new Error('String function cannot be called with non-string');
   }
-  return [func(value, argsAtoms.map(atom => atom && atom.eval(undefined)))];
+  return [func(value, ...argsAtoms.map(atom => atom && atom.eval(undefined)))];
 }
 
 function applyMathFunc(func: (x: number, ...args: any[]) => number, input: any[], ...argsAtoms: Atom[]): number[] {
   if (input.length === 0) {
     return input;
   }
-  if (input.length > 1) {
-    throw new Error('Math function cannot be called with multiple items');
-  }
-  const value = input[0];
+  const [value] = validateInput(input, 1);
   if (typeof value !== 'number') {
     throw new Error('Math function cannot be called with non-number');
   }
-  return [func(value, argsAtoms.map(atom => atom.eval(undefined)))];
+  return [func(value, ...argsAtoms.map(atom => atom.eval(undefined)))];
+}
+
+function validateInput(input: any[], count: number): any[] {
+  if (input.length !== count) {
+    throw new Error(`Expected ${count} arguments`);
+  }
+  return input;
 }

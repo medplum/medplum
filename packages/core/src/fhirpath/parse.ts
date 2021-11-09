@@ -45,16 +45,6 @@ class ParserBuilder {
     });
   }
 
-  public infixRight(tokenType: string, precedence: number, builder: (left: Atom, token: Token, right: Atom) => Atom): ParserBuilder {
-    return this.registerInfix(tokenType, {
-      parse(parser, left, token) {
-        const right = parser.parse(precedence + 1)
-        return builder(left, token, right)
-      },
-      precedence
-    });
-  }
-
   public construct(input: string): Parser {
     return new Parser(tokenizer.tokenize(input), this.prefixParselets, this.infixParselets);
   }

@@ -1,4 +1,4 @@
-import { applyMaybeArray, toBoolean } from './utils';
+import { applyMaybeArray, fhirPathIs, toBoolean } from './utils';
 
 describe('FHIRPath utils', () => {
 
@@ -18,5 +18,16 @@ describe('FHIRPath utils', () => {
     expect(toBoolean('hi')).toEqual(true);
     expect(toBoolean([])).toEqual(false);
     expect(toBoolean(['hi'])).toEqual(true);
+  });
+
+  test('fhirPathIs', () => {
+    expect(fhirPathIs(undefined, 'string')).toEqual(false);
+    expect(fhirPathIs({}, 'Patient')).toEqual(false);
+    expect(fhirPathIs({ resourceType: 'Patient' }, 'Patient')).toEqual(true);
+    expect(fhirPathIs({ resourceType: 'Observation' }, 'Patient')).toEqual(false);
+    expect(fhirPathIs(true, 'Boolean')).toEqual(true);
+    expect(fhirPathIs(false, 'Boolean')).toEqual(true);
+    expect(fhirPathIs(100, 'Boolean')).toEqual(false);
+    expect(fhirPathIs({}, 'Boolean')).toEqual(false);
   });
 });
