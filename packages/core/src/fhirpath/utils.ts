@@ -45,7 +45,6 @@ export function toBoolean(obj: any): boolean {
  * @returns True if equal.
  */
 export function fhirPathEquals(x: any, y: any): boolean | [] {
-  // console.log('fhirPathEquals', x, y);
   if (isFalsy(x) && isFalsy(y)) {
     return true;
   }
@@ -62,10 +61,6 @@ export function fhirPathEquals(x: any, y: any): boolean | [] {
 }
 
 export function fhirPathIs(value: any, desiredType: any): boolean {
-  // const desiredResourceType = (this.right as SymbolAtom).name;
-  // return applyMaybeArray(this.left.eval(context), e => e?.resourceType === desiredResourceType ? e : undefined);
-  // return true;
-
   if (typeof value === 'object' && value?.resourceType === desiredType) {
     return true;
   }
@@ -73,13 +68,6 @@ export function fhirPathIs(value: any, desiredType: any): boolean {
   if (typeof value === 'boolean' && desiredType === 'Boolean') {
     return true;
   }
-
-  // const typeName = typeAtom.toString();
-  // console.log('cody is', input, typeAtom, typeName);
-  // if (typeName === 'System.Patient') {
-  //   return input.map(() => false);
-  // }
-  // return input.map(() => true);
 
   return false;
 }

@@ -395,9 +395,69 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
 
   convertsToBoolean: stub,
 
-  toInteger: stub,
+  /**
+   * Returns the integer representation of the input.
+   * 
+   * If the input collection contains a single item, this function will return a single integer if:
+   *   1) the item is an Integer
+   *   2) the item is a String and is convertible to an integer
+   *   3) the item is a Boolean, where true results in a 1 and false results in a 0.
+   * 
+   * If the item is not one the above types, the result is empty.
+   * 
+   * If the item is a String, but the string is not convertible to an integer (using the regex format (\\+|-)?\d+), the result is empty.
+   * 
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   * 
+   * If the input collection is empty, the result is empty.
+   * 
+   * See: https://hl7.org/fhirpath/#tointeger-integer
+   * 
+   * @param input The input collection.
+   * @returns The string representation of the input.
+   */
+  toInteger(input: any[]): number | boolean {
+    if (input.length === 0 || input.length > 1) {
+      return false;
+    }
+    const value = input[0];
+    if (typeof value === 'number') {
+      return value;
+    }
+    if (typeof value === 'string' && value.match(/^(\+|-)?\d+$/)) {
+      return parseInt(input[0], 10);
+    }
+    if (typeof value === 'boolean') {
+      return value ? 1 : 0;
+    }
+    return false;
+  },
 
-  convertsToInteger: stub,
+  /**
+   * Returns true if the input can be converted to string.
+   * 
+   * If the input collection contains a single item, this function will return true if:
+   *   1) the item is an Integer
+   *   2) the item is a String and is convertible to an Integer
+   *   3) the item is a Boolean
+   *   4) If the item is not one of the above types, or the item is a String, but is not convertible to an Integer (using the regex format (\\+|-)?\d+), the result is false.
+   * 
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   * 
+   * If the input collection is empty, the result is empty.
+   * 
+   * See: https://hl7.org/fhirpath/#convertstointeger-boolean
+   * 
+   * @param input The input collection.
+   * @returns 
+   */
+  convertsToInteger(input: any[]): boolean {
+    if (input.length === 0 || input.length > 1) {
+      return false;
+    }
+    const value = input[0];
+    return value !== null && value !== undefined && (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean');
+  },
 
   toDate: stub,
 
@@ -438,7 +498,32 @@ export const functions: Record<string, (input: any[], ...args: Atom[]) => any> =
     return input[0].toString();
   },
 
-  convertsToString: stub,
+  /**
+   * Returns true if the input can be converted to string.
+   * 
+   * If the input collection contains a single item, this function will return true if:
+   *   1) the item is a String
+   *   2) the item is an Integer, Decimal, Date, Time, or DateTime
+   *   3) the item is a Boolean
+   *   4) the item is a Quantity
+   * 
+   * If the item is not one of the above types, the result is false.
+   * 
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   * 
+   * If the input collection is empty, the result is empty.
+   * 
+   * See: https://hl7.org/fhirpath/#tostring-string
+   * 
+   * @param input The input collection.
+   * @returns 
+   */
+  convertsToString(input: any[]): boolean {
+    if (input.length === 0 || input.length > 1) {
+      return false;
+    }
+    return input[0] !== null && input[0] !== undefined;
+  },
 
   toTime: stub,
 

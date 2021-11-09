@@ -42,12 +42,10 @@ export class LiteralAtom implements Atom {
 export class SymbolAtom implements Atom {
   constructor(public readonly name: string) { }
   eval(context: any): any {
-    // return applyMaybeArray(context, e => e.resourceType === this.name ? e : e[this.name]);
     return applyMaybeArray(context, e => {
       if (e.resourceType === this.name) {
         return e;
       }
-      // return e.resourceType === this.name ? e : e[this.name];
       if (typeof e === 'object') {
         if (this.name in e) {
           return e[this.name];
@@ -87,12 +85,9 @@ export class BinaryOperatorAtom implements Atom {
     public readonly impl: (x: any, y: any) => any) { }
 
   eval(context: any): any {
-    // return this.impl(this.left.eval(context), this.right.eval(context));
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
-    // console.log('eval BinaryOperatorAtom', leftValue, rightValue, this.impl);
     return applyMaybeArray(leftValue, (value) => this.impl(value, rightValue));
-    // return applyMaybeArray(x, (value) => fhirPathEquals(value, y));
   }
 
   toString(): string {
@@ -177,12 +172,9 @@ export class UnionAtom implements Atom {
   eval(context: any): any {
     const leftResult = this.left.eval(context);
     const rightResult = this.right.eval(context);
-    // console.log('UnionAtom', leftResult, rightResult);
     if (leftResult !== undefined && rightResult !== undefined) {
-      // console.log('union result1', [leftResult, rightResult].flat());
       return [leftResult, rightResult].flat();
     }
-    // console.log('union result2', leftResult || rightResult);
     return leftResult || rightResult;
   }
 }
@@ -246,7 +238,6 @@ export class IsAtom implements Atom {
 
   eval(context: any): any {
     const typeName = (this.right as SymbolAtom).name;
-    // return applyMaybeArray(this.left.eval(context), e => e?.resourceType === desiredResourceType ? e : undefined);
     return applyMaybeArray(this.left.eval(context), e => fhirPathIs(e, typeName));
   }
 }

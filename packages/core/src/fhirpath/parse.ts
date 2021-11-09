@@ -56,7 +56,6 @@ class ParserBuilder {
   }
 
   public construct(input: string): Parser {
-    // console.log('tokenize', input, tokenizer.tokenize(input));
     return new Parser(tokenizer.tokenize(input), this.prefixParselets, this.infixParselets);
   }
 }
@@ -190,7 +189,6 @@ const FUNCTION_CALL_PARSELET: InfixParselet = {
 
 const parserBuilder = new ParserBuilder()
   .registerPrefix('String', { parse: (_, token) => new LiteralAtom(token.value.substring(1, token.value.length - 1)) })
-  // .registerPrefix('DateTime', { parse: (_, token) => new LiteralAtom(new Date(token.value.substring(1))) })
   .registerPrefix('DateTime', { parse: (_, token) => new LiteralAtom(parseDateString(token.value.substring(1))) })
   .registerPrefix('Quantity', { parse: (_, token) => new LiteralAtom(parseFloat(token.value)) })
   .registerPrefix('Number', { parse: (_, token) => new LiteralAtom(parseFloat(token.value)) })
@@ -210,65 +208,20 @@ const parserBuilder = new ParserBuilder()
   .registerInfix('(', FUNCTION_CALL_PARSELET)
   .prefix('-', Precedence.UnarySubtract, (_, right) => new UnaryOperatorAtom(right, x => -x))
   .infixLeft('.', Precedence.Dot, (left, _, right) => new DotAtom(left, right))
-  // .infixRight('^', Precedence.Exp, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x ** y))
   .infixLeft('/', Precedence.Divide, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x / y))
   .infixLeft('*', Precedence.Multiply, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x * y))
   .infixLeft('+', Precedence.Add, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x + y))
   .infixLeft('-', Precedence.Subtract, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x - y))
   .infixLeft('|', Precedence.Union, (left, _, right) => new UnionAtom(left, right))
   .infixLeft('=', Precedence.Equals, (left, _, right) => new EqualsAtom(left, right))
-  // .infixLeft('=', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => fhirPathEquals(x, y)))
-  // .infixLeft('=', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => {
-  //   console.log('equals', x, y, typeof x, typeof y, fhirPathEquals(x, y));
-  //   return fhirPathEquals(x, y);
-  // }))
-  // .infixLeft('!=', Precedence.NotEquals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => !fhirPathEquals(x, y)))
   .infixLeft('!=', Precedence.Equals, (left, _, right) => new NotEqualsAtom(left, right))
-  // .infixLeft('!=', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => {
-  //   console.log('not equals', x, y, !fhirPathEquals(x, y));
-  //   return !fhirPathEquals(x, y);
-  // }))
   .infixLeft('~', Precedence.Equivalent, (left, _, right) => new EquivalentAtom(left, right))
   .infixLeft('!~', Precedence.NotEquivalent, (left, _, right) => new NotEquivalentAtom(left, right))
-  // .infixLeft('!~', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => {
-  //   console.log('not equivalent', x, y, stringify(x), stringify(y), stringify(x) !== stringify(y));
-  //   // return x !== y;
-  //   return stringify(x) !== stringify(y);
-  // }))
   .infixLeft('<', Precedence.LessThan, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x < y))
-  // .infixLeft('<', Precedence.Equals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => { 
-  //   console.log('less than', x, y);
-  //   return x < y; 
-  // }))
   .infixLeft('<=', Precedence.LessThanOrEquals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x <= y))
   .infixLeft('>', Precedence.GreaterThan, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x > y))
   .infixLeft('>=', Precedence.GreaterThanOrEquals, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => x >= y))
-  // .infixLeft('>=', Precedence.GreaterThanOrEquals, (left, _, right) => {
-  //   return new BinaryOperatorAtom(left, right, (x, y) => { 
-  //     console.log('greater than or equal', x, y);
-  //     return x >= y;
-  //   });
-  // })
   .infixLeft('&', Precedence.Ampersand, (left, _, right) => new ConcatAtom(left, right))
-  // .infixLeft('&', Precedence.Ampersand, (left, _, right) => new BinaryOperatorAtom(left, right, (x, y) => {
-  //   console.log('concat', x, y);
-  //   const result = [];
-  //   if (x) {
-  //     if (Array.isArray(x)) {
-  //       result.push(...x);
-  //     } else {
-  //       result.push(x);
-  //     }
-  //   }
-  //   if (y) {
-  //     if (Array.isArray(y)) {
-  //       result.push(...y);
-  //     } else {
-  //       result.push(y);
-  //     }
-  //   }
-  //   return result;
-  // }))
   .infixLeft('Symbol', Precedence.Is, (left: Atom, symbol: Token, right: Atom) => {
     switch (symbol.value) {
       case 'and':
@@ -296,12 +249,7 @@ const parserBuilder = new ParserBuilder()
 
 export function parseFhirPath(input: string): FhirPathAtom {
   try {
-    // return new FhirPathAtom(input, parserBuilder.construct(input).parse());
-    const result = new FhirPathAtom(input, parserBuilder.construct(input).parse());
-    // console.log('result', result);
-    // console.log('result', JSON.stringify(result, undefined, 2));
-    // console.log('result', result.toString());
-    return result;
+    return new FhirPathAtom(input, parserBuilder.construct(input).parse());
   } catch (error) {
     throw new Error(`FhirPathError on "${input}": ${error}`);
   }
