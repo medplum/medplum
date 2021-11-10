@@ -61536,6 +61536,10 @@
           "description": "A name associated with the AccessPolicy.",
           "$ref": "#/definitions/string"
         },
+        "compartment": {
+          "description": "Optional compartment restriction for the user account.",
+          "$ref": "#/definitions/Reference"
+        },
         "resource": {
           "description": "Access details for a resource type.",
           "items": {
