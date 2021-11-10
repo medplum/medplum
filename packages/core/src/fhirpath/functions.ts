@@ -1,5 +1,5 @@
 import { Atom } from './atoms';
-import { fhirPathIs, toBoolean } from './utils';
+import { ensureArray, fhirPathIs, isQuantity, removeDuplicates, toBoolean } from './utils';
 
 /**
  * Temporary placholder for unimplemented methods.
@@ -345,9 +345,36 @@ export const functions: Record<string, (...args: any[]) => any> = {
     return input.slice(0, numValue);
   },
 
-  intersect: stub,
+  /**
+   * Returns the set of elements that are in both collections. 
+   * Duplicate items will be eliminated by this function. 
+   * Order of items is not guaranteed to be preserved in the result of this function.
+   * 
+   * See: http://hl7.org/fhirpath/#intersectother-collection-collection
+   */
+  intersect(input: any[], other: Atom): any[] {
+    if (!other) {
+      return input;
+    }
+    const otherArray = ensureArray(other.eval(0));
+    return removeDuplicates(input.filter(e => otherArray.includes(e)));
+  },
 
-  exclude: stub,
+  /**
+   * Returns the set of elements that are not in the other collection. 
+   * Duplicate items will not be eliminated by this function, and order will be preserved.
+   *
+   * e.g. (1 | 2 | 3).exclude(2) returns (1 | 3).
+   *
+   * See: http://hl7.org/fhirpath/#excludeother-collection-collection
+   */
+  exclude(input: any[], other: Atom): any[] {
+    if (!other) {
+      return input;
+    }
+    const otherArray = ensureArray(other.eval(0));
+    return input.filter(e => !otherArray.includes(e));
+  },
 
   /*
    * 5.4. Combining
@@ -355,9 +382,37 @@ export const functions: Record<string, (...args: any[]) => any> = {
    * See: https://hl7.org/fhirpath/#combining
    */
 
-  union: stub,
+  /**
+   * Merge the two collections into a single collection, 
+   * eliminating any duplicate values (using = (Equals) (=) to determine equality). 
+   * There is no expectation of order in the resulting collection.
+   *
+   * In other words, this function returns the distinct list of elements from both inputs.
+   *
+   * See: http://hl7.org/fhirpath/#unionother-collection
+   */
+  union(input: any[], other: Atom): any[] {
+    if (!other) {
+      return input;
+    }
+    return removeDuplicates([input, other.eval(0)].flat());
+  },
 
-  combine: stub,
+  /**
+   * Merge the input and other collections into a single collection 
+   * without eliminating duplicate values. Combining an empty collection 
+   * with a non-empty collection will return the non-empty collection.
+   *
+   * There is no expectation of order in the resulting collection.
+   *
+   * See: http://hl7.org/fhirpath/#combineother-collection-collection
+   */
+  combine(input: any[], other: Atom): any[] {
+    if (!other) {
+      return input;
+    }
+    return [input, other.eval(0)].flat();
+  },
 
   /*
    * 5.5. Conversion
@@ -594,7 +649,7 @@ export const functions: Record<string, (...args: any[]) => any> = {
    */
   substring(input: any[], startAtom: Atom, lengthAtom: Atom): string[] {
     return applyStringFunc(
-      (str, start, length) => str.substr(start, length),
+      (str, start, length) => (start < 0 || start >= str.length) ? undefined : str.substr(start, length),
       input,
       startAtom,
       lengthAtom);
@@ -917,16 +972,16 @@ export const functions: Record<string, (...args: any[]) => any> = {
     return input;
   },
 
-  now(): Date[] {
-    return [new Date()];
+  now(): string[] {
+    return [new Date().toISOString()];
   },
 
-  timeOfDay(): Date[] {
-    return [new Date()];
+  timeOfDay(): string[] {
+    return [new Date().toISOString().substring(11)];
   },
 
-  today(): Date[] {
-    return [new Date()];
+  today(): string[] {
+    return [new Date().toISOString().substring(0, 10)];
   },
 
   /*
@@ -974,7 +1029,7 @@ export const functions: Record<string, (...args: any[]) => any> = {
    *
    * 12.2. Model Information
    *
-   * The model information returned by the reflection function type() is specified as an 
+   * The model information returned by the reflection function type() is specified as an
    * XML Schema document (xsd) and included in this specification at the following link:
    * https://hl7.org/fhirpath/modelinfo.xsd
    *
@@ -1018,7 +1073,7 @@ export const functions: Record<string, (...args: any[]) => any> = {
 
 };
 
-function applyStringFunc<T>(func: (str: string, ...args: any[]) => T, input: any[], ...argsAtoms: Atom[]): T[] {
+function applyStringFunc<T>(func: (str: string, ...args: any[]) => T | undefined, input: any[], ...argsAtoms: Atom[]): T[] {
   if (input.length === 0) {
     return input;
   }
@@ -1026,21 +1081,23 @@ function applyStringFunc<T>(func: (str: string, ...args: any[]) => T, input: any
   if (typeof value !== 'string') {
     throw new Error('String function cannot be called with non-string');
   }
-  return [func(value, ...argsAtoms.map(atom => atom && atom.eval(undefined)))];
+  // return [func(value, ...argsAtoms.map(atom => atom && atom.eval(undefined)))];
+  const result = func(value, ...argsAtoms.map(atom => atom && atom.eval(undefined)));
+  return result === undefined ? [] : [result];
 }
 
 function applyMathFunc(func: (x: number, ...args: any[]) => number, input: any[], ...argsAtoms: Atom[]): number[] {
   if (input.length === 0) {
     return input;
   }
-  let [value] = validateInput(input, 1);
-  if (typeof value === 'object' && 'value' in value && 'unit' in value) {
-    value = value.value;
-  }
-  if (typeof value !== 'number') {
+  const [value] = validateInput(input, 1);
+  const quantity = isQuantity(value);
+  const numberInput = quantity ? value.value : value;
+  if (typeof numberInput !== 'number') {
     throw new Error('Math function cannot be called with non-number');
   }
-  return [func(value, ...argsAtoms.map(atom => atom.eval(undefined)))];
+  const result = func(numberInput, ...argsAtoms.map(atom => atom.eval(undefined)));
+  return quantity ? [{ ...value, value: result }] : [result];
 }
 
 function validateInput(input: any[], count: number): any[] {

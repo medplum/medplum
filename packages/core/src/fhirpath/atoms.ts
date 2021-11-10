@@ -1,5 +1,4 @@
-import { stringify } from '../utils';
-import { applyMaybeArray, fhirPathEquals, fhirPathIs, toBoolean } from './utils';
+import { applyMaybeArray, ensureArray, fhirPathEquals, fhirPathEquivalent, fhirPathIs, flattenValue, isQuantity, removeDuplicates, toBoolean } from './utils';
 
 export interface Atom {
   eval(context: any): any;
@@ -43,15 +42,20 @@ export class SymbolAtom implements Atom {
   constructor(public readonly name: string) { }
   eval(context: any): any {
     return applyMaybeArray(context, e => {
-      if (e.resourceType === this.name) {
-        return e;
-      }
-      if (typeof e === 'object') {
-        if (this.name in e) {
-          return e[this.name];
+      if (e) {
+        if (e.resourceType === this.name) {
+          return e;
         }
-        if (this.name === 'value') {
-          return e['valueQuantity'];
+        if (typeof e === 'object') {
+          if (this.name in e) {
+            return e[this.name];
+          }
+          if (this.name === 'value') {
+            const valuePropertyName = Object.keys(e).find(k => k.startsWith('value'));
+            if (valuePropertyName) {
+              return e[valuePropertyName];
+            }
+          }
         }
       }
       return undefined;
@@ -95,6 +99,48 @@ export class BinaryOperatorAtom implements Atom {
   }
 }
 
+export class ArithemticOperatorAtom implements Atom {
+  constructor(
+    public readonly left: Atom,
+    public readonly right: Atom,
+    public readonly impl: (x: any, y: any) => any) { }
+
+  eval(context: any): any {
+    const leftValue = this.left.eval(context);
+    const rightValue = this.right.eval(context);
+    if (isQuantity(leftValue) && isQuantity(rightValue)) {
+      return { ...leftValue, value: this.impl(leftValue.value, rightValue.value) };
+    } else {
+      return this.impl(leftValue, rightValue);
+    }
+  }
+
+  toString(): string {
+    return '(' + this.left.toString() + ' ' + this.impl.toString() + ' ' + this.right.toString() + ')';
+  }
+}
+
+export class ComparisonOperatorAtom implements Atom {
+  constructor(
+    public readonly left: Atom,
+    public readonly right: Atom,
+    public readonly impl: (x: any, y: any) => any) { }
+
+  eval(context: any): any {
+    const leftValue = this.left.eval(context);
+    const rightValue = this.right.eval(context);
+    if (isQuantity(leftValue) && isQuantity(rightValue)) {
+      return this.impl(leftValue.value, rightValue.value);
+    } else {
+      return this.impl(leftValue, rightValue);
+    }
+  }
+
+  toString(): string {
+    return '(' + this.left.toString() + ' ' + this.impl.toString() + ' ' + this.right.toString() + ')';
+  }
+}
+
 export class ConcatAtom implements Atom {
   constructor(
     public readonly left: Atom,
@@ -115,6 +161,9 @@ export class ConcatAtom implements Atom {
     };
     add(leftValue);
     add(rightValue);
+    if (result.every(e => typeof e === 'string')) {
+      return result.join('');
+    }
     return result;
   }
 
@@ -131,8 +180,7 @@ export class ContainsAtom implements Atom {
   eval(context: any): any {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
-    const array = Array.isArray(leftValue) ? leftValue : [leftValue];
-    return array.includes(rightValue);
+    return ensureArray(leftValue).includes(rightValue);
   }
 
   toString(): string {
@@ -148,8 +196,7 @@ export class InAtom implements Atom {
   eval(context: any): any {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
-    const array = Array.isArray(rightValue) ? rightValue : [rightValue];
-    return array.includes(leftValue);
+    return ensureArray(rightValue).includes(leftValue);
   }
 
   toString(): string {
@@ -172,10 +219,17 @@ export class UnionAtom implements Atom {
   eval(context: any): any {
     const leftResult = this.left.eval(context);
     const rightResult = this.right.eval(context);
+    let resultArray: any[];
     if (leftResult !== undefined && rightResult !== undefined) {
-      return [leftResult, rightResult].flat();
+      resultArray = [leftResult, rightResult].flat();
+    } else if (leftResult !== undefined) {
+      resultArray = ensureArray(leftResult);
+    } else if (rightResult !== undefined) {
+      resultArray = ensureArray(rightResult);
+    } else {
+      resultArray = [];
     }
-    return leftResult || rightResult;
+    return removeDuplicates(resultArray);
   }
 }
 
@@ -187,7 +241,10 @@ export class EqualsAtom implements Atom {
   eval(context: any): any {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
-    return fhirPathEquals(leftValue, rightValue);
+    if (Array.isArray(leftValue) && Array.isArray(rightValue)) {
+      return fhirPathEquals(leftValue.flat(), rightValue);
+    }
+    return applyMaybeArray(leftValue, e => fhirPathEquals(e, rightValue));
   }
 }
 
@@ -199,7 +256,13 @@ export class NotEqualsAtom implements Atom {
   eval(context: any): any {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
-    return !toBoolean(fhirPathEquals(leftValue, rightValue));
+    let result;
+    if (Array.isArray(rightValue)) {
+      result = fhirPathEquals(leftValue, rightValue);
+    } else {
+      result = applyMaybeArray(leftValue, e => fhirPathEquals(e, rightValue));
+    }
+    return !toBoolean(result);
   }
 }
 
@@ -211,9 +274,10 @@ export class EquivalentAtom implements Atom {
   eval(context: any): any {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
-    // TODO: equivalence is not order dependent
-    // TODO: equivalence is not case sensitive
-    return stringify(leftValue) === stringify(rightValue);
+    if (Array.isArray(rightValue)) {
+      return fhirPathEquivalent(leftValue, rightValue);
+    }
+    return applyMaybeArray(leftValue, e => fhirPathEquivalent(e, rightValue));
   }
 }
 
@@ -225,9 +289,13 @@ export class NotEquivalentAtom implements Atom {
   eval(context: any): any {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
-    // TODO: equivalence is not order dependent
-    // TODO: equivalence is not case sensitive
-    return stringify(leftValue) !== stringify(rightValue);
+    let result;
+    if (Array.isArray(rightValue)) {
+      result = fhirPathEquivalent(leftValue, rightValue);
+    } else {
+      result = applyMaybeArray(leftValue, e => fhirPathEquivalent(e, rightValue));
+    }
+    return !toBoolean(result);
   }
 }
 
@@ -239,6 +307,30 @@ export class IsAtom implements Atom {
   eval(context: any): any {
     const typeName = (this.right as SymbolAtom).name;
     return applyMaybeArray(this.left.eval(context), e => fhirPathIs(e, typeName));
+  }
+}
+
+/**
+ * 6.5.1. and
+ * Returns true if both operands evaluate to true, false if either operand evaluates to false, and the empty collection ({ }) otherwise.
+ */
+export class AndAtom implements Atom {
+  constructor(
+    public readonly left: Atom,
+    public readonly right: Atom) { }
+
+  eval(context: any): any {
+    const leftValue = this.left.eval(context);
+    const rightValue = this.right.eval(context);
+    const leftBoolean = flattenValue(leftValue);
+    const rightBoolean = flattenValue(rightValue);
+    if (leftBoolean === true && rightBoolean === true) {
+      return true;
+    }
+    if (leftBoolean === false || rightBoolean === false) {
+      return false;
+    }
+    return [];
   }
 }
 
@@ -262,6 +354,12 @@ export class OrAtom implements Atom {
   }
 }
 
+/**
+ * 6.5.4. xor
+ * Returns true if exactly one of the operands evaluates to true, 
+ * false if either both operands evaluate to true or both operands evaluate to false, 
+ * and the empty collection ({ }) otherwise:
+ */
 export class XorAtom implements Atom {
   constructor(
     public readonly left: Atom,
@@ -270,10 +368,13 @@ export class XorAtom implements Atom {
   eval(context: any): any {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
-    const leftBoolean = toBoolean(leftValue);
-    const rightBoolean = toBoolean(rightValue);
-    if (leftBoolean !== rightBoolean) {
+    const leftBoolean = flattenValue(leftValue);
+    const rightBoolean = flattenValue(rightValue);
+    if ((leftBoolean === true && rightBoolean !== true) || (leftBoolean !== true && rightBoolean === true)) {
       return true;
+    }
+    if ((leftBoolean === true && rightBoolean === true) || (leftBoolean === false && rightBoolean === false)) {
+      return false;
     }
     return [];
   }
@@ -286,7 +387,6 @@ export class FunctionAtom implements Atom {
     public readonly impl: (context: any[], ...a: Atom[]) => any[]
   ) { }
   eval(context: any): any {
-    const input = Array.isArray(context) ? context : [context];
-    return this.impl(input, ...this.args);
+    return this.impl(ensureArray(context), ...this.args);
   }
 }

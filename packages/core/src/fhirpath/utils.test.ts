@@ -1,4 +1,4 @@
-import { applyMaybeArray, fhirPathIs, toBoolean } from './utils';
+import { applyMaybeArray, fhirPathEquals, fhirPathIs, toBoolean } from './utils';
 
 describe('FHIRPath utils', () => {
 
@@ -30,4 +30,11 @@ describe('FHIRPath utils', () => {
     expect(fhirPathIs(100, 'Boolean')).toEqual(false);
     expect(fhirPathIs({}, 'Boolean')).toEqual(false);
   });
+
+  test('fhirPathEquals', () => {
+    expect(fhirPathEquals(1, 1)).toEqual(true);
+    expect(fhirPathEquals(1, 2)).toEqual(false);
+    expect(fhirPathEquals(2, 1)).toEqual(false);
+  });
+
 });

@@ -164,7 +164,7 @@ describe('FHIRPath parser', () => {
         family: 'Jones'
       }]
     }]);
-    expect(result).toEqual(['Alice', 'Alice', 'Bob', 'Bob']);
+    expect(result).toEqual(['Alice', 'Bob']);
   });
 
   test('Evaluate ignores non-objects', () => {

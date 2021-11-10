@@ -21,6 +21,8 @@
   },
   "devDependencies": {
     "@medplum/core": "0.2.2",
-    "@medplum/definitions": "0.2.2"
+    "@medplum/definitions": "0.2.2",
+    "fhirpath": "^2.10.1",
+    "fast-xml-parser": "^3.19.0"
   }
 }
