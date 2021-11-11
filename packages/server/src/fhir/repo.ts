@@ -173,12 +173,12 @@ export class Repository {
     }];
   }
 
-  async readVersion(resourceType: string, id: string, vid: string): RepositoryResult<Resource> {
+  async readVersion<T extends Resource>(resourceType: string, id: string, vid: string): RepositoryResult<T> {
     if (!validator.isUUID(vid)) {
       return [badRequest('Invalid UUID'), undefined];
     }
 
-    const [resourceOutcome] = await this.readResource(resourceType, id);
+    const [resourceOutcome] = await this.readResource<T>(resourceType, id);
     if (!isOk(resourceOutcome) && !isGone(resourceOutcome)) {
       return [resourceOutcome, undefined];
     }
@@ -251,6 +251,7 @@ export class Repository {
 
     const account = await this.getAccount(existing, updated);
     if (account) {
+      // Need cast to overwrite a readonly property
       (result.meta as any).account = account;
     }
 

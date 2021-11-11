@@ -113,11 +113,67 @@ describe('Auth middleware', () => {
     expect(res.status).toBe(401);
   });
 
+  test('Unrecognized auth token type', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/Patient')
+      .set('Authorization', 'foo foo');
+    expect(res.status).toBe(401);
+  });
+
   test('Invalid bearer token', async () => {
     const res = await request(app)
       .get('/fhir/R4/Patient')
       .set('Authorization', 'Bearer foo');
     expect(res.status).toBe(401);
+  });
+
+  test('Basic auth empty string', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/Patient')
+      .set('Authorization', 'Basic ');
+    expect(res.status).toBe(401);
+  });
+
+  test('Basic auth malformed string', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/Patient')
+      .set('Authorization', 'Basic foo');
+    expect(res.status).toBe(401);
+  });
+
+  test('Basic auth empty username', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/Patient')
+      .set('Authorization', 'Basic ' + Buffer.from(':' + client.secret).toString('base64'));
+    expect(res.status).toBe(401);
+  });
+
+  test('Basic auth empty password', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/Patient')
+      .set('Authorization', 'Basic ' + Buffer.from(client.id + ':').toString('base64'));
+    expect(res.status).toBe(401);
+  });
+
+  test('Basic auth client not found', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/Patient')
+      .set('Authorization', 'Basic ' + Buffer.from(randomUUID() + ':' + client.secret).toString('base64'));
+    expect(res.status).toBe(401);
+  });
+
+  test('Basic auth wrong password', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/Patient')
+      .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + 'wrong').toString('base64'));
+    expect(res.status).toBe(401);
+  });
+
+  test('Basic auth success', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/Patient')
+      .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'));
+    expect(res.status).toBe(200);
   });
 
 });
