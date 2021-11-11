@@ -1,22 +1,27 @@
-import { isOk, Login } from '@medplum/core';
+import { ClientApplication, createReference, getReferenceString, isOk, Login } from '@medplum/core';
 import { NextFunction, Request, Response } from 'express';
 import { getRepoForLogin, repo } from '../fhir';
 import { logger } from '../logger';
 import { MedplumAccessTokenClaims, verifyJwt } from './keys';
 
-export interface MedplumRequestContext {
-  user: string;
-  profile: string;
-}
-
 export async function authenticateToken(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(' ')[1];
-  if (!token) {
+  const [tokenType, token] = req.headers.authorization?.split(' ') ?? [];
+  if (!tokenType || !token) {
     res.sendStatus(401);
     return;
   }
 
+  if (tokenType === 'Bearer') {
+    await authenticateBearerToken(req, res, next, token);
+  } else if (tokenType === 'Basic') {
+    await authenticateBasicAuth(req, res, next, token);
+  } else {
+    res.sendStatus(401);
+    return;
+  }
+}
+
+async function authenticateBearerToken(req: Request, res: Response, next: NextFunction, token: string): Promise<void> {
   try {
     const verifyResult = await verifyJwt(token);
     const claims = verifyResult.payload as MedplumAccessTokenClaims;
@@ -30,11 +35,42 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
     res.locals.profile = claims.profile;
     res.locals.scope = claims.scope;
     res.locals.repo = await getRepoForLogin(login);
+    next();
+
   } catch (err) {
     logger.error('verify error', err);
     res.sendStatus(401);
     return;
   }
+}
 
+async function authenticateBasicAuth(req: Request, res: Response, next: NextFunction, token: string): Promise<void> {
+  const credentials = Buffer.from(token, 'base64').toString('ascii');
+  const [username, password] = credentials.split(':');
+  if (!username || !password) {
+    res.sendStatus(401);
+    return;
+  }
+
+  const [outcome, client] = await repo.readResource<ClientApplication>('ClientApplication', username);
+  if (!isOk(outcome) || !client) {
+    res.sendStatus(401);
+    return;
+  }
+
+  if (client.secret !== password) {
+    res.sendStatus(401);
+    return;
+  }
+
+  const login: Login = {
+    resourceType: 'Login',
+    profile: createReference(client)
+  };
+
+  res.locals.user = client.id;
+  res.locals.profile = getReferenceString(client);
+  res.locals.scope = 'openid';
+  res.locals.repo = await getRepoForLogin(login);
   next();
 }
