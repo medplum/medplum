@@ -7,7 +7,7 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Medplum',
-  tagline: 'Healthcare infrastructure',
+  tagline: 'Healthcare infrastructure and application development',
   url: 'https://docs.medplum.com',
   baseUrl: '/',
   trailingSlash: false,
@@ -24,7 +24,7 @@ const config = {
       ({
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://github.com/medplum/medplum/docs/',
+          editUrl: 'https://github.com/medplum/medplum/packages/docs/',
         },
         blog: {
           showReadingTime: true,
@@ -89,8 +89,8 @@ const config = {
                 href: 'https://discordapp.com/invite/medplum',
               },
               {
-                label: 'Twitter',
-                href: 'https://twitter.com/medplum',
+                label: 'Storybook',
+                href: 'https://docs.medplum.com/storybook/index.html',
               },
             ],
           },

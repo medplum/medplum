@@ -14,8 +14,7 @@ const FeatureList: FeatureItem[] = [
     image: '/img/undraw_docusaurus_mountain.svg',
     description: (
       <>
-        Medplum was designed from the ground up to be easily installed and
-        used to get your website up and running quickly.
+        Medplum was designed from the ground up to let you build your healthcare app quickly and compliantly.
       </>
     ),
   },
@@ -24,18 +23,17 @@ const FeatureList: FeatureItem[] = [
     image: '/img/undraw_docusaurus_tree.svg',
     description: (
       <>
-        Medplum lets you focus on your docs, and we&apos;ll do the chores. Go
-        ahead and move your docs into the <code>docs</code> directory.
+        Medplum lets you focus on your app, and we&apos;ll do the chores. Focus on your clinical scenarios
+        and let us handle the infrastructure and compliance.
       </>
     ),
   },
   {
-    title: 'Powered by React',
+    title: 'Powered by FHIR',
     image: '/img/undraw_docusaurus_react.svg',
     description: (
       <>
-        Extend or customize your website layout by reusing React. Medplum can
-        be extended while reusing the same header and footer.
+        Data is stored natively in FHIR. Deploy in your own environment or use our hosted service.
       </>
     ),
   },
