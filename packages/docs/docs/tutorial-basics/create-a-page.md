@@ -18,7 +18,8 @@ You will need the following to get started:
 
 These three requirements will need to be in place to connect
 
-```const BASE_URL = 'https://api.medplum.com/' // if you are connecting to an on premise deployment, these values may be different;
+```js
+const BASE_URL = 'https://api.medplum.com/' // if you are connecting to an on premise deployment, these values may be different;
 const MY_CLIENT_ID = 'MY_CLIENT_ID';
 const MY_CLIENT_SECRET = 'MY_CLIENT_SECRET';
 ```
@@ -43,7 +44,8 @@ Here is a breakdown of workflow at a high level
 
 The [client credentials](https://oauth.net/2/grant-types/client-credentials/) flow is a type of connection that is used to obtain an access token outside the context of the user.
 
-```/**
+```js
+/**
  * Authenticates using OAuth client credentials flow.
  * This sets the accessToken global.
  */
@@ -74,7 +76,8 @@ async function authenticate() {
 
 Creating a Patient if one does not exist uses the **conditional create** logic in FHIR.  In this example, a patient has an Medical Record Number or MRN.  If that MRN exists, then a new patient should not be created.  In a lab workflow, it is common for a lab to serve patients repeatedly.  In this case where there is already a patient in the system, it would be incorrect (and confusing) to make a new patient record.
 
-```/**
+```js
+/**
  * Creates an order by creating Patient and ServiceRequest resources.
  */
 async function createServiceRequest() {
@@ -184,7 +187,8 @@ To get this to be linked up, you'll need to have the identifiers for the Patient
 
 You can then create a diagnostic report using the function below.
 
-```async function createReport(patientId, serviceRequestId) {
+```js
+async function createReport(patientId, serviceRequestId) {
   const observtionUrn1 = 'urn:uuid:' + randomUUID();
   const observtionUrn2 = 'urn:uuid:' + randomUUID();
 
