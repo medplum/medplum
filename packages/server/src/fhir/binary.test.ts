@@ -7,7 +7,7 @@ import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { initTestAuth } from '../jest.setup';
 import { initKeys } from '../oauth';
-import { initBinaryStorage } from './binary';
+import { initBinaryStorage } from './storage';
 
 const app = express();
 const binaryDir = mkdtempSync(__dirname + sep + 'binary-');

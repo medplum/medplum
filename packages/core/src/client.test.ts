@@ -383,13 +383,6 @@ describe('Client', () => {
     expect(promise).rejects.toMatchObject({});
   });
 
-  test('Read binary', async () => {
-    const client = new MedplumClient(defaultOptions);
-    const result = await client.readBinary('123');
-    expect(result).not.toBeUndefined();
-    expect((result as any).request.url).toBe('https://x/fhir/R4/Binary/123');
-  });
-
   test('Create binary', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.createBinary('Hello world', 'text/plain');

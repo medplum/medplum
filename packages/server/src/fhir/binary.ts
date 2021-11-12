@@ -1,21 +1,9 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { assertOk, Binary, stringify } from '@medplum/core';
+import { assertOk, Binary } from '@medplum/core';
 import { Request, Response, Router } from 'express';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
-import { IncomingMessage } from 'http';
-import path from 'path';
 import { asyncWrap } from '../async';
 import { Repository } from './repo';
-
-let binaryStorage: BinaryStorage | undefined = undefined;
-
-export function initBinaryStorage(type: string): void {
-  if (type.startsWith('s3:')) {
-    binaryStorage = new S3Storage(type.replace('s3:', ''));
-  } else if (type.startsWith('file:')) {
-    binaryStorage = new FileSystemStorage(type.replace('file:', ''));
-  }
-}
+import { getPresignedUrl } from './signer';
+import { getBinaryStorage } from './storage';
 
 export const binaryRouter = Router();
 
@@ -27,8 +15,11 @@ binaryRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
     contentType: req.get('Content-Type')
   });
   assertOk(outcome);
-  await binaryStorage?.writeBinary(resource as Binary, req);
-  res.status(201).json(resource);
+  await getBinaryStorage().writeBinary(resource as Binary, req);
+  res.status(201).json({
+    ...resource,
+    url: getPresignedUrl(resource as Binary)
+  });
 }));
 
 // Update a binary
@@ -41,7 +32,7 @@ binaryRouter.put('/:id', asyncWrap(async (req: Request, res: Response) => {
     contentType: req.get('Content-Type')
   });
   assertOk(outcome);
-  await binaryStorage?.writeBinary(resource as Binary, req);
+  await getBinaryStorage().writeBinary(resource as Binary, req);
   res.status(200).json(resource);
 }));
 
@@ -54,91 +45,5 @@ binaryRouter.get('/:id', asyncWrap(async (req: Request, res: Response) => {
 
   const binary = resource as Binary;
   res.status(200).contentType(binary.contentType as string);
-  await binaryStorage?.readBinary(binary, res);
+  await getBinaryStorage().readBinary(binary, res);
 }));
-
-/**
- * The BinaryStorage interface represents a method of reading and writing binary blobs.
- */
-interface BinaryStorage {
-
-  writeBinary(binary: Binary, req: Request): Promise<void>;
-
-  readBinary(binary: Binary, res: Response): Promise<void>;
-}
-
-/**
- * The FileSystemStorage class stores binary blobs on the file system.
- * Files are stored in path/binary.id/binary.meta.versionId.
- */
-class FileSystemStorage implements BinaryStorage {
-  private readonly path: string;
-
-  constructor(path: string) {
-    this.path = path;
-  }
-
-  async writeBinary(binary: Binary, req: Request): Promise<void> {
-    const dir = this.getDir(binary);
-    if (!existsSync(dir)) {
-      mkdirSync(dir);
-    }
-    writeFileSync(this.getPath(binary), req.body, { encoding: 'binary' });
-  }
-
-  async readBinary(binary: Binary, res: Response): Promise<void> {
-    res.sendFile(this.getPath(binary));
-  }
-
-  private getDir(binary: Binary): string {
-    return path.resolve(this.path, binary.id as string);
-  }
-
-  private getPath(binary: Binary): string {
-    return path.resolve(this.getDir(binary), binary.meta?.versionId as string);
-  }
-}
-
-/**
- * The S3Storage class stores binary data in an AWS S3 bucket.
- * Files are stored in bucket/binary/binary.id/binary.meta.versionId.
- */
-class S3Storage implements BinaryStorage {
-  private readonly client: S3Client;
-  private readonly bucket: string;
-
-  constructor(bucket: string) {
-    this.client = new S3Client({ region: 'us-east-1' });
-    this.bucket = bucket;
-  }
-
-  async writeBinary(binary: Binary, req: Request): Promise<void> {
-    let body: Buffer | string | undefined;
-    if (req.body instanceof Buffer) {
-      body = req.body;
-    } else if (req.is('application/json') || req.is('application/fhir+json')) {
-      body = stringify(req.body);
-    } else if (req.body) {
-      body = req.body.toString();
-    }
-
-    await this.client.send(new PutObjectCommand({
-      Bucket: this.bucket,
-      Key: this.getKey(binary),
-      ContentType: binary.contentType,
-      Body: body
-    }));
-  }
-
-  async readBinary(binary: Binary, res: Response): Promise<void> {
-    const output = await this.client.send(new GetObjectCommand({
-      Bucket: this.bucket,
-      Key: this.getKey(binary)
-    }));
-    (output.Body as IncomingMessage).pipe(res);
-  }
-
-  private getKey(binary: Binary): string {
-    return 'binary/' + binary.id + '/' + binary.meta?.versionId;
-  }
-}

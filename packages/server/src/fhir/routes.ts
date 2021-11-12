@@ -12,6 +12,7 @@ import { getRootSchema } from './graphql';
 import { getCapabilityStatement } from './metadata';
 import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
+import { rewriteAttachments, RewriteMode } from './rewrite';
 import { validateResource } from './schema';
 import { parseSearchRequest } from './search';
 
@@ -156,7 +157,7 @@ protectedRoutes.get('/:resourceType/:id', asyncWrap(async (req: Request, res: Re
   const repo = res.locals.repo as Repository;
   const [outcome, resource] = await repo.readResource(resourceType, id);
   assertOk(outcome);
-  res.status(getStatus(outcome)).json(resource);
+  res.status(getStatus(outcome)).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, resource));
 }));
 
 // Read resource history

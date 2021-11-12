@@ -1,6 +1,5 @@
 import { Attachment } from '@medplum/core';
-import React, { useEffect, useState } from 'react';
-import { useMedplum } from './MedplumProvider';
+import React from 'react';
 
 export interface AttachmentDisplayProps {
   value?: Attachment;
@@ -8,29 +7,17 @@ export interface AttachmentDisplayProps {
 }
 
 export function AttachmentDisplay(props: AttachmentDisplayProps) {
-  const medplum = useMedplum();
-  const [objectUrl, setObjectUrl] = useState<string>();
-
-  useEffect(() => {
-    if (props.value) {
-      const { url, contentType } = props.value;
-      if (url && (contentType?.startsWith('image/') || contentType?.startsWith('video/'))) {
-        medplum.readBlobAsObjectUrl(url).then(setObjectUrl);
-      }
-    }
-
-  }, [props.value?.url]);
-
   const value = props.value;
+  const { contentType, url } = value ?? {};
 
-  if (value?.contentType?.startsWith('image/') && objectUrl) {
-    return <img data-testid="attachment-image" style={{ maxWidth: props.maxWidth }} src={objectUrl} />;
+  if (contentType?.startsWith('image/') && url) {
+    return <img data-testid="attachment-image" style={{ maxWidth: props.maxWidth }} src={url} />;
   }
 
-  if (value?.contentType?.startsWith('video/') && objectUrl) {
+  if (contentType?.startsWith('video/') && url) {
     return (
       <video data-testid="attachment-video" style={{ maxWidth: props.maxWidth }} controls={true}>
-        <source type={value.contentType} src={objectUrl} />
+        <source type={contentType} src={url} />
       </video>
     );
   }

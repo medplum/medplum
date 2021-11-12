@@ -14,6 +14,10 @@ export interface MedplumServerConfig {
   userInfoUrl: string;
   appBaseUrl: string;
   binaryStorage: string;
+  storageBaseUrl: string;
+  signingKey: string;
+  signingKeyId: string;
+  signingKeyPassphrase: string;
   supportEmail: string;
   database: MedplumDatabaseConfig;
   redis: MedplumRedisConfig;

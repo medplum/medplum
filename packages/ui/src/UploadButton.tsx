@@ -39,7 +39,7 @@ export function UploadButton(props: UploadButtonProps) {
       .then((binary: Binary) => {
         props.onUpload({
           contentType: binary.contentType,
-          url: medplum.fhirUrl('Binary', binary.id as string),
+          url: binary.url,
           title: file.name
         });
       })
