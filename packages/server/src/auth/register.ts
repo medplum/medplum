@@ -1,4 +1,4 @@
-import { assertOk, badRequest, BundleEntry, ClientApplication, createReference, Login, Operator, ProfileResource, Project, User } from '@medplum/core';
+import { assertOk, badRequest, BundleEntry, ClientApplication, createReference, getReferenceString, Login, Operator, ProfileResource, Project, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
@@ -65,7 +65,8 @@ export async function registerHandler(req: Request, res: Response) {
 
   return res.status(200).json({
     ...token,
-    ...result
+    project: result.project && getReferenceString(result.project),
+    profile: result.profile && getReferenceString(result.profile)
   });
 }
 

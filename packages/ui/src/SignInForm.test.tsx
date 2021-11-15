@@ -13,11 +13,7 @@ function mockFetch(url: string, options: any): Promise<any> {
     if (email === 'admin@medplum.com' && password === 'admin') {
       status = 301;
       result = {
-        profile: {
-          resourceType: 'Practitioner',
-          id: '123',
-          name: [{ given: ['Medplum'], family: ['Admin'] }],
-        }
+        profile: 'Practitioner/123'
       };
     } else if (email !== 'admin@medplum.com') {
       result = {
@@ -40,6 +36,13 @@ function mockFetch(url: string, options: any): Promise<any> {
         }]
       };
     }
+  } else if (options.method === 'GET' && url.endsWith('Practitioner/123')) {
+    status = 200;
+    result = {
+      resourceType: 'Practitioner',
+      id: '123',
+      name: [{ given: ['Medplum'], family: ['Admin'] }],
+    };
   }
 
   const response: any = {

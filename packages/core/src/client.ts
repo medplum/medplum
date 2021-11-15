@@ -4,7 +4,7 @@
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
-import { Binary, Bundle, Project, Reference, Resource, SearchParameter, StructureDefinition, Subscription, ValueSet } from './fhir';
+import { Binary, Bundle, Reference, Resource, SearchParameter, StructureDefinition, Subscription, ValueSet } from './fhir';
 import { parseJWTPayload } from './jwt';
 import { isOk, OperationOutcomeError } from './outcomes';
 import { formatSearchQuery, Operator, SearchRequest } from './search';
@@ -80,8 +80,8 @@ export interface FetchLike {
 }
 
 interface LoginResponse {
-  project: Project;
-  profile: ProfileResource;
+  project: string;
+  profile: string;
   accessToken: string;
   refreshToken: string;
 }
@@ -120,6 +120,7 @@ export class MedplumClient extends EventTarget {
   private readonly logoutUrl: string;
   private readonly onUnauthenticated?: () => void;
   private activeLogin?: LoginResponse;
+  private profile?: ProfileResource;
 
   constructor(options: MedplumClientOptions) {
     super();
@@ -155,6 +156,7 @@ export class MedplumClient extends EventTarget {
   clear(): void {
     this.storage.clear();
     this.activeLogin = undefined;
+    this.profile = undefined;
     this.dispatchEvent({ type: 'change' });
   }
 
@@ -224,9 +226,13 @@ export class MedplumClient extends EventTarget {
    * @param response The login response.
    * @returns The user profile.
    */
-  private handleLoginResponse(response: LoginResponse): ProfileResource {
+  private async handleLoginResponse(response: LoginResponse): Promise<ProfileResource> {
     this.setActiveLogin(response);
-    return response.profile;
+    this.profile = undefined;
+    if (response.profile) {
+      this.profile = await this.readCachedReference({ reference: response.profile });
+    }
+    return this.profile as ProfileResource;
   }
 
   /**
@@ -442,13 +448,13 @@ export class MedplumClient extends EventTarget {
   }
 
   addLogin(newLogin: LoginResponse): void {
-    const logins = this.getLogins().filter(login => login.profile?.id !== newLogin.profile?.id);
+    const logins = this.getLogins().filter(login => login.profile !== newLogin.profile);
     logins.push(newLogin);
     this.storage.setObject('logins', logins);
   }
 
   getProfile(): ProfileResource | undefined {
-    return this.getActiveLogin()?.profile;
+    return this.profile;
   }
 
   /**
@@ -636,7 +642,7 @@ export class MedplumClient extends EventTarget {
         return response.json();
       })
       .then(tokens => this.verifyTokens(tokens))
-      .then(() => this.getActiveLogin()?.profile as ProfileResource);
+      .then(() => this.profile as ProfileResource);
   }
 
   /**

@@ -1,9 +1,9 @@
-import { Bundle, Communication, Patient, Media, MedplumClient } from '@medplum/core';
+import { Bundle, Communication, Media, MedplumClient, Patient } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
-import { PatientTimeline, PatientTimelineProps } from './PatientTimeline';
 import { MedplumProvider } from './MedplumProvider';
+import { PatientTimeline, PatientTimelineProps } from './PatientTimeline';
 
 const patientId = randomUUID();
 
@@ -79,10 +79,7 @@ function mockFetch(url: string, options: any): Promise<any> {
 
   if (method === 'POST' && url.endsWith('/auth/login')) {
     result = {
-      profile: {
-        resourceType: 'Practitioner',
-        id: '123'
-      }
+      profile: 'Practitioner/123'
     };
   } else if (method === 'GET' && url.includes('/fhir/R4/Patient/' + patientId)) {
     result = patient;

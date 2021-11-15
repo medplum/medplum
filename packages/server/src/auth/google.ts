@@ -1,4 +1,4 @@
-import { assertOk, badRequest, Login } from '@medplum/core';
+import { assertOk, badRequest, getReferenceString, Login } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -76,6 +76,7 @@ export async function googleHandler(req: Request, res: Response) {
 
   return res.status(200).json({
     ...loginDetails.tokens,
-    profile: loginDetails.profile
+    project: loginDetails.project && getReferenceString(loginDetails.project),
+    profile: loginDetails.profile && getReferenceString(loginDetails.profile)
   });
 }

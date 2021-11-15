@@ -1,13 +1,13 @@
-import { getDisplayString, HumanName, Patient } from '@medplum/core';
+import { getReferenceString, HumanName, Patient, ProfileResource } from '@medplum/core';
 import React, { useState } from 'react';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
+import './Header.css';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { MedplumLink } from './MedplumLink';
 import { useMedplumContext } from './MedplumProvider';
 import { Popup } from './Popup';
 import { ResourceInput } from './ResourceInput';
-import './Header.css';
 
 export interface HeaderProps {
   onLogo?: () => void;
@@ -85,14 +85,16 @@ export function Header(props: HeaderProps) {
                 {logins.length > 1 && (
                   <div>
                     <hr />
-                    {logins.map(login => login.profile.id !== context.profile?.id && (
-                      <div key={login.profile.id} onClick={() => {
+                    {logins.map(login => login.profile !== getReferenceString(context.profile as ProfileResource) && (
+                      <div key={login.profile} onClick={() => {
                         medplum.setActiveLogin(login);
                         setUserMenuVisible(false);
                         window.location.reload();
                       }}>
-                        <div>{getDisplayString(login.profile)}</div>
-                        <div>Project: {getDisplayString(login.project)}</div>
+                        {/* <div>{getDisplayString(login.profile)}</div>
+                        <div>Project: {getDisplayString(login.project)}</div> */}
+                        <div>{login.profile}</div>
+                        <div>{login.project}</div>
                       </div>
                     ))}
                   </div>
