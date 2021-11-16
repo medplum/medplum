@@ -70,4 +70,9 @@ export interface Binary {
    * The actual content, base64 encoded.
    */
   readonly data?: string;
+
+  /**
+   * A location where the data can be accessed.
+   */
+  readonly url?: string;
 }

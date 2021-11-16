@@ -1,4 +1,4 @@
-import { assertOk, badRequest, getStatus } from '@medplum/core';
+import { assertOk, badRequest, getStatus, OperationOutcome } from '@medplum/core';
 import { NextFunction, Request, Response, Router } from 'express';
 import { graphqlHTTP } from 'express-graphql';
 import { Operation } from 'fast-json-patch';
@@ -12,6 +12,7 @@ import { getRootSchema } from './graphql';
 import { getCapabilityStatement } from './metadata';
 import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
+import { rewriteAttachments, RewriteMode } from './rewrite';
 import { validateResource } from './schema';
 import { parseSearchRequest } from './search';
 
@@ -119,7 +120,8 @@ protectedRoutes.post('/', asyncWrap(async (req: Request, res: Response) => {
   const repo = res.locals.repo as Repository;
   const [outcome, result] = await processBatch(repo, bundle);
   assertOk(outcome);
-  res.status(getStatus(outcome)).json(result);
+  sendResponse(res, outcome, result);
+
 }));
 
 // Search
@@ -129,7 +131,7 @@ protectedRoutes.get('/:resourceType', asyncWrap(async (req: Request, res: Respon
   const query = req.query as Record<string, string | undefined>;
   const [outcome, bundle] = await repo.search(parseSearchRequest(resourceType, query));
   assertOk(outcome);
-  res.status(getStatus(outcome)).json(bundle);
+  sendResponse(res, outcome, bundle);
 }));
 
 // Create resource
@@ -147,7 +149,7 @@ protectedRoutes.post('/:resourceType', asyncWrap(async (req: Request, res: Respo
   const repo = res.locals.repo as Repository;
   const [outcome, result] = await repo.createResource(resource);
   assertOk(outcome);
-  res.status(getStatus(outcome)).json(result);
+  sendResponse(res, outcome, result);
 }));
 
 // Read resource by ID
@@ -156,7 +158,7 @@ protectedRoutes.get('/:resourceType/:id', asyncWrap(async (req: Request, res: Re
   const repo = res.locals.repo as Repository;
   const [outcome, resource] = await repo.readResource(resourceType, id);
   assertOk(outcome);
-  res.status(getStatus(outcome)).json(resource);
+  sendResponse(res, outcome, resource);
 }));
 
 // Read resource history
@@ -196,16 +198,16 @@ protectedRoutes.put('/:resourceType/:id', asyncWrap(async (req: Request, res: Re
   const repo = res.locals.repo as Repository;
   const [outcome, result] = await repo.updateResource(resource);
   assertOk(outcome);
-  res.status(getStatus(outcome)).json(result);
+  sendResponse(res, outcome, result);
 }));
 
 // Delete resource
 protectedRoutes.delete('/:resourceType/:id', asyncWrap(async (req: Request, res: Response) => {
   const { resourceType, id } = req.params;
   const repo = res.locals.repo as Repository;
-  const [outcome, resource] = await repo.deleteResource(resourceType, id);
+  const [outcome] = await repo.deleteResource(resourceType, id);
   assertOk(outcome);
-  res.status(getStatus(outcome)).json(resource);
+  res.sendStatus(getStatus(outcome));
 }));
 
 // Patch resource
@@ -219,7 +221,7 @@ protectedRoutes.patch('/:resourceType/:id', asyncWrap(async (req: Request, res: 
   const repo = res.locals.repo as Repository;
   const [outcome, resource] = await repo.patchResource(resourceType, id, patch);
   assertOk(outcome);
-  res.status(getStatus(outcome)).json(resource);
+  sendResponse(res, outcome, resource);
 }));
 
 // Validate create resource
@@ -234,4 +236,9 @@ protectedRoutes.post('/:resourceType/([$])validate', asyncWrap(async (req: Reque
 
 function isFhirJsonContentType(req: Request) {
   return req.is('application/json') || req.is('application/fhir+json');
+}
+
+async function sendResponse(res: Response, outcome: OperationOutcome, body: any): Promise<void> {
+  const repo = res.locals.repo as Repository;
+  res.status(getStatus(outcome)).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, body));
 }

@@ -61,7 +61,7 @@ function mockFetch(url: string, options: any): Promise<any> {
   if (method === 'POST' && url.endsWith('/auth/login')) {
     result = {
       user,
-      profile: practitioner
+      profile: 'Practitioner/123'
     };
   } else if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name:exact=Practitioner')) {
     result = practitionerStructureBundle;

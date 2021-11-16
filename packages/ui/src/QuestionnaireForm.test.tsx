@@ -11,14 +11,7 @@ function mockFetch(url: string, options: any): Promise<any> {
 
   if (url.endsWith('/auth/login')) {
     result = {
-      user: {
-        resourceType: 'User',
-        id: '123'
-      },
-      profile: {
-        resourceType: 'Practitioner',
-        id: '456'
-      }
+      profile: 'Practitioner/456'
     };
   }
 

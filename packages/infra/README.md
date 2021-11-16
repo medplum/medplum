@@ -47,3 +47,27 @@ Creates:
 * Load Balancer
 * SSL Certificate
 * Route 53 Entries
+
+### Storage
+
+Based on:
+
+The CloudFront distribution requires a public key for signature verification.
+
+Generate a 2048 bit RSA key:
+
+```sh
+openssl genrsa -des3 -out private.pem 2048
+```
+
+Export the public key to a file:
+
+```sh
+openssl rsa -in private.pem -outform PEM -pubout -out public.pem
+```
+
+Open the `public.pem` file and ensure that it starts with `-----BEGIN PUBLIC KEY-----`. This is how you know that this file is the public key of the pair and not a private key.
+
+Add the public key to the CDK infrastructure configuration.
+
+Add the private key to the server configuration settings (JSON, AWS Parameter Store, etc).

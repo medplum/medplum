@@ -4,7 +4,7 @@
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
-import { Binary, Bundle, Project, Reference, Resource, SearchParameter, StructureDefinition, Subscription, ValueSet } from './fhir';
+import { Binary, Bundle, Reference, Resource, SearchParameter, StructureDefinition, Subscription, ValueSet } from './fhir';
 import { parseJWTPayload } from './jwt';
 import { isOk, OperationOutcomeError } from './outcomes';
 import { formatSearchQuery, Operator, SearchRequest } from './search';
@@ -14,7 +14,6 @@ import { arrayBufferToBase64, ProfileResource, stringify } from './utils';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
-const DEFAULT_BLOB_CACHE_SIZE = 100;
 const JSON_CONTENT_TYPE = 'application/json';
 const FHIR_CONTENT_TYPE = 'application/fhir+json';
 const PATCH_CONTENT_TYPE = 'application/json-patch+json';
@@ -62,13 +61,6 @@ export interface MedplumClientOptions {
   resourceCacheSize?: number;
 
   /**
-   * Number of blob URLs to store in the cache.
-   * Optional.  Default value is 100.
-   * Consider using this for performance of displaying Patient or Practitioner resources.
-   */
-  blobCacheSize?: number;
-
-  /**
    * Optional fetch implementation.
    * Optional.  Default is window.fetch.
    * For nodejs applications, consider the 'node-fetch' package.
@@ -88,8 +80,8 @@ export interface FetchLike {
 }
 
 interface LoginResponse {
-  project: Project;
-  profile: ProfileResource;
+  project: string;
+  profile: string;
   accessToken: string;
   refreshToken: string;
 }
@@ -121,7 +113,6 @@ export class MedplumClient extends EventTarget {
   private readonly storage: ClientStorage;
   private readonly schema: Map<string, IndexedStructureDefinition>;
   private readonly resourceCache: LRUCache<Resource | Promise<Resource>>;
-  private readonly blobUrlCache: LRUCache<string | Promise<string>>;
   private readonly baseUrl: string;
   private readonly clientId: string;
   private readonly authorizeUrl: string;
@@ -129,6 +120,7 @@ export class MedplumClient extends EventTarget {
   private readonly logoutUrl: string;
   private readonly onUnauthenticated?: () => void;
   private activeLogin?: LoginResponse;
+  private profile?: ProfileResource;
 
   constructor(options: MedplumClientOptions) {
     super();
@@ -150,7 +142,6 @@ export class MedplumClient extends EventTarget {
     this.storage = new ClientStorage();
     this.schema = new Map();
     this.resourceCache = new LRUCache(options.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
-    this.blobUrlCache = new LRUCache(options.blobCacheSize ?? DEFAULT_BLOB_CACHE_SIZE);
     this.baseUrl = options.baseUrl || DEFAULT_BASE_URL;
     this.clientId = options.clientId;
     this.authorizeUrl = options.authorizeUrl || this.baseUrl + 'oauth2/authorize';
@@ -165,11 +156,12 @@ export class MedplumClient extends EventTarget {
   clear(): void {
     this.storage.clear();
     this.activeLogin = undefined;
+    this.profile = undefined;
     this.dispatchEvent({ type: 'change' });
   }
 
-  get(url: string, blob?: boolean): Promise<any> {
-    return this.request('GET', url, undefined, undefined, blob);
+  get(url: string): Promise<any> {
+    return this.request('GET', url);
   }
 
   post(url: string, body: any, contentType?: string): Promise<any> {
@@ -234,9 +226,13 @@ export class MedplumClient extends EventTarget {
    * @param response The login response.
    * @returns The user profile.
    */
-  private handleLoginResponse(response: LoginResponse): ProfileResource {
+  private async handleLoginResponse(response: LoginResponse): Promise<ProfileResource> {
     this.setActiveLogin(response);
-    return response.profile;
+    this.profile = undefined;
+    if (response.profile) {
+      this.profile = await this.readCachedReference({ reference: response.profile });
+    }
+    return this.profile as ProfileResource;
   }
 
   /**
@@ -383,30 +379,6 @@ export class MedplumClient extends EventTarget {
     return this.get(this.fhirUrl('Patient', id, '$everything'));
   }
 
-  readBlob(url: string): Promise<Blob> {
-    return this.get(url, true);
-  }
-
-  readBlobAsObjectUrl(url: string): Promise<string> {
-    const promise = this.readBlob(url)
-      .then(imageBlob => {
-        const imageUrl = URL.createObjectURL(imageBlob);
-        this.blobUrlCache.set(url, imageUrl);
-        return imageUrl;
-      });
-    this.blobUrlCache.set(url, promise);
-    return promise;
-  }
-
-  readCachedBlobAsObjectUrl(url: string): Promise<string> {
-    const cached = this.blobUrlCache.get(url);
-    return cached ? Promise.resolve(cached) : this.readBlobAsObjectUrl(url);
-  }
-
-  readBinary(id: string): Promise<Blob> {
-    return this.readBlob(this.fhirUrl('Binary', id));
-  }
-
   create<T extends Resource>(resource: T): Promise<T> {
     if (!resource.resourceType) {
       throw new Error('Missing resourceType');
@@ -476,13 +448,13 @@ export class MedplumClient extends EventTarget {
   }
 
   addLogin(newLogin: LoginResponse): void {
-    const logins = this.getLogins().filter(login => login.profile?.id !== newLogin.profile?.id);
+    const logins = this.getLogins().filter(login => login.profile !== newLogin.profile);
     logins.push(newLogin);
     this.storage.setObject('logins', logins);
   }
 
   getProfile(): ProfileResource | undefined {
-    return this.getActiveLogin()?.profile;
+    return this.profile;
   }
 
   /**
@@ -491,14 +463,12 @@ export class MedplumClient extends EventTarget {
    * @param {string} url
    * @param {string=} contentType
    * @param {Object=} body
-   * @param {boolean=} blob
    */
   private async request(
     method: string,
     url: string,
     contentType?: string,
-    body?: any,
-    blob?: boolean): Promise<any> {
+    body?: any): Promise<any> {
 
     if (!url.startsWith('http')) {
       url = this.baseUrl + url;
@@ -531,7 +501,7 @@ export class MedplumClient extends EventTarget {
     const response = await this.fetch(url, options);
     if (response.status === 401) {
       // Refresh and try again
-      return this.handleUnauthenticated(method, url, contentType, body, blob);
+      return this.handleUnauthenticated(method, url, contentType, body);
     }
 
     if (response.status === 304) {
@@ -539,7 +509,7 @@ export class MedplumClient extends EventTarget {
       return undefined;
     }
 
-    const obj = blob ? await response.blob() : await response.json();
+    const obj = await response.json();
     if (obj.resourceType === 'OperationOutcome' && !isOk(obj)) {
       return Promise.reject(new OperationOutcomeError(obj));
     }
@@ -554,16 +524,14 @@ export class MedplumClient extends EventTarget {
    * @param url The URL of the original request.
    * @param contentType The content type of the original request.
    * @param body The body of the original request.
-   * @param blob Optional blob flag of the original request.
    */
   private async handleUnauthenticated(
     method: string,
     url: string,
     contentType?: string,
-    body?: any,
-    blob?: boolean): Promise<any> {
+    body?: any): Promise<any> {
     return this.refresh()
-      .then(() => this.request(method, url, contentType, body, blob))
+      .then(() => this.request(method, url, contentType, body))
       .catch(error => {
         this.clear();
         if (this.onUnauthenticated) {
@@ -674,7 +642,7 @@ export class MedplumClient extends EventTarget {
         return response.json();
       })
       .then(tokens => this.verifyTokens(tokens))
-      .then(() => this.getActiveLogin()?.profile as ProfileResource);
+      .then(() => this.profile as ProfileResource);
   }
 
   /**

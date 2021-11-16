@@ -53,23 +53,29 @@ function mockFetch(url: string, options: any): Promise<any> {
 
   if (method === 'POST' && url.endsWith('auth/login')) {
     result = {
-      profile: { resourceType: 'Practitioner', id: '123' },
+      profile: 'Practitioner/123',
       accessToken: '123',
       refreshToken: '456'
     };
 
   } else if (method === 'POST' && url.endsWith('auth/google')) {
     result = {
-      profile: { resourceType: 'Practitioner', id: '123' },
+      profile: 'Practitioner/123',
       accessToken: '123',
       refreshToken: '456'
     };
 
   } else if (method === 'POST' && url.endsWith('auth/register')) {
     result = {
-      profile: { resourceType: 'Practitioner', id: '123' },
+      profile: 'Practitioner/123',
       accessToken: '123',
       refreshToken: '456'
+    };
+
+  } else if (method === 'GET' && url.endsWith('Practitioner/123')) {
+    result = {
+      resourceType: 'Practitioner',
+      id: '123'
     };
 
   } else if (method === 'GET' && url.endsWith('Patient/123')) {
@@ -180,9 +186,11 @@ describe('Client', () => {
   test('SignOut', () => {
     const client = new MedplumClient(defaultOptions);
     expect(() => client.signOut()).not.toThrow();
+    expect(client.getActiveLogin()).toBeUndefined();
+    expect(client.getProfile()).toBeUndefined();
   });
 
-  test('SignIn', async () => {
+  test('SignIn direct', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
     expect(result).not.toBeUndefined();
@@ -381,13 +389,6 @@ describe('Client', () => {
     const client = new MedplumClient(defaultOptions);
     const promise = client.update({ resourceType: 'Patient', id: '888' });
     expect(promise).rejects.toMatchObject({});
-  });
-
-  test('Read binary', async () => {
-    const client = new MedplumClient(defaultOptions);
-    const result = await client.readBinary('123');
-    expect(result).not.toBeUndefined();
-    expect((result as any).request.url).toBe('https://x/fhir/R4/Binary/123');
   });
 
   test('Create binary', async () => {

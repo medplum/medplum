@@ -8,6 +8,7 @@ import { getClient } from '../database';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
 import { getPatientCompartmentResourceTypes, getPatientId } from './patient';
+import { rewriteAttachments, RewriteMode } from './rewrite';
 import { validateResource, validateResourceType } from './schema';
 import { getSearchParameter, getSearchParameters } from './search';
 import { InsertQuery, Operator, SelectQuery } from './sql';
@@ -225,14 +226,14 @@ export class Repository {
       return [existingOutcome, undefined];
     }
 
-    const updated: T = {
+    const updated = await rewriteAttachments<T>(RewriteMode.REFERENCE, this, {
       ...existing,
       ...resource,
       meta: {
         ...existing?.meta,
         ...resource.meta
       }
-    };
+    });
 
     if (existing && deepEquals(existing, updated)) {
       return [notModified, existing];

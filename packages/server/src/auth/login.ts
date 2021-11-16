@@ -1,4 +1,4 @@
-import { assertOk, Login } from '@medplum/core';
+import { assertOk, getReferenceString, Login } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -34,7 +34,7 @@ export async function loginHandler(req: Request, res: Response) {
   const loginDetails = await finalizeLogin(login as Login);
   return res.status(200).json({
     ...loginDetails.tokens,
-    project: loginDetails.project,
-    profile: loginDetails.profile
+    project: loginDetails.project && getReferenceString(loginDetails.project),
+    profile: loginDetails.profile && getReferenceString(loginDetails.profile)
   });
 }

@@ -78,10 +78,7 @@ function mockFetch(url: string, options: any): Promise<any> {
 
   if (method === 'POST' && url.endsWith('/auth/login')) {
     result = {
-      profile: {
-        resourceType: 'Practitioner',
-        id: '123'
-      }
+      profile: 'Practitioner/123'
     };
   } else if (method === 'GET' && url.includes('/fhir/R4/ServiceRequest/' + serviceRequestId)) {
     result = serviceRequest;

@@ -10,6 +10,7 @@ import { logger } from './logger';
 import { oauthRouter } from './oauth';
 import { openApiHandler } from './openapi';
 import { scimRouter } from './scim';
+import { storageRouter } from './storage';
 import { wellKnownRouter } from './wellknown';
 
 const corsOptions: cors.CorsOptions = {
@@ -88,6 +89,7 @@ export async function initApp(app: Express): Promise<Express> {
   app.use('/fhir/R4/', fhirRouter);
   app.use('/oauth2/', oauthRouter);
   app.use('/scim/v2/', scimRouter);
+  app.use('/storage/', storageRouter);
   app.use(errorHandler);
   return app;
 }
