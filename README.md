@@ -64,6 +64,7 @@ medplum/
 │   ├── app          # Frontend web app
 │   ├── core         # Core shared library
 │   ├── definitions  # Data definitions
+│   ├── docs         # Documentation
 │   ├── generator    # Code generator utilities
 │   ├── graphiql     # Preconfigured GraphiQL
 │   ├── infra        # Infra as code
