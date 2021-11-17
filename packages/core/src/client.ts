@@ -227,11 +227,7 @@ export class MedplumClient extends EventTarget {
    * @returns The user profile.
    */
   private async handleLoginResponse(response: LoginResponse): Promise<ProfileResource> {
-    this.setActiveLogin(response);
-    this.profile = undefined;
-    if (response.profile) {
-      this.profile = await this.readCachedReference({ reference: response.profile });
-    }
+    await this.setActiveLogin(response);
     return this.profile as ProfileResource;
   }
 
@@ -436,10 +432,14 @@ export class MedplumClient extends EventTarget {
     return this.activeLogin;
   }
 
-  setActiveLogin(login: LoginResponse): void {
+  async setActiveLogin(login: LoginResponse): Promise<void> {
     this.activeLogin = login;
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
+    this.profile = undefined;
+    if (login.profile) {
+      this.profile = await this.readCachedReference({ reference: login.profile });
+    }
     this.dispatchEvent({ type: 'change' });
   }
 
@@ -667,7 +667,7 @@ export class MedplumClient extends EventTarget {
       return Promise.reject('Token was not issued for this audience');
     }
 
-    this.setActiveLogin({
+    await this.setActiveLogin({
       ...(this.getActiveLogin() as LoginResponse),
       accessToken: token,
       refreshToken: tokens.refresh_token

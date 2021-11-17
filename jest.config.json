@@ -3,6 +3,11 @@
   "testRunner": "jasmine2",
   "testTimeout": 60000,
   "testSequencer": "<rootDir>/packages/server/jest.sequencer.js",
+  "globals": {
+    "ts-jest": {
+      "isolatedModules": true
+    }
+  },
   "transform": {
     "^.+\\.(js|ts)$": "ts-jest"
   },
