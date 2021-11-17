@@ -4,7 +4,7 @@ sidebar_position: 2
 
 # Publish and Subscribe
 
-In a healthcare setting, Publish and Subcribe is a common pattern.  For example: an everyday workflow in a laboratory setting is for a physician to create a lab order for a patient (publish), and then receive a finalized lab report once the sample has been collected from the patient and processed (subscribe).
+In a healthcare setting, Publish and Subcribe is a common pattern.  For example: an everyday workflow in a laboratory setting is for a physician to create a lab order for a patient, and then receive a finalized lab report once the sample has been collected from the patient and processed.
 
 In the past, this would have been a scenario where the patient is sent to a lab to get a blood test, and the lab report is faxed back to the doctor who ordered it.  
 
