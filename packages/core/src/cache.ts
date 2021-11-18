@@ -12,6 +12,10 @@ export class LRUCache<T> {
     this.cache = new Map();
   }
 
+  clear() {
+    this.cache.clear();
+  }
+
   get(key: string): T | undefined {
     const item = this.cache.get(key);
     if (item) {
