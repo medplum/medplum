@@ -119,6 +119,7 @@ export class MedplumClient extends EventTarget {
   private readonly tokenUrl: string;
   private readonly logoutUrl: string;
   private readonly onUnauthenticated?: () => void;
+  private refreshPromise?: Promise<any>;
   private activeLogin?: LoginResponse;
   private profile?: ProfileResource;
 
@@ -157,6 +158,8 @@ export class MedplumClient extends EventTarget {
    */
   clear(): void {
     this.storage.clear();
+    this.schema.clear();
+    this.resourceCache.clear();
     this.activeLogin = undefined;
     this.profile = undefined;
     this.dispatchEvent({ type: 'change' });
@@ -435,6 +438,8 @@ export class MedplumClient extends EventTarget {
     this.activeLogin = login;
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
+    this.resourceCache.clear();
+    this.refreshPromise = undefined;
     await this.refreshProfile();
   }
 
@@ -473,6 +478,10 @@ export class MedplumClient extends EventTarget {
     url: string,
     contentType?: string,
     body?: any): Promise<any> {
+
+    if (this.refreshPromise) {
+      await this.refreshPromise;
+    }
 
     if (!url.startsWith('http')) {
       url = this.baseUrl + url;
@@ -610,16 +619,22 @@ export class MedplumClient extends EventTarget {
    * See: https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens
    */
   private async refresh(): Promise<void> {
+    if (this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
     const refreshToken = this.getActiveLogin()?.refreshToken;
     if (!refreshToken) {
       this.clear();
       return Promise.reject('Invalid refresh token');
     }
 
-    await this.fetchTokens(
+    this.refreshPromise = this.fetchTokens(
       'grant_type=refresh_token' +
       '&client_id=' + encodeURIComponent(this.clientId) +
       '&refresh_token=' + encodeURIComponent(refreshToken));
+
+    await this.refreshPromise;
   }
 
   /**
@@ -629,7 +644,7 @@ export class MedplumClient extends EventTarget {
    */
   private async fetchTokens(formBody: string): Promise<ProfileResource> {
     if (!this.tokenUrl) {
-      throw new Error('Missing token URL');
+      return Promise.reject('Missing token URL');
     }
 
     return this.fetch(
@@ -674,7 +689,8 @@ export class MedplumClient extends EventTarget {
     await this.setActiveLogin({
       ...(this.getActiveLogin() as LoginResponse),
       accessToken: token,
-      refreshToken: tokens.refresh_token
+      refreshToken: tokens.refresh_token,
+      profile: tokenPayload.profile
     });
   }
 }
