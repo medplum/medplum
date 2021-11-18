@@ -148,6 +148,8 @@ export class MedplumClient extends EventTarget {
     this.tokenUrl = options.tokenUrl || this.baseUrl + 'oauth2/token';
     this.logoutUrl = options.logoutUrl || this.baseUrl + 'oauth2/logout';
     this.onUnauthenticated = options.onUnauthenticated;
+    this.activeLogin = this.storage.getObject<LoginResponse>('activeLogin');
+    this.refreshProfile().catch(console.log);
   }
 
   /**
@@ -426,9 +428,6 @@ export class MedplumClient extends EventTarget {
   }
 
   getActiveLogin(): LoginResponse | undefined {
-    if (!this.activeLogin) {
-      this.activeLogin = this.storage.getObject<LoginResponse>('activeLogin');
-    }
     return this.activeLogin;
   }
 
@@ -436,11 +435,7 @@ export class MedplumClient extends EventTarget {
     this.activeLogin = login;
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
-    this.profile = undefined;
-    if (login.profile) {
-      this.profile = await this.readCachedReference({ reference: login.profile });
-    }
-    this.dispatchEvent({ type: 'change' });
+    await this.refreshProfile();
   }
 
   getLogins(): LoginResponse[] {
@@ -451,6 +446,15 @@ export class MedplumClient extends EventTarget {
     const logins = this.getLogins().filter(login => login.profile !== newLogin.profile);
     logins.push(newLogin);
     this.storage.setObject('logins', logins);
+  }
+
+  private async refreshProfile(): Promise<ProfileResource | undefined> {
+    const reference = this.getActiveLogin()?.profile;
+    if (reference) {
+      this.profile = await this.readCachedReference({ reference });
+      this.dispatchEvent({ type: 'change' });
+    }
+    return this.profile;
   }
 
   getProfile(): ProfileResource | undefined {
