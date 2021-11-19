@@ -17,6 +17,7 @@ function setLine(address: Address, index: number, str: string): Address {
 export interface AddressInputProps {
   name: string;
   defaultValue?: Address;
+  onChange?: (value: Address) => void;
 }
 
 export function AddressInput(props: AddressInputProps) {
@@ -25,32 +26,39 @@ export function AddressInput(props: AddressInputProps) {
   const valueRef = useRef<Address>();
   valueRef.current = value;
 
+  function setValueWrapper(newValue: Address): void {
+    setValue(newValue);
+    if (props.onChange) {
+      props.onChange(newValue);
+    }
+  }
+
   function setUse(use: string) {
-    setValue({ ...valueRef.current, use });
+    setValueWrapper({ ...valueRef.current, use });
   }
 
   function setType(type: string) {
-    setValue({ ...valueRef.current, type });
+    setValueWrapper({ ...valueRef.current, type });
   }
 
   function setLine1(line1: string) {
-    setValue(setLine(valueRef.current || {}, 0, line1));
+    setValueWrapper(setLine(valueRef.current || {}, 0, line1));
   }
 
   function setLine2(line2: string) {
-    setValue(setLine(valueRef.current || {}, 1, line2));
+    setValueWrapper(setLine(valueRef.current || {}, 1, line2));
   }
 
   function setCity(city: string) {
-    setValue({ ...valueRef.current, city });
+    setValueWrapper({ ...valueRef.current, city });
   }
 
   function setState(state: string) {
-    setValue({ ...valueRef.current, state });
+    setValueWrapper({ ...valueRef.current, state });
   }
 
   function setPostalCode(postalCode: string) {
-    setValue({ ...valueRef.current, postalCode });
+    setValueWrapper({ ...valueRef.current, postalCode });
   }
 
   return (
@@ -58,7 +66,6 @@ export function AddressInput(props: AddressInputProps) {
       <tbody>
         <tr>
           <td>
-            <input name={props.name} type="hidden" value={JSON.stringify(value)} readOnly={true} />
             <select data-testid="address-use" defaultValue={value?.use} onChange={e => setUse(e.currentTarget.value)}>
               <option></option>
               <option>home</option>

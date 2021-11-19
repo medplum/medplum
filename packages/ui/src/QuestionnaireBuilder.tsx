@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { QuestionnaireItemType } from '.';
 import { Button } from './Button';
 import { Form } from './Form';
-import { generateKey } from './FormUtils';
 import { useResource } from './useResource';
 import './QuestionnaireBuilder.css';
 
@@ -202,6 +201,16 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
       )}
     </div>
   );
+}
+
+let nextKeyId = 1;
+
+/**
+ * Generates a short unique key that can be used for local identifiers.
+ * @return A unique key.
+*/
+function generateKey(): string {
+  return 'key' + (nextKeyId++);
 }
 
 function ensureQuestionnaireKeys(questionnaire: Questionnaire): Questionnaire {

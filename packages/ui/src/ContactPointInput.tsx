@@ -4,6 +4,7 @@ import React, { useRef, useState } from 'react';
 export interface ContactPointInputProps {
   name: string;
   defaultValue?: ContactPoint;
+  onChange?: (value: ContactPoint) => void;
 }
 
 export function ContactPointInput(props: ContactPointInputProps) {
@@ -12,16 +13,23 @@ export function ContactPointInput(props: ContactPointInputProps) {
   const ref = useRef<ContactPoint>();
   ref.current = contactPoint;
 
+  function setContactPointWrapper(newValue: ContactPoint) {
+    setContactPoint(newValue);
+    if (props.onChange) {
+      props.onChange(newValue);
+    }
+  }
+
   function setSystem(system: string) {
-    setContactPoint({ ...ref.current, system: system ? system : undefined });
+    setContactPointWrapper({ ...ref.current, system: system ? system : undefined });
   }
 
   function setUse(use: string) {
-    setContactPoint({ ...ref.current, use: use ? use : undefined });
+    setContactPointWrapper({ ...ref.current, use: use ? use : undefined });
   }
 
   function setValue(value: string) {
-    setContactPoint({ ...ref.current, value: value ? value : undefined });
+    setContactPointWrapper({ ...ref.current, value: value ? value : undefined });
   }
 
   return (
@@ -29,13 +37,6 @@ export function ContactPointInput(props: ContactPointInputProps) {
       <tbody>
         <tr>
           <td>
-            <input
-              name={props.name}
-              type="hidden"
-              value={JSON.stringify(contactPoint)}
-              readOnly={true}
-              data-testid="hidden"
-            />
             <select
               defaultValue={contactPoint?.system}
               onChange={e => setSystem(e.currentTarget.value)}

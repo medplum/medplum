@@ -1,3 +1,4 @@
+import { ContactPoint } from '@medplum/core';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { ContactPointInput } from './ContactPointInput';
@@ -19,8 +20,10 @@ describe('ContactPointInput', () => {
   });
 
   test('Change events', async () => {
+    let lastValue: ContactPoint | undefined = undefined;
+
     render(
-      <ContactPointInput name="test" defaultValue={{}} />
+      <ContactPointInput name="test" defaultValue={{}} onChange={value => lastValue = value} />
     );
 
     await act(async () => {
@@ -35,9 +38,8 @@ describe('ContactPointInput', () => {
       fireEvent.change(screen.getByPlaceholderText('Value'), { target: { value: 'xyz@example.com' } });
     });
 
-    const hidden = screen.getByTestId('hidden') as HTMLInputElement;
-    expect(hidden).not.toBeUndefined();
-    expect(JSON.parse(hidden.value)).toMatchObject({
+    expect(lastValue).not.toBeUndefined();
+    expect(lastValue).toMatchObject({
       use: 'home',
       system: 'email',
       value: 'xyz@example.com'
@@ -45,12 +47,16 @@ describe('ContactPointInput', () => {
   });
 
   test('Set blanks', async () => {
+    let lastValue: ContactPoint | undefined = undefined;
+
     render(
       <ContactPointInput name="test" defaultValue={{
         use: 'home',
         system: 'email',
         value: 'abc@example.com'
-      }} />
+      }}
+        onChange={value => lastValue = value}
+      />
     );
 
     await act(async () => {
@@ -65,9 +71,8 @@ describe('ContactPointInput', () => {
       fireEvent.change(screen.getByPlaceholderText('Value'), { target: { value: '' } });
     });
 
-    const hidden = screen.getByTestId('hidden') as HTMLInputElement;
-    expect(hidden).not.toBeUndefined();
-    expect(hidden.value).toEqual('{}');
+    expect(lastValue).not.toBeUndefined();
+    expect(JSON.stringify(lastValue)).toEqual('{}');
   });
 
 });

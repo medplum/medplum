@@ -4,6 +4,7 @@ import React, { useRef, useState } from 'react';
 export interface HumanNameInputProps {
   name: string;
   defaultValue?: HumanName;
+  onChange?: (value: HumanName) => void;
 }
 
 export function HumanNameInput(props: HumanNameInputProps) {
@@ -12,24 +13,31 @@ export function HumanNameInput(props: HumanNameInputProps) {
   const valueRef = useRef<HumanName>();
   valueRef.current = value;
 
+  function setValueWrapper(newValue: HumanName): void {
+    setValue(newValue);
+    if (props.onChange) {
+      props.onChange(newValue);
+    }
+  }
+
   function setUse(use: string) {
-    setValue({ ...valueRef.current, use: use ? use : undefined });
+    setValueWrapper({ ...valueRef.current, use: use ? use : undefined });
   }
 
   function setPrefix(prefix: string) {
-    setValue({ ...valueRef.current, prefix: prefix ? prefix.split(' ') : undefined });
+    setValueWrapper({ ...valueRef.current, prefix: prefix ? prefix.split(' ') : undefined });
   }
 
   function setGiven(given: string) {
-    setValue({ ...valueRef.current, given: given ? given.split(' ') : undefined });
+    setValueWrapper({ ...valueRef.current, given: given ? given.split(' ') : undefined });
   }
 
   function setFamily(family: string) {
-    setValue({ ...valueRef.current, family: family ? family : undefined });
+    setValueWrapper({ ...valueRef.current, family: family ? family : undefined });
   }
 
   function setSuffix(suffix: string) {
-    setValue({ ...valueRef.current, suffix: suffix ? suffix.split(' ') : undefined });
+    setValueWrapper({ ...valueRef.current, suffix: suffix ? suffix.split(' ') : undefined });
   }
 
   return (
@@ -37,13 +45,6 @@ export function HumanNameInput(props: HumanNameInputProps) {
       <tbody>
         <tr>
           <td>
-            <input
-              name={props.name}
-              type="hidden"
-              value={JSON.stringify(value)}
-              readOnly={true}
-              data-testid="hidden"
-            />
             <select
               defaultValue={value?.use}
               onChange={e => setUse(e.currentTarget.value)}

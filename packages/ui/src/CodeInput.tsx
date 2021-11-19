@@ -7,6 +7,7 @@ export interface CodeInputProps {
   property: ElementDefinition;
   name: string;
   defaultValue?: string;
+  onChange?: (value: string) => void;
 }
 
 const cachedDisplayValues: Record<string, string> = {};
@@ -35,6 +36,11 @@ export function CodeInput(props: CodeInputProps) {
       getDisplay={(item: string) => <>{cachedDisplayValues[item] || item}</>}
       name={props.name}
       defaultValue={defaultValue}
+      onChange={(values: string[]) => {
+        if (props.onChange) {
+          props.onChange(values[0]);
+        }
+      }}
     />
   );
 }

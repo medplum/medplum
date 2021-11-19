@@ -7,6 +7,7 @@ export interface CodeableConceptInputProps {
   property: ElementDefinition;
   name: string;
   defaultValue?: CodeableConcept;
+  onChange?: (value: CodeableConcept) => void;
 }
 
 export function CodeableConceptInput(props: CodeableConceptInputProps) {
@@ -31,6 +32,11 @@ export function CodeableConceptInput(props: CodeableConceptInputProps) {
       getDisplay={getDisplay}
       name={props.name}
       defaultValue={defaultValue}
+      onChange={(values: CodeableConcept[]) => {
+        if (props.onChange) {
+          props.onChange(values[0]);
+        }
+      }}
     />
   );
 }
