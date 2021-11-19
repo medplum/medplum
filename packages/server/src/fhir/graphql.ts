@@ -268,7 +268,7 @@ async function resolveByReference(source: any, args: any, ctx: any): Promise<Res
  * @returns The GraphQL type of the resource.
  * @implements {GraphQLTypeResolver}
  */
-function resolveTypeByReference(resource: Resource | undefined): GraphQLObjectType | undefined {
+function resolveTypeByReference(resource: Resource | undefined): string | undefined {
   const resourceType = resource?.resourceType;
   if (!resourceType) {
     return undefined;
@@ -279,5 +279,5 @@ function resolveTypeByReference(resource: Resource | undefined): GraphQLObjectTy
     return undefined;
   }
 
-  return graphQLType as GraphQLObjectType;
+  return (graphQLType as GraphQLObjectType).name;
 }

@@ -2,6 +2,7 @@ import { Bundle, MedplumClient, Subscription } from '@medplum/core';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { DefaultResourceTimeline, DefaultResourceTimelineProps } from './DefaultResourceTimeline';
 import { MedplumProvider } from './MedplumProvider';
 
@@ -72,9 +73,11 @@ describe('DefaultResourceTimeline', () => {
 
   const setup = (args: DefaultResourceTimelineProps) => {
     return render(
-      <MedplumProvider medplum={medplum}>
-        <DefaultResourceTimeline {...args} />
-      </MedplumProvider>
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <DefaultResourceTimeline {...args} />
+        </MedplumProvider>
+      </MemoryRouter>
     );
   };
 

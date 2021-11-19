@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 
 export function FormPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams() as { id: string };
   const location = useLocation();
   const queryParams = Object.fromEntries(new URLSearchParams(location.search).entries()) as Record<string, string>;
   const medplum = useMedplum();

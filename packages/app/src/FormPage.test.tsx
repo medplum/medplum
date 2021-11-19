@@ -2,7 +2,7 @@ import { MedplumClient, notFound, Practitioner, Questionnaire, User } from '@med
 import { MedplumProvider } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter, Route, Switch } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { FormPage } from './FormPage';
 
 const user: User = {
@@ -31,13 +31,6 @@ const questionnaire: Questionnaire = {
     text: 'First question',
     type: 'string'
   }]
-}
-
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
 }
 
 function mockFetch(url: string, options: any): Promise<any> {
@@ -85,11 +78,11 @@ describe('FormPage', () => {
 
   const setup = (url: string) => {
     return render(
-      <MedplumProvider medplum={medplum} router={mockRouter}>
+      <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
-          <Switch>
-            <Route exact path="/forms/:id"><FormPage /></Route>
-          </Switch>
+          <Routes>
+            <Route path="/forms/:id" element={<FormPage />} />
+          </Routes>
         </MemoryRouter>
       </MedplumProvider>
     );

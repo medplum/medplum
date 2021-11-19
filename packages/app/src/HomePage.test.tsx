@@ -2,8 +2,8 @@ import { Bundle, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter, Route, Switch } from 'react-router-dom';
-import { history } from './history';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { CreateResourcePage } from './CreateResourcePage';
 import { getDefaultSearchForResourceType, HomePage } from './HomePage';
 
 const patientStructureBundle: Bundle = {
@@ -53,13 +53,6 @@ const patientSearchBundle: Bundle = {
   }]
 };
 
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 function mockFetch(url: string, options: any): Promise<any> {
   const method = options.method ?? 'GET';
   let result: any;
@@ -98,11 +91,13 @@ beforeAll(async () => {
 
 const setup = (url = '/Patient') => {
   return render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
+    <MedplumProvider medplum={medplum}>
       <MemoryRouter initialEntries={[url]} initialIndex={0}>
-        <Switch>
-          <Route exact path="/:resourceType?"><HomePage /></Route>
-        </Switch>
+        <Routes>
+          <Route path="/:resourceType/new" element={<CreateResourcePage />} />
+          <Route path="/:resourceType" element={<HomePage />} />
+          <Route path="/" element={<HomePage />} />
+        </Routes>
       </MemoryRouter>
     </MedplumProvider>
   );
@@ -144,8 +139,6 @@ describe('HomePage', () => {
   });
 
   test('Next page button', async () => {
-    history.push = jest.fn();
-
     setup();
 
     await act(async () => {
@@ -155,13 +148,9 @@ describe('HomePage', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('next-page-button'));
     });
-
-    expect(history.push).toBeCalled();
   });
 
   test('Prev page button', async () => {
-    history.push = jest.fn();
-
     setup();
 
     await act(async () => {
@@ -171,13 +160,9 @@ describe('HomePage', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('prev-page-button'));
     });
-
-    expect(history.push).toBeCalled();
   });
 
   test('New button', async () => {
-    mockRouter.push = jest.fn();
-
     setup();
 
     await act(async () => {
@@ -187,8 +172,6 @@ describe('HomePage', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('new-button'));
     });
-
-    expect(mockRouter.push).toBeCalled();
   });
 
   test('Default search fields', () => {

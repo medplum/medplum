@@ -2,6 +2,7 @@ import { Bundle, MedplumClient, Patient } from '@medplum/core';
 import { render } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
 import { ResourceHistoryTable, ResourceHistoryTableProps } from './ResourceHistoryTable';
 
@@ -79,9 +80,11 @@ describe('ResourceHistoryTable', () => {
 
   const setup = (args: ResourceHistoryTableProps) => {
     return render(
-      <MedplumProvider medplum={medplum}>
-        <ResourceHistoryTable {...args} />
-      </MedplumProvider>
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <ResourceHistoryTable {...args} />
+        </MedplumProvider>
+      </MemoryRouter>
     );
   };
 

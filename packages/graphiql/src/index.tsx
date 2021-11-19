@@ -37,13 +37,6 @@ const medplum = new MedplumClient({
   clientId: process.env.MEDPLUM_CLIENT_ID,
 });
 
-const router = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined)
-};
-
 function App() {
   const profile = useMedplumProfile();
   return profile ? (
@@ -59,7 +52,7 @@ function App() {
 }
 
 render((
-  <MedplumProvider medplum={medplum} router={router}>
+  <MedplumProvider medplum={medplum}>
     <App />
   </MedplumProvider>
 ), document.getElementById('root'));

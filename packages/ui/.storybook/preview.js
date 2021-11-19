@@ -1,4 +1,5 @@
 import { MedplumClient } from '@medplum/core';
+import { BrowserRouter } from 'react-router-dom';
 import { MedplumProvider } from '../src/MedplumProvider';
 import '../src/CssBaseline.css';
 import '../src/DefaultTheme.css';
@@ -14,13 +15,6 @@ export const parameters = {
   },
 }
 
-const mockRouter = {
-  push: (path, state) => {
-    alert('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 const medplum = new MedplumClient({
   baseUrl: process.env.MEDPLUM_BASE_URL,
   clientId: process.env.MEDPLUM_CLIENT_ID,
@@ -28,8 +22,10 @@ const medplum = new MedplumClient({
 
 export const decorators = [
   (Story) => (
-    <MedplumProvider medplum={medplum} router={mockRouter}>
-      <Story />
-    </MedplumProvider>
+    <BrowserRouter>
+      <MedplumProvider medplum={medplum}>
+        <Story />
+      </MedplumProvider>
+    </BrowserRouter>
   ),
 ];

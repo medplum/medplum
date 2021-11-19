@@ -13,7 +13,7 @@ const accessPolicyProperty: ElementDefinition = {
 };
 
 export function EditMembershipPage() {
-  const { projectId, membershipId } = useParams<{ projectId: string, membershipId: string }>();
+  const { projectId, membershipId } = useParams();
   const medplum = useMedplum();
   const [loading, setLoading] = useState<boolean>(true);
   const [result, setResult] = useState<ProjectMembership>();

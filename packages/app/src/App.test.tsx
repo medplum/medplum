@@ -2,9 +2,8 @@ import { Bundle, MedplumClient, Practitioner, User } from '@medplum/core';
 import { MedplumProvider } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { Router } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { App } from './App';
-import { history } from './history';
 
 const user: User = {
   resourceType: 'User',
@@ -103,13 +102,6 @@ const patientSearchBundle: Bundle = {
   }]
 };
 
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 function mockFetch(url: string, options: any): Promise<any> {
   const method = options.method ?? 'GET';
   let result: any;
@@ -161,11 +153,11 @@ beforeAll(async () => {
 
 const setup = () => {
   return render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
-      <Router history={history}>
+    <MemoryRouter>
+      <MedplumProvider medplum={medplum}>
         <App />
-      </Router>
-    </MedplumProvider>
+      </MedplumProvider>
+    </MemoryRouter>
   );
 };
 
@@ -183,8 +175,6 @@ describe('App', () => {
   });
 
   test('Click logo', async () => {
-    mockRouter.push = jest.fn();
-
     setup();
 
     await act(async () => {
@@ -194,13 +184,9 @@ describe('App', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('header-logo'));
     });
-
-    expect(mockRouter.push).toBeCalledWith('/');
   });
 
   test('Click profile', async () => {
-    mockRouter.push = jest.fn();
-
     setup();
 
     await act(async () => {
@@ -214,13 +200,9 @@ describe('App', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('header-profile-link'));
     });
-
-    expect(mockRouter.push).toBeCalledWith('/Practitioner/123');
   });
 
   test('Click sign out', async () => {
-    mockRouter.push = jest.fn();
-
     setup();
 
     await act(async () => {
@@ -234,8 +216,6 @@ describe('App', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('header-signout-button'));
     });
-
-    expect(mockRouter.push).toBeCalledWith('/signin');
   });
 
 });

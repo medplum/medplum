@@ -2,14 +2,8 @@ import { MedplumClient, Patient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/ui';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { PatientHeader } from './PatientHeader';
-
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
 
 function mockFetch(url: string, options: any): Promise<any> {
   const response: any = {
@@ -39,9 +33,11 @@ describe('PatientHeader', () => {
 
   const setup = (patient: Patient) => {
     return render(
-      <MedplumProvider medplum={medplum} router={mockRouter}>
-        <PatientHeader patient={patient} />
-      </MedplumProvider>
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <PatientHeader patient={patient} />
+        </MedplumProvider>
+      </MemoryRouter>
     );
   };
 

@@ -2,6 +2,7 @@ import { DiagnosticReport, MedplumClient, Observation } from '@medplum/core';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { act } from 'react-dom/test-utils';
+import { MemoryRouter } from 'react-router-dom';
 import { DiagnosticReportDisplay, DiagnosticReportDisplayProps } from './DiagnosticReportDisplay';
 import { MedplumProvider } from './MedplumProvider';
 
@@ -151,9 +152,11 @@ describe('DiagnosticReportDisplay', () => {
 
   const setup = (args: DiagnosticReportDisplayProps) => {
     return render(
-      <MedplumProvider medplum={medplum}>
-        <DiagnosticReportDisplay {...args} />
-      </MedplumProvider>
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <DiagnosticReportDisplay {...args} />
+        </MedplumProvider>
+      </MemoryRouter>
     );
   };
 

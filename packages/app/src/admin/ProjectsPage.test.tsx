@@ -5,13 +5,6 @@ import React from 'react';
 import { act } from 'react-dom/test-utils';
 import { ProjectsPage } from './ProjectsPage';
 
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 function mockFetch(url: string, options: any): Promise<any> {
   let result: any;
 
@@ -45,7 +38,7 @@ const medplum = new MedplumClient({
 
 const setup = () => {
   render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
+    <MedplumProvider medplum={medplum}>
       <ProjectsPage />
     </MedplumProvider>
   );

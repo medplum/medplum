@@ -1,6 +1,7 @@
 import { Communication, MedplumClient } from '@medplum/core';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
 import { Timeline, TimelineItem } from './Timeline';
 
@@ -18,11 +19,13 @@ describe('Timeline', () => {
     };
 
     render(
-      <MedplumProvider medplum={medplum}>
-        <Timeline>
-          <TimelineItem resource={resource}>test</TimelineItem>
-        </Timeline>
-      </MedplumProvider>
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <Timeline>
+            <TimelineItem resource={resource}>test</TimelineItem>
+          </Timeline>
+        </MedplumProvider>
+      </MemoryRouter>
     );
 
     expect(screen.getByText('test')).not.toBeUndefined();
@@ -36,11 +39,13 @@ describe('Timeline', () => {
     };
 
     render(
-      <MedplumProvider medplum={medplum}>
-        <Timeline>
-          <TimelineItem resource={resource} socialEnabled={true}>test</TimelineItem>
-        </Timeline>
-      </MedplumProvider>
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <Timeline>
+            <TimelineItem resource={resource} socialEnabled={true}>test</TimelineItem>
+          </Timeline>
+        </MedplumProvider>
+      </MemoryRouter>
     );
 
     expect(screen.getByText('test')).not.toBeUndefined();

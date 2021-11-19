@@ -1,13 +1,9 @@
 import { MedplumClient } from '@medplum/core';
 import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { MedplumLink } from './MedplumLink';
 import { MedplumProvider } from './MedplumProvider';
-
-const mockRouter = {
-  push: jest.fn(),
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
 
 function mockFetch(url: string, options: any): Promise<any> {
   const response: any = {
@@ -31,9 +27,11 @@ const medplum = new MedplumClient({
 
 const setup = (ui: React.ReactElement) => {
   return render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
-      {ui}
-    </MedplumProvider>
+    <MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        {ui}
+      </MedplumProvider>
+    </MemoryRouter>
   );
 };
 
@@ -78,11 +76,9 @@ describe('MedplumLink', () => {
   });
 
   test('Handles click with router', () => {
-    mockRouter.push = jest.fn();
     setup(<MedplumLink to="xyz">test</MedplumLink>);
     expect(screen.getByText('test')).not.toBeUndefined();
     fireEvent.click(screen.getByText('test'));
-    expect(mockRouter.push).toHaveBeenCalled();
   });
 
   test('Handles click with no listeners', () => {

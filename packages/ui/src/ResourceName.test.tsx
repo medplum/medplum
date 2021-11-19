@@ -2,6 +2,7 @@ import { MedplumClient, Patient } from '@medplum/core';
 import { render, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
 import { ResourceName, ResourceNameProps } from './ResourceName';
 
@@ -43,9 +44,11 @@ describe('ResourceName', () => {
 
   const setup = (args: ResourceNameProps) => {
     return render(
-      <MedplumProvider medplum={medplum}>
-        <ResourceName {...args} />
-      </MedplumProvider>
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <ResourceName {...args} />
+        </MedplumProvider>
+      </MemoryRouter>
     );
   };
 

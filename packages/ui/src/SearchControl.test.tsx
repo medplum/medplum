@@ -1,6 +1,7 @@
 import { Bundle, MedplumClient, Operator, StructureDefinition } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
 import { SearchControl, SearchControlProps } from './SearchControl';
 
@@ -48,13 +49,6 @@ const emptySearchBundle: Bundle = {
   total: 0,
   entry: []
 };
-
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
 
 function mockFetch(url: string, options: any): Promise<any> {
   const method = options.method ?? 'GET';
@@ -109,9 +103,11 @@ describe('SearchControl', () => {
 
   const setup = (args: SearchControlProps) => {
     return render(
-      <MedplumProvider medplum={medplum} router={mockRouter}>
-        <SearchControl {...args} />
-      </MedplumProvider>
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <SearchControl {...args} />
+        </MedplumProvider>
+      </MemoryRouter>
     );
   };
 
@@ -315,8 +311,6 @@ describe('SearchControl', () => {
   });
 
   test('New button', async () => {
-    mockRouter.push = jest.fn();
-
     setup({
       search: {
         resourceType: 'Patient'
@@ -330,8 +324,6 @@ describe('SearchControl', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('new-button'));
     });
-
-    expect(mockRouter.push).toBeCalled();
   });
 
   test('Click on row', async () => {

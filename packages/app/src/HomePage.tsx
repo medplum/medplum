@@ -1,10 +1,10 @@
 import { formatSearchQuery, parseSearchDefinition, SearchRequest } from '@medplum/core';
 import { Loading, SearchControl } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { history } from './history';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export function HomePage() {
+  const navigate = useNavigate();
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>(parseSearchDefinition(location));
 
@@ -39,18 +39,14 @@ export function HomePage() {
     <SearchControl
       checkboxesEnabled={true}
       search={search}
-      onClick={e => history.push(`/${e.resource.resourceType}/${e.resource.id}`)}
+      onClick={e => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
       onChange={e => {
         if (e.definition.resourceType && e.definition.fields && e.definition.fields.length > 0) {
-          goToSearch(e.definition);
+          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
         }
       }}
     />
   );
-}
-
-function goToSearch(search: SearchRequest): void {
-  history.push(`/${search.resourceType}${formatSearchQuery(search)}`);
 }
 
 function getDefaultSearch(): SearchRequest {

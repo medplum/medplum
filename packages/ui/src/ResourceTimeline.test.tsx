@@ -2,6 +2,7 @@ import { Attachment, Bundle, Communication, createReference, Encounter, getRefer
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
 import { ResourceTimeline, ResourceTimelineProps } from './ResourceTimeline';
 
@@ -144,9 +145,11 @@ describe('ResourceTimeline', () => {
 
   function setup<T extends Resource>(args: ResourceTimelineProps<T>) {
     return render(
-      <MedplumProvider medplum={medplum}>
-        <ResourceTimeline {...args} />
-      </MedplumProvider>
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <ResourceTimeline {...args} />
+        </MedplumProvider>
+      </MemoryRouter>
     );
   }
 

@@ -1,6 +1,7 @@
 import { MedplumClient } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
 import { SignInForm, SignInFormProps } from './SignInForm';
 
@@ -73,9 +74,11 @@ const setup = (args?: SignInFormProps) => {
     ...args
   };
   return render(
-    <MedplumProvider medplum={medplum}>
-      <SignInForm {...props} />
-    </MedplumProvider>
+    <MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <SignInForm {...props} />
+      </MedplumProvider>
+    </MemoryRouter>
   );
 };
 

@@ -36,8 +36,7 @@ import {
   useMedplum
 } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { history } from './history';
+import { useNavigate, useParams } from 'react-router-dom';
 import { PatientHeader } from './PatientHeader';
 
 function getTabs(resourceType: string): string[] {
@@ -80,7 +79,8 @@ function getPatient(resource: Resource): Patient | Reference | undefined {
 }
 
 export function ResourcePage() {
-  const { resourceType, id, tab } = useParams<{ resourceType: string, id: string, tab: string }>();
+  const navigate = useNavigate();
+  const { resourceType, id, tab } = useParams() as { resourceType: string, id: string, tab: string };
   const medplum = useMedplum();
   const [loading, setLoading] = useState<boolean>(true);
   const [value, setValue] = useState<Resource | undefined>();
@@ -134,7 +134,7 @@ export function ResourcePage() {
       )}
       <TabBar
         value={tab || defaultTab}
-        onChange={(name: string) => history.push(`/${resourceType}/${id}/${name}`)}>
+        onChange={(name: string) => navigate(`/${resourceType}/${id}/${name}`)}>
         {tabs.map(t => <Tab key={t} name={t.toLowerCase()} label={t} />)}
       </TabBar>
       <Document>

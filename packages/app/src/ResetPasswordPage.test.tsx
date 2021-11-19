@@ -2,14 +2,8 @@ import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/ui';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { ResetPasswordPage } from './ResetPasswordPage';
-
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
 
 function mockFetch(url: string, options: any): Promise<any> {
   let status = 404;
@@ -65,9 +59,11 @@ const medplum = new MedplumClient({
 
 const setup = () => {
   return render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
-      <ResetPasswordPage />
-    </MedplumProvider>
+    <MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <ResetPasswordPage />
+      </MedplumProvider>
+    </MemoryRouter>
   );
 };
 

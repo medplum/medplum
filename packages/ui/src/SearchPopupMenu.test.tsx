@@ -1,6 +1,7 @@
 import { Filter, IndexedStructureDefinition, MedplumClient, Operator, SearchRequest } from '@medplum/core';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
 import { SearchPopupMenu, SearchPopupMenuProps } from './SearchPopupMenu';
 
@@ -67,9 +68,11 @@ describe('SearchPopupMenu', () => {
 
   function setup(props: SearchPopupMenuProps) {
     return render(
-      <MedplumProvider medplum={medplum}>
-        <SearchPopupMenu {...props} />
-      </MedplumProvider>
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <SearchPopupMenu {...props} />
+        </MedplumProvider>
+      </MemoryRouter>
     );
   }
 

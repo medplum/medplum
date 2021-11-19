@@ -1,13 +1,14 @@
 import { getReferenceString, HumanName, Patient, ProfileResource } from '@medplum/core';
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
-import './Header.css';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { MedplumLink } from './MedplumLink';
 import { useMedplumContext } from './MedplumProvider';
 import { Popup } from './Popup';
 import { ResourceInput } from './ResourceInput';
+import './Header.css';
 
 export interface HeaderProps {
   onLogo?: () => void;
@@ -27,9 +28,9 @@ export interface SidebarLink {
 }
 
 export function Header(props: HeaderProps) {
+  const navigate = useNavigate();
   const context = useMedplumContext();
   const medplum = context.medplum;
-  const router = context.router;
   const logins = medplum.getLogins();
   const [userMenuVisible, setUserMenuVisible] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useState(false);
@@ -53,7 +54,7 @@ export function Header(props: HeaderProps) {
               className="medplum-nav-search-container"
               placeholder="Search"
               onChange={(patient: Patient) => {
-                router.push(`/${patient.resourceType}/${patient.id}`);
+                navigate(`/${patient.resourceType}/${patient.id}`);
               }}
             />
           )}
