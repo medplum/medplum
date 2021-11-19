@@ -3,15 +3,8 @@ import { MedplumProvider } from '@medplum/ui';
 import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { act } from 'react-dom/test-utils';
-import { MemoryRouter, Route, Switch } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ProjectPage } from './ProjectPage';
-
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
 
 function mockFetch(url: string, options: any): Promise<any> {
   let result: any;
@@ -55,11 +48,11 @@ const medplum = new MedplumClient({
 
 const setup = (url: string) => {
   render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
+    <MedplumProvider medplum={medplum}>
       <MemoryRouter initialEntries={[url]} initialIndex={0}>
-        <Switch>
-          <Route exact path="/admin/projects/:id"><ProjectPage /></Route>
-        </Switch>
+        <Routes>
+          <Route path="/admin/projects/:id" element={<ProjectPage />} />
+        </Routes>
       </MemoryRouter>
     </MedplumProvider>
   );

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { useMedplumRouter } from './MedplumProvider';
+import { Location, useLocation } from 'react-router-dom';
 import './Popup.css';
 
 interface PopupProps {
@@ -15,12 +15,24 @@ interface PopupProps {
 }
 
 export function Popup(props: PopupProps) {
-  const router = useMedplumRouter();
   const ref = useRef<HTMLDivElement>(null);
+
+  // Track location, and the location when the popup becomes visible
+  const location = useLocation();
+  const locationRef = useRef<Location>();
+  if (props.visible) {
+    if (locationRef.current === undefined) {
+      locationRef.current = location;
+    }
+  } else {
+    locationRef.current = undefined;
+  }
 
   const propsRef = useRef<PopupProps>();
   propsRef.current = props;
 
+  // Listen for clicks outside of the popup
+  // If the user clicks outside of the popup, close it
   useEffect(() => {
     function handleClick(e: Event) {
       if (propsRef.current?.visible &&
@@ -31,15 +43,17 @@ export function Popup(props: PopupProps) {
     }
 
     document.addEventListener('click', handleClick, true);
-
-    const unlisten = router.listen(() => props.onClose());
-
-    return () => {
-      document.removeEventListener('click', handleClick, true);
-      unlisten();
-    };
+    return () => document.removeEventListener('click', handleClick, true);
 
   }, []);
+
+  // Listen for changes in the location
+  // If the browser navigates to a new page, close the popup
+  useEffect(() => {
+    if (props.visible && location !== locationRef.current) {
+      props.onClose();
+    }
+  }, [location]);
 
   const style: React.CSSProperties = {
     display: props.visible ? 'block' : 'none'

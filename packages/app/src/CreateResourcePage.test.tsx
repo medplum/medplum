@@ -2,8 +2,9 @@ import { Bundle, MedplumClient, Practitioner, User } from '@medplum/core';
 import { MedplumProvider } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter, Route, Switch } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { CreateResourcePage } from './CreateResourcePage';
+import { ResourcePage } from './ResourcePage';
 
 const user: User = {
   resourceType: 'User',
@@ -55,13 +56,6 @@ const practitionerSearchParameter: Bundle = {
   }]
 };
 
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 function mockFetch(url: string, options: any): Promise<any> {
   const method = options.method ?? 'GET';
   let result: any;
@@ -107,11 +101,12 @@ describe('CreateResourcePage', () => {
 
   const setup = (url: string) => {
     return render(
-      <MedplumProvider medplum={medplum} router={mockRouter}>
+      <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
-          <Switch>
-            <Route exact path="/:resourceType/new"><CreateResourcePage /></Route>
-          </Switch>
+          <Routes>
+            <Route path="/:resourceType/new" element={<CreateResourcePage />} />
+            <Route path="/:resourceType/:id" element={<ResourcePage />} />
+          </Routes>
         </MemoryRouter>
       </MedplumProvider>
     );

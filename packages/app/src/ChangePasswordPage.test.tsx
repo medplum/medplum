@@ -4,13 +4,6 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { ChangePasswordPage } from './ChangePasswordPage';
 
-const mockRouter = {
-  push: (path: string, state: any) => {
-    console.log('Navigate to: ' + path + ' (state=' + JSON.stringify(state) + ')');
-  },
-  listen: () => (() => undefined) // Return mock "unlisten" handler
-}
-
 function mockFetch(url: string, options: any): Promise<any> {
   let status = 404;
   let result: any;
@@ -55,7 +48,7 @@ const medplum = new MedplumClient({
 
 const setup = () => {
   return render(
-    <MedplumProvider medplum={medplum} router={mockRouter}>
+    <MedplumProvider medplum={medplum}>
       <ChangePasswordPage />
     </MedplumProvider>
   );

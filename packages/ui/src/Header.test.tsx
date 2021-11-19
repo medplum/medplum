@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
 import { act } from 'react-dom/test-utils';
+import { MemoryRouter } from 'react-router-dom';
 import { Header, HeaderProps } from './Header';
 import { MedplumProvider } from './MedplumProvider';
 
@@ -114,9 +115,11 @@ const medplum = new MedplumClient({
 
 function setup(props?: HeaderProps) {
   render(
-    <MedplumProvider medplum={medplum}>
-      <Header {...props} />
-    </MedplumProvider>
+    <MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <Header {...props} />
+      </MedplumProvider>
+    </MemoryRouter>
   );
 }
 

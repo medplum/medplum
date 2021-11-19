@@ -1,6 +1,6 @@
 import { Reference, Resource } from '@medplum/core';
 import React from 'react';
-import { useMedplumRouter } from './MedplumProvider';
+import { useNavigate } from 'react-router-dom';
 import { killEvent } from './utils/dom';
 
 export interface MedplumLinkProps {
@@ -11,7 +11,7 @@ export interface MedplumLinkProps {
 }
 
 export function MedplumLink(props: MedplumLinkProps) {
-  const router = useMedplumRouter();
+  const navigate = useNavigate();
 
   let href = '#';
   if (props.to) {
@@ -33,7 +33,7 @@ export function MedplumLink(props: MedplumLinkProps) {
         if (props.onClick) {
           props.onClick();
         } else if (props.to) {
-          router.push(href);
+          navigate(href);
         }
       }}
     >{props.children}</a>

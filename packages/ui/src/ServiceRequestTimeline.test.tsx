@@ -2,6 +2,7 @@ import { Bundle, Communication, Media, MedplumClient, ServiceRequest } from '@me
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
 import { ServiceRequestTimeline, ServiceRequestTimelineProps } from './ServiceRequestTimeline';
 
@@ -120,9 +121,11 @@ describe('ServiceRequestTimeline', () => {
 
   const setup = (args: ServiceRequestTimelineProps) => {
     return render(
-      <MedplumProvider medplum={medplum}>
-        <ServiceRequestTimeline {...args} />
-      </MedplumProvider>
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <ServiceRequestTimeline {...args} />
+        </MedplumProvider>
+      </MemoryRouter>
     );
   };
 

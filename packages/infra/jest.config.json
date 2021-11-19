@@ -2,7 +2,7 @@
   "testEnvironment": "node",
   "testRunner": "jasmine2",
   "transform": {
-    "^.+\\.ts$": "ts-jest"
+    "^.+\\.ts$": "babel-jest"
   },
   "moduleFileExtensions": [
     "ts",

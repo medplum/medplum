@@ -2,6 +2,7 @@ import { MedplumClient, Patient } from '@medplum/core';
 import { render, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
 import { ResourceBadge, ResourceBadgeProps } from './ResourceBadge';
 
@@ -41,9 +42,11 @@ beforeAll(async () => {
 
 const setup = (args: ResourceBadgeProps) => {
   return render(
-    <MedplumProvider medplum={medplum}>
-      <ResourceBadge {...args} />
-    </MedplumProvider>
+    <MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <ResourceBadge {...args} />
+      </MedplumProvider>
+    </MemoryRouter>
   );
 };
 

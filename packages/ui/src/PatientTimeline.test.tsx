@@ -2,6 +2,7 @@ import { Bundle, Communication, Media, MedplumClient, Patient } from '@medplum/c
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
 import { PatientTimeline, PatientTimelineProps } from './PatientTimeline';
 
@@ -121,9 +122,11 @@ describe('PatientTimeline', () => {
 
   const setup = (args: PatientTimelineProps) => {
     return render(
-      <MedplumProvider medplum={medplum}>
-        <PatientTimeline {...args} />
-      </MedplumProvider>
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <PatientTimeline {...args} />
+        </MedplumProvider>
+      </MemoryRouter>
     );
   };
 

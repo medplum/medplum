@@ -2,6 +2,7 @@ import { Bundle, Communication, Encounter, Media, MedplumClient } from '@medplum
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { EncounterTimeline, EncounterTimelineProps } from './EncounterTimeline';
 import { MedplumProvider } from './MedplumProvider';
 
@@ -120,9 +121,11 @@ describe('EncounterTimeline', () => {
 
   const setup = (args: EncounterTimelineProps) => {
     return render(
-      <MedplumProvider medplum={medplum}>
-        <EncounterTimeline {...args} />
-      </MedplumProvider>
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <EncounterTimeline {...args} />
+        </MedplumProvider>
+      </MemoryRouter>
     );
   };
 

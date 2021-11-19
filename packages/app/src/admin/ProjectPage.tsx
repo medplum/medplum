@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 export function ProjectPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams() as { id: string };
   const medplum = useMedplum();
   const [loading, setLoading] = useState<boolean>(true);
   const [result, setResult] = useState<any>();

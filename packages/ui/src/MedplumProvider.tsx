@@ -5,28 +5,13 @@ const reactContext = createContext(undefined as MedplumContext | undefined);
 
 export interface MedplumProviderProps {
   medplum: MedplumClient;
-  router?: MedplumRouter;
   children: React.ReactNode;
 }
 
 export interface MedplumContext {
   medplum: MedplumClient;
-  router: MedplumRouter;
   profile?: ProfileResource;
   loading: boolean;
-}
-
-export interface MedplumRouter {
-  push: (path: string, state?: any) => void;
-  listen: (listener: MedplumRouterListen) => MedplumRouterUnlisten;
-}
-
-export interface MedplumRouterListen {
-  (location: any): void;
-}
-
-export interface MedplumRouterUnlisten {
-  (): void;
 }
 
 /**
@@ -34,11 +19,10 @@ export interface MedplumRouterUnlisten {
  *
  * Medplum context includes:
  *   1) medplum - Medplum client library
- *   2) router - Router for navigating links (compatible with 'history' and 'react-router')
- *   3) user - The current user (if signed in)
+ *   2) profile - The current user profile (if signed in)
  */
 export function MedplumProvider(props: MedplumProviderProps) {
-  const medplumContext = createMedplumContext(props.medplum, props.router);
+  const medplumContext = createMedplumContext(props.medplum);
   return <reactContext.Provider value={medplumContext}>{props.children}</reactContext.Provider>;
 }
 
@@ -58,14 +42,6 @@ export function useMedplum(): MedplumClient {
 }
 
 /**
- * Returns the MedplumRouter instance.
- * This is a shortcut for useMedplumContext().router.
- */
-export function useMedplumRouter(): MedplumRouter {
-  return useMedplumContext().router;
-}
-
-/**
  * Returns the current Medplum user profile (if signed in).
  * This is a shortcut for useMedplumContext().profile.
  * @returns The current user profile.
@@ -77,7 +53,7 @@ export function useMedplumProfile(): ProfileResource | undefined {
 /**
  * Creates the auth object that handles user state.
  */
-function createMedplumContext(medplum: MedplumClient, router: MedplumRouter | undefined): MedplumContext {
+function createMedplumContext(medplum: MedplumClient): MedplumContext {
   const [state, setState] = useState({
     profile: medplum.getProfile(),
     loading: false
@@ -95,17 +71,6 @@ function createMedplumContext(medplum: MedplumClient, router: MedplumRouter | un
 
   return {
     ...state,
-    medplum,
-    router: router ?? NOOP_ROUTER
+    medplum
   };
 }
-
-/**
- * Default "no-op" router.
- * Most applications will provide their own router.
- * This is a simple implementation that can be used for testing.
- */
-const NOOP_ROUTER: MedplumRouter = {
-  push: () => undefined,
-  listen: () => (() => undefined)
-};

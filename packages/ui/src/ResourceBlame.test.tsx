@@ -2,6 +2,7 @@ import { Bundle, MedplumClient, Patient } from '@medplum/core';
 import { render } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
 import { ResourceBlame, ResourceBlameProps } from './ResourceBlame';
 
@@ -79,9 +80,11 @@ describe('ResourceBlame', () => {
 
   const setup = (args: ResourceBlameProps) => {
     return render(
-      <MedplumProvider medplum={medplum}>
-        <ResourceBlame {...args} />
-      </MedplumProvider>
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <ResourceBlame {...args} />
+        </MedplumProvider>
+      </MemoryRouter>
     );
   };
 

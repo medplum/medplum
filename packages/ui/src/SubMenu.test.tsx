@@ -2,6 +2,7 @@ import { MedplumClient } from '@medplum/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { act } from 'react-dom/test-utils';
+import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
 import { MenuItem } from './MenuItem';
 import { MenuSeparator } from './MenuSeparator';
@@ -36,11 +37,13 @@ describe('SubMenu', () => {
 
   test('Renders', async () => {
     setup(
-      <SubMenu title="SubMenu Test">
-        <MenuItem onClick={() => undefined}>MenuItem Test</MenuItem>
-        <MenuSeparator />
-        <MenuItem onClick={() => undefined}>2nd Item Test</MenuItem>
-      </SubMenu>
+      <MemoryRouter>
+        <SubMenu title="SubMenu Test">
+          <MenuItem onClick={() => undefined}>MenuItem Test</MenuItem>
+          <MenuSeparator />
+          <MenuItem onClick={() => undefined}>2nd Item Test</MenuItem>
+        </SubMenu>
+      </MemoryRouter>
     );
 
     expect(screen.getByText('SubMenu Test')).not.toBeUndefined();
@@ -51,11 +54,13 @@ describe('SubMenu', () => {
     const onClick = jest.fn();
 
     setup(
-      <SubMenu title="SubMenu Test">
-        <MenuItem onClick={onClick}>MenuItem Test</MenuItem>
-        <MenuSeparator />
-        <MenuItem onClick={() => undefined}>2nd Item Test</MenuItem>
-      </SubMenu>
+      <MemoryRouter>
+        <SubMenu title="SubMenu Test">
+          <MenuItem onClick={onClick}>MenuItem Test</MenuItem>
+          <MenuSeparator />
+          <MenuItem onClick={() => undefined}>2nd Item Test</MenuItem>
+        </SubMenu>
+      </MemoryRouter>
     );
 
     expect(screen.getByText('SubMenu Test')).not.toBeUndefined();
@@ -75,14 +80,14 @@ describe('SubMenu', () => {
   });
 
   test('Opens on hover', async () => {
-    // const onClick = jest.fn();
-
     setup(
-      <SubMenu title="SubMenu Test">
-        <MenuItem onClick={jest.fn()}>MenuItem Test</MenuItem>
-        <MenuSeparator />
-        <MenuItem onClick={jest.fn()}>2nd Item Test</MenuItem>
-      </SubMenu>
+      <MemoryRouter>
+        <SubMenu title="SubMenu Test">
+          <MenuItem onClick={jest.fn()}>MenuItem Test</MenuItem>
+          <MenuSeparator />
+          <MenuItem onClick={jest.fn()}>2nd Item Test</MenuItem>
+        </SubMenu>
+      </MemoryRouter>
     );
 
     expect(screen.getByText('SubMenu Test')).not.toBeUndefined();

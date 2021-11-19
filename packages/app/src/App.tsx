@@ -5,11 +5,10 @@ import {
   FooterLinks,
   Header,
   useMedplum,
-  useMedplumProfile,
-  useMedplumRouter
+  useMedplumProfile
 } from '@medplum/ui';
 import React from 'react';
-import { Route, Router, Switch } from 'react-router-dom';
+import { Route, Routes, useNavigate } from 'react-router-dom';
 import { EditMembershipPage } from './admin/EditMembershipPage';
 import { InvitePage } from './admin/InvitePage';
 import { ProjectPage } from './admin/ProjectPage';
@@ -17,7 +16,6 @@ import { ProjectsPage } from './admin/ProjectsPage';
 import { ChangePasswordPage } from './ChangePasswordPage';
 import { CreateResourcePage } from './CreateResourcePage';
 import { FormPage } from './FormPage';
-import { history } from './history';
 import { HomePage } from './HomePage';
 import { RegisterPage } from './RegisterPage';
 import { ResetPasswordPage } from './ResetPasswordPage';
@@ -26,20 +24,20 @@ import { SetPasswordPage } from './SetPasswordPage';
 import { SignInPage } from './SignInPage';
 
 export function App() {
+  const navigate = useNavigate();
   const medplum = useMedplum();
-  const router = useMedplumRouter();
   const profile = useMedplumProfile();
   return (
-    <Router history={history}>
+    <>
       <CssBaseline />
       <DefaultTheme />
       {profile && (
         <Header
-          onLogo={() => router.push('/')}
-          onProfile={() => router.push(`/${getReferenceString(profile)}`)}
+          onLogo={() => navigate('/')}
+          onProfile={() => navigate(`/${getReferenceString(profile)}`)}
           onSignOut={() => {
             medplum.signOut();
-            router.push('/signin');
+            navigate('/signin');
           }}
           sidebarLinks={[
             {
@@ -80,27 +78,29 @@ export function App() {
           ]}
         />
       )}
-      <Switch>
-        <Route exact path="/signin"><SignInPage /></Route>
-        <Route exact path="/resetpassword"><ResetPasswordPage /></Route>
-        <Route exact path="/setpassword/:id/:secret"><SetPasswordPage /></Route>
-        <Route exact path="/register"><RegisterPage /></Route>
-        <Route exact path="/changepassword"><ChangePasswordPage /></Route>
-        <Route exact path="/forms/:id"><FormPage /></Route>
-        <Route exact path="/admin/projects"><ProjectsPage /></Route>
-        <Route exact path="/admin/projects/:id"><ProjectPage /></Route>
-        <Route exact path="/admin/projects/:id/invite"><InvitePage /></Route>
-        <Route exact path="/admin/projects/:projectId/members/:membershipId"><EditMembershipPage /></Route>
-        <Route exact path="/:resourceType/new"><CreateResourcePage /></Route>
-        <Route exact path="/:resourceType/:id/:tab?"><ResourcePage /></Route>
-        <Route exact path="/:resourceType?"><HomePage /></Route>
-      </Switch>
+      <Routes>
+        <Route path="/signin" element={<SignInPage />} />
+        <Route path="/resetpassword" element={<ResetPasswordPage />} />
+        <Route path="/setpassword/:id/:secret" element={<SetPasswordPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/changepassword" element={<ChangePasswordPage />} />
+        <Route path="/forms/:id" element={<FormPage />} />
+        <Route path="/admin/projects" element={<ProjectsPage />} />
+        <Route path="/admin/projects/:id" element={<ProjectPage />} />
+        <Route path="/admin/projects/:id/invite" element={<InvitePage />} />
+        <Route path="/admin/projects/:projectId/members/:membershipId" element={<EditMembershipPage />} />
+        <Route path="/:resourceType/new" element={<CreateResourcePage />} />
+        <Route path="/:resourceType/:id/:tab" element={<ResourcePage />} />
+        <Route path="/:resourceType/:id" element={<ResourcePage />} />
+        <Route path="/:resourceType" element={<HomePage />} />
+        <Route path="/" element={<HomePage />} />
+      </Routes>
       {!profile && (
         <FooterLinks>
           <a href="https://www.medplum.com/privacy">Terms</a>
           <a href="https://www.medplum.com/privacy">Privacy</a>
         </FooterLinks>
       )}
-    </Router>
+    </>
   );
 }

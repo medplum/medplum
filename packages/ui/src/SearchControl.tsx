@@ -1,8 +1,9 @@
 import { Bundle, IndexedStructureDefinition, OperationOutcome, Resource, SearchRequest } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from './Button';
 import { Loading } from './Loading';
-import { useMedplum, useMedplumRouter } from './MedplumProvider';
+import { useMedplum } from './MedplumProvider';
 import { SearchFieldEditor } from './SearchFieldEditor';
 import { SearchFilterEditor } from './SearchFilterEditor';
 import { SearchPopupMenu } from './SearchPopupMenu';
@@ -65,8 +66,8 @@ interface SearchControlState {
  * It does not include the field editor, filter editor, pagination buttons.
  */
 export function SearchControl(props: SearchControlProps) {
+  const navigate = useNavigate();
   const medplum = useMedplum();
-  const router = useMedplumRouter();
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
 
@@ -260,7 +261,7 @@ export function SearchControl(props: SearchControlProps) {
           <Button
             testid="new-button"
             size="small"
-            onClick={() => router.push(`/${resourceType}/new`)}
+            onClick={() => navigate(`/${resourceType}/new`)}
           >New...</Button>
         </div>
         {lastResult && (

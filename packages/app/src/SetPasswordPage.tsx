@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 export function SetPasswordPage() {
-  const { id, secret } = useParams<{ id: string, secret: string }>();
+  const { id, secret } = useParams() as { id: string, secret: string };
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [success, setSuccess] = useState(false);

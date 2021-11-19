@@ -2,7 +2,7 @@
   "testEnvironment": "jsdom",
   "testRunner": "jasmine2",
   "transform": {
-    "^.+\\.tsx?$": "ts-jest"
+    "^.+\\.tsx?$": "babel-jest"
   },
   "moduleFileExtensions": [
     "ts",
