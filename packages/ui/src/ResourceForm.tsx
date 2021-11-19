@@ -52,9 +52,7 @@ export function ResourceForm(props: ResourceFormProps) {
   return (
     <form noValidate autoComplete="off" onSubmit={(e: React.FormEvent) => {
       e.preventDefault();
-      // const formData = parseResourceForm(schema, value.resourceType, e.target as HTMLFormElement, value);
       if (props.onSubmit) {
-        // props.onSubmit(formData);
         props.onSubmit(value);
       }
     }}>

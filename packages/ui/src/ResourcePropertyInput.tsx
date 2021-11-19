@@ -65,6 +65,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
         <TextField
           type="text"
           name={name}
+          testid={name}
           defaultValue={value}
           onChange={(e: React.ChangeEvent) => props.onChange && props.onChange((e.target as HTMLInputElement).value)}
           outcome={props.outcome}

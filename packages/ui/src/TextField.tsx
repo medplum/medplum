@@ -12,7 +12,8 @@ export interface TextFieldProps {
   autoFocus?: boolean;
   inputRef?: RefObject<HTMLInputElement>;
   onChange?: (e: React.ChangeEvent) => void;
-  outcome?: OperationOutcome
+  outcome?: OperationOutcome;
+  placeholder?: string;
   testid?: string;
 }
 
@@ -33,6 +34,7 @@ export function TextField(props: TextFieldProps) {
       onChange={props.onChange}
       aria-invalid={invalid}
       aria-describedby={invalid ? props.name + '-errors' : ''}
+      placeholder={props.placeholder}
       data-testid={props.testid}
     />
   );

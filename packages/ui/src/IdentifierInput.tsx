@@ -24,6 +24,7 @@ export function IdentifierInput(props: IdentifierInputProps) {
         <tr>
           <td>
             <TextField
+              placeholder="System"
               defaultValue={value?.system}
               onChange={e => setValueWrapper({
                 ...value,
@@ -33,6 +34,7 @@ export function IdentifierInput(props: IdentifierInputProps) {
           </td>
           <td>
             <TextField
+              placeholder="Value"
               defaultValue={value?.value}
               onChange={e => setValueWrapper({
                 ...value,

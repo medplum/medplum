@@ -8,20 +8,19 @@ interface ResourceArrayInputProps {
   schema: IndexedStructureDefinition;
   property: ElementDefinition;
   name: string;
-  defaultValue: any[];
+  defaultValue?: any[];
   arrayElement?: boolean;
   onChange?: (value: any[]) => void;
 }
 
 export function ResourceArrayInput(props: ResourceArrayInputProps) {
-  const [values, setValues2] = useState(props.defaultValue ?? []);
+  const [values, setValues] = useState(props.defaultValue ?? []);
 
   const valuesRef = useRef<any[]>();
   valuesRef.current = values;
 
-  function setValues(newValues: any[]): void {
-    console.log('array setValues', newValues);
-    setValues2(newValues);
+  function setValuesWrapper(newValues: any[]): void {
+    setValues(newValues);
     if (props.onChange) {
       props.onChange(newValues);
     }
@@ -47,7 +46,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps) {
                   onChange={(newValue: any) => {
                     const copy = [...(valuesRef.current as any[])];
                     copy[index] = newValue;
-                    setValues(copy);
+                    setValuesWrapper(copy);
                   }}
                 />
               </td>
@@ -57,7 +56,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps) {
                     killEvent(e);
                     const copy = [...(valuesRef.current as any[])];
                     copy.splice(index, 1);
-                    setValues(copy);
+                    setValuesWrapper(copy);
                   }}>Remove</Button>
               </td>
             </tr>
@@ -70,7 +69,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps) {
                   killEvent(e);
                   const copy = [...(valuesRef.current as any[])];
                   copy.push(undefined);
-                  setValues(copy);
+                  setValuesWrapper(copy);
                 }}>Add</Button>
             </td>
           </tr>
