@@ -1,3 +1,4 @@
+import { HumanName } from '@medplum/core';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { HumanNameInput } from './HumanNameInput';
@@ -19,8 +20,10 @@ describe('HumanNameInput', () => {
   });
 
   test('Change events', async () => {
+    let lastValue = undefined;
+
     render(
-      <HumanNameInput name="test" defaultValue={{}} />
+      <HumanNameInput name="test" defaultValue={{}} onChange={value => lastValue = value} />
     );
 
     await act(async () => {
@@ -43,9 +46,7 @@ describe('HumanNameInput', () => {
       fireEvent.change(screen.getByPlaceholderText('Suffix'), { target: { value: 'Sr' } });
     });
 
-    const hidden = screen.getByTestId('hidden') as HTMLInputElement;
-    expect(hidden).not.toBeUndefined();
-    expect(JSON.parse(hidden.value)).toMatchObject({
+    expect(lastValue).toMatchObject({
       use: 'official',
       prefix: ['Mr'],
       given: ['Homer', 'J'],
@@ -55,6 +56,8 @@ describe('HumanNameInput', () => {
   });
 
   test('Set blanks', async () => {
+    let lastValue: HumanName | undefined = undefined;
+
     render(
       <HumanNameInput name="test" defaultValue={{
         use: 'official',
@@ -62,7 +65,9 @@ describe('HumanNameInput', () => {
         given: ['Homer', 'J'],
         family: 'Simpson',
         suffix: ['Sr']
-      }} />
+      }}
+        onChange={value => lastValue = value}
+      />
     );
 
     await act(async () => {
@@ -85,9 +90,8 @@ describe('HumanNameInput', () => {
       fireEvent.change(screen.getByPlaceholderText('Suffix'), { target: { value: '' } });
     });
 
-    const hidden = screen.getByTestId('hidden') as HTMLInputElement;
-    expect(hidden).not.toBeUndefined();
-    expect(hidden.value).toEqual('{}');
+    expect(lastValue).not.toBeUndefined();
+    expect(JSON.stringify(lastValue)).toEqual('{}');
   });
 
 });

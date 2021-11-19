@@ -1,7 +1,6 @@
 import { Attachment } from '@medplum/core';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { AttachmentInput } from './AttachmentInput';
-import { ensureKeys } from './FormUtils';
 import { UploadButton } from './UploadButton';
 import { killEvent } from './utils/dom';
 
@@ -9,22 +8,24 @@ export interface AttachmentArrayInputProps {
   name: string;
   defaultValue?: Attachment[];
   arrayElement?: boolean;
+  onChange?: (value: Attachment[]) => void;
 }
 
 export function AttachmentArrayInput(props: AttachmentArrayInputProps) {
-  const [values, setValues] = useState(ensureKeys(props.defaultValue));
+  const [values, setValues] = useState(props.defaultValue ?? []);
 
-  function addAttachment(attachment: Attachment) {
-    const copy = values.slice();
-    copy.push(attachment);
-    setValues(ensureKeys(copy));
+  const valuesRef = useRef<Attachment[]>();
+  valuesRef.current = values;
+
+  function setValuesWrapper(newValues: Attachment[]) {
+    setValues(newValues);
+    if (props.onChange) {
+      props.onChange(newValues);
+    }
   }
 
   return (
     <div>
-      {values.map((v: any) => v.__removed && (
-        <input key={v.__key} type="hidden" name={props.name + '.' + v.__key} value={JSON.stringify(v)} />
-      ))}
       <table>
         <colgroup>
           <col width="90%" />
@@ -32,10 +33,10 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps) {
         </colgroup>
         <tbody>
           {values.map((v: any, index: number) => !v.__removed && (
-            <tr key={v.__key}>
+            <tr key={`${index}-${values.length}`}>
               <td>
                 <AttachmentInput
-                  name={props.name + '.' + v.__key}
+                  name={props.name}
                   defaultValue={v} />
               </td>
               <td>
@@ -44,8 +45,8 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps) {
                   onClick={e => {
                     killEvent(e);
                     const copy = values.slice();
-                    (copy[index] as any).__removed = true;
-                    setValues(copy);
+                    copy.splice(index, 1);
+                    setValuesWrapper(copy);
                   }}>Remove</button>
               </td>
             </tr>
@@ -53,7 +54,9 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps) {
           <tr>
             <td></td>
             <td>
-              <UploadButton onUpload={addAttachment} />
+              <UploadButton onUpload={(attachment: Attachment) => {
+                setValuesWrapper([...(valuesRef.current as Attachment[]), attachment]);
+              }} />
             </td>
           </tr>
         </tbody>

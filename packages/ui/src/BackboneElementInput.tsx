@@ -8,6 +8,7 @@ export interface BackboneElementInputProps {
   property: ElementDefinition;
   name: string;
   defaultValue?: any;
+  onChange?: (value: any) => void;
 }
 
 export function BackboneElementInput(props: BackboneElementInputProps) {

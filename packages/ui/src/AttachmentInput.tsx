@@ -12,7 +12,6 @@ export function AttachmentInput(props: AttachmentInputProps) {
 
   return (
     <div data-testid="attachment-input">
-      <input name={props.name} type="hidden" value={JSON.stringify(value)} readOnly={true} />
       <div>{value?.contentType}</div>
       <div>{value?.url}</div>
       {contentType?.startsWith('image/') && url && (

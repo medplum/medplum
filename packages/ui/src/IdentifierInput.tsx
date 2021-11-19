@@ -1,23 +1,32 @@
-import { Identifier, stringify } from '@medplum/core';
+import { Identifier } from '@medplum/core';
 import React, { useState } from 'react';
 import { TextField } from './TextField';
 
 export interface IdentifierInputProps {
   name: string;
   defaultValue?: Identifier;
+  onChange?: (value: Identifier) => void;
 }
 
 export function IdentifierInput(props: IdentifierInputProps) {
   const [value, setValue] = useState(props.defaultValue);
+
+  function setValueWrapper(newValue: Identifier): void {
+    setValue(newValue);
+    if (props.onChange) {
+      props.onChange(newValue);
+    }
+  }
+
   return (
     <table>
       <tbody>
         <tr>
           <td>
-            <input name={props.name} type="hidden" value={stringify(value)} readOnly={true} />
             <TextField
+              placeholder="System"
               defaultValue={value?.system}
-              onChange={e => setValue({
+              onChange={e => setValueWrapper({
                 ...value,
                 system: (e.currentTarget as HTMLInputElement).value
               })}
@@ -25,8 +34,9 @@ export function IdentifierInput(props: IdentifierInputProps) {
           </td>
           <td>
             <TextField
+              placeholder="Value"
               defaultValue={value?.value}
-              onChange={e => setValue({
+              onChange={e => setValueWrapper({
                 ...value,
                 value: (e.currentTarget as HTMLInputElement).value
               })}

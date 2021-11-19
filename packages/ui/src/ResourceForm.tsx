@@ -2,7 +2,6 @@ import { getPropertyDisplayName, IndexedStructureDefinition, OperationOutcome, R
 import React, { useEffect, useState } from 'react';
 import { Button } from './Button';
 import { FormSection } from './FormSection';
-import { parseResourceForm } from './FormUtils';
 import { useMedplum } from './MedplumProvider';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 import { useResource } from './useResource';
@@ -32,7 +31,7 @@ export function ResourceForm(props: ResourceFormProps) {
 
   useEffect(() => {
     if (defaultValue) {
-      setValue(defaultValue);
+      setValue(JSON.parse(JSON.stringify(defaultValue)));
       medplum.getTypeDefinition(defaultValue.resourceType).then(setSchema);
     }
   }, [defaultValue]);
@@ -53,9 +52,8 @@ export function ResourceForm(props: ResourceFormProps) {
   return (
     <form noValidate autoComplete="off" onSubmit={(e: React.FormEvent) => {
       e.preventDefault();
-      const formData = parseResourceForm(schema, value.resourceType, e.target as HTMLFormElement, value);
       if (props.onSubmit) {
-        props.onSubmit(formData);
+        props.onSubmit(value);
       }
     }}>
       <FormSection title="Resource Type">
@@ -83,6 +81,9 @@ export function ResourceForm(props: ResourceFormProps) {
               name={key}
               defaultValue={(value as any)[key]}
               outcome={props.outcome}
+              onChange={(newValue: any) => {
+                setValue({ ...value, [key]: newValue });
+              }}
             />
           </FormSection>
         );

@@ -1,3 +1,4 @@
+import { Address } from '@medplum/core';
 import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { act } from 'react-dom/test-utils';
@@ -17,7 +18,9 @@ describe('AddressInput', () => {
   });
 
   test('Set value', async () => {
-    render(<AddressInput name="a" />);
+    let lastValue: Address | undefined = undefined;
+
+    render(<AddressInput name="a" onChange={value => lastValue = value} />);
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('address-use'), { target: { value: 'home' } });
@@ -47,7 +50,15 @@ describe('AddressInput', () => {
       fireEvent.change(screen.getByPlaceholderText('Postal Code'), { target: { value: '97403' } });
     });
 
-    expect(screen.getByDisplayValue('{"use":"home","type":"both","line":["742 Evergreen Terrace","Attn: Homer"],"city":"Springfield","state":"OR","postalCode":"97403"}')).not.toBeUndefined();
+    expect(lastValue).not.toBeUndefined();
+    expect(lastValue).toMatchObject({
+      "use": "home",
+      "type": "both",
+      "line": ["742 Evergreen Terrace", "Attn: Homer"],
+      "city": "Springfield",
+      "state": "OR",
+      "postalCode": "97403"
+    });
   });
 
 });

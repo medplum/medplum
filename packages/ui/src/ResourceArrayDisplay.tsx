@@ -1,6 +1,5 @@
 import { ElementDefinition } from '@medplum/core';
 import React from 'react';
-import { ensureKeys } from './FormUtils';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 interface ResourceArrayDisplayProps {
@@ -11,12 +10,12 @@ interface ResourceArrayDisplayProps {
 
 export function ResourceArrayDisplay(props: ResourceArrayDisplayProps) {
   const property = props.property;
-  const values = ensureKeys(props.values);
+  const values = props.values ?? [];
   return (
     <>
-      {values.map(v => (
+      {values.map((v: any, index: number) => (
         <ResourcePropertyDisplay
-          key={typeof v === 'string' ? v : v.__key}
+          key={`${index}-${values.length}`}
           arrayElement={true}
           property={property}
           value={v} />

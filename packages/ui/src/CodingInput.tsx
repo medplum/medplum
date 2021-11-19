@@ -7,6 +7,7 @@ export interface CodingInputProps {
   property: ElementDefinition;
   name: string;
   defaultValue?: Coding;
+  onChange?: (value: Coding) => void;
 }
 
 export function CodingInput(props: CodingInputProps) {
@@ -35,6 +36,11 @@ export function CodingInput(props: CodingInputProps) {
       getDisplay={(item: Coding) => <>{item.display || item.code}</>}
       name={props.name}
       defaultValue={defaultValue}
+      onChange={(values: Coding[]) => {
+        if (props.onChange) {
+          props.onChange(values[0]);
+        }
+      }}
     />
   );
 }
