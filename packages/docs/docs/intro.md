@@ -2,34 +2,36 @@
 sidebar_position: 1
 ---
 
-# Tutorial Intro
+# Intro
 
-Let's discover **Docusaurus in less than 5 minutes**.
+Welcome to Medplum. Building on Medplum enables **flexible and rapid development** of healthcare apps.
 
-## Getting Started
+## Basic Concepts
 
-Get started by **creating a new site**.
+Developing on Medplum is very similar to web development, but has built in compliance and interoperability features that are requirements for healthcare apps.
 
-Or **try Docusaurus immediately** with **[docusaurus.new](https://docusaurus.new)**.
+The Medplum basics are as follows:
 
-## Generate a new site
+- **Database**: a clinical data repository (CDR) that stores all data natively in FHIR.  This includes support for binary files like images and videos.
+- **[Web Application](https://app.medplum.com)**: where users can log in and create and update data.  It also has an audit log.
+- **Application Programming Interface (API)**: ability to create and update FHIR objects in the CDR programatically
+- **[User Interface Library](https://docs.medplum.com/storybook/index.html?path=/story/medplum-introduction--page)**: interface components for representing FHIR objects
+- **Subscriptions**: notifications when objects are created or updated, this is implemented using the FHIRPath spec
+- **Identity Management and Permissions**: manage user identities and access to data
 
-Generate a new Docusaurus site using the **classic template**:
+## Common Use Cases
 
-```shell
-npm init docusaurus@latest my-website classic
-```
+These building blocks enable a large number of potential applications.  For example:
 
-## Start your site
+- Lab Orders and Results Reporting via API
+- Telemedicine web and mobile app
+- Population health analysis, clinical research and HEDIS reporting
+- External data warehousing
+- Synthetic data set showcasing for partnership and prototyping
+- Adding a FHIR API to an existing medical application
 
-Run the development server:
+Stay tuned: we will post detailed implementation guides for all of these scenarios, including sample code.
 
-```shell
-cd my-website
+## Get Started
 
-npx docusaurus start
-```
-
-Your site starts at `http://localhost:3000`.
-
-Open `docs/intro.md` and edit some lines: the site **reloads automatically** and display your changes.
+Get started right away, you can [register here](https://app.medplum.com/register).  If needed, Medplum also supports self-hosting, get find the [source code](https://github.com/medplum/medplum) on Github.
