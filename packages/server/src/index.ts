@@ -5,6 +5,7 @@ import { initDatabase } from './database';
 import { initBinaryStorage } from './fhir';
 import { logger } from './logger';
 import { initKeys } from './oauth';
+import { initRedis } from './redis';
 import { seedDatabase } from './seed';
 import { initSubscriptionWorker } from './workers/subscription';
 
@@ -18,6 +19,7 @@ async function main() {
   logger.info('config: ' + JSON.stringify(config, undefined, 2));
 
   await initDatabase(config.database);
+  await initRedis(config.redis);
   await initKeys(config);
   await seedDatabase();
   initBinaryStorage(config.binaryStorage);
