@@ -6,6 +6,8 @@ import { closeDatabase, initDatabase } from './database';
 import { initKeys } from './oauth';
 import { closeRedis, initRedis } from './redis';
 
+jest.mock('ioredis');
+
 const app = express();
 
 describe('Health check', () => {
