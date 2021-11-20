@@ -1,4 +1,4 @@
-import { Address, CodeableConcept, ContactPoint, HumanName, Identifier } from '@medplum/core';
+import { Address, Attachment, CodeableConcept, ContactPoint, HumanName, Identifier } from '@medplum/core';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
@@ -7,6 +7,11 @@ describe('ResourcePropertyDisplay', () => {
 
   test('Renders null value', () => {
     render(<ResourcePropertyDisplay property={{ type: [{ code: 'string' }] }} value="" />);
+  });
+
+  test('Renders boolean', () => {
+    render(<ResourcePropertyDisplay property={{ type: [{ code: 'boolean' }] }} value={true} />);
+    expect(screen.getByText('true')).not.toBeUndefined();
   });
 
   test('Renders string', () => {
@@ -35,6 +40,11 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('world')).not.toBeUndefined();
   });
 
+  test('Renders markdown', () => {
+    render(<ResourcePropertyDisplay property={{ type: [{ code: 'markdown' }] }} value="hello" />);
+    expect(screen.getByText('hello')).not.toBeUndefined();
+  });
+
   test('Renders Address', () => {
     const value: Address = {
       city: 'London'
@@ -46,6 +56,44 @@ describe('ResourcePropertyDisplay', () => {
     />);
 
     expect(screen.getByText('London')).not.toBeUndefined();
+  });
+
+  test('Renders Attachment', () => {
+    const value: Attachment = {
+      contentType: 'text/plain',
+      url: 'https://example.com/file.txt',
+      title: 'file.txt'
+    };
+
+    render(<ResourcePropertyDisplay
+      property={{ type: [{ code: 'Attachment' }] }}
+      value={value}
+    />);
+
+    expect(screen.getByText('file.txt')).not.toBeUndefined();
+  });
+
+  test('Renders Attachment array', () => {
+    const value: Attachment[] = [
+      {
+        contentType: 'text/plain',
+        url: 'https://example.com/file.txt',
+        title: 'file.txt'
+      },
+      {
+        contentType: 'text/plain',
+        url: 'https://example.com/file2.txt',
+        title: 'file2.txt'
+      }
+    ];
+
+    render(<ResourcePropertyDisplay
+      property={{ type: [{ code: 'Attachment' }], max: '*' }}
+      value={value}
+    />);
+
+    expect(screen.getByText('file.txt')).not.toBeUndefined();
+    expect(screen.getByText('file2.txt')).not.toBeUndefined();
   });
 
   test('Renders CodeableConcept', () => {
