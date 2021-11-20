@@ -201,6 +201,8 @@ export class BackEnd extends cdk.Construct {
         path: '/healthcheck',
         interval: cdk.Duration.seconds(30),
         timeout: cdk.Duration.seconds(3),
+        healthyThresholdCount: 2,
+        unhealthyThresholdCount: 5,
       },
       targets: [fargateService]
     });

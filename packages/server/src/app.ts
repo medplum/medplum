@@ -3,9 +3,11 @@ import { json, raw, urlencoded } from 'body-parser';
 import cors from 'cors';
 import { Express, NextFunction, Request, Response } from 'express';
 import { adminRouter } from './admin';
+import { asyncWrap } from './async';
 import { authRouter } from './auth';
 import { dicomRouter } from './dicom/routes';
 import { fhirRouter, sendOutcome } from './fhir';
+import { healthcheckHandler } from './healthcheck';
 import { logger } from './logger';
 import { oauthRouter } from './oauth';
 import { openApiHandler } from './openapi';
@@ -80,7 +82,7 @@ export async function initApp(app: Express): Promise<Express> {
     limit: '100mb'
   }));
   app.get('/', (req: Request, res: Response) => res.sendStatus(200));
-  app.get('/healthcheck', (req: Request, res: Response) => res.json({ ok: true }));
+  app.get('/healthcheck', asyncWrap(healthcheckHandler));
   app.get('/openapi.json', openApiHandler);
   app.use('/.well-known/', wellKnownRouter);
   app.use('/admin/', adminRouter);
