@@ -79,7 +79,7 @@ export async function initApp(app: Express): Promise<Express> {
   }));
   app.use(raw({
     type: '*/*',
-    limit: '100mb'
+    limit: '1000mb'
   }));
   app.get('/', (req: Request, res: Response) => res.sendStatus(200));
   app.get('/healthcheck', asyncWrap(healthcheckHandler));
