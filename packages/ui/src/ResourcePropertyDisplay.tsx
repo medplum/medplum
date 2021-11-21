@@ -15,6 +15,7 @@ export interface ResourcePropertyDisplayProps {
   property: ElementDefinition;
   value: any;
   arrayElement?: boolean;
+  maxWidth?: number;
 }
 
 export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
@@ -24,7 +25,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
 
   if (property.max === '*' && !props.arrayElement) {
     if (propertyType === 'Attachment') {
-      return <AttachmentArrayDisplay values={value} />
+      return <AttachmentArrayDisplay values={value} maxWidth={props.maxWidth} />
     }
     return <ResourceArrayDisplay property={property} values={value} />
   }
@@ -49,7 +50,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
     case PropertyType.Address:
       return <AddressDisplay value={value} />;
     case PropertyType.Attachment:
-      return <AttachmentDisplay value={value} />;
+      return <AttachmentDisplay value={value} maxWidth={props.maxWidth} />;
     case PropertyType.CodeableConcept:
       return <CodeableConceptDisplay value={value} />;
     case PropertyType.ContactPoint:

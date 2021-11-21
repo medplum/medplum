@@ -4,6 +4,7 @@ import { AttachmentDisplay } from './AttachmentDisplay';
 
 export interface AttachmentArrayDisplayProps {
   values?: Attachment[];
+  maxWidth?: number;
 }
 
 export function AttachmentArrayDisplay(props: AttachmentArrayDisplayProps) {
@@ -11,7 +12,7 @@ export function AttachmentArrayDisplay(props: AttachmentArrayDisplayProps) {
     <div>
       {props.values && props.values.map((v, index) => (
         <div key={'attatchment-' + index}>
-          <AttachmentDisplay value={v} />
+          <AttachmentDisplay value={v} maxWidth={props.maxWidth} />
         </div>
       ))}
     </div>

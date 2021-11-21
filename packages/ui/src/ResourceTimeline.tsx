@@ -1,8 +1,8 @@
 import { Attachment, AuditEvent, Bundle, BundleEntry, Communication, DiagnosticReport, Media, ProfileResource, Reference, Resource, SearchRequest, stringify } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
-import { DiagnosticReportDisplay } from './DiagnosticReportDisplay';
 import { AttachmentDisplay } from './AttachmentDisplay';
 import { Button } from './Button';
+import { DiagnosticReportDisplay } from './DiagnosticReportDisplay';
 import { Form } from './Form';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
@@ -203,8 +203,10 @@ interface MediaTimelineItemProps {
 }
 
 function MediaTimelineItem(props: MediaTimelineItemProps) {
+  const contentType = props.media.content?.contentType;
+  const padding = contentType && !contentType.startsWith('image/') && !contentType.startsWith('video/');
   return (
-    <TimelineItem resource={props.media}>
+    <TimelineItem resource={props.media} padding={!!padding}>
       <AttachmentDisplay value={props.media.content} />
     </TimelineItem>
   );

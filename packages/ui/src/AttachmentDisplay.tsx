@@ -23,10 +23,6 @@ export function AttachmentDisplay(props: AttachmentDisplayProps) {
   }
 
   return (
-    <div data-testid="attachment-details">
-      <div>{value?.title}</div>
-      <div>{value?.contentType}</div>
-      <div>{value?.url}</div>
-    </div>
+    <a href={value?.url} data-testid="attachment-details">{value?.title}</a>
   );
 }
