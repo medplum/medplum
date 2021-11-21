@@ -4,7 +4,7 @@
   "testTimeout": 60000,
   "testSequencer": "<rootDir>/jest.sequencer.js",
   "transform": {
-    "^.+\\.(js|ts)$": "babel-jest"
+    "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
   },
   "moduleFileExtensions": [
     "ts",

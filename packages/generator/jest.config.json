@@ -1,8 +1,8 @@
 {
-  "testEnvironment": "node",
+  "testEnvironment": "jsdom",
   "testRunner": "jasmine2",
   "transform": {
-    "^.+\\.ts$": "babel-jest"
+    "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
   },
   "moduleFileExtensions": [
     "ts",
