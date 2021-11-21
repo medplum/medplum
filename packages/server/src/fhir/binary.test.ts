@@ -34,7 +34,7 @@ describe('Binary', () => {
       .post(`/fhir/R4/Binary`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/octet-stream')
-      .send('a'.repeat(101 * 1024 * 1024));
+      .send('a'.repeat(11 * 1024 * 1024));
     expect(res.status).toBe(400);
   });
 

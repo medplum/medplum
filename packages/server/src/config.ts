@@ -24,6 +24,8 @@ export interface MedplumServerConfig {
   googleClientId?: string;
   googleClientSecret?: string;
   adminClientId?: string;
+  maxJsonSize: string;
+  maxUploadSize: string;
 }
 
 /**
