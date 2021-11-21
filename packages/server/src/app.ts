@@ -5,6 +5,7 @@ import { Express, NextFunction, Request, Response } from 'express';
 import { adminRouter } from './admin';
 import { asyncWrap } from './async';
 import { authRouter } from './auth';
+import { getConfig } from './config';
 import { dicomRouter } from './dicom/routes';
 import { fhirRouter, sendOutcome } from './fhir';
 import { healthcheckHandler } from './healthcheck';
@@ -65,6 +66,7 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
 }
 
 export async function initApp(app: Express): Promise<Express> {
+  const config = getConfig();
   app.set('trust proxy', true);
   app.set('x-powered-by', false);
   app.set('json spaces', 2);
@@ -75,11 +77,11 @@ export async function initApp(app: Express): Promise<Express> {
   }));
   app.use(json({
     type: ['application/json', 'application/fhir+json', 'application/json-patch+json'],
-    limit: '10mb'
+    limit: config.maxJsonSize
   }));
   app.use(raw({
     type: '*/*',
-    limit: '100mb'
+    limit: config.maxUploadSize
   }));
   app.get('/', (req: Request, res: Response) => res.sendStatus(200));
   app.get('/healthcheck', asyncWrap(healthcheckHandler));
