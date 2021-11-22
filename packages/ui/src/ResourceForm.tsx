@@ -1,4 +1,4 @@
-import { getPropertyDisplayName, IndexedStructureDefinition, OperationOutcome, Reference, Resource } from '@medplum/core';
+import { capitalize, ElementDefinition, ElementDefinitionType, getPropertyDisplayName, IndexedStructureDefinition, OperationOutcome, Reference, Resource } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
 import { Button } from './Button';
 import { FormSection } from './FormSection';
@@ -79,10 +79,10 @@ export function ResourceForm(props: ResourceFormProps) {
               schema={schema}
               property={property}
               name={key}
-              defaultValue={(value as any)[key]}
+              defaultValue={getDefaultValue(value, key, entry[1])}
               outcome={props.outcome}
-              onChange={(newValue: any) => {
-                setValue({ ...value, [key]: newValue });
+              onChange={(newValue: any, propName?: string) => {
+                setValue(setPropertyValue(value, key, propName ?? key, entry[1], newValue));
               }}
             />
           </FormSection>
@@ -91,4 +91,32 @@ export function ResourceForm(props: ResourceFormProps) {
       <Button type="submit" size="large">OK</Button>
     </form>
   );
+}
+
+function getDefaultValue(obj: any, key: string, elementDefinition: ElementDefinition): any {
+  const types = elementDefinition.type as ElementDefinitionType[];
+  if (types.length === 1) {
+    return obj[key];
+  }
+  for (const type of types) {
+    const compoundKey = key.replace('[x]', capitalize(type.code as string));
+    if (compoundKey in obj) {
+      return obj[compoundKey];
+    }
+  }
+  return undefined;
+}
+
+function setPropertyValue(obj: any, key: string, propName: string, elementDefinition: ElementDefinition, value: any): any {
+  const types = elementDefinition.type as ElementDefinitionType[];
+  if (types.length > 1) {
+    for (const type of types) {
+      const compoundKey = key.replace('[x]', capitalize(type.code as string));
+      if (compoundKey in obj) {
+        delete obj[compoundKey];
+      }
+    }
+  }
+  obj[propName] = value;
+  return obj;
 }

@@ -1,4 +1,4 @@
-import { ElementDefinition, ElementDefinitionType, IndexedStructureDefinition, OperationOutcome, PropertyType } from '@medplum/core';
+import { capitalize, ElementDefinition, ElementDefinitionType, IndexedStructureDefinition, OperationOutcome, PropertyType } from '@medplum/core';
 import React, { useState } from 'react';
 import { AddressInput } from './AddressInput';
 import { AttachmentArrayInput } from './AttachmentArrayInput';
@@ -22,7 +22,7 @@ export interface ResourcePropertyInputProps {
   name: string;
   defaultValue?: any;
   arrayElement?: boolean;
-  onChange?: (value: any) => void;
+  onChange?: (value: any, propName?: string) => void;
   outcome?: OperationOutcome;
 }
 
@@ -53,11 +53,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
     );
   }
 
-  const propertyTypes = property.type;
-  if (!propertyTypes) {
-    return null;
-  }
-
+  const propertyTypes = property.type as ElementDefinitionType[];
   if (propertyTypes.length > 1) {
     return (
       <ElementDefinitionInputSelector elementDefinitionTypes={propertyTypes} {...props} />
@@ -82,7 +78,6 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
         <tr>
           <td style={{ width: '20%' }}>
             <select onChange={(e: React.ChangeEvent) => {
-              console.log('onChange', e);
               setSelectedType(propertyTypes.find((type: ElementDefinitionType) => type.code === (e.target as HTMLSelectElement).value) as ElementDefinitionType);
             }}>
               {propertyTypes.map((type: ElementDefinitionType) => (
@@ -91,7 +86,15 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
             </select>
           </td>
           <td style={{ width: '80%' }}>
-            <ElementDefinitionTypeInput elementDefinitionType={selectedType} {...props} />
+            <ElementDefinitionTypeInput
+              {...props}
+              elementDefinitionType={selectedType}
+              onChange={(newValue: any) => {
+                if (props.onChange) {
+                  props.onChange(newValue, props.name.replace('[x]', capitalize(selectedType.code as string)));
+                }
+              }}
+            />
           </td>
         </tr>
       </tbody>
@@ -135,8 +138,13 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
         <TextField
           type="number"
           name={name}
+          testid={name}
           defaultValue={value}
-          onChange={(e: React.ChangeEvent) => props.onChange && props.onChange((e.target as HTMLInputElement).value)}
+          onChange={(e: React.ChangeEvent) => {
+            if (props.onChange) {
+              props.onChange(parseFloat((e.target as HTMLInputElement).value));
+            }
+          }}
           outcome={props.outcome}
         />
       );
