@@ -47,86 +47,6 @@ const practitionerHistory: Bundle = {
   ]
 };
 
-// const practitionerStructureBundle: Bundle = {
-//   resourceType: 'Bundle',
-//   entry: [{
-//     resource: {
-//       resourceType: 'StructureDefinition',
-//       name: 'Practitioner',
-//       snapshot: {
-//         element: [
-//           {
-//             path: 'Practitioner.id',
-//             type: [{
-//               code: 'code'
-//             }]
-//           }
-//         ]
-//       }
-//     }
-//   }]
-// };
-
-// const practitionerSearchParameter: Bundle = {
-//   resourceType: 'Bundle',
-//   entry: [{
-//     resource: {
-//       resourceType: 'SearchParameter',
-//       id: 'Practitioner-name',
-//       code: 'name',
-//       name: 'name'
-//     }
-//   }]
-// };
-
-// const patient: Patient = {
-//   resourceType: 'Patient',
-//   id: '123',
-//   identifier: [
-//     { system: 'abc', value: '123' },
-//     { system: 'def', value: '456' }
-//   ],
-//   name: [{
-//     given: ['Alice'],
-//     family: 'Smith'
-//   }],
-//   birthDate: '1990-01-01'
-// };
-
-// const patientSearchBundle: Bundle = {
-//   resourceType: 'Bundle',
-//   total: 100,
-//   entry: [{
-//     resource: patient
-//   }]
-// };
-
-// const questionnaire: Questionnaire = {
-//   resourceType: 'Questionnaire',
-//   id: '123',
-//   item: [{
-//     linkId: '1',
-//     text: 'Hello',
-//     type: 'string'
-//   }]
-// };
-
-// const bot: Bot = {
-//   resourceType: 'Bot',
-//   id: '123',
-//   name: 'Test Bot',
-//   code: 'console.log("hello world");'
-// };
-
-// const diagnosticReport: DiagnosticReport = {
-//   resourceType: 'DiagnosticReport',
-//   id: '123',
-//   status: 'final',
-//   result: [
-//     { reference: 'Observation/123' }
-//   ]
-// };
-
 function mockFetch(url: string, options: any): Promise<any> {
   const method = options.method ?? 'GET';
   let result: any;
@@ -136,30 +56,12 @@ function mockFetch(url: string, options: any): Promise<any> {
       user,
       profile: 'Practitioner/123'
     };
-    // } else if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name:exact=Practitioner')) {
-    //   result = practitionerStructureBundle;
-    // } else if (method === 'GET' && url.includes('/fhir/R4/SearchParameter?name=Practitioner')) {
-    //   result = practitionerSearchParameter;
-    // } else if (method === 'GET' && url.includes('/fhir/R4/Patient?')) {
-    //   result = patientSearchBundle;
-    // } else if (method === 'GET' && url.includes('/fhir/R4/Patient/123')) {
-    //   result = patient;
-    // } else if (method === 'GET' && url.includes('/fhir/R4/Patient/123/_history')) {
-    //   result = patientSearchBundle;
   } else if (method === 'GET' && url.endsWith('/fhir/R4/Practitioner/123')) {
     result = practitioner;
-    // } else if (method === 'PUT' && url.endsWith('/fhir/R4/Practitioner/123')) {
-    //   result = practitioner;
   } else if (method === 'GET' && url.endsWith('/fhir/R4/Practitioner/123/_history')) {
     result = practitionerHistory;
   } else if (method === 'GET' && url.endsWith('/fhir/R4/Practitioner/not-found/_history')) {
     result = notFound
-    // } else if (method === 'GET' && url.endsWith('/fhir/R4/Questionnaire/123')) {
-    //   result = questionnaire;
-    // } else if (method === 'GET' && url.includes('/fhir/R4/Bot/123')) {
-    //   result = bot;
-    // } else if (method === 'GET' && url.includes('/fhir/R4/DiagnosticReport/123')) {
-    //   result = diagnosticReport;
   }
 
   const response: any = {

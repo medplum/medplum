@@ -7,7 +7,9 @@ import {
 import {
   Document,
   Loading,
-  MedplumLink, ResourceDiff, Tab,
+  MedplumLink,
+  ResourceDiff,
+  Tab,
   TabBar,
   TabPanel,
   TabSwitch,
