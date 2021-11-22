@@ -13,3 +13,9 @@ export const Patient = () => (
     <ResourceTable value={{ reference: `Patient/${process.env.SAMPLE_PATIENT_ID}` }} />
   </Document>
 );
+
+export const Observation = () => (
+  <Document>
+    <ResourceTable value={{ reference: `Observation/${process.env.SAMPLE_OBSERVATION_ID}` }} />
+  </Document>
+);
