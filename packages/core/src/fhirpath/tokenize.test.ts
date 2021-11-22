@@ -1,6 +1,7 @@
 import { tokenizer } from './tokenize';
 
 describe('Tokenizer', () => {
+
   test('Simple string matching', () => {
     const matches = tokenizer.tokenize('  (  + ) /   ( *  ');
     expect(matches).toMatchObject([
@@ -84,6 +85,15 @@ describe('Tokenizer', () => {
       { id: '=', value: '=' },
       { id: 'String', value: '\'email\'' },
       { id: ')', value: ')' }
+    ]);
+  });
+
+  test('Quantity units', () => {
+    expect(tokenizer.tokenize('1.0 \'mg\'')).toMatchObject([{ id: 'Quantity', value: '1.0 \'mg\'' }]);
+    expect(tokenizer.tokenize('7 days = 1 week')).toMatchObject([
+      { id: 'Quantity', value: '7 days' },
+      { id: '=', value: '=' },
+      { id: 'Quantity', value: '1 week' },
     ]);
   });
 

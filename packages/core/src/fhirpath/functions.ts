@@ -1033,7 +1033,10 @@ function applyMathFunc(func: (x: number, ...args: any[]) => number, input: any[]
   if (input.length === 0) {
     return input;
   }
-  const [value] = validateInput(input, 1);
+  let [value] = validateInput(input, 1);
+  if (typeof value === 'object' && 'value' in value && 'unit' in value) {
+    value = value.value;
+  }
   if (typeof value !== 'number') {
     throw new Error('Math function cannot be called with non-number');
   }

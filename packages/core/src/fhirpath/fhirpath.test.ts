@@ -1376,7 +1376,7 @@ describe('FHIRPath Test Suite', () => {
 
   });
 
-  describe.skip('testQuantity', () => {
+  describe('testQuantity', () => {
 
     test('testQuantity1', () => {
       expect(toBoolean(parseFhirPath("4.0000 'g' = 4000.0 'mg'").eval(patient))).toBeTruthy();
