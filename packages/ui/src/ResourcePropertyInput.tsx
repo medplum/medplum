@@ -1,5 +1,5 @@
-import { ElementDefinition, IndexedStructureDefinition, OperationOutcome, PropertyType } from '@medplum/core';
-import React from 'react';
+import { capitalize, ElementDefinition, ElementDefinitionType, IndexedStructureDefinition, OperationOutcome, PropertyType } from '@medplum/core';
+import React, { useState } from 'react';
 import { AddressInput } from './AddressInput';
 import { AttachmentArrayInput } from './AttachmentArrayInput';
 import { AttachmentInput } from './AttachmentInput';
@@ -11,6 +11,7 @@ import { ContactPointInput } from './ContactPointInput';
 import { ExtensionInput } from './ExtensionInput';
 import { HumanNameInput } from './HumanNameInput';
 import { IdentifierInput } from './IdentifierInput';
+import { QuantityInput } from './QuantityInput';
 import { ReferenceInput } from './ReferenceInput';
 import { ResourceArrayInput } from './ResourceArrayInput';
 import { TextField } from './TextField';
@@ -21,7 +22,7 @@ export interface ResourcePropertyInputProps {
   name: string;
   defaultValue?: any;
   arrayElement?: boolean;
-  onChange?: (value: any) => void;
+  onChange?: (value: any, propName?: string) => void;
   outcome?: OperationOutcome;
 }
 
@@ -52,6 +53,65 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
     );
   }
 
+  const propertyTypes = property.type as ElementDefinitionType[];
+  if (propertyTypes.length > 1) {
+    return (
+      <ElementDefinitionInputSelector elementDefinitionTypes={propertyTypes} {...props} />
+    );
+  } else {
+    return (
+      <ElementDefinitionTypeInput elementDefinitionType={propertyTypes[0]} {...props} />
+    );
+  }
+}
+
+export interface ElementDefinitionSelectorProps extends ResourcePropertyInputProps {
+  elementDefinitionTypes: ElementDefinitionType[];
+}
+
+export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorProps): JSX.Element {
+  const propertyTypes = props.elementDefinitionTypes;
+  const [selectedType, setSelectedType] = useState(propertyTypes[0]);
+  return (
+    <table>
+      <tbody>
+        <tr>
+          <td style={{ width: '20%' }}>
+            <select onChange={(e: React.ChangeEvent) => {
+              setSelectedType(propertyTypes.find((type: ElementDefinitionType) => type.code === (e.target as HTMLSelectElement).value) as ElementDefinitionType);
+            }}>
+              {propertyTypes.map((type: ElementDefinitionType) => (
+                <option key={type.code} value={type.code}>{type.code}</option>
+              ))}
+            </select>
+          </td>
+          <td style={{ width: '80%' }}>
+            <ElementDefinitionTypeInput
+              {...props}
+              elementDefinitionType={selectedType}
+              onChange={(newValue: any) => {
+                if (props.onChange) {
+                  props.onChange(newValue, props.name.replace('[x]', capitalize(selectedType.code as string)));
+                }
+              }}
+            />
+          </td>
+        </tr>
+      </tbody>
+    </table >
+  );
+}
+
+export interface ElementDefinitionTypeInputProps extends ResourcePropertyInputProps {
+  elementDefinitionType: ElementDefinitionType;
+}
+
+export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProps): JSX.Element {
+  const property = props.property;
+  const propertyType = props.elementDefinitionType.code as PropertyType;
+  const name = props.name;
+  const value = props.defaultValue;
+
   switch (propertyType) {
     case PropertyType.SystemString:
     case PropertyType.canonical:
@@ -78,8 +138,13 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
         <TextField
           type="number"
           name={name}
+          testid={name}
           defaultValue={value}
-          onChange={(e: React.ChangeEvent) => props.onChange && props.onChange((e.target as HTMLInputElement).value)}
+          onChange={(e: React.ChangeEvent) => {
+            if (props.onChange) {
+              props.onChange(parseFloat((e.target as HTMLInputElement).value));
+            }
+          }}
           outcome={props.outcome}
         />
       );
@@ -154,6 +219,14 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
     case PropertyType.Identifier:
       return (
         <IdentifierInput
+          name={name}
+          defaultValue={value}
+          onChange={props.onChange}
+        />
+      );
+    case PropertyType.Quantity:
+      return (
+        <QuantityInput
           name={name}
           defaultValue={value}
           onChange={props.onChange}

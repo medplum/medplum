@@ -1,5 +1,5 @@
 import { Address, Attachment, CodeableConcept, ContactPoint, ElementDefinition, HumanName, Identifier, IndexedStructureDefinition, MedplumClient } from '@medplum/core';
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
 import { ResourcePropertyInput, ResourcePropertyInputProps } from './ResourcePropertyInput';
@@ -77,9 +77,11 @@ const patientManagingOrganizationProperty: ElementDefinition = {
 const observationValueProperty: ElementDefinition = {
   id: 'Observation.value[x]',
   path: 'Observation.value[x]',
-  type: [{
-    code: 'integer'
-  }]
+  type: [
+    { code: 'Quantity' },
+    { code: 'string' },
+    { code: 'integer' }
+  ]
 };
 
 const schema: IndexedStructureDefinition = {
@@ -239,6 +241,65 @@ describe('ResourcePropertyInput', () => {
       name: 'managingOrganization'
     });
     expect(screen.getByTestId('autocomplete')).toBeInTheDocument();
+  });
+
+  test('Type selector', async () => {
+    const onChange = jest.fn();
+
+    setup({
+      schema,
+      property: observationValueProperty,
+      name: 'value[x]',
+      onChange
+    });
+
+    // The first property type is the default
+    expect(screen.getByDisplayValue('Quantity')).not.toBeUndefined();
+
+    // Set a quantity value
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Value'), { target: { value: '123' } });
+    });
+
+    expect(onChange).toHaveBeenCalledWith({ value: 123 }, 'valueQuantity');
+    onChange.mockClear();
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Unit'), { target: { value: 'mg' } });
+    });
+
+    expect(onChange).toHaveBeenCalledWith({ value: 123, unit: 'mg' }, 'valueQuantity');
+    onChange.mockClear();
+
+    // Change to string
+    await act(async () => {
+      fireEvent.change(screen.getByDisplayValue('Quantity'), { target: { value: 'string' } });
+    });
+    expect(screen.getByDisplayValue('string')).not.toBeUndefined();
+    expect(screen.getByTestId('value[x]')).not.toBeUndefined();
+
+    // Set a string value
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('value[x]'), { target: { value: 'hello' } });
+    });
+
+    expect(onChange).toHaveBeenCalledWith('hello', 'valueString');
+    onChange.mockClear();
+
+    // Change to integer
+    await act(async () => {
+      fireEvent.change(screen.getByDisplayValue('string'), { target: { value: 'integer' } });
+    });
+    expect(screen.getByDisplayValue('integer')).not.toBeUndefined();
+    expect(screen.getByTestId('value[x]')).not.toBeUndefined();
+
+    // Set an integer value
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('value[x]'), { target: { value: '123' } });
+    });
+
+    expect(onChange).toHaveBeenCalledWith(123, 'valueInteger');
+    onChange.mockClear();
   });
 
 });

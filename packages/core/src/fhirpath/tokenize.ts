@@ -10,7 +10,7 @@ export interface Token extends TokenMatcher {
 
 const matchers: TokenMatcher[] = [
   // { id: 'Comment', pattern: /\/\/.*$/ },
-  { id: 'Quantity', pattern: /-?\d{1,9}(\.\d{1,9})? 'mg'/ },
+  { id: 'Quantity', pattern: /-?\d{1,9}(\.\d{1,9})? ('[^']+'|years?|months?|weeks?|days?|hours?|minutes?|seconds?|milliseconds?)/ },
   { id: 'String', pattern: /'[^']*'/ },
   { id: 'DateTime', pattern: /@[a-zA-Z0-9:_+-]*(.\d+)?/ },
   { id: 'Number', pattern: /-?\d{1,9}(\.\d{1,9})?/ },

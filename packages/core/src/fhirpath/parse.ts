@@ -1,3 +1,4 @@
+import { Quantity } from '../fhir';
 import { Atom, BinaryOperatorAtom, ConcatAtom, ContainsAtom, DotAtom, EmptySetAtom, EqualsAtom, EquivalentAtom, FhirPathAtom, FunctionAtom, InAtom, IsAtom, LiteralAtom, NotEqualsAtom, NotEquivalentAtom, OrAtom, SymbolAtom, UnaryOperatorAtom, UnionAtom, XorAtom } from './atoms';
 import { parseDateString } from './date';
 import { functions } from './functions';
@@ -177,10 +178,17 @@ const FUNCTION_CALL_PARSELET: InfixParselet = {
   precedence: Precedence.FunctionCall
 };
 
+function parseQuantity(str: string): Quantity {
+  const parts = str.split(' ');
+  const value = parseFloat(parts[0]);
+  const unit = parts[1];
+  return { value, unit };
+}
+
 const parserBuilder = new ParserBuilder()
   .registerPrefix('String', { parse: (_, token) => new LiteralAtom(token.value.substring(1, token.value.length - 1)) })
   .registerPrefix('DateTime', { parse: (_, token) => new LiteralAtom(parseDateString(token.value.substring(1))) })
-  .registerPrefix('Quantity', { parse: (_, token) => new LiteralAtom(parseFloat(token.value)) })
+  .registerPrefix('Quantity', { parse: (_, token) => new LiteralAtom(parseQuantity(token.value)) })
   .registerPrefix('Number', { parse: (_, token) => new LiteralAtom(parseFloat(token.value)) })
   .registerPrefix('Symbol', {
     parse: (_, token) => {

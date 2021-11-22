@@ -1,3 +1,4 @@
+import React from 'react';
 import { MedplumClient } from '@medplum/core';
 import { BrowserRouter } from 'react-router-dom';
 import { MedplumProvider } from '../src/MedplumProvider';
