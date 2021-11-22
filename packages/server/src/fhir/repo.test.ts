@@ -196,6 +196,38 @@ describe('FHIR Repo', () => {
     expect(resource4).toBeUndefined();
   });
 
+  test('Read history', async () => {
+    const [outcome1, version1] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      meta: {
+        lastUpdated: new Date(Date.now() - 1000 * 60).toISOString()
+      }
+    });
+    expect(isOk(outcome1)).toBe(true);
+    expect(version1).not.toBeUndefined();
+    expect(version1?.id).not.toBeUndefined();
+
+    const [outcome2, version2] = await repo.updateResource<Patient>({
+      resourceType: 'Patient',
+      id: version1?.id,
+      active: true,
+      meta: {
+        lastUpdated: new Date().toISOString()
+      }
+    });
+    expect(isOk(outcome2)).toBe(true);
+    expect(version2).not.toBeUndefined();
+    expect(version2?.id).toEqual(version1?.id);
+    expect(version2?.meta?.versionId).not.toEqual(version1?.meta?.versionId);
+
+    const [outcome3, history] = await repo.readHistory('Patient', version1?.id);
+    expect(isOk(outcome3)).toBe(true);
+    expect(history).not.toBeUndefined();
+    expect(history.entry?.length).toBe(2);
+    expect(history.entry?.[0]?.resource?.id).toBe(version2?.id);
+    expect(history.entry?.[1]?.resource?.id).toBe(version1?.id);
+  });
+
   test('Update patient', async () => {
     const [createOutcome, patient1] = await repo.createResource<Patient>({
       resourceType: 'Patient',
