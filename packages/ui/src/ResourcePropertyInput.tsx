@@ -149,7 +149,14 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
         />
       );
     case PropertyType.code:
-      return <CodeInput property={property} name={name} defaultValue={value} />;
+      return (
+        <CodeInput
+          property={property}
+          name={name}
+          defaultValue={value}
+          onChange={props.onChange}
+        />
+      );
     case PropertyType.boolean:
       return (
         <input
