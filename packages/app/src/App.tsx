@@ -20,6 +20,7 @@ import { HomePage } from './HomePage';
 import { RegisterPage } from './RegisterPage';
 import { ResetPasswordPage } from './ResetPasswordPage';
 import { ResourcePage } from './ResourcePage';
+import { ResourceVersionPage } from './ResourceVersionPage';
 import { SetPasswordPage } from './SetPasswordPage';
 import { SignInPage } from './SignInPage';
 
@@ -89,6 +90,8 @@ export function App() {
         <Route path="/admin/projects/:id" element={<ProjectPage />} />
         <Route path="/admin/projects/:id/invite" element={<InvitePage />} />
         <Route path="/admin/projects/:projectId/members/:membershipId" element={<EditMembershipPage />} />
+        <Route path="/:resourceType/:id/_history/:versionId/:tab" element={<ResourceVersionPage />} />
+        <Route path="/:resourceType/:id/_history/:versionId" element={<ResourceVersionPage />} />
         <Route path="/:resourceType/new" element={<CreateResourcePage />} />
         <Route path="/:resourceType/:id/:tab" element={<ResourcePage />} />
         <Route path="/:resourceType/:id" element={<ResourcePage />} />

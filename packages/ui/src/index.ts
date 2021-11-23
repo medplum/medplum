@@ -40,6 +40,7 @@ export * from './ResourceArrayDisplay';
 export * from './ResourceArrayInput';
 export * from './ResourceBadge';
 export * from './ResourceBlame';
+export * from './ResourceDiff';
 export * from './ResourceForm';
 export * from './ResourceHistoryTable';
 export * from './ResourceName';
