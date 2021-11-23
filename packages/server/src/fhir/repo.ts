@@ -152,6 +152,17 @@ export class Repository {
     return this.readResource(parts[0], parts[1]);
   }
 
+  /**
+   * Returns resource history.
+   *
+   * Results are sorted with oldest versions last
+   *
+   * See: https://www.hl7.org/fhir/http.html#history
+   *
+   * @param resourceType The FHIR resource type.
+   * @param id The FHIR resource ID.
+   * @returns Operation outcome and a history bundle.
+   */
   async readHistory(resourceType: string, id: string): RepositoryResult<Bundle> {
     const [resourceOutcome] = await this.readResource(resourceType, id);
     if (!isOk(resourceOutcome)) {
@@ -162,6 +173,7 @@ export class Repository {
     const rows = await new SelectQuery(resourceType + '_History')
       .column('content')
       .where('id', Operator.EQUALS, id)
+      .orderBy('lastUpdated', true)
       .limit(100)
       .execute(client);
 
