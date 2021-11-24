@@ -1,34 +1,13 @@
-import { Attachment, MedplumClient } from '@medplum/core';
+import { Attachment } from '@medplum/core';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
+import { MockClient } from './MockClient';
 import { UploadButton, UploadButtonProps } from './UploadButton';
 
-function mockFetch(url: string, options: any): Promise<any> {
-  const response: any = {
-    request: {
-      url,
-      options
-    }
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
-});
+const medplum = new MockClient({});
 
 describe('UploadButton', () => {
-
-  beforeAll(async () => {
-    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-  });
 
   const setup = (args?: UploadButtonProps) => {
     return render(

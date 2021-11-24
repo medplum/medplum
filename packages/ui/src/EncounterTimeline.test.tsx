@@ -1,17 +1,26 @@
-import { Bundle, Communication, Encounter, Media, MedplumClient } from '@medplum/core';
+import { Bundle, Communication, Encounter, Media } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { EncounterTimeline, EncounterTimelineProps } from './EncounterTimeline';
 import { MedplumProvider } from './MedplumProvider';
-
-const encounterId = randomUUID();
+import { MockClient } from './MockClient';
 
 const encounter: Encounter = {
   resourceType: 'Encounter',
-  id: encounterId
+  id: '123',
+  meta: {
+    versionId: '456'
+  }
 };
+
+const encounterHistory: Bundle = {
+  resourceType: 'Bundle',
+  entry: [{
+    resource: encounter
+  }]
+}
 
 const communications: Bundle = {
   resourceType: 'Bundle',
@@ -73,51 +82,33 @@ const newMedia: Media = {
   }
 };
 
-function mockFetch(url: string, options: any): Promise<any> {
-  const method = options.method ?? 'GET';
-  let result: any;
-
-  if (method === 'POST' && url.endsWith('/auth/login')) {
-    result = {
-      profile: 'Practitioner/123'
-    };
-  } else if (method === 'GET' && url.includes('/fhir/R4/Encounter/' + encounterId)) {
-    result = encounter;
-  } else if (method === 'GET' && url.includes('/fhir/R4/Communication?')) {
-    result = communications;
-  } else if (method === 'GET' && url.includes('/fhir/R4/Media?')) {
-    result = media;
-  } else if (method === 'POST' && url.includes('/fhir/R4/Communication')) {
-    result = newComment;
-  } else if (method === 'POST' && url.includes('/fhir/R4/Media')) {
-    result = newMedia;
-  }
-
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    ...result
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
+const medplum = new MockClient({
+  'auth/login': {
+    'POST': {
+      profile: { reference: 'Practitioner/123' }
+    }
+  },
+  'fhir/R4/Encounter/123': {
+    'GET': encounter
+  },
+  'fhir/R4/Encounter/123/_history': {
+    'GET': encounterHistory
+  },
+  'fhir/R4/Communication?_count=100&encounter=Encounter/123': {
+    'GET': communications
+  },
+  'fhir/R4/Media?_count=100&encounter=Encounter/123': {
+    'GET': media
+  },
+  'fhir/R4/Communication': {
+    'POST': newComment
+  },
+  'fhir/R4/Media': {
+    'POST': newMedia
+  },
 });
 
 describe('EncounterTimeline', () => {
-
-  beforeAll(async () => {
-    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-  });
 
   const setup = (args: EncounterTimelineProps) => {
     return render(
@@ -130,7 +121,7 @@ describe('EncounterTimeline', () => {
   };
 
   test('Renders reference', async () => {
-    setup({ encounter: { reference: 'Encounter/' + encounterId } });
+    setup({ encounter: { reference: 'Encounter/' + encounter.id } });
 
     await act(async () => {
       await waitFor(() => screen.getAllByTestId('timeline-item'));
@@ -138,7 +129,7 @@ describe('EncounterTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).not.toBeUndefined();
-    expect(items.length).toEqual(2);
+    expect(items.length).toEqual(3);
   });
 
   test('Renders resource', async () => {
@@ -150,7 +141,7 @@ describe('EncounterTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).not.toBeUndefined();
-    expect(items.length).toEqual(2);
+    expect(items.length).toEqual(3);
   });
 
   test('Create comment', async () => {
@@ -178,7 +169,7 @@ describe('EncounterTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).not.toBeUndefined();
-    expect(items.length).toEqual(3);
+    expect(items.length).toEqual(4);
   });
 
   test('Upload media', async () => {
@@ -204,7 +195,7 @@ describe('EncounterTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).not.toBeUndefined();
-    expect(items.length).toEqual(3);
+    expect(items.length).toEqual(4);
   });
 
 });

@@ -1,12 +1,13 @@
-import { assertOk, badRequest, getReferenceString, Login } from '@medplum/core';
+import { assertOk, badRequest, Reference, User } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
 import { getConfig } from '../config';
 import { MEDPLUM_CLIENT_APPLICATION_ID } from '../constants';
-import { invalidRequest, sendOutcome } from '../fhir';
-import { finalizeLogin, GoogleCredentialClaims, tryLogin } from '../oauth';
+import { invalidRequest, repo, sendOutcome } from '../fhir';
+import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
+import { getUserProfiles, GoogleCredentialClaims, tryLogin } from '../oauth';
 
 /*
  * Integrating Google Sign-In into your web app
@@ -66,17 +67,17 @@ export async function googleHandler(req: Request, res: Response) {
     email: claims.email,
     googleCredentials: claims,
     scope: 'openid',
-    role: 'practitioner',
     nonce: randomUUID(),
     remember: true
   });
   assertOk(loginOutcome);
 
-  const loginDetails = await finalizeLogin(login as Login);
+  const profiles = await getUserProfiles(login?.user as Reference<User>);
 
-  return res.status(200).json({
-    ...loginDetails.tokens,
-    project: loginDetails.project && getReferenceString(loginDetails.project),
-    profile: loginDetails.profile && getReferenceString(loginDetails.profile)
-  });
+  // Safe to rewrite attachments,
+  // because we know that these are all resources that the user has access to
+  return res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, {
+    login: login?.id,
+    profiles
+  }));
 }

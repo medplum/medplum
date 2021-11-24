@@ -40,7 +40,7 @@ function mockFetch(url: string, options: any): Promise<any> {
   if (method === 'POST' && url.endsWith('/auth/login')) {
     result = {
       user,
-      profile: 'Practitioner/123'
+      profile: { reference: 'Practitioner/123' }
     };
   } else if (method === 'GET' && url.endsWith('/fhir/R4/Practitioner/123')) {
     result = practitioner;

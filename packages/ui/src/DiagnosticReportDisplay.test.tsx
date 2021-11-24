@@ -1,10 +1,11 @@
-import { DiagnosticReport, MedplumClient, Observation } from '@medplum/core';
+import { DiagnosticReport, Observation } from '@medplum/core';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { act } from 'react-dom/test-utils';
 import { MemoryRouter } from 'react-router-dom';
 import { DiagnosticReportDisplay, DiagnosticReportDisplayProps } from './DiagnosticReportDisplay';
 import { MedplumProvider } from './MedplumProvider';
+import { MockClient } from './MockClient';
 
 const diagnosticReport: DiagnosticReport = {
   resourceType: 'DiagnosticReport',
@@ -104,51 +105,36 @@ const observation6: Observation = {
   ]
 };
 
-function mockFetch(url: string, options: any): Promise<any> {
-  let result = {};
-
-
-  if (url.endsWith('/DiagnosticReport/123')) {
-    result = diagnosticReport;
-  } else if (url.endsWith('/Observation/1')) {
-    result = observation1;
-  } else if (url.endsWith('/Observation/2')) {
-    result = observation2;
-  } else if (url.endsWith('/Observation/3')) {
-    result = observation3;
-  } else if (url.endsWith('/Observation/4')) {
-    result = observation4;
-  } else if (url.endsWith('/Observation/5')) {
-    result = observation5;
-  } else if (url.endsWith('/Observation/6')) {
-    result = observation6;
-  }
-
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    ...result
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
+const medplum = new MockClient({
+  'auth/login': {
+    'POST': {
+      profile: { reference: 'Practitioner/123' }
+    }
+  },
+  'fhir/R4/DiagnosticReport/123': {
+    'GET': diagnosticReport
+  },
+  'fhir/R4/Observation/1': {
+    'GET': observation1
+  },
+  'fhir/R4/Observation/2': {
+    'GET': observation2
+  },
+  'fhir/R4/Observation/3': {
+    'GET': observation3
+  },
+  'fhir/R4/Observation/4': {
+    'GET': observation4
+  },
+  'fhir/R4/Observation/5': {
+    'GET': observation5
+  },
+  'fhir/R4/Observation/6': {
+    'GET': observation6
+  },
 });
 
 describe('DiagnosticReportDisplay', () => {
-
-  beforeAll(async () => {
-    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-  });
 
   const setup = (args: DiagnosticReportDisplayProps) => {
     return render(

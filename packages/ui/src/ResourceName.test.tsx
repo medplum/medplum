@@ -1,46 +1,35 @@
-import { MedplumClient, Patient } from '@medplum/core';
+import { Patient } from '@medplum/core';
 import { render, waitFor } from '@testing-library/react';
-import { randomUUID } from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
+import { MockClient } from './MockClient';
 import { ResourceName, ResourceNameProps } from './ResourceName';
 
 const patient: Patient = {
   resourceType: 'Patient',
-  id: randomUUID(),
+  id: '123',
+  meta: {
+    versionId: '456'
+  },
   name: [{
     given: ['Alice'],
     family: 'Smith'
   }]
 };
 
-function mockFetch(url: string, options: any): Promise<any> {
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    ...patient
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
+const medplum = new MockClient({
+  'auth/login': {
+    'POST': {
+      profile: { reference: 'Practitioner/123' }
+    }
+  },
+  'fhir/R4/Patient/123': {
+    'GET': patient
+  },
 });
 
 describe('ResourceName', () => {
-
-  beforeAll(async () => {
-    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-  });
 
   const setup = (args: ResourceNameProps) => {
     return render(

@@ -411,7 +411,7 @@ export class Repository {
           }
         }
       }
-    } else if (this.context.project !== undefined && this.context.project !== MEDPLUM_PROJECT_ID) {
+    } else if (this.context.project !== undefined && this.context.project !== MEDPLUM_PROJECT_ID && !this.context.admin) {
       compartmentIds.push(this.context.project);
     }
 

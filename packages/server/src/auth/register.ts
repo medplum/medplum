@@ -1,4 +1,4 @@
-import { assertOk, badRequest, BundleEntry, ClientApplication, createReference, getReferenceString, Login, Operator, ProfileResource, Project, User } from '@medplum/core';
+import { assertOk, badRequest, BundleEntry, ClientApplication, createReference, Login, Operator, ProfileResource, Project, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
@@ -47,14 +47,12 @@ export async function registerHandler(req: Request, res: Response) {
 
   const result = await registerNew(req.body as RegisterRequest);
   const scope = req.body.scope ?? 'launch/patient openid fhirUser offline_access user/*.*';
-  const role = req.body.role ?? 'practitioner';
   const [loginOutcome, login] = await tryLogin({
     authMethod: 'password',
     clientId: MEDPLUM_CLIENT_APPLICATION_ID,
     email: email,
     password: password,
     scope: scope,
-    role: role,
     nonce: randomUUID(),
     remember: true
   });
@@ -65,8 +63,8 @@ export async function registerHandler(req: Request, res: Response) {
 
   return res.status(200).json({
     ...token,
-    project: result.project && getReferenceString(result.project),
-    profile: result.profile && getReferenceString(result.profile)
+    project: result.project && createReference(result.project),
+    profile: result.profile && createReference(result.profile)
   });
 }
 

@@ -4,6 +4,7 @@ import {
   DefaultTheme,
   FooterLinks,
   Header,
+  Loading,
   useMedplum,
   useMedplumProfile
 } from '@medplum/ui';
@@ -28,6 +29,17 @@ export function App() {
   const navigate = useNavigate();
   const medplum = useMedplum();
   const profile = useMedplumProfile();
+
+  if (medplum.isLoading()) {
+    return (
+      <>
+        <CssBaseline />
+        <DefaultTheme />
+        <Loading />
+      </>
+    );
+  }
+
   return (
     <>
       <CssBaseline />

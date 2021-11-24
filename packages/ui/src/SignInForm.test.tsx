@@ -14,7 +14,7 @@ function mockFetch(url: string, options: any): Promise<any> {
     if (email === 'admin@medplum.com' && password === 'admin') {
       status = 301;
       result = {
-        profile: 'Practitioner/123'
+        profile: { reference: 'Practitioner/123' }
       };
     } else if (email !== 'admin@medplum.com') {
       result = {

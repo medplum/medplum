@@ -1,43 +1,32 @@
-import { MedplumClient, Patient } from '@medplum/core';
+import { Patient } from '@medplum/core';
 import { render, waitFor } from '@testing-library/react';
-import { randomUUID } from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
+import { MockClient } from './MockClient';
 import { ResourceBadge, ResourceBadgeProps } from './ResourceBadge';
 
 const patient: Patient = {
   resourceType: 'Patient',
-  id: randomUUID(),
+  id: '123',
+  meta: {
+    versionId: '456'
+  },
   name: [{
     given: ['Alice'],
     family: 'Smith'
   }]
 };
 
-function mockFetch(url: string, options: any): Promise<any> {
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    ...patient
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
-});
-
-beforeAll(async () => {
-  await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
+const medplum = new MockClient({
+  'auth/login': {
+    'POST': {
+      profile: { reference: 'Practitioner/123' }
+    }
+  },
+  'fhir/R4/Patient/123': {
+    'GET': patient
+  },
 });
 
 const setup = (args: ResourceBadgeProps) => {

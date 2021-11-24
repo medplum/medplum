@@ -1,14 +1,10 @@
-import { Bundle, MedplumClient, Patient } from '@medplum/core';
+import { Bundle, Patient } from '@medplum/core';
 import { render } from '@testing-library/react';
-import { randomUUID } from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
+import { MockClient } from './MockClient';
 import { ResourceBlame, ResourceBlameProps } from './ResourceBlame';
-
-const patientId = randomUUID();
-const version1Id = randomUUID();
-const version2Id = randomUUID();
 
 const historyBundle: Bundle = {
   resourceType: 'Bundle',
@@ -16,10 +12,10 @@ const historyBundle: Bundle = {
     {
       resource: {
         resourceType: 'Patient',
-        id: patientId,
+        id: '123',
         meta: {
           lastUpdated: new Date().toISOString(),
-          versionId: version1Id,
+          versionId: '2',
           author: {
             reference: 'Practitioner/123'
           }
@@ -33,10 +29,10 @@ const historyBundle: Bundle = {
     {
       resource: {
         resourceType: 'Patient',
-        id: patientId,
+        id: '123',
         meta: {
           lastUpdated: new Date().toISOString(),
-          versionId: version2Id,
+          versionId: '1',
           author: {
             reference: 'Practitioner/456'
           }
@@ -51,32 +47,13 @@ const historyBundle: Bundle = {
   ]
 }
 
-function mockFetch(url: string, options: any): Promise<any> {
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    ...historyBundle
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
+const medplum = new MockClient({
+  'fhir/R4/Patient/123/_history': {
+    'GET': historyBundle
+  }
 });
 
 describe('ResourceBlame', () => {
-
-  beforeAll(async () => {
-    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-  });
 
   const setup = (args: ResourceBlameProps) => {
     return render(
@@ -91,7 +68,7 @@ describe('ResourceBlame', () => {
   test('ResourceBlame renders', async () => {
     const utils = setup({
       resourceType: 'Patient',
-      id: patientId
+      id: '123'
     });
 
     const el = await utils.findByText('Loading...');
@@ -103,7 +80,7 @@ describe('ResourceBlame', () => {
       history: historyBundle
     });
 
-    const el = await utils.findAllByText(version1Id);
+    const el = await utils.findAllByText('1');
     expect(el).not.toBeUndefined();
     expect(el.length).not.toBe(0);
   });
@@ -111,10 +88,10 @@ describe('ResourceBlame', () => {
   test('ResourceBlame renders after loading the resource', async () => {
     const utils = setup({
       resourceType: 'Patient',
-      id: patientId
+      id: '123'
     });
 
-    const el = await utils.findAllByText(version1Id);
+    const el = await utils.findAllByText('1');
     expect(el).not.toBeUndefined();
     expect(el.length).not.toBe(0);
   });

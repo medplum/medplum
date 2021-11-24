@@ -1,16 +1,15 @@
-import { assertOk, getReferenceString, Login } from '@medplum/core';
+import { assertOk, Reference, User } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { invalidRequest, sendOutcome } from '../fhir';
-import { finalizeLogin, tryLogin } from '../oauth';
+import { invalidRequest, repo, sendOutcome } from '../fhir';
+import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
+import { getUserProfiles, tryLogin } from '../oauth';
 
 export const loginValidators = [
-  body('clientId').exists().withMessage('Missing clientId'),
+  body('clientId').notEmpty().withMessage('Missing clientId'),
   body('email').isEmail().withMessage('Valid email address is required'),
   body('password').isLength({ min: 5 }).withMessage('Invalid password, must be at least 5 characters'),
-  body('scope').notEmpty().withMessage('Missing scope'),
-  body('role').notEmpty().withMessage('Missing role'),
 ];
 
 export async function loginHandler(req: Request, res: Response) {
@@ -22,19 +21,22 @@ export async function loginHandler(req: Request, res: Response) {
   const [loginOutcome, login] = await tryLogin({
     authMethod: 'password',
     clientId: req.body.clientId,
+    scope: req.body.scope,
+    codeChallenge: req.body.codeChallenge,
+    codeChallengeMethod: req.body.codeChallengeMethod,
     email: req.body.email,
     password: req.body.password,
-    scope: req.body.scope,
-    role: req.body.role,
     nonce: randomUUID(),
     remember: true
   });
   assertOk(loginOutcome);
 
-  const loginDetails = await finalizeLogin(login as Login);
-  return res.status(200).json({
-    ...loginDetails.tokens,
-    project: loginDetails.project && getReferenceString(loginDetails.project),
-    profile: loginDetails.profile && getReferenceString(loginDetails.profile)
-  });
+  const profiles = await getUserProfiles(login?.user as Reference<User>);
+
+  // Safe to rewrite attachments,
+  // because we know that these are all resources that the user has access to
+  return res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, {
+    login: login?.id,
+    profiles
+  }));
 }

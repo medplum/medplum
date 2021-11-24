@@ -1,9 +1,10 @@
-import { ElementDefinition, MedplumClient, ValueSet } from '@medplum/core';
+import { ElementDefinition, ValueSet } from '@medplum/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { act } from 'react-dom/test-utils';
 import { CodingInput } from './CodingInput';
 import { MedplumProvider } from './MedplumProvider';
+import { MockClient } from './MockClient';
 
 const statusProperty: ElementDefinition = {
   binding: {
@@ -22,38 +23,13 @@ const valueSet: ValueSet = {
   }
 };
 
-function mockFetch(url: string, options: any): Promise<any> {
-  let result: any;
-
-  if (url.endsWith('/fhir/R4/ValueSet/%24expand?url=https%3A%2F%2Fexample.com%2Ftest&filter=xyz')) {
-    result = valueSet;
+const medplum = new MockClient({
+  'fhir/R4/ValueSet/%24expand?url=https%3A%2F%2Fexample.com%2Ftest&filter=xyz': {
+    'GET': valueSet
   }
-
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    ...result
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
 });
 
 describe('CodingInput', () => {
-
-  beforeAll(async () => {
-    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-  });
 
   beforeEach(() => {
     jest.useFakeTimers();
