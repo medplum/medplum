@@ -19,6 +19,23 @@ function mockFetch(url: string, options: any): Promise<any> {
         login: '1',
         code: '1'
       };
+    } else if (email === 'multiple@medplum.com' && password === 'admin') {
+      status = 200;
+      result = {
+        login: '2',
+        profiles: [
+          {
+            resourceType: 'Practitioner',
+            id: '123',
+            name: [{ given: ['Alice'], family: 'Smith' }]
+          },
+          {
+            resourceType: 'Practitioner',
+            id: '234',
+            name: [{ given: ['Bob'], family: 'Jones' }]
+          }
+        ]
+      };
     } else if (email !== 'admin@medplum.com') {
       result = {
         resourceType: 'OperationOutcome',
@@ -40,6 +57,13 @@ function mockFetch(url: string, options: any): Promise<any> {
         }]
       };
     }
+
+  } else if (options.method === 'POST' && url.endsWith('auth/profile')) {
+    result = {
+      login: '1',
+      code: '1'
+    };
+
   } else if (options.method === 'GET' && url.endsWith('Practitioner/123')) {
     status = 200;
     result = {
@@ -162,6 +186,38 @@ describe('SignInForm', () => {
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
 
     expect(medplum.getProfile()).not.toBeUndefined();
+  });
+
+  test('Submit success multiple profiles', async () => {
+    let success = false;
+
+    setup({
+      onSuccess: () => success = true
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('email'), { target: { value: 'multiple@medplum.com' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('password'), { target: { value: 'admin' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('submit'));
+    });
+
+    await waitFor(() => expect(screen.getByText('Choose profile')).toBeDefined());
+    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+    expect(screen.getByText('Bob Jones')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Alice Smith'));
+    });
+
+    await waitFor(() => expect(medplum.getProfile()).toBeDefined());
+
+    expect(success).toBe(true);
   });
 
   test('User not found', async () => {

@@ -1,10 +1,10 @@
-import { assertOk, Reference, User } from '@medplum/core';
+import { assertOk, Login } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { invalidRequest, repo, sendOutcome } from '../fhir';
-import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-import { getUserProfiles, tryLogin } from '../oauth';
+import { invalidRequest, sendOutcome } from '../fhir';
+import { tryLogin } from '../oauth';
+import { sendLoginResult } from './utils';
 
 export const loginValidators = [
   body('clientId').notEmpty().withMessage('Missing clientId'),
@@ -12,10 +12,11 @@ export const loginValidators = [
   body('password').isLength({ min: 5 }).withMessage('Invalid password, must be at least 5 characters'),
 ];
 
-export async function loginHandler(req: Request, res: Response) {
+export async function loginHandler(req: Request, res: Response): Promise<void> {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return sendOutcome(res, invalidRequest(errors));
+    sendOutcome(res, invalidRequest(errors));
+    return;
   }
 
   const [loginOutcome, login] = await tryLogin({
@@ -30,22 +31,5 @@ export async function loginHandler(req: Request, res: Response) {
     remember: true
   });
   assertOk(loginOutcome);
-
-  if (!login?.profile) {
-    // User has multiple profiles, so the user needs to select
-    // Safe to rewrite attachments,
-    // because we know that these are all resources that the user has access to
-    const profiles = await getUserProfiles(login?.user as Reference<User>);
-    return res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, {
-      login: login?.id,
-      profiles
-    }));
-
-  } else {
-    // User only has one profile, so proceed
-    return res.status(200).json({
-      login: login?.id,
-      code: login?.code
-    });
-  }
+  await sendLoginResult(res, login as Login);
 }
