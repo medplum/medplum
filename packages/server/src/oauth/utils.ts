@@ -1,4 +1,4 @@
-import { allOk, assertOk, badRequest, BundleEntry, ClientApplication, createReference, getDateProperty, isNotFound, isOk, Login, notFound, OperationOutcome, Operator, ProfileResource, ProjectMembership, Reference, User } from '@medplum/core';
+import { allOk, assertOk, badRequest, BundleEntry, ClientApplication, createReference, getDateProperty, isNotFound, isOk, Login, notFound, OperationOutcome, Operator, ProfileResource, Project, ProjectMembership, Reference, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
 import { JWTPayload } from 'jose';
 import { repo, RepositoryResult } from '../fhir';
@@ -82,6 +82,17 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
 
   const refreshSecret = request.remember ? generateSecret(48) : undefined;
 
+  // Try to get user memberships
+  // If they only have one membership, set it now
+  // Otherwise the application will need to prompt the user
+  const memberships = await getUserMemberships(createReference(user));
+  let project: Reference<Project> | undefined = undefined;
+  let profile: Reference<ProfileResource> | undefined = undefined;
+  if (memberships.length === 1) {
+    project = memberships[0].project;
+    profile = memberships[0].profile;
+  }
+
   return repo.createResource<Login>({
     resourceType: 'Login',
     client: createReference(client as ClientApplication),
@@ -94,7 +105,9 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     nonce: request.nonce,
     codeChallenge: request.codeChallenge,
     codeChallengeMethod: request.codeChallengeMethod,
-    admin: user.admin
+    admin: user.admin,
+    project,
+    profile,
   });
 }
 
@@ -163,15 +176,11 @@ async function authenticate(request: LoginRequest, user: User): Promise<Operatio
   return badRequest('Invalid authentication method');
 }
 
-/**
- * Returns a list of profiles that the user has access to.
- * When a user logs in, gather all the available profiles.
- * If there is only one profile, then automatically select it.
- * Otherwise, the user must select a profile.
- * @param user Reference to the user.
- * @returns Array of profile resources that the user has access to.
- */
-export async function getUserProfiles(user: Reference<User>): Promise<ProfileResource[]> {
+export async function getUserMemberships(user: Reference<User>): Promise<ProjectMembership[]> {
+  if (!user?.reference) {
+    throw new Error('User reference is missing');
+  }
+
   const [membershipsOutcome, memberships] = await repo.search<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [{
@@ -181,11 +190,26 @@ export async function getUserProfiles(user: Reference<User>): Promise<ProfileRes
     }]
   });
   assertOk(membershipsOutcome);
+  return (memberships?.entry as BundleEntry<ProjectMembership>[]).map(entry => entry.resource as ProjectMembership);
+}
 
+/**
+ * Returns a list of profiles that the user has access to.
+ * When a user logs in, gather all the available profiles.
+ * If there is only one profile, then automatically select it.
+ * Otherwise, the user must select a profile.
+ * @param user Reference to the user.
+ * @returns Array of profile resources that the user has access to.
+ */
+export async function getUserProfiles(user: Reference<User>): Promise<ProfileResource[]> {
+  if (!user?.reference) {
+    throw new Error('User reference is missing');
+  }
+
+  const memberships = await getUserMemberships(user);
   const profiles = [] as ProfileResource[];
 
-  for (const entry of (memberships?.entry as BundleEntry<ProjectMembership>[])) {
-    const membership = entry.resource as ProjectMembership;
+  for (const membership of memberships) {
     const [profileOutcome, profile] = await repo.readReference<ProfileResource>(membership.profile as Reference<ProfileResource>);
     assertOk(profileOutcome);
     profiles.push(profile as ProfileResource);

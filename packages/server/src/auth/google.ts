@@ -4,10 +4,10 @@ import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
 import { getConfig } from '../config';
-import { MEDPLUM_CLIENT_APPLICATION_ID } from '../constants';
 import { invalidRequest, repo, sendOutcome } from '../fhir';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { getUserProfiles, GoogleCredentialClaims, tryLogin } from '../oauth';
+import { getDefaultClientApplication } from '../seed';
 
 /*
  * Integrating Google Sign-In into your web app
@@ -61,9 +61,10 @@ export async function googleHandler(req: Request, res: Response) {
 
   const result = await jwtVerify(googleJwt, JWKS, verifyOptions);
   const claims = result.payload as GoogleCredentialClaims;
+  const client = getDefaultClientApplication();
   const [loginOutcome, login] = await tryLogin({
     authMethod: 'google',
-    clientId: MEDPLUM_CLIENT_APPLICATION_ID,
+    clientId: client.id as string,
     email: claims.email,
     googleCredentials: claims,
     scope: 'openid',
@@ -72,12 +73,21 @@ export async function googleHandler(req: Request, res: Response) {
   });
   assertOk(loginOutcome);
 
-  const profiles = await getUserProfiles(login?.user as Reference<User>);
+  if (!login?.profile) {
+    // User has multiple profiles, so the user needs to select
+    const profiles = await getUserProfiles(login?.user as Reference<User>);
+    // Safe to rewrite attachments,
+    // because we know that these are all resources that the user has access to
+    return res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, {
+      login: login?.id,
+      profiles
+    }));
 
-  // Safe to rewrite attachments,
-  // because we know that these are all resources that the user has access to
-  return res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, {
-    login: login?.id,
-    profiles
-  }));
+  } else {
+    // User only has one profile, so proceed
+    return res.status(200).json({
+      login: login?.id,
+      code: login?.code
+    });
+  }
 }

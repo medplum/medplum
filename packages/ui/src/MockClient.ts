@@ -9,7 +9,12 @@ export class MockClient extends MedplumClient {
       fetch: (url: string, options: any) => {
         const method = options.method;
         const path = url.replace('https://example.com/', '');
-        const result = routes[path]?.[method] as any;
+
+        let result = routes[path]?.[method] as any;
+        if (typeof result === 'function') {
+          result = result(options.body);
+        }
+
         const response: any = {
           request: {
             url,

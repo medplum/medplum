@@ -1,35 +1,13 @@
-import { MedplumClient, Patient } from '@medplum/core';
-import { MedplumProvider } from '@medplum/ui';
+import { Patient } from '@medplum/core';
+import { MedplumProvider, MockClient } from '@medplum/ui';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { PatientHeader } from './PatientHeader';
 
-function mockFetch(url: string, options: any): Promise<any> {
-  const response: any = {
-    request: {
-      url,
-      options
-    }
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
-});
+const medplum = new MockClient({});
 
 describe('PatientHeader', () => {
-
-  beforeAll(async () => {
-    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-  });
 
   const setup = (patient: Patient) => {
     return render(

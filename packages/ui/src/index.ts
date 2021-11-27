@@ -30,6 +30,7 @@ export * from './Logo';
 export * from './MedplumLink';
 export * from './MedplumProvider';
 export * from './MenuItem';
+export * from './MockClient';
 export * from './PatientTimeline';
 export * from './Popup';
 export * from './QuestionnaireBuilder';

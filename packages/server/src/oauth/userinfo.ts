@@ -14,7 +14,6 @@ export const userInfoHandler: RequestHandler = asyncWrap(async (req: Request, re
 
   const [outcome, resource] = await repo.readReference({ reference: res.locals.profile });
   if (!isOk(outcome) || !resource) {
-    console.log('Error reading profile', outcome);
     res.sendStatus(500);
     return;
   }

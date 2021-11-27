@@ -1,60 +1,23 @@
-import { MedplumClient } from '@medplum/core';
-import { MedplumProvider } from '@medplum/ui';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { allOk } from '@medplum/core';
+import { MedplumProvider, MockClient } from '@medplum/ui';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import crypto from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { TextEncoder } from 'util';
 import { RegisterPage } from './RegisterPage';
 
-function mockFetch(url: string, options: any): Promise<any> {
-  let status = 404;
-  let result: any;
-
-  if (options.method === 'POST' && url.endsWith('/auth/login')) {
-    const { email, password } = JSON.parse(options.body);
-    if (email === 'admin@medplum.com' && password === 'admin') {
-      status = 301;
-      result = {};
-    } else if (email !== 'admin@medplum.com') {
-      result = {
-        resourceType: 'OperationOutcome',
-        issue: [{
-          expression: ['email'],
-          details: {
-            text: 'User not found'
-          }
-        }]
-      };
-    } else {
-      result = {
-        resourceType: 'OperationOutcome',
-        issue: [{
-          expression: ['password'],
-          details: {
-            text: 'Incorrect password'
-          }
-        }]
-      };
+const medplum = new MockClient({
+  'auth/register': {
+    'POST': (body: string) => {
+      const { email, password } = JSON.parse(body);
+      if (email === 'george@example.com' && password === 'password') {
+        return allOk;
+      } else {
+        return undefined;
+      }
     }
   }
-
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    status,
-    ...result
-  };
-
-  return Promise.resolve({
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
 });
 
 const setup = () => {
@@ -68,6 +31,16 @@ const setup = () => {
 };
 
 describe('RegisterPage', () => {
+
+  beforeAll(() => {
+    Object.defineProperty(global, 'TextEncoder', {
+      value: TextEncoder
+    });
+
+    Object.defineProperty(global.self, 'crypto', {
+      value: crypto.webcrypto
+    });
+  });
 
   test('Renders', () => {
     const utils = setup();
@@ -88,6 +61,8 @@ describe('RegisterPage', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('submit'));
     });
+
+    await waitFor(async () => expect(screen.getByTestId('success')).toBeInTheDocument());
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
   });

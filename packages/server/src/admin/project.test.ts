@@ -62,10 +62,10 @@ describe('Project Admin routes', () => {
     expect(res.status).toBe(200);
     expect(res.body.project).not.toBeUndefined();
 
-    const projectId = res.body.project.replace('Project/', '');
+    const projectId = res.body.project.reference.replace('Project/', '');
 
     const res2 = await request(app)
-      .get('/admin/projects/' + res.body.project.replace('Project/', ''))
+      .get('/admin/projects/' + res.body.project.reference.replace('Project/', ''))
       .set('Authorization', 'Bearer ' + res.body.accessToken);
 
     expect(res2.status).toBe(200);
@@ -118,7 +118,7 @@ describe('Project Admin routes', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.project).not.toBeUndefined();
 
-    const projectId = res.body.project.replace('Project/', '');
+    const projectId = res.body.project.reference.replace('Project/', '');
 
     // Try to access Alice's project using Alices's access token
     // Should succeed

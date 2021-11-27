@@ -1,60 +1,21 @@
-import { MedplumClient } from '@medplum/core';
-import { MedplumProvider } from '@medplum/ui';
+import { allOk } from '@medplum/core';
+import { MedplumProvider, MockClient } from '@medplum/ui';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { ResetPasswordPage } from './ResetPasswordPage';
 
-function mockFetch(url: string, options: any): Promise<any> {
-  let status = 404;
-  let result: any;
-
-  if (options.method === 'POST' && url.endsWith('/auth/login')) {
-    const { email, password } = JSON.parse(options.body);
-    if (email === 'admin@medplum.com' && password === 'admin') {
-      status = 301;
-      result = {};
-    } else if (email !== 'admin@medplum.com') {
-      result = {
-        resourceType: 'OperationOutcome',
-        issue: [{
-          expression: ['email'],
-          details: {
-            text: 'User not found'
-          }
-        }]
-      };
-    } else {
-      result = {
-        resourceType: 'OperationOutcome',
-        issue: [{
-          expression: ['password'],
-          details: {
-            text: 'Incorrect password'
-          }
-        }]
-      };
+const medplum = new MockClient({
+  'auth/resetpassword': {
+    'POST': (body: string) => {
+      const { email } = JSON.parse(body);
+      if (email === 'admin@medplum.com') {
+        return allOk;
+      } else {
+        return undefined;
+      }
     }
   }
-
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    status,
-    ...result
-  };
-
-  return Promise.resolve({
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
 });
 
 const setup = () => {

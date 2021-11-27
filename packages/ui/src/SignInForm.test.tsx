@@ -1,7 +1,9 @@
 import { MedplumClient } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import crypto from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { TextEncoder } from 'util';
 import { MedplumProvider } from './MedplumProvider';
 import { SignInForm, SignInFormProps } from './SignInForm';
 
@@ -14,7 +16,8 @@ function mockFetch(url: string, options: any): Promise<any> {
     if (email === 'admin@medplum.com' && password === 'admin') {
       status = 301;
       result = {
-        profile: { reference: 'Practitioner/123' }
+        login: '1',
+        code: '1'
       };
     } else if (email !== 'admin@medplum.com') {
       result = {
@@ -44,6 +47,21 @@ function mockFetch(url: string, options: any): Promise<any> {
       id: '123',
       name: [{ given: ['Medplum'], family: ['Admin'] }],
     };
+
+  } else if (options.method === 'POST' && url.endsWith('/oauth2/token')) {
+    status = 200;
+    result = {
+      access_token: 'header.' + window.btoa(JSON.stringify({ client_id: 'my-client-id' })) + '.signature',
+      refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: 'my-client-id' })) + '.signature',
+      expires_in: 1,
+      token_type: 'Bearer',
+      scope: 'openid',
+      project: { reference: 'Project/123' },
+      profile: { reference: 'Practitioner/123' }
+    };
+
+  } else {
+    console.log(options.method, url);
   }
 
   const response: any = {
@@ -56,6 +74,7 @@ function mockFetch(url: string, options: any): Promise<any> {
   };
 
   return Promise.resolve({
+    ok: status < 400,
     json: () => Promise.resolve(response)
   });
 }
@@ -84,6 +103,16 @@ const setup = (args?: SignInFormProps) => {
 
 describe('SignInForm', () => {
 
+  beforeAll(() => {
+    Object.defineProperty(global, 'TextEncoder', {
+      value: TextEncoder
+    });
+
+    Object.defineProperty(global.self, 'crypto', {
+      value: crypto.webcrypto
+    });
+  });
+
   test('Renders', () => {
     const utils = setup();
     const input = utils.getByTestId('submit') as HTMLButtonElement;
@@ -109,6 +138,8 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByTestId('submit'));
     });
 
+    await waitFor(() => expect(medplum.getProfile()).toBeDefined());
+
     expect(success).toBe(true);
   });
 
@@ -127,6 +158,8 @@ describe('SignInForm', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('submit'));
     });
+
+    await waitFor(() => expect(medplum.getProfile()).toBeDefined());
 
     expect(medplum.getProfile()).not.toBeUndefined();
   });
@@ -166,6 +199,10 @@ describe('SignInForm', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('submit'));
+    });
+
+    await act(async () => {
+      await waitFor(() => expect(screen.getByTestId('text-field-error')).toBeInTheDocument());
     });
 
     expect(screen.getByTestId('text-field-error')).toBeInTheDocument();

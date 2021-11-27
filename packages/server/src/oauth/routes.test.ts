@@ -1,11 +1,10 @@
-import { ClientApplication, isOk } from '@medplum/core';
+import { ClientApplication } from '@medplum/core';
 import express from 'express';
 import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
-import { MEDPLUM_PROJECT_ID } from '../constants';
 import { closeDatabase, initDatabase } from '../database';
-import { repo } from '../fhir';
+import { getDefaultClientApplication, seedDatabase } from '../seed';
 import { initKeys } from './keys';
 
 const app = express();
@@ -16,23 +15,10 @@ describe('OAuth Routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
+    await seedDatabase();
     await initApp(app);
     await initKeys(config);
-
-    const [outcome, result] = await repo.createResource({
-      resourceType: 'ClientApplication',
-      meta: {
-        project: MEDPLUM_PROJECT_ID
-      },
-      secret: 'big-long-string',
-      redirectUri: 'https://example.com'
-    } as ClientApplication);
-
-    if (!isOk(outcome) || !result) {
-      throw new Error('Error creating application');
-    }
-
-    client = result;
+    client = getDefaultClientApplication();
   });
 
   afterAll(async () => {

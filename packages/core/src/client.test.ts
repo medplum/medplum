@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID } from 'crypto';
+import crypto, { randomUUID } from 'crypto';
 import { TextEncoder } from 'util';
 import { MedplumClient } from './client';
 import { Bundle, SearchParameter, StructureDefinition } from './fhir';
@@ -147,6 +147,16 @@ function mockFetch(url: string, options: any): Promise<any> {
 
 describe('Client', () => {
 
+  beforeAll(() => {
+    Object.defineProperty(global, 'TextEncoder', {
+      value: TextEncoder
+    });
+
+    Object.defineProperty(global.self, 'crypto', {
+      value: crypto.webcrypto
+    });
+  });
+
   test('Constructor', () => {
     expect(() => new MedplumClient({
       clientId: '',
@@ -209,19 +219,6 @@ describe('Client', () => {
   });
 
   test('SignInWithRedirect', async () => {
-    // Mock window.crypto
-    Object.defineProperty(global.self, 'crypto', {
-      value: {
-        getRandomValues: (arr: Uint8Array) => randomBytes(arr.length),
-        subtle: {
-          digest: () => 'test'
-        }
-      }
-    });
-
-    // Mock TextEncoder
-    global.TextEncoder = TextEncoder;
-
     // Mock window.location.assign
     global.window = Object.create(window);
     Object.defineProperty(window, 'location', {

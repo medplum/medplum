@@ -1,9 +1,7 @@
 import { ClientApplication, isOk } from '@medplum/core';
 import { loadTestConfig } from '../config';
-import { MEDPLUM_PROJECT_ID } from '../constants';
 import { closeDatabase, initDatabase } from '../database';
-import { repo } from '../fhir';
-import { seedDatabase } from '../seed';
+import { getDefaultClientApplication, seedDatabase } from '../seed';
 import { initKeys } from './keys';
 import { tryLogin, validateLoginRequest } from './utils';
 
@@ -16,21 +14,7 @@ describe('OAuth utils', () => {
     await initDatabase(config.database);
     await seedDatabase();
     await initKeys(config);
-
-    const [outcome, result] = await repo.createResource({
-      resourceType: 'ClientApplication',
-      meta: {
-        project: MEDPLUM_PROJECT_ID
-      },
-      secret: 'big-long-string',
-      redirectUri: 'https://example.com'
-    } as ClientApplication);
-
-    if (!isOk(outcome) || !result) {
-      throw new Error('Error creating application');
-    }
-
-    client = result;
+    client = getDefaultClientApplication();
   });
 
   afterAll(async () => {
@@ -43,7 +27,6 @@ describe('OAuth utils', () => {
       authMethod: 'password',
       email: 'admin@medplum.com',
       password: 'admin',
-      role: 'practitioner',
       scope: 'openid',
       nonce: 'nonce',
       remember: false
@@ -59,7 +42,6 @@ describe('OAuth utils', () => {
       authMethod: 'password',
       email: '',
       password: 'admin',
-      role: 'practitioner',
       scope: 'openid',
       nonce: 'nonce',
       remember: false
@@ -75,23 +57,6 @@ describe('OAuth utils', () => {
       authMethod: 'password',
       email: 'admin@medplum.com',
       password: '',
-      role: 'practitioner',
-      scope: 'openid',
-      nonce: 'nonce',
-      remember: false
-    });
-
-    expect(isOk(outcome)).toBe(false);
-    expect(login).toBeUndefined();
-  });
-
-  test('Login with missing role', async () => {
-    const [outcome, login] = await tryLogin({
-      clientId: client.id as string,
-      authMethod: 'password',
-      email: 'admin@medplum.com',
-      password: 'admin',
-      role: '' as 'practitioner',
       scope: 'openid',
       nonce: 'nonce',
       remember: false
@@ -107,7 +72,6 @@ describe('OAuth utils', () => {
       authMethod: 'password',
       email: 'admin@medplum.com',
       password: 'admin',
-      role: 'practitioner',
       scope: 'openid',
       nonce: 'nonce',
       remember: false
@@ -123,7 +87,6 @@ describe('OAuth utils', () => {
       authMethod: 'password',
       email: 'admin@medplum.com',
       password: 'admin',
-      role: 'practitioner',
       scope: 'openid',
       nonce: 'nonce',
       remember: false
@@ -140,7 +103,6 @@ describe('OAuth utils', () => {
       authMethod: 'password',
       email: 'admin@medplum.com',
       password: 'admin',
-      role: 'practitioner',
       scope: 'openid',
       nonce: 'nonce',
       remember: false,
@@ -153,7 +115,6 @@ describe('OAuth utils', () => {
       authMethod: 'password',
       email: 'admin@medplum.com',
       password: 'admin',
-      role: 'practitioner',
       scope: 'openid',
       nonce: 'nonce',
       remember: false,
@@ -166,7 +127,6 @@ describe('OAuth utils', () => {
       authMethod: 'password',
       email: 'admin@medplum.com',
       password: 'admin',
-      role: 'practitioner',
       scope: 'openid',
       nonce: 'nonce',
       remember: false,
@@ -180,7 +140,6 @@ describe('OAuth utils', () => {
       authMethod: 'password',
       email: 'admin@medplum.com',
       password: 'admin',
-      role: 'practitioner',
       scope: 'openid',
       nonce: 'nonce',
       remember: false,
@@ -194,7 +153,6 @@ describe('OAuth utils', () => {
       authMethod: 'password',
       email: 'admin@medplum.com',
       password: 'admin',
-      role: 'practitioner',
       scope: 'openid',
       nonce: 'nonce',
       remember: false,

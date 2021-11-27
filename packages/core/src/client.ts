@@ -319,7 +319,6 @@ export class MedplumClient extends EventTarget {
   readReference<T extends Resource>(reference: Reference<T>): Promise<T> {
     const refString = reference?.reference;
     if (!refString) {
-      console.log('CODY readReference missing', reference)
       return Promise.reject('Missing reference');
     }
     const [resourceType, id] = refString.split('/');
@@ -329,7 +328,6 @@ export class MedplumClient extends EventTarget {
   readCachedReference<T extends Resource>(reference: Reference<T>): Promise<T> {
     const refString = reference?.reference;
     if (!refString) {
-      console.log('CODY readCachedReference missing', reference)
       return Promise.reject('Missing reference');
     }
     const [resourceType, id] = refString.split('/');
@@ -690,7 +688,6 @@ export class MedplumClient extends EventTarget {
    * @param tokens
    */
   private async verifyTokens(tokens: TokenResponse): Promise<void> {
-    console.log('verifyTokens', tokens);
     const token = tokens.access_token;
 
     // Verify token has not expired
@@ -705,8 +702,6 @@ export class MedplumClient extends EventTarget {
       this.clear();
       return Promise.reject('Token was not issued for this audience');
     }
-
-    console.log('verifyTokens', tokenPayload);
 
     await this.setActiveLogin({
       accessToken: token,

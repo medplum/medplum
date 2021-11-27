@@ -1,10 +1,10 @@
-import { assertOk, ClientApplication, createReference, isOk, Login } from '@medplum/core';
-import { MEDPLUM_PROJECT_ID } from './constants';
+import { createReference, isOk, Login } from '@medplum/core';
 import { repo } from './fhir';
 import { generateAccessToken } from './oauth';
+import { getDefaultClientApplication } from './seed';
 
 export async function initTestAuth() {
-  const client = await initTestClientApplication();
+  const client = getDefaultClientApplication();
   const scope = 'openid';
 
   const [loginOutcome, login] = await repo.createResource<Login>({
@@ -27,17 +27,4 @@ export async function initTestAuth() {
     profile: client.resourceType + '/' + client.id,
     scope
   });
-}
-
-export async function initTestClientApplication(): Promise<ClientApplication> {
-  const [outcome, result] = await repo.createResource<ClientApplication>({
-    resourceType: 'ClientApplication',
-    meta: {
-      project: MEDPLUM_PROJECT_ID
-    },
-    secret: 'big-long-string',
-    redirectUri: 'https://example.com'
-  } as ClientApplication);
-  assertOk(outcome);
-  return result as ClientApplication;
 }

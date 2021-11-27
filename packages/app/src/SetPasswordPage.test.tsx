@@ -1,50 +1,29 @@
-import { allOk, MedplumClient } from '@medplum/core';
-import { MedplumProvider } from '@medplum/ui';
+import { allOk } from '@medplum/core';
+import { MedplumProvider, MockClient } from '@medplum/ui';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { SetPasswordPage } from './SetPasswordPage';
 
-function mockFetch(url: string, options: any): Promise<any> {
-  let status = 404;
-  let result: any;
-
-  if (options.method === 'POST' && url.endsWith('/auth/setpassword')) {
-    const { password } = JSON.parse(options.body);
-    if (password === 'orange') {
-      status = 200;
-      result = allOk;
-    } else {
-      result = {
-        resourceType: 'OperationOutcome',
-        issue: [{
-          expression: ['password'],
-          details: {
-            text: 'Incorrect password'
-          }
-        }]
-      };
-    }
-  }
-
-  const response: any = {
-    request: {
-      url,
-      options
+const medplum = new MockClient({
+  'auth/setpassword': {
+    'POST': (body: string) => {
+      const { password } = JSON.parse(body);
+      if (password === 'orange') {
+        return allOk;
+      } else {
+        return {
+          resourceType: 'OperationOutcome',
+          issue: [{
+            expression: ['password'],
+            details: {
+              text: 'Incorrect password'
+            }
+          }]
+        };
+      }
     },
-    status,
-    ...result
-  };
-
-  return Promise.resolve({
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
+  }
 });
 
 function setup(url: string) {

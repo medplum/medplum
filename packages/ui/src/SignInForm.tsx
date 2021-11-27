@@ -25,14 +25,24 @@ export function SignInForm(props: SignInFormProps) {
   const [login, setLogin] = useState<string | undefined>(undefined);
   const [profiles, setProfiles] = useState<ProfileResource[] | undefined>(undefined);
 
-  function setCode(code: string): void {
-    medplum.processCode(code)
-      .then(() => {
-        if (props.onSuccess) {
-          props.onSuccess();
-        }
-      })
-      .catch(console.log);
+  function handleAuthResponse(response: any): void {
+    if (response.login) {
+      setLogin(response.login);
+    }
+
+    if (response.profiles) {
+      setProfiles(response.profiles);
+    }
+
+    if (response.code) {
+      medplum.processCode(response.code)
+        .then(() => {
+          if (props.onSuccess) {
+            props.onSuccess();
+          }
+        })
+        .catch(console.log);
+    }
   }
 
   return (
@@ -44,8 +54,7 @@ export function SignInForm(props: SignInFormProps) {
               googleClientId={props.googleClientId}
               onForgotPassword={props.onForgotPassword}
               onRegister={props.onRegister}
-              setLogin={setLogin}
-              setProfiles={setProfiles}
+              handleAuthResponse={handleAuthResponse}
             />
           );
         } else if (profiles) {
@@ -53,7 +62,7 @@ export function SignInForm(props: SignInFormProps) {
             <ProfileForm
               login={login}
               profiles={profiles}
-              setCode={setCode}
+              handleAuthResponse={handleAuthResponse}
             />
           );
         } else {
@@ -70,8 +79,7 @@ interface AuthenticationFormProps {
   googleClientId?: string;
   onForgotPassword?: () => void;
   onRegister?: () => void;
-  setLogin: (login: string) => void;
-  setProfiles: (profiles: ProfileResource[]) => void;
+  handleAuthResponse: (response: any) => void;
 }
 
 function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
@@ -80,10 +88,7 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
   return (
     <Form style={{ maxWidth: 400 }} onSubmit={(formData: Record<string, string>) => {
       medplum.startLogin(formData.email, formData.password)
-        .then((response: any) => {
-          props.setLogin(response.login as string);
-          props.setProfiles(response.profiles as ProfileResource[]);
-        })
+        .then(props.handleAuthResponse)
         .catch((err: any) => {
           if (err.outcome) {
             setOutcome(err.outcome);
@@ -123,11 +128,12 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
               client_id: props.googleClientId,
               callback: (response: GoogleCredentialResponse) => {
                 medplum.startGoogleLogin(response)
-                  .then((response: any) => {
-                    props.setLogin(response.login as string);
-                    props.setProfiles(response.profiles as ProfileResource[]);
-                  })
-                  .catch(setOutcome);
+                  .then(props.handleAuthResponse)
+                  .catch((err: any) => {
+                    if (err.outcome) {
+                      setOutcome(err.outcome);
+                    }
+                  });
               }
             });
             google.accounts.id.prompt();
@@ -151,7 +157,7 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
 interface ProfileFormProps {
   login: string;
   profiles: ProfileResource[];
-  setCode: (code: string) => void;
+  handleAuthResponse: (response: any) => void;
 }
 
 function ProfileForm(props: ProfileFormProps): JSX.Element {
@@ -164,9 +170,7 @@ function ProfileForm(props: ProfileFormProps): JSX.Element {
           key={profile.id}
           onClick={() => {
             medplum.post('auth/profile', { login: props.login, profile: getReferenceString(profile) })
-              .then((response: any) => {
-                props.setCode(response.code);
-              });
+              .then(props.handleAuthResponse);
           }}
         ><ResourceBadge value={profile} /></div>
       ))}

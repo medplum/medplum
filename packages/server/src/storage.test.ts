@@ -7,6 +7,7 @@ import { initApp } from './app';
 import { loadTestConfig } from './config';
 import { closeDatabase, initDatabase } from './database';
 import { getBinaryStorage, initBinaryStorage, repo } from './fhir';
+import { seedDatabase } from './seed';
 
 const app = express();
 const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
@@ -17,6 +18,7 @@ describe('Storage Routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
+    await seedDatabase();
     await initApp(app);
     await initBinaryStorage('file:' + binaryDir);
 

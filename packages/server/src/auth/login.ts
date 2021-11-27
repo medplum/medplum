@@ -31,12 +31,21 @@ export async function loginHandler(req: Request, res: Response) {
   });
   assertOk(loginOutcome);
 
-  const profiles = await getUserProfiles(login?.user as Reference<User>);
+  if (!login?.profile) {
+    // User has multiple profiles, so the user needs to select
+    // Safe to rewrite attachments,
+    // because we know that these are all resources that the user has access to
+    const profiles = await getUserProfiles(login?.user as Reference<User>);
+    return res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, {
+      login: login?.id,
+      profiles
+    }));
 
-  // Safe to rewrite attachments,
-  // because we know that these are all resources that the user has access to
-  return res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, {
-    login: login?.id,
-    profiles
-  }));
+  } else {
+    // User only has one profile, so proceed
+    return res.status(200).json({
+      login: login?.id,
+      code: login?.code
+    });
+  }
 }

@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { Repository } from '.';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
+import { seedDatabase } from '../seed';
 import { processBatch } from './batch';
 import { repo } from './repo';
 
@@ -11,6 +12,7 @@ describe('Batch', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
+    await seedDatabase();
   });
 
   afterAll(async () => {

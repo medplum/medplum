@@ -7,6 +7,7 @@ describe('Seed', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
+    await seedDatabase();
   });
 
   afterAll(async () => {

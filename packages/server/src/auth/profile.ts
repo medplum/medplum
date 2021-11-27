@@ -17,6 +17,10 @@ export async function profileHandler(req: Request, res: Response) {
   const [loginOutcome, login] = await repo.readResource<Login>('Login', req.body.login);
   assertOk(loginOutcome);
 
+  // TODO: Validate that login is not granted or revoked
+  // TODO: Validate that profile is not set
+  // TODO: Validate that project is not set
+
   const [membershipsOutcome, memberships] = await repo.search<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [{
@@ -49,22 +53,13 @@ export async function profileHandler(req: Request, res: Response) {
   assertOk(profileOutcome);
 
   // Update the login
-  const [updateOutcome, updatedLogin] = await repo.updateResource({
+  const [updateOutcome] = await repo.updateResource({
     ...(login as Login),
-    // project: membership.project,
-    // profile: membership.profile,
     project: createReference(project as Project),
     profile: createReference(profile as ProfileResource),
     accessPolicy: membership.accessPolicy,
   });
   assertOk(updateOutcome);
-
-  console.log('Login...');
-  console.log(JSON.stringify(updatedLogin, null, 2));
-  console.log('Project...');
-  console.log(JSON.stringify(project, null, 2));
-  console.log('Profile...');
-  console.log(JSON.stringify(profile, null, 2));
 
   return res.status(200).json({
     login: login?.id,
