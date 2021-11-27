@@ -4,7 +4,7 @@
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
-import { Binary, Bundle, Project, Reference, Resource, SearchParameter, StructureDefinition, Subscription, ValueSet } from './fhir';
+import { Binary, Bundle, Project, ProjectMembership, Reference, Resource, SearchParameter, StructureDefinition, Subscription, ValueSet } from './fhir';
 import { parseJWTPayload } from './jwt';
 import { isOk, OperationOutcomeError } from './outcomes';
 import { formatSearchQuery, Operator, SearchRequest } from './search';
@@ -96,7 +96,8 @@ export interface GoogleCredentialResponse {
 
 export interface LoginAuthenticationResponse {
   readonly login: string;
-  readonly profiles: ProfileResource[];
+  readonly code?: string;
+  readonly memberships?: ProjectMembership[];
 }
 
 export interface LoginProfileResponse {

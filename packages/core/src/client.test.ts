@@ -54,19 +54,19 @@ function mockFetch(url: string, options: any): Promise<any> {
   if (method === 'POST' && url.endsWith('auth/login')) {
     result = {
       login: '123',
-      profiles: [{ resourceType: 'Practitioner', id: '123' }]
+      code: '123',
     };
 
   } else if (method === 'POST' && url.endsWith('auth/google')) {
     result = {
       login: '123',
-      profiles: [{ resourceType: 'Practitioner', id: '123' }]
+      code: '123',
     };
 
   } else if (method === 'POST' && url.endsWith('auth/register')) {
     result = {
       login: '123',
-      profiles: [{ resourceType: 'Practitioner', id: '123' }]
+      code: '123',
     };
 
   } else if (method === 'GET' && url.endsWith('Practitioner/123')) {
@@ -199,13 +199,10 @@ describe('Client', () => {
 
   test('SignIn direct', async () => {
     const client = new MedplumClient(defaultOptions);
-    // const result = await client.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
     const result1 = await client.startLogin('admin@medplum.com', 'admin');
     expect(result1).not.toBeUndefined();
     expect(result1.login).not.toBeUndefined();
-
-    // const result2 = await client.post('auth/profiles', {});
-    // expect(result2).not.toBeUndefined();
+    expect(result1.code).not.toBeUndefined();
   });
 
   test('Sign in with Google', async () => {
@@ -280,7 +277,6 @@ describe('Client', () => {
     tokenExpired = true;
 
     const client = new MedplumClient(defaultOptions);
-    // await client.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
     await client.startLogin('admin@medplum.com', 'admin');
 
     const result = await client.get('expired');
@@ -293,7 +289,6 @@ describe('Client', () => {
 
     const onUnauthenticated = jest.fn();
     const client = new MedplumClient({ ...defaultOptions, onUnauthenticated });
-    // await client.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
     await client.startLogin('admin@medplum.com', 'admin');
 
     const result = client.get('expired');
