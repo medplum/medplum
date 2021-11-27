@@ -91,11 +91,6 @@ export function Header(props: HeaderProps) {
                         setUserMenuVisible(false);
                         window.location.reload();
                       }}>
-                        {/* <div>{getDisplayString(login.profile)}</div>
-                        <div>Project: {getDisplayString(login.project)}</div> */}
-                        {/* <div>{login.profile?.display}</div>
-                        <div>{login.project?.display}</div> */}
-
                         <div className="medplum-nav-menu-profile-icon">
                           <Avatar />
                         </div>

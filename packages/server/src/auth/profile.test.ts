@@ -202,17 +202,17 @@ describe('Profile', () => {
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
     expect(res1.body.code).toBeUndefined();
-    expect(res1.body.profiles).toBeDefined();
-    expect(res1.body.profiles.length).toBe(2);
-    expect(res1.body.profiles.find(p => p.id === profile1.id)).toBeDefined();
-    expect(res1.body.profiles.find(p => p.id === profile2.id)).toBeDefined();
+    expect(res1.body.memberships).toBeDefined();
+    expect(res1.body.memberships.length).toBe(2);
+    expect(res1.body.memberships.find(p => p.profile.reference === getReferenceString(profile1))).toBeDefined();
+    expect(res1.body.memberships.find(p => p.profile.reference === getReferenceString(profile2))).toBeDefined();
 
     const res2 = await request(app)
       .post('/auth/profile')
       .type('json')
       .send({
         login: res1.body.login,
-        profile: `Practitioner/${randomUUID()}`
+        profile: randomUUID(),
       });
     expect(res2.status).toBe(400);
     expect(res2.body.issue).not.toBeUndefined();
@@ -232,17 +232,17 @@ describe('Profile', () => {
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
     expect(res1.body.code).toBeUndefined();
-    expect(res1.body.profiles).toBeDefined();
-    expect(res1.body.profiles.length).toBe(2);
-    expect(res1.body.profiles.find(p => p.id === profile1.id)).toBeDefined();
-    expect(res1.body.profiles.find(p => p.id === profile2.id)).toBeDefined();
+    expect(res1.body.memberships).toBeDefined();
+    expect(res1.body.memberships.length).toBe(2);
+    expect(res1.body.memberships.find(p => p.profile.reference === getReferenceString(profile1))).toBeDefined();
+    expect(res1.body.memberships.find(p => p.profile.reference === getReferenceString(profile2))).toBeDefined();
 
     const res2 = await request(app)
       .post('/auth/profile')
       .type('json')
       .send({
         login: res1.body.login,
-        profile: getReferenceString(profile1)
+        profile: res1.body.memberships[0].id
       });
     expect(res2.status).toBe(200);
     expect(res2.body.code).toBeDefined();

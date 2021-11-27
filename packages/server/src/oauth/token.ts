@@ -244,7 +244,9 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
     expires_in: 3600,
     id_token: token.idToken,
     access_token: token.accessToken,
-    refresh_token: token.refreshToken
+    refresh_token: token.refreshToken,
+    project: login.project,
+    profile: login.profile,
   });
 }
 

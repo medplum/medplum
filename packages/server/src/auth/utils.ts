@@ -3,7 +3,7 @@ import { Response } from 'express';
 import { repo } from '../fhir';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { logger } from '../logger';
-import { getUserProfiles } from '../oauth';
+import { getUserMemberships } from '../oauth';
 
 export interface NewAccountRequest {
   firstName: string;
@@ -69,10 +69,16 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
     // User has multiple profiles, so the user needs to select
     // Safe to rewrite attachments,
     // because we know that these are all resources that the user has access to
-    const profiles = await getUserProfiles(login?.user as Reference<User>);
+    // const profiles = await getUserProfiles(login?.user as Reference<User>);
+    const memberships = await getUserMemberships(login?.user as Reference<User>);
+    const redactedMemberships = memberships.map(m => ({
+      id: m.id,
+      project: m.project,
+      profile: m.profile,
+    }));
     res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, {
       login: login?.id,
-      profiles
+      memberships: redactedMemberships
     }));
 
   } else {

@@ -1,4 +1,4 @@
-import { assertOk, badRequest, createReference, Login, ProfileResource, Project, ProjectMembership, Reference, User } from '@medplum/core';
+import { assertOk, badRequest, createReference, Login, ProfileResource, Project, Reference, User } from '@medplum/core';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { invalidRequest, repo, sendOutcome } from '../fhir';
@@ -32,14 +32,7 @@ export async function profileHandler(req: Request, res: Response) {
 
   // Find the membership for the user
   const memberships = await getUserMemberships(login?.user as Reference<User>);
-  let membership: ProjectMembership | undefined = undefined;
-  for (const m of memberships) {
-    if (m.profile?.reference === req.body.profile) {
-      membership = m;
-      break;
-    }
-  }
-
+  const membership = memberships.find(m => m.id === req.body.profile);
   if (!membership) {
     return sendOutcome(res, badRequest('Profile not found'));
   }

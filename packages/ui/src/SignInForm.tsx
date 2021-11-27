@@ -1,5 +1,6 @@
-import { getReferenceString, GoogleCredentialResponse, OperationOutcome, ProfileResource } from '@medplum/core';
+import { GoogleCredentialResponse, OperationOutcome, ProjectMembership } from '@medplum/core';
 import React, { useState } from 'react';
+import { Avatar } from '.';
 import { Button } from './Button';
 import { Document } from './Document';
 import { Form } from './Form';
@@ -7,7 +8,6 @@ import { FormSection } from './FormSection';
 import { Logo } from './Logo';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
-import { ResourceBadge } from './ResourceBadge';
 import { TextField } from './TextField';
 import './SignInForm.css';
 
@@ -23,15 +23,15 @@ export interface SignInFormProps {
 export function SignInForm(props: SignInFormProps) {
   const medplum = useMedplum();
   const [login, setLogin] = useState<string | undefined>(undefined);
-  const [profiles, setProfiles] = useState<ProfileResource[] | undefined>(undefined);
+  const [memberships, setMemberships] = useState<ProjectMembership[] | undefined>(undefined);
 
   function handleAuthResponse(response: any): void {
     if (response.login) {
       setLogin(response.login);
     }
 
-    if (response.profiles) {
-      setProfiles(response.profiles);
+    if (response.memberships) {
+      setMemberships(response.memberships);
     }
 
     if (response.code) {
@@ -57,11 +57,11 @@ export function SignInForm(props: SignInFormProps) {
               handleAuthResponse={handleAuthResponse}
             />
           );
-        } else if (profiles) {
+        } else if (memberships) {
           return (
             <ProfileForm
               login={login}
-              profiles={profiles}
+              memberships={memberships}
               handleAuthResponse={handleAuthResponse}
             />
           );
@@ -155,7 +155,7 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
 
 interface ProfileFormProps {
   login: string;
-  profiles: ProfileResource[];
+  memberships: ProjectMembership[];
   handleAuthResponse: (response: any) => void;
 }
 
@@ -163,15 +163,29 @@ function ProfileForm(props: ProfileFormProps): JSX.Element {
   const medplum = useMedplum();
   return (
     <div>
-      <h1>Choose profile</h1>
-      {props.profiles.map((profile: ProfileResource) => (
+      <div className="center">
+        <Logo size={32} />
+        <h1>Choose profile</h1>
+      </div>
+      {props.memberships.map((membership: ProjectMembership) => (
         <div
-          key={profile.id}
+          className="medplum-nav-menu-profile"
+          key={membership.id}
           onClick={() => {
-            medplum.post('auth/profile', { login: props.login, profile: getReferenceString(profile) })
+            medplum.post('auth/profile', { login: props.login, profile: membership.id })
               .then(props.handleAuthResponse);
           }}
-        ><ResourceBadge value={profile} /></div>
+        >
+          <div className="medplum-nav-menu-profile-icon">
+            <Avatar alt={membership.profile?.display} />
+          </div>
+          <div className="medplum-nav-menu-profile-label">
+            {membership.profile?.display}
+            <div className="medplum-nav-menu-profile-help-text">
+              {membership.project?.display}
+            </div>
+          </div>
+        </div>
       ))}
     </div>
   );

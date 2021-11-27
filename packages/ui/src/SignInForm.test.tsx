@@ -23,16 +23,28 @@ function mockFetch(url: string, options: any): Promise<any> {
       status = 200;
       result = {
         login: '2',
-        profiles: [
+        memberships: [
           {
-            resourceType: 'Practitioner',
-            id: '123',
-            name: [{ given: ['Alice'], family: 'Smith' }]
+            id: '100',
+            profile: {
+              reference: 'Practitioner/123',
+              display: 'Alice Smith'
+            },
+            project: {
+              reference: 'Project/1',
+              display: 'Project 1'
+            },
           },
           {
-            resourceType: 'Practitioner',
-            id: '234',
-            name: [{ given: ['Bob'], family: 'Jones' }]
+            id: '101',
+            profile: {
+              reference: 'Practitioner/234',
+              display: 'Bob Jones'
+            },
+            project: {
+              reference: 'Project/2',
+              display: 'Project 2'
+            },
           }
         ]
       };

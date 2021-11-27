@@ -1,4 +1,4 @@
-import { assertOk, Bundle, BundleEntry, ClientApplication, createReference, getReferenceString, isOk, OperationOutcomeError, Operator, Project, SearchParameter, User } from '@medplum/core';
+import { assertOk, Bundle, BundleEntry, ClientApplication, createReference, getReferenceString, Operator, Project, SearchParameter, User } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { registerNew } from './auth/register';
 import { getConfig } from './config';
@@ -149,11 +149,7 @@ async function createPublicProject(owner: User): Promise<void> {
     name: 'Public',
     owner: createReference(owner)
   });
-
-  if (!isOk(outcome)) {
-    throw new OperationOutcomeError(outcome);
-  }
-
+  assertOk(outcome);
   publicProject = result as Project;
   logger.info('Created: ' + (result as Project).id);
 }
@@ -172,11 +168,7 @@ async function createSearchParameters(): Promise<void> {
       ...searchParam,
       text: undefined
     });
-
-    if (!isOk(outcome)) {
-      throw new OperationOutcomeError(outcome);
-    }
-
+    assertOk(outcome);
     logger.debug('Created: ' + (result as SearchParameter).id);
   }
 }

@@ -768,7 +768,6 @@ export class Repository {
     }
 
     if (protectedResourceTypes.includes(resource.resourceType)) {
-      // return getMedplumProject().id as string;
       return undefined;
     }
 
