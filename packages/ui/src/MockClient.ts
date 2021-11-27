@@ -10,7 +10,7 @@ export class MockClient extends MedplumClient {
         const method = options.method;
         const path = url.replace('https://example.com/', '');
 
-        let result = routes[path]?.[method] as any;
+        let result = routes[path]?.[method];
         if (typeof result === 'function') {
           result = result(options.body);
         }
@@ -24,7 +24,6 @@ export class MockClient extends MedplumClient {
         };
 
         return Promise.resolve({
-          blob: () => Promise.resolve(response),
           json: () => Promise.resolve(response)
         });
       }

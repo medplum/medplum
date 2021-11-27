@@ -1,7 +1,8 @@
-import { assertOk, badRequest, BundleEntry, createReference, Login, Operator, ProfileResource, Project, ProjectMembership, Reference } from '@medplum/core';
+import { assertOk, badRequest, createReference, Login, ProfileResource, Project, ProjectMembership, Reference, User } from '@medplum/core';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { invalidRequest, repo, sendOutcome } from '../fhir';
+import { getUserMemberships } from '../oauth';
 
 export const profileValidators = [
   body('login').exists().withMessage('Missing login'),
@@ -17,24 +18,22 @@ export async function profileHandler(req: Request, res: Response) {
   const [loginOutcome, login] = await repo.readResource<Login>('Login', req.body.login);
   assertOk(loginOutcome);
 
-  // TODO: Validate that login is not granted or revoked
-  // TODO: Validate that profile is not set
-  // TODO: Validate that project is not set
+  if (login?.revoked) {
+    return sendOutcome(res, badRequest('Login revoked'));
+  }
 
-  const [membershipsOutcome, memberships] = await repo.search<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    filters: [{
-      code: 'user',
-      operator: Operator.EQUALS,
-      value: login?.user?.reference as string
-    }]
-  });
-  assertOk(membershipsOutcome);
+  if (login?.granted) {
+    return sendOutcome(res, badRequest('Login granted'));
+  }
+
+  if (login?.project || login?.profile) {
+    return sendOutcome(res, badRequest('Login profile set'));
+  }
 
   // Find the membership for the user
+  const memberships = await getUserMemberships(login?.user as Reference<User>);
   let membership: ProjectMembership | undefined = undefined;
-  for (const entry of (memberships?.entry as BundleEntry<ProjectMembership>[])) {
-    const m = entry.resource as ProjectMembership;
+  for (const m of memberships) {
     if (m.profile?.reference === req.body.profile) {
       membership = m;
       break;

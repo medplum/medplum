@@ -30,8 +30,7 @@ describe('Login', () => {
         clientId: '123',
         email: 'admin@medplum.com',
         password: 'admin',
-        scope: 'openid',
-        role: 'practitioner'
+        scope: 'openid'
       });
     expect(res.status).toBe(400);
     expect(res.body.issue).not.toBeUndefined();
@@ -46,8 +45,7 @@ describe('Login', () => {
         clientId: 'e99126bb-c748-4c00-8d28-4e88dfb88278',
         email: 'admin@medplum.com',
         password: 'admin',
-        scope: 'openid',
-        role: 'practitioner'
+        scope: 'openid'
       });
     expect(res.status).toBe(404);
     expect(res.body.issue).not.toBeUndefined();
@@ -62,8 +60,7 @@ describe('Login', () => {
         clientId: getDefaultClientApplication().id,
         email: 'admin@medplum.com',
         password: 'wrong-password',
-        scope: 'openid',
-        role: 'practitioner'
+        scope: 'openid'
       });
     expect(res.status).toBe(400);
     expect(res.body.issue).not.toBeUndefined();
@@ -78,8 +75,7 @@ describe('Login', () => {
         clientId: getDefaultClientApplication().id,
         email: 'admin@medplum.com',
         password: 'admin',
-        scope: 'openid',
-        role: 'practitioner'
+        scope: 'openid'
       });
     expect(res.status).toBe(200);
     expect(res.body.code).toBeDefined();

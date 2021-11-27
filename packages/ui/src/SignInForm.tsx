@@ -85,15 +85,18 @@ interface AuthenticationFormProps {
 function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome>();
+
+  function handleError(err: any): void {
+    if (err.outcome) {
+      setOutcome(err.outcome);
+    }
+  }
+
   return (
     <Form style={{ maxWidth: 400 }} onSubmit={(formData: Record<string, string>) => {
       medplum.startLogin(formData.email, formData.password)
         .then(props.handleAuthResponse)
-        .catch((err: any) => {
-          if (err.outcome) {
-            setOutcome(err.outcome);
-          }
-        });
+        .catch(handleError);
     }}>
       <div className="center">
         <Logo size={32} />
@@ -129,11 +132,7 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
               callback: (response: GoogleCredentialResponse) => {
                 medplum.startGoogleLogin(response)
                   .then(props.handleAuthResponse)
-                  .catch((err: any) => {
-                    if (err.outcome) {
-                      setOutcome(err.outcome);
-                    }
-                  });
+                  .catch(handleError);
               }
             });
             google.accounts.id.prompt();

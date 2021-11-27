@@ -177,7 +177,7 @@ async function authenticate(request: LoginRequest, user: User): Promise<Operatio
 }
 
 export async function getUserMemberships(user: Reference<User>): Promise<ProjectMembership[]> {
-  if (!user?.reference) {
+  if (!user.reference) {
     throw new Error('User reference is missing');
   }
 
@@ -186,7 +186,7 @@ export async function getUserMemberships(user: Reference<User>): Promise<Project
     filters: [{
       code: 'user',
       operator: Operator.EQUALS,
-      value: user?.reference as string
+      value: user.reference
     }]
   });
   assertOk(membershipsOutcome);
@@ -202,7 +202,7 @@ export async function getUserMemberships(user: Reference<User>): Promise<Project
  * @returns Array of profile resources that the user has access to.
  */
 export async function getUserProfiles(user: Reference<User>): Promise<ProfileResource[]> {
-  if (!user?.reference) {
+  if (!user.reference) {
     throw new Error('User reference is missing');
   }
 

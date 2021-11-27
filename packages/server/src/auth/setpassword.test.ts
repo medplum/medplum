@@ -81,8 +81,7 @@ describe('Set Password', () => {
         clientId: getDefaultClientApplication().id,
         email: email,
         password: 'my-new-password',
-        scope: 'openid',
-        role: 'practitioner'
+        scope: 'openid'
       });
     expect(res4.status).toBe(200);
 
