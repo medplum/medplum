@@ -53,7 +53,7 @@ async function migrate(client: PoolClient): Promise<void> {
   }
 
   const migrationKeys = Object.keys(migrations);
-  for (let i = version; i <= migrationKeys.length; i++) {
+  for (let i = version + 1; i <= migrationKeys.length; i++) {
     const migration = (migrations as Record<string, migrations.Migration>)['v' + i];
     if (migration) {
       logger.info(`Run database migration v${i}`);
