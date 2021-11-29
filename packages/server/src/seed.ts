@@ -107,7 +107,7 @@ async function findAdminProject(owner: User, name: string): Promise<Project | un
       },
       {
         code: 'name',
-        operator: Operator.EQUALS,
+        operator: Operator.EXACT,
         value: name
       }
     ]
@@ -127,7 +127,7 @@ async function findDefaultClientApplication(): Promise<ClientApplication | undef
       },
       {
         code: 'name',
-        operator: Operator.EQUALS,
+        operator: Operator.EXACT,
         value: 'Medplum Default Client'
       }
     ]
