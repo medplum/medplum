@@ -170,6 +170,9 @@ export class MedplumClient extends EventTarget {
     this.logoutUrl = options.logoutUrl || this.baseUrl + 'oauth2/logout';
     this.onUnauthenticated = options.onUnauthenticated;
     this.activeLogin = this.storage.getObject<LoginState>('activeLogin');
+    if (!this.activeLogin?.profile?.reference) {
+      this.clear();
+    }
     this.loading = false;
     this.refreshProfile().catch(console.log);
   }
@@ -203,9 +206,9 @@ export class MedplumClient extends EventTarget {
    * @param request The registration request.
    * @returns Promise to the authentication response.
    */
-  async register(request: RegisterRequest): Promise<LoginAuthenticationResponse> {
-    await this.startPkce();
-    return this.post('auth/register', request) as Promise<LoginAuthenticationResponse>;
+  async register(request: RegisterRequest): Promise<void> {
+    const response = await this.post('auth/register', request);
+    await this.setActiveLogin(response as LoginState);
   }
 
   /**
