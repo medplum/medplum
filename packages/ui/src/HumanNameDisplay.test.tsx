@@ -15,7 +15,7 @@ describe('HumanNameDisplay', () => {
       />
     );
 
-    expect(screen.getByText('Alice Smith')).not.toBeUndefined();
+    expect(screen.getByText('Alice Smith')).toBeDefined();
   });
 
   test('Renders with options', () => {
@@ -30,7 +30,7 @@ describe('HumanNameDisplay', () => {
       />
     );
 
-    expect(screen.getByText('Alice Smith [official]')).not.toBeUndefined();
+    expect(screen.getByText('Alice Smith [official]')).toBeDefined();
   });
 
   test('Handles null name', () => {

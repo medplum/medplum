@@ -205,8 +205,8 @@ describe('FHIR Repo', () => {
       }
     });
     expect(isOk(outcome1)).toBe(true);
-    expect(version1).not.toBeUndefined();
-    expect(version1?.id).not.toBeUndefined();
+    expect(version1).toBeDefined();
+    expect(version1?.id).toBeDefined();
 
     const [outcome2, version2] = await repo.updateResource<Patient>({
       resourceType: 'Patient',
@@ -217,13 +217,13 @@ describe('FHIR Repo', () => {
       }
     });
     expect(isOk(outcome2)).toBe(true);
-    expect(version2).not.toBeUndefined();
+    expect(version2).toBeDefined();
     expect(version2?.id).toEqual(version1?.id);
     expect(version2?.meta?.versionId).not.toEqual(version1?.meta?.versionId);
 
     const [outcome3, history] = await repo.readHistory('Patient', version1?.id);
     expect(isOk(outcome3)).toBe(true);
-    expect(history).not.toBeUndefined();
+    expect(history).toBeDefined();
     expect(history.entry?.length).toBe(2);
     expect(history.entry?.[0]?.resource?.id).toBe(version2?.id);
     expect(history.entry?.[1]?.resource?.id).toBe(version1?.id);
@@ -448,7 +448,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome1.id).toEqual('created');
-    expect(patient1).not.toBeUndefined();
+    expect(patient1).toBeDefined();
 
     const [outcome2, encounter1] = await repo.createResource<Encounter>({
       resourceType: 'Encounter',
@@ -460,7 +460,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome2.id).toEqual('created');
-    expect(encounter1).not.toBeUndefined();
+    expect(encounter1).toBeDefined();
 
     const [outcome3, comm1] = await repo.createResource<Communication>({
       resourceType: 'Communication',
@@ -471,7 +471,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome3.id).toEqual('created');
-    expect(comm1).not.toBeUndefined();
+    expect(comm1).toBeDefined();
 
     const [outcome4, patient2] = await repo.createResource<Patient>({
       resourceType: 'Patient',
@@ -479,7 +479,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome4.id).toEqual('created');
-    expect(patient2).not.toBeUndefined();
+    expect(patient2).toBeDefined();
 
     const [outcome5, encounter2] = await repo.createResource<Encounter>({
       resourceType: 'Encounter',
@@ -491,7 +491,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome5.id).toEqual('created');
-    expect(encounter2).not.toBeUndefined();
+    expect(encounter2).toBeDefined();
 
     const [outcome6, comm2] = await repo.createResource<Communication>({
       resourceType: 'Communication',
@@ -502,7 +502,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome6.id).toEqual('created');
-    expect(comm2).not.toBeUndefined();
+    expect(comm2).toBeDefined();
 
     const [searchOutcome, searchResult] = await repo.search({
       resourceType: 'Communication',
@@ -525,7 +525,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome1.id).toEqual('created');
-    expect(patient1).not.toBeUndefined();
+    expect(patient1).toBeDefined();
 
     const [outcome2, serviceRequest1] = await repo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
@@ -536,7 +536,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome2.id).toEqual('created');
-    expect(serviceRequest1).not.toBeUndefined();
+    expect(serviceRequest1).toBeDefined();
 
     const [outcome3, comm1] = await repo.createResource<Communication>({
       resourceType: 'Communication',
@@ -547,7 +547,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome3.id).toEqual('created');
-    expect(comm1).not.toBeUndefined();
+    expect(comm1).toBeDefined();
 
     const [outcome4, patient2] = await repo.createResource<Patient>({
       resourceType: 'Patient',
@@ -555,7 +555,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome4.id).toEqual('created');
-    expect(patient2).not.toBeUndefined();
+    expect(patient2).toBeDefined();
 
     const [outcome5, serviceRequest2] = await repo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
@@ -566,7 +566,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome5.id).toEqual('created');
-    expect(serviceRequest2).not.toBeUndefined();
+    expect(serviceRequest2).toBeDefined();
 
     const [outcome6, comm2] = await repo.createResource<Communication>({
       resourceType: 'Communication',
@@ -577,7 +577,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome6.id).toEqual('created');
-    expect(comm2).not.toBeUndefined();
+    expect(comm2).toBeDefined();
 
     const [searchOutcome, searchResult] = await repo.search({
       resourceType: 'Communication',
@@ -605,8 +605,8 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome.id).toEqual('ok');
-    expect(bundle?.entry?.find(e => (e.resource as SearchParameter).code === 'name')).not.toBeUndefined();
-    expect(bundle?.entry?.find(e => (e.resource as SearchParameter).code === 'email')).not.toBeUndefined();
+    expect(bundle?.entry?.find(e => (e.resource as SearchParameter).code === 'name')).toBeDefined();
+    expect(bundle?.entry?.find(e => (e.resource as SearchParameter).code === 'email')).toBeDefined();
   });
 
   test('Search sort by Patient.id', async () => {
@@ -616,7 +616,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome.id).toEqual('ok');
-    expect(bundle).not.toBeUndefined();
+    expect(bundle).toBeDefined();
   });
 
   test('Search sort by Patient.meta.lastUpdated', async () => {
@@ -626,7 +626,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome.id).toEqual('ok');
-    expect(bundle).not.toBeUndefined();
+    expect(bundle).toBeDefined();
   });
 
   test('Search sort by Patient.identifier', async () => {
@@ -636,7 +636,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome.id).toEqual('ok');
-    expect(bundle).not.toBeUndefined();
+    expect(bundle).toBeDefined();
   });
 
   test('Search sort by Patient.name', async () => {
@@ -646,7 +646,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome.id).toEqual('ok');
-    expect(bundle).not.toBeUndefined();
+    expect(bundle).toBeDefined();
   });
 
   test('Search sort by Patient.given', async () => {
@@ -656,7 +656,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome.id).toEqual('ok');
-    expect(bundle).not.toBeUndefined();
+    expect(bundle).toBeDefined();
   });
 
   test('Search sort by Patient.address', async () => {
@@ -666,7 +666,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome.id).toEqual('ok');
-    expect(bundle).not.toBeUndefined();
+    expect(bundle).toBeDefined();
   });
 
   test('Search sort by Patient.telecom', async () => {
@@ -676,7 +676,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome.id).toEqual('ok');
-    expect(bundle).not.toBeUndefined();
+    expect(bundle).toBeDefined();
   });
 
   test('Search sort by Patient.email', async () => {
@@ -686,7 +686,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome.id).toEqual('ok');
-    expect(bundle).not.toBeUndefined();
+    expect(bundle).toBeDefined();
   });
 
   test('Search sort by Patient.birthDate', async () => {
@@ -696,7 +696,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(outcome.id).toEqual('ok');
-    expect(bundle).not.toBeUndefined();
+    expect(bundle).toBeDefined();
   });
 
   test('Filter and sort on same search parameter', async () => {
@@ -725,7 +725,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(isOk(createOutcome)).toBe(true);
-    expect(createBundle).not.toBeUndefined();
+    expect(createBundle).toBeDefined();
 
     const [searchOutcome, bundle] = await repo.search({
       resourceType: 'Patient',
@@ -734,7 +734,7 @@ describe('FHIR Repo', () => {
     });
 
     expect(isOk(searchOutcome)).toBe(true);
-    expect(bundle?.entry).not.toBeUndefined();
+    expect(bundle?.entry).toBeDefined();
     expect(bundle?.entry?.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -748,7 +748,7 @@ describe('FHIR Repo', () => {
     };
 
     const result1 = await registerNew(registration1);
-    expect(result1.profile).not.toBeUndefined();
+    expect(result1.profile).toBeDefined();
 
     const [loginOutcome1, login1] = await tryLogin({
       authMethod: 'password',
@@ -761,7 +761,7 @@ describe('FHIR Repo', () => {
     });
 
     assertOk(loginOutcome1);
-    expect(login1).not.toBeUndefined();
+    expect(login1).toBeDefined();
 
     const repo1 = await getRepoForLogin(login1 as Login);
     const [patientOutcome1, patient1] = await repo1.createResource<Patient>({
@@ -769,12 +769,12 @@ describe('FHIR Repo', () => {
     });
 
     assertOk(patientOutcome1);
-    expect(patient1).not.toBeUndefined();
-    expect(patient1?.id).not.toBeUndefined();
+    expect(patient1).toBeDefined();
+    expect(patient1?.id).toBeDefined();
 
     const [patientOutcome2, patient2] = await repo1.readResource('Patient', patient1?.id as string);
     assertOk(patientOutcome2);
-    expect(patient2).not.toBeUndefined();
+    expect(patient2).toBeDefined();
     expect(patient2?.id).toEqual(patient1?.id);
 
     const registration2: RegisterRequest = {
@@ -786,7 +786,7 @@ describe('FHIR Repo', () => {
     };
 
     const result2 = await registerNew(registration2);
-    expect(result2.profile).not.toBeUndefined();
+    expect(result2.profile).toBeDefined();
 
     const [loginOutcome2, login2] = await tryLogin({
       authMethod: 'password',
@@ -799,7 +799,7 @@ describe('FHIR Repo', () => {
     });
 
     assertOk(loginOutcome2);
-    expect(login2).not.toBeUndefined();
+    expect(login2).toBeDefined();
 
     const repo2 = await getRepoForLogin(login2 as Login);
     const [patientOutcome3, patient3] = await repo2.readResource('Patient', patient1?.id as string);
@@ -814,7 +814,7 @@ describe('FHIR Repo', () => {
       birthDate: '1970-01-01'
     });
     assertOk(createOutcome);
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
 
     // Empty access policy effectively blocks all reads and writes
     const accessPolicy: AccessPolicy = {
@@ -872,7 +872,7 @@ describe('FHIR Repo', () => {
       birthDate: '1970-01-01'
     });
     assertOk(createOutcome);
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
 
     const accessPolicy: AccessPolicy = {
       resourceType: 'AccessPolicy',
@@ -903,7 +903,7 @@ describe('FHIR Repo', () => {
       birthDate: '1970-01-01'
     });
     assertOk(createOutcome);
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
 
     const accessPolicy: AccessPolicy = {
       resourceType: 'AccessPolicy',
@@ -956,13 +956,13 @@ describe('FHIR Repo', () => {
       birthDate: '1970-01-01'
     });
     assertOk(createOutcome);
-    expect(patient).not.toBeUndefined();
-    expect(patient?.meta?.account).not.toBeUndefined();
+    expect(patient).toBeDefined();
+    expect(patient?.meta?.account).toBeDefined();
 
     const [readOutcome, readPatient] = await repo.readResource('Patient', patient?.id as string);
     assertOk(readOutcome);
-    expect(readPatient).not.toBeUndefined();
-    expect(readPatient?.meta?.account).not.toBeUndefined();
+    expect(readPatient).toBeDefined();
+    expect(readPatient?.meta?.account).toBeDefined();
   });
 
   test('Access policy restrict compartment', async () => {
@@ -1015,14 +1015,14 @@ describe('FHIR Repo', () => {
       birthDate: '1970-01-01'
     });
     assertOk(createOutcome1);
-    expect(patient1).not.toBeUndefined();
-    expect(patient1?.meta?.account).not.toBeUndefined();
+    expect(patient1).toBeDefined();
+    expect(patient1?.meta?.account).toBeDefined();
     expect(patient1?.meta?.account?.reference).toEqual('Organization/' + org1);
 
     const [readOutcome1, readPatient1] = await repo1.readResource('Patient', patient1?.id as string);
     assertOk(readOutcome1);
-    expect(readPatient1).not.toBeUndefined();
-    expect(readPatient1?.meta?.account).not.toBeUndefined();
+    expect(readPatient1).toBeDefined();
+    expect(readPatient1?.meta?.account).toBeDefined();
 
     const [createOutcome2, patient2] = await repo2.createResource<Patient>({
       resourceType: 'Patient',
@@ -1030,14 +1030,14 @@ describe('FHIR Repo', () => {
       birthDate: '1970-01-01'
     });
     assertOk(createOutcome2);
-    expect(patient2).not.toBeUndefined();
-    expect(patient2?.meta?.account).not.toBeUndefined();
+    expect(patient2).toBeDefined();
+    expect(patient2?.meta?.account).toBeDefined();
     expect(patient2?.meta?.account?.reference).toEqual('Organization/' + org2);
 
     const [readOutcome2, readPatient2] = await repo2.readResource('Patient', patient2?.id as string);
     assertOk(readOutcome2);
-    expect(readPatient2).not.toBeUndefined();
-    expect(readPatient2?.meta?.account).not.toBeUndefined();
+    expect(readPatient2).toBeDefined();
+    expect(readPatient2?.meta?.account).toBeDefined();
 
     // Try to read patient1 with repo2
     // This should fail
@@ -1068,7 +1068,7 @@ describe('FHIR Repo', () => {
       }
     });
     assertOk(outcome1);
-    expect(clientApplication).not.toBeUndefined();
+    expect(clientApplication).toBeDefined();
 
     // Create a repo for the ClientApplication
     // Use getRepoForLogin to generate the synthetic access policy
@@ -1087,7 +1087,7 @@ describe('FHIR Repo', () => {
       birthDate: '1975-12-12'
     });
     assertOk(outcome2);
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
 
     // The Patient should have the account value set
     expect(patient?.meta?.account?.reference).toEqual(account);
@@ -1102,7 +1102,7 @@ describe('FHIR Repo', () => {
       valueString: 'positive'
     });
     assertOk(outcome3);
-    expect(observation).not.toBeUndefined();
+    expect(observation).toBeDefined();
 
     // The Observation should have the account value set
     expect(observation?.meta?.account?.reference).toEqual(account);
@@ -1114,7 +1114,7 @@ describe('FHIR Repo', () => {
       birthDate: '1975-11-11'
     });
     assertOk(outcome4);
-    expect(patient2).not.toBeUndefined();
+    expect(patient2).toBeDefined();
 
     // The ClientApplication should not be able to access it
     const [outcome5] = await clientRepo.readResource<Patient>('Patient', patient2?.id as string);
@@ -1130,7 +1130,7 @@ describe('FHIR Repo', () => {
       valueString: 'positive'
     });
     assertOk(outcome6);
-    expect(observation2).not.toBeUndefined();
+    expect(observation2).toBeDefined();
 
     // The ClientApplication should not be able to access it
     const [outcome7] = await clientRepo.readResource<Observation>('Observation', observation2?.id as string);
@@ -1224,7 +1224,7 @@ describe('FHIR Repo', () => {
       name: [{ given: ['Alice'], family }]
     });
     assertOk(createOutcome);
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
 
     const [searchOutcome1, searchResult1] = await repo.search({
       resourceType: 'Patient',
@@ -1280,7 +1280,7 @@ describe('FHIR Repo', () => {
       }
     });
     assertOk(outcome1);
-    expect(patient1).not.toBeUndefined();
+    expect(patient1).toBeDefined();
 
     const [outcome2, patient2] = await repo.createResource<Patient>({
       resourceType: 'Patient',
@@ -1290,7 +1290,7 @@ describe('FHIR Repo', () => {
       }
     });
     assertOk(outcome2);
-    expect(patient2).not.toBeUndefined();
+    expect(patient2).toBeDefined();
 
     // Greater than (newer than) 2 seconds ago should only return patient 1
     const [searchOutcome1, searchResult1] = await repo.search({

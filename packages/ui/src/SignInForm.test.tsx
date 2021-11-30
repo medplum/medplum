@@ -197,7 +197,7 @@ describe('SignInForm', () => {
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
 
-    expect(medplum.getProfile()).not.toBeUndefined();
+    expect(medplum.getProfile()).toBeDefined();
   });
 
   test('Submit success multiple profiles', async () => {

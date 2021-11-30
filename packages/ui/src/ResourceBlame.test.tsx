@@ -72,7 +72,7 @@ describe('ResourceBlame', () => {
     });
 
     const el = await utils.findByText('Loading...');
-    expect(el).not.toBeUndefined();
+    expect(el).toBeDefined();
   });
 
   test('ResourceBlame renders preloaded history', async () => {
@@ -81,7 +81,7 @@ describe('ResourceBlame', () => {
     });
 
     const el = await utils.findAllByText('1');
-    expect(el).not.toBeUndefined();
+    expect(el).toBeDefined();
     expect(el.length).not.toBe(0);
   });
 
@@ -92,7 +92,7 @@ describe('ResourceBlame', () => {
     });
 
     const el = await utils.findAllByText('1');
-    expect(el).not.toBeUndefined();
+    expect(el).toBeDefined();
     expect(el.length).not.toBe(0);
   });
 

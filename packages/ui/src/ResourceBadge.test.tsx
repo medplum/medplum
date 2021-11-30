@@ -43,7 +43,7 @@ describe('ResourceBadge', () => {
 
   test('Renders system', () => {
     const utils = setup({ value: { reference: 'system' } });
-    expect(utils.getByText('System')).not.toBeUndefined();
+    expect(utils.getByText('System')).toBeDefined();
   });
 
   test('Renders resource directly', async () => {
@@ -53,7 +53,7 @@ describe('ResourceBadge', () => {
 
     await waitFor(() => utils.getByText('Alice Smith'));
 
-    expect(utils.getByText('Alice Smith')).not.toBeUndefined();
+    expect(utils.getByText('Alice Smith')).toBeDefined();
   });
 
   test('Renders resource directly as link', async () => {
@@ -64,7 +64,7 @@ describe('ResourceBadge', () => {
 
     await waitFor(() => utils.getByText('Alice Smith'));
 
-    expect(utils.getByText('Alice Smith')).not.toBeUndefined();
+    expect(utils.getByText('Alice Smith')).toBeDefined();
   });
 
   test('Renders after loading the resource', async () => {
@@ -76,7 +76,7 @@ describe('ResourceBadge', () => {
 
     await waitFor(() => utils.getByText('Alice Smith'));
 
-    expect(utils.getByText('Alice Smith')).not.toBeUndefined();
+    expect(utils.getByText('Alice Smith')).toBeDefined();
   });
 
 });

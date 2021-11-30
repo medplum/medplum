@@ -6,7 +6,7 @@ describe('Index', () => {
     const patient: Patient = {
       resourceType: 'Patient'
     };
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
   });
 });
 

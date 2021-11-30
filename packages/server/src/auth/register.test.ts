@@ -37,10 +37,10 @@ describe('Register', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.profile).not.toBeUndefined();
-    expect(res.body.idToken).not.toBeUndefined();
-    expect(res.body.accessToken).not.toBeUndefined();
-    expect(res.body.refreshToken).not.toBeUndefined();
+    expect(res.body.profile).toBeDefined();
+    expect(res.body.idToken).toBeDefined();
+    expect(res.body.accessToken).toBeDefined();
+    expect(res.body.refreshToken).toBeDefined();
   });
 
   test('Email already registered', async () => {
@@ -58,7 +58,7 @@ describe('Register', () => {
       .send(registerRequest);
 
     expect(res.status).toBe(200);
-    expect(res.body.profile).not.toBeUndefined();
+    expect(res.body.profile).toBeDefined();
 
     const res2 = await request(app)
       .post('/auth/register')
@@ -83,7 +83,7 @@ describe('Register', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.project.reference).not.toBeUndefined();
+    expect(res.body.project.reference).toBeDefined();
 
     const res2 = await request(app)
       .get(`/fhir/R4/${res.body.project.reference}`)
@@ -105,7 +105,7 @@ describe('Register', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.profile.reference).not.toBeUndefined();
+    expect(res.body.profile.reference).toBeDefined();
 
     const res2 = await request(app)
       .get(`/fhir/R4/${res.body.profile.reference}`)
@@ -127,7 +127,7 @@ describe('Register', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.profile).not.toBeUndefined();
+    expect(res.body.profile).toBeDefined();
 
     const res2 = await request(app)
       .get(`/fhir/R4/ClientApplication`)
@@ -152,7 +152,7 @@ describe('Register', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.profile).not.toBeUndefined();
+    expect(res.body.profile).toBeDefined();
 
     const client: ClientApplication = {
       resourceType: 'ClientApplication',
@@ -189,7 +189,7 @@ describe('Register', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.profile).not.toBeUndefined();
+    expect(res.body.profile).toBeDefined();
 
     const patient: Patient = {
       resourceType: 'Patient',
@@ -219,7 +219,7 @@ describe('Register', () => {
       });
 
     expect(res3.status).toBe(200);
-    expect(res3.body.profile).not.toBeUndefined();
+    expect(res3.body.profile).toBeDefined();
 
     // Try to access User1 patient using User2 directly
     // This should fail
@@ -255,7 +255,7 @@ describe('Register', () => {
       });
     expect(res6.status).toBe(200);
     expect(res6.body.error).toBeUndefined();
-    expect(res6.body.access_token).not.toBeUndefined();
+    expect(res6.body.access_token).toBeDefined();
 
     // Try to access User1 patient using User2 directly
     // This should fail
@@ -291,7 +291,7 @@ describe('Register', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.profile).not.toBeUndefined();
+    expect(res.body.profile).toBeDefined();
 
     const patient: Patient = {
       resourceType: 'Patient',
@@ -321,7 +321,7 @@ describe('Register', () => {
       });
 
     expect(res3.status).toBe(200);
-    expect(res3.body.profile).not.toBeUndefined();
+    expect(res3.body.profile).toBeDefined();
 
     // Try to access User1 patient using User2 directly
     // This should fail
@@ -346,8 +346,8 @@ describe('Register', () => {
         }`
       });
     expect(res5.status).toBe(200);
-    expect(res5.body.data).not.toBeUndefined();
-    expect(res5.body.data.PatientList).not.toBeUndefined();
+    expect(res5.body.data).toBeDefined();
+    expect(res5.body.data.PatientList).toBeDefined();
     expect(res5.body.data.PatientList.length).toEqual(0);
   });
 

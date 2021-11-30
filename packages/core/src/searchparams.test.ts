@@ -24,7 +24,7 @@ describe('SearchParameterDetails', () => {
     };
 
     const details = getSearchParameterDetails(structureDefinitions, 'Patient', individualPhoneticParam);
-    expect(details).not.toBeUndefined();
+    expect(details).toBeDefined();
     expect(details.columnName).toEqual('phonetic');
     expect(details.array).toEqual(true);
   });
@@ -38,7 +38,7 @@ describe('SearchParameterDetails', () => {
     };
 
     const details = getSearchParameterDetails(structureDefinitions, 'Patient', activeParam);
-    expect(details).not.toBeUndefined();
+    expect(details).toBeDefined();
     expect(details.columnName).toEqual('active');
     expect(details.type).toEqual(SearchParameterType.BOOLEAN);
     expect(details.array).toEqual(false);
@@ -53,7 +53,7 @@ describe('SearchParameterDetails', () => {
     };
 
     const details = getSearchParameterDetails(structureDefinitions, 'Patient', birthDateParam);
-    expect(details).not.toBeUndefined();
+    expect(details).toBeDefined();
     expect(details.columnName).toEqual('birthdate');
     expect(details.type).toEqual(SearchParameterType.DATE);
     expect(details.array).toEqual(false);
@@ -68,7 +68,7 @@ describe('SearchParameterDetails', () => {
     };
 
     const details = getSearchParameterDetails(structureDefinitions, 'Patient', missingExpressionParam);
-    expect(details).not.toBeUndefined();
+    expect(details).toBeDefined();
     expect(details.columnName).toEqual('link');
     expect(details.type).toEqual(SearchParameterType.REFERENCE);
   });
@@ -82,7 +82,7 @@ describe('SearchParameterDetails', () => {
     };
 
     const details = getSearchParameterDetails(structureDefinitions, 'Patient', missingExpressionParam);
-    expect(details).not.toBeUndefined();
+    expect(details).toBeDefined();
     expect(details.columnName).toEqual('test');
   });
 
@@ -95,7 +95,7 @@ describe('SearchParameterDetails', () => {
     };
 
     const details = getSearchParameterDetails(structureDefinitions, 'Patient', missingExpressionParam);
-    expect(details).not.toBeUndefined();
+    expect(details).toBeDefined();
     expect(details.columnName).toEqual('test');
   });
 
@@ -108,7 +108,7 @@ describe('SearchParameterDetails', () => {
     };
 
     const details = getSearchParameterDetails(structureDefinitions, 'Patient', missingExpressionParam);
-    expect(details).not.toBeUndefined();
+    expect(details).toBeDefined();
     expect(details.columnName).toEqual('test');
   });
 
@@ -119,7 +119,7 @@ describe('SearchParameterDetails', () => {
         const searchParam = entry.resource;
         if (searchParam.base?.includes(resourceType)) {
           const details = getSearchParameterDetails(structureDefinitions, resourceType, searchParam);
-          expect(details).not.toBeUndefined();
+          expect(details).toBeDefined();
         }
       }
     }

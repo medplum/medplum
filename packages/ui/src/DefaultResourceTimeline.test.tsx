@@ -78,7 +78,7 @@ describe('DefaultResourceTimeline', () => {
     });
 
     const items = screen.getAllByTestId('timeline-item');
-    expect(items).not.toBeUndefined();
+    expect(items).toBeDefined();
     expect(items.length).toEqual(2);
   });
 
@@ -90,7 +90,7 @@ describe('DefaultResourceTimeline', () => {
     });
 
     const items = screen.getAllByTestId('timeline-item');
-    expect(items).not.toBeUndefined();
+    expect(items).toBeDefined();
     expect(items.length).toEqual(2);
   });
 

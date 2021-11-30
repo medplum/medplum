@@ -43,7 +43,7 @@ describe('Google Auth', () => {
         credential: 'xyz'
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue).not.toBeUndefined();
+    expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Missing clientId');
   });
 
@@ -56,7 +56,7 @@ describe('Google Auth', () => {
         credential: 'xyz'
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue).not.toBeUndefined();
+    expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Invalid Google Client ID');
   });
 
@@ -69,7 +69,7 @@ describe('Google Auth', () => {
         credential: ''
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue).not.toBeUndefined();
+    expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Missing credential');
   });
 

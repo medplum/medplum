@@ -46,7 +46,7 @@ describe('SubMenu', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('SubMenu Test')).not.toBeUndefined();
+    expect(screen.getByText('SubMenu Test')).toBeDefined();
     expect(screen.getByTestId('popup').style.display).toEqual('none');
   });
 
@@ -63,14 +63,14 @@ describe('SubMenu', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('SubMenu Test')).not.toBeUndefined();
+    expect(screen.getByText('SubMenu Test')).toBeDefined();
 
     await act(async () => {
       fireEvent.click(screen.getByText('SubMenu Test'));
     });
 
     expect(screen.getByTestId('popup').style.display).toEqual('block');
-    expect(screen.getByText('MenuItem Test')).not.toBeUndefined();
+    expect(screen.getByText('MenuItem Test')).toBeDefined();
 
     await act(async () => {
       fireEvent.click(screen.getByText('MenuItem Test'));
@@ -90,7 +90,7 @@ describe('SubMenu', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('SubMenu Test')).not.toBeUndefined();
+    expect(screen.getByText('SubMenu Test')).toBeDefined();
     expect(screen.getByTestId('popup').style.display).toEqual('none');
 
     await act(async () => {

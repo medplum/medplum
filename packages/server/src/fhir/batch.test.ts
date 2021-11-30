@@ -123,26 +123,26 @@ describe('Batch', () => {
     });
 
     expect(isOk(outcome)).toBe(true);
-    expect(bundle).not.toBeUndefined();
+    expect(bundle).toBeDefined();
     expect(bundle?.type).toEqual('batch-response');
-    expect(bundle?.entry).not.toBeUndefined();
+    expect(bundle?.entry).toBeDefined();
 
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(4);
     expect(results[0].response?.status).toEqual('201');
     expect(results[1].response?.status).toEqual('201');
     expect(results[2].response?.status).toEqual('200');
-    expect(results[2].resource).not.toBeUndefined();
+    expect(results[2].resource).toBeDefined();
     expect((results[2].resource as Bundle).entry?.length).toEqual(1);
     expect(results[3].response?.status).toEqual('404');
 
     const [patientOutcome, patient] = await userRepo.readReference({ reference: results[0].response?.location as string });
     expect(isOk(patientOutcome)).toBe(true);
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
 
     const [observationOutcome, observation] = await userRepo.readReference({ reference: results[1].response?.location as string });
     expect(isOk(observationOutcome)).toBe(true);
-    expect(observation).not.toBeUndefined();
+    expect(observation).toBeDefined();
     expect((observation as Observation).subject?.reference).toEqual('Patient/' + patient?.id);
   });
 
@@ -164,8 +164,8 @@ describe('Batch', () => {
     });
 
     expect(isOk(outcome)).toBe(true);
-    expect(bundle).not.toBeUndefined();
-    expect(bundle?.entry).not.toBeUndefined();
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
 
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
@@ -187,8 +187,8 @@ describe('Batch', () => {
     });
 
     expect(isOk(outcome)).toBe(true);
-    expect(bundle).not.toBeUndefined();
-    expect(bundle?.entry).not.toBeUndefined();
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
 
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
@@ -211,8 +211,8 @@ describe('Batch', () => {
     });
 
     expect(isOk(outcome)).toBe(true);
-    expect(bundle).not.toBeUndefined();
-    expect(bundle?.entry).not.toBeUndefined();
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
 
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
@@ -237,8 +237,8 @@ describe('Batch', () => {
     });
 
     expect(isOk(outcome)).toBe(true);
-    expect(bundle).not.toBeUndefined();
-    expect(bundle?.entry).not.toBeUndefined();
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
 
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
@@ -264,8 +264,8 @@ describe('Batch', () => {
     });
 
     expect(isOk(outcome)).toBe(true);
-    expect(bundle).not.toBeUndefined();
-    expect(bundle?.entry).not.toBeUndefined();
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
 
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
@@ -298,8 +298,8 @@ describe('Batch', () => {
     });
 
     expect(isOk(outcome)).toBe(true);
-    expect(bundle).not.toBeUndefined();
-    expect(bundle?.entry).not.toBeUndefined();
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
 
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
@@ -307,7 +307,7 @@ describe('Batch', () => {
 
     const [readOutcome, readResult] = await repo.readReference({ reference: results[0].response?.location as string });
     expect(isOk(readOutcome)).toBe(true);
-    expect(readResult).not.toBeUndefined();
+    expect(readResult).toBeDefined();
     expect((readResult as Patient).identifier?.[0]?.value).toEqual(id);
   });
 
@@ -350,8 +350,8 @@ describe('Batch', () => {
     });
 
     expect(isOk(outcome)).toBe(true);
-    expect(bundle).not.toBeUndefined();
-    expect(bundle?.entry).not.toBeUndefined();
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
 
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(2);
@@ -381,8 +381,8 @@ describe('Batch', () => {
     });
 
     expect(isOk(outcome)).toBe(true);
-    expect(bundle).not.toBeUndefined();
-    expect(bundle?.entry).not.toBeUndefined();
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
 
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
@@ -444,8 +444,8 @@ describe('Batch', () => {
     });
 
     expect(isOk(outcome)).toBe(true);
-    expect(bundle).not.toBeUndefined();
-    expect(bundle?.entry).not.toBeUndefined();
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
 
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(3);
@@ -478,8 +478,8 @@ describe('Batch', () => {
     });
 
     expect(isOk(outcome)).toBe(true);
-    expect(bundle).not.toBeUndefined();
-    expect(bundle?.entry).not.toBeUndefined();
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
 
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
@@ -501,8 +501,8 @@ describe('Batch', () => {
     });
 
     expect(isOk(outcome)).toBe(true);
-    expect(bundle).not.toBeUndefined();
-    expect(bundle?.entry).not.toBeUndefined();
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
 
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
@@ -521,8 +521,8 @@ describe('Batch', () => {
     });
 
     expect(isOk(outcome)).toBe(true);
-    expect(bundle).not.toBeUndefined();
-    expect(bundle?.entry).not.toBeUndefined();
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
 
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
@@ -547,8 +547,8 @@ describe('Batch', () => {
     });
 
     expect(isOk(outcome)).toBe(true);
-    expect(bundle).not.toBeUndefined();
-    expect(bundle?.entry).not.toBeUndefined();
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
 
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
@@ -574,8 +574,8 @@ describe('Batch', () => {
     });
 
     expect(isOk(outcome)).toBe(true);
-    expect(bundle).not.toBeUndefined();
-    expect(bundle?.entry).not.toBeUndefined();
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
 
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
@@ -600,8 +600,8 @@ describe('Batch', () => {
     });
 
     expect(isOk(outcome)).toBe(true);
-    expect(bundle).not.toBeUndefined();
-    expect(bundle?.entry).not.toBeUndefined();
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
 
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
@@ -636,8 +636,8 @@ describe('Batch', () => {
     });
 
     expect(isOk(outcome)).toBe(true);
-    expect(bundle).not.toBeUndefined();
-    expect(bundle?.entry).not.toBeUndefined();
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
 
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(3);

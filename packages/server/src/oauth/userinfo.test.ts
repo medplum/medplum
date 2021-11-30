@@ -61,7 +61,7 @@ describe('OAuth2 UserInfo', () => {
         state: 'xyz'
       });
     expect(res.status).toBe(302);
-    expect(res.headers.location).not.toBeUndefined();
+    expect(res.headers.location).toBeDefined();
 
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toBeNull();
@@ -75,14 +75,14 @@ describe('OAuth2 UserInfo', () => {
         code_verifier: 'xyz'
       });
     expect(res2.status).toBe(200);
-    expect(res2.body.access_token).not.toBeUndefined();
+    expect(res2.body.access_token).toBeDefined();
 
     const res3 = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + res2.body.access_token);
     expect(res3.status).toBe(200);
-    expect(res3.body.sub).not.toBeUndefined();
-    expect(res3.body.profile).not.toBeUndefined();
+    expect(res3.body.sub).toBeDefined();
+    expect(res3.body.profile).toBeDefined();
     expect(res3.body.name).toBe('Medplum Admin');
     expect(res3.body.given_name).toBe('Medplum');
     expect(res3.body.family_name).toBe('Admin');
@@ -108,7 +108,7 @@ describe('OAuth2 UserInfo', () => {
         state: 'xyz'
       });
     expect(res.status).toBe(302);
-    expect(res.headers.location).not.toBeUndefined();
+    expect(res.headers.location).toBeDefined();
 
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toBeNull();
@@ -122,13 +122,13 @@ describe('OAuth2 UserInfo', () => {
         code_verifier: 'xyz'
       });
     expect(res2.status).toBe(200);
-    expect(res2.body.access_token).not.toBeUndefined();
+    expect(res2.body.access_token).toBeDefined();
 
     const res3 = await request(app)
       .get(`/oauth2/userinfo`)
       .set('Authorization', 'Bearer ' + res2.body.access_token);
     expect(res3.status).toBe(200);
-    expect(res3.body.sub).not.toBeUndefined();
+    expect(res3.body.sub).toBeDefined();
     expect(res3.body.profile).toBeUndefined();
     expect(res3.body.name).toBeUndefined();
     expect(res3.body.given_name).toBeUndefined();

@@ -132,7 +132,7 @@ describe('ResourcePropertyInput', () => {
       name: 'address',
       defaultValue: address
     });
-    expect(screen.getByDisplayValue('San Francisco')).not.toBeUndefined();
+    expect(screen.getByDisplayValue('San Francisco')).toBeDefined();
   });
 
   test('Renders Attachment property', () => {
@@ -147,7 +147,7 @@ describe('ResourcePropertyInput', () => {
       name: 'photo',
       defaultValue: photo
     });
-    expect(screen.getByText('text/plain')).not.toBeUndefined();
+    expect(screen.getByText('text/plain')).toBeDefined();
   });
 
   test('Renders CodeableConcept property', () => {
@@ -164,7 +164,7 @@ describe('ResourcePropertyInput', () => {
       name: 'maritalStatus',
       defaultValue: maritalStatus
     });
-    expect(screen.getByText('Married')).not.toBeUndefined();
+    expect(screen.getByText('Married')).toBeDefined();
   });
 
   test('Renders HumanName property', () => {
@@ -178,7 +178,7 @@ describe('ResourcePropertyInput', () => {
       name: 'name',
       defaultValue: name
     });
-    expect(screen.getByDisplayValue('Smith')).not.toBeUndefined();
+    expect(screen.getByDisplayValue('Smith')).toBeDefined();
   });
 
   test('Renders ContactPoint property', () => {
@@ -193,8 +193,8 @@ describe('ResourcePropertyInput', () => {
       name: 'telecom',
       defaultValue: telecom
     });
-    expect(screen.getByDisplayValue('email')).not.toBeUndefined();
-    expect(screen.getByDisplayValue('homer@example.com')).not.toBeUndefined();
+    expect(screen.getByDisplayValue('email')).toBeDefined();
+    expect(screen.getByDisplayValue('homer@example.com')).toBeDefined();
   });
 
   test('Renders Identifier property', () => {
@@ -209,8 +209,8 @@ describe('ResourcePropertyInput', () => {
       name: 'identifier',
       defaultValue: identifier
     });
-    expect(screen.getByDisplayValue('https://example.com')).not.toBeUndefined();
-    expect(screen.getByDisplayValue('123')).not.toBeUndefined();
+    expect(screen.getByDisplayValue('https://example.com')).toBeDefined();
+    expect(screen.getByDisplayValue('123')).toBeDefined();
   });
 
   test('Renders Reference property', () => {
@@ -233,7 +233,7 @@ describe('ResourcePropertyInput', () => {
     });
 
     // The first property type is the default
-    expect(screen.getByDisplayValue('Quantity')).not.toBeUndefined();
+    expect(screen.getByDisplayValue('Quantity')).toBeDefined();
 
     // Set a quantity value
     await act(async () => {
@@ -254,8 +254,8 @@ describe('ResourcePropertyInput', () => {
     await act(async () => {
       fireEvent.change(screen.getByDisplayValue('Quantity'), { target: { value: 'string' } });
     });
-    expect(screen.getByDisplayValue('string')).not.toBeUndefined();
-    expect(screen.getByTestId('value[x]')).not.toBeUndefined();
+    expect(screen.getByDisplayValue('string')).toBeDefined();
+    expect(screen.getByTestId('value[x]')).toBeDefined();
 
     // Set a string value
     await act(async () => {
@@ -269,8 +269,8 @@ describe('ResourcePropertyInput', () => {
     await act(async () => {
       fireEvent.change(screen.getByDisplayValue('string'), { target: { value: 'integer' } });
     });
-    expect(screen.getByDisplayValue('integer')).not.toBeUndefined();
-    expect(screen.getByTestId('value[x]')).not.toBeUndefined();
+    expect(screen.getByDisplayValue('integer')).toBeDefined();
+    expect(screen.getByTestId('value[x]')).toBeDefined();
 
     // Set an integer value
     await act(async () => {

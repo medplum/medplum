@@ -23,7 +23,7 @@ describe('Signer', () => {
 
     const signer = new Signer(keyId, privateKey, passphrase);
     const result = signer.sign('https://example.com/test', new Date().getTime() / 1000 + 3600);
-    expect(result).not.toBeUndefined();
+    expect(result).toBeDefined();
 
     const resultUrl = new URL(result);
     expect(resultUrl.hostname).toBe('example.com');

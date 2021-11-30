@@ -11,11 +11,11 @@ describe('HumanNameInput', () => {
     );
 
     const given = screen.getByPlaceholderText('Given') as HTMLInputElement;
-    expect(given).not.toBeUndefined();
+    expect(given).toBeDefined();
     expect(given.value).toEqual('Alice');
 
     const family = screen.getByPlaceholderText('Family') as HTMLInputElement;
-    expect(family).not.toBeUndefined();
+    expect(family).toBeDefined();
     expect(family.value).toEqual('Smith');
   });
 
@@ -90,7 +90,7 @@ describe('HumanNameInput', () => {
       fireEvent.change(screen.getByPlaceholderText('Suffix'), { target: { value: '' } });
     });
 
-    expect(lastValue).not.toBeUndefined();
+    expect(lastValue).toBeDefined();
     expect(JSON.stringify(lastValue)).toEqual('{}');
   });
 

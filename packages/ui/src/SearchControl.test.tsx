@@ -111,7 +111,7 @@ describe('SearchControl', () => {
     });
 
     const control = screen.getByTestId('search-control');
-    expect(control).not.toBeUndefined();
+    expect(control).toBeDefined();
     expect(props.onLoad).toBeCalled();
   });
 
@@ -135,7 +135,7 @@ describe('SearchControl', () => {
     });
 
     const control = screen.getByTestId('empty-search');
-    expect(control).not.toBeUndefined();
+    expect(control).toBeDefined();
     expect(props.onLoad).toBeCalled();
   });
 
@@ -160,7 +160,7 @@ describe('SearchControl', () => {
     });
 
     const control = screen.getByTestId('search-control');
-    expect(control).not.toBeUndefined();
+    expect(control).toBeDefined();
     expect(props.onLoad).toBeCalled();
   });
 
@@ -185,7 +185,7 @@ describe('SearchControl', () => {
     });
 
     const control = screen.getByTestId('empty-search');
-    expect(control).not.toBeUndefined();
+    expect(control).toBeDefined();
     expect(props.onLoad).toBeCalled();
   });
 
@@ -210,7 +210,7 @@ describe('SearchControl', () => {
     });
 
     const control = screen.getByTestId('search-control');
-    expect(control).not.toBeUndefined();
+    expect(control).toBeDefined();
     expect(props.onLoad).toBeCalled();
   });
 
@@ -361,7 +361,7 @@ describe('SearchControl', () => {
     });
 
     const control = screen.getByTestId('search-control');
-    expect(control).not.toBeUndefined();
+    expect(control).toBeDefined();
     expect(props.onLoad).toBeCalled();
   });
 
@@ -455,7 +455,7 @@ describe('SearchControl', () => {
     });
 
     const control = screen.getByTestId('search-control');
-    expect(control).not.toBeUndefined();
+    expect(control).toBeDefined();
     expect(props.onLoad).toBeCalled();
   });
 
@@ -480,7 +480,7 @@ describe('SearchControl', () => {
     });
 
     const control = screen.getByTestId('search-control');
-    expect(control).not.toBeUndefined();
+    expect(control).toBeDefined();
     expect(props.onLoad).toBeCalled();
 
     await act(async () => {
@@ -488,11 +488,11 @@ describe('SearchControl', () => {
     });
 
     const allCheckbox = screen.getByTestId('all-checkbox');
-    expect(allCheckbox).not.toBeUndefined();
+    expect(allCheckbox).toBeDefined();
     expect((allCheckbox as HTMLInputElement).checked).toEqual(true);
 
     const rowCheckboxes = screen.queryAllByTestId('row-checkbox');
-    expect(rowCheckboxes).not.toBeUndefined();
+    expect(rowCheckboxes).toBeDefined();
     expect(rowCheckboxes.length).toEqual(1);
     expect((rowCheckboxes[0] as HTMLInputElement).checked).toEqual(true);
   });
@@ -518,7 +518,7 @@ describe('SearchControl', () => {
     });
 
     const control = screen.getByTestId('search-control');
-    expect(control).not.toBeUndefined();
+    expect(control).toBeDefined();
     expect(props.onLoad).toBeCalled();
 
     await act(async () => {
@@ -526,11 +526,11 @@ describe('SearchControl', () => {
     });
 
     const allCheckbox = screen.getByTestId('all-checkbox');
-    expect(allCheckbox).not.toBeUndefined();
+    expect(allCheckbox).toBeDefined();
     expect((allCheckbox as HTMLInputElement).checked).toEqual(true);
 
     const rowCheckboxes = screen.queryAllByTestId('row-checkbox');
-    expect(rowCheckboxes).not.toBeUndefined();
+    expect(rowCheckboxes).toBeDefined();
     expect(rowCheckboxes.length).toEqual(1);
     expect((rowCheckboxes[0] as HTMLInputElement).checked).toEqual(true);
   });

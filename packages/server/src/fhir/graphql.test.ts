@@ -177,7 +177,7 @@ describe('GraphQL', () => {
     `
       });
     expect(res.status).toBe(200);
-    expect(res.body.data.Patient).not.toBeUndefined();
+    expect(res.body.data.Patient).toBeDefined();
   });
 
   test('Read by ID not found', async () => {
@@ -216,7 +216,7 @@ describe('GraphQL', () => {
     `
       });
     expect(res.status).toBe(200);
-    expect(res.body.data.PatientList).not.toBeUndefined();
+    expect(res.body.data.PatientList).toBeDefined();
   });
 
   test('Read resource by reference', async () => {
@@ -250,7 +250,7 @@ describe('GraphQL', () => {
     `
       });
     expect(res.status).toBe(200);
-    expect(res.body.data.Encounter).not.toBeUndefined();
+    expect(res.body.data.Encounter).toBeDefined();
   });
 
   test('Read resource by reference not found', async () => {
@@ -284,7 +284,7 @@ describe('GraphQL', () => {
     `
       });
     expect(res.status).toBe(200);
-    expect(res.body.data.Encounter).not.toBeUndefined();
+    expect(res.body.data.Encounter).toBeDefined();
     expect(res.body.data.Encounter.subject.resource).toBeNull();
   });
 

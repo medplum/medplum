@@ -11,11 +11,11 @@ describe('ContactPointInput', () => {
     );
 
     const system = screen.getByTestId('system') as HTMLInputElement;
-    expect(system).not.toBeUndefined();
+    expect(system).toBeDefined();
     expect(system.value).toEqual('email');
 
     const value = screen.getByPlaceholderText('Value') as HTMLInputElement;
-    expect(value).not.toBeUndefined();
+    expect(value).toBeDefined();
     expect(value.value).toEqual('abc@example.com');
   });
 
@@ -38,7 +38,7 @@ describe('ContactPointInput', () => {
       fireEvent.change(screen.getByPlaceholderText('Value'), { target: { value: 'xyz@example.com' } });
     });
 
-    expect(lastValue).not.toBeUndefined();
+    expect(lastValue).toBeDefined();
     expect(lastValue).toMatchObject({
       use: 'home',
       system: 'email',
@@ -71,7 +71,7 @@ describe('ContactPointInput', () => {
       fireEvent.change(screen.getByPlaceholderText('Value'), { target: { value: '' } });
     });
 
-    expect(lastValue).not.toBeUndefined();
+    expect(lastValue).toBeDefined();
     expect(JSON.stringify(lastValue)).toEqual('{}');
   });
 

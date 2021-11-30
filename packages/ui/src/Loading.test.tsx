@@ -6,7 +6,7 @@ describe('Loading', () => {
 
   test('Renders', () => {
     render(<Loading />);
-    expect(screen.getByRole('progressbar')).not.toBeUndefined();
+    expect(screen.getByRole('progressbar')).toBeDefined();
   });
 
 });

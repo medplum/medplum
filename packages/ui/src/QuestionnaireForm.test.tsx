@@ -67,8 +67,8 @@ describe('QuestionnaireForm', () => {
     });
 
     expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
-    expect(screen.getByText('Group 1')).not.toBeUndefined();
-    expect(screen.getByText('Group 2')).not.toBeUndefined();
+    expect(screen.getByText('Group 1')).toBeDefined();
+    expect(screen.getByText('Group 2')).toBeDefined();
   });
 
   test('Handles submit', async () => {
@@ -118,7 +118,7 @@ describe('QuestionnaireForm', () => {
       fireEvent.change(screen.getByLabelText('q3'), { target: { value: '2023-03-03' } });
     });
 
-    expect(screen.getByText('OK')).not.toBeUndefined();
+    expect(screen.getByText('OK')).toBeDefined();
 
     await act(async () => {
       fireEvent.click(screen.getByText('OK'));

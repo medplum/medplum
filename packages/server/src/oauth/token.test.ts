@@ -76,7 +76,7 @@ describe('OAuth2 Token', () => {
       });
     expect(res.status).toBe(200);
     expect(res.body.error).toBeUndefined();
-    expect(res.body.access_token).not.toBeUndefined();
+    expect(res.body.access_token).toBeDefined();
   });
 
   test('Token for client credentials with missing client_id', async () => {
@@ -197,7 +197,7 @@ describe('OAuth2 Token', () => {
         state: 'xyz'
       });
     expect(res.status).toBe(302);
-    expect(res.headers.location).not.toBeUndefined();
+    expect(res.headers.location).toBeDefined();
 
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toBeNull();
@@ -214,9 +214,9 @@ describe('OAuth2 Token', () => {
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid');
     expect(res2.body.expires_in).toBe(3600);
-    expect(res2.body.id_token).not.toBeUndefined();
-    expect(res2.body.access_token).not.toBeUndefined();
-    expect(res2.body.refresh_token).not.toBeUndefined();
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeDefined();
   });
 
   test('Authorization code token success with client ID', async () => {
@@ -238,7 +238,7 @@ describe('OAuth2 Token', () => {
         state: 'xyz'
       });
     expect(res.status).toBe(302);
-    expect(res.headers.location).not.toBeUndefined();
+    expect(res.headers.location).toBeDefined();
 
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toBeNull();
@@ -256,9 +256,9 @@ describe('OAuth2 Token', () => {
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid');
     expect(res2.body.expires_in).toBe(3600);
-    expect(res2.body.id_token).not.toBeUndefined();
-    expect(res2.body.access_token).not.toBeUndefined();
-    expect(res2.body.refresh_token).not.toBeUndefined();
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeDefined();
   });
 
   test('Refresh token without token', async () => {
@@ -307,7 +307,7 @@ describe('OAuth2 Token', () => {
       })
       .expect(302);
     expect(res.status).toBe(302);
-    expect(res.headers.location).not.toBeUndefined();
+    expect(res.headers.location).toBeDefined();
 
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toBeNull();
@@ -324,9 +324,9 @@ describe('OAuth2 Token', () => {
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid');
     expect(res2.body.expires_in).toBe(3600);
-    expect(res2.body.id_token).not.toBeUndefined();
-    expect(res2.body.access_token).not.toBeUndefined();
-    expect(res2.body.refresh_token).not.toBeUndefined();
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeDefined();
     const res3 = await request(app)
       .post('/oauth2/token')
       .type('form')
@@ -338,9 +338,9 @@ describe('OAuth2 Token', () => {
     expect(res3.body.token_type).toBe('Bearer');
     expect(res3.body.scope).toBe('openid');
     expect(res3.body.expires_in).toBe(3600);
-    expect(res3.body.id_token).not.toBeUndefined();
-    expect(res3.body.access_token).not.toBeUndefined();
-    expect(res3.body.refresh_token).not.toBeUndefined();
+    expect(res3.body.id_token).toBeDefined();
+    expect(res3.body.access_token).toBeDefined();
+    expect(res3.body.refresh_token).toBeDefined();
   });
 
   test('Refresh token failure with S256 code', async () => {
@@ -365,7 +365,7 @@ describe('OAuth2 Token', () => {
         state: 'xyz'
       });
     expect(res.status).toBe(302);
-    expect(res.headers.location).not.toBeUndefined();
+    expect(res.headers.location).toBeDefined();
 
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toBeNull();
@@ -404,7 +404,7 @@ describe('OAuth2 Token', () => {
       })
       .expect(302);
     expect(res.status).toBe(302);
-    expect(res.headers.location).not.toBeUndefined();
+    expect(res.headers.location).toBeDefined();
 
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toBeNull();
@@ -421,9 +421,9 @@ describe('OAuth2 Token', () => {
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid');
     expect(res2.body.expires_in).toBe(3600);
-    expect(res2.body.id_token).not.toBeUndefined();
-    expect(res2.body.access_token).not.toBeUndefined();
-    expect(res2.body.refresh_token).not.toBeUndefined();
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeDefined();
     const res3 = await request(app)
       .post('/oauth2/token')
       .type('form')
@@ -435,9 +435,9 @@ describe('OAuth2 Token', () => {
     expect(res3.body.token_type).toBe('Bearer');
     expect(res3.body.scope).toBe('openid');
     expect(res3.body.expires_in).toBe(3600);
-    expect(res3.body.id_token).not.toBeUndefined();
-    expect(res3.body.access_token).not.toBeUndefined();
-    expect(res3.body.refresh_token).not.toBeUndefined();
+    expect(res3.body.id_token).toBeDefined();
+    expect(res3.body.access_token).toBeDefined();
+    expect(res3.body.refresh_token).toBeDefined();
   });
 
 });

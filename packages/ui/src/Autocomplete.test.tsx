@@ -46,7 +46,7 @@ describe('Autocomplete', () => {
     });
 
     const selected = screen.getByTestId('selected');
-    expect(selected).not.toBeUndefined();
+    expect(selected).toBeDefined();
   });
 
   test('Ignores empty default value', async () => {
@@ -147,7 +147,7 @@ describe('Autocomplete', () => {
     expect(input.value).toBe('Alice');
 
     const dropdown = screen.getByTestId('dropdown');
-    expect(dropdown).not.toBeUndefined();
+    expect(dropdown).toBeDefined();
   });
 
   test('Move with arrow keys', async () => {
@@ -184,7 +184,7 @@ describe('Autocomplete', () => {
     });
 
     const el = screen.getByText('Alice Smith');
-    expect(el).not.toBeUndefined();
+    expect(el).toBeDefined();
   });
 
   test('Backspace key', async () => {
@@ -216,7 +216,7 @@ describe('Autocomplete', () => {
     });
 
     const el = screen.getByText('Alice Smith');
-    expect(el).not.toBeUndefined();
+    expect(el).toBeDefined();
   });
 
   test('Select option with Enter key', async () => {
@@ -248,7 +248,7 @@ describe('Autocomplete', () => {
     });
 
     const el = screen.getByText('Alice Smith');
-    expect(el).not.toBeUndefined();
+    expect(el).toBeDefined();
   });
 
   test('Select option with Tab key', async () => {
@@ -280,7 +280,7 @@ describe('Autocomplete', () => {
     });
 
     const el = screen.getByText('Alice Smith');
-    expect(el).not.toBeUndefined();
+    expect(el).toBeDefined();
   });
 
   test('Select option with separator key', async () => {
@@ -312,7 +312,7 @@ describe('Autocomplete', () => {
     });
 
     const el = screen.getByText('Alice Smith');
-    expect(el).not.toBeUndefined();
+    expect(el).toBeDefined();
   });
 
   test('Select option with click', async () => {
@@ -441,7 +441,7 @@ describe('Autocomplete', () => {
     });
 
     expect(onChange).toBeCalled();
-    expect(screen.getByText('xyz')).not.toBeUndefined();
+    expect(screen.getByText('xyz')).toBeDefined();
   });
 
   test('Hover over row', async () => {
@@ -477,7 +477,7 @@ describe('Autocomplete', () => {
 
     const dropdown = screen.getByTestId('dropdown');
     const option = dropdown.querySelector('.medplum-autocomplete-active');
-    expect(option).not.toBeUndefined();
+    expect(option).toBeDefined();
     expect(option?.innerHTML).toMatch(/Bob Jones/);
 
     // Press "Tab"
@@ -556,7 +556,7 @@ describe('Autocomplete', () => {
 
     const dropdown = screen.getByTestId('dropdown');
     const option = dropdown.querySelector('.medplum-autocomplete-active');
-    expect(option).not.toBeUndefined();
+    expect(option).toBeDefined();
     expect(option?.innerHTML).toMatch(/Carol Brown/);
   });
 

@@ -131,7 +131,7 @@ describe('ResourceForm', () => {
     });
 
     const control = screen.getByText('Resource Type');
-    expect(control).not.toBeUndefined();
+    expect(control).toBeDefined();
   });
 
   test('Renders Practitioner resource', async () => {
@@ -149,7 +149,7 @@ describe('ResourceForm', () => {
     });
 
     const control = screen.getByText('Resource Type');
-    expect(control).not.toBeUndefined();
+    expect(control).toBeDefined();
   });
 
   test('Submit Practitioner', async () => {
@@ -188,7 +188,7 @@ describe('ResourceForm', () => {
     });
 
     const control = screen.getByText('Resource Type');
-    expect(control).not.toBeUndefined();
+    expect(control).toBeDefined();
   });
 
   test('Renders Observation resource', async () => {
@@ -206,7 +206,7 @@ describe('ResourceForm', () => {
     });
 
     const control = screen.getByText('Resource Type');
-    expect(control).not.toBeUndefined();
+    expect(control).toBeDefined();
   });
 
   test('Submit Observation', async () => {

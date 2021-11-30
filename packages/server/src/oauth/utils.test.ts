@@ -78,7 +78,7 @@ describe('OAuth utils', () => {
     });
 
     expect(isOk(outcome)).toBe(true);
-    expect(login).not.toBeUndefined();
+    expect(login).toBeDefined();
   });
 
   test('Login successfully', async () => {
@@ -93,7 +93,7 @@ describe('OAuth utils', () => {
     });
 
     expect(isOk(outcome)).toBe(true);
-    expect(login).not.toBeUndefined();
+    expect(login).toBeDefined();
   });
 
   test('Validate code challenge login request', () => {

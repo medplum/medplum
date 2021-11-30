@@ -45,7 +45,7 @@ describe('Admin Invite', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.project).not.toBeUndefined();
+    expect(res.body.project).toBeDefined();
 
     // Second, Alice invites Bob to the project
     const res2 = await request(app)
@@ -76,7 +76,7 @@ describe('Admin Invite', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.project).not.toBeUndefined();
+    expect(res.body.project).toBeDefined();
 
     // Second, Bob creates a project
     const bobEmail = `bob${randomUUID()}@example.com`;
@@ -92,7 +92,7 @@ describe('Admin Invite', () => {
       });
 
     expect(res2.status).toBe(200);
-    expect(res2.body.project).not.toBeUndefined();
+    expect(res2.body.project).toBeDefined();
 
     // Third, Alice invites Bob to the project
     // Because Bob already has an account, no emails should be sent
@@ -124,7 +124,7 @@ describe('Admin Invite', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.project).not.toBeUndefined();
+    expect(res.body.project).toBeDefined();
 
     // Second, Bob creates a project
     const res2 = await request(app)
@@ -139,7 +139,7 @@ describe('Admin Invite', () => {
       });
 
     expect(res2.status).toBe(200);
-    expect(res2.body.project).not.toBeUndefined();
+    expect(res2.body.project).toBeDefined();
 
     // Third, Bob tries to invite Carol to Alice's project
     // In this example, Bob is not an admin of Alice's project
@@ -172,7 +172,7 @@ describe('Admin Invite', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.project).not.toBeUndefined();
+    expect(res.body.project).toBeDefined();
 
     // Second, Alice invites Bob to the project
     // But she forgets his email address
@@ -187,7 +187,7 @@ describe('Admin Invite', () => {
       });
 
     expect(res2.status).toBe(400);
-    expect(res2.body.issue).not.toBeUndefined();
+    expect(res2.body.issue).toBeDefined();
     expect(SESv2Client).not.toHaveBeenCalled();
     expect(SendEmailCommand).not.toHaveBeenCalled();
   });

@@ -89,7 +89,7 @@ describe('HomePage', () => {
     });
 
     const control = screen.getByTestId('search-control');
-    expect(control).not.toBeUndefined();
+    expect(control).toBeDefined();
   });
 
   test('Renders with resourceType', async () => {
@@ -100,7 +100,7 @@ describe('HomePage', () => {
     });
 
     const control = screen.getByTestId('search-control');
-    expect(control).not.toBeUndefined();
+    expect(control).toBeDefined();
   });
 
   test('Renders with resourceType and fields', async () => {
@@ -111,7 +111,7 @@ describe('HomePage', () => {
     });
 
     const control = screen.getByTestId('search-control');
-    expect(control).not.toBeUndefined();
+    expect(control).toBeDefined();
   });
 
   test('Next page button', async () => {

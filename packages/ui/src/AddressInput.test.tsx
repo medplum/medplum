@@ -8,8 +8,8 @@ describe('AddressInput', () => {
 
   test('Renders', () => {
     render(<AddressInput name="a" defaultValue={{ line: ['123 main st'], city: 'Happy' }} />);
-    expect(screen.getByDisplayValue('123 main st')).not.toBeUndefined();
-    expect(screen.getByDisplayValue('Happy')).not.toBeUndefined();
+    expect(screen.getByDisplayValue('123 main st')).toBeDefined();
+    expect(screen.getByDisplayValue('Happy')).toBeDefined();
   });
 
   test('Renders undefined value', () => {
@@ -50,7 +50,7 @@ describe('AddressInput', () => {
       fireEvent.change(screen.getByPlaceholderText('Postal Code'), { target: { value: '97403' } });
     });
 
-    expect(lastValue).not.toBeUndefined();
+    expect(lastValue).toBeDefined();
     expect(lastValue).toMatchObject({
       "use": "home",
       "type": "both",

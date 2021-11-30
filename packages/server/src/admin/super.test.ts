@@ -81,7 +81,7 @@ describe('Super Admin routes', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.project).not.toBeUndefined();
+    expect(res.body.project).toBeDefined();
 
     const res2 = await request(app)
       .post('/admin/super/valuesets')
@@ -148,7 +148,7 @@ describe('Super Admin routes', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.project).not.toBeUndefined();
+    expect(res.body.project).toBeDefined();
 
     const res2 = await request(app)
       .post('/admin/super/structuredefinitions')

@@ -24,8 +24,8 @@ describe('OpenAPI', () => {
     const res = await request(app)
       .get('/openapi.json');
     expect(res.status).toBe(200);
-    expect(res.body.openapi).not.toBeUndefined();
-    expect(res.body.info).not.toBeUndefined();
+    expect(res.body.openapi).toBeDefined();
+    expect(res.body.info).toBeDefined();
   });
 
 });

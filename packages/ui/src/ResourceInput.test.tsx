@@ -105,7 +105,7 @@ describe('ResourceInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Alice Smith')).not.toBeUndefined();
+    expect(screen.getByText('Alice Smith')).toBeDefined();
   });
 
   test('Call onChange', async () => {
@@ -135,7 +135,7 @@ describe('ResourceInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Alice Smith')).not.toBeUndefined();
+    expect(screen.getByText('Alice Smith')).toBeDefined();
     expect(onChange).toHaveBeenCalled();
   });
 

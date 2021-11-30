@@ -21,11 +21,11 @@ describe('ResourceDiff', () => {
     render(<ResourceDiff original={original} revised={revised} />);
 
     const removed = screen.getByText('"active": false');
-    expect(removed).not.toBeUndefined();
+    expect(removed).toBeDefined();
     expect(removed.style.color).toEqual('red');
 
     const added = screen.getByText('"active": true');
-    expect(added).not.toBeUndefined();
+    expect(added).toBeDefined();
     expect(added.style.color).toEqual('green');
   });
 

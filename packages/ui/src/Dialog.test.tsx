@@ -20,7 +20,7 @@ describe('Dialog', () => {
       </Dialog>
     );
 
-    expect(screen.getByText('test')).not.toBeUndefined();
+    expect(screen.getByText('test')).toBeDefined();
   });
 
   test('Click OK', async () => {
