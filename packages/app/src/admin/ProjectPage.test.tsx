@@ -1,49 +1,29 @@
-import { MedplumClient } from '@medplum/core';
-import { MedplumProvider } from '@medplum/ui';
+import { MedplumProvider, MockClient } from '@medplum/ui';
 import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { act } from 'react-dom/test-utils';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ProjectPage } from './ProjectPage';
 
-function mockFetch(url: string, options: any): Promise<any> {
-  let result: any;
-
-  if (options.method === 'GET' && url.endsWith('/admin/projects/123')) {
-    result = {
+const medplum = new MockClient({
+  'admin/projects/123': {
+    'GET': {
       project: { id: '123', name: 'Project 123' },
       members: [
         { profile: 'Practitioner/456', name: 'Alice Smith' }
       ]
-    };
-  } else if (options.method === 'GET' && url.endsWith('/Practitioner/456')) {
-    result = {
+    }
+  },
+  'fhir/R4/Practitioner/456': {
+    'GET': {
       resourceType: 'Practitioner',
       id: '456',
       name: [{
         given: ['Alice'],
         family: 'Smith'
       }]
-    };
+    }
   }
-
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    ...result
-  };
-
-  return Promise.resolve({
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
 });
 
 const setup = (url: string) => {

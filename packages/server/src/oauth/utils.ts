@@ -1,4 +1,4 @@
-import { allOk, assertOk, badRequest, ClientApplication, createReference, getDateProperty, getReferenceString, isNotFound, isOk, Login, notFound, OperationOutcome, Operator, ProfileResource, Project, ProjectMembership, Reference, Resource, User } from '@medplum/core';
+import { allOk, assertOk, badRequest, BundleEntry, ClientApplication, createReference, getDateProperty, isNotFound, isOk, Login, notFound, OperationOutcome, Operator, ProfileResource, Project, ProjectMembership, Reference, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
 import { JWTPayload } from 'jose';
 import { repo, RepositoryResult } from '../fhir';
@@ -9,7 +9,6 @@ export interface LoginRequest {
   readonly email: string;
   readonly authMethod: 'password' | 'google';
   readonly password?: string;
-  readonly role: 'practitioner' | 'patient';
   readonly scope: string;
   readonly nonce: string;
   readonly remember: boolean;
@@ -22,12 +21,6 @@ export interface TokenResult {
   readonly idToken: string;
   readonly accessToken: string;
   readonly refreshToken?: string;
-}
-
-export interface LoginResult {
-  readonly tokens: TokenResult;
-  readonly project: Project;
-  readonly profile: Resource;
 }
 
 /**
@@ -87,21 +80,23 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     return [authOutcome, undefined];
   }
 
-  const memberships = await getUserMemberships(user);
-  if (!memberships || memberships.length === 0) {
-    return [badRequest('Project memberships not found', 'email'), undefined];
-  }
-
-  const project = user.admin ? undefined : getDefaultProject(memberships);
-  const profile = getDefaultProfile(memberships);
   const refreshSecret = request.remember ? generateSecret(48) : undefined;
+
+  // Try to get user memberships
+  // If they only have one membership, set it now
+  // Otherwise the application will need to prompt the user
+  const memberships = await getUserMemberships(createReference(user));
+  let project: Reference<Project> | undefined = undefined;
+  let profile: Reference<ProfileResource> | undefined = undefined;
+  if (memberships.length === 1) {
+    project = memberships[0].project;
+    profile = memberships[0].profile;
+  }
 
   return repo.createResource<Login>({
     resourceType: 'Login',
     client: createReference(client as ClientApplication),
     user: createReference(user),
-    profile,
-    project,
     authTime: new Date().toISOString(),
     code: generateSecret(16),
     cookie: generateSecret(16),
@@ -110,8 +105,9 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     nonce: request.nonce,
     codeChallenge: request.codeChallenge,
     codeChallengeMethod: request.codeChallengeMethod,
-    accessPolicy: memberships[0].accessPolicy,
-    admin: user.admin
+    admin: user.admin,
+    project,
+    profile,
   });
 }
 
@@ -134,10 +130,6 @@ export function validateLoginRequest(request: LoginRequest): OperationOutcome | 
 
   if (request.authMethod === 'google' && !request.googleCredentials) {
     return badRequest('Invalid password', 'password');
-  }
-
-  if (request.role !== 'patient' && request.role !== 'practitioner') {
-    return badRequest('Invalid role', 'role');
   }
 
   if (!request.scope) {
@@ -185,33 +177,28 @@ async function authenticate(request: LoginRequest, user: User): Promise<Operatio
 }
 
 /**
- * Performs common additional login steps.
- * Each of the common login paths (signin, register, google auth) perform a similar
- * series of post-login steps for the client.
- * Note that this *cannot* be part of tryLogin directly, because tokens cannot be issued in that step.
- * In OAuth2 authorization code flow, "login" and "token" must be two separate requests.
- * @param login The login resource.
- * @returns Additional common login artifacts.
+ * Returns a list of profiles that the user has access to.
+ * When a user logs in, gather all the available profiles.
+ * If there is only one profile, then automatically select it.
+ * Otherwise, the user must select a profile.
+ * @param user Reference to the user.
+ * @returns Array of profile resources that the user has access to.
  */
-export async function finalizeLogin(login: Login): Promise<LoginResult> {
-  const [tokensOutcome, tokens] = await getAuthTokens(login);
-  assertOk(tokensOutcome);
-
-  const [profileOutcome, profile] = await repo.readReference(login?.profile as Reference<ProfileResource>);
-  assertOk(profileOutcome);
-
-  let project = undefined;
-  if (login?.project) {
-    const [projectOutcome, projectResource] = await repo.readReference(login.project);
-    assertOk(projectOutcome);
-    project = projectResource;
+export async function getUserMemberships(user: Reference<User>): Promise<ProjectMembership[]> {
+  if (!user.reference) {
+    throw new Error('User reference is missing');
   }
 
-  return {
-    tokens: tokens as TokenResult,
-    project: project as Project,
-    profile: profile as ProfileResource
-  };
+  const [membershipsOutcome, memberships] = await repo.search<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    filters: [{
+      code: 'user',
+      operator: Operator.EQUALS,
+      value: user.reference
+    }]
+  });
+  assertOk(membershipsOutcome);
+  return (memberships?.entry as BundleEntry<ProjectMembership>[]).map(entry => entry.resource as ProjectMembership);
 }
 
 export async function getAuthTokens(login: Login): Promise<[OperationOutcome, TokenResult | undefined]> {
@@ -307,38 +294,4 @@ async function getUserByEmail(email: string): RepositoryResult<User | undefined>
   }
 
   return [allOk, bundle.entry[0].resource as User];
-}
-
-async function getUserMemberships(user: User): Promise<ProjectMembership[] | undefined> {
-  // In the future, introduce new login step for user to choose project and profile
-  // For now, support the common case of one project per user
-  const [membershipsOutcome, memberships] = await repo.search<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    filters: [{
-      code: 'user',
-      operator: Operator.EQUALS,
-      value: getReferenceString(user)
-    }]
-  });
-
-  assertOk(membershipsOutcome);
-  return memberships?.entry?.map(entry => entry.resource as ProjectMembership);
-}
-
-function getDefaultProfile(memberships: ProjectMembership[]): Reference<ProfileResource> | undefined {
-  for (const membership of memberships) {
-    if (membership.profile) {
-      return membership.profile;
-    }
-  }
-  return undefined;
-}
-
-function getDefaultProject(memberships: ProjectMembership[]): Reference<Project> | undefined {
-  for (const membership of memberships) {
-    if (membership.project) {
-      return membership.project;
-    }
-  }
-  return undefined;
 }

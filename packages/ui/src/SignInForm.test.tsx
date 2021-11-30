@@ -1,7 +1,9 @@
 import { MedplumClient } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import crypto from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { TextEncoder } from 'util';
 import { MedplumProvider } from './MedplumProvider';
 import { SignInForm, SignInFormProps } from './SignInForm';
 
@@ -14,7 +16,37 @@ function mockFetch(url: string, options: any): Promise<any> {
     if (email === 'admin@medplum.com' && password === 'admin') {
       status = 301;
       result = {
-        profile: 'Practitioner/123'
+        login: '1',
+        code: '1'
+      };
+    } else if (email === 'multiple@medplum.com' && password === 'admin') {
+      status = 200;
+      result = {
+        login: '2',
+        memberships: [
+          {
+            id: '100',
+            profile: {
+              reference: 'Practitioner/123',
+              display: 'Alice Smith'
+            },
+            project: {
+              reference: 'Project/1',
+              display: 'Project 1'
+            },
+          },
+          {
+            id: '101',
+            profile: {
+              reference: 'Practitioner/234',
+              display: 'Bob Jones'
+            },
+            project: {
+              reference: 'Project/2',
+              display: 'Project 2'
+            },
+          }
+        ]
       };
     } else if (email !== 'admin@medplum.com') {
       result = {
@@ -37,6 +69,13 @@ function mockFetch(url: string, options: any): Promise<any> {
         }]
       };
     }
+
+  } else if (options.method === 'POST' && url.endsWith('auth/profile')) {
+    result = {
+      login: '1',
+      code: '1'
+    };
+
   } else if (options.method === 'GET' && url.endsWith('Practitioner/123')) {
     status = 200;
     result = {
@@ -44,6 +83,21 @@ function mockFetch(url: string, options: any): Promise<any> {
       id: '123',
       name: [{ given: ['Medplum'], family: ['Admin'] }],
     };
+
+  } else if (options.method === 'POST' && url.endsWith('/oauth2/token')) {
+    status = 200;
+    result = {
+      access_token: 'header.' + window.btoa(JSON.stringify({ client_id: 'my-client-id' })) + '.signature',
+      refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: 'my-client-id' })) + '.signature',
+      expires_in: 1,
+      token_type: 'Bearer',
+      scope: 'openid',
+      project: { reference: 'Project/123' },
+      profile: { reference: 'Practitioner/123' }
+    };
+
+  } else {
+    console.log(options.method, url);
   }
 
   const response: any = {
@@ -56,6 +110,7 @@ function mockFetch(url: string, options: any): Promise<any> {
   };
 
   return Promise.resolve({
+    ok: status < 400,
     json: () => Promise.resolve(response)
   });
 }
@@ -84,6 +139,16 @@ const setup = (args?: SignInFormProps) => {
 
 describe('SignInForm', () => {
 
+  beforeAll(() => {
+    Object.defineProperty(global, 'TextEncoder', {
+      value: TextEncoder
+    });
+
+    Object.defineProperty(global.self, 'crypto', {
+      value: crypto.webcrypto
+    });
+  });
+
   test('Renders', () => {
     const utils = setup();
     const input = utils.getByTestId('submit') as HTMLButtonElement;
@@ -109,6 +174,8 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByTestId('submit'));
     });
 
+    await waitFor(() => expect(medplum.getProfile()).toBeDefined());
+
     expect(success).toBe(true);
   });
 
@@ -128,7 +195,41 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByTestId('submit'));
     });
 
+    await waitFor(() => expect(medplum.getProfile()).toBeDefined());
+
     expect(medplum.getProfile()).not.toBeUndefined();
+  });
+
+  test('Submit success multiple profiles', async () => {
+    let success = false;
+
+    setup({
+      onSuccess: () => success = true
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('email'), { target: { value: 'multiple@medplum.com' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('password'), { target: { value: 'admin' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('submit'));
+    });
+
+    await waitFor(() => expect(screen.getByText('Choose profile')).toBeDefined());
+    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+    expect(screen.getByText('Bob Jones')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Alice Smith'));
+    });
+
+    await waitFor(() => expect(medplum.getProfile()).toBeDefined());
+
+    expect(success).toBe(true);
   });
 
   test('User not found', async () => {
@@ -166,6 +267,10 @@ describe('SignInForm', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('submit'));
+    });
+
+    await act(async () => {
+      await waitFor(() => expect(screen.getByTestId('text-field-error')).toBeInTheDocument());
     });
 
     expect(screen.getByTestId('text-field-error')).toBeInTheDocument();

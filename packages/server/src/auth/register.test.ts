@@ -83,10 +83,10 @@ describe('Register', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.project).not.toBeUndefined();
+    expect(res.body.project.reference).not.toBeUndefined();
 
     const res2 = await request(app)
-      .get(`/fhir/R4/${res.body.project}`)
+      .get(`/fhir/R4/${res.body.project.reference}`)
       .set('Authorization', 'Bearer ' + res.body.accessToken);
 
     expect(res2.status).toBe(404);
@@ -105,10 +105,10 @@ describe('Register', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.profile).not.toBeUndefined();
+    expect(res.body.profile.reference).not.toBeUndefined();
 
     const res2 = await request(app)
-      .get(`/fhir/R4/${res.body.profile}`)
+      .get(`/fhir/R4/${res.body.profile.reference}`)
       .set('Authorization', 'Bearer ' + res.body.accessToken);
 
     expect(res2.status).toBe(200);

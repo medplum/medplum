@@ -5,6 +5,7 @@ import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { initTestAuth } from '../jest.setup';
 import { initKeys } from '../oauth';
+import { seedDatabase } from '../seed';
 import { repo } from './repo';
 
 const app = express();
@@ -15,6 +16,7 @@ describe('GraphQL', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
+    await seedDatabase();
     await initApp(app);
     await initKeys(config);
     accessToken = await initTestAuth();

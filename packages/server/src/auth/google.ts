@@ -1,12 +1,13 @@
-import { assertOk, badRequest, getReferenceString, Login } from '@medplum/core';
+import { assertOk, badRequest, Login } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
 import { getConfig } from '../config';
-import { MEDPLUM_CLIENT_APPLICATION_ID } from '../constants';
 import { invalidRequest, sendOutcome } from '../fhir';
-import { finalizeLogin, GoogleCredentialClaims, tryLogin } from '../oauth';
+import { GoogleCredentialClaims, tryLogin } from '../oauth';
+import { getDefaultClientApplication } from '../seed';
+import { sendLoginResult } from './utils';
 
 /*
  * Integrating Google Sign-In into your web app
@@ -35,19 +36,22 @@ export const googleValidators = [
  * @param req The request.
  * @param res The response.
  */
-export async function googleHandler(req: Request, res: Response) {
+export async function googleHandler(req: Request, res: Response): Promise<void> {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return sendOutcome(res, invalidRequest(errors));
+    sendOutcome(res, invalidRequest(errors));
+    return;
   }
 
   const clientId = getConfig().googleClientId;
   if (!clientId) {
-    return sendOutcome(res, badRequest('Google authentication is not enabled'));
+    sendOutcome(res, badRequest('Google authentication is not enabled'));
+    return;
   }
 
   if (req.body.clientId !== clientId) {
-    return sendOutcome(res, badRequest('Invalid Google Client ID'));
+    sendOutcome(res, badRequest('Invalid Google Client ID'));
+    return;
   }
 
   const googleJwt = req.body.credential as string;
@@ -60,23 +64,16 @@ export async function googleHandler(req: Request, res: Response) {
 
   const result = await jwtVerify(googleJwt, JWKS, verifyOptions);
   const claims = result.payload as GoogleCredentialClaims;
+  const client = getDefaultClientApplication();
   const [loginOutcome, login] = await tryLogin({
     authMethod: 'google',
-    clientId: MEDPLUM_CLIENT_APPLICATION_ID,
+    clientId: client.id as string,
     email: claims.email,
     googleCredentials: claims,
     scope: 'openid',
-    role: 'practitioner',
     nonce: randomUUID(),
     remember: true
   });
   assertOk(loginOutcome);
-
-  const loginDetails = await finalizeLogin(login as Login);
-
-  return res.status(200).json({
-    ...loginDetails.tokens,
-    project: loginDetails.project && getReferenceString(loginDetails.project),
-    profile: loginDetails.profile && getReferenceString(loginDetails.profile)
-  });
+  await sendLoginResult(res, login as Login);
 }

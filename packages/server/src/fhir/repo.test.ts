@@ -2,9 +2,9 @@ import { AccessPolicy, assertOk, Bundle, ClientApplication, Communication, creat
 import { randomUUID } from 'crypto';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { MEDPLUM_CLIENT_APPLICATION_ID, MEDPLUM_PROJECT_ID } from '../constants';
 import { closeDatabase, initDatabase } from '../database';
 import { tryLogin } from '../oauth';
+import { getDefaultClientApplication, seedDatabase } from '../seed';
 import { processBatch } from './batch';
 import { getRepoForLogin, repo, Repository } from './repo';
 
@@ -13,6 +13,7 @@ describe('FHIR Repo', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
+    await seedDatabase();
   });
 
   afterAll(async () => {
@@ -291,7 +292,7 @@ describe('FHIR Repo', () => {
     const author = 'Practitioner/' + randomUUID();
 
     const repo = new Repository({
-      project: MEDPLUM_PROJECT_ID,
+      project: randomUUID(),
       author: {
         reference: author
       }
@@ -340,7 +341,6 @@ describe('FHIR Repo', () => {
     const clientApp = 'ClientApplication/' + randomUUID();
 
     const repo = new Repository({
-      project: MEDPLUM_PROJECT_ID,
       author: {
         reference: clientApp
       }
@@ -360,7 +360,6 @@ describe('FHIR Repo', () => {
     const author = 'Practitioner/' + randomUUID();
 
     const repo = new Repository({
-      project: MEDPLUM_PROJECT_ID,
       author: {
         reference: clientApp
       }
@@ -384,7 +383,6 @@ describe('FHIR Repo', () => {
     const author = 'Practitioner/' + randomUUID();
 
     const repo = new Repository({
-      project: MEDPLUM_PROJECT_ID,
       author: {
         reference: author
       }
@@ -404,7 +402,6 @@ describe('FHIR Repo', () => {
     const fakeAuthor = 'Practitioner/' + randomUUID();
 
     const repo = new Repository({
-      project: MEDPLUM_PROJECT_ID,
       author: {
         reference: author
       }
@@ -755,11 +752,10 @@ describe('FHIR Repo', () => {
 
     const [loginOutcome1, login1] = await tryLogin({
       authMethod: 'password',
-      clientId: MEDPLUM_CLIENT_APPLICATION_ID,
+      clientId: getDefaultClientApplication().id,
       email: registration1.email,
       password: registration1.password,
       scope: 'openid',
-      role: 'practitioner',
       nonce: randomUUID(),
       remember: true
     });
@@ -794,11 +790,10 @@ describe('FHIR Repo', () => {
 
     const [loginOutcome2, login2] = await tryLogin({
       authMethod: 'password',
-      clientId: MEDPLUM_CLIENT_APPLICATION_ID,
+      clientId: getDefaultClientApplication().id,
       email: registration2.email,
       password: registration2.password,
       scope: 'openid',
-      role: 'practitioner',
       nonce: randomUUID(),
       remember: true
     });
@@ -827,7 +822,6 @@ describe('FHIR Repo', () => {
     };
 
     const repo2 = new Repository({
-      project: MEDPLUM_PROJECT_ID,
       author: {
         reference: 'Practitioner/123'
       },
@@ -845,7 +839,6 @@ describe('FHIR Repo', () => {
     };
 
     const repo2 = new Repository({
-      project: MEDPLUM_PROJECT_ID,
       author: {
         reference: 'Practitioner/123'
       },
@@ -862,7 +855,6 @@ describe('FHIR Repo', () => {
     };
 
     const repo2 = new Repository({
-      project: MEDPLUM_PROJECT_ID,
       author: {
         reference: 'Practitioner/123'
       },
@@ -891,7 +883,6 @@ describe('FHIR Repo', () => {
     };
 
     const repo2 = new Repository({
-      project: MEDPLUM_PROJECT_ID,
       author: {
         reference: 'Practitioner/123'
       },
@@ -923,7 +914,6 @@ describe('FHIR Repo', () => {
     };
 
     const repo2 = new Repository({
-      project: MEDPLUM_PROJECT_ID,
       author: {
         reference: 'Practitioner/123'
       },
@@ -954,7 +944,6 @@ describe('FHIR Repo', () => {
     };
 
     const repo = new Repository({
-      project: MEDPLUM_PROJECT_ID,
       author: {
         reference: 'Practitioner/123'
       },
@@ -1007,7 +996,6 @@ describe('FHIR Repo', () => {
     };
 
     const repo1 = new Repository({
-      project: MEDPLUM_PROJECT_ID,
       author: {
         reference: 'Practitioner/123'
       },
@@ -1015,7 +1003,6 @@ describe('FHIR Repo', () => {
     });
 
     const repo2 = new Repository({
-      project: MEDPLUM_PROJECT_ID,
       author: {
         reference: 'Practitioner/123'
       },

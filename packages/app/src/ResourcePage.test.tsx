@@ -1,14 +1,9 @@
-import { Bot, Bundle, DiagnosticReport, MedplumClient, notFound, Patient, Practitioner, Questionnaire, User } from '@medplum/core';
-import { MedplumProvider } from '@medplum/ui';
+import { Bot, Bundle, DiagnosticReport, notFound, Patient, Practitioner, Questionnaire } from '@medplum/core';
+import { MedplumProvider, MockClient } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ResourcePage } from './ResourcePage';
-
-const user: User = {
-  resourceType: 'User',
-  id: '123'
-};
 
 const practitioner: Practitioner = {
   resourceType: 'Practitioner',
@@ -73,7 +68,10 @@ const patient: Patient = {
     given: ['Alice'],
     family: 'Smith'
   }],
-  birthDate: '1990-01-01'
+  birthDate: '1990-01-01',
+  meta: {
+    versionId: '456'
+  }
 };
 
 const patientSearchBundle: Bundle = {
@@ -110,66 +108,45 @@ const diagnosticReport: DiagnosticReport = {
   ]
 };
 
-function mockFetch(url: string, options: any): Promise<any> {
-  const method = options.method ?? 'GET';
-  let result: any;
-
-  if (method === 'POST' && url.endsWith('/auth/login')) {
-    result = {
-      user,
-      profile: 'Practitioner/123'
-    };
-  } else if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name:exact=Practitioner')) {
-    result = practitionerStructureBundle;
-  } else if (method === 'GET' && url.includes('/fhir/R4/SearchParameter?name=Practitioner')) {
-    result = practitionerSearchParameter;
-  } else if (method === 'GET' && url.includes('/fhir/R4/Patient?')) {
-    result = patientSearchBundle;
-  } else if (method === 'GET' && url.includes('/fhir/R4/Patient/123')) {
-    result = patient;
-  } else if (method === 'GET' && url.includes('/fhir/R4/Patient/123/_history')) {
-    result = patientSearchBundle;
-  } else if (method === 'GET' && url.endsWith('/fhir/R4/Practitioner/123')) {
-    result = practitioner;
-  } else if (method === 'PUT' && url.endsWith('/fhir/R4/Practitioner/123')) {
-    result = practitioner;
-  } else if (method === 'GET' && url.endsWith('/fhir/R4/Practitioner/123/_history')) {
-    result = practitionerHistory;
-  } else if (method === 'GET' && url.endsWith('/fhir/R4/Practitioner/not-found')) {
-    result = notFound
-  } else if (method === 'GET' && url.endsWith('/fhir/R4/Questionnaire/123')) {
-    result = questionnaire;
-  } else if (method === 'GET' && url.includes('/fhir/R4/Bot/123')) {
-    result = bot;
-  } else if (method === 'GET' && url.includes('/fhir/R4/DiagnosticReport/123')) {
-    result = diagnosticReport;
-  }
-
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    ...result
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
+const medplum = new MockClient({
+  'fhir/R4/StructureDefinition?name:exact=Practitioner': {
+    'GET': practitionerStructureBundle
+  },
+  'fhir/R4/SearchParameter?name=Practitioner': {
+    'GET': practitionerSearchParameter
+  },
+  'fhir/R4/Patient?': {
+    'GET': patientSearchBundle
+  },
+  'fhir/R4/Patient/123': {
+    'GET': patient
+  },
+  'fhir/R4/Patient/123/_history': {
+    'GET': patientSearchBundle
+  },
+  'fhir/R4/Practitioner/123': {
+    'GET': practitioner,
+    'PUT': practitioner
+  },
+  'fhir/R4/Practitioner/123/_history': {
+    'GET': practitionerHistory
+  },
+  'fhir/R4/Practitioner/not-found': {
+    'GET': notFound
+  },
+  'fhir/R4/Questionnaire/123': {
+    'GET': questionnaire
+  },
+  'fhir/R4/Bot/123': {
+    'GET': bot
+  },
+  'fhir/R4/DiagnosticReport/123': {
+    'GET': diagnosticReport
+  },
 });
 
 describe('ResourcePage', () => {
 
-  beforeAll(async () => {
-    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-  });
 
   const setup = (url: string) => {
     return render(

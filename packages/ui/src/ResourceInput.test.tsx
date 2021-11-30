@@ -1,88 +1,42 @@
-import { Bundle, MedplumClient, Patient } from '@medplum/core';
+import { Bundle } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { randomUUID } from 'crypto';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
+import { MockClient } from './MockClient';
 import { ResourceInput, ResourceInputProps } from './ResourceInput';
 
-function mockSearch(): Bundle {
-  return {
-    resourceType: 'Bundle',
-    entry: [{
-      resource: {
-        resourceType: 'Patient',
-        id: randomUUID(),
-        name: [{
-          given: ['Alice'],
-          family: 'Smith'
-        }]
-      }
-    }, {
-      resource: {
-        resourceType: 'Patient',
-        id: randomUUID(),
-        name: [{
-          given: ['Bob'],
-          family: 'Jones'
-        }],
-        birthDate: '1955-05-05'
-      }
-    }, {
-      resource: {
-        resourceType: 'Organization',
-        id: randomUUID(),
-        name: 'Random Org'
-      }
-    }]
-  };
-}
+const searchResult: Bundle = {
+  resourceType: 'Bundle',
+  entry: [{
+    resource: {
+      resourceType: 'Patient',
+      id: '123',
+      name: [{
+        given: ['Alice'],
+        family: 'Smith'
+      }]
+    }
+  }, {
+    resource: {
+      resourceType: 'Patient',
+      id: '345',
+      name: [{
+        given: ['Bob'],
+        family: 'Jones'
+      }]
+    }
+  }]
+};
 
-function mockPatient(): Patient {
-  return {
-    resourceType: 'Patient',
-    id: '123',
-    name: [{
-      given: ['Alice'],
-      family: 'Smith'
-    }]
+const medplum = new MockClient({
+  'auth/login': {
+    'POST': {
+      profile: { reference: 'Practitioner/123' }
+    }
+  },
+  'fhir/R4/Patient?name=Alice': {
+    'GET': searchResult
   }
-}
-
-function mockCreateNew(): any {
-  return {
-    ok: true
-  }
-}
-
-function mockFetch(url: string, options: any): Promise<any> {
-  let result: any;
-
-  if (url.includes('/fhir/R4/Patient?name=')) {
-    result = mockSearch();
-  } else if (url.includes('/fhir/R4/Patient/123')) {
-    result = mockPatient();
-  } else if (url.includes('/create-new?')) {
-    result = mockCreateNew();
-  }
-
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    ...result
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
 });
 
 const setup = (args: ResourceInputProps) => {
@@ -94,10 +48,6 @@ const setup = (args: ResourceInputProps) => {
 };
 
 describe('ResourceInput', () => {
-
-  beforeAll(async () => {
-    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-  });
 
   beforeEach(() => {
     jest.useFakeTimers();

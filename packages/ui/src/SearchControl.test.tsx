@@ -1,8 +1,9 @@
-import { Bundle, MedplumClient, Operator, StructureDefinition } from '@medplum/core';
+import { Bundle, Operator, StructureDefinition } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
+import { MockClient } from './MockClient';
 import { SearchControl, SearchControlProps } from './SearchControl';
 
 const patientStructure: StructureDefinition = {
@@ -20,6 +21,19 @@ const patientStructure: StructureDefinition = {
       }
     ]
   }
+};
+
+const patientSearchParams: Bundle = {
+  resourceType: 'Bundle',
+  entry: [{
+    resource: {
+      resourceType: 'SearchParameter',
+      id: 'Patient-name',
+      code: 'name',
+      name: 'name',
+      expression: 'Patient.name'
+    }
+  }]
 };
 
 const patientStructureBundle: Bundle = {
@@ -50,56 +64,22 @@ const emptySearchBundle: Bundle = {
   entry: []
 };
 
-function mockFetch(url: string, options: any): Promise<any> {
-  const method = options.method ?? 'GET';
-  let result: any;
-
-  if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name:exact=Patient')) {
-    result = patientStructureBundle;
-  } else if (method === 'GET' && url.includes('/fhir/R4/SearchParameter?_count=100&base=Patient')) {
-    result = {
-      resourceType: 'Bundle',
-      entry: [{
-        resource: {
-          resourceType: 'SearchParameter',
-          id: 'Patient-name',
-          code: 'name',
-          name: 'name',
-          expression: 'Patient.name'
-        }
-      }]
-    };
-  } else if (method === 'GET' && url.endsWith('/fhir/R4/Patient?name=Alice')) {
-    result = aliceSearchBundle;
-  } else if (method === 'GET' && url.endsWith('/fhir/R4/Patient?name=Bob')) {
-    result = emptySearchBundle;
-  }
-
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    ...result
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
+const medplum = new MockClient({
+  'fhir/R4/StructureDefinition?name:exact=Patient': {
+    'GET': patientStructureBundle
+  },
+  'fhir/R4/SearchParameter?_count=100&base=Patient': {
+    'GET': patientSearchParams
+  },
+  'fhir/R4/Patient?name=Alice': {
+    'GET': aliceSearchBundle
+  },
+  'fhir/R4/Patient?name=Bob': {
+    'GET': emptySearchBundle
+  },
 });
 
 describe('SearchControl', () => {
-
-  beforeAll(async () => {
-    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-  });
 
   const setup = (args: SearchControlProps) => {
     return render(

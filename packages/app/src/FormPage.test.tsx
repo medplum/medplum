@@ -1,14 +1,9 @@
-import { MedplumClient, notFound, Practitioner, Questionnaire, User } from '@medplum/core';
-import { MedplumProvider } from '@medplum/ui';
+import { notFound, Practitioner, Questionnaire } from '@medplum/core';
+import { MedplumProvider, MockClient } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { FormPage } from './FormPage';
-
-const user: User = {
-  resourceType: 'User',
-  id: '123'
-};
 
 const practitioner: Practitioner = {
   resourceType: 'Practitioner',
@@ -31,50 +26,21 @@ const questionnaire: Questionnaire = {
     text: 'First question',
     type: 'string'
   }]
-}
+};
 
-function mockFetch(url: string, options: any): Promise<any> {
-  const method = options.method ?? 'GET';
-  let result: any;
-
-  if (method === 'POST' && url.endsWith('/auth/login')) {
-    result = {
-      user,
-      profile: 'Practitioner/123'
-    };
-  } else if (method === 'GET' && url.endsWith('/fhir/R4/Practitioner/123')) {
-    result = practitioner;
-  } else if (method === 'GET' && url.endsWith('/fhir/R4/Questionnaire/not-found')) {
-    result = notFound
-  } else if (method === 'GET' && url.endsWith('/fhir/R4/Questionnaire/123')) {
-    result = questionnaire;
-  }
-
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    ...result
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
+const medplum = new MockClient({
+  'fhir/R4/Practitioner/123': {
+    'GET': practitioner
+  },
+  'fhir/R4/Questionnaire/not-found': {
+    'GET': notFound
+  },
+  'fhir/R4/Questionnaire/123': {
+    'GET': questionnaire
+  },
 });
 
 describe('FormPage', () => {
-
-  beforeAll(async () => {
-    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-  });
 
   const setup = (url: string) => {
     return render(

@@ -1,16 +1,25 @@
-import { Bundle, MedplumClient, Subscription } from '@medplum/core';
+import { Bundle, Subscription } from '@medplum/core';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { DefaultResourceTimeline, DefaultResourceTimelineProps } from './DefaultResourceTimeline';
 import { MedplumProvider } from './MedplumProvider';
-
-const subscriptionId = randomUUID();
+import { MockClient } from './MockClient';
 
 const subscription: Subscription = {
   resourceType: 'Subscription',
-  id: subscriptionId
+  id: '123',
+  meta: {
+    versionId: '456'
+  }
+};
+
+const subscriptionHistory: Bundle = {
+  resourceType: 'Bundle',
+  entry: [{
+    resource: subscription
+  }]
 };
 
 const auditEvents: Bundle = {
@@ -22,6 +31,7 @@ const auditEvents: Bundle = {
         id: randomUUID(),
         meta: {
           lastUpdated: new Date().toISOString(),
+          versionId: randomUUID(),
           author: {
             reference: 'Practitioner/123'
           }
@@ -31,45 +41,24 @@ const auditEvents: Bundle = {
   ]
 };
 
-function mockFetch(url: string, options: any): Promise<any> {
-  const method = options.method ?? 'GET';
-  let result: any;
-
-  if (method === 'POST' && url.endsWith('/auth/login')) {
-    result = {
-      profile: 'Practitioner/123'
-    };
-  } else if (method === 'GET' && url.includes('/fhir/R4/Subscription/' + subscriptionId)) {
-    result = subscription;
-  } else if (method === 'GET' && url.includes('/fhir/R4/AuditEvent?')) {
-    result = auditEvents;
+const medplum = new MockClient({
+  'auth/login': {
+    'POST': {
+      profile: { reference: 'Practitioner/123' }
+    }
+  },
+  'fhir/R4/Subscription/123': {
+    'GET': subscription
+  },
+  'fhir/R4/Subscription/123/_history': {
+    'GET': subscriptionHistory
+  },
+  'fhir/R4/AuditEvent?_count=100&entity=Subscription/123': {
+    'GET': auditEvents
   }
-
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    ...result
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
 });
 
 describe('DefaultResourceTimeline', () => {
-
-  beforeAll(async () => {
-    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-  });
 
   const setup = (args: DefaultResourceTimelineProps) => {
     return render(
@@ -82,7 +71,7 @@ describe('DefaultResourceTimeline', () => {
   };
 
   test('Renders reference', async () => {
-    setup({ resource: { reference: 'Subscription/' + subscriptionId } });
+    setup({ resource: { reference: 'Subscription/' + subscription.id } });
 
     await act(async () => {
       await waitFor(() => screen.getAllByTestId('timeline-item'));
@@ -90,7 +79,7 @@ describe('DefaultResourceTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).not.toBeUndefined();
-    expect(items.length).toEqual(1);
+    expect(items.length).toEqual(2);
   });
 
   test('Renders resource', async () => {
@@ -102,7 +91,7 @@ describe('DefaultResourceTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).not.toBeUndefined();
-    expect(items.length).toEqual(1);
+    expect(items.length).toEqual(2);
   });
 
 });

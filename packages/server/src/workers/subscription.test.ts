@@ -4,18 +4,29 @@ import { createHmac, randomUUID } from 'crypto';
 import fetch from 'node-fetch';
 import { loadTestConfig } from '../config';
 import { closeDatabase, getClient, initDatabase } from '../database';
-import { repo } from '../fhir/repo';
+import { Repository } from '../fhir/repo';
+import { seedDatabase } from '../seed';
 import { closeSubscriptionWorker, initSubscriptionWorker, sendSubscription } from './subscription';
 
 jest.mock('bullmq');
 jest.mock('node-fetch');
+
+let repo: Repository;
 
 describe('Subscription Worker', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
+    await seedDatabase();
     await initSubscriptionWorker(config.redis);
+
+    repo = new Repository({
+      project: randomUUID(),
+      author: {
+        reference: 'ClientApplication/' + randomUUID()
+      }
+    });
   });
 
   afterAll(async () => {

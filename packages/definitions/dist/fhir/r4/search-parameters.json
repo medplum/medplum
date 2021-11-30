@@ -65423,6 +65423,24 @@
     }
   },
   {
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/Project-owner",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "Project-owner",
+      "url" : "https://medplum.com/fhir/SearchParameter/Project-owner",
+      "version" : "4.0.1",
+      "name" : "name",
+      "publisher" : "Medplum",
+      "code" : "owner",
+      "base" : ["Project"],
+      "type" : "reference",
+      "expression" : "Project.owner",
+      "xpath" : "f:Project/f:owner",
+      "xpathUsage" : "normal",
+      "target" : ["User"]
+    }
+  },
+  {
     "fullUrl" : "https://medplum.com/fhir/SearchParameter/ProjectMembership-project",
     "resource" : {
       "resourceType" : "SearchParameter",

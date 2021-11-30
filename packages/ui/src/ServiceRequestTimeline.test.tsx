@@ -1,17 +1,26 @@
-import { Bundle, Communication, Media, MedplumClient, ServiceRequest } from '@medplum/core';
+import { Bundle, Communication, Media, ServiceRequest } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
+import { MockClient } from './MockClient';
 import { ServiceRequestTimeline, ServiceRequestTimelineProps } from './ServiceRequestTimeline';
-
-const serviceRequestId = randomUUID();
 
 const serviceRequest: ServiceRequest = {
   resourceType: 'ServiceRequest',
-  id: serviceRequestId
+  id: '123',
+  meta: {
+    versionId: '456'
+  }
 };
+
+const serviceRequestHistory: Bundle = {
+  resourceType: 'Bundle',
+  entry: [{
+    resource: serviceRequest
+  }]
+}
 
 const communications: Bundle = {
   resourceType: 'Bundle',
@@ -73,51 +82,33 @@ const newMedia: Media = {
   }
 };
 
-function mockFetch(url: string, options: any): Promise<any> {
-  const method = options.method ?? 'GET';
-  let result: any;
-
-  if (method === 'POST' && url.endsWith('/auth/login')) {
-    result = {
-      profile: 'Practitioner/123'
-    };
-  } else if (method === 'GET' && url.includes('/fhir/R4/ServiceRequest/' + serviceRequestId)) {
-    result = serviceRequest;
-  } else if (method === 'GET' && url.includes('/fhir/R4/Communication?')) {
-    result = communications;
-  } else if (method === 'GET' && url.includes('/fhir/R4/Media?')) {
-    result = media;
-  } else if (method === 'POST' && url.includes('/fhir/R4/Communication')) {
-    result = newComment;
-  } else if (method === 'POST' && url.includes('/fhir/R4/Media')) {
-    result = newMedia;
-  }
-
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    ...result
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
+const medplum = new MockClient({
+  'auth/login': {
+    'POST': {
+      profile: { reference: 'Practitioner/123' }
+    }
+  },
+  'fhir/R4/ServiceRequest/123': {
+    'GET': serviceRequest
+  },
+  'fhir/R4/ServiceRequest/123/_history': {
+    'GET': serviceRequestHistory
+  },
+  'fhir/R4/Communication?_count=100&based-on=ServiceRequest/123': {
+    'GET': communications
+  },
+  'fhir/R4/Media?_count=100&based-on=ServiceRequest/123': {
+    'GET': media
+  },
+  'fhir/R4/Communication': {
+    'POST': newComment
+  },
+  'fhir/R4/Media': {
+    'POST': newMedia
+  },
 });
 
 describe('ServiceRequestTimeline', () => {
-
-  beforeAll(async () => {
-    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-  });
 
   const setup = (args: ServiceRequestTimelineProps) => {
     return render(
@@ -130,7 +121,7 @@ describe('ServiceRequestTimeline', () => {
   };
 
   test('Renders reference', async () => {
-    setup({ serviceRequest: { reference: 'ServiceRequest/' + serviceRequestId } });
+    setup({ serviceRequest: { reference: 'ServiceRequest/' + serviceRequest.id } });
 
     await act(async () => {
       await waitFor(() => screen.getAllByTestId('timeline-item'));
@@ -138,7 +129,7 @@ describe('ServiceRequestTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).not.toBeUndefined();
-    expect(items.length).toEqual(2);
+    expect(items.length).toEqual(3);
   });
 
   test('Renders resource', async () => {
@@ -150,7 +141,7 @@ describe('ServiceRequestTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).not.toBeUndefined();
-    expect(items.length).toEqual(2);
+    expect(items.length).toEqual(3);
   });
 
   test('Create comment', async () => {
@@ -178,7 +169,7 @@ describe('ServiceRequestTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).not.toBeUndefined();
-    expect(items.length).toEqual(3);
+    expect(items.length).toEqual(4);
   });
 
   test('Upload media', async () => {
@@ -204,7 +195,7 @@ describe('ServiceRequestTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).not.toBeUndefined();
-    expect(items.length).toEqual(3);
+    expect(items.length).toEqual(4);
   });
 
 });

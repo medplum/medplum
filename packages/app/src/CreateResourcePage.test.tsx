@@ -1,15 +1,10 @@
-import { Bundle, MedplumClient, Practitioner, User } from '@medplum/core';
-import { MedplumProvider } from '@medplum/ui';
+import { Bundle, Practitioner } from '@medplum/core';
+import { MedplumProvider, MockClient } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { CreateResourcePage } from './CreateResourcePage';
 import { ResourcePage } from './ResourcePage';
-
-const user: User = {
-  resourceType: 'User',
-  id: '123'
-};
 
 const practitioner: Practitioner = {
   resourceType: 'Practitioner',
@@ -56,48 +51,19 @@ const practitionerSearchParameter: Bundle = {
   }]
 };
 
-function mockFetch(url: string, options: any): Promise<any> {
-  const method = options.method ?? 'GET';
-  let result: any;
-
-  if (method === 'POST' && url.endsWith('/auth/login')) {
-    result = {
-      user,
-      profile: 'Practitioner/123'
-    };
-  } else if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name:exact=Practitioner')) {
-    result = practitionerStructureBundle;
-  } else if (method === 'GET' && url.includes('/fhir/R4/SearchParameter?name=Practitioner')) {
-    result = practitionerSearchParameter;
-  } else if (method === 'GET' && url.includes('/fhir/R4/Practitioner/123')) {
-    result = practitioner;
-  }
-
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    ...result
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
+const medplum = new MockClient({
+  'fhir/R4/StructureDefinition?name:exact=Practitioner': {
+    'GET': practitionerStructureBundle
+  },
+  'fhir/R4/SearchParameter?name=Practitioner': {
+    'GET': practitionerSearchParameter
+  },
+  'fhir/R4/Practitioner/123': {
+    'GET': practitioner
+  },
 });
 
 describe('CreateResourcePage', () => {
-
-  beforeAll(async () => {
-    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-  });
 
   const setup = (url: string) => {
     return render(
@@ -121,7 +87,6 @@ describe('CreateResourcePage', () => {
 
     expect(screen.getByText('New Practitioner')).toBeInTheDocument();
   });
-
 
   test('Submit new Practitioner', async () => {
     setup('/Practitioner/new');

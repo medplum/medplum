@@ -1,7 +1,8 @@
-import { Address, Attachment, CodeableConcept, ContactPoint, ElementDefinition, HumanName, Identifier, IndexedStructureDefinition, MedplumClient } from '@medplum/core';
+import { Address, Attachment, CodeableConcept, ContactPoint, ElementDefinition, HumanName, Identifier, IndexedStructureDefinition } from '@medplum/core';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
+import { MockClient } from './MockClient';
 import { ResourcePropertyInput, ResourcePropertyInputProps } from './ResourcePropertyInput';
 
 const patientNameProperty: ElementDefinition = {
@@ -108,31 +109,9 @@ const schema: IndexedStructureDefinition = {
   }
 };
 
-function mockFetch(url: string, options: any): Promise<any> {
-  const response: any = {
-    request: {
-      url,
-      options
-    }
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
-});
+const medplum = new MockClient({});
 
 describe('ResourcePropertyInput', () => {
-
-  beforeAll(async () => {
-    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-  });
 
   function setup(props: ResourcePropertyInputProps) {
     return render(

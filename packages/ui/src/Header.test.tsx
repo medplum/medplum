@@ -1,116 +1,44 @@
-import { Bundle, MedplumClient, Patient } from '@medplum/core';
+import { Bundle } from '@medplum/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { randomUUID } from 'crypto';
 import React from 'react';
 import { act } from 'react-dom/test-utils';
 import { MemoryRouter } from 'react-router-dom';
 import { Header, HeaderProps } from './Header';
 import { MedplumProvider } from './MedplumProvider';
+import { MockClient } from './MockClient';
 
-function mockSearch(): Bundle {
-  return {
-    resourceType: 'Bundle',
-    entry: [{
-      resource: {
-        resourceType: 'Patient',
-        id: randomUUID(),
-        name: [{
-          given: ['Alice'],
-          family: 'Smith'
-        }]
-      }
-    }, {
-      resource: {
-        resourceType: 'Patient',
-        id: randomUUID(),
-        name: [{
-          given: ['Bob'],
-          family: 'Jones'
-        }]
-      }
-    }]
-  };
-}
-
-function mockPatient(): Patient {
-  return {
-    resourceType: 'Patient',
-    id: '123',
-    name: [{
-      given: ['Alice'],
-      family: 'Smith'
-    }]
-  }
-}
-
-function mockFetch(url: string, options: any): Promise<any> {
-  let result: any;
-
-  if (url.endsWith('/auth/login')) {
-    if (options.body.includes('admin@medplum.com')) {
-      result = {
-        project: 'Project/1',
-        profile: 'Practitioner/123'
-      };
-    } else if (options.body.includes('patient@example.com')) {
-      result = {
-        project: 'Project/2',
-        profile: 'Patient/456'
-      };
-    }
-  } else if (url.includes('/fhir/R4/Patient?name=')) {
-    result = mockSearch();
-  } else if (url.includes('/fhir/R4/Patient/123')) {
-    result = mockPatient();
-  } else if (url.includes('/fhir/R4/Practitioner/123')) {
-    result = {
-      resourceType: 'Practitioner',
+const searchResult: Bundle = {
+  resourceType: 'Bundle',
+  entry: [{
+    resource: {
+      resourceType: 'Patient',
       id: '123',
       name: [{
-        given: ['Medplum'],
-        family: 'Admin'
+        given: ['Alice'],
+        family: 'Smith'
       }]
-    };
-  } else if (url.includes('/fhir/R4/Practitioner/456')) {
-    result = {
-      resourceType: 'Practitioner',
-      id: '456',
-      name: [{
-        given: ['Medplum'],
-        family: 'Admin'
-      }]
-    };
-  } else if (url.includes('/fhir/R4/Patient/456')) {
-    result = {
+    }
+  }, {
+    resource: {
       resourceType: 'Patient',
-      id: '456',
+      id: '345',
       name: [{
-        given: ['Test'],
-        family: 'Patient'
+        given: ['Bob'],
+        family: 'Jones'
       }]
-    };
-  } else {
-    console.log('fetch', options.method, url);
+    }
+  }]
+};
+
+const medplum = new MockClient({
+  'auth/login': {
+    'POST': {
+      profile: { reference: 'Practitioner/123' }
+    }
+  },
+  'fhir/R4/Patient?name=Alice': {
+    'GET': searchResult
   }
-
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    ...result
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
 });
 
 function setup(props?: HeaderProps) {
@@ -124,10 +52,6 @@ function setup(props?: HeaderProps) {
 }
 
 describe('Header', () => {
-
-  beforeAll(async () => {
-    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-  });
 
   beforeEach(() => {
     jest.useFakeTimers();
@@ -230,8 +154,8 @@ describe('Header', () => {
   test.skip('Switch accounts', async () => {
     Object.defineProperty(window, 'location', { value: { reload: jest.fn() } });
 
-    const signInResult = await medplum.signIn('patient@example.com', 'password', 'patient', 'openid');
-    expect(signInResult.id).toEqual('456');
+    // const signInResult = await medplum.signIn('patient@example.com', 'password', 'patient', 'openid');
+    // expect(signInResult.id).toEqual('456');
     expect(medplum.getLogins().length).toEqual(2);
     expect(medplum.getProfile()?.id).toEqual('456');
 

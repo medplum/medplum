@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID } from 'crypto';
+import crypto, { randomUUID } from 'crypto';
 import { TextEncoder } from 'util';
 import { MedplumClient } from './client';
 import { Bundle, SearchParameter, StructureDefinition } from './fhir';
@@ -53,23 +53,20 @@ function mockFetch(url: string, options: any): Promise<any> {
 
   if (method === 'POST' && url.endsWith('auth/login')) {
     result = {
-      profile: 'Practitioner/123',
-      accessToken: '123',
-      refreshToken: '456'
+      login: '123',
+      code: '123',
     };
 
   } else if (method === 'POST' && url.endsWith('auth/google')) {
     result = {
-      profile: 'Practitioner/123',
-      accessToken: '123',
-      refreshToken: '456'
+      login: '123',
+      code: '123',
     };
 
   } else if (method === 'POST' && url.endsWith('auth/register')) {
     result = {
-      profile: 'Practitioner/123',
-      accessToken: '123',
-      refreshToken: '456'
+      login: '123',
+      code: '123',
     };
 
   } else if (method === 'GET' && url.endsWith('Practitioner/123')) {
@@ -150,6 +147,16 @@ function mockFetch(url: string, options: any): Promise<any> {
 
 describe('Client', () => {
 
+  beforeAll(() => {
+    Object.defineProperty(global, 'TextEncoder', {
+      value: TextEncoder
+    });
+
+    Object.defineProperty(global.self, 'crypto', {
+      value: crypto.webcrypto
+    });
+  });
+
   test('Constructor', () => {
     expect(() => new MedplumClient({
       clientId: '',
@@ -192,35 +199,23 @@ describe('Client', () => {
 
   test('SignIn direct', async () => {
     const client = new MedplumClient(defaultOptions);
-    const result = await client.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-    expect(result).not.toBeUndefined();
-    expect(result.resourceType).toBe('Practitioner');
+    const result1 = await client.startLogin('admin@medplum.com', 'admin');
+    expect(result1).not.toBeUndefined();
+    expect(result1.login).not.toBeUndefined();
+    expect(result1.code).not.toBeUndefined();
   });
 
   test('Sign in with Google', async () => {
     const client = new MedplumClient(defaultOptions);
-    const result = await client.signInWithGoogle({
+    const result1 = await client.startGoogleLogin({
       clientId: 'google-client-id',
       credential: 'google-credential'
     });
-    expect(result).not.toBeUndefined();
-    expect(result.resourceType).toBe('Practitioner');
+    expect(result1).not.toBeUndefined();
+    expect(result1.login).not.toBeUndefined();
   });
 
   test('SignInWithRedirect', async () => {
-    // Mock window.crypto
-    Object.defineProperty(global.self, 'crypto', {
-      value: {
-        getRandomValues: (arr: Uint8Array) => randomBytes(arr.length),
-        subtle: {
-          digest: () => 'test'
-        }
-      }
-    });
-
-    // Mock TextEncoder
-    global.TextEncoder = TextEncoder;
-
     // Mock window.location.assign
     global.window = Object.create(window);
     Object.defineProperty(window, 'location', {
@@ -275,14 +270,14 @@ describe('Client', () => {
       projectName: 'Sally World'
     });
     expect(result).not.toBeUndefined();
-    expect(result.resourceType).toBe('Practitioner');
+    expect(result.login).not.toBeUndefined();
   });
 
   test('Read expired and refresh', async () => {
     tokenExpired = true;
 
     const client = new MedplumClient(defaultOptions);
-    await client.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
+    await client.startLogin('admin@medplum.com', 'admin');
 
     const result = await client.get('expired');
     expect(result).not.toBeUndefined();
@@ -294,7 +289,7 @@ describe('Client', () => {
 
     const onUnauthenticated = jest.fn();
     const client = new MedplumClient({ ...defaultOptions, onUnauthenticated });
-    await client.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
+    await client.startLogin('admin@medplum.com', 'admin');
 
     const result = client.get('expired');
     await expect(result).rejects.toEqual('Failed to fetch tokens');

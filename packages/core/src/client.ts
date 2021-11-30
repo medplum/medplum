@@ -4,7 +4,7 @@
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
-import { Binary, Bundle, Reference, Resource, SearchParameter, StructureDefinition, Subscription, ValueSet } from './fhir';
+import { Binary, Bundle, Project, ProjectMembership, Reference, Resource, SearchParameter, StructureDefinition, Subscription, ValueSet } from './fhir';
 import { parseJWTPayload } from './jwt';
 import { isOk, OperationOutcomeError } from './outcomes';
 import { formatSearchQuery, Operator, SearchRequest } from './search';
@@ -13,6 +13,7 @@ import { IndexedStructureDefinition, indexStructureDefinition } from './types';
 import { arrayBufferToBase64, ProfileResource, stringify } from './utils';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
+const DEFAULT_SCOPE = 'launch/patient openid fhirUser offline_access user/*.*';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
 const JSON_CONTENT_TYPE = 'application/json';
 const FHIR_CONTENT_TYPE = 'application/fhir+json';
@@ -79,33 +80,51 @@ export interface FetchLike {
   (url: string, options?: any): Promise<any>;
 }
 
-interface LoginResponse {
-  project: string;
-  profile: string;
-  accessToken: string;
-  refreshToken: string;
-}
-
-interface TokenResponse {
-  token_type: string;
-  id_token: string;
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-}
-
 export interface RegisterRequest {
-  firstName: string;
-  lastName: string;
-  projectName: string;
-  email: string;
-  password: string;
-  remember?: boolean;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly projectName: string;
+  readonly email: string;
+  readonly password: string;
+  readonly remember?: boolean;
 }
 
 export interface GoogleCredentialResponse {
   readonly clientId: string;
   readonly credential: string;
+}
+
+export interface LoginAuthenticationResponse {
+  readonly login: string;
+  readonly code?: string;
+  readonly memberships?: ProjectMembership[];
+}
+
+export interface LoginProfileResponse {
+  readonly login: string;
+  readonly scope: string;
+}
+
+export interface LoginScopeResponse {
+  readonly login: string;
+  readonly code: string;
+}
+
+export interface LoginState {
+  readonly project: Reference<Project>;
+  readonly profile: Reference<ProfileResource>;
+  readonly accessToken: string;
+  readonly refreshToken: string;
+}
+
+export interface TokenResponse {
+  readonly token_type: string;
+  readonly id_token: string;
+  readonly access_token: string;
+  readonly refresh_token: string;
+  readonly expires_in: number;
+  readonly project: Reference<Project>;
+  readonly profile: Reference<ProfileResource>;
 }
 
 export class MedplumClient extends EventTarget {
@@ -120,8 +139,9 @@ export class MedplumClient extends EventTarget {
   private readonly logoutUrl: string;
   private readonly onUnauthenticated?: () => void;
   private refreshPromise?: Promise<any>;
-  private activeLogin?: LoginResponse;
+  private activeLogin?: LoginState;
   private profile?: ProfileResource;
+  private loading: boolean;
 
   constructor(options: MedplumClientOptions) {
     super();
@@ -149,7 +169,8 @@ export class MedplumClient extends EventTarget {
     this.tokenUrl = options.tokenUrl || this.baseUrl + 'oauth2/token';
     this.logoutUrl = options.logoutUrl || this.baseUrl + 'oauth2/logout';
     this.onUnauthenticated = options.onUnauthenticated;
-    this.activeLogin = this.storage.getObject<LoginResponse>('activeLogin');
+    this.activeLogin = this.storage.getObject<LoginState>('activeLogin');
+    this.loading = false;
     this.refreshProfile().catch(console.log);
   }
 
@@ -180,37 +201,31 @@ export class MedplumClient extends EventTarget {
   /**
    * Tries to register a new user.
    * @param request The registration request.
-   * @returns Promise to the user profile resource.
+   * @returns Promise to the authentication response.
    */
-  register(request: RegisterRequest): Promise<ProfileResource> {
-    return this.post('auth/register', request)
-      .then((response: LoginResponse) => this.handleLoginResponse(response));
+  async register(request: RegisterRequest): Promise<LoginAuthenticationResponse> {
+    await this.startPkce();
+    return this.post('auth/register', request) as Promise<LoginAuthenticationResponse>;
   }
 
   /**
-   * Tries to sign in with email and password.
-   * @param email The user email address.
-   * @param password The user password.
-   * @param role The login role.
-   * @param scope The OAuth2 login scope.
-   * @param remember Optional flag to "remember" to generate a refresh token and persist in local storage.
-   * @returns Promise to the user profile resource.
+   * Initiates a user login flow.
+   * @param email The email address of the user.
+   * @param password The password of the user.
+   * @param remember Optional flag to remember the user.
+   * @returns Promise to the authentication response.
    */
-  signIn(
-    email: string,
-    password: string,
-    role: string,
-    scope: string,
-    remember?: boolean): Promise<ProfileResource> {
-
+  async startLogin(email: string, password: string, remember?: boolean): Promise<LoginAuthenticationResponse> {
+    await this.startPkce();
     return this.post('auth/login', {
       clientId: this.clientId,
+      scope: DEFAULT_SCOPE,
+      codeChallengeMethod: 'S256',
+      codeChallenge: this.storage.getString('codeChallenge') as string,
       email,
       password,
-      role,
-      scope,
       remember: !!remember
-    }).then((response: LoginResponse) => this.handleLoginResponse(response));
+    }) as Promise<LoginAuthenticationResponse>;
   }
 
   /**
@@ -218,22 +233,11 @@ export class MedplumClient extends EventTarget {
    * The response parameter is the result of a Google authentication.
    * See: https://developers.google.com/identity/gsi/web/guides/handle-credential-responses-js-functions
    * @param googleResponse The Google credential response.
-   * @returns Promise to the user profile resource.
+   * @returns Promise to the authentication response.
    */
-  signInWithGoogle(googleResponse: GoogleCredentialResponse): Promise<ProfileResource> {
-    return this.post('auth/google', googleResponse)
-      .then((loginResponse: LoginResponse) => this.handleLoginResponse(loginResponse));
-  }
-
-  /**
-   * Handles a login response.
-   * This can be used for both "register" and "signIn".
-   * @param response The login response.
-   * @returns The user profile.
-   */
-  private async handleLoginResponse(response: LoginResponse): Promise<ProfileResource> {
-    await this.setActiveLogin(response);
-    return this.profile as ProfileResource;
+  async startGoogleLogin(googleResponse: GoogleCredentialResponse): Promise<LoginAuthenticationResponse> {
+    await this.startPkce();
+    return this.post('auth/google', googleResponse) as Promise<LoginAuthenticationResponse>;
   }
 
   /**
@@ -430,11 +434,11 @@ export class MedplumClient extends EventTarget {
     });
   }
 
-  getActiveLogin(): LoginResponse | undefined {
+  getActiveLogin(): LoginState | undefined {
     return this.activeLogin;
   }
 
-  async setActiveLogin(login: LoginResponse): Promise<void> {
+  async setActiveLogin(login: LoginState): Promise<void> {
     this.activeLogin = login;
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
@@ -443,12 +447,12 @@ export class MedplumClient extends EventTarget {
     await this.refreshProfile();
   }
 
-  getLogins(): LoginResponse[] {
-    return this.storage.getObject<LoginResponse[]>('logins') ?? [];
+  getLogins(): LoginState[] {
+    return this.storage.getObject<LoginState[]>('logins') ?? [];
   }
 
-  addLogin(newLogin: LoginResponse): void {
-    const logins = this.getLogins().filter(login => login.profile !== newLogin.profile);
+  private addLogin(newLogin: LoginState): void {
+    const logins = this.getLogins().filter(login => login.profile?.reference !== newLogin.profile?.reference);
     logins.push(newLogin);
     this.storage.setObject('logins', logins);
   }
@@ -456,14 +460,21 @@ export class MedplumClient extends EventTarget {
   private async refreshProfile(): Promise<ProfileResource | undefined> {
     const reference = this.getActiveLogin()?.profile;
     if (reference) {
-      this.profile = await this.readCachedReference({ reference });
+      this.loading = true;
+      this.profile = await this.readCachedReference(reference);
+      this.loading = false;
       this.dispatchEvent({ type: 'change' });
     }
+
     return this.profile;
   }
 
   getProfile(): ProfileResource | undefined {
     return this.profile;
+  }
+
+  isLoading(): boolean {
+    return this.loading;
   }
 
   /**
@@ -555,6 +566,25 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Starts a new PKCE flow.
+   * These PKCE values are stateful, and must survive redirects and page refreshes.
+   */
+  private async startPkce(): Promise<void> {
+    const pkceState = getRandomString();
+    this.storage.setString('pkceState', pkceState);
+
+    const codeVerifier = getRandomString();
+    this.storage.setString('codeVerifier', codeVerifier);
+
+    const arrayHash = await encryptSHA256(codeVerifier);
+    const codeChallenge = arrayBufferToBase64(arrayHash)
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+    this.storage.setString('codeChallenge', codeChallenge);
+  }
+
+  /**
    * Redirects the user to the login screen for authorization.
    * Clears all auth state including local storage and session storage.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
@@ -564,28 +594,16 @@ export class MedplumClient extends EventTarget {
       throw new Error('Missing authorize URL');
     }
 
-    this.clear();
-
-    const pkceState = getRandomString();
-    this.storage.setString('pkceState', pkceState);
-
-    const codeVerifier = getRandomString();
-    this.storage.setString('codeVerifier', codeVerifier);
-
-    const arrayHash = await encryptSHA256(codeVerifier);
-    const codeChallenge = arrayBufferToBase64(arrayHash);
-    this.storage.setString('codeChallenge', codeChallenge);
-
-    const scope = 'launch/patient openid fhirUser offline_access user/*.*';
+    this.startPkce();
 
     window.location.assign(this.authorizeUrl +
       '?response_type=code' +
-      '&state=' + encodeURIComponent(pkceState) +
+      '&state=' + encodeURIComponent(this.storage.getString('pkceState') as string) +
       '&client_id=' + encodeURIComponent(this.clientId) +
       '&redirect_uri=' + encodeURIComponent(getBaseUrl()) +
-      '&scope=' + encodeURIComponent(scope) +
+      '&scope=' + encodeURIComponent(DEFAULT_SCOPE) +
       '&code_challenge_method=S256' +
-      '&code_challenge=' + encodeURIComponent(codeChallenge));
+      '&code_challenge=' + encodeURIComponent(this.storage.getString('codeChallenge') as string));
   }
 
   /**
@@ -593,7 +611,7 @@ export class MedplumClient extends EventTarget {
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenRequest
    * @param code The authorization code received by URL parameter.
    */
-  private processCode(code: string): Promise<ProfileResource> {
+  processCode(code: string): Promise<ProfileResource> {
     const pkceState = this.storage.getString('pkceState');
     if (!pkceState) {
       this.clear();
@@ -687,10 +705,10 @@ export class MedplumClient extends EventTarget {
     }
 
     await this.setActiveLogin({
-      ...(this.getActiveLogin() as LoginResponse),
       accessToken: token,
       refreshToken: tokens.refresh_token,
-      profile: tokenPayload.profile
+      project: tokens.project,
+      profile: tokens.profile,
     });
   }
 }

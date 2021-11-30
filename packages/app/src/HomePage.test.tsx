@@ -1,5 +1,5 @@
-import { Bundle, MedplumClient } from '@medplum/core';
-import { MedplumProvider } from '@medplum/ui';
+import { Bundle } from '@medplum/core';
+import { MedplumProvider, MockClient } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -53,40 +53,16 @@ const patientSearchBundle: Bundle = {
   }]
 };
 
-function mockFetch(url: string, options: any): Promise<any> {
-  const method = options.method ?? 'GET';
-  let result: any;
-
-  if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name:exact=Patient')) {
-    result = patientStructureBundle;
-  } else if (method === 'GET' && url.includes('/fhir/R4/SearchParameter?name=Patient')) {
-    result = patientSearchParameter;
-  } else if (method === 'GET' && url.includes('/fhir/R4/Patient?')) {
-    result = patientSearchBundle;
-  }
-
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    ...result
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
-});
-
-beforeAll(async () => {
-  await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
+const medplum = new MockClient({
+  'fhir/R4/StructureDefinition?name:exact=Patient': {
+    'GET': patientStructureBundle
+  },
+  'fhir/R4/SearchParameter?name=Patient': {
+    'GET': patientSearchParameter
+  },
+  'fhir/R4/Patient?': {
+    'GET': patientSearchBundle
+  },
 });
 
 const setup = (url = '/Patient') => {

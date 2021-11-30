@@ -4,10 +4,9 @@ import express from 'express';
 import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
-import { MEDPLUM_CLIENT_APPLICATION_ID } from '../constants';
 import { closeDatabase, initDatabase } from '../database';
 import { generateSecret, initKeys } from '../oauth';
-import { seedDatabase } from '../seed';
+import { getDefaultClientApplication, seedDatabase } from '../seed';
 
 jest.mock('@aws-sdk/client-sesv2');
 
@@ -44,9 +43,8 @@ describe('Set Password', () => {
         projectName: 'Washington Project',
         email,
         password: 'password!@#'
-      })
+      });
     expect(res.status).toBe(200);
-    expect(res.body.profile).not.toBeUndefined();
 
     const res2 = await request(app)
       .post('/auth/resetpassword')
@@ -80,11 +78,10 @@ describe('Set Password', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        clientId: MEDPLUM_CLIENT_APPLICATION_ID,
+        clientId: getDefaultClientApplication().id,
         email: email,
         password: 'my-new-password',
-        scope: 'openid',
-        role: 'practitioner'
+        scope: 'openid'
       });
     expect(res4.status).toBe(200);
 

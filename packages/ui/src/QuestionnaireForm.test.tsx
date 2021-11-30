@@ -1,39 +1,13 @@
-import { MedplumClient, PropertyType } from '@medplum/core';
+import { PropertyType } from '@medplum/core';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import each from 'jest-each';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
+import { MockClient } from './MockClient';
 import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 import { QuestionnaireItemType } from './QuestionnaireUtils';
 
-function mockFetch(url: string, options: any): Promise<any> {
-  let result: any;
-
-  if (url.endsWith('/auth/login')) {
-    result = {
-      profile: 'Practitioner/456'
-    };
-  }
-
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    ...result
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
-});
+const medplum = new MockClient({});
 
 const setup = (args: QuestionnaireFormProps) => {
   return render(
@@ -44,10 +18,6 @@ const setup = (args: QuestionnaireFormProps) => {
 };
 
 describe('QuestionnaireForm', () => {
-
-  beforeAll(async () => {
-    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-  });
 
   test('Renders empty', () => {
     setup({

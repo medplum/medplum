@@ -42,7 +42,6 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
     nonce: req.query.nonce as string,
     email: req.body.email as string,
     password: req.body.password as string,
-    role: 'practitioner',
     remember: true
   });
 

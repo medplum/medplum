@@ -1,8 +1,9 @@
-import { Filter, IndexedStructureDefinition, MedplumClient, Operator, SearchRequest } from '@medplum/core';
+import { Filter, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
+import { MockClient } from './MockClient';
 import { SearchPopupMenu, SearchPopupMenuProps } from './SearchPopupMenu';
 
 const schema: IndexedStructureDefinition = {
@@ -41,30 +42,9 @@ const schema: IndexedStructureDefinition = {
   }
 };
 
+const medplum = new MockClient({});
+
 describe('SearchPopupMenu', () => {
-
-  function mockFetch(url: string, options: any): Promise<any> {
-    const response: any = {
-      request: {
-        url,
-        options
-      }
-    };
-
-    return Promise.resolve({
-      json: () => Promise.resolve(response)
-    });
-  }
-
-  const medplum = new MedplumClient({
-    baseUrl: 'https://example.com/',
-    clientId: 'my-client-id',
-    fetch: mockFetch
-  });
-
-  beforeAll(async () => {
-    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-  });
 
   function setup(props: SearchPopupMenuProps) {
     return render(

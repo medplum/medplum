@@ -3,8 +3,8 @@ import { randomUUID } from 'crypto';
 import { applyPatch, Operation } from 'fast-json-patch';
 import validator from 'validator';
 import { getConfig } from '../config';
-import { MEDPLUM_PROJECT_ID, PUBLIC_PROJECT_ID } from '../constants';
 import { getClient } from '../database';
+import { getPublicProject } from '../seed';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
 import { getPatientCompartmentResourceTypes, getPatientId } from './patient';
@@ -31,7 +31,7 @@ export interface RepositoryContext {
    * This should be the ID/UUID of the current project.
    * This value will be included in every resource as meta.project.
    */
-  project: string;
+  project?: string;
 
   /**
    * Optional compartment restriction.
@@ -96,6 +96,9 @@ export class Repository {
 
   constructor(context: RepositoryContext) {
     this.context = context;
+    if (!this.context.author.reference) {
+      throw new Error('Invalid author reference');
+    }
   }
 
   async createResource<T extends Resource>(resource: T): RepositoryResult<T> {
@@ -257,9 +260,14 @@ export class Repository {
         ...updated?.meta,
         versionId: randomUUID(),
         lastUpdated: this.getLastUpdated(resource),
-        project: this.getProjectId(updated),
         author: this.getAuthor(resource)
       }
+    }
+
+    const project = this.getProjectId(updated);
+    if (project) {
+      // Need cast to overwrite a readonly property
+      (result.meta as any).project = project;
     }
 
     const account = await this.getAccount(existing, updated);
@@ -411,7 +419,7 @@ export class Repository {
           }
         }
       }
-    } else if (this.context.project !== undefined && this.context.project !== MEDPLUM_PROJECT_ID) {
+    } else if (this.context.project !== undefined && !this.context.admin) {
       compartmentIds.push(this.context.project);
     }
 
@@ -754,13 +762,13 @@ export class Repository {
    * @param resource The FHIR resource.
    * @returns The project ID.
    */
-  private getProjectId(resource: Resource): string {
+  private getProjectId(resource: Resource): string | undefined {
     if (publicResourceTypes.includes(resource.resourceType)) {
-      return PUBLIC_PROJECT_ID;
+      return getPublicProject().id as string;
     }
 
     if (protectedResourceTypes.includes(resource.resourceType)) {
-      return MEDPLUM_PROJECT_ID;
+      return undefined;
     }
 
     return resource.meta?.project ?? this.context.project;
@@ -955,6 +963,10 @@ function fhirOperatorToSqlOperator(fhirOperator: FhirOperator): Operator {
 export async function getRepoForLogin(login: Login): Promise<Repository> {
   let accessPolicy: AccessPolicy | undefined = undefined;
 
+  if (!login.profile?.reference) {
+    throw new Error('Cannot create repo for login without profile');
+  }
+
   if (login.accessPolicy) {
     const [accessPolicyOutcome, accessPolicyResource] = await repo.readReference(login.accessPolicy);
     assertOk(accessPolicyOutcome);
@@ -1013,7 +1025,6 @@ function buildSyntheticAccessPolicy(compartment: Reference): AccessPolicy {
 }
 
 export const repo = new Repository({
-  project: MEDPLUM_PROJECT_ID,
   author: {
     reference: 'system'
   }

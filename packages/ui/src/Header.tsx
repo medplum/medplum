@@ -3,12 +3,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
+import './Header.css';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { MedplumLink } from './MedplumLink';
 import { useMedplumContext } from './MedplumProvider';
 import { Popup } from './Popup';
 import { ResourceInput } from './ResourceInput';
-import './Header.css';
 
 export interface HeaderProps {
   onLogo?: () => void;
@@ -73,7 +73,6 @@ export function Header(props: HeaderProps) {
                 <div style={{ margin: 'auto', padding: '8px' }}>
                   <Avatar size="large" value={context.profile} />
                 </div>
-                <hr />
                 <div style={{ margin: 'auto', padding: '8px' }}>
                   <div style={{ margin: '4px auto 4px auto', fontWeight: 'bold' }}><HumanNameDisplay value={context.profile?.name?.[0] as HumanName} /></div>
                   <Button testid="header-profile-link" onClick={() => {
@@ -86,20 +85,31 @@ export function Header(props: HeaderProps) {
                 {logins.length > 1 && (
                   <div>
                     <hr />
-                    {logins.map(login => login.profile !== getReferenceString(context.profile as ProfileResource) && (
-                      <div key={login.profile} onClick={() => {
+                    {logins.map(login => login.profile?.reference !== getReferenceString(context.profile as ProfileResource) && (
+                      <div className="medplum-nav-menu-profile" key={login.profile?.reference} onClick={() => {
                         medplum.setActiveLogin(login);
                         setUserMenuVisible(false);
                         window.location.reload();
                       }}>
-                        {/* <div>{getDisplayString(login.profile)}</div>
-                        <div>Project: {getDisplayString(login.project)}</div> */}
-                        <div>{login.profile}</div>
-                        <div>{login.project}</div>
+                        <div className="medplum-nav-menu-profile-icon">
+                          <Avatar />
+                        </div>
+                        <div className="medplum-nav-menu-profile-label">
+                          {login.profile?.display}
+                          <div className="medplum-nav-menu-profile-help-text">
+                            {login.project?.display}
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
+                <hr />
+                <div style={{ margin: 'auto', padding: '8px' }}>
+                  <Button testid="header-add-account-button" onClick={() => {
+                    navigate('/signin');
+                  }}>Add another account</Button>
+                </div>
                 <hr />
                 <div style={{ margin: 'auto', padding: '8px' }}>
                   <Button testid="header-signout-button" onClick={() => {

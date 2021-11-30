@@ -77,6 +77,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
     client: createReference(client),
     profile: createReference(client),
     authTime: new Date().toISOString(),
+    granted: true,
     project: {
       reference: 'Project/' + client.meta?.project
     },
@@ -139,6 +140,14 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
     return sendTokenError(res, 'invalid_request', 'Invalid client');
   }
 
+  if (!login.project) {
+    return sendTokenError(res, 'invalid_request', 'Invalid project');
+  }
+
+  if (!login.profile) {
+    return sendTokenError(res, 'invalid_request', 'Invalid profile');
+  }
+
   if (login.granted) {
     await revokeLogin(login);
     return sendTokenError(res, 'invalid_grant', 'Token already granted');
@@ -170,7 +179,9 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
     expires_in: 3600,
     id_token: token.idToken,
     access_token: token.accessToken,
-    refresh_token: token.refreshToken
+    refresh_token: token.refreshToken,
+    project: login.project,
+    profile: login.profile,
   });
 }
 
@@ -234,7 +245,9 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
     expires_in: 3600,
     id_token: token.idToken,
     access_token: token.accessToken,
-    refresh_token: token.refreshToken
+    refresh_token: token.refreshToken,
+    project: login.project,
+    profile: login.profile,
   });
 }
 
@@ -275,6 +288,7 @@ function verifyCode(challenge: string, method: string, verifier: string): boolea
  * Returns the base64-url-encoded SHA256 hash of the code.
  * The details around '+', '/', and '=' are important for compatibility.
  * See: https://auth0.com/docs/flows/call-your-api-using-the-authorization-code-flow-with-pkce
+ * See: packages/client/src/crypto.ts
  * @param code The input code.
  * @returns The base64-url-encoded SHA256 hash.
  */

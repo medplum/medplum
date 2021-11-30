@@ -1,13 +1,9 @@
-import { Bundle, MedplumClient, Observation, Practitioner, User } from '@medplum/core';
+import { Bundle, Observation, Practitioner } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
+import { MockClient } from './MockClient';
 import { ResourceForm, ResourceFormProps } from './ResourceForm';
-
-const user: User = {
-  resourceType: 'User',
-  id: '123'
-};
 
 const practitioner: Practitioner = {
   resourceType: 'Practitioner',
@@ -86,50 +82,22 @@ const observationStructureBundle: Bundle = {
   }]
 };
 
-function mockFetch(url: string, options: any): Promise<any> {
-  const method = options.method ?? 'GET';
-  let result: any;
-
-  if (method === 'POST' && url.endsWith('/auth/login')) {
-    result = {
-      user,
-      profile: 'Practitioner/123'
-    };
-  } else if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name:exact=Practitioner')) {
-    result = practitionerStructureBundle;
-  } else if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name:exact=Observation')) {
-    result = observationStructureBundle;
-  } else if (method === 'GET' && url.endsWith('/fhir/R4/Practitioner/123')) {
-    result = practitioner;
-  } else if (method === 'GET' && url.endsWith('/fhir/R4/Observation/123')) {
-    result = observation;
-  }
-
-  const response: any = {
-    request: {
-      url,
-      options
-    },
-    ...result
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch
+const medplum = new MockClient({
+  'fhir/R4/StructureDefinition?name:exact=Practitioner': {
+    'GET': practitionerStructureBundle
+  },
+  'fhir/R4/StructureDefinition?name:exact=Observation': {
+    'GET': observationStructureBundle
+  },
+  'fhir/R4/Practitioner/123': {
+    'GET': practitioner
+  },
+  'fhir/R4/Observation/123': {
+    'GET': observation
+  },
 });
 
 describe('ResourceForm', () => {
-
-  beforeAll(async () => {
-    await medplum.signIn('admin@medplum.com', 'admin', 'practitioner', 'openid');
-  });
 
   function setup(props: ResourceFormProps) {
     return render(

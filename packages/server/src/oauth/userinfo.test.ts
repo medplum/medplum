@@ -3,11 +3,10 @@ import express from 'express';
 import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
-import { MEDPLUM_PROJECT_ID } from '../constants';
 import { closeDatabase, initDatabase } from '../database';
 import { repo } from '../fhir';
 import { initKeys } from '../oauth';
-import { seedDatabase } from '../seed';
+import { getMedplumProject, seedDatabase } from '../seed';
 
 const app = express();
 let client: ClientApplication;
@@ -21,10 +20,12 @@ describe('OAuth2 UserInfo', () => {
     await initApp(app);
     await initKeys(config);
 
+    const medplumProject = getMedplumProject();
+
     const [outcome, result] = await repo.createResource({
       resourceType: 'ClientApplication',
       meta: {
-        project: MEDPLUM_PROJECT_ID
+        project: medplumProject.id
       },
       secret: 'big-long-string',
       redirectUri: 'https://example.com'
