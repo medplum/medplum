@@ -1,5 +1,5 @@
 .medplum-autocomplete-container {
-  border: thin solid var(--medplum-gray-300);
+  border: 0.1px solid var(--medplum-gray-300);
   border-radius: 3px;
   background: var(--medplum-surface);
   box-shadow: 0 1px 1px 0 var(--medplum-gray-200);
@@ -14,7 +14,7 @@
 .medplum-autocomplete-container.focused {
   background: var(--medplum-surface);
   color: var(--medplum-gray-900);
-  border: thin solid var(--medplum-blue-300);
+  border: 0.1px solid var(--medplum-blue-300);
   box-shadow: 0 0 0 2px var(--medplum-blue-200);
 }
 
@@ -38,7 +38,7 @@
 .medplum-autocomplete-container>ul>li.choice {
   margin: 1px 0 1px 4px;
   padding: 0 6px;
-  border: thin solid var(--medplum-orange-200);
+  border: 0.1px solid var(--medplum-orange-200);
   border-radius: 4px;
   background-color: var(--medplum-gray-50);
   cursor: move;
@@ -46,7 +46,7 @@
 }
 
 .medplum-autocomplete-container>ul>li.unstructured {
-  border: thin dashed var(--medplum-red-700) !important;
+  border: 0.1px dashed var(--medplum-red-700) !important;
 }
 
 .medplum-autocomplete-container>ul>li>input {
@@ -77,7 +77,7 @@
   width: 300px;
   z-index: 1;
   cursor: pointer;
-  border: thin solid var(--medplum-gray-300);
+  border: 0.1px solid var(--medplum-gray-300);
   border-radius: 2px;
   box-shadow: 0 2px 4px var(--medplum-shadow);
   transition: opacity .218s;

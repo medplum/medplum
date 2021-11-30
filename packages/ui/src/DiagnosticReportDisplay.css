@@ -1,13 +1,13 @@
 
 .medplum-observation-table {
   border-collapse: collapse;
-  border-top: thin solid var(--medplum-gray-500);
-  border-left: thin solid var(--medplum-gray-500);
+  border-top: 0.1px solid var(--medplum-gray-500);
+  border-left: 0.1px solid var(--medplum-gray-500);
 }
 
 .medplum-observation-table td,
 .medplum-observation-table th {
-  border-bottom: thin solid var(--medplum-gray-500);
-  border-right: thin solid var(--medplum-gray-500);
+  border-bottom: 0.1px solid var(--medplum-gray-500);
+  border-right: 0.1px solid var(--medplum-gray-500);
   padding: 4px 8px;
 }

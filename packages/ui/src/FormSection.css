@@ -7,7 +7,7 @@ fieldset {
 }
 
 fieldset.bordered {
-  border: thin solid var(--medplum-gray-300);
+  border: 0.1px solid var(--medplum-gray-300);
   border-radius: 6px;
   margin: 6px 0 16px 0;
   padding: 2px 8px 8px 8px;
