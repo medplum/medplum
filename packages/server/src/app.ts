@@ -18,6 +18,7 @@ import { wellKnownRouter } from './wellknown';
 
 const corsOptions: cors.CorsOptions = {
   credentials: true,
+  maxAge: 86400,
   origin: (origin, callback) => {
     // TODO: Check origin against whitelist
     callback(null, true);
@@ -31,9 +32,13 @@ const corsOptions: cors.CorsOptions = {
  * @param next The next handler.
  */
 function cacheHandler(req: Request, res: Response, next: NextFunction): void {
-  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-  res.set('Expires', 'Wed, 21 Oct 2015 07:28:00 GMT');
-  res.set('Pragma', 'no-cache');
+  if (req.method === 'OPTIONS') {
+    res.set('Cache-Control', 'public, max-age=86400');
+  } else {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.set('Expires', 'Wed, 21 Oct 2015 07:28:00 GMT');
+    res.set('Pragma', 'no-cache');
+  }
   next();
 }
 
