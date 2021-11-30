@@ -22,7 +22,7 @@
     "babel-loader": "8.2.3",
     "css-loader": "6.5.1",
     "dotenv-webpack": "7.0.3",
-    "graphiql": "1.5.1",
+    "graphiql": "1.5.7",
     "graphql": "16.0.1",
     "html-webpack-plugin": "5.5.0",
     "react": "17.0.2",
