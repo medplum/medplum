@@ -25,7 +25,7 @@ describe('QuestionnaireBuilder', () => {
       },
       onSubmit: jest.fn()
     });
-    expect(screen.getByTestId('questionnaire-form')).not.toBeUndefined();
+    expect(screen.getByTestId('questionnaire-form')).toBeDefined();
   });
 
   test('Render groups', async () => {
@@ -65,9 +65,9 @@ describe('QuestionnaireBuilder', () => {
       onSubmit: jest.fn()
     });
 
-    expect(screen.getByTestId('questionnaire-form')).not.toBeUndefined();
-    expect(screen.getByText('Group 1')).not.toBeUndefined();
-    expect(screen.getByText('Group 2')).not.toBeUndefined();
+    expect(screen.getByTestId('questionnaire-form')).toBeDefined();
+    expect(screen.getByText('Group 1')).toBeDefined();
+    expect(screen.getByText('Group 2')).toBeDefined();
   });
 
   test('Handles submit', async () => {
@@ -107,7 +107,7 @@ describe('QuestionnaireBuilder', () => {
       onSubmit
     });
 
-    expect(screen.getByText('OK')).not.toBeUndefined();
+    expect(screen.getByText('OK')).toBeDefined();
 
     await act(async () => {
       fireEvent.click(screen.getByText('OK'));
@@ -131,7 +131,7 @@ describe('QuestionnaireBuilder', () => {
       onSubmit
     });
 
-    expect(screen.getByText('Question 1')).not.toBeUndefined();
+    expect(screen.getByText('Question 1')).toBeDefined();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Question 1'));

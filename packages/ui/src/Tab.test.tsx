@@ -35,8 +35,8 @@ describe('Tab', () => {
       <TabTest />
     );
 
-    expect(screen.getByText('First')).not.toBeUndefined();
-    expect(screen.getByText('First content')).not.toBeUndefined();
+    expect(screen.getByText('First')).toBeDefined();
+    expect(screen.getByText('First content')).toBeDefined();
     expect(screen.queryByText('Second content')).toBeNull();
     expect(screen.queryByText('only render tabs')).toBeNull();
 
@@ -44,8 +44,8 @@ describe('Tab', () => {
       await fireEvent.click(screen.getByText('Second'));
     });
 
-    expect(screen.getByText('Second')).not.toBeUndefined();
-    expect(screen.getByText('Second content')).not.toBeUndefined();
+    expect(screen.getByText('Second')).toBeDefined();
+    expect(screen.getByText('Second content')).toBeDefined();
     expect(screen.queryByText('First content')).toBeNull();
   });
 

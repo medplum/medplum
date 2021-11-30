@@ -150,7 +150,7 @@ describe('DiagnosticReportDisplay', () => {
     await act(async () => {
       setup({ value: diagnosticReport });
     });
-    expect(screen.getByText('Diagnostic Report')).not.toBeUndefined();
+    expect(screen.getByText('Diagnostic Report')).toBeDefined();
     expect(screen.getByText('110/75'));
   });
 
@@ -158,7 +158,7 @@ describe('DiagnosticReportDisplay', () => {
     await act(async () => {
       setup({ value: { reference: 'DiagnosticReport/123' } });
     });
-    expect(screen.getByText('Diagnostic Report')).not.toBeUndefined();
+    expect(screen.getByText('Diagnostic Report')).toBeDefined();
     expect(screen.getByText('110/75'));
   });
 

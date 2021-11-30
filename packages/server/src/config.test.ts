@@ -44,15 +44,15 @@ describe('Config', () => {
 
   test('Load config file', async () => {
     const config = await loadConfig('file:medplum.config.json');
-    expect(config).not.toBeUndefined();
-    expect(config.baseUrl).not.toBeUndefined();
+    expect(config).toBeDefined();
+    expect(config.baseUrl).toBeDefined();
     expect(getConfig()).toBe(config);
   });
 
   test('Load AWS config', async () => {
     const config = await loadConfig('aws:test');
-    expect(config).not.toBeUndefined();
-    expect(config.baseUrl).not.toBeUndefined();
+    expect(config).toBeDefined();
+    expect(config.baseUrl).toBeDefined();
     expect(getConfig()).toBe(config);
   });
 

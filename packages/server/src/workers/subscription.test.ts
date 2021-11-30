@@ -53,7 +53,7 @@ describe('Subscription Worker', () => {
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
-    expect(subscription).not.toBeUndefined();
+    expect(subscription).toBeDefined();
 
     const queue = (Queue as any).mock.instances[0];
     queue.add.mockClear();
@@ -64,7 +64,7 @@ describe('Subscription Worker', () => {
     });
 
     expect(patientOutcome.id).toEqual('created');
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
     (fetch as any).mockImplementation(() => ({ status: 200 }));
@@ -94,7 +94,7 @@ describe('Subscription Worker', () => {
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
-    expect(subscription).not.toBeUndefined();
+    expect(subscription).toBeDefined();
 
     const queue = (Queue as any).mock.instances[0];
     queue.add.mockClear();
@@ -105,7 +105,7 @@ describe('Subscription Worker', () => {
     });
 
     expect(patientOutcome.id).toEqual('created');
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
     (fetch as any).mockImplementation(() => ({ status: 200 }));
@@ -141,7 +141,7 @@ describe('Subscription Worker', () => {
       }]
     });
     expect(subscriptionOutcome.id).toEqual('created');
-    expect(subscription).not.toBeUndefined();
+    expect(subscription).toBeDefined();
 
     const queue = (Queue as any).mock.instances[0];
     queue.add.mockClear();
@@ -152,7 +152,7 @@ describe('Subscription Worker', () => {
     });
 
     expect(patientOutcome.id).toEqual('created');
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
     (fetch as any).mockImplementation(() => ({ status: 200 }));
@@ -183,7 +183,7 @@ describe('Subscription Worker', () => {
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
-    expect(subscription).not.toBeUndefined();
+    expect(subscription).toBeDefined();
 
     const queue = (Queue as any).mock.instances[0];
     queue.add.mockClear();
@@ -194,7 +194,7 @@ describe('Subscription Worker', () => {
     });
 
     expect(patientOutcome.id).toEqual('created');
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
     expect(queue.add).not.toHaveBeenCalled();
   });
 
@@ -209,7 +209,7 @@ describe('Subscription Worker', () => {
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
-    expect(subscription).not.toBeUndefined();
+    expect(subscription).toBeDefined();
 
     const queue = (Queue as any).mock.instances[0];
     queue.add.mockClear();
@@ -220,7 +220,7 @@ describe('Subscription Worker', () => {
     });
 
     expect(patientOutcome.id).toEqual('created');
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
     expect(queue.add).not.toHaveBeenCalled();
   });
 
@@ -234,7 +234,7 @@ describe('Subscription Worker', () => {
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
-    expect(subscription).not.toBeUndefined();
+    expect(subscription).toBeDefined();
 
     const queue = (Queue as any).mock.instances[0];
     queue.add.mockClear();
@@ -245,7 +245,7 @@ describe('Subscription Worker', () => {
     });
 
     expect(patientOutcome.id).toEqual('created');
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
     expect(queue.add).not.toHaveBeenCalled();
   });
 
@@ -260,7 +260,7 @@ describe('Subscription Worker', () => {
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
-    expect(subscription).not.toBeUndefined();
+    expect(subscription).toBeDefined();
 
     const queue = (Queue as any).mock.instances[0];
     queue.add.mockClear();
@@ -271,7 +271,7 @@ describe('Subscription Worker', () => {
     });
 
     expect(patientOutcome.id).toEqual('created');
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
     expect(queue.add).not.toHaveBeenCalled();
   });
 
@@ -286,7 +286,7 @@ describe('Subscription Worker', () => {
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
-    expect(subscription).not.toBeUndefined();
+    expect(subscription).toBeDefined();
 
     const queue = (Queue as any).mock.instances[0];
     queue.add.mockClear();
@@ -319,7 +319,7 @@ describe('Subscription Worker', () => {
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
-    expect(subscription).not.toBeUndefined();
+    expect(subscription).toBeDefined();
 
     const queue = (Queue as any).mock.instances[0];
     queue.add.mockClear();
@@ -330,7 +330,7 @@ describe('Subscription Worker', () => {
     });
 
     expect(patientOutcome.id).toEqual('created');
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
     expect(queue.add).not.toHaveBeenCalled();
   });
 
@@ -351,7 +351,7 @@ describe('Subscription Worker', () => {
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
-    expect(subscription).not.toBeUndefined();
+    expect(subscription).toBeDefined();
 
     const queue = (Queue as any).mock.instances[0];
     queue.add.mockClear();
@@ -365,7 +365,7 @@ describe('Subscription Worker', () => {
     });
 
     expect(patientOutcome.id).toEqual('created');
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
     expect(queue.add).not.toHaveBeenCalled();
   });
 
@@ -389,7 +389,7 @@ describe('Subscription Worker', () => {
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
-    expect(subscription).not.toBeUndefined();
+    expect(subscription).toBeDefined();
 
     const queue = (Queue as any).mock.instances[0];
     queue.add.mockClear();
@@ -403,7 +403,7 @@ describe('Subscription Worker', () => {
     });
 
     expect(patientOutcome.id).toEqual('created');
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
     expect(queue.add).not.toHaveBeenCalled();
   });
 
@@ -420,7 +420,7 @@ describe('Subscription Worker', () => {
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
-    expect(subscription).not.toBeUndefined();
+    expect(subscription).toBeDefined();
 
     const queue = (Queue as any).mock.instances[0];
     queue.add.mockClear();
@@ -431,7 +431,7 @@ describe('Subscription Worker', () => {
     });
 
     expect(patientOutcome.id).toEqual('created');
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
     (fetch as any).mockImplementation(() => ({ status: 400 }));
@@ -455,7 +455,7 @@ describe('Subscription Worker', () => {
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
-    expect(subscription).not.toBeUndefined();
+    expect(subscription).toBeDefined();
 
     const queue = (Queue as any).mock.instances[0];
     queue.add.mockClear();
@@ -466,7 +466,7 @@ describe('Subscription Worker', () => {
     });
 
     expect(patientOutcome.id).toEqual('created');
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
     // (fetch as any).mockImplementation(() => ({ status: 400 }));
@@ -490,7 +490,7 @@ describe('Subscription Worker', () => {
       code: `console.log('${nonce}');`
     });
     expect(botOutcome.id).toEqual('created');
-    expect(bot).not.toBeUndefined();
+    expect(bot).toBeDefined();
 
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
@@ -502,7 +502,7 @@ describe('Subscription Worker', () => {
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
-    expect(subscription).not.toBeUndefined();
+    expect(subscription).toBeDefined();
 
     const queue = (Queue as any).mock.instances[0];
     queue.add.mockClear();
@@ -513,7 +513,7 @@ describe('Subscription Worker', () => {
     });
 
     expect(patientOutcome.id).toEqual('created');
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
     (fetch as any).mockImplementation(() => ({ status: 200 }));
@@ -531,7 +531,7 @@ describe('Subscription Worker', () => {
       }]
     });
     assertOk(searchOutcome);
-    expect(bundle).not.toBeUndefined();
+    expect(bundle).toBeDefined();
     expect(bundle?.entry?.length).toEqual(1);
     expect(bundle?.entry?.[0]?.resource?.outcome).toEqual('0');
     expect(bundle?.entry?.[0]?.resource?.outcomeDesc).toContain('Success');
@@ -548,7 +548,7 @@ describe('Subscription Worker', () => {
       code: `throw new Error('${nonce}');`
     });
     expect(botOutcome.id).toEqual('created');
-    expect(bot).not.toBeUndefined();
+    expect(bot).toBeDefined();
 
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
@@ -560,7 +560,7 @@ describe('Subscription Worker', () => {
       }
     });
     expect(subscriptionOutcome.id).toEqual('created');
-    expect(subscription).not.toBeUndefined();
+    expect(subscription).toBeDefined();
 
     const queue = (Queue as any).mock.instances[0];
     queue.add.mockClear();
@@ -571,7 +571,7 @@ describe('Subscription Worker', () => {
     });
 
     expect(patientOutcome.id).toEqual('created');
-    expect(patient).not.toBeUndefined();
+    expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
     (fetch as any).mockImplementation(() => ({ status: 200 }));
@@ -589,7 +589,7 @@ describe('Subscription Worker', () => {
       }]
     });
     assertOk(searchOutcome);
-    expect(bundle).not.toBeUndefined();
+    expect(bundle).toBeDefined();
     expect(bundle?.entry?.length).toEqual(1);
     expect(bundle?.entry?.[0]?.resource?.outcome).not.toEqual('0');
     expect(bundle?.entry?.[0]?.resource?.outcomeDesc).toContain('Error');

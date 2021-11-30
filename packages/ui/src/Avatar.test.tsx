@@ -39,12 +39,12 @@ describe('Avatar', () => {
 
   test('Avatar renders system', () => {
     const utils = setup({ value: { reference: 'system' } });
-    expect(utils.getByText('S')).not.toBeUndefined();
+    expect(utils.getByText('S')).toBeDefined();
   });
 
   test('Avatar renders initials', () => {
     const utils = setup({ alt: 'Alice Smith' });
-    expect(utils.getByTestId('avatar')).not.toBeUndefined();
+    expect(utils.getByTestId('avatar')).toBeDefined();
   });
 
   test('Avatar renders resource directly', async () => {
@@ -54,7 +54,7 @@ describe('Avatar', () => {
 
     await waitFor(() => utils.getByTestId('avatar'));
 
-    expect(utils.getByTestId('avatar')).not.toBeUndefined();
+    expect(utils.getByTestId('avatar')).toBeDefined();
   });
 
   test('Avatar renders resource directly as link', async () => {
@@ -65,7 +65,7 @@ describe('Avatar', () => {
 
     await waitFor(() => utils.getByTestId('avatar'));
 
-    expect(utils.getByTestId('avatar')).not.toBeUndefined();
+    expect(utils.getByTestId('avatar')).toBeDefined();
   });
 
   test('Avatar renders after loading the resource', async () => {
@@ -77,7 +77,7 @@ describe('Avatar', () => {
 
     await waitFor(() => utils.getByTestId('avatar'));
 
-    expect(utils.getByTestId('avatar')).not.toBeUndefined();
+    expect(utils.getByTestId('avatar')).toBeDefined();
   });
 
 });

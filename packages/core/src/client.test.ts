@@ -214,9 +214,9 @@ describe('Client', () => {
   test('SignIn direct', async () => {
     const client = new MedplumClient(defaultOptions);
     const result1 = await client.startLogin('admin@medplum.com', 'admin');
-    expect(result1).not.toBeUndefined();
-    expect(result1.login).not.toBeUndefined();
-    expect(result1.code).not.toBeUndefined();
+    expect(result1).toBeDefined();
+    expect(result1.login).toBeDefined();
+    expect(result1.code).toBeDefined();
   });
 
   test('Sign in with Google', async () => {
@@ -225,8 +225,8 @@ describe('Client', () => {
       clientId: 'google-client-id',
       credential: 'google-credential'
     });
-    expect(result1).not.toBeUndefined();
-    expect(result1.login).not.toBeUndefined();
+    expect(result1).toBeDefined();
+    expect(result1.login).toBeDefined();
   });
 
   test('SignInWithRedirect', async () => {
@@ -256,7 +256,7 @@ describe('Client', () => {
 
     // Next, test processing the response code
     const result2 = client.signInWithRedirect();
-    expect(result2).not.toBeUndefined();
+    expect(result2).toBeDefined();
   });
 
   test('SignOutWithRedirect', async () => {
@@ -283,7 +283,7 @@ describe('Client', () => {
       lastName: 'Foo',
       projectName: 'Sally World'
     });
-    expect(client.getActiveLogin()).not.toBeUndefined();
+    expect(client.getActiveLogin()).toBeDefined();
   });
 
   test('Read expired and refresh', async () => {
@@ -295,7 +295,7 @@ describe('Client', () => {
     await client.processCode(loginResponse.code);
 
     const result = await client.get('expired');
-    expect(result).not.toBeUndefined();
+    expect(result).toBeDefined();
   });
 
   test('Read expired and refresh with unAuthenticated callback', async () => {
@@ -315,7 +315,7 @@ describe('Client', () => {
   test('Read resource', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.read('Patient', '123');
-    expect(result).not.toBeUndefined();
+    expect(result).toBeDefined();
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
     expect(result.resourceType).toBe('Patient');
     expect(result.id).toBe('123');
@@ -324,7 +324,7 @@ describe('Client', () => {
   test('Read reference', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.readReference({ reference: 'Patient/123' });
-    expect(result).not.toBeUndefined();
+    expect(result).toBeDefined();
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
     expect(result.resourceType).toBe('Patient');
     expect(result.id).toBe('123');
@@ -339,7 +339,7 @@ describe('Client', () => {
   test('Read cached resource', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.readCached('Patient', '123');
-    expect(result).not.toBeUndefined();
+    expect(result).toBeDefined();
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
     expect(result.resourceType).toBe('Patient');
     expect(result.id).toBe('123');
@@ -348,7 +348,7 @@ describe('Client', () => {
   test('Read cached reference', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.readCachedReference({ reference: 'Patient/123' });
-    expect(result).not.toBeUndefined();
+    expect(result).toBeDefined();
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
     expect(result.resourceType).toBe('Patient');
     expect(result.id).toBe('123');
@@ -363,21 +363,21 @@ describe('Client', () => {
   test('Read history', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.readHistory('Patient', '123');
-    expect(result).not.toBeUndefined();
+    expect(result).toBeDefined();
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123/_history');
   });
 
   test('Read patient everything', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.readPatientEverything('123');
-    expect(result).not.toBeUndefined();
+    expect(result).toBeDefined();
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123/%24everything');
   });
 
   test('Create resource', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.create({ resourceType: 'Patient' });
-    expect(result).not.toBeUndefined();
+    expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('POST');
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient');
   });
@@ -385,7 +385,7 @@ describe('Client', () => {
   test('Update resource', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.update({ resourceType: 'Patient', id: '123' });
-    expect(result).not.toBeUndefined();
+    expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('PUT');
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
   });
@@ -405,7 +405,7 @@ describe('Client', () => {
   test('Create binary', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.createBinary('Hello world', 'text/plain');
-    expect(result).not.toBeUndefined();
+    expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('POST');
     expect((result as any).request.url).toBe('https://x/fhir/R4/Binary');
   });
@@ -413,16 +413,16 @@ describe('Client', () => {
   test('Get schema', async () => {
     const client = new MedplumClient(defaultOptions);
     const schema = await client.getTypeDefinition('Patient');
-    expect(schema).not.toBeUndefined();
-    expect(schema.types['Patient']).not.toBeUndefined();
-    expect(schema.types['Patient'].searchParams).not.toBeUndefined();
+    expect(schema).toBeDefined();
+    expect(schema.types['Patient']).toBeDefined();
+    expect(schema.types['Patient'].searchParams).toBeDefined();
   });
 
   test('Get cached schema', async () => {
     const client = new MedplumClient(defaultOptions);
     const schema = await client.getTypeDefinition('Patient');
-    expect(schema).not.toBeUndefined();
-    expect(schema.types['Patient']).not.toBeUndefined();
+    expect(schema).toBeDefined();
+    expect(schema.types['Patient']).toBeDefined();
 
     const schema2 = await client.getTypeDefinition('Patient');
     expect(schema2).toEqual(schema);
@@ -441,7 +441,7 @@ describe('Client', () => {
   test('Search ValueSet', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.searchValueSet('system', 'filter');
-    expect(result).not.toBeUndefined();
+    expect(result).toBeDefined();
     expect(result.resourceType).toBe('ValueSet');
   });
 

@@ -59,7 +59,7 @@ describe('Profile', () => {
         profile: 'Practitioner/123'
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue).not.toBeUndefined();
+    expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Missing login');
   });
 
@@ -71,7 +71,7 @@ describe('Profile', () => {
         login: '123'
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue).not.toBeUndefined();
+    expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Missing profile');
   });
 
@@ -84,7 +84,7 @@ describe('Profile', () => {
         profile: getReferenceString(profile1)
       });
     expect(res.status).toBe(404);
-    expect(res.body.issue).not.toBeUndefined();
+    expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Not found');
   });
 
@@ -116,7 +116,7 @@ describe('Profile', () => {
         profile: getReferenceString(profile1)
       });
     expect(res2.status).toBe(400);
-    expect(res2.body.issue).not.toBeUndefined();
+    expect(res2.body.issue).toBeDefined();
     expect(res2.body.issue[0].details.text).toBe('Login revoked');
   });
 
@@ -148,7 +148,7 @@ describe('Profile', () => {
         profile: getReferenceString(profile1)
       });
     expect(res2.status).toBe(400);
-    expect(res2.body.issue).not.toBeUndefined();
+    expect(res2.body.issue).toBeDefined();
     expect(res2.body.issue[0].details.text).toBe('Login granted');
   });
 
@@ -185,7 +185,7 @@ describe('Profile', () => {
         profile: getReferenceString(profile1)
       });
     expect(res2.status).toBe(400);
-    expect(res2.body.issue).not.toBeUndefined();
+    expect(res2.body.issue).toBeDefined();
     expect(res2.body.issue[0].details.text).toBe('Login profile set');
   });
 
@@ -215,7 +215,7 @@ describe('Profile', () => {
         profile: randomUUID(),
       });
     expect(res2.status).toBe(400);
-    expect(res2.body.issue).not.toBeUndefined();
+    expect(res2.body.issue).toBeDefined();
     expect(res2.body.issue[0].details.text).toBe('Profile not found');
   });
 

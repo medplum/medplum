@@ -28,7 +28,7 @@ describe('Timeline', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('test')).not.toBeUndefined();
+    expect(screen.getByText('test')).toBeDefined();
     expect(screen.queryByText('Like')).toBeNull();
     expect(screen.queryByText('Comment')).toBeNull();
   });
@@ -48,7 +48,7 @@ describe('Timeline', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('test')).not.toBeUndefined();
+    expect(screen.getByText('test')).toBeDefined();
     expect(screen.queryByText('Like')).not.toBeNull();
     expect(screen.queryByText('Comment')).not.toBeNull();
   });

@@ -141,7 +141,7 @@ describe('App', () => {
     });
 
     const control = screen.getByTestId('search-control');
-    expect(control).not.toBeUndefined();
+    expect(control).toBeDefined();
   });
 
   test('Click logo', async () => {

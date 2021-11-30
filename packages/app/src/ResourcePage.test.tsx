@@ -305,7 +305,7 @@ describe('ResourcePage', () => {
       await waitFor(() => screen.getByText('OK'));
     });
 
-    expect(screen.getByText('OK')).not.toBeUndefined();
+    expect(screen.getByText('OK')).toBeDefined();
   });
 
   test('Questionnaire preview', async () => {

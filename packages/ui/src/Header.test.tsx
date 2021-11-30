@@ -81,8 +81,8 @@ describe('Header', () => {
       fireEvent.click(screen.getByTestId('header-menu-button'));
     });
 
-    expect(screen.getByText('section 1')).not.toBeUndefined();
-    expect(screen.getByText('label 1')).not.toBeUndefined();
+    expect(screen.getByText('section 1')).toBeDefined();
+    expect(screen.getByText('label 1')).toBeDefined();
   });
 
   test('Search', async () => {
@@ -106,7 +106,7 @@ describe('Header', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Alice Smith')).not.toBeUndefined();
+    expect(screen.getByText('Alice Smith')).toBeDefined();
   });
 
   test('Profile menu', async () => {
@@ -116,7 +116,7 @@ describe('Header', () => {
       fireEvent.click(screen.getByTestId('header-profile-menu-button'));
     });
 
-    expect(screen.getByText('Sign out of all accounts')).not.toBeUndefined();
+    expect(screen.getByText('Sign out of all accounts')).toBeDefined();
   });
 
   test('Manage account button', async () => {
@@ -166,9 +166,9 @@ describe('Header', () => {
       fireEvent.click(screen.getByTestId('header-profile-menu-button'));
     });
 
-    expect(screen.getByText('Test Patient')).not.toBeUndefined();
-    expect(screen.getByText('Practitioner/123')).not.toBeUndefined();
-    expect(screen.getByText('Project/1')).not.toBeUndefined();
+    expect(screen.getByText('Test Patient')).toBeDefined();
+    expect(screen.getByText('Practitioner/123')).toBeDefined();
+    expect(screen.getByText('Project/1')).toBeDefined();
 
     await act(async () => {
       // Change to the patient profile

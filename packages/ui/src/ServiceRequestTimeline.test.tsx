@@ -128,7 +128,7 @@ describe('ServiceRequestTimeline', () => {
     });
 
     const items = screen.getAllByTestId('timeline-item');
-    expect(items).not.toBeUndefined();
+    expect(items).toBeDefined();
     expect(items.length).toEqual(3);
   });
 
@@ -140,7 +140,7 @@ describe('ServiceRequestTimeline', () => {
     });
 
     const items = screen.getAllByTestId('timeline-item');
-    expect(items).not.toBeUndefined();
+    expect(items).toBeDefined();
     expect(items.length).toEqual(3);
   });
 
@@ -168,7 +168,7 @@ describe('ServiceRequestTimeline', () => {
     });
 
     const items = screen.getAllByTestId('timeline-item');
-    expect(items).not.toBeUndefined();
+    expect(items).toBeDefined();
     expect(items.length).toEqual(4);
   });
 
@@ -194,7 +194,7 @@ describe('ServiceRequestTimeline', () => {
     });
 
     const items = screen.getAllByTestId('timeline-item');
-    expect(items).not.toBeUndefined();
+    expect(items).toBeDefined();
     expect(items.length).toEqual(4);
   });
 

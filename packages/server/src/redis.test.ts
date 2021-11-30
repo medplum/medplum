@@ -8,7 +8,7 @@ describe('Redis', () => {
   test('Get redis', async () => {
     const config = await loadTestConfig();
     await initRedis(config.redis);
-    expect(getRedis()).not.toBeUndefined();
+    expect(getRedis()).toBeDefined();
     await closeRedis();
   });
 

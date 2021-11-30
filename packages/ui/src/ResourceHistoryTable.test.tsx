@@ -72,7 +72,7 @@ describe('ResourceHistoryTable', () => {
     });
 
     const el = await utils.findByText('Loading...');
-    expect(el).not.toBeUndefined();
+    expect(el).toBeDefined();
   });
 
   test('Renders preloaded history', async () => {
@@ -81,7 +81,7 @@ describe('ResourceHistoryTable', () => {
     });
 
     const el = await utils.findByText('1');
-    expect(el).not.toBeUndefined();
+    expect(el).toBeDefined();
   });
 
   test('Renders after loading the resource', async () => {
@@ -91,7 +91,7 @@ describe('ResourceHistoryTable', () => {
     });
 
     const el = await utils.findByText('1');
-    expect(el).not.toBeUndefined();
+    expect(el).toBeDefined();
   });
 
 });

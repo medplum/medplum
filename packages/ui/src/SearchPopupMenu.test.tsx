@@ -93,7 +93,7 @@ describe('SearchPopupMenu', () => {
       onClose: jest.fn()
     });
 
-    expect(screen.getByText('Equals...')).not.toBeUndefined();
+    expect(screen.getByText('Equals...')).toBeDefined();
   });
 
   test('Renders date field', () => {
@@ -109,8 +109,8 @@ describe('SearchPopupMenu', () => {
       onClose: jest.fn()
     });
 
-    expect(screen.getByText('Before...')).not.toBeUndefined();
-    expect(screen.getByText('After...')).not.toBeUndefined();
+    expect(screen.getByText('Before...')).toBeDefined();
+    expect(screen.getByText('After...')).toBeDefined();
   });
 
   test('Renders date field submenu', async () => {
@@ -126,8 +126,8 @@ describe('SearchPopupMenu', () => {
       onClose: jest.fn()
     });
 
-    expect(screen.getByText('Before...')).not.toBeUndefined();
-    expect(screen.getByText('After...')).not.toBeUndefined();
+    expect(screen.getByText('Before...')).toBeDefined();
+    expect(screen.getByText('After...')).toBeDefined();
 
     const dateFiltersSubmenu = screen.getByText('Date filters');
 
@@ -135,9 +135,9 @@ describe('SearchPopupMenu', () => {
       fireEvent.click(dateFiltersSubmenu);
     });
 
-    expect(screen.getByText('Tomorrow')).not.toBeUndefined();
-    expect(screen.getByText('Today')).not.toBeUndefined();
-    expect(screen.getByText('Yesterday')).not.toBeUndefined();
+    expect(screen.getByText('Tomorrow')).toBeDefined();
+    expect(screen.getByText('Today')).toBeDefined();
+    expect(screen.getByText('Yesterday')).toBeDefined();
   });
 
   test('Renders numeric field', () => {
@@ -153,8 +153,8 @@ describe('SearchPopupMenu', () => {
       onClose: jest.fn()
     });
 
-    expect(screen.getByText('Sort Largest to Smallest')).not.toBeUndefined();
-    expect(screen.getByText('Sort Smallest to Largest')).not.toBeUndefined();
+    expect(screen.getByText('Sort Largest to Smallest')).toBeDefined();
+    expect(screen.getByText('Sort Smallest to Largest')).toBeDefined();
   });
 
   test('Sort', async () => {
@@ -177,7 +177,7 @@ describe('SearchPopupMenu', () => {
       fireEvent.click(screen.getByText('Sort Oldest to Newest'));
     });
 
-    expect(currSearch.sortRules).not.toBeUndefined();
+    expect(currSearch.sortRules).toBeDefined();
     expect(currSearch.sortRules?.length).toEqual(1);
     expect(currSearch.sortRules?.[0].code).toEqual('birthDate');
     expect(currSearch.sortRules?.[0].descending).toEqual(false);
@@ -186,7 +186,7 @@ describe('SearchPopupMenu', () => {
       fireEvent.click(screen.getByText('Sort Newest to Oldest'));
     });
 
-    expect(currSearch.sortRules).not.toBeUndefined();
+    expect(currSearch.sortRules).toBeDefined();
     expect(currSearch.sortRules?.length).toEqual(1);
     expect(currSearch.sortRules?.[0].code).toEqual('birthDate');
     expect(currSearch.sortRules?.[0].descending).toEqual(true);
@@ -250,7 +250,7 @@ describe('SearchPopupMenu', () => {
         fireEvent.click(screen.getByText(option.text));
       });
 
-      expect(currSearch.filters).not.toBeUndefined();
+      expect(currSearch.filters).toBeDefined();
       expect(currSearch.filters?.length).toEqual(1);
       expect(currSearch.filters?.[0]).toMatchObject({
         code: 'name',
@@ -301,7 +301,7 @@ describe('SearchPopupMenu', () => {
         fireEvent.click(screen.getByText(option.text));
       });
 
-      expect(currSearch.filters).not.toBeUndefined();
+      expect(currSearch.filters).toBeDefined();
       expect(currSearch.filters?.length).toEqual(1);
       expect(currSearch.filters?.[0]).toMatchObject({
         code: 'birthDate',
@@ -325,7 +325,7 @@ describe('SearchPopupMenu', () => {
       onClose: jest.fn()
     });
 
-    expect(screen.getByText('Equals...')).not.toBeUndefined();
+    expect(screen.getByText('Equals...')).toBeDefined();
   });
 
   test('Renders _lastUpdated', () => {
@@ -341,8 +341,8 @@ describe('SearchPopupMenu', () => {
       onClose: jest.fn()
     });
 
-    expect(screen.getByText('Before...')).not.toBeUndefined();
-    expect(screen.getByText('After...')).not.toBeUndefined();
+    expect(screen.getByText('Before...')).toBeDefined();
+    expect(screen.getByText('After...')).toBeDefined();
   });
 
 });

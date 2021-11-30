@@ -29,7 +29,7 @@ describe('Storage', () => {
     expect(fs.mkdirSync).toHaveBeenCalled();
 
     const storage = getBinaryStorage();
-    expect(storage).not.toBeUndefined();
+    expect(storage).toBeDefined();
 
     // Write a file
     const binary: Binary = {
@@ -70,7 +70,7 @@ describe('Storage', () => {
     });
 
     const storage = getBinaryStorage();
-    expect(storage).not.toBeUndefined();
+    expect(storage).toBeDefined();
 
     // Write a file
     const binary: Binary = {

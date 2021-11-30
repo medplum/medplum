@@ -46,7 +46,7 @@ describe('FHIR Search Utils', () => {
 
   test('Patient has birthdate param', () => {
     const params = getSearchParameters('Patient');
-    expect(params['birthdate']).not.toBeUndefined();
+    expect(params['birthdate']).toBeDefined();
   });
 
   test('Parse URL', () => {

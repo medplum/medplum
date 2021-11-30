@@ -72,9 +72,9 @@ describe('URL rewrite', () => {
     };
 
     const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, practitioner);
-    expect(result).not.toBeUndefined();
+    expect(result).toBeDefined();
     expect(result.resourceType).toBe('Practitioner');
-    expect(result.photo).not.toBeUndefined();
+    expect(result.photo).toBeDefined();
     expect(result.photo?.length).toBe(1);
 
     const url = new URL(result.photo?.[0]?.url as string);
@@ -91,9 +91,9 @@ describe('URL rewrite', () => {
     };
 
     const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, practitioner);
-    expect(result).not.toBeUndefined();
+    expect(result).toBeDefined();
     expect(result.resourceType).toBe('Practitioner');
-    expect(result.photo).not.toBeUndefined();
+    expect(result.photo).toBeDefined();
     expect(result.photo?.length).toBe(1);
 
     const url = new URL(result.photo?.[0]?.url as string);
@@ -110,9 +110,9 @@ describe('URL rewrite', () => {
     };
 
     const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, practitioner);
-    expect(result).not.toBeUndefined();
+    expect(result).toBeDefined();
     expect(result.resourceType).toBe('Practitioner');
-    expect(result.photo).not.toBeUndefined();
+    expect(result.photo).toBeDefined();
     expect(result.photo?.length).toBe(1);
 
     const url = new URL(result.photo?.[0]?.url as string);
@@ -129,9 +129,9 @@ describe('URL rewrite', () => {
     };
 
     const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, practitioner);
-    expect(result).not.toBeUndefined();
+    expect(result).toBeDefined();
     expect(result.resourceType).toBe('Practitioner');
-    expect(result.photo).not.toBeUndefined();
+    expect(result.photo).toBeDefined();
     expect(result.photo?.length).toBe(1);
 
     const url = new URL(result.photo?.[0]?.url as string);

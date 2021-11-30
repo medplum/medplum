@@ -33,7 +33,7 @@ describe('Login', () => {
         scope: 'openid'
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue).not.toBeUndefined();
+    expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Invalid UUID');
   });
 
@@ -48,7 +48,7 @@ describe('Login', () => {
         scope: 'openid'
       });
     expect(res.status).toBe(404);
-    expect(res.body.issue).not.toBeUndefined();
+    expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Not found');
   });
 
@@ -63,7 +63,7 @@ describe('Login', () => {
         scope: 'openid'
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue).not.toBeUndefined();
+    expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Incorrect password');
   });
 

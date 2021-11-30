@@ -6,12 +6,12 @@ import { Select, TextField } from './TextField';
 describe('TextField', () => {
 
   test('Renders', () => {
-    expect(render(<TextField name="test" />)).not.toBeUndefined();
+    expect(render(<TextField name="test" />)).toBeDefined();
   });
 
   test('Renders default value', () => {
     render(<TextField name="test" defaultValue="hello" />);
-    expect(screen.getByDisplayValue('hello')).not.toBeUndefined();
+    expect(screen.getByDisplayValue('hello')).toBeDefined();
   });
 
   test('Renders aria invalid', () => {
@@ -27,7 +27,7 @@ describe('TextField', () => {
 
     render(<TextField name="test" defaultValue="hello" outcome={outcome} />);
     const input = screen.getByDisplayValue('hello');
-    expect(input).not.toBeUndefined();
+    expect(input).toBeDefined();
     expect(input.getAttribute('aria-invalid')).toEqual('true');
     expect(input.getAttribute('aria-describedby')).toEqual('test-errors');
   });
@@ -37,7 +37,7 @@ describe('TextField', () => {
 describe('Select', () => {
 
   test('Renders', () => {
-    expect(render(<Select name="test"><option></option></Select>)).not.toBeUndefined();
+    expect(render(<Select name="test"><option></option></Select>)).toBeDefined();
   });
 
   test('Renders default value', () => {
@@ -48,7 +48,7 @@ describe('Select', () => {
         <option value="c">c</option>
       </Select>
     );
-    expect(screen.getByDisplayValue('b')).not.toBeUndefined();
+    expect(screen.getByDisplayValue('b')).toBeDefined();
   });
 
   test('Renders aria invalid', () => {
@@ -70,7 +70,7 @@ describe('Select', () => {
       </Select>
     );
     const input = screen.getByDisplayValue('b');
-    expect(input).not.toBeUndefined();
+    expect(input).toBeDefined();
     expect(input.getAttribute('aria-invalid')).toEqual('true');
     expect(input.getAttribute('aria-describedby')).toEqual('test-errors');
   });

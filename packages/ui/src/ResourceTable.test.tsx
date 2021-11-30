@@ -69,7 +69,7 @@ describe('ResourceTable', () => {
     });
 
     const control = screen.getByText('Resource Type');
-    expect(control).not.toBeUndefined();
+    expect(control).toBeDefined();
   });
 
   test('Renders Practitioner resource', async () => {
@@ -84,7 +84,7 @@ describe('ResourceTable', () => {
     });
 
     const control = screen.getByText('Resource Type');
-    expect(control).not.toBeUndefined();
+    expect(control).toBeDefined();
   });
 
 });

@@ -6,7 +6,7 @@ describe('Logo', () => {
 
   test('Renders', () => {
     render(<Logo size={100} />);
-    expect(screen.getByTitle('Medplum Logo')).not.toBeUndefined();
+    expect(screen.getByTitle('Medplum Logo')).toBeDefined();
   });
 
 });

@@ -191,7 +191,7 @@ describe('OAuth Authorize', () => {
         nonce: 'asdf'
       });
     expect(res.status).toBe(302);
-    expect(res.headers.location).not.toBeUndefined();
+    expect(res.headers.location).toBeDefined();
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toBeNull();
     expect(location.searchParams.get('code')).not.toBeNull();
@@ -215,7 +215,7 @@ describe('OAuth Authorize', () => {
         nonce: 'asdf'
       });
     expect(res.status).toBe(302);
-    expect(res.headers.location).not.toBeUndefined();
+    expect(res.headers.location).toBeDefined();
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toBeNull();
     expect(location.searchParams.get('code')).not.toBeNull();
@@ -261,7 +261,7 @@ describe('OAuth Authorize', () => {
         nonce: 'asdf'
       });
     expect(res.status).toBe(302);
-    expect(res.headers.location).not.toBeUndefined();
+    expect(res.headers.location).toBeDefined();
     const location = new URL(res.headers.location);
     expect(location.host).toBe('example.com');
     expect(location.searchParams.get('error')).toBe('login_required');
@@ -285,7 +285,7 @@ describe('OAuth Authorize', () => {
         nonce: 'asdf'
       });
     expect(res.status).toBe(302);
-    expect(res.headers['set-cookie']).not.toBeUndefined();
+    expect(res.headers['set-cookie']).toBeDefined();
     const cookies = setCookieParser.parse(res.headers['set-cookie']);
     expect(cookies.length).toBe(1);
     const cookie = cookies[0];
@@ -308,7 +308,7 @@ describe('OAuth Authorize', () => {
         nonce: 'asdf'
       })
     expect(res2.status).toBe(302);
-    expect(res2.headers.location).not.toBeUndefined();
+    expect(res2.headers.location).toBeDefined();
     const location = new URL(res2.headers.location);
     expect(location.host).toBe('example.com');
     expect(location.searchParams.get('error')).toBeNull();
@@ -334,7 +334,7 @@ describe('OAuth Authorize', () => {
       });
     expect(res.status).toBe(302);
     expect(res.status).toBe(302);
-    expect(res.headers['set-cookie']).not.toBeUndefined();
+    expect(res.headers['set-cookie']).toBeDefined();
 
     const cookies = setCookieParser.parse(res.headers['set-cookie']);
     expect(cookies.length).toBe(1);
@@ -379,7 +379,7 @@ describe('OAuth Authorize', () => {
       });
     expect(res.status).toBe(302);
     expect(res.status).toBe(302);
-    expect(res.headers.location).not.toBeUndefined();
+    expect(res.headers.location).toBeDefined();
 
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toBeNull();
@@ -393,7 +393,7 @@ describe('OAuth Authorize', () => {
         code_verifier: 'xyz'
       });
     expect(res2.status).toBe(200);
-    expect(res2.body.id_token).not.toBeUndefined();
+    expect(res2.body.id_token).toBeDefined();
     const params2 = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
@@ -406,7 +406,7 @@ describe('OAuth Authorize', () => {
     const res3 = await request(app)
       .get('/oauth2/authorize?' + params2.toString());
     expect(res3.status).toBe(302);
-    expect(res3.headers.location).not.toBeUndefined();
+    expect(res3.headers.location).toBeDefined();
 
     const location2 = new URL(res3.headers.location);
     expect(location2.host).toBe('example.com');

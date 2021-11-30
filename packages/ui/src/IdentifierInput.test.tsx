@@ -8,14 +8,14 @@ describe('IdentifierInput', () => {
 
   test('Renders', () => {
     render(<IdentifierInput name="a" defaultValue={{ system: 'x', value: 'y' }} />);
-    expect(screen.getByDisplayValue('x')).not.toBeUndefined();
-    expect(screen.getByDisplayValue('y')).not.toBeUndefined();
+    expect(screen.getByDisplayValue('x')).toBeDefined();
+    expect(screen.getByDisplayValue('y')).toBeDefined();
   });
 
   test('Renders undefined value', () => {
     render(<IdentifierInput name="a" />);
-    expect(screen.getByPlaceholderText('System')).not.toBeUndefined();
-    expect(screen.getByPlaceholderText('Value')).not.toBeUndefined();
+    expect(screen.getByPlaceholderText('System')).toBeDefined();
+    expect(screen.getByPlaceholderText('Value')).toBeDefined();
   });
 
   test('Set value', async () => {
@@ -31,7 +31,7 @@ describe('IdentifierInput', () => {
       fireEvent.change(screen.getByPlaceholderText('Value'), { target: { value: 'v' } });
     });
 
-    expect(lastValue).not.toBeUndefined();
+    expect(lastValue).toBeDefined();
     expect(lastValue).toMatchObject({ system: 's', value: 'v' });
   });
 

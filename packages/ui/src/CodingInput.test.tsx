@@ -60,7 +60,7 @@ describe('CodingInput', () => {
     );
 
     expect(screen.getByTestId('autocomplete')).toBeInTheDocument();
-    expect(screen.getByText('abc')).not.toBeUndefined();
+    expect(screen.getByText('abc')).toBeDefined();
   });
 
   test('Searches for results', async () => {
@@ -88,7 +88,7 @@ describe('CodingInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Test Display')).not.toBeUndefined();
+    expect(screen.getByText('Test Display')).toBeDefined();
   });
 
 });

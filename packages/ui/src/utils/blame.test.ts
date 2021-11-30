@@ -42,7 +42,7 @@ describe('Blame', () => {
     };
 
     const result = blame(history);
-    expect(result).not.toBeUndefined();
+    expect(result).toBeDefined();
   });
 
 });

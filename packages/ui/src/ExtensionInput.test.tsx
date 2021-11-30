@@ -8,12 +8,12 @@ describe('ExtensionInput', () => {
 
   test('Renders', () => {
     render(<ExtensionInput name="a" defaultValue={{ url: 'https://example.com' }} />);
-    expect(screen.getByTestId('extension-input')).not.toBeUndefined();
+    expect(screen.getByTestId('extension-input')).toBeDefined();
   });
 
   test('Renders undefined value', () => {
     render(<ExtensionInput name="a" />);
-    expect(screen.getByTestId('extension-input')).not.toBeUndefined();
+    expect(screen.getByTestId('extension-input')).toBeDefined();
   });
 
   test('Set value', async () => {
@@ -25,7 +25,7 @@ describe('ExtensionInput', () => {
       fireEvent.change(screen.getByTestId('extension-input'), { target: { value: '{"url":"https://foo.com"}' } });
     });
 
-    expect(lastValue).not.toBeUndefined();
+    expect(lastValue).toBeDefined();
     expect(lastValue).toMatchObject({ url: 'https://foo.com' });
   });
 

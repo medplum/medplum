@@ -11,38 +11,38 @@ describe('ResourcePropertyDisplay', () => {
 
   test('Renders boolean', () => {
     render(<ResourcePropertyDisplay property={{ type: [{ code: 'boolean' }] }} value={true} />);
-    expect(screen.getByText('true')).not.toBeUndefined();
+    expect(screen.getByText('true')).toBeDefined();
   });
 
   test('Renders string', () => {
     render(<ResourcePropertyDisplay property={{ type: [{ code: 'string' }] }} value="hello" />);
-    expect(screen.getByText('hello')).not.toBeUndefined();
+    expect(screen.getByText('hello')).toBeDefined();
   });
 
   test('Renders canonical', () => {
     render(<ResourcePropertyDisplay property={{ type: [{ code: 'canonical' }] }} value="hello" />);
-    expect(screen.getByText('hello')).not.toBeUndefined();
+    expect(screen.getByText('hello')).toBeDefined();
   });
 
   test('Renders url', () => {
     render(<ResourcePropertyDisplay property={{ type: [{ code: 'url' }] }} value="https://example.com" />);
-    expect(screen.getByText('https://example.com')).not.toBeUndefined();
+    expect(screen.getByText('https://example.com')).toBeDefined();
   });
 
   test('Renders uri', () => {
     render(<ResourcePropertyDisplay property={{ type: [{ code: 'uri' }] }} value="https://example.com" />);
-    expect(screen.getByText('https://example.com')).not.toBeUndefined();
+    expect(screen.getByText('https://example.com')).toBeDefined();
   });
 
   test('Renders string array', () => {
     render(<ResourcePropertyDisplay property={{ type: [{ code: 'string' }], max: '*' }} value={['hello', 'world']} />);
-    expect(screen.getByText('hello')).not.toBeUndefined();
-    expect(screen.getByText('world')).not.toBeUndefined();
+    expect(screen.getByText('hello')).toBeDefined();
+    expect(screen.getByText('world')).toBeDefined();
   });
 
   test('Renders markdown', () => {
     render(<ResourcePropertyDisplay property={{ type: [{ code: 'markdown' }] }} value="hello" />);
-    expect(screen.getByText('hello')).not.toBeUndefined();
+    expect(screen.getByText('hello')).toBeDefined();
   });
 
   test('Renders Address', () => {
@@ -55,7 +55,7 @@ describe('ResourcePropertyDisplay', () => {
       value={value}
     />);
 
-    expect(screen.getByText('London')).not.toBeUndefined();
+    expect(screen.getByText('London')).toBeDefined();
   });
 
   test('Renders Attachment', () => {
@@ -70,7 +70,7 @@ describe('ResourcePropertyDisplay', () => {
       value={value}
     />);
 
-    expect(screen.getByText('file.txt')).not.toBeUndefined();
+    expect(screen.getByText('file.txt')).toBeDefined();
   });
 
   test('Renders Attachment array', () => {
@@ -92,8 +92,8 @@ describe('ResourcePropertyDisplay', () => {
       value={value}
     />);
 
-    expect(screen.getByText('file.txt')).not.toBeUndefined();
-    expect(screen.getByText('file2.txt')).not.toBeUndefined();
+    expect(screen.getByText('file.txt')).toBeDefined();
+    expect(screen.getByText('file2.txt')).toBeDefined();
   });
 
   test('Renders CodeableConcept', () => {
@@ -106,7 +106,7 @@ describe('ResourcePropertyDisplay', () => {
       value={value}
     />);
 
-    expect(screen.getByText('foo')).not.toBeUndefined();
+    expect(screen.getByText('foo')).toBeDefined();
   });
 
   test('Renders ContactPoint', () => {
@@ -120,7 +120,7 @@ describe('ResourcePropertyDisplay', () => {
       value={value}
     />);
 
-    expect(screen.getByText('foo@example.com [email]')).not.toBeUndefined();
+    expect(screen.getByText('foo@example.com [email]')).toBeDefined();
   });
 
   test('Renders HumanName', () => {
@@ -133,7 +133,7 @@ describe('ResourcePropertyDisplay', () => {
       value={value}
     />);
 
-    expect(screen.getByText('Smith')).not.toBeUndefined();
+    expect(screen.getByText('Smith')).toBeDefined();
   });
 
   test('Renders Identifier', () => {
@@ -147,7 +147,7 @@ describe('ResourcePropertyDisplay', () => {
       value={value}
     />);
 
-    expect(screen.getByText('xyz: xyz123')).not.toBeUndefined();
+    expect(screen.getByText('xyz: xyz123')).toBeDefined();
   });
 
 });

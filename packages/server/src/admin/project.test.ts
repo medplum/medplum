@@ -36,14 +36,14 @@ describe('Project Admin routes', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.project).not.toBeUndefined();
+    expect(res.body.project).toBeDefined();
 
     const res2 = await request(app)
       .get('/admin/projects')
       .set('Authorization', 'Bearer ' + res.body.accessToken);
 
     expect(res2.status).toBe(200);
-    expect(res2.body.projects).not.toBeUndefined();
+    expect(res2.body.projects).toBeDefined();
     expect(res2.body.projects.length).toEqual(1);
   });
 
@@ -60,7 +60,7 @@ describe('Project Admin routes', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.project).not.toBeUndefined();
+    expect(res.body.project).toBeDefined();
 
     const projectId = res.body.project.reference.replace('Project/', '');
 
@@ -69,8 +69,8 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + res.body.accessToken);
 
     expect(res2.status).toBe(200);
-    expect(res2.body.project).not.toBeUndefined();
-    expect(res2.body.members).not.toBeUndefined();
+    expect(res2.body.project).toBeDefined();
+    expect(res2.body.members).toBeDefined();
     expect(res2.body.members.length).toEqual(1);
 
     const res3 = await request(app)
@@ -102,7 +102,7 @@ describe('Project Admin routes', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.project).not.toBeUndefined();
+    expect(res.body.project).toBeDefined();
 
     const res2 = await request(app)
       .post('/auth/register')
@@ -116,7 +116,7 @@ describe('Project Admin routes', () => {
       });
 
     expect(res2.status).toBe(200);
-    expect(res2.body.project).not.toBeUndefined();
+    expect(res2.body.project).toBeDefined();
 
     const projectId = res.body.project.reference.replace('Project/', '');
 

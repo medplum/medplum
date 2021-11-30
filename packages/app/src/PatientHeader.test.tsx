@@ -61,7 +61,7 @@ describe('PatientHeader', () => {
     });
 
     const avatar = screen.getByTestId('avatar');
-    expect(avatar).not.toBeUndefined();
+    expect(avatar).toBeDefined();
     expect(avatar.style.backgroundColor).toEqual('rgb(121, 163, 210)');
   });
 
@@ -76,7 +76,7 @@ describe('PatientHeader', () => {
     });
 
     const avatar = screen.getByTestId('avatar');
-    expect(avatar).not.toBeUndefined();
+    expect(avatar).toBeDefined();
     expect(avatar.style.backgroundColor).toEqual('rgb(197, 134, 134)');
   });
 
@@ -91,7 +91,7 @@ describe('PatientHeader', () => {
     });
 
     const avatar = screen.getByTestId('avatar');
-    expect(avatar).not.toBeUndefined();
+    expect(avatar).toBeDefined();
     expect(avatar.style.backgroundColor).toEqual('rgb(108, 181, 120)');
   });
 
