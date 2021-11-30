@@ -65,8 +65,15 @@ function mockFetch(url: string, options: any): Promise<any> {
 
   } else if (method === 'POST' && url.endsWith('auth/register')) {
     result = {
-      login: '123',
-      code: '123',
+      status: 200,
+      access_token: 'header.' + window.btoa(stringify({ client_id: defaultOptions.clientId })) + '.signature',
+      refresh_token: 'header.' + window.btoa(stringify({ client_id: defaultOptions.clientId })) + '.signature',
+      project: {
+        reference: 'Project/123',
+      },
+      profile: {
+        reference: 'Practitioner/123'
+      },
     };
 
   } else if (method === 'GET' && url.endsWith('Practitioner/123')) {
@@ -84,6 +91,7 @@ function mockFetch(url: string, options: any): Promise<any> {
   } else if (method === 'POST' && url.endsWith('oauth2/token')) {
     if (canRefresh) {
       result = {
+        status: 200,
         access_token: 'header.' + window.btoa(stringify({ client_id: defaultOptions.clientId })) + '.signature',
         refresh_token: 'header.' + window.btoa(stringify({ client_id: defaultOptions.clientId })) + '.signature'
       };
@@ -138,7 +146,7 @@ function mockFetch(url: string, options: any): Promise<any> {
   };
 
   return Promise.resolve({
-    ok: response.status === undefined,
+    ok: response.status === 200 || response.status === undefined,
     status: response.status,
     blob: () => Promise.resolve(response),
     json: () => Promise.resolve(response)
@@ -155,6 +163,12 @@ describe('Client', () => {
     Object.defineProperty(global.self, 'crypto', {
       value: crypto.webcrypto
     });
+  });
+
+  beforeEach(() => {
+    localStorage.clear();
+    canRefresh = true;
+    tokenExpired = false;
   });
 
   test('Constructor', () => {
@@ -262,22 +276,23 @@ describe('Client', () => {
 
   test('Register', async () => {
     const client = new MedplumClient(defaultOptions);
-    const result = await client.register({
+    await client.register({
       email: `sally${randomUUID()}@example.com`,
       password: 'testtest',
       firstName: 'Sally',
       lastName: 'Foo',
       projectName: 'Sally World'
     });
-    expect(result).not.toBeUndefined();
-    expect(result.login).not.toBeUndefined();
+    expect(client.getActiveLogin()).not.toBeUndefined();
   });
 
   test('Read expired and refresh', async () => {
     tokenExpired = true;
 
     const client = new MedplumClient(defaultOptions);
-    await client.startLogin('admin@medplum.com', 'admin');
+
+    const loginResponse = await client.startLogin('admin@medplum.com', 'admin');
+    await client.processCode(loginResponse.code);
 
     const result = await client.get('expired');
     expect(result).not.toBeUndefined();
@@ -289,10 +304,11 @@ describe('Client', () => {
 
     const onUnauthenticated = jest.fn();
     const client = new MedplumClient({ ...defaultOptions, onUnauthenticated });
-    await client.startLogin('admin@medplum.com', 'admin');
+    const loginResponse = await client.startLogin('admin@medplum.com', 'admin');
+    await expect(client.processCode(loginResponse.code)).rejects.toEqual('Failed to fetch tokens');
 
     const result = client.get('expired');
-    await expect(result).rejects.toEqual('Failed to fetch tokens');
+    await expect(result).rejects.toEqual('Invalid refresh token');
     expect(onUnauthenticated).toBeCalled();
   });
 
