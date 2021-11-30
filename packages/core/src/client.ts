@@ -459,7 +459,7 @@ export class MedplumClient extends EventTarget {
 
   private async refreshProfile(): Promise<ProfileResource | undefined> {
     const reference = this.getActiveLogin()?.profile;
-    if (reference) {
+    if (reference?.reference) {
       this.loading = true;
       this.profile = await this.readCachedReference(reference);
       this.loading = false;
