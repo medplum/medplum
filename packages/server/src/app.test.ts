@@ -26,7 +26,7 @@ describe('App', () => {
     expect(res.status).toBe(200);
   });
 
-  test('Preflight max age', async () => {
+  test.skip('Preflight max age', async () => {
     const res = await request(app).options('/');
     expect(res.status).toBe(204);
     expect(res.header['access-control-max-age']).toBe('86400');
