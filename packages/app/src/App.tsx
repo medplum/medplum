@@ -14,6 +14,7 @@ import { EditMembershipPage } from './admin/EditMembershipPage';
 import { InvitePage } from './admin/InvitePage';
 import { ProjectPage } from './admin/ProjectPage';
 import { ProjectsPage } from './admin/ProjectsPage';
+import { BatchPage } from './BatchPage';
 import { ChangePasswordPage } from './ChangePasswordPage';
 import { CreateResourcePage } from './CreateResourcePage';
 import { FormPage } from './FormPage';
@@ -78,7 +79,8 @@ export function App() {
               links: [
                 { label: 'Client Applications', href: '/ClientApplication' },
                 { label: 'Subscriptions', href: '/Subscription' },
-                { label: 'Bots', href: '/Bot' }
+                { label: 'Bots', href: '/Bot' },
+                { label: 'Batch', href: '/batch' }
               ]
             },
             {
@@ -97,6 +99,7 @@ export function App() {
         <Route path="/setpassword/:id/:secret" element={<SetPasswordPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/changepassword" element={<ChangePasswordPage />} />
+        <Route path="/batch" element={<BatchPage />} />
         <Route path="/forms/:id" element={<FormPage />} />
         <Route path="/admin/projects" element={<ProjectsPage />} />
         <Route path="/admin/projects/:id" element={<ProjectPage />} />
