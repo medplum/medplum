@@ -31,7 +31,7 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps) {
         <ReactMarkdown>{textContent}</ReactMarkdown>
       )}
       {diagnosticReport.result && (
-        <ObservationTable value={diagnosticReport.result as Reference<Observation>[]} />
+        <ObservationTable value={diagnosticReport.result} />
       )}
     </div>
   );
