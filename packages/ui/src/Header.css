@@ -64,7 +64,7 @@ div.medplum-nav-search-container {
 .medplum-nav-search-container.focused {
   background: var(--medplum-surface);
   color: var(--medplum-gray-900);
-  border: thin solid var(--medplum-blue-300);
+  border: 0.1px solid var(--medplum-blue-300);
   box-shadow: 0 0 0 2px var(--medplum-blue-200);
 }
 
@@ -88,7 +88,7 @@ div.medplum-nav-search-container {
 .medplum-nav-search-container>ul>li.choice {
   margin: 1px 0 1px 4px;
   padding: 0 6px;
-  border: thin solid var(--medplum-orange-200);
+  border: 0.1px solid var(--medplum-orange-200);
   border-radius: 4px;
   background-color: var(--medplum-gray-50);
   cursor: move;
@@ -97,7 +97,7 @@ div.medplum-nav-search-container {
 }
 
 .medplum-nav-search-container>ul>li.unstructured {
-  border: thin dashed var(--medplum-red-700) !important;
+  border: 0.1px dashed var(--medplum-red-700) !important;
 }
 
 .medplum-nav-search-container>ul>li>input {
@@ -140,7 +140,7 @@ div.medplum-nav-menu-container {
   top: 0;
   right: 0;
   transform: translate(0px, 32px);
-  border: thin solid var(--medplum-gray-400);
+  border: 0.1px solid var(--medplum-gray-400);
   border-radius: 4px;
   background-color: var(--medplum-surface);
   color: var(--medplum-gray-600);

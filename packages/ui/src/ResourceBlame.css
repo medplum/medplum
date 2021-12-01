@@ -1,5 +1,5 @@
 .medplum-blame {
-  border: thin solid rgba(0, 0, 0, 0.15);
+  border: 0.1px solid rgba(0, 0, 0, 0.15);
   border-collapse: collapse;
   border-radius: 4px;
   border-spacing: 0;
@@ -7,7 +7,7 @@
 }
 
 .medplum-blame .start-row {
-  border-top: thin solid rgba(0, 0, 0, 0.15);
+  border-top: 0.1px solid rgba(0, 0, 0, 0.15);
 }
 
 .medplum-blame .normal-row {
@@ -15,7 +15,7 @@
 }
 
 .medplum-blame .details {
-  border-right: thin solid rgba(0, 0, 0, 0.15);
+  border-right: 0.1px solid rgba(0, 0, 0, 0.15);
   padding: 4px;
   font-size: 10px;
   line-height: 10px;

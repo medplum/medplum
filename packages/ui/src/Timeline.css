@@ -30,7 +30,7 @@ article.medplum-timeline-item {
 .medplum-timeline-item-footer {
   display: flex;
   padding: 8px;
-  border-top: thin solid var(--medplum-gray-200);
+  border-top: 0.1px solid var(--medplum-gray-200);
 }
 
 .medplum-timeline-icon {

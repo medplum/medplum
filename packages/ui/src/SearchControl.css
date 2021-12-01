@@ -12,12 +12,12 @@
 .medplum-search-control>table {
   width: 100%;
   clear: both;
-  border-top: thin solid var(--medplum-gray-300);
+  border-top: 0.1px solid var(--medplum-gray-300);
   border-collapse: collapse;
 }
 
 .medplum-search-control>table tr {
-  border-bottom: thin solid var(--medplum-gray-300);
+  border-bottom: 0.1px solid var(--medplum-gray-300);
 }
 
 .medplum-search-control>table td, .medplum-search-control>table th {
@@ -40,7 +40,7 @@
   background-color: var(--medplum-blue-50);
   white-space: nowrap;
   color: var(--medplum-gray-700);
-  border: thin solid var(--medplum-gray-300);
+  border: 0.1px solid var(--medplum-gray-300);
   position: relative;
 }
 
@@ -85,12 +85,12 @@
 
 .medplum-search-control>table tbody td {
   color: var(--medplum-gray-800);
-  border-right: thin solid var(--medplum-gray-100);
+  border-right: 0.1px solid var(--medplum-gray-100);
 }
 
 .medplum-search-control .medplum-empty-search {
   background: var(--medplum-gray-100);
-  border: thin solid var(--medplum-gray-300);
+  border: 0.1px solid var(--medplum-gray-300);
   color: var(--medplum-gray-500);
   text-align: center;
   padding: 40px;
@@ -106,7 +106,7 @@ a.paginate_button, a.paginate_active {
   padding: 8px 12px;
   margin-left: 2px;
   cursor: pointer;
-  border: thin solid var(--medplum-gray-300);
+  border: 0.1px solid var(--medplum-gray-300);
 }
 
 a.paginate_button:hover {
@@ -140,7 +140,7 @@ a.paginate_button_disabled:hover {
 .medplum-search-icon-cell input[type=checkbox] {
   margin: 0;
   padding: 0;
-  border: thin solid var(--medplum-gray-600);
+  border: 0.1px solid var(--medplum-gray-600);
   outline: 0;
 }
 

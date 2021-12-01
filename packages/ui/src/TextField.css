@@ -5,7 +5,7 @@ input[type=tel],
 input[type=text],
 input[type=datetime-local],
 select {
-  border: thin solid var(--medplum-gray-300);
+  border: 0.1px solid var(--medplum-gray-300);
   border-radius: 3px;
   background: var(--medplum-surface);
   box-shadow: 0 1px 1px 0 var(--medplum-gray-200);
@@ -33,7 +33,7 @@ input[type=datetime-local]:focus,
 select:focus {
   background: var(--medplum-surface);
   color: var(--medplum-gray-900);
-  border: thin solid var(--medplum-blue-300);
+  border: 0.1px solid var(--medplum-blue-300);
   box-shadow: 0 0 0 2px var(--medplum-blue-200);
 }
 
@@ -87,7 +87,7 @@ select.large:not([size]) {
 
 input[type=checkbox],
 input[type=radio] {
-  border: thin solid var(--medplum-gray-300);
+  border: 0.1px solid var(--medplum-gray-300);
   border-radius: 0;
   background: var(--medplum-surface);
   box-shadow: 0 1px 1px 0 var(--medplum-gray-200);
@@ -97,7 +97,7 @@ input[type=checkbox]:focus,
 input[type=radio]:focus {
   background: var(--medplum-surface);
   color: var(--medplum-gray-900);
-  border: thin solid var(--medplum-blue-300);
+  border: 0.1px solid var(--medplum-blue-300);
   box-shadow: 0 0 0 2px var(--medplum-blue-200);
 }
 

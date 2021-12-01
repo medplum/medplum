@@ -34,7 +34,7 @@ a:hover {
 }
 
 a:focus {
-  outline: thin solid var(--medplum-blue-500);
+  outline: 0.1px solid var(--medplum-blue-500);
 }
 
 th, strong {
@@ -93,6 +93,6 @@ table.table {
 
 table.table th,
 table.table td {
-  border: thin solid var(--medplum-gray-400);
+  border: 0.1px solid var(--medplum-gray-400);
   padding: 4px 6px;
 }
