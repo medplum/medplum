@@ -1,6 +1,7 @@
-import { MedplumClient, Practitioner } from '@medplum/core';
+import { LoginState, MedplumClient, Practitioner, ProfileResource } from '@medplum/core';
 
 export class MockClient extends MedplumClient {
+  activeLoginOverride?: LoginState;
 
   constructor(routes: Record<string, Record<string, any>>) {
     super({
@@ -30,7 +31,12 @@ export class MockClient extends MedplumClient {
     });
   }
 
-  getProfile() {
+  clear(): void {
+    super.clear();
+    this.activeLoginOverride = undefined;
+  }
+
+  getProfile(): ProfileResource {
     return {
       resourceType: 'Practitioner',
       id: '123',
@@ -38,5 +44,16 @@ export class MockClient extends MedplumClient {
         versionId: '456'
       }
     } as Practitioner;
+  }
+
+  setActiveLoginOverride(activeLoginOverride: LoginState): void {
+    this.activeLoginOverride = activeLoginOverride;
+  }
+
+  getActiveLogin(): LoginState | undefined {
+    if (this.activeLoginOverride !== undefined) {
+      return this.activeLoginOverride;
+    }
+    return super.getActiveLogin();
   }
 }

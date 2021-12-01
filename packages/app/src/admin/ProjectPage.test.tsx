@@ -31,7 +31,7 @@ const setup = (url: string) => {
     <MedplumProvider medplum={medplum}>
       <MemoryRouter initialEntries={[url]} initialIndex={0}>
         <Routes>
-          <Route path="/admin/projects/:id" element={<ProjectPage />} />
+          <Route path="/admin/projects" element={<ProjectPage />} />
         </Routes>
       </MemoryRouter>
     </MedplumProvider>
@@ -41,7 +41,18 @@ const setup = (url: string) => {
 describe('ProjectPage', () => {
 
   test('Renders', async () => {
-    setup('/admin/projects/123');
+    medplum.setActiveLoginOverride({
+      accessToken: '123',
+      refreshToken: '456',
+      profile: {
+        reference: 'Practitioner/456'
+      },
+      project: {
+        reference: 'Project/123'
+      }
+    });
+
+    setup('/admin/projects');
 
     await act(async () => {
       await waitFor(() => screen.getByText('Alice Smith'));
