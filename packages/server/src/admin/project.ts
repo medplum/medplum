@@ -10,6 +10,10 @@ export const projectAdminRouter = Router();
 projectAdminRouter.use(authenticateToken);
 projectAdminRouter.post('/:projectId/invite', inviteValidators, asyncWrap(inviteHandler));
 
+/**
+ * Handles requests to "/admin/projects"
+ * Returns a list of projects where the current user is an admin.
+ */
 projectAdminRouter.get('/', asyncWrap(async (req: Request, res: Response) => {
   const [outcome, bundle] = await repo.search<ProjectMembership>({
     resourceType: 'ProjectMembership',
@@ -38,6 +42,10 @@ projectAdminRouter.get('/', asyncWrap(async (req: Request, res: Response) => {
   res.status(200).json({ projects });
 }));
 
+/**
+ * Handles requests to "/admin/projects/{projectId}"
+ * Returns project metadata and a list of members.
+ */
 projectAdminRouter.get('/:projectId', asyncWrap(async (req: Request, res: Response) => {
   const projectDetails = await verifyProjectAdmin(req, res);
   if (!projectDetails) {
@@ -51,7 +59,8 @@ projectAdminRouter.get('/:projectId', asyncWrap(async (req: Request, res: Respon
       membershipId: membership.id,
       profile: membership.profile?.reference,
       user: membership.user?.reference,
-      name: membership.profile?.display
+      name: membership.profile?.display,
+      role: getRole(project, membership)
     });
   }
 
@@ -89,3 +98,23 @@ projectAdminRouter.post('/:projectId/members/:membershipId', asyncWrap(async (re
   assertOk(outcome);
   res.status(getStatus(outcome)).json(result);
 }));
+
+/**
+ * Returns the role of the membership in the project.
+ * There are 3 possible roles:
+ *  1) "owner" - for the one owner of the project
+ *  2) "admin" - for the admin of the project
+ *  3) "member" - for any other member of the project
+ * @param project The project resource.
+ * @param membership The project membership resource.
+ * @returns A string representing the role of the user in the project.
+ */
+function getRole(project: Project, membership: ProjectMembership): string {
+  if (membership.user?.reference === project.owner?.reference) {
+    return 'owner';
+  }
+  if (membership.admin) {
+    return 'admin';
+  }
+  return 'member';
+}

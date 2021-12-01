@@ -38,6 +38,7 @@ export function ProjectPage() {
         <thead>
           <tr>
             <th>Name</th>
+            <th>Role</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -47,6 +48,7 @@ export function ProjectPage() {
               <td>
                 <ResourceBadge value={{ reference: member.profile }} link={true} />
               </td>
+              <td>{member.role}</td>
               <td>
                 <MedplumLink to={`/admin/projects/${id}/members/${member.membershipId}`}>Edit</MedplumLink>
               </td>
