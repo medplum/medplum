@@ -3,7 +3,7 @@ import * as route53 from '@aws-cdk/aws-route53';
 import * as targets from '@aws-cdk/aws-route53-targets/lib';
 import * as s3 from '@aws-cdk/aws-s3';
 import * as cdk from '@aws-cdk/core';
-import { APP_DOMAIN_NAME, APP_SSL_CERT_ARN, DOMAIN_NAME } from './constants';
+import { APP_DOMAIN_NAME, DOMAIN_NAME } from './constants';
 
 /**
  * Static app infrastructure, which deploys app content to an S3 bucket.
@@ -37,12 +37,7 @@ export class FrontEnd extends cdk.Construct {
 
     // CloudFront distribution that provides HTTPS
     const distribution = new cloudfront.CloudFrontWebDistribution(this, 'AppDistribution', {
-      aliasConfiguration: {
-        acmCertRef: APP_SSL_CERT_ARN,
-        names: [APP_DOMAIN_NAME],
-        sslMethod: cloudfront.SSLMethod.SNI,
-        securityPolicy: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021
-      },
+      viewerCertificate: cloudfront.ViewerCertificate.fromCloudFrontDefaultCertificate(APP_DOMAIN_NAME),
       originConfigs: [{
         s3OriginSource: {
           s3BucketSource: appBucket,
