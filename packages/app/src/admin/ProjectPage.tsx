@@ -1,10 +1,9 @@
 import { Document, Loading, MedplumLink, ResourceBadge, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
 
 export function ProjectPage() {
-  const { id } = useParams() as { id: string };
   const medplum = useMedplum();
+  const id = medplum.getActiveLogin()?.project?.reference?.split('/')?.[1] as string;
   const [loading, setLoading] = useState<boolean>(true);
   const [result, setResult] = useState<any>();
   const [error, setError] = useState();

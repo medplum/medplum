@@ -74,7 +74,12 @@ export function Header(props: HeaderProps) {
                   <Avatar size="large" value={context.profile} />
                 </div>
                 <div style={{ margin: 'auto', padding: '8px' }}>
-                  <div style={{ margin: '4px auto 4px auto', fontWeight: 'bold' }}><HumanNameDisplay value={context.profile?.name?.[0] as HumanName} /></div>
+                  <div style={{ margin: '4px auto 4px auto', fontWeight: 'bold' }}>
+                    <HumanNameDisplay value={context.profile?.name?.[0] as HumanName} />
+                  </div>
+                  <div style={{ margin: '4px auto 4px auto' }}>
+                    {medplum.getActiveLogin()?.project?.display}
+                  </div>
                   <Button testid="header-profile-link" onClick={() => {
                     setUserMenuVisible(false);
                     if (props.onProfile) {
