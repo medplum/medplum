@@ -2,6 +2,8 @@
   padding: 0;
   width: 32px;
   height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   line-height: 32px;
   user-select: none;
   border-radius: 50%;
@@ -21,6 +23,8 @@
 .medplum-avatar.xsmall {
   width: 20px;
   height: 20px;
+  min-width: 20px;
+  min-height: 20px;
   line-height: 20px;
   font-size: 10px;
 }
@@ -28,6 +32,8 @@
 .medplum-avatar.small {
   width: 24px;
   height: 24px;
+  min-width: 24px;
+  min-height: 24px;
   line-height: 24px;
   font-size: 11px;
 }
@@ -35,6 +41,8 @@
 .medplum-avatar.large {
   width: 56px;
   height: 56px;
+  min-width: 56px;
+  min-height: 56px;
   line-height: 56px;
   font-size: 28px;
 }
