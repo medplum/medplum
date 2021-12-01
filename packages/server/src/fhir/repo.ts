@@ -691,6 +691,10 @@ export class Repository {
       return this.buildReferenceColumns(searchParam, value);
     }
 
+    if (searchParam.type === 'date') {
+      return this.buildDateColumn(value);
+    }
+
     return (typeof value === 'string') ? value : stringify(value);
   }
 
@@ -707,6 +711,25 @@ export class Repository {
 
     // TODO: Consider normalizing reference string when known (searchParam.target.length === 1)
     return refStr;
+  }
+
+  /**
+   * Builds the column value for a date parameter.
+   * Tries to parse the date string.
+   * Silently ignores failure.
+   * @param value The FHIRPath result.
+   * @returns The date string if parsed; undefined otherwise.
+   */
+  private buildDateColumn(value: any): string | undefined {
+    if (typeof value === 'string') {
+      try {
+        const date = new Date(value);
+        return date.toISOString().substring(0, 10);
+      } catch (ex) {
+        // Silent ignore
+      }
+    }
+    return undefined;
   }
 
   private async writeLookupTables(resource: Resource): Promise<void> {
