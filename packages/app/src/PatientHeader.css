@@ -5,6 +5,7 @@
   align-items: center;
   background-color: white;
   padding: 4px 10px;
+  overflow: hidden;
 }
 
 .medplum-patient-header > .medplum-avatar {
@@ -19,9 +20,11 @@
   color: #444;
   text-transform: uppercase;
   font-size: 10px;
+  white-space: nowrap;
 }
 
 .medplum-patient-header dd {
   font-size: 16px;
   font-weight: bold;
+  white-space: nowrap;
 }

@@ -1,5 +1,6 @@
 import { DiagnosticReport, Observation, ObservationComponent, ObservationReferenceRange, Reference } from '@medplum/core';
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
 import { CodeableConceptDisplay } from './CodeableConceptDisplay';
 import { MedplumLink } from './MedplumLink';
 import { useResource } from './useResource';
@@ -15,10 +16,23 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps) {
     return null;
   }
 
+  let textContent: string | undefined = undefined;
+  if (diagnosticReport.presentedForm && diagnosticReport.presentedForm.length > 0) {
+    const pf = diagnosticReport.presentedForm[0];
+    if (pf.contentType?.startsWith('text/plain') && pf.data) {
+      textContent = window.atob(pf.data);
+    }
+  }
+
   return (
     <div className="medplum-diagnostic-report">
       <h1>Diagnostic Report</h1>
-      <ObservationTable value={diagnosticReport.result as Reference<Observation>[]} />
+      {textContent && (
+        <ReactMarkdown>{textContent}</ReactMarkdown>
+      )}
+      {diagnosticReport.result && (
+        <ObservationTable value={diagnosticReport.result} />
+      )}
     </div>
   );
 }
@@ -93,7 +107,7 @@ function getUnitsDisplayString(observation: Observation | ObservationComponent):
 }
 
 function getValueDisplayString(observation: Observation | ObservationComponent): string | number | undefined {
-  if (observation.valueQuantity?.value) {
+  if (observation.valueQuantity?.value !== undefined) {
     return observation.valueQuantity.value;
   }
 
