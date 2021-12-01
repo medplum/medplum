@@ -1387,6 +1387,24 @@ describe('FHIR Repo', () => {
     expect(bundleContains(searchResult4 as Bundle, patient2 as Patient)).toEqual(true);
   });
 
+  test('Unsupported date search param', async () => {
+    const [outcome, resource] = await repo.createResource<Encounter>({
+      resourceType: 'Encounter',
+      status: 'finished',
+      class: {
+        system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+        code: 'AMB'
+      },
+      period: {
+        start: '2014-01-11T21:23:39-08:00',
+        end: '2014-01-11T21:38:39-08:00'
+      }
+    });
+    expect(outcome.id).toEqual('created');
+    expect(resource).toBeDefined();
+    expect(resource?.id).toBeDefined();
+  });
+
 });
 
 
