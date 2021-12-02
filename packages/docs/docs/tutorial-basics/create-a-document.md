@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
 ---
 
 # Publish and Subscribe
@@ -33,9 +33,13 @@ The `Criteria` section in the setup is what determines the triggering event for 
 
 The `Endpoint` is the place where the subscribing web application URL should be placed.  A full JSON representation of the object will be posted to the URL provided.
 
+Before moving on to the rest of the tutorial, **we recommend testing your subscription** by attempting to trigger the webhook and inspect the data.  If you have set up your webhook correctly you should see events when you [create a new](https://app.medplum.com/ServiceRequest/new) ServiceRequest or edit an existing [ServiceRequest](https://app.medplum.com/ServiceRequest).  You will also see [AuditEvents](https://app.medplum.com/AuditEvent) created for the Subscription.
+
+You can use any enpoint you like, and there are free services like [Pipedream](https://pipedream.com/) that you can use to set up an endpoint for testing purposes.
+
 ## Creating the "Order" or ServiceRequest
 
-A ServiceRequest for a lab test needs to be created for a Patient.  The snippet below *conditional creates* (only if patient does not exist) and creates a service request for a lab panel.
+This section shows how to create a ServiceRequest for a lab test needs that belongs to a Patient using the API.  Notably, the snippet below *conditional creates* (only if patient does not exist) and creates a service request for a lab panel.
 
 ```js
 /**
@@ -132,7 +136,6 @@ Using this code snippet ServiceRequest was created and linked to a Patient.  You
 
 Because the [ServiceRequest](https://app.medplum.com/ServiceRequest) was created, the [Subscription](https://app.medplum.com/Subscription)
  that was created in the previous section will trigger a web request to the provided endpoint.
-
 
 ## Updating the status of the ServiceRequest as it moves through the workflow
 

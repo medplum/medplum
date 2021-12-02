@@ -34,4 +34,10 @@ Stay tuned: we will post detailed implementation guides for all of these scenari
 
 ## Get Started
 
+The Medplum API is available at https://api.medplum.com
+
+The OAuth2 base URL is https://api.medplum.com/oauth2/
+
+The FHIR base URL is https://api.medplum.com/fhir/R4/
+
 Get started right away, you can [register here](https://app.medplum.com/register).  If needed, Medplum also supports self-hosting, get find the [source code](https://github.com/medplum/medplum) on Github.
