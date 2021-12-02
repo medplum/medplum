@@ -52,6 +52,11 @@ export function getDisplayString(resource: Resource): string {
       return deviceName;
     }
   }
+  if (resource.resourceType === 'User') {
+    if (resource.email) {
+      return resource.email;
+    }
+  }
   const simpleName = (resource as any).name;
   if (simpleName && typeof simpleName === 'string') {
     return simpleName;

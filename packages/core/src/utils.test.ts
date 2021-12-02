@@ -44,6 +44,8 @@ describe('Core Utils', () => {
     expect(getDisplayString({ resourceType: 'Device', deviceName: [{ name: 'Foo' }] })).toEqual('Foo');
     expect(getDisplayString({ resourceType: 'Device', id: '123', deviceName: [{}] })).toEqual('Device/123');
     expect(getDisplayString({ resourceType: 'Device', id: '123', deviceName: [] })).toEqual('Device/123');
+    expect(getDisplayString({ resourceType: 'User', email: 'foo@example.com' })).toEqual('foo@example.com');
+    expect(getDisplayString({ resourceType: 'User', id: '123' })).toEqual('User/123');
   });
 
   test('getImageSrc', () => {
