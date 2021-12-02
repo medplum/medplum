@@ -188,7 +188,7 @@ export class BackEnd extends cdk.Construct {
       vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_WITH_NAT
       },
-      desiredCount: 1,
+      desiredCount: 2,
       securityGroup: fargateSecurityGroup,
     });
 
