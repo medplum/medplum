@@ -81,6 +81,10 @@ export function getDefaultSearchForResourceType(resourceType: string): SearchReq
     case 'Questionnaire':
       fields.push('name');
       break;
+    case 'CodeSystem':
+    case 'ValueSet':
+      fields.push('name', 'title', 'status');
+      break;
     case 'DiagnosticReport':
     case 'Encounter':
     case 'Observation':
@@ -91,6 +95,9 @@ export function getDefaultSearchForResourceType(resourceType: string): SearchReq
       break;
     case 'Subscription':
       fields.push('criteria');
+      break;
+    case 'User':
+      fields.push('email');
       break;
   }
   return {

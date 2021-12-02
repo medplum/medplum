@@ -153,6 +153,7 @@ describe('HomePage', () => {
   test('Default search fields', () => {
     expect(getDefaultSearchForResourceType('AccessPolicy').fields).toEqual(['id', '_lastUpdated', 'name']);
     expect(getDefaultSearchForResourceType('ClientApplication').fields).toEqual(['id', '_lastUpdated', 'name']);
+    expect(getDefaultSearchForResourceType('CodeSystem').fields).toEqual(['id', '_lastUpdated', 'name', 'title', 'status']);
     expect(getDefaultSearchForResourceType('DiagnosticReport').fields).toEqual(['id', '_lastUpdated', 'subject']);
     expect(getDefaultSearchForResourceType('Encounter').fields).toEqual(['id', '_lastUpdated', 'subject']);
     expect(getDefaultSearchForResourceType('Observation').fields).toEqual(['id', '_lastUpdated', 'subject']);
@@ -163,6 +164,8 @@ describe('HomePage', () => {
     expect(getDefaultSearchForResourceType('Questionnaire').fields).toEqual(['id', '_lastUpdated', 'name']);
     expect(getDefaultSearchForResourceType('ServiceRequest').fields).toEqual(['id', '_lastUpdated', 'subject', 'code', 'status', 'orderDetail']);
     expect(getDefaultSearchForResourceType('Subscription').fields).toEqual(['id', '_lastUpdated', 'criteria']);
+    expect(getDefaultSearchForResourceType('User').fields).toEqual(['id', '_lastUpdated', 'email']);
+    expect(getDefaultSearchForResourceType('ValueSet').fields).toEqual(['id', '_lastUpdated', 'name', 'title', 'status']);
   });
 
 });
