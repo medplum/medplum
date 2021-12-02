@@ -85,7 +85,7 @@ describe('AttachmentArrayInput', () => {
       fireEvent.change(screen.getByTestId('upload-file-input'), { target: { files } });
     });
 
-    expect(screen.getByText('text/plain')).toBeInTheDocument();
+    expect(screen.getByText('hello.txt')).toBeInTheDocument();
   });
 
   test('Renders attachments', async () => {

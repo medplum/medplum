@@ -1,5 +1,7 @@
 import { Attachment } from '@medplum/core';
 import React from 'react';
+import { AttachmentDisplay } from './AttachmentDisplay';
+import './AttachmentInput.css';
 
 export interface AttachmentInputProps {
   name: string;
@@ -8,14 +10,10 @@ export interface AttachmentInputProps {
 
 export function AttachmentInput(props: AttachmentInputProps) {
   const value = props.defaultValue;
-  const { contentType, url } = value ?? {};
-
   return (
-    <div data-testid="attachment-input">
-      <div>{value?.contentType}</div>
-      <div>{value?.url}</div>
-      {contentType?.startsWith('image/') && url && (
-        <img style={{ maxWidth: 100 }} src={url} />
+    <div className="medplum-attachment-input" data-testid="attachment-input">
+      {value && (
+        <AttachmentDisplay value={value} />
       )}
     </div>
   );

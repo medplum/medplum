@@ -138,7 +138,8 @@ describe('ResourcePropertyInput', () => {
   test('Renders Attachment property', () => {
     const photo: Attachment[] = [{
       contentType: 'text/plain',
-      url: 'https://example.com/hello.txt'
+      url: 'https://example.com/hello.txt',
+      title: 'hello.txt'
     }];
 
     setup({
@@ -147,7 +148,7 @@ describe('ResourcePropertyInput', () => {
       name: 'photo',
       defaultValue: photo
     });
-    expect(screen.getByText('text/plain')).toBeDefined();
+    expect(screen.getByText('hello.txt')).toBeDefined();
   });
 
   test('Renders CodeableConcept property', () => {

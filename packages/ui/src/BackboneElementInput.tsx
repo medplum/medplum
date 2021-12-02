@@ -1,6 +1,7 @@
 import { buildTypeName, ElementDefinition, getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/core';
 import React from 'react';
 import { FormSection } from './FormSection';
+import { DEFAULT_IGNORED_PROPERTIES } from './ResourceForm';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 
 export interface BackboneElementInputProps {
@@ -22,6 +23,9 @@ export function BackboneElementInput(props: BackboneElementInputProps) {
     <>
       {Object.entries(typeSchema.properties).map(entry => {
         const key = entry[0];
+        if (DEFAULT_IGNORED_PROPERTIES.indexOf(key) >= 0) {
+          return null;
+        }
         const property = entry[1];
         return (
           <FormSection key={key} title={getPropertyDisplayName(property)} description={property.definition}>
