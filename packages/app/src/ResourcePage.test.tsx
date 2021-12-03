@@ -193,7 +193,7 @@ describe('ResourcePage', () => {
     expect(screen.getByText('Edit')).toBeInTheDocument();
   });
 
-  test('Delete button', async () => {
+  test('Delete button confirm', async () => {
     window.confirm = jest.fn(() => true);
 
     setup('/Practitioner/123/edit');
@@ -207,6 +207,26 @@ describe('ResourcePage', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Delete'));
     });
+
+    expect(window.confirm).toHaveBeenCalled();
+  });
+
+  test('Delete button decline', async () => {
+    window.confirm = jest.fn(() => false);
+
+    setup('/Practitioner/123/edit');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Delete'));
+    });
+
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Delete'));
+    });
+
+    expect(window.confirm).toHaveBeenCalled();
   });
 
   test('History tab renders', async () => {
