@@ -259,7 +259,7 @@ export class Repository {
       meta: {
         ...updated?.meta,
         versionId: randomUUID(),
-        lastUpdated: this.getLastUpdated(resource),
+        lastUpdated: this.getLastUpdated(existing, resource),
         author: this.getAuthor(resource)
       }
     }
@@ -764,13 +764,16 @@ export class Repository {
    * @param resource The FHIR resource.
    * @returns The last updated date.
    */
-  private getLastUpdated(resource: Resource): string {
-    // If the resource has a specified "lastUpdated",
-    // and the current context is a ClientApplication (i.e., OAuth client credentials),
-    // then allow the ClientApplication to set the date.
-    const lastUpdated = resource.meta?.lastUpdated;
-    if (lastUpdated && this.canWriteMeta()) {
-      return lastUpdated;
+  private getLastUpdated(existing: Resource | undefined, resource: Resource): string {
+    if (!existing) {
+      // If the resource has a specified "lastUpdated",
+      // and there is no existing version,
+      // and the current context is a ClientApplication (i.e., OAuth client credentials),
+      // then allow the ClientApplication to set the date.
+      const lastUpdated = resource.meta?.lastUpdated;
+      if (lastUpdated && this.canWriteMeta()) {
+        return lastUpdated;
+      }
     }
 
     // Otherwise, use "now"

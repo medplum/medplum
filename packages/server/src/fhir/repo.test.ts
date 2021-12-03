@@ -441,6 +441,32 @@ describe('FHIR Repo', () => {
     expect(patient?.meta?.lastUpdated).toEqual(lastUpdated);
   });
 
+  test('Update resource with lastUpdated', async () => {
+    const lastUpdated = '2020-01-01T12:00:00Z';
+
+    // System repo has the ability to write custom timestamps
+    const [createOutcome, patient1] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      meta: {
+        lastUpdated
+      }
+    });
+    expect(createOutcome.id).toEqual('created');
+    expect(patient1?.meta?.lastUpdated).toEqual(lastUpdated);
+
+    // But system cannot update the timestamp
+    const [updateOutcome, patient2] = await repo.updateResource<Patient>({
+      ...patient1,
+      active: true,
+      meta: {
+        lastUpdated
+      }
+    });
+    expect(updateOutcome.id).toEqual('ok');
+    expect(patient2?.meta?.lastUpdated).not.toEqual(lastUpdated);
+  });
+
   test('Search for Communications by Encounter', async () => {
     const [outcome1, patient1] = await repo.createResource<Patient>({
       resourceType: 'Patient',
