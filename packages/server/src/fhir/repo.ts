@@ -797,7 +797,15 @@ export class Repository {
       return undefined;
     }
 
-    return resource.meta?.project ?? this.context.project;
+    const submittedProjectId = resource.meta?.project;
+    if (submittedProjectId && this.canWriteMeta()) {
+      // If the resource has an project (whether provided or from existing),
+      // and the current context is allowed to write meta,
+      // then use the provided value.
+      return submittedProjectId;
+    }
+
+    return this.context.project;
   }
 
   /**
