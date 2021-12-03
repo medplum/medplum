@@ -410,6 +410,14 @@ describe('Client', () => {
     expect((result as any).request.url).toBe('https://x/fhir/R4/Binary');
   });
 
+  test('Delete resource', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.deleteResource('Patient', 'xyz');
+    expect(result).toBeDefined();
+    expect((result as any).request.options.method).toBe('DELETE');
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/xyz');
+  });
+
   test('Get schema', async () => {
     const client = new MedplumClient(defaultOptions);
     const schema = await client.getTypeDefinition('Patient');

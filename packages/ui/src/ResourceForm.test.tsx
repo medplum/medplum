@@ -248,4 +248,29 @@ describe('ResourceForm', () => {
     expect(result.valueString).toBe('hello');
   });
 
+  test('Delete', async () => {
+    const onSubmit = jest.fn();
+    const onDelete = jest.fn();
+
+    await act(async () => {
+      setup({
+        defaultValue: {
+          resourceType: 'Practitioner',
+          id: 'xyz'
+        },
+        onSubmit,
+        onDelete
+      });
+    });
+
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Delete'));
+    });
+
+    expect(onSubmit).not.toBeCalled();
+    expect(onDelete).toBeCalled();
+  });
+
 });

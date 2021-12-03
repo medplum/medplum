@@ -153,6 +153,13 @@ export function ResourcePage() {
                     .then(loadResource)
                     .catch(setError);
                 }}
+                onDelete={() => {
+                  if (window.confirm('Are you sure you want to delete this resource?')) {
+                    medplum.deleteResource(resourceType, id)
+                      .then(() => navigate(`/${resourceType}`))
+                      .catch(setError);
+                  }
+                }}
                 outcome={error?.outcome}
               />
             </TabPanel>
@@ -168,6 +175,7 @@ interface ResourceTabProps {
   resource: Resource;
   resourceHistory: Bundle;
   onSubmit: (resource: Resource) => void;
+  onDelete: (resource: Resource) => void;
   outcome?: OperationOutcome;
 }
 
@@ -179,7 +187,12 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
       );
     case 'edit':
       return (
-        <ResourceForm defaultValue={props.resource} onSubmit={props.onSubmit} outcome={props.outcome} />
+        <ResourceForm
+          defaultValue={props.resource}
+          onSubmit={props.onSubmit}
+          onDelete={props.onDelete}
+          outcome={props.outcome}
+        />
       );
     case 'history':
       return (

@@ -3,6 +3,7 @@ import { MedplumProvider, MockClient } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { HomePage } from './HomePage';
 import { ResourcePage } from './ResourcePage';
 
 const practitioner: Practitioner = {
@@ -155,6 +156,7 @@ describe('ResourcePage', () => {
           <Routes>
             <Route path="/:resourceType/:id/:tab" element={<ResourcePage />} />
             <Route path="/:resourceType/:id" element={<ResourcePage />} />
+            <Route path="/:resourceType" element={<HomePage />} />
           </Routes>
         </MemoryRouter>
       </MedplumProvider>
@@ -189,6 +191,42 @@ describe('ResourcePage', () => {
     });
 
     expect(screen.getByText('Edit')).toBeInTheDocument();
+  });
+
+  test('Delete button confirm', async () => {
+    window.confirm = jest.fn(() => true);
+
+    setup('/Practitioner/123/edit');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Delete'));
+    });
+
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Delete'));
+    });
+
+    expect(window.confirm).toHaveBeenCalled();
+  });
+
+  test('Delete button decline', async () => {
+    window.confirm = jest.fn(() => false);
+
+    setup('/Practitioner/123/edit');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Delete'));
+    });
+
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Delete'));
+    });
+
+    expect(window.confirm).toHaveBeenCalled();
   });
 
   test('History tab renders', async () => {
