@@ -12,7 +12,10 @@ binaryRouter.post('/', asyncWrap(async (req: Request, res: Response) => {
   const repo = res.locals.repo as Repository;
   const [outcome, resource] = await repo.createResource<Binary>({
     resourceType: 'Binary',
-    contentType: req.get('Content-Type')
+    contentType: req.get('Content-Type'),
+    meta: {
+      project: req.query['_project'] as string | undefined
+    }
   });
   assertOk(outcome);
   await getBinaryStorage().writeBinary(resource as Binary, req);
