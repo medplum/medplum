@@ -6,7 +6,7 @@ import { useMedplum } from './MedplumProvider';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 import { useResource } from './useResource';
 
-const DEFAULT_IGNORED_PROPERTIES = [
+export const DEFAULT_IGNORED_PROPERTIES = [
   'id',
   'meta',
   'implicitRules',
