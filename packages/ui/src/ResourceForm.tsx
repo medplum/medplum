@@ -99,7 +99,7 @@ export function ResourceForm(props: ResourceFormProps) {
   );
 }
 
-function getDefaultValue(obj: any, key: string, elementDefinition: ElementDefinition): any {
+export function getDefaultValue(obj: any, key: string, elementDefinition: ElementDefinition): any {
   const types = elementDefinition.type as ElementDefinitionType[];
   if (types.length === 1) {
     return obj[key];
@@ -113,7 +113,7 @@ function getDefaultValue(obj: any, key: string, elementDefinition: ElementDefini
   return undefined;
 }
 
-function setPropertyValue(obj: any, key: string, propName: string, elementDefinition: ElementDefinition, value: any): any {
+export function setPropertyValue(obj: any, key: string, propName: string, elementDefinition: ElementDefinition, value: any): any {
   const types = elementDefinition.type as ElementDefinitionType[];
   if (types.length > 1) {
     for (const type of types) {

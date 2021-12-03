@@ -264,6 +264,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           name={name}
           defaultValue={value}
           onChange={props.onChange}
+          outcome={props.outcome}
         />
       );
   }
