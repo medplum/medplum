@@ -419,7 +419,7 @@ export class Repository {
           }
         }
       }
-    } else if (this.context.project !== undefined && !this.context.admin) {
+    } else if (this.context.project !== undefined && !this.isAdmin()) {
       compartmentIds.push(this.context.project);
     }
 

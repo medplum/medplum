@@ -172,8 +172,8 @@ export function deepEquals(object1: any, object2: any, path?: string): boolean {
   let keys1 = Object.keys(object1);
   let keys2 = Object.keys(object2);
   if (path === 'meta') {
-    keys1 = keys1.filter(k => k !== 'versionId' && k !== 'lastUpdated');
-    keys2 = keys2.filter(k => k !== 'versionId' && k !== 'lastUpdated');
+    keys1 = keys1.filter(k => k !== 'versionId' && k !== 'lastUpdated' && k !== 'author');
+    keys2 = keys2.filter(k => k !== 'versionId' && k !== 'lastUpdated' && k !== 'author');
   }
   if (keys1.length !== keys2.length) {
     return false;

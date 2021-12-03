@@ -103,7 +103,7 @@ describe('Core Utils', () => {
     expect(stringify({ x: null })).toEqual('{}');
     expect(stringify({ x: {} })).toEqual('{}');
     expect(stringify({ x: { y: 'z' } })).toEqual('{"x":{"y":"z"}}');
-    expect(stringify({x: 2}, true)).toEqual('{\n  "x": 2\n}');
+    expect(stringify({ x: 2 }, true)).toEqual('{\n  "x": 2\n}');
   });
 
   test('Deep equals', () => {
@@ -157,6 +157,11 @@ describe('Core Utils', () => {
     expect(deepEquals(
       { resourceType: 'Patient', meta: { lastUpdated: '1' } },
       { resourceType: 'Patient', meta: { lastUpdated: '1' } })).toEqual(true);
+
+    // Ignore changes to certain meta fields
+    expect(deepEquals({ resourceType: 'Patient', meta: { versionId: '1' } }, { resourceType: 'Patient', meta: { versionId: '2' } })).toEqual(true);
+    expect(deepEquals({ resourceType: 'Patient', meta: { lastUpdated: '1' } }, { resourceType: 'Patient', meta: { lastUpdated: '2' } })).toEqual(true);
+    expect(deepEquals({ resourceType: 'Patient', meta: { author: '1' } }, { resourceType: 'Patient', meta: { author: '2' } })).toEqual(true);
   });
 
   test('Capitalize', () => {
