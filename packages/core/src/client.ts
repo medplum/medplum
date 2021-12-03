@@ -201,6 +201,10 @@ export class MedplumClient extends EventTarget {
     return this.request('PUT', url, contentType, body);
   }
 
+  delete(url: string): Promise<any> {
+    return this.request('DELETE', url);
+  }
+
   /**
    * Tries to register a new user.
    * @param request The registration request.
@@ -412,6 +416,10 @@ export class MedplumClient extends EventTarget {
     return this.request('PATCH', this.fhirUrl(resourceType, id), PATCH_CONTENT_TYPE, operations);
   }
 
+  deleteResource(resourceType: string, id: string): Promise<any> {
+    return this.delete(this.fhirUrl(resourceType, id));
+  }
+
   graphql(gql: any): Promise<any> {
     return this.post(this.fhirUrl('$graphql'), gql, JSON_CONTENT_TYPE);
   }
@@ -531,8 +539,8 @@ export class MedplumClient extends EventTarget {
       return this.handleUnauthenticated(method, url, contentType, body);
     }
 
-    if (response.status === 304) {
-      // No change
+    if (response.status === 204 || response.status === 304) {
+      // No content or change
       return undefined;
     }
 

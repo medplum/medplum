@@ -20,7 +20,8 @@ export const DEFAULT_IGNORED_PROPERTIES = [
 export interface ResourceFormProps {
   defaultValue: Resource | Reference;
   outcome?: OperationOutcome;
-  onSubmit: (formData: any) => void;
+  onSubmit: (resource: Resource) => void;
+  onDelete?: (resource: Resource) => void;
 }
 
 export function ResourceForm(props: ResourceFormProps) {
@@ -89,6 +90,11 @@ export function ResourceForm(props: ResourceFormProps) {
         );
       })}
       <Button type="submit" size="large">OK</Button>
+      {props.onDelete && (
+        <Button type="button" size="large" onClick={() => {
+          (props.onDelete as (resource: Resource) => void)(value);
+        }}>Delete</Button>
+      )}
     </form>
   );
 }

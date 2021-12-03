@@ -207,7 +207,7 @@ protectedRoutes.delete('/:resourceType/:id', asyncWrap(async (req: Request, res:
   const repo = res.locals.repo as Repository;
   const [outcome] = await repo.deleteResource(resourceType, id);
   assertOk(outcome);
-  res.sendStatus(getStatus(outcome));
+  sendOutcome(res, outcome);
 }));
 
 // Patch resource
