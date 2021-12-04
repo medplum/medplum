@@ -63,14 +63,13 @@ describe('Autocomplete', () => {
     // Wait for default value to load
     await act(async () => {
       jest.advanceTimersByTime(1000);
-      await waitFor(() => screen.getByTestId('hidden'));
+      await waitFor(() => screen.getByTestId('autocomplete'));
     });
-
-    const hidden = screen.getByTestId('hidden') as HTMLInputElement;
-    expect(hidden.value).toEqual('');
   });
 
   test('Backspace deletes item', async () => {
+    let lastValue: any = undefined;
+
     render(
       <Autocomplete
         name="foo"
@@ -78,6 +77,9 @@ describe('Autocomplete', () => {
         loadOptions={async () => ['x', 'y', 'z']}
         getId={(item: string) => item}
         getDisplay={(item: string) => <span>{item}</span>}
+        onChange={(value: any) => {
+          lastValue = value;
+        }}
       />
     );
 
@@ -95,8 +97,7 @@ describe('Autocomplete', () => {
       fireEvent.keyDown(input, { key: 'Backspace', code: 'Backspace' });
     });
 
-    const hidden = screen.getByTestId('hidden') as HTMLInputElement;
-    expect(hidden.value).toEqual('');
+    expect(lastValue).toBeUndefined();
   });
 
   test('Handles click', async () => {
