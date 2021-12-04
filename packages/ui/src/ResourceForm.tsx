@@ -1,21 +1,11 @@
 import { capitalize, ElementDefinition, ElementDefinitionType, getPropertyDisplayName, IndexedStructureDefinition, OperationOutcome, Reference, Resource } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
 import { Button } from './Button';
+import { DEFAULT_IGNORED_PROPERTIES } from './constants';
 import { FormSection } from './FormSection';
 import { useMedplum } from './MedplumProvider';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 import { useResource } from './useResource';
-
-export const DEFAULT_IGNORED_PROPERTIES = [
-  'id',
-  'meta',
-  'implicitRules',
-  'language',
-  'text',
-  'contained',
-  'extension',
-  'modifierExtension'
-];
 
 export interface ResourceFormProps {
   defaultValue: Resource | Reference;

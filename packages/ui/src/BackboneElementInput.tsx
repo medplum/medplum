@@ -1,7 +1,8 @@
 import { buildTypeName, ElementDefinition, getPropertyDisplayName, IndexedStructureDefinition, OperationOutcome } from '@medplum/core';
 import React, { useState } from 'react';
+import { DEFAULT_IGNORED_PROPERTIES } from './constants';
 import { FormSection } from './FormSection';
-import { DEFAULT_IGNORED_PROPERTIES, getDefaultValue, setPropertyValue } from './ResourceForm';
+import { getDefaultValue, setPropertyValue } from './ResourceForm';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 
 export interface BackboneElementInputProps {
