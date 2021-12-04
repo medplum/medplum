@@ -35,7 +35,7 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps) {
             <ResourcePropertyDisplay
               schema={props.schema}
               property={property}
-              value={(value as any)[key]}
+              value={value[key]}
             />
           </DescriptionListEntry>
         );

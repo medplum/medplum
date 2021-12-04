@@ -1,4 +1,4 @@
-import { Address, Attachment, CodeableConcept, ContactPoint, HumanName, Identifier, IndexedStructureDefinition } from '@medplum/core';
+import { Address, Attachment, CodeableConcept, ContactPoint, HumanName, Identifier, IndexedStructureDefinition, Quantity } from '@medplum/core';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
@@ -219,6 +219,23 @@ describe('ResourcePropertyDisplay', () => {
     );
 
     expect(screen.getByText('xyz: xyz123')).toBeDefined();
+  });
+
+  test('Renders Quantity', () => {
+    const value: Quantity = {
+      value: 1,
+      unit: 'mg'
+    };
+
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'Quantity' }] }}
+        value={value}
+      />
+    );
+
+    expect(screen.getByText('1 mg')).toBeDefined();
   });
 
 });
