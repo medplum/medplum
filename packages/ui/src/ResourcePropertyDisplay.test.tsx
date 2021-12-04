@@ -1,47 +1,97 @@
-import { Address, Attachment, CodeableConcept, ContactPoint, HumanName, Identifier } from '@medplum/core';
+import { Address, Attachment, CodeableConcept, ContactPoint, HumanName, Identifier, IndexedStructureDefinition, Quantity } from '@medplum/core';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
+const schema = {} as IndexedStructureDefinition;
+
 describe('ResourcePropertyDisplay', () => {
 
   test('Renders null value', () => {
-    render(<ResourcePropertyDisplay property={{ type: [{ code: 'string' }] }} value="" />);
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'string' }] }}
+        value=""
+      />
+    );
   });
 
   test('Renders boolean', () => {
-    render(<ResourcePropertyDisplay property={{ type: [{ code: 'boolean' }] }} value={true} />);
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'boolean' }] }}
+        value={true}
+      />
+    );
     expect(screen.getByText('true')).toBeDefined();
   });
 
   test('Renders string', () => {
-    render(<ResourcePropertyDisplay property={{ type: [{ code: 'string' }] }} value="hello" />);
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'string' }] }}
+        value="hello"
+      />
+    );
     expect(screen.getByText('hello')).toBeDefined();
   });
 
   test('Renders canonical', () => {
-    render(<ResourcePropertyDisplay property={{ type: [{ code: 'canonical' }] }} value="hello" />);
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'canonical' }] }}
+        value="hello"
+      />
+    );
     expect(screen.getByText('hello')).toBeDefined();
   });
 
   test('Renders url', () => {
-    render(<ResourcePropertyDisplay property={{ type: [{ code: 'url' }] }} value="https://example.com" />);
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'url' }] }}
+        value="https://example.com"
+      />
+    );
     expect(screen.getByText('https://example.com')).toBeDefined();
   });
 
   test('Renders uri', () => {
-    render(<ResourcePropertyDisplay property={{ type: [{ code: 'uri' }] }} value="https://example.com" />);
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'uri' }] }}
+        value="https://example.com"
+      />
+    );
     expect(screen.getByText('https://example.com')).toBeDefined();
   });
 
   test('Renders string array', () => {
-    render(<ResourcePropertyDisplay property={{ type: [{ code: 'string' }], max: '*' }} value={['hello', 'world']} />);
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'string' }], max: '*' }}
+        value={['hello', 'world']}
+      />
+    );
     expect(screen.getByText('hello')).toBeDefined();
     expect(screen.getByText('world')).toBeDefined();
   });
 
   test('Renders markdown', () => {
-    render(<ResourcePropertyDisplay property={{ type: [{ code: 'markdown' }] }} value="hello" />);
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'markdown' }] }}
+        value="hello"
+      />
+    );
     expect(screen.getByText('hello')).toBeDefined();
   });
 
@@ -50,10 +100,13 @@ describe('ResourcePropertyDisplay', () => {
       city: 'London'
     };
 
-    render(<ResourcePropertyDisplay
-      property={{ type: [{ code: 'Address' }] }}
-      value={value}
-    />);
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'Address' }] }}
+        value={value}
+      />
+    );
 
     expect(screen.getByText('London')).toBeDefined();
   });
@@ -65,10 +118,13 @@ describe('ResourcePropertyDisplay', () => {
       title: 'file.txt'
     };
 
-    render(<ResourcePropertyDisplay
-      property={{ type: [{ code: 'Attachment' }] }}
-      value={value}
-    />);
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'Attachment' }] }}
+        value={value}
+      />
+    );
 
     expect(screen.getByText('file.txt')).toBeDefined();
   });
@@ -87,10 +143,13 @@ describe('ResourcePropertyDisplay', () => {
       }
     ];
 
-    render(<ResourcePropertyDisplay
-      property={{ type: [{ code: 'Attachment' }], max: '*' }}
-      value={value}
-    />);
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'Attachment' }], max: '*' }}
+        value={value}
+      />
+    );
 
     expect(screen.getByText('file.txt')).toBeDefined();
     expect(screen.getByText('file2.txt')).toBeDefined();
@@ -101,10 +160,13 @@ describe('ResourcePropertyDisplay', () => {
       text: 'foo'
     };
 
-    render(<ResourcePropertyDisplay
-      property={{ type: [{ code: 'CodeableConcept' }] }}
-      value={value}
-    />);
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'CodeableConcept' }] }}
+        value={value}
+      />
+    );
 
     expect(screen.getByText('foo')).toBeDefined();
   });
@@ -115,10 +177,13 @@ describe('ResourcePropertyDisplay', () => {
       value: 'foo@example.com'
     };
 
-    render(<ResourcePropertyDisplay
-      property={{ type: [{ code: 'ContactPoint' }] }}
-      value={value}
-    />);
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'ContactPoint' }] }}
+        value={value}
+      />
+    );
 
     expect(screen.getByText('foo@example.com [email]')).toBeDefined();
   });
@@ -128,10 +193,13 @@ describe('ResourcePropertyDisplay', () => {
       family: 'Smith'
     };
 
-    render(<ResourcePropertyDisplay
-      property={{ type: [{ code: 'HumanName' }] }}
-      value={value}
-    />);
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'HumanName' }] }}
+        value={value}
+      />
+    );
 
     expect(screen.getByText('Smith')).toBeDefined();
   });
@@ -142,12 +210,32 @@ describe('ResourcePropertyDisplay', () => {
       value: 'xyz123'
     };
 
-    render(<ResourcePropertyDisplay
-      property={{ type: [{ code: 'Identifier' }] }}
-      value={value}
-    />);
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'Identifier' }] }}
+        value={value}
+      />
+    );
 
     expect(screen.getByText('xyz: xyz123')).toBeDefined();
+  });
+
+  test('Renders Quantity', () => {
+    const value: Quantity = {
+      value: 1,
+      unit: 'mg'
+    };
+
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'Quantity' }] }}
+        value={value}
+      />
+    );
+
+    expect(screen.getByText('1 mg')).toBeDefined();
   });
 
 });

@@ -484,5 +484,12 @@ export function renderValue(schema: IndexedStructureDefinition, resourceType: st
     return stringify(value);
   }
 
-  return <ResourcePropertyDisplay property={property} value={value} maxWidth={200} />;
+  return (
+    <ResourcePropertyDisplay
+      schema={schema}
+      property={property}
+      value={value}
+      maxWidth={200}
+    />
+  );
 }
