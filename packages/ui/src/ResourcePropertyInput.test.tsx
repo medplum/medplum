@@ -14,6 +14,14 @@ const patientNameProperty: ElementDefinition = {
   max: '*'
 };
 
+const patientActiveProperty: ElementDefinition = {
+  id: 'Patient.active',
+  path: 'Patient.active',
+  type: [{
+    code: 'boolean'
+  }]
+};
+
 const patientBirthDateProperty: ElementDefinition = {
   id: 'Patient.birthDate',
   path: 'Patient.birthDate',
@@ -91,6 +99,7 @@ const schema: IndexedStructureDefinition = {
       display: 'Patient',
       properties: {
         name: patientNameProperty,
+        active: patientActiveProperty,
         birthDate: patientBirthDateProperty,
         address: patientAddressProperty,
         photo: patientPhotoProperty,
@@ -120,6 +129,25 @@ describe('ResourcePropertyInput', () => {
       </MedplumProvider>
     );
   }
+
+  test('Renders boolean property', () => {
+    const onChange = jest.fn();
+
+    setup({
+      schema,
+      property: patientActiveProperty,
+      name: 'active',
+      defaultValue: undefined,
+      onChange
+    });
+    expect(screen.getByTestId('active')).toBeDefined();
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('active'));
+    });
+
+    expect(onChange).toHaveBeenCalledWith(true);
+  });
 
   test('Renders Address property', () => {
     const address: Address[] = [{
