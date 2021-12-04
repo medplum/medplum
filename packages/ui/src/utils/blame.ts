@@ -10,10 +10,12 @@ export interface BlameRow {
 
 export function blame(history: Bundle): BlameRow[] {
   // Convert to array of array of lines
-  const versions = (history.entry as BundleEntry[]).map(entry => ({
-    meta: entry.resource?.meta as Meta,
-    lines: stringify(entry.resource, true).match(/[^\r\n]+/g) as string[]
-  }));
+  const versions = (history.entry as BundleEntry[])
+    .map(entry => ({
+      meta: entry.resource?.meta as Meta,
+      lines: stringify(entry.resource, true).match(/[^\r\n]+/g) as string[]
+    }))
+    .sort((a, b) => (a.meta.lastUpdated as string).localeCompare(b.meta.lastUpdated as string));
 
   // Start with array of lines from the first version
   const table: BlameRow[] = versions[0].lines.map(line => ({
