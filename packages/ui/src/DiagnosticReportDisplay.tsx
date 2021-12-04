@@ -1,9 +1,11 @@
-import { DiagnosticReport, Observation, ObservationComponent, ObservationReferenceRange, Reference } from '@medplum/core';
+import { capitalize, DiagnosticReport, Observation, ObservationComponent, ObservationReferenceRange, Reference } from '@medplum/core';
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { CodeableConceptDisplay } from './CodeableConceptDisplay';
 import { MedplumLink } from './MedplumLink';
+import { ResourceBadge } from './ResourceBadge';
 import { useResource } from './useResource';
+import { formatDateTime } from './utils/format';
 import './DiagnosticReportDisplay.css';
 
 export interface DiagnosticReportDisplayProps {
@@ -27,6 +29,32 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps) {
   return (
     <div className="medplum-diagnostic-report">
       <h1>Diagnostic Report</h1>
+      <div className="medplum-diagnostic-report-header">
+        {diagnosticReport.subject && (
+          <dl>
+            <dt>Subject</dt>
+            <dd><ResourceBadge value={diagnosticReport.subject} link={true} /></dd>
+          </dl>
+        )}
+        {diagnosticReport.resultsInterpreter && diagnosticReport.resultsInterpreter.map(interpreter => (
+          <dl key={interpreter.reference}>
+            <dt>Interpreter</dt>
+            <dd><ResourceBadge value={interpreter} link={true} /></dd>
+          </dl>
+        ))}
+        {diagnosticReport.issued && (
+          <dl>
+            <dt>Issued</dt>
+            <dd>{formatDateTime(diagnosticReport.issued)}</dd>
+          </dl>
+        )}
+        {diagnosticReport.status && (
+          <dl>
+            <dt>Status</dt>
+            <dd>{capitalize(diagnosticReport.status)}</dd>
+          </dl>
+        )}
+      </div>
       {textContent && (
         <ReactMarkdown>{textContent}</ReactMarkdown>
       )}
