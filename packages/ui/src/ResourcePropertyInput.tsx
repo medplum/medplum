@@ -162,8 +162,10 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
         <input
           type="checkbox"
           name={name}
-          defaultChecked={!!value} value="true"
-          onChange={(e: React.ChangeEvent) => props.onChange && props.onChange((e.target as HTMLInputElement).value)}
+          data-testid={name}
+          defaultChecked={!!value} 
+          value="true"
+          onChange={(e: React.ChangeEvent) => props.onChange && props.onChange((e.target as HTMLInputElement).value === 'true')}
         />
       );
     case PropertyType.markdown:
