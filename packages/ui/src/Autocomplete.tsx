@@ -36,6 +36,10 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    setValues(props.defaultValue ?? []);
+  }, [props.defaultValue]);
+
   /**
    * Adds an option to the list of selected options.
    * @param option The option.

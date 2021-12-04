@@ -1,5 +1,5 @@
 import { Bundle, BundleEntry, Operator, Reference, Resource } from '@medplum/core';
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useResource } from '.';
 import { Autocomplete } from './Autocomplete';
 import { Avatar } from './Avatar';
@@ -12,15 +12,27 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly defaultValue?: T | Reference<T>;
   readonly className?: string;
   readonly placeholder?: string;
-  readonly onChange?: (value: T) => void;
+  readonly onChange?: (value: T | undefined) => void;
 }
 
 export function ResourceInput<T extends Resource = Resource>(props: ResourceInputProps<T>) {
   const medplum = useMedplum();
   const defaultResource = useResource(props.defaultValue);
+  const [value, setValue] = useState<T>();
 
   const resourceTypeRef = useRef<string>(props.resourceType);
   resourceTypeRef.current = props.resourceType;
+
+  useEffect(() => {
+    setValue(defaultResource);
+  }, [defaultResource]);
+
+  function setValueWrapper(newValue: T | undefined): void {
+    setValue(newValue);
+    if (props.onChange) {
+      props.onChange(newValue);
+    }
+  }
 
   return (
     <Autocomplete
@@ -47,15 +59,11 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
         return undefined;
       }}
       name={props.name}
-      defaultValue={defaultResource ? [defaultResource] : undefined}
+      defaultValue={value ? [value] : undefined}
       className={props.className}
       placeholder={props.placeholder}
       onChange={(items: T[]) => {
-        if (items.length > 0) {
-          if (props.onChange) {
-            props.onChange(items[0]);
-          }
-        }
+        setValueWrapper(items.length > 0 ? items[0] : undefined);
       }}
     />
   );
