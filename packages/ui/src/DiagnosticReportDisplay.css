@@ -1,3 +1,33 @@
+.medplum-diagnostic-report-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background-color: white;
+  padding: 4px;
+  overflow: hidden;
+}
+
+.medplum-diagnostic-report-header > .medplum-avatar {
+  margin: 5px;
+}
+
+.medplum-diagnostic-report-header > dl {
+  margin: 5px 30px 5px 0;
+}
+
+.medplum-diagnostic-report-header dt {
+  color: #444;
+  text-transform: uppercase;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.medplum-diagnostic-report-header dd {
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 32px;
+  white-space: nowrap;
+}
 
 .medplum-observation-table {
   border-collapse: collapse;
