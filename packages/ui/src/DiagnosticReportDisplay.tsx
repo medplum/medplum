@@ -37,7 +37,7 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps) {
           </dl>
         )}
         {diagnosticReport.resultsInterpreter && diagnosticReport.resultsInterpreter.map(interpreter => (
-          <dl>
+          <dl key={interpreter.reference}>
             <dt>Interpreter</dt>
             <dd><ResourceBadge value={interpreter} link={true} /></dd>
           </dl>

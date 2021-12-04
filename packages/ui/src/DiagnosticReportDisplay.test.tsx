@@ -1,4 +1,4 @@
-import { DiagnosticReport, Observation } from '@medplum/core';
+import { DiagnosticReport, Observation, Patient, Practitioner } from '@medplum/core';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { act } from 'react-dom/test-utils';
@@ -10,6 +10,12 @@ import { MockClient } from './MockClient';
 const diagnosticReport: DiagnosticReport = {
   resourceType: 'DiagnosticReport',
   id: '123',
+  subject: {
+    reference: 'Patient/123',
+  },
+  resultsInterpreter: [{
+    reference: 'Practitioner/123',
+  }],
   result: [
     { reference: 'Observation/1' },
     { reference: 'Observation/2' },
@@ -18,6 +24,25 @@ const diagnosticReport: DiagnosticReport = {
     { reference: 'Observation/5' },
     { reference: 'Observation/6' },
   ]
+};
+
+const patient: Patient = {
+  resourceType: 'Patient',
+  id: '123',
+  name: [{
+    given: ['Alice'],
+    family: 'Smith'
+  }]
+};
+
+const practitioner: Practitioner = {
+  resourceType: 'Practitioner',
+  id: '123',
+  name: [{
+    prefix: ['Dr.'],
+    given: ['Carol'],
+    family: 'White'
+  }]
 };
 
 const observation1: Observation = {
@@ -169,6 +194,12 @@ const medplum = new MockClient({
   },
   'fhir/R4/DiagnosticReport/123': {
     'GET': diagnosticReport
+  },
+  'fhir/R4/Patient/123': {
+    'GET': patient
+  },
+  'fhir/R4/Practitioner/123': {
+    'GET': practitioner
   },
   'fhir/R4/Observation/1': {
     'GET': observation1
