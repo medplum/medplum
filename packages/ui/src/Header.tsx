@@ -53,8 +53,10 @@ export function Header(props: HeaderProps) {
               name="search"
               className="medplum-nav-search-container"
               placeholder="Search"
-              onChange={(patient: Patient) => {
-                navigate(`/${patient.resourceType}/${patient.id}`);
+              onChange={(patient: Patient | undefined) => {
+                if (patient) {
+                  navigate(`/${patient.resourceType}/${patient.id}`);
+                }
               }}
             />
           )}

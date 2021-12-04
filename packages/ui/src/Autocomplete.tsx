@@ -36,6 +36,10 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    setValues(props.defaultValue ?? []);
+  }, [props.defaultValue]);
+
   /**
    * Adds an option to the list of selected options.
    * @param option The option.
@@ -260,12 +264,6 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
       data-testid="autocomplete"
       className={baseClassName + (focused ? ' focused' : '')}
       onClick={() => handleClick()}>
-      <input
-        type="hidden"
-        id={props.name}
-        name={props.name}
-        data-testid="hidden"
-        value={values.map(r => JSON.stringify(r)).join(',')} />
       <ul onClick={() => handleClick()}>
         {values.map(value => (
           <li

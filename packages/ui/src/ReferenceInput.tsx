@@ -6,7 +6,7 @@ export interface ReferenceInputProps {
   property?: ElementDefinition;
   name: string;
   defaultValue?: Reference;
-  onChange?: (value: Reference) => void;
+  onChange?: (value: Reference | undefined) => void;
 }
 
 export function ReferenceInput(props: ReferenceInputProps) {
@@ -21,7 +21,7 @@ export function ReferenceInput(props: ReferenceInputProps) {
   const resourceTypeRef = useRef<string>();
   resourceTypeRef.current = resourceType;
 
-  function setValueHelper(newValue: Reference): void {
+  function setValueHelper(newValue: Reference | undefined): void {
     setValue(newValue);
     if (props.onChange) {
       props.onChange(newValue);
@@ -60,9 +60,9 @@ export function ReferenceInput(props: ReferenceInputProps) {
               <ResourceInput
                 resourceType={resourceType}
                 name={props.name + '-id'}
-                defaultValue={props.defaultValue}
-                onChange={(item: Resource) => {
-                  setValueHelper(createReference(item));
+                defaultValue={value}
+                onChange={(item: Resource | undefined) => {
+                  setValueHelper(item ? createReference(item) : undefined);
                 }}
               />
             )}

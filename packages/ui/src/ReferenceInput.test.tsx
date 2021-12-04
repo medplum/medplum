@@ -1,30 +1,34 @@
-import { Bundle } from '@medplum/core';
+import { Bundle, Patient } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
 import { MockClient } from './MockClient';
 import { ReferenceInput, ReferenceInputProps } from './ReferenceInput';
 
+const alice: Patient = {
+  resourceType: 'Patient',
+  id: '123',
+  name: [{
+    given: ['Alice'],
+    family: 'Smith'
+  }]
+};
+
+const bob: Patient = {
+  resourceType: 'Patient',
+  id: '345',
+  name: [{
+    given: ['Bob'],
+    family: 'Jones'
+  }]
+};
+
 const searchResult: Bundle = {
   resourceType: 'Bundle',
   entry: [{
-    resource: {
-      resourceType: 'Patient',
-      id: '123',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }]
-    }
+    resource: alice
   }, {
-    resource: {
-      resourceType: 'Patient',
-      id: '345',
-      name: [{
-        given: ['Bob'],
-        family: 'Jones'
-      }]
-    }
+    resource: bob
   }]
 };
 
@@ -36,7 +40,10 @@ const medplum = new MockClient({
   },
   'fhir/R4/Patient?name=Alice': {
     'GET': searchResult
-  }
+  },
+  'fhir/R4/Patient/123': {
+    'GET': alice
+  },
 });
 
 const setup = (args: ReferenceInputProps) => {
@@ -215,6 +222,8 @@ describe('ReferenceInput', () => {
     await act(async () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
+
+    await waitFor(() => screen.getByText('Alice Smith'));
 
     expect(screen.getByText('Alice Smith')).toBeDefined();
     expect(onChange).toHaveBeenCalled();
