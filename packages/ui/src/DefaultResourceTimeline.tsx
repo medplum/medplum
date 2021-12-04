@@ -19,6 +19,10 @@ export function DefaultResourceTimeline(props: DefaultResourceTimelineProps): JS
               operator: Operator.EQUALS,
               value: getReferenceString(resource)
             }],
+            sortRules: [{
+              code: '_lastUpdated',
+              descending: true
+            }],
             count: 100
           }
         ];
