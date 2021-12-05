@@ -1,4 +1,4 @@
-FROM node:16
+FROM node:16-slim
 ENV NODE_ENV production
 WORKDIR /usr/src/medplum
 ADD ./medplum-server.tar.gz ./
