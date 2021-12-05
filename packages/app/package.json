@@ -21,7 +21,7 @@
   "devDependencies": {
     "@medplum/core": "0.2.2",
     "@medplum/ui": "0.2.2",
-    "@testing-library/jest-dom": "5.15.1",
+    "@testing-library/jest-dom": "5.16.0",
     "@testing-library/react": "12.1.2",
     "@types/react": "17.0.37",
     "@types/react-dom": "17.0.11",
