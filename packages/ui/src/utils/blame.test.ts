@@ -3,7 +3,7 @@ import { blame } from './blame';
 
 describe('Blame', () => {
 
-  test('blame', () => {
+  test('blame oldest to newest', () => {
     const history: Bundle = {
       resourceType: 'Bundle',
       entry: [
@@ -12,7 +12,8 @@ describe('Blame', () => {
             resourceType: 'Patient',
             id: '123',
             meta: {
-              versionId: '1'
+              versionId: '1',
+              lastUpdated: '2021-01-01T12:00:00Z'
             }
           }
         },
@@ -21,7 +22,8 @@ describe('Blame', () => {
             resourceType: 'Patient',
             id: '123',
             meta: {
-              versionId: '2'
+              versionId: '2',
+              lastUpdated: '2021-01-01T12:01:00Z'
             },
             name: [{ given: ['Alice'], family: 'Smith' }],
             active: true
@@ -32,7 +34,8 @@ describe('Blame', () => {
             resourceType: 'Patient',
             id: '123',
             meta: {
-              versionId: '3'
+              versionId: '3',
+              lastUpdated: '2021-01-01T12:02:00Z'
             },
             name: [{ given: ['Alice'], family: 'Smith' }],
             active: false
@@ -43,6 +46,71 @@ describe('Blame', () => {
 
     const result = blame(history);
     expect(result).toBeDefined();
+    expect(result.length).toBe(17);
+    expect(result[0]).toMatchObject({
+      "id": "1",
+      "meta": {
+        "versionId": "1",
+        "lastUpdated": "2021-01-01T12:00:00Z"
+      },
+      "value": "{",
+      "span": 4
+    });
+  });
+
+  test('blame newest to oldest', () => {
+    const history: Bundle = {
+      resourceType: 'Bundle',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Patient',
+            id: '123',
+            meta: {
+              versionId: '3',
+              lastUpdated: '2021-01-01T12:02:00Z'
+            },
+            name: [{ given: ['Alice'], family: 'Smith' }],
+            active: false
+          }
+        },
+        {
+          resource: {
+            resourceType: 'Patient',
+            id: '123',
+            meta: {
+              versionId: '2',
+              lastUpdated: '2021-01-01T12:01:00Z'
+            },
+            name: [{ given: ['Alice'], family: 'Smith' }],
+            active: true
+          }
+        },
+        {
+          resource: {
+            resourceType: 'Patient',
+            id: '123',
+            meta: {
+              versionId: '1',
+              lastUpdated: '2021-01-01T12:00:00Z'
+            }
+          }
+        }
+      ]
+    };
+
+    const result = blame(history);
+    expect(result).toBeDefined();
+    expect(result.length).toBe(17);
+    expect(result[0]).toMatchObject({
+      "id": "1",
+      "meta": {
+        "versionId": "1",
+        "lastUpdated": "2021-01-01T12:00:00Z"
+      },
+      "value": "{",
+      "span": 4
+    });
   });
 
 });
