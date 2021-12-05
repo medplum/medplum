@@ -68,12 +68,9 @@ jobs:
       - name: Login to Amazon ECR
         if: github.repository == 'medplum/medplum' && github.ref == 'refs/heads/main'
         uses: aws-actions/amazon-ecr-login@v1
-      - name: Deploy App
+      - name: Deploy
         if: github.repository == 'medplum/medplum' && github.ref == 'refs/heads/main'
-        run: ./scripts/deploy-app.sh
-      - name: Deploy Server
-        if: github.repository == 'medplum/medplum' && github.ref == 'refs/heads/main'
-        run: ./scripts/deploy-server.sh
+        run: ./scripts/cicd-deploy.sh
         env:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           DOCKER_REPOSITORY: ${{ secrets.DOCKER_REPOSITORY }}
