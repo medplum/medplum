@@ -35,7 +35,7 @@
     "@aws-cdk/aws-secretsmanager": "1.134.0",
     "@aws-cdk/aws-ssm": "1.134.0",
     "@aws-cdk/core": "1.134.0",
-    "aws-cdk": "1.134.0",
+    "aws-cdk": "2.0.0",
     "constructs": "3.3.161"
   }
 }
