@@ -35,7 +35,8 @@ fieldset input[type=tel],
 fieldset input[type=text],
 fieldset input[type=time],
 fieldset input[type=url] {
-  width: 400px;
+  width: 100%;
+  max-width: 400px;
 }
 
 fieldset select,
