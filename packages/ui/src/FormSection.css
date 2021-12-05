@@ -26,12 +26,18 @@ fieldset small {
   padding: 2px 0 4px 0;
 }
 
+fieldset input[type=date],
 fieldset input[type=datetime-local],
 fieldset input[type=email],
 fieldset input[type=number],
 fieldset input[type=password],
 fieldset input[type=tel],
 fieldset input[type=text],
+fieldset input[type=time],
+fieldset input[type=url] {
+  width: 400px;
+}
+
 fieldset select,
 fieldset table {
   width: 100%;

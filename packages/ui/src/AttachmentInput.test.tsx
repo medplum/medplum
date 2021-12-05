@@ -2,7 +2,7 @@ import { Binary, MedplumClient } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
-import { AttachmentArrayInput, AttachmentArrayInputProps } from './AttachmentArrayInput';
+import { AttachmentInput, AttachmentInputProps } from './AttachmentInput';
 import { MedplumProvider } from './MedplumProvider';
 
 function mockFetch(url: string, options: any): Promise<any> {
@@ -37,15 +37,15 @@ const medplum = new MedplumClient({
   fetch: mockFetch
 });
 
-const setup = (args?: AttachmentArrayInputProps) => {
+const setup = (args?: AttachmentInputProps) => {
   return render(
     <MedplumProvider medplum={medplum}>
-      <AttachmentArrayInput name="test" {...args} />
+      <AttachmentInput name="test" {...args} />
     </MedplumProvider>
   );
 };
 
-describe('AttachmentArrayInput', () => {
+describe('AttachmentInput', () => {
 
   beforeAll(async () => {
     global.URL.createObjectURL = jest.fn(() => 'details');
@@ -55,22 +55,15 @@ describe('AttachmentArrayInput', () => {
     setup();
   });
 
-  test('Renders empty array', () => {
-    setup({
-      name: 'test',
-      defaultValue: []
-    });
-  });
-
   test('Renders attachments', async () => {
     await act(async () => {
       await setup({
         name: 'test',
-        defaultValue: [{
+        defaultValue: {
           contentType: 'image/jpeg',
           url: 'https://example.com/test.jpg',
           title: 'test.jpg'
-        }]
+        }
       });
       await waitFor(() => screen.getByAltText('test.jpg'));
     });
@@ -93,11 +86,11 @@ describe('AttachmentArrayInput', () => {
     await act(async () => {
       await setup({
         name: 'test',
-        defaultValue: [{
+        defaultValue: {
           contentType: 'image/jpeg',
           url: 'https://example.com/test.jpg',
           title: 'test.jpg'
-        }]
+        }
       });
     });
 
