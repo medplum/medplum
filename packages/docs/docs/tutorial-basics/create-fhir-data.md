@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-# Getting started
+# Creating FHIR Data
 
 This is a quickstart sample application that introduces some basic FHIR and Medplum concepts.
 
