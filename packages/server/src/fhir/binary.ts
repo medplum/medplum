@@ -32,7 +32,10 @@ binaryRouter.put('/:id', asyncWrap(async (req: Request, res: Response) => {
   const [outcome, resource] = await repo.updateResource<Binary>({
     resourceType: 'Binary',
     id,
-    contentType: req.get('Content-Type')
+    contentType: req.get('Content-Type'),
+    meta: {
+      project: req.query['_project'] as string | undefined
+    }
   });
   assertOk(outcome);
   await getBinaryStorage().writeBinary(resource as Binary, req);
