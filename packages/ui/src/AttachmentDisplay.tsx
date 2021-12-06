@@ -11,7 +11,14 @@ export function AttachmentDisplay(props: AttachmentDisplayProps) {
   const { contentType, url } = value ?? {};
 
   if (contentType?.startsWith('image/') && url) {
-    return <img data-testid="attachment-image" style={{ maxWidth: props.maxWidth }} src={url} />;
+    return (
+      <img
+        data-testid="attachment-image"
+        style={{ maxWidth: props.maxWidth }}
+        src={url}
+        alt={value?.title}
+      />
+    );
   }
 
   if (contentType?.startsWith('video/') && url) {

@@ -1,6 +1,6 @@
 import { Attachment } from '@medplum/core';
 import React, { useRef, useState } from 'react';
-import { AttachmentInput } from './AttachmentInput';
+import { AttachmentDisplay } from './AttachmentDisplay';
 import { UploadButton } from './UploadButton';
 import { killEvent } from './utils/dom';
 
@@ -35,9 +35,7 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps) {
           {values.map((v: any, index: number) => !v.__removed && (
             <tr key={`${index}-${values.length}`}>
               <td>
-                <AttachmentInput
-                  name={props.name}
-                  defaultValue={v} />
+                <AttachmentDisplay value={v} maxWidth={200} />
               </td>
               <td>
                 <button

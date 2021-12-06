@@ -1,20 +1,40 @@
 import { Attachment } from '@medplum/core';
-import React from 'react';
+import React, { useState } from 'react';
 import { AttachmentDisplay } from './AttachmentDisplay';
-import './AttachmentInput.css';
+import { Button } from './Button';
+import { UploadButton } from './UploadButton';
+import { killEvent } from './utils/dom';
 
 export interface AttachmentInputProps {
   name: string;
   defaultValue?: Attachment;
+  arrayElement?: boolean;
+  onChange?: (value: Attachment | undefined) => void;
 }
 
 export function AttachmentInput(props: AttachmentInputProps) {
-  const value = props.defaultValue;
+  const [value, setValue] = useState(props.defaultValue);
+
+  function setValueWrapper(newValue: Attachment | undefined) {
+    setValue(newValue);
+    if (props.onChange) {
+      props.onChange(newValue);
+    }
+  }
+
+  if (value) {
+    return (
+      <>
+        <AttachmentDisplay value={value} maxWidth={200} />
+        <Button onClick={e => {
+          killEvent(e);
+          setValueWrapper(undefined);
+        }}>Remove</Button>
+      </>
+    );
+  }
+
   return (
-    <div className="medplum-attachment-input" data-testid="attachment-input">
-      {value && (
-        <AttachmentDisplay value={value} />
-      )}
-    </div>
+    <UploadButton onUpload={setValueWrapper} />
   );
 }

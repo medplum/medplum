@@ -231,7 +231,7 @@ describe('QuestionnaireForm', () => {
       onSubmit: jest.fn()
     });
 
-    const input = screen.getByTestId('attachment-input');
+    const input = screen.getByText('Upload...');
     expect(input).toBeInTheDocument();
   });
 

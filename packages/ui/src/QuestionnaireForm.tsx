@@ -47,6 +47,9 @@ export function QuestionnaireForm(props: QuestionnaireFormProps) {
           props.onSubmit(response);
         }
       }}>
+      {questionnaire.title && (
+        <h1>{questionnaire.title}</h1>
+      )}
       {questionnaire.item && (
         <QuestionnaireFormItemArray items={questionnaire.item} />
       )}
@@ -96,7 +99,6 @@ function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element |
 
   switch (type) {
     case QuestionnaireItemType.group:
-    case QuestionnaireItemType.display:
       return (
         <div>
           <h3>{item.text}</h3>
@@ -111,11 +113,11 @@ function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element |
       );
     case QuestionnaireItemType.decimal:
       return (
-        <input type="number" id={name} name={name} defaultValue={initial?.valueDecimal} />
+        <input type="number" step={0.01} id={name} name={name} defaultValue={initial?.valueDecimal} />
       );
     case QuestionnaireItemType.integer:
       return (
-        <input type="number" id={name} name={name} defaultValue={initial?.valueInteger} />
+        <input type="number" step={1} id={name} name={name} defaultValue={initial?.valueInteger} />
       );
     case QuestionnaireItemType.date:
       return (
