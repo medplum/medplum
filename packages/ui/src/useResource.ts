@@ -18,13 +18,15 @@ const system: Device = {
  */
 export function useResource<T extends Resource>(value: Reference<T> | T | undefined): T | undefined {
   const medplum = useMedplum();
-  const [resource, setResource] = useState<T | undefined>();
+  const [resource, setResource] = useState<T | undefined>(value && 'resourceType' in value ? value : undefined);
 
   useEffect(() => {
     let subscribed = true;
     if (value) {
       if ('resourceType' in value) {
-        setResource(value);
+        if (value !== resource) {
+          setResource(value);
+        }
       } else if ('reference' in value) {
         if (value.reference === 'system') {
           setResource(system as T);
