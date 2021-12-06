@@ -86,8 +86,10 @@ export function getDefaultSearchForResourceType(resourceType: string): SearchReq
       fields.push('name', 'title', 'status');
       break;
     case 'DiagnosticReport':
-    case 'Encounter':
     case 'Observation':
+      fields.push('subject', 'code', 'status');
+      break;
+    case 'Encounter':
       fields.push('subject');
       break;
     case 'ServiceRequest':
