@@ -1,4 +1,4 @@
-import { allOk, assertOk, badRequest, BundleEntry, ClientApplication, createReference, getDateProperty, isNotFound, isOk, Login, notFound, OperationOutcome, Operator, ProfileResource, Project, ProjectMembership, Reference, User } from '@medplum/core';
+import { AccessPolicy, allOk, assertOk, badRequest, BundleEntry, ClientApplication, createReference, getDateProperty, isNotFound, isOk, Login, notFound, OperationOutcome, Operator, ProfileResource, Project, ProjectMembership, Reference, User } from '@medplum/core';
 import bcrypt from 'bcrypt';
 import { JWTPayload } from 'jose';
 import { repo, RepositoryResult } from '../fhir';
@@ -88,9 +88,11 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
   const memberships = await getUserMemberships(createReference(user));
   let project: Reference<Project> | undefined = undefined;
   let profile: Reference<ProfileResource> | undefined = undefined;
+  let accessPolicy: Reference<AccessPolicy> | undefined = undefined;
   if (memberships.length === 1) {
     project = memberships[0].project;
     profile = memberships[0].profile;
+    accessPolicy = memberships[0].accessPolicy;
   }
 
   return repo.createResource<Login>({
@@ -108,6 +110,7 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     admin: user.admin,
     project,
     profile,
+    accessPolicy,
   });
 }
 

@@ -28,6 +28,7 @@ projectAdminRouter.get('/:projectId', asyncWrap(async (req: Request, res: Respon
       profile: membership.profile?.reference,
       user: membership.user?.reference,
       name: membership.profile?.display,
+      accessPolicy: membership.accessPolicy,
       role: getRole(project, membership)
     });
   }
