@@ -14,7 +14,6 @@ textarea {
   background: var(--medplum-surface);
   box-shadow: 0 1px 1px 0 var(--medplum-gray-200);
   color: var(--medplum-gray-800);
-  line-height: 28px;
   font-size: var(--medplum-font-normal);
 }
 
@@ -27,8 +26,26 @@ input[type=tel],
 input[type=text],
 input[type=time],
 input[type=url],
-textarea {
+select {
+  line-height: 28px;
+}
+
+input[type=date],
+input[type=datetime-local],
+input[type=email],
+input[type=number],
+input[type=password],
+input[type=tel],
+input[type=text],
+input[type=time],
+input[type=url] {
   padding: 2px 8px;
+  margin: 0;
+}
+
+textarea {
+  line-height: 18px;
+  padding: 2px 4px;
   margin: 0;
 }
 
