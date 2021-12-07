@@ -23,31 +23,13 @@ export function useResource<T extends Resource>(value: Reference<T> | T | undefi
   useEffect(() => {
     let subscribed = true;
 
-    if (value === resource) {
-      // If the value is the same as the current resource, do nothing.
-      return;
-    }
-
-    if (!value) {
-      // If the value is null or undefined, set the resource to undefined.
-      setResource(undefined);
-      return;
-    }
-
-    if ('resourceType' in value) {
-      // If the value is a resource, set the resource to the value.
-      setResource(value);
-      return;
-    }
-
-    if ('reference' in value) {
-      // If the value is a reference, resolve the reference.
+    if (value && 'reference' in value) {
       if (value.reference === 'system') {
         setResource(system as T);
         return;
       }
 
-      medplum.readCachedReference(value).then(r => {
+      medplum.readCachedReference(value as Reference<T>).then(r => {
         if (subscribed) {
           setResource(r);
         }
