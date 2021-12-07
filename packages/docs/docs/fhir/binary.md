@@ -19,6 +19,7 @@ A resource that represents the data of a single raw artifact as digital content 
 | contentType | 1..1 | code | MimeType of the binary content
 | securityContext | 0..1 | Reference | Identifies another resource to use as proxy when enforcing access control
 | data | 0..1 | base64Binary | The actual content
+| url | 0..1 | url | Uri where the data can be found
 
 ## Search Parameters
 
