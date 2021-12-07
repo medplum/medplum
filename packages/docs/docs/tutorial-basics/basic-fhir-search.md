@@ -19,8 +19,7 @@ To execute this search as via API, here's how you would do it using curl.  In th
 
 ```curl
 curl 'https://api.medplum.com/fhir/R4/Patient?_count=20&_fields=id,_lastUpdated,name,birthDate,gender&_sort=-_lastUpdated&name=Alex' \
-  -H 'authorization: Bearer $ACCESS_TOKEN' \
-  -H 'content-type: application/fhir+json' \
+  -H 'authorization: Bearer $ACCESS_TOKEN'
 ```
 
 ## Use Medplum App to Learn Advanced Search
@@ -49,7 +48,6 @@ Here's an example that requests all DiagnosticReports for a given Patient are re
 
 ```curl
 curl 'https://api.medplum.com/fhir/R4/DiagnosticReport?_count=100&subject=Patient/017d49f2-955a-1620-bc31-f96b72f5770e' \
-  -H 'authorization: Bearer $ACCESS_TOKEN' \
-  -H 'content-type: application/fhir+json' \
-  --compressed
+  -H 'authorization: Bearer $ACCESS_TOKEN'
   ```
+  
