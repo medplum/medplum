@@ -408,6 +408,10 @@ export class Repository {
       return;
     }
 
+    if (this.isAdmin()) {
+      return;
+    }
+
     const compartmentIds = [];
 
     if (this.context.accessPolicy?.resource) {
@@ -419,7 +423,9 @@ export class Repository {
           }
         }
       }
-    } else if (this.context.project !== undefined && !this.isAdmin()) {
+    }
+
+    if (compartmentIds.length === 0 && this.context.project !== undefined) {
       compartmentIds.push(this.context.project);
     }
 
