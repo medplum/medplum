@@ -65,6 +65,9 @@ async function authenticateBasicAuth(req: Request, res: Response, next: NextFunc
 
   const login: Login = {
     resourceType: 'Login',
+    project: {
+      reference: `Project/${client.meta?.project}`
+    },
     profile: createReference(client)
   };
 
