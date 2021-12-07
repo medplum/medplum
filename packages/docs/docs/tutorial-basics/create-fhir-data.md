@@ -1,8 +1,8 @@
 ---
-sidebar_position: 1
+sidebar_position: 2
 ---
 
-# Getting started
+# Creating FHIR Data
 
 This is a quickstart sample application that introduces some basic FHIR and Medplum concepts.
 
@@ -10,11 +10,11 @@ This is a quickstart sample application that introduces some basic FHIR and Medp
 
 ## Prerequisites
 
-You will need the following to get started:
+You will need the following to get started and instructions on how to set this up were covered in the previous article.
 
 * Make sure you have an account and log into [Medplum](https://app.medplum.com)
 * Log in and create [Client Application](https://app.medplum.com/ClientApplication)
-* Save the Client ID and Client Secret, they will be needed later. TODO: include instructions on how to generate a client secret.
+* Save the Client ID and Client Secret, they will be needed to get your sample to run.
 
 These three requirements will need to be in place to connect
 
