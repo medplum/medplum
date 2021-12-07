@@ -1,4 +1,4 @@
-import { ClientApplication, createReference, getReferenceString, isOk, Login, Operator } from '@medplum/core';
+import { assertOk, ClientApplication, createReference, getReferenceString, isOk, Login, Operator } from '@medplum/core';
 import { createHash } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
@@ -71,7 +71,6 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
 
   const scope = req.body.scope as string;
 
-  // TODO: Add user accessPolicy
   const [loginOutcome, login] = await repo.createResource<Login>({
     resourceType: 'Login',
     client: createReference(client),
@@ -83,13 +82,10 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
     },
     scope
   });
-
-  if (!isOk(loginOutcome) || !login) {
-    return sendTokenError(res, 'invalid_request', 'Invalid login');
-  }
+  assertOk(loginOutcome);
 
   const accessToken = await generateAccessToken({
-    login_id: login.id as string,
+    login_id: login?.id as string,
     client_id: client.id as string,
     sub: client.id as string,
     username: client.id as string,
