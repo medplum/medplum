@@ -135,7 +135,7 @@ function escapeTableCell(input: string | undefined): string {
   if (!input) {
     return '';
   }
-  return input.replaceAll('\n', ' ').replaceAll(/\|/g, '\\|').trim();
+  return input.replaceAll('\n', ' ').replaceAll(/\|/g, '\\|').replaceAll('\\', '/').trim();
 }
 
 if (process.argv[1].endsWith('docs.ts')) {
