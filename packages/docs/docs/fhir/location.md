@@ -51,11 +51,7 @@ Details and position information for a physical place where services are provide
 | endpoint | reference | Technical endpoints providing access to services operated for the location | Location.endpoint
 | identifier | token | An identifier for the location | Location.identifier
 | name | string | A portion of the location's name or alias | Location.name
-| near | special | Search for locations where the location.position is near to, or within a specified distance of, the provided coordinates expressed as [latitude]\|[longitude]\|[distance]\|[units] (using the WGS84 datum, see notes). If the units are omitted, then kms should be assumed. If the distance is omitted, then the server can use its own discretion as to what distances should be considered near (and units are irrelevant)
-
-Servers may search using various techniques that might have differing accuracies, depending on implementation efficiency.
-
-Requires the near-distance parameter to be provided also | Location.position
+| near | special | Search for locations where the location.position is near to, or within a specified distance of, the provided coordinates expressed as [latitude]\|[longitude]\|[distance]\|[units] (using the WGS84 datum, see notes). If the units are omitted, then kms should be assumed. If the distance is omitted, then the server can use its own discretion as to what distances should be considered near (and units are irrelevant)  Servers may search using various techniques that might have differing accuracies, depending on implementation efficiency.  Requires the near-distance parameter to be provided also | Location.position
 | operational-status | token | Searches for locations (typically bed/room) that have an operational status (e.g. contaminated, housekeeping) | Location.operationalStatus
 | organization | reference | Searches for locations that are managed by the provided organization | Location.managingOrganization
 | partof | reference | A location of which this location is a part | Location.partOf

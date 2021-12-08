@@ -85,7 +85,7 @@ function writeDocsForType(i: number, resourceType: string, typeSchema: TypeSchem
   }
 
   fileBuilder.newLine();
-  writeFileSync(resolve(__dirname, `../../../docs/docs/fhir/${resourceType.toLowerCase()}.md`), fileBuilder.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, `../../docs/docs/fhir/${resourceType.toLowerCase()}.md`), fileBuilder.toString(), 'utf8');
 }
 
 function isResourceType(typeSchema: TypeSchema): boolean {
@@ -135,7 +135,7 @@ function escapeTableCell(input: string | undefined): string {
   if (!input) {
     return '';
   }
-  return input.replace('\n', ' ').replace(/\|/g, '\\|').trim();
+  return input.replaceAll('\n', ' ').replaceAll(/\|/g, '\\|').replaceAll('\\', '/').trim();
 }
 
 if (process.argv[1].endsWith('docs.ts')) {
