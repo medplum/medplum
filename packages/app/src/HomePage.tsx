@@ -1,9 +1,10 @@
 import { formatSearchQuery, parseSearchDefinition, SearchRequest } from '@medplum/core';
-import { Loading, SearchControl } from '@medplum/ui';
+import { Loading, SearchControl, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export function HomePage() {
+  const medplum = useMedplum();
   const navigate = useNavigate();
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>(parseSearchDefinition(location));
@@ -43,6 +44,24 @@ export function HomePage() {
       onChange={e => {
         if (e.definition.resourceType && e.definition.fields && e.definition.fields.length > 0) {
           navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+        }
+      }}
+      onNew={() => {
+        navigate(`/${search.resourceType}/new`);
+      }}
+      onDelete={(ids: string[]) => {
+        if (window.confirm('Are you sure you want to delete these resources?')) {
+          medplum.post('fhir/R4', {
+            resourceType: 'Bundle',
+            type: 'batch',
+            entry: ids.map(id => ({
+              request: {
+                method: 'DELETE',
+                url: `${search.resourceType}/${id}`,
+              }
+            }))
+          })
+            .then(() => setSearch({ ...search }));
         }
       }}
     />
