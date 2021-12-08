@@ -103,6 +103,9 @@ class BatchProcessor {
       case 'PUT':
         return this.processPut(entry, url);
 
+      case 'DELETE':
+        return this.processDelete(url);
+
       default:
         return buildBundleResponse(badRequest('Unsupported entry.request.method'));
     }
@@ -244,6 +247,30 @@ class BatchProcessor {
     }
     const [outcome, result] = await this.repo.updateResource(resource);
     return buildBundleResponse(outcome, result);
+  }
+
+  /**
+   * Process a batch DELETE request.
+   * This dispatches to deleteResource.
+   * @param url The entry request URL.
+   * @returns The bundle entry response.
+   */
+  private async processDelete(url: URL): Promise<BundleEntry> {
+    const path = url.pathname.split('/');
+    if (path.length === 3) {
+      return this.processDeleteResource(path[1], path[2]);
+    }
+    return buildBundleResponse(notFound);
+  }
+
+  /**
+   * Process a batch delete request.
+   * @param resource The FHIR resource.
+   * @returns The bundle entry response.
+   */
+  private async processDeleteResource(resourceType: string, id: string): Promise<BundleEntry> {
+    const [outcome] = await this.repo.deleteResource(resourceType, id);
+    return buildBundleResponse(outcome);
   }
 
   private addReplacementId(fullUrl: string, resource: Resource): void {

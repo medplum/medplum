@@ -1,6 +1,5 @@
 import { Bundle, IndexedStructureDefinition, OperationOutcome, Resource, SearchRequest } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from './Button';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
@@ -47,6 +46,9 @@ export interface SearchControlProps {
   onLoad?: (e: SearchLoadEvent) => void;
   onChange?: (e: SearchChangeEvent) => void;
   onClick?: (e: SearchClickEvent) => void;
+  onNew?: () => void;
+  onDelete?: (ids: string[]) => void;
+  onPatch?: (ids: string[]) => void;
 }
 
 interface SearchControlState {
@@ -66,7 +68,6 @@ interface SearchControlState {
  * It does not include the field editor, filter editor, pagination buttons.
  */
 export function SearchControl(props: SearchControlProps) {
-  const navigate = useNavigate();
   const medplum = useMedplum();
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
@@ -258,11 +259,18 @@ export function SearchControl(props: SearchControlProps) {
             size="small"
             onClick={() => setState({ ...stateRef.current, filterEditorVisible: true })}
           >Filters</Button>
-          <Button
-            testid="new-button"
-            size="small"
-            onClick={() => navigate(`/${resourceType}/new`)}
-          >New...</Button>
+          {props.onNew && (
+            <Button
+              size="small"
+              onClick={props.onNew}
+            >New...</Button>
+          )}
+          {props.onDelete && (
+            <Button
+              size="small"
+              onClick={() => (props.onDelete as (ids: string[]) => any)(Object.keys(state.selected))}
+            >Delete...</Button>
+          )}
         </div>
         {lastResult && (
           <div>

@@ -291,19 +291,45 @@ describe('SearchControl', () => {
   });
 
   test('New button', async () => {
+    const onNew = jest.fn();
+
     setup({
       search: {
         resourceType: 'Patient'
-      }
+      },
+      onNew
     });
 
     await act(async () => {
-      await waitFor(() => screen.getByTestId('new-button'));
+      await waitFor(() => screen.getByText('New...'));
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('new-button'));
+      fireEvent.click(screen.getByText('New...'));
     });
+
+    expect(onNew).toBeCalled();
+  });
+
+  test('Delete button', async () => {
+    const onDelete = jest.fn();
+
+    setup({
+      search: {
+        resourceType: 'Patient'
+      },
+      onDelete
+    });
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Delete...'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Delete...'));
+    });
+
+    expect(onDelete).toBeCalled();
   });
 
   test('Click on row', async () => {
