@@ -60,7 +60,7 @@ const medplum = new MockClient({
   'fhir/R4/SearchParameter?name=Patient': {
     'GET': patientSearchParameter
   },
-  'fhir/R4/Patient?': {
+  'fhir/R4/Patient?_count=20&_fields=id,_lastUpdated,name,birthDate,gender&_sort=-_lastUpdated': {
     'GET': patientSearchBundle
   },
 });
@@ -142,11 +142,45 @@ describe('HomePage', () => {
     setup();
 
     await act(async () => {
-      await waitFor(() => screen.getByTestId('new-button'));
+      await waitFor(() => screen.getByText('New...'));
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('new-button'));
+      fireEvent.click(screen.getByText('New...'));
+    });
+  });
+
+  test('Delete button, cancel', async () => {
+    window.confirm = jest.fn(() => false);
+
+    setup();
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Delete...'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Delete...'));
+    });
+  });
+
+  test('Delete button, ok', async () => {
+    window.confirm = jest.fn(() => true);
+
+    setup();
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Delete...'));
+    });
+
+    // Select all
+    const checkboxes = screen.queryAllByTestId('row-checkbox');
+    await act(async () => {
+      checkboxes.forEach(checkbox => fireEvent.click(checkbox));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Delete...'));
     });
   });
 

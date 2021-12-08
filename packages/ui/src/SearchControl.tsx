@@ -261,14 +261,12 @@ export function SearchControl(props: SearchControlProps) {
           >Filters</Button>
           {props.onNew && (
             <Button
-              testid="new-button"
               size="small"
               onClick={props.onNew}
             >New...</Button>
           )}
           {props.onDelete && (
             <Button
-              testid="delete-button"
               size="small"
               onClick={() => (props.onDelete as (ids: string[]) => any)(Object.keys(state.selected))}
             >Delete...</Button>

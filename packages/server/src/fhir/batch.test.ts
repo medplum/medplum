@@ -118,6 +118,13 @@ describe('Batch', () => {
             method: 'GET',
             url: 'Patient/' + randomUUID()
           },
+        },
+        {
+          // Delete resource
+          request: {
+            method: 'DELETE',
+            url: 'Patient/' + randomUUID()
+          },
         }
       ]
     });
@@ -128,13 +135,14 @@ describe('Batch', () => {
     expect(bundle?.entry).toBeDefined();
 
     const results = bundle?.entry as BundleEntry[];
-    expect(results.length).toEqual(4);
+    expect(results.length).toEqual(5);
     expect(results[0].response?.status).toEqual('201');
     expect(results[1].response?.status).toEqual('201');
     expect(results[2].response?.status).toEqual('200');
     expect(results[2].resource).toBeDefined();
     expect((results[2].resource as Bundle).entry?.length).toEqual(1);
     expect(results[3].response?.status).toEqual('404');
+    expect(results[4].response?.status).toEqual('404');
 
     const [patientOutcome, patient] = await userRepo.readReference({ reference: results[0].response?.location as string });
     expect(isOk(patientOutcome)).toBe(true);
@@ -528,6 +536,57 @@ describe('Batch', () => {
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual('Missing entry.request');
+  });
+
+  test('Process batch delete', async () => {
+    const [patientOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient'
+    });
+    assertOk(patientOutcome);
+
+    const [outcome, bundle] = await processBatch(repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'DELETE',
+            url: 'Patient/' + patient?.id
+          }
+        }
+      ]
+    });
+
+    expect(isOk(outcome)).toBe(true);
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
+
+    const results = bundle?.entry as BundleEntry[];
+    expect(results.length).toEqual(1);
+    expect(results[0].response?.status).toEqual('200');
+  });
+
+  test('Process batch delete invalid URL', async () => {
+    const [outcome, bundle] = await processBatch(repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'DELETE',
+            url: 'Patient'
+          }
+        }
+      ]
+    });
+
+    expect(isOk(outcome)).toBe(true);
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
+
+    const results = bundle?.entry as BundleEntry[];
+    expect(results.length).toEqual(1);
+    expect(results[0].response?.status).toEqual('404');
   });
 
   test('Process batch missing request.method', async () => {
