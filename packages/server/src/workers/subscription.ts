@@ -256,6 +256,11 @@ export async function sendSubscription(job: Job<SubscriptionJobData>): Promise<v
   const [subscriptionOutcome, subscription] = await repo.readResource<Subscription>('Subscription', subscriptionId);
   assertOk(subscriptionOutcome);
 
+  if (subscription?.status !== 'active') {
+    // If the subscription has been disabled, then stop processing it.
+    return;
+  }
+
   const [resourceOutcome, resource] = await repo.readVersion(resourceType, id, versionId);
   assertOk(resourceOutcome);
 

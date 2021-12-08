@@ -596,4 +596,57 @@ describe('Subscription Worker', () => {
     expect(bundle?.entry?.[0]?.resource?.outcomeDesc).toContain(nonce);
   });
 
+  test('Stop retries if Subscription status not active', async () => {
+    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      status: 'active',
+      criteria: 'Patient',
+      channel: {
+        type: 'rest-hook',
+        endpoint: 'https://example.com/'
+      }
+    });
+    expect(subscriptionOutcome.id).toEqual('created');
+    expect(subscription).toBeDefined();
+
+    const queue = (Queue as any).mock.instances[0];
+    queue.add.mockClear();
+
+    const [patientOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }]
+    });
+
+    expect(patientOutcome.id).toEqual('created');
+    expect(patient).toBeDefined();
+    expect(queue.add).toHaveBeenCalled();
+
+    // At this point the job should be in the queue
+    // But let's change the subscription status to something else
+    const [updateOutcome] = await repo.updateResource<Subscription>({
+      ...subscription,
+      status: 'off'
+    });
+    expect(updateOutcome.id).toEqual('ok');
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    await sendSubscription(job);
+
+    // Fetch should not have been called
+    expect(fetch).not.toHaveBeenCalled();
+
+    // No AuditEvent resources should have been created
+    const [searchOutcome, bundle] = await repo.search<AuditEvent>({
+      resourceType: 'AuditEvent',
+      filters: [{
+        code: 'entity',
+        operator: Operator.EQUALS,
+        value: getReferenceString(subscription as Subscription)
+      }]
+    });
+    assertOk(searchOutcome);
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry?.length).toEqual(0);
+  });
+
 });
