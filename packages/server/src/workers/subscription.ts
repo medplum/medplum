@@ -1,4 +1,4 @@
-import { assertOk, AuditEvent, Bot, BundleEntry, createReference, Extension, Filter, Operator, parseFhirPath, Resource, SearchRequest, stringify, Subscription } from '@medplum/core';
+import { assertOk, AuditEvent, Bot, BundleEntry, createReference, Extension, Filter, isGone, Operator, parseFhirPath, Resource, SearchRequest, stringify, Subscription } from '@medplum/core';
 import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
@@ -254,6 +254,10 @@ export async function sendSubscription(job: Job<SubscriptionJobData>): Promise<v
   const { subscriptionId, resourceType, id, versionId } = job.data;
 
   const [subscriptionOutcome, subscription] = await repo.readResource<Subscription>('Subscription', subscriptionId);
+  if (isGone(subscriptionOutcome)) {
+    // If the subscription was deleted, then stop processing it.
+    return;
+  }
   assertOk(subscriptionOutcome);
 
   if (subscription?.status !== 'active') {
@@ -261,15 +265,22 @@ export async function sendSubscription(job: Job<SubscriptionJobData>): Promise<v
     return;
   }
 
-  const [resourceOutcome, resource] = await repo.readVersion(resourceType, id, versionId);
-  assertOk(resourceOutcome);
+  const [readOutcome] = await repo.readResource(resourceType, id);
+  if (isGone(readOutcome)) {
+    // If the resource was deleted, then stop processing it.
+    return;
+  }
+  assertOk(readOutcome);
+
+  const [versionOutcome, resourceVersion] = await repo.readVersion(resourceType, id, versionId);
+  assertOk(versionOutcome);
 
   const channelType = subscription?.channel?.type;
   if (channelType === 'rest-hook') {
     if (subscription?.channel?.endpoint?.startsWith('Bot/')) {
-      await execBot(job, subscription, resource as Resource);
+      await execBot(job, subscription, resourceVersion as Resource);
     } else {
-      await sendRestHook(job, subscription as Subscription, resource as Resource);
+      await sendRestHook(job, subscription as Subscription, resourceVersion as Resource);
     }
   }
 }
