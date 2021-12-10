@@ -63,6 +63,10 @@ pre {
   background-color: #fee;
   color: #800;
 }
+.mixed {
+  background-color: #fffcee;
+  color: #860;
+}
 </style>
 </head>
 <body>
@@ -152,7 +156,13 @@ function processTest(test: any): void {
   const fhirpathOutput = getFhirpathOutput(resource, expr);
   const medplumOutput = getMedplumOutput(resource, expr);
   const fhirpathClassName = (fhirpathOutput === specOutput || anyOutput) ? 'good' : 'bad';
-  const medplumClassName = (medplumOutput === specOutput || medplumOutput === fhirpathOutput || anyOutput) ? 'good' : 'bad';
+
+  let medplumClassName = 'bad';
+  if (medplumOutput === specOutput || (medplumOutput === fhirpathOutput && (anyOutput || !valid))) {
+    medplumClassName = 'good';
+  } else if (medplumOutput === specOutput || medplumOutput === fhirpathOutput || anyOutput || !valid) {
+    medplumClassName = 'mixed';
+  }
 
   if (!valid) {
     lines.push('<td>invalid</td>');
