@@ -4,7 +4,7 @@ import { deepEquals } from '../utils';
 /**
  * Flattens a value that may or may not be wrapped in an array.
  * @param input The input as a an array or a value.
- * @returns The flattened value. 
+ * @returns The flattened value.
  */
 export function flattenValue(input: any): any {
   if (Array.isArray(input) && input.length > 0) {
@@ -19,6 +19,9 @@ export function flattenValue(input: any): any {
  * @returns The input as an array.
  */
 export function ensureArray(input: any): any[] {
+  if (input === null || input === undefined) {
+    return [];
+  }
   return Array.isArray(input) ? input : [input];
 }
 
@@ -128,7 +131,7 @@ export function fhirPathEquivalent(x: any, y: any): boolean | [] {
     return true;
   }
   if (isEmptyArray(x) || isEmptyArray(y)) {
-    // Note that this implies that if the collections have a different number of items to compare, 
+    // Note that this implies that if the collections have a different number of items to compare,
     // or if one input is a value and the other is empty ({ }), the result will be false.
     return false;
   }
@@ -137,7 +140,7 @@ export function fhirPathEquivalent(x: any, y: any): boolean | [] {
   }
   if (typeof x === 'number' && typeof y === 'number') {
     // Use more generous threshold than equality
-    // Decimal: values must be equal, comparison is done on values rounded to the precision of the least precise operand. 
+    // Decimal: values must be equal, comparison is done on values rounded to the precision of the least precise operand.
     // Trailing zeroes after the decimal are ignored in determining precision.
     return Math.abs(x - y) < 0.01;
   }

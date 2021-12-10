@@ -622,7 +622,7 @@ describe('FHIRPath Test Suite', () => {
 
   });
 
-  describe.skip('testLiterals', () => {
+  describe('testLiterals', () => {
 
     test('testLiteralTrue', () => {
       expect(parseFhirPath("Patient.name.exists() = true").eval(patient)).toEqual([true]);
@@ -633,7 +633,7 @@ describe('FHIRPath Test Suite', () => {
     });
 
     test('testLiteralString', () => {
-      expect(toBoolean(parseFhirPath("Patient.name.given.first() = 'Peter'").eval(patient))).toEqual([true]);
+      expect(parseFhirPath("Patient.name.given.first() = 'Peter'").eval(patient)).toEqual([true]);
     });
 
     test('testLiteralInteger1', () => {
@@ -648,7 +648,7 @@ describe('FHIRPath Test Suite', () => {
       expect(parseFhirPath("(-1).convertsToInteger()").eval(patient)).toEqual([true]);
     });
 
-    test('testLiteralIntegerNegative1Invalid', () => {
+    test.skip('testLiteralIntegerNegative1Invalid', () => {
       expect(() => parseFhirPath("-1.convertsToInteger()").eval(patient)).toThrow();
     });
 
@@ -660,8 +660,8 @@ describe('FHIRPath Test Suite', () => {
       expect(parseFhirPath("'test'.convertsToString()").eval(patient)).toEqual([true]);
     });
 
-    test('testLiteralStringEscapes', () => {
-      expect(toBoolean(parseFhirPath("'\\\\\\/\\f\\r\\n\\t\\\"\\`\\'\\u002a'.convertsToString()").eval(patient))).toBeTruthy();
+    test.skip('testLiteralStringEscapes', () => {
+      expect(parseFhirPath("'\\\\\\/\\f\\r\\n\\t\\\"\\`\\'\\u002a'.convertsToString()").eval(patient)).toEqual([true]);
     });
 
     test('testLiteralBooleanTrue', () => {
@@ -688,7 +688,7 @@ describe('FHIRPath Test Suite', () => {
       expect(parseFhirPath("(-0.1).convertsToDecimal()").eval(patient)).toEqual([true]);
     });
 
-    test('testLiteralDecimalNegative01Invalid', () => {
+    test.skip('testLiteralDecimalNegative01Invalid', () => {
       expect(() => parseFhirPath("-0.1.convertsToDecimal()").eval(patient)).toThrow();
     });
 
@@ -764,11 +764,11 @@ describe('FHIRPath Test Suite', () => {
       expect(parseFhirPath("@T14:34:28.123.is(Time)").eval(patient)).toEqual([true]);
     });
 
-    test('testLiteralTimeUTC', () => {
+    test.skip('testLiteralTimeUTC', () => {
       expect(() => parseFhirPath("@T14:34:28Z.is(Time)").eval(patient)).toThrow();
     });
 
-    test('testLiteralTimeTimezoneOffset', () => {
+    test.skip('testLiteralTimeTimezoneOffset', () => {
       expect(() => parseFhirPath("@T14:34:28+10:00.is(Time)").eval(patient)).toThrow();
     });
 
@@ -872,11 +872,11 @@ describe('FHIRPath Test Suite', () => {
       expect(parseFhirPath("Patient.birthDate < today()").eval(patient)).toEqual([true]);
     });
 
-    test.skip('testDateTimeGreaterThanDate', () => {
+    test('testDateTimeGreaterThanDate', () => {
       expect(parseFhirPath("now() > Patient.birthDate").eval(patient)).toEqual([true]);
     });
 
-    test.skip('testLiteralDateTimeTZGreater', () => {
+    test('testLiteralDateTimeTZGreater', () => {
       expect(parseFhirPath("@2017-11-05T01:30:00.0-04:00 > @2017-11-05T01:15:00.0-05:00").eval(patient)).toEqual([false]);
     });
 
@@ -884,7 +884,7 @@ describe('FHIRPath Test Suite', () => {
       expect(parseFhirPath("@2017-11-05T01:30:00.0-04:00 < @2017-11-05T01:15:00.0-05:00").eval(patient)).toEqual([true]);
     });
 
-    test.skip('testLiteralDateTimeTZEqualFalse', () => {
+    test('testLiteralDateTimeTZEqualFalse', () => {
       expect(parseFhirPath("@2017-11-05T01:30:00.0-04:00 = @2017-11-05T01:15:00.0-05:00").eval(patient)).toEqual([false]);
     });
 
@@ -916,7 +916,7 @@ describe('FHIRPath Test Suite', () => {
       expect(parseFhirPath("Patient.name.empty().not()").eval(patient)).toEqual([true]);
     });
 
-    test.skip('testEmpty', () => {
+    test('testEmpty', () => {
       expect(parseFhirPath("Patient.link.empty()").eval(patient)).toEqual([true]);
     });
 
@@ -3036,7 +3036,7 @@ describe('FHIRPath Test Suite', () => {
       //
       // The spec says:
       //   "Returns true if exactly one of the operands evaluates to true,
-      //    false if either both operands evaluate to true or both operands evaluate to false, 
+      //    false if either both operands evaluate to true or both operands evaluate to false,
       //    and the empty collection ({ }) otherwise:"
       //
       // I believe the first condition holds:  exactly one of the operands evaluates to true.
@@ -3063,7 +3063,7 @@ describe('FHIRPath Test Suite', () => {
       //
       // The spec says:
       //   "Returns true if exactly one of the operands evaluates to true,
-      //    false if either both operands evaluate to true or both operands evaluate to false, 
+      //    false if either both operands evaluate to true or both operands evaluate to false,
       //    and the empty collection ({ }) otherwise:"
       //
       // I believe the first condition holds:  exactly one of the operands evaluates to true.

@@ -356,8 +356,8 @@ export class OrAtom implements Atom {
 
 /**
  * 6.5.4. xor
- * Returns true if exactly one of the operands evaluates to true, 
- * false if either both operands evaluate to true or both operands evaluate to false, 
+ * Returns true if exactly one of the operands evaluates to true,
+ * false if either both operands evaluate to true or both operands evaluate to false,
  * and the empty collection ({ }) otherwise:
  */
 export class XorAtom implements Atom {

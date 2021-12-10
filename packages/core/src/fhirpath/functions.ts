@@ -346,10 +346,10 @@ export const functions: Record<string, (...args: any[]) => any> = {
   },
 
   /**
-   * Returns the set of elements that are in both collections. 
-   * Duplicate items will be eliminated by this function. 
+   * Returns the set of elements that are in both collections.
+   * Duplicate items will be eliminated by this function.
    * Order of items is not guaranteed to be preserved in the result of this function.
-   * 
+   *
    * See: http://hl7.org/fhirpath/#intersectother-collection-collection
    */
   intersect(input: any[], other: Atom): any[] {
@@ -361,7 +361,7 @@ export const functions: Record<string, (...args: any[]) => any> = {
   },
 
   /**
-   * Returns the set of elements that are not in the other collection. 
+   * Returns the set of elements that are not in the other collection.
    * Duplicate items will not be eliminated by this function, and order will be preserved.
    *
    * e.g. (1 | 2 | 3).exclude(2) returns (1 | 3).
@@ -383,8 +383,8 @@ export const functions: Record<string, (...args: any[]) => any> = {
    */
 
   /**
-   * Merge the two collections into a single collection, 
-   * eliminating any duplicate values (using = (Equals) (=) to determine equality). 
+   * Merge the two collections into a single collection,
+   * eliminating any duplicate values (using = (Equals) (=) to determine equality).
    * There is no expectation of order in the resulting collection.
    *
    * In other words, this function returns the distinct list of elements from both inputs.
@@ -399,8 +399,8 @@ export const functions: Record<string, (...args: any[]) => any> = {
   },
 
   /**
-   * Merge the input and other collections into a single collection 
-   * without eliminating duplicate values. Combining an empty collection 
+   * Merge the input and other collections into a single collection
+   * without eliminating duplicate values. Combining an empty collection
    * with a non-empty collection will return the non-empty collection.
    *
    * There is no expectation of order in the resulting collection.
@@ -461,7 +461,10 @@ export const functions: Record<string, (...args: any[]) => any> = {
     return [toBoolean(value)];
   },
 
-  convertsToBoolean: stub,
+  convertsToBoolean(input: any[]): boolean[] {
+    const conversion = functions.toBoolean(input);
+    return [conversion.length === 1];
+  },
 
   /**
    * Returns the integer representation of the input.
@@ -520,18 +523,8 @@ export const functions: Record<string, (...args: any[]) => any> = {
    * @returns
    */
   convertsToInteger(input: any[]): boolean[] {
-    if (input.length === 0) {
-      return [];
-    }
-    const [value] = validateInput(input, 1);
-    return [
-      value !== null &&
-      value !== undefined &&
-      (
-        typeof value === 'number' ||
-        (typeof value === 'string' && !!value.match(/^[+-]?\d+$/)) ||
-        typeof value === 'boolean'
-      )];
+    const conversion = functions.toInteger(input);
+    return [conversion.length === 1];
   },
 
   toDate: stub,
@@ -542,13 +535,34 @@ export const functions: Record<string, (...args: any[]) => any> = {
 
   convertsToDateTime: stub,
 
-  toDecimal: stub,
+  toDecimal(input: any[]): number[] {
+    if (input.length === 0) {
+      return [];
+    }
+    const [value] = validateInput(input, 1);
+    if (typeof value === 'number') {
+      return [value];
+    }
+    if (typeof value === 'string' && value.match(/-?\d{1,9}(\.\d{1,9})?/)) {
+      return [parseFloat(input[0])];
+    }
+    return [];
+  },
 
-  convertsToDecimal: stub,
+  convertsToDecimal(input: any[]): boolean[] {
+    const result = functions.toDecimal(input);
+    return [result.length === 1];
+  },
 
   toQuantity: stub,
 
-  convertsToQuantity: stub,
+  convertsToQuantity(input: any[]): boolean[] {
+    if (input.length === 0) {
+      return [];
+    }
+    const [value] = validateInput(input, 1);
+    return [isQuantity(value)];
+  },
 
   /**
    * Returns the string representation of the input.
@@ -595,11 +609,7 @@ export const functions: Record<string, (...args: any[]) => any> = {
    * @returns
    */
   convertsToString(input: any[]): boolean[] {
-    if (input.length === 0) {
-      return [];
-    }
-    const [value] = validateInput(input, 1);
-    return [value !== null && value !== undefined];
+    return [(functions.toString as any)(input).length === 1];
   },
 
   toTime: stub,
