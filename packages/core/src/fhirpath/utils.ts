@@ -1,3 +1,4 @@
+import { Quantity } from '../fhir/Quantity';
 import { deepEquals } from '../utils';
 
 /**
@@ -70,16 +71,16 @@ export function toBoolean(obj: any): boolean {
  */
 export function removeDuplicates(arr: any[]): any[] {
   const result: any[] = [];
-  for (let i = 0; i < arr.length; i++) {
+  for (const i of arr) {
     let found = false;
-    for (let j = 0; j < result.length; j++) {
-      if (fhirPathEquals(arr[i], result[j])) {
+    for (const j of result) {
+      if (fhirPathEquals(i, j)) {
         found = true;
         break;
       }
     }
     if (!found) {
-      result.push(arr[i]);
+      result.push(i);
     }
   }
   return result;
@@ -105,7 +106,7 @@ export function fhirPathEquals(x: any, y: any): boolean | [] {
     return Math.abs(x - y) < 1e-8;
   }
   if (isQuantity(x) && isQuantity(y)) {
-    return Math.abs(x.value - y.value) < 0.01 && (x.unit === y.unit || x.code === y.code || x.unit === y.code || x.code === y.unit);
+    return isQuantityEquivalent(x, y);
   }
   if (Array.isArray(x) && Array.isArray(y)) {
     return x.length === y.length && x.every((val, index) => fhirPathEquals(val, y[index]));
@@ -141,7 +142,7 @@ export function fhirPathEquivalent(x: any, y: any): boolean | [] {
     return Math.abs(x - y) < 0.01;
   }
   if (isQuantity(x) && isQuantity(y)) {
-    return Math.abs(x.value - y.value) < 0.01 && (x.unit === y.unit || x.code === y.code || x.unit === y.code || x.code === y.unit);
+    return isQuantityEquivalent(x, y);
   }
   if (Array.isArray(x) && Array.isArray(y)) {
     // If both operands are collections with multiple items:
@@ -186,4 +187,8 @@ export function fhirPathIs(value: any, desiredType: any): boolean {
  */
 export function isQuantity(input: any): boolean {
   return input && typeof input === 'object' && 'value' in input && typeof input.value === 'number';
+}
+
+export function isQuantityEquivalent(x: Quantity, y: Quantity): boolean {
+  return Math.abs((x.value as number) - (y.value as number)) < 0.01 && (x.unit === y.unit || x.code === y.code || x.unit === y.code || x.code === y.unit);
 }
