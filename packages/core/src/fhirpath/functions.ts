@@ -64,7 +64,7 @@ export const functions: Record<string, (...args: any[]) => any> = {
    * @param criteria The evaluation criteria.
    * @returns True if for every element in the input collection, criteria evaluates to true.
    */
-  all(input: any, criteria: Atom): boolean {
+  all(input: any[], criteria: Atom): boolean {
     for (const value of input) {
       if (!criteria.eval(value)) {
         return false;
@@ -84,7 +84,7 @@ export const functions: Record<string, (...args: any[]) => any> = {
    * @param criteria The evaluation criteria.
    * @returns True if all the items are true.
    */
-  allTrue(input: any): boolean {
+  allTrue(input: any[]): boolean {
     for (const value of input) {
       if (!value) {
         return false;
@@ -103,7 +103,7 @@ export const functions: Record<string, (...args: any[]) => any> = {
    * @param criteria The evaluation criteria.
    * @returns True if any of the items are true.
    */
-  anyTrue(input: any): boolean {
+  anyTrue(input: any[]): boolean {
     for (const value of input) {
       if (value) {
         return true;
@@ -123,7 +123,7 @@ export const functions: Record<string, (...args: any[]) => any> = {
    * @param criteria The evaluation criteria.
    * @returns True if all the items are false.
    */
-  allFalse(input: any): boolean {
+  allFalse(input: any[]): boolean {
     for (const value of input) {
       if (value) {
         return false;
@@ -142,7 +142,7 @@ export const functions: Record<string, (...args: any[]) => any> = {
    * @param criteria The evaluation criteria.
    * @returns True if for every element in the input collection, criteria evaluates to true.
    */
-  anyFalse(input: any): boolean {
+  anyFalse(input: any[]): boolean {
     for (const value of input) {
       if (!value) {
         return true;
@@ -151,8 +151,30 @@ export const functions: Record<string, (...args: any[]) => any> = {
     return false;
   },
 
+  /**
+   * Returns true if all items in the input collection are members of the collection passed
+   * as the other argument. Membership is determined using the = (Equals) (=) operation.
+   *
+   * Conceptually, this function is evaluated by testing each element in the input collection
+   * for membership in the other collection, with a default of true. This means that if the
+   * input collection is empty ({ }), the result is true, otherwise if the other collection
+   * is empty ({ }), the result is false.
+   *
+   * See: http://hl7.org/fhirpath/#subsetofother-collection-boolean
+   */
   subsetOf: stub,
 
+  /**
+   * Returns true if all items in the collection passed as the other argument are members of
+   * the input collection. Membership is determined using the = (Equals) (=) operation.
+   *
+   * Conceptually, this function is evaluated by testing each element in the other collection
+   * for membership in the input collection, with a default of true. This means that if the
+   * other collection is empty ({ }), the result is true, otherwise if the input collection
+   * is empty ({ }), the result is false.
+   *
+   * See: http://hl7.org/fhirpath/#supersetofother-collection-boolean
+   */
   supersetOf: stub,
 
   /**
@@ -227,10 +249,36 @@ export const functions: Record<string, (...args: any[]) => any> = {
     return input.filter(e => toBoolean(criteria.eval(e)));
   },
 
+  /**
+   * Evaluates the projection expression for each item in the input collection.
+   * The result of each evaluation is added to the output collection. If the
+   * evaluation results in a collection with multiple items, all items are added
+   * to the output collection (collections resulting from evaluation of projection
+   * are flattened). This means that if the evaluation for an element results in
+   * the empty collection ({ }), no element is added to the result, and that if
+   * the input collection is empty ({ }), the result is empty as well.
+   *
+   * See: http://hl7.org/fhirpath/#selectprojection-expression-collection
+   */
   select: stub,
 
+  /**
+   * A version of select that will repeat the projection and add it to the output
+   * collection, as long as the projection yields new items (as determined by
+   * the = (Equals) (=) operator).
+   *
+   * See: http://hl7.org/fhirpath/#repeatprojection-expression-collection
+   */
   repeat: stub,
 
+  /**
+   * Returns a collection that contains all items in the input collection that
+   * are of the given type or a subclass thereof. If the input collection is
+   * empty ({ }), the result is empty. The type argument is an identifier that
+   * must resolve to the name of a type in a model
+   *
+   * See: http://hl7.org/fhirpath/#oftypetype-type-specifier-collection
+   */
   ofType: stub,
 
   /*
@@ -461,9 +509,31 @@ export const functions: Record<string, (...args: any[]) => any> = {
     return [toBoolean(value)];
   },
 
+  /**
+   * If the input collection contains a single item, this function will return true if:
+   *   1) the item is a Boolean
+   *   2) the item is an Integer that is equal to one of the possible integer representations of Boolean values
+   *   3) the item is a Decimal that is equal to one of the possible decimal representations of Boolean values
+   *   4) the item is a String that is equal to one of the possible string representations of Boolean values
+   *
+   * If the item is not one of the above types, or the item is a String, Integer, or Decimal, but is not equal to one of the possible values convertible to a Boolean, the result is false.
+   *
+   * Possible values for Integer, Decimal, and String are described in the toBoolean() function.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * See: http://hl7.org/fhirpath/#convertstoboolean-boolean
+   *
+   * @param input
+   * @returns
+   */
   convertsToBoolean(input: any[]): boolean[] {
-    const conversion = functions.toBoolean(input);
-    return [conversion.length === 1];
+    if (input.length === 0) {
+      return [];
+    }
+    return [functions.toBoolean(input).length === 1];
   },
 
   /**
@@ -523,8 +593,10 @@ export const functions: Record<string, (...args: any[]) => any> = {
    * @returns
    */
   convertsToInteger(input: any[]): boolean[] {
-    const conversion = functions.toInteger(input);
-    return [conversion.length === 1];
+    if (input.length === 0) {
+      return [];
+    }
+    return [functions.toInteger(input).length === 1];
   },
 
   toDate: stub,
@@ -550,8 +622,10 @@ export const functions: Record<string, (...args: any[]) => any> = {
   },
 
   convertsToDecimal(input: any[]): boolean[] {
-    const result = functions.toDecimal(input);
-    return [result.length === 1];
+    if (input.length === 0) {
+      return [];
+    }
+    return [functions.toDecimal(input).length === 1];
   },
 
   toQuantity: stub,
@@ -609,6 +683,9 @@ export const functions: Record<string, (...args: any[]) => any> = {
    * @returns
    */
   convertsToString(input: any[]): boolean[] {
+    if (input.length === 0) {
+      return [];
+    }
     return [(functions.toString as any)(input).length === 1];
   },
 

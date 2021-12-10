@@ -1,5 +1,4 @@
 import { parseFhirPath } from './parse';
-import { toBoolean } from './utils';
 
 const observation = {
   "resourceType": "Observation",
