@@ -11,6 +11,8 @@ import { initKeys } from '../oauth';
 import { getDefaultClientApplication, seedDatabase } from '../seed';
 import { registerNew } from './register';
 
+jest.mock('@aws-sdk/client-sesv2');
+
 const app = express();
 const email = `multi${randomUUID()}@example.com`;
 const password = randomUUID();
