@@ -70,7 +70,7 @@ export function InvitePage() {
           <div data-testid="success">
             <p>User created</p>
             <p>Email sent</p>
-            <p>Click <a href={'/admin/projects/' + id}>here</a> to return to the project admin page</p>
+            <p>Click <a href={'/admin/project'}>here</a> to return to the project admin page</p>
           </div>
         )}
       </Form>

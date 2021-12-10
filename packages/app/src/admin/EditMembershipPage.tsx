@@ -88,7 +88,7 @@ export function EditMembershipPage() {
           <div data-testid="success">
             <p>User updated</p>
             <pre>{JSON.stringify(outcome, undefined, 2)}</pre>
-            <p>Click <a href={'/admin/projects/' + projectId}>here</a> to return to the project admin page</p>
+            <p>Click <a href={'/admin/project'}>here</a> to return to the project admin page</p>
           </div>
         )}
       </Form>
