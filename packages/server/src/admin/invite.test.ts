@@ -48,18 +48,33 @@ describe('Admin Invite', () => {
     expect(res.body.project).toBeDefined();
 
     // Second, Alice invites Bob to the project
+    const bobEmail = `bob${randomUUID()}@example.com`;
     const res2 = await request(app)
       .post('/admin/projects/' + res.body.project.reference.replace('Project/', '') + '/invite')
       .set('Authorization', 'Bearer ' + res.body.accessToken)
       .send({
         firstName: 'Bob',
         lastName: 'Jones',
-        email: `bob${randomUUID()}@example.com`
+        email: bobEmail
       });
 
     expect(res2.status).toBe(200);
     expect(SESv2Client).toHaveBeenCalledTimes(1);
     expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+
+    const args = (SendEmailCommand as any).mock.calls[0][0];
+    expect(args).toMatchObject({
+      Destination: {
+        ToAddresses: [bobEmail]
+      },
+      Content: {
+        Simple: {
+          Subject: {
+            Data: 'Welcome to Medplum'
+          }
+        }
+      }
+    });
   });
 
   test('Existing user to project', async () => {
@@ -106,8 +121,22 @@ describe('Admin Invite', () => {
       });
 
     expect(res3.status).toBe(200);
-    expect(SESv2Client).not.toHaveBeenCalled();
-    expect(SendEmailCommand).not.toHaveBeenCalled();
+    expect(SESv2Client).toHaveBeenCalledTimes(1);
+    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+
+    const args = (SendEmailCommand as any).mock.calls[0][0];
+    expect(args).toMatchObject({
+      Destination: {
+        ToAddresses: [bobEmail]
+      },
+      Content: {
+        Simple: {
+          Subject: {
+            Data: 'Medplum: Welcome to Alice Project'
+          }
+        }
+      }
+    });
   });
 
   test('Access denied', async () => {

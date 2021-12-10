@@ -69,7 +69,7 @@ export function App() {
             {
               title: 'Admin',
               links: [
-                { label: 'Projects', href: '/admin/projects' },
+                { label: 'Project', href: '/admin/project' },
                 { label: 'AccessPolicy', href: '/AccessPolicy' }
               ]
             },
@@ -100,7 +100,7 @@ export function App() {
         <Route path="/changepassword" element={<ChangePasswordPage />} />
         <Route path="/batch" element={<BatchPage />} />
         <Route path="/forms/:id" element={<FormPage />} />
-        <Route path="/admin/projects" element={<ProjectPage />} />
+        <Route path="/admin/project" element={<ProjectPage />} />
         <Route path="/admin/projects/:id/invite" element={<InvitePage />} />
         <Route path="/admin/projects/:projectId/members/:membershipId" element={<EditMembershipPage />} />
         <Route path="/:resourceType/:id/_history/:versionId/:tab" element={<ResourceVersionPage />} />

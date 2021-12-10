@@ -68,6 +68,20 @@ describe('Reset Password', () => {
     expect(res2.status).toBe(200);
     expect(SESv2Client).toHaveBeenCalledTimes(1);
     expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+
+    const args = (SendEmailCommand as any).mock.calls[0][0];
+    expect(args).toMatchObject({
+      Destination: {
+        ToAddresses: [email]
+      },
+      Content: {
+        Simple: {
+          Subject: {
+            Data: 'Medplum Password Reset'
+          }
+        }
+      }
+    });
   });
 
 });

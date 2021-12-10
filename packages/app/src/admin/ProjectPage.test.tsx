@@ -31,7 +31,7 @@ const setup = (url: string) => {
     <MedplumProvider medplum={medplum}>
       <MemoryRouter initialEntries={[url]} initialIndex={0}>
         <Routes>
-          <Route path="/admin/projects" element={<ProjectPage />} />
+          <Route path="/admin/project" element={<ProjectPage />} />
         </Routes>
       </MemoryRouter>
     </MedplumProvider>
@@ -52,7 +52,7 @@ describe('ProjectPage', () => {
       }
     });
 
-    setup('/admin/projects');
+    setup('/admin/project');
 
     await act(async () => {
       await waitFor(() => screen.getByText('Alice Smith'));

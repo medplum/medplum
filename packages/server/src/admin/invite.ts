@@ -4,6 +4,8 @@ import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { resetPassword } from '../auth/resetpassword';
 import { createPractitioner, createProjectMembership } from '../auth/utils';
+import { getConfig } from '../config';
+import { sendEmail } from '../email';
 import { invalidRequest, repo, sendOutcome } from '../fhir';
 import { logger } from '../logger';
 import { generateSecret } from '../oauth';
@@ -47,9 +49,44 @@ export interface InviteRequest {
 export async function inviteUser(request: InviteRequest): Promise<Practitioner> {
   const project = request.project;
   let user = await searchForExisting(request.email);
-  if (!user) {
+
+  if (user) {
+    // Existing user
+    await sendEmail(
+      [user.email as string],
+      `Medplum: Welcome to ${request.project.name}`,
+      [
+        `You were invited to ${request.project.name}`,
+        '',
+        `The next time you sign-in, you will see ${request.project.name} as an option.`,
+        '',
+        `You can sign in here: ${getConfig().appBaseUrl}signin`,
+        '',
+        'Thank you,',
+        'Medplum',
+        ''
+      ].join('\n')
+    );
+
+  } else {
+    // New user
     user = await createUser(request);
-    await resetPassword(user);
+    const url = await resetPassword(user);
+    await sendEmail(
+      [user.email as string],
+      'Welcome to Medplum',
+      [
+        `You were invited to ${request.project.name}`,
+        '',
+        'Please click on the following link to create your account:',
+        '',
+        url,
+        '',
+        'Thank you,',
+        'Medplum',
+        ''
+      ].join('\n')
+    );
   }
   const practitioner = await createPractitioner(request, project);
   await createProjectMembership(user, project, practitioner, false);
