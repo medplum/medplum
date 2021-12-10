@@ -164,19 +164,36 @@ export function fhirPathEquivalent(x: any, y: any): boolean | [] {
 }
 
 export function fhirPathIs(value: any, desiredType: any): boolean {
-  if (typeof value === 'object' && value?.resourceType === desiredType) {
-    return true;
+  if (value === undefined || value === null) {
+    return false;
   }
 
-  if (typeof value === 'boolean' && desiredType === 'Boolean') {
-    return true;
+  switch (desiredType) {
+    case 'Boolean':
+      return typeof value === 'boolean';
+    case 'Date':
+      return typeof value === 'string' && !!value.match(/^\d{4}(-\d{2}(-\d{2})?)?/);
+    case 'DateTime':
+      return typeof value === 'string' && !!value.match(/^\d{4}(-\d{2}(-\d{2})?)?T/);
+    case 'Time':
+      return typeof value === 'string' && !!value.match(/^T\d/);
+    case 'Period':
+      return isPeriod(value);
+    case 'Quantity':
+      return isQuantity(value);
+    default:
+      return typeof value === 'object' && value?.resourceType === desiredType;
   }
+}
 
-  if (desiredType === 'Quantity' && isQuantity(value)) {
-    return true;
-  }
-
-  return false;
+/**
+ * Determines if the input is a Period object.
+ * This is heuristic based, as we do not have strong typing at runtime.
+ * @param input The input value.
+ * @returns True if the input is a period.
+ */
+export function isPeriod(input: any): boolean {
+  return input && typeof input === 'object' && 'start' in input;
 }
 
 /**
