@@ -9,5 +9,8 @@ COPY packages/server/package.json ./packages/server/package.json
 COPY packages/ui/package.json ./packages/ui/package.json
 RUN npm ci
 COPY . .
+RUN npm run build --workspace packages/definitions
+RUN npm run build --workspace packages/core
+RUN npm run build --workspace packages/ui
 EXPOSE 3000
 ENTRYPOINT [ "npm", "run", "dev", "--workspace", "packages/app" ]

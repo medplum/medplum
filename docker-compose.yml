@@ -5,10 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile.app
     volumes:
-      - ./:/usr/src/medplum
-      - /usr/src/medplum/node_modules
-    environment:
-      - NODE_ENV=development
+      - ./packages/app:/usr/src/medplum/packages/app
     ports:
       - '3000:3000'
   server:
@@ -19,10 +16,7 @@ services:
       - postgres
       - redis
     volumes:
-      - ./:/usr/src/medplum
-      - /usr/src/medplum/node_modules
-    environment:
-      - NODE_ENV=development
+      - ./packages/server:/usr/src/medplum/packages/server
     ports:
       - '5000:5000'
   postgres:

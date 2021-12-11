@@ -7,3 +7,4 @@ Dockerfile
 Dockerfile.dev
 docker
 docker-compose.yml
+node_modules
