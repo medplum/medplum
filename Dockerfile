@@ -1,3 +1,7 @@
+# This is the main production Dockerfile.
+# It depends on medplum-server.tar.gz which is created by scripts/build.sh.
+# This is a production ready image.
+# It does not include any development dependencies.
 FROM node:16-slim
 ENV NODE_ENV production
 WORKDIR /usr/src/medplum
