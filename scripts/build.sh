@@ -45,5 +45,4 @@ tar \
   packages/definitions/dist \
   packages/server/package.json \
   packages/server/dist \
-  packages/server/templates \
-  packages/server/medplum.config.json
+  packages/server/templates
