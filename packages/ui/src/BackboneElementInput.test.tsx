@@ -36,6 +36,23 @@ const nameProperty: ElementDefinition = {
   max: '1'
 };
 
+const valueSetComposeProperty: ElementDefinition = {
+  id: 'ValueSet.compose',
+  path: 'ValueSet.compose',
+  min: 0,
+  max: '1',
+  base: {
+    path: 'ValueSet.compose',
+    min: 0,
+    max: '1'
+  },
+  type: [
+    {
+      code: 'BackboneElement'
+    }
+  ]
+};
+
 const valueSetExcludeProperty: ElementDefinition = {
   id: 'ValueSet.compose.exclude',
   path: 'ValueSet.compose.exclude',
@@ -68,7 +85,13 @@ const schema: IndexedStructureDefinition = {
     ValueSet: {
       display: 'Value Set',
       properties: {
-        valueSetExcludeProperty
+        compose: valueSetComposeProperty
+      }
+    },
+    ValueSetCompose: {
+      display: 'Value Set Compose',
+      properties: {
+        exclude: valueSetExcludeProperty
       }
     }
   }
@@ -100,9 +123,10 @@ describe('BackboneElementInput', () => {
   test('Handles content reference', () => {
     setup({
       schema,
-      property: valueSetExcludeProperty,
-      name: 'exclude'
+      property: valueSetComposeProperty,
+      name: 'compose'
     });
+    expect(screen.getByText('Compose')).toBeInTheDocument();
     expect(screen.queryByText('Exclude')).toBeNull();
   });
 
