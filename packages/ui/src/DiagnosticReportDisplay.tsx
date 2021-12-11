@@ -1,6 +1,5 @@
 import { capitalize, DiagnosticReport, Observation, ObservationComponent, ObservationReferenceRange, Reference } from '@medplum/core';
 import React from 'react';
-import ReactMarkdown from 'react-markdown';
 import { CodeableConceptDisplay } from './CodeableConceptDisplay';
 import { MedplumLink } from './MedplumLink';
 import { ResourceBadge } from './ResourceBadge';
@@ -56,7 +55,7 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps) {
         )}
       </div>
       {textContent && (
-        <ReactMarkdown>{textContent}</ReactMarkdown>
+        <pre>{textContent}</pre>
       )}
       {diagnosticReport.result && (
         <ObservationTable value={diagnosticReport.result} />
