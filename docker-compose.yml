@@ -15,6 +15,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.server
+    depends_on:
+      - postgres
+      - redis
     volumes:
       - ./:/usr/src/medplum
       - /usr/src/medplum/node_modules
