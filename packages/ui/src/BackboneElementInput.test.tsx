@@ -36,6 +36,50 @@ const nameProperty: ElementDefinition = {
   max: '1'
 };
 
+const valueSetComposeProperty: ElementDefinition = {
+  id: 'ValueSet.compose',
+  path: 'ValueSet.compose',
+  min: 0,
+  max: '1',
+  base: {
+    path: 'ValueSet.compose',
+    min: 0,
+    max: '1'
+  },
+  type: [
+    {
+      code: 'BackboneElement'
+    }
+  ]
+};
+
+const valueSetComposeLockedDateProperty: ElementDefinition = {
+  id: 'ValueSet.compose.lockedDate',
+  path: 'ValueSet.compose.lockedDate',
+  short: 'Locked date',
+  min: 0,
+  max: '1',
+  type: [
+    {
+      code: 'date'
+    }
+  ]
+};
+
+const valueSetComposeExcludeProperty: ElementDefinition = {
+  id: 'ValueSet.compose.exclude',
+  path: 'ValueSet.compose.exclude',
+  short: 'Explicitly exclude codes from a code system or other value sets',
+  min: 0,
+  max: '*',
+  base: {
+    path: 'ValueSet.compose.exclude',
+    min: 0,
+    max: '*'
+  },
+  contentReference: '#ValueSet.compose.include'
+};
+
 const schema: IndexedStructureDefinition = {
   types: {
     Patient: {
@@ -49,6 +93,19 @@ const schema: IndexedStructureDefinition = {
       properties: {
         id: idProperty,
         name: nameProperty
+      }
+    },
+    ValueSet: {
+      display: 'Value Set',
+      properties: {
+        compose: valueSetComposeProperty
+      }
+    },
+    ValueSetCompose: {
+      display: 'Value Set Compose',
+      properties: {
+        lockedDate: valueSetComposeLockedDateProperty,
+        exclude: valueSetComposeExcludeProperty
       }
     }
   }
@@ -75,6 +132,16 @@ describe('BackboneElementInput', () => {
       name: 'contact'
     });
     expect(screen.getByText('Name')).toBeDefined();
+  });
+
+  test('Handles content reference', () => {
+    setup({
+      schema,
+      property: valueSetComposeProperty,
+      name: 'compose'
+    });
+    expect(screen.getByText('Locked Date')).toBeInTheDocument();
+    expect(screen.queryByText('Exclude')).toBeNull();
   });
 
 });
