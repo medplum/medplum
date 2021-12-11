@@ -36,6 +36,20 @@ const nameProperty: ElementDefinition = {
   max: '1'
 };
 
+const valueSetExcludeProperty: ElementDefinition = {
+  id: 'ValueSet.compose.exclude',
+  path: 'ValueSet.compose.exclude',
+  short: 'Explicitly exclude codes from a code system or other value sets',
+  min: 0,
+  max: '*',
+  base: {
+    path: 'ValueSet.compose.exclude',
+    min: 0,
+    max: '*'
+  },
+  contentReference: '#ValueSet.compose.include'
+};
+
 const schema: IndexedStructureDefinition = {
   types: {
     Patient: {
@@ -49,6 +63,12 @@ const schema: IndexedStructureDefinition = {
       properties: {
         id: idProperty,
         name: nameProperty
+      }
+    },
+    ValueSet: {
+      display: 'Value Set',
+      properties: {
+        valueSetExcludeProperty
       }
     }
   }
@@ -75,6 +95,15 @@ describe('BackboneElementInput', () => {
       name: 'contact'
     });
     expect(screen.getByText('Name')).toBeDefined();
+  });
+
+  test('Handles content reference', () => {
+    setup({
+      schema,
+      property: valueSetExcludeProperty,
+      name: 'exclude'
+    });
+    expect(screen.queryByText('Exclude')).toBeNull();
   });
 
 });

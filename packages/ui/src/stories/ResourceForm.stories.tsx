@@ -125,3 +125,30 @@ export const Subscription = () => (
     />
   </Document>
 );
+
+export const ValueSet = () => (
+  <Document>
+    <ResourceForm
+      defaultValue={{
+        resourceType: 'ValueSet'
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
+export const DeviceRequest = () => (
+  <Document>
+    <ResourceForm
+      defaultValue={{
+        resourceType: 'DeviceRequest'
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
