@@ -1,3 +1,10 @@
+# This is the docker-compose file for the dev environment.
+# It can be used to quickly run 4 services:
+#   1) The front-end web server
+#   2) The back-end API server
+#   3) The Postgres database
+#   4) The Redis cache
+# You can start all services by running "docker-compose up"
 version: '3.7'
 services:
   app:

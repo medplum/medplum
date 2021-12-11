@@ -1,3 +1,7 @@
+# This is a deveopment image for the front-end app.
+# It includes all development dependencies.
+# The content is served by webpack-dev-server.
+# This should be launched using docker-compose.
 FROM node:16-slim
 ENV NODE_ENV development
 WORKDIR /usr/src/medplum
