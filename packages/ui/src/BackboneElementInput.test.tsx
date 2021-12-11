@@ -53,7 +53,20 @@ const valueSetComposeProperty: ElementDefinition = {
   ]
 };
 
-const valueSetExcludeProperty: ElementDefinition = {
+const valueSetComposeLockedDateProperty: ElementDefinition = {
+  id: 'ValueSet.compose.lockedDate',
+  path: 'ValueSet.compose.lockedDate',
+  short: 'Locked date',
+  min: 0,
+  max: '1',
+  type: [
+    {
+      code: 'date'
+    }
+  ]
+};
+
+const valueSetComposeExcludeProperty: ElementDefinition = {
   id: 'ValueSet.compose.exclude',
   path: 'ValueSet.compose.exclude',
   short: 'Explicitly exclude codes from a code system or other value sets',
@@ -91,7 +104,8 @@ const schema: IndexedStructureDefinition = {
     ValueSetCompose: {
       display: 'Value Set Compose',
       properties: {
-        exclude: valueSetExcludeProperty
+        lockedDate: valueSetComposeLockedDateProperty,
+        exclude: valueSetComposeExcludeProperty
       }
     }
   }
@@ -126,7 +140,7 @@ describe('BackboneElementInput', () => {
       property: valueSetComposeProperty,
       name: 'compose'
     });
-    expect(screen.getByText('Compose')).toBeInTheDocument();
+    expect(screen.getByText('Locked Date')).toBeInTheDocument();
     expect(screen.queryByText('Exclude')).toBeNull();
   });
 
