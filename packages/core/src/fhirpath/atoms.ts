@@ -1,4 +1,4 @@
-import { applyMaybeArray, ensureArray, fhirPathEquals, fhirPathEquivalent, fhirPathIs, flattenValue, isQuantity, removeDuplicates, toBoolean } from './utils';
+import { applyMaybeArray, ensureArray, fhirPathEquals, fhirPathEquivalent, fhirPathIs, isQuantity, removeDuplicates, toBoolean } from './utils';
 
 export interface Atom {
   eval(context: any): any;
@@ -322,12 +322,10 @@ export class AndAtom implements Atom {
   eval(context: any): any {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
-    const leftBoolean = flattenValue(leftValue);
-    const rightBoolean = flattenValue(rightValue);
-    if (leftBoolean === true && rightBoolean === true) {
+    if (leftValue === true && rightValue === true) {
       return true;
     }
-    if (leftBoolean === false || rightBoolean === false) {
+    if (leftValue === false || rightValue === false) {
       return false;
     }
     return [];
@@ -368,12 +366,10 @@ export class XorAtom implements Atom {
   eval(context: any): any {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
-    const leftBoolean = flattenValue(leftValue);
-    const rightBoolean = flattenValue(rightValue);
-    if ((leftBoolean === true && rightBoolean !== true) || (leftBoolean !== true && rightBoolean === true)) {
+    if ((leftValue === true && rightValue !== true) || (leftValue !== true && rightValue === true)) {
       return true;
     }
-    if ((leftBoolean === true && rightBoolean === true) || (leftBoolean === false && rightBoolean === false)) {
+    if ((leftValue === true && rightValue === true) || (leftValue === false && rightValue === false)) {
       return false;
     }
     return [];

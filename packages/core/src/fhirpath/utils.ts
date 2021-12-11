@@ -2,18 +2,6 @@ import { Quantity } from '../fhir/Quantity';
 import { deepEquals } from '../utils';
 
 /**
- * Flattens a value that may or may not be wrapped in an array.
- * @param input The input as a an array or a value.
- * @returns The flattened value.
- */
-export function flattenValue(input: any): any {
-  if (Array.isArray(input) && input.length > 0) {
-    return input[0];
-  }
-  return input;
-}
-
-/**
  * Ensures that the value is wrapped in an array.
  * @param input The input as a an array or a value.
  * @returns The input as an array.
@@ -102,9 +90,6 @@ export function fhirPathEquals(x: any, y: any): boolean | [] {
   if (isEmptyArray(x) || isEmptyArray(y)) {
     return [];
   }
-  if (x instanceof Date && y instanceof Date) {
-    return x.toString() === y.toString();
-  }
   if (typeof x === 'number' && typeof y === 'number') {
     return Math.abs(x - y) < 1e-8;
   }
@@ -134,9 +119,6 @@ export function fhirPathEquivalent(x: any, y: any): boolean | [] {
     // Note that this implies that if the collections have a different number of items to compare,
     // or if one input is a value and the other is empty ({ }), the result will be false.
     return false;
-  }
-  if (x instanceof Date && y instanceof Date) {
-    return x.toString() === y.toString();
   }
   if (typeof x === 'number' && typeof y === 'number') {
     // Use more generous threshold than equality

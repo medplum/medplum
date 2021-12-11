@@ -1,3 +1,4 @@
+import { Quantity } from '../fhir/Quantity';
 import { Atom } from './atoms';
 import { ensureArray, fhirPathIs, isQuantity, removeDuplicates, toBoolean } from './utils';
 
@@ -607,6 +608,24 @@ export const functions: Record<string, (...args: any[]) => any> = {
 
   convertsToDateTime: stub,
 
+  /**
+   * If the input collection contains a single item, this function will return a single decimal if:
+   *   1) the item is an Integer or Decimal
+   *   2) the item is a String and is convertible to a Decimal
+   *   3) the item is a Boolean, where true results in a 1.0 and false results in a 0.0.
+   *   4) If the item is not one of the above types, the result is empty.
+   *
+   * If the item is a String, but the string is not convertible to a Decimal (using the regex format (\\+|-)?\d+(\.\d+)?), the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * See: https://hl7.org/fhirpath/#decimal-conversion-functions
+   *
+   * @param input The input collection.
+   * @returns
+   */
   toDecimal(input: any[]): number[] {
     if (input.length === 0) {
       return [];
@@ -618,9 +637,29 @@ export const functions: Record<string, (...args: any[]) => any> = {
     if (typeof value === 'string' && value.match(/-?\d{1,9}(\.\d{1,9})?/)) {
       return [parseFloat(input[0])];
     }
+    if (typeof value === 'boolean') {
+      return [value ? 1 : 0];
+    }
     return [];
   },
 
+  /**
+   * If the input collection contains a single item, this function will true if:
+   *   1) the item is an Integer or Decimal
+   *   2) the item is a String and is convertible to a Decimal
+   *   3) the item is a Boolean
+   *
+   * If the item is not one of the above types, or is not convertible to a Decimal (using the regex format (\\+|-)?\d+(\.\d+)?), the result is false.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * If the input collection is empty, the result is empty.
+
+   * See: https://hl7.org/fhirpath/#convertstodecimal-boolean
+   *
+   * @param input The input collection.
+   * @returns
+   */
   convertsToDecimal(input: any[]): boolean[] {
     if (input.length === 0) {
       return [];
@@ -628,14 +667,68 @@ export const functions: Record<string, (...args: any[]) => any> = {
     return [functions.toDecimal(input).length === 1];
   },
 
-  toQuantity: stub,
-
-  convertsToQuantity(input: any[]): boolean[] {
+  /**
+   * If the input collection contains a single item, this function will return a single quantity if:
+   *   1) the item is an Integer, or Decimal, where the resulting quantity will have the default unit ('1')
+   *   2) the item is a Quantity
+   *   3) the item is a String and is convertible to a Quantity
+   *   4) the item is a Boolean, where true results in the quantity 1.0 '1', and false results in the quantity 0.0 '1'
+   *
+   * If the item is not one of the above types, the result is empty.
+   *
+   * See: https://hl7.org/fhirpath/#quantity-conversion-functions
+   *
+   * @param input The input collection.
+   * @returns
+   */
+  toQuantity(input: any[]): Quantity[] {
     if (input.length === 0) {
       return [];
     }
     const [value] = validateInput(input, 1);
-    return [isQuantity(value)];
+    if (isQuantity(value)) {
+      return [value];
+    }
+    if (typeof value === 'number') {
+      return [{ value, unit: '1' }];
+    }
+    if (typeof value === 'string' && value.match(/-?\d{1,9}(\.\d{1,9})?/)) {
+      return [{ value: parseFloat(input[0]), unit: '1' }];
+    }
+    if (typeof value === 'boolean') {
+      return [{ value: value ? 1 : 0, unit: '1' }];
+    }
+    return [];
+  },
+
+  /**
+   * If the input collection contains a single item, this function will return true if:
+   *   1) the item is an Integer, Decimal, or Quantity
+   *   2) the item is a String that is convertible to a Quantity
+   *   3) the item is a Boolean
+   *
+   * If the item is not one of the above types, or is not convertible to a Quantity using the following regex format:
+   *
+   *     (?'value'(\+|-)?\d+(\.\d+)?)\s*('(?'unit'[^']+)'|(?'time'[a-zA-Z]+))?
+   *
+   * then the result is false.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * If the unit argument is provided, it must be the string representation of a UCUM code (or a FHIRPath calendar duration keyword), and is used to determine whether the input quantity can be converted to the given unit, according to the unit conversion rules specified by UCUM. If the input quantity can be converted, the result is true, otherwise, the result is false.
+   *
+   * See: https://hl7.org/fhirpath/#convertstoquantityunit-string-boolean
+   *
+   * @param input The input collection.
+   * @returns
+   */
+  convertsToQuantity(input: any[]): boolean[] {
+    if (input.length === 0) {
+      return [];
+    }
+    return [functions.toQuantity(input).length === 1];
   },
 
   /**
@@ -850,13 +943,15 @@ export const functions: Record<string, (...args: any[]) => any> = {
   },
 
   /**
+   * Returns the list of characters in the input string. If the input collection is empty ({ }), the result is empty.
+   *
+   * See: https://hl7.org/fhirpath/#tochars-collection
    *
    * @param input The input collection.
-   * @returns The index of the substring.
    */
   toChars(input: any[]): string[][] {
     return applyStringFunc(
-      (str) => str.split(''),
+      (str) => str ? str.split('') : undefined,
       input);
   },
 
