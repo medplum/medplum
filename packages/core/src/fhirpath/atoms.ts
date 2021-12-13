@@ -1,4 +1,4 @@
-import { applyMaybeArray, ensureArray, fhirPathEquals, fhirPathEquivalent, fhirPathIs, isQuantity, removeDuplicates, toBoolean } from './utils';
+import { applyMaybeArray, ensureArray, fhirPathEquals, fhirPathEquivalent, fhirPathIs, isQuantity, removeDuplicates, toJsBoolean } from './utils';
 
 export interface Atom {
   eval(context: any): any;
@@ -242,7 +242,6 @@ export class EqualsAtom implements Atom {
   eval(context: any): any {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
-    // console.log('equals', leftValue, rightValue);
     if (Array.isArray(leftValue) && Array.isArray(rightValue)) {
       return fhirPathEquals(leftValue.flat(), rightValue);
     }
@@ -264,8 +263,7 @@ export class NotEqualsAtom implements Atom {
     } else {
       result = applyMaybeArray(leftValue, e => fhirPathEquals(e, rightValue));
     }
-    // return !toBoolean(result);
-    return result.map(e => !e);
+    return !toJsBoolean(result);
   }
 }
 
@@ -298,7 +296,7 @@ export class NotEquivalentAtom implements Atom {
     } else {
       result = applyMaybeArray(leftValue, e => fhirPathEquivalent(e, rightValue));
     }
-    return !toBoolean(result);
+    return !toJsBoolean(result);
   }
 }
 
@@ -342,12 +340,12 @@ export class OrAtom implements Atom {
 
   eval(context: any): any {
     const leftValue = this.left.eval(context);
-    if (toBoolean(leftValue)) {
+    if (toJsBoolean(leftValue)) {
       return leftValue;
     }
 
     const rightValue = this.right.eval(context);
-    if (toBoolean(rightValue)) {
+    if (toJsBoolean(rightValue)) {
       return rightValue;
     }
 

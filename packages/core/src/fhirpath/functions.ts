@@ -1,6 +1,6 @@
 import { Quantity } from '../fhir/Quantity';
 import { Atom } from './atoms';
-import { ensureArray, fhirPathIs, isQuantity, removeDuplicates } from './utils';
+import { ensureArray, fhirPathIs, isQuantity, removeDuplicates, toJsBoolean } from './utils';
 
 /*
  * Collection of FHIRPath
@@ -46,7 +46,7 @@ export function empty(input: any[]): boolean {
  */
 export function exists(input: any[], criteria?: Atom): boolean {
   if (criteria) {
-    return input.filter(e => !!criteria.eval(e)).length > 0;
+    return input.filter(e => toJsBoolean(criteria.eval(e))).length > 0;
   } else {
     return input.length > 0;
   }
@@ -65,12 +65,7 @@ export function exists(input: any[], criteria?: Atom): boolean {
  * @returns True if for every element in the input collection, criteria evaluates to true.
  */
 export function all(input: any[], criteria: Atom): boolean {
-  for (const value of input) {
-    if (!criteria.eval(value)) {
-      return false;
-    }
-  }
-  return true;
+  return input.every(e => toJsBoolean(criteria.eval(e)));
 }
 
 /**
@@ -246,20 +241,7 @@ export function isDistinct(input: any[]): boolean {
  * @returns A collection containing only those elements in the input collection for which the stated criteria expression evaluates to true.
  */
 export function where(input: any[], criteria: Atom): any[] {
-  // console.log('where', input, criteria);
-  // input.forEach(e => {
-  //   console.log('input.forEach', e, criteria.eval(e));
-  //   // console.log('input.forEach', e, toBoolean(criteria.eval(e)));
-  // });
-  // return input.filter(e => toBoolean(criteria.eval(e)));
-  // return input.filter(e => criteria.eval(e));
-  const overallResult = input.filter(e => {
-    const result = criteria.eval(e);
-    // console.log('where', e, result);
-    return result.length === 1 && result[0] === true;
-  });
-  // console.log('where', overallResult);
-  return overallResult;
+  return input.filter(e => toJsBoolean(criteria.eval(e)));
 }
 
 /**
@@ -840,7 +822,6 @@ export function indexOf(input: any[], substringAtom: Atom): number[] {
  * @returns The index of the substring.
  */
 export function substring(input: any[], startAtom: Atom, lengthAtom?: Atom): string[] {
-  // console.log('substring', input, startAtom, lengthAtom);
   return applyStringFunc(
     (str, start, length) => (start < 0 || start >= str.length) ? undefined : str.substr(start, length),
     input,
@@ -1320,8 +1301,6 @@ function applyStringFunc<T>(func: (str: string, ...args: any[]) => T | undefined
   if (typeof value !== 'string') {
     throw new Error('String function cannot be called with non-string');
   }
-  // console.log('args before', argsAtoms);
-  // console.log('args after', argsAtoms.map(atom => atom && atom.eval(undefined)));
   const result = func(value, ...argsAtoms.map(atom => atom && atom.eval(undefined)));
   return result === undefined ? [] : [result];
 }

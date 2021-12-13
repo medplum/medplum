@@ -44,11 +44,13 @@ export function isFalsy(obj: any): boolean {
 }
 
 /**
- * Converts any object into a boolean.
+ * Converts any object into a JavaScript boolean.
+ * Note that this is different than the FHIRPath "toBoolean",
+ * which has particular semantics around arrays, empty arrays, and type conversions.
  * @param obj Any value or array of values.
  * @returns The converted boolean value according to FHIRPath rules.
  */
-export function toBoolean(obj: any): boolean {
+export function toJsBoolean(obj: any): boolean {
   if (Array.isArray(obj)) {
     return obj.length === 0 ? false : !!obj[0];
   }
