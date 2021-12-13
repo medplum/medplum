@@ -67,10 +67,6 @@ class Tokenizer {
       return this.consumeSingleLineComment();
     }
 
-    if (c === '-' && next.match(/\d/)) {
-      return this.consumeNumber();
-    }
-
     if (c === '\'') {
       return this.consumeString();
     }

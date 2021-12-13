@@ -49,8 +49,8 @@ describe('Tokenizer', () => {
     expect(tokenize('1')).toMatchObject([{ id: 'Number', value: '1' }]);
     expect(tokenize('1 ')).toMatchObject([{ id: 'Number', value: '1' }]);
     expect(tokenize('1.0')).toMatchObject([{ id: 'Number', value: '1.0' }]);
-    expect(tokenize('-1')).toMatchObject([{ id: 'Number', value: '-1' }]);
-    expect(tokenize('-1.0')).toMatchObject([{ id: 'Number', value: '-1.0' }]);
+    expect(tokenize('-1')).toMatchObject([{ id: '-', value: '-' }, { id: 'Number', value: '1' }]);
+    expect(tokenize('-1.0')).toMatchObject([{ id: '-', value: '-' }, { id: 'Number', value: '1.0' }]);
   });
 
   test('DateTime matching', () => {

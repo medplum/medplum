@@ -42,7 +42,7 @@ export class SymbolAtom implements Atom {
   constructor(public readonly name: string) { }
   eval(context: any): any {
     if (this.name === '$this') {
-      console.log('SymbolAtom eval $this', context);
+      return context;
     }
     return applyMaybeArray(context, e => {
       if (e && typeof e === 'object') {

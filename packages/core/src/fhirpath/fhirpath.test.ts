@@ -597,7 +597,7 @@ describe('FHIRPath Test Suite', () => {
 
   });
 
-  describe.skip('testDollar', () => {
+  describe('testDollar', () => {
 
     test('testDollarThis1', () => {
       expect(() => parseFhirPath("Patient.name.given.where(substring($this.length()-3) = 'out')").eval(patient)).not.toThrow();
@@ -615,7 +615,7 @@ describe('FHIRPath Test Suite', () => {
       expect(() => parseFhirPath("Patient.name.skip(3).given").eval(patient)).not.toThrow();
     });
 
-    test('testDollarOrderNotAllowed', () => {
+    test.skip('testDollarOrderNotAllowed', () => {
       expect(() => parseFhirPath("Patient.children().skip(1)").eval(patient)).toThrow();
     });
 
