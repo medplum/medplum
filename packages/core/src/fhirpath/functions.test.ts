@@ -1,8 +1,8 @@
 import { Atom, LiteralAtom } from './atoms';
-import { functions } from './functions';
+import * as functions from './functions';
 
 const isEven: Atom = {
-  eval: num => num % 2 === 0
+  eval: num => [num % 2 === 0]
 };
 
 describe('FHIRPath functions', () => {
@@ -238,7 +238,7 @@ describe('FHIRPath functions', () => {
     expect(functions.toBoolean(['true'])).toEqual([true]);
     expect(functions.toBoolean(['false'])).toEqual([false]);
     expect(functions.toBoolean(['xyz'])).toEqual([]);
-    expect(functions.toBoolean([{}])).toEqual([true]);
+    expect(functions.toBoolean([{}])).toEqual([]);
   });
 
   test('convertsToBoolean', () => {
@@ -250,7 +250,7 @@ describe('FHIRPath functions', () => {
     expect(functions.convertsToBoolean(['true'])).toEqual([true]);
     expect(functions.convertsToBoolean(['false'])).toEqual([true]);
     expect(functions.convertsToBoolean(['xyz'])).toEqual([false]);
-    expect(functions.convertsToBoolean([{}])).toEqual([true]);
+    expect(functions.convertsToBoolean([{}])).toEqual([false]);
   });
 
   test('toInteger', () => {

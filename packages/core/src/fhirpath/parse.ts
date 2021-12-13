@@ -1,7 +1,7 @@
 import { Quantity } from '../fhir';
 import { AndAtom, ArithemticOperatorAtom, Atom, BinaryOperatorAtom, ComparisonOperatorAtom, ConcatAtom, ContainsAtom, DotAtom, EmptySetAtom, EqualsAtom, EquivalentAtom, FhirPathAtom, FunctionAtom, InAtom, IsAtom, LiteralAtom, NotEqualsAtom, NotEquivalentAtom, OrAtom, SymbolAtom, UnaryOperatorAtom, UnionAtom, XorAtom } from './atoms';
 import { parseDateString } from './date';
-import { functions } from './functions';
+import * as functions from './functions';
 import { Token, tokenize } from './tokenize';
 
 interface PrefixParselet {
@@ -173,7 +173,7 @@ const FUNCTION_CALL_PARSELET: InfixParselet = {
       parser.match(',');
     }
 
-    return new FunctionAtom(left.name, args, functions[left.name]);
+    return new FunctionAtom(left.name, args, (functions as Record<string, (...args: any[]) => any>)[left.name]);
   },
   precedence: Precedence.FunctionCall
 };

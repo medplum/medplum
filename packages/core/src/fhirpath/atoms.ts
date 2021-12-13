@@ -41,20 +41,21 @@ export class LiteralAtom implements Atom {
 export class SymbolAtom implements Atom {
   constructor(public readonly name: string) { }
   eval(context: any): any {
+    if (this.name === '$this') {
+      console.log('SymbolAtom eval $this', context);
+    }
     return applyMaybeArray(context, e => {
-      if (e) {
+      if (e && typeof e === 'object') {
         if (e.resourceType === this.name) {
           return e;
         }
-        if (typeof e === 'object') {
-          if (this.name in e) {
-            return e[this.name];
-          }
-          if (this.name === 'value') {
-            const valuePropertyName = Object.keys(e).find(k => k.startsWith('value'));
-            if (valuePropertyName) {
-              return e[valuePropertyName];
-            }
+        if (this.name in e) {
+          return e[this.name];
+        }
+        if (this.name === 'value') {
+          const valuePropertyName = Object.keys(e).find(k => k.startsWith('value'));
+          if (valuePropertyName) {
+            return e[valuePropertyName];
           }
         }
       }
@@ -241,6 +242,7 @@ export class EqualsAtom implements Atom {
   eval(context: any): any {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
+    // console.log('equals', leftValue, rightValue);
     if (Array.isArray(leftValue) && Array.isArray(rightValue)) {
       return fhirPathEquals(leftValue.flat(), rightValue);
     }
@@ -262,7 +264,8 @@ export class NotEqualsAtom implements Atom {
     } else {
       result = applyMaybeArray(leftValue, e => fhirPathEquals(e, rightValue));
     }
-    return !toBoolean(result);
+    // return !toBoolean(result);
+    return result.map(e => !e);
   }
 }
 
@@ -386,3 +389,7 @@ export class FunctionAtom implements Atom {
     return this.impl(ensureArray(context), ...this.args);
   }
 }
+
+// export class ThisAtom implements Atom {
+
+// }
