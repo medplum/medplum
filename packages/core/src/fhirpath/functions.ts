@@ -10,7 +10,7 @@ import { ensureArray, fhirPathIs, isQuantity, removeDuplicates, toJsBoolean } fr
 /**
  * Temporary placholder for unimplemented methods.
  */
-const stub = (input: any[]) => input;
+const stub = () => [];
 
 /*
  * 5.1 Existence
@@ -255,7 +255,9 @@ export function where(input: any[], criteria: Atom): any[] {
  *
  * See: http://hl7.org/fhirpath/#selectprojection-expression-collection
  */
-export const select = stub;
+export function select(input: any[], criteria: Atom): any[] {
+  return criteria.eval(input);
+}
 
 /**
  * A version of select that will repeat the projection and add it to the output

@@ -903,8 +903,8 @@ describe('FHIRPath Test Suite', () => {
       expect(() => parseFhirPath("Patient.name.given != {}").eval(patient)).not.toThrow();
     });
 
-    test.skip('testExpressions', () => {
-      expect(parseFhirPath("Patient.name.select(given | family).distinct()").eval(patient)).toEqual(["Peter", "James", "Chalmers", "Jim", "Windsor"]);
+    test('testExpressions', () => {
+      expect(parseFhirPath("Patient.name.select(given | family).distinct()").eval(patient)).toEqual(["Peter", "James", "Jim", "Chalmers", "Windsor"]);
     });
 
     test('testExpressionsEqual', () => {
