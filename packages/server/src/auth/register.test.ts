@@ -90,6 +90,18 @@ describe('Register', () => {
       .set('Authorization', 'Bearer ' + res.body.accessToken);
 
     expect(res2.status).toBe(403);
+
+    const res3 = await request(app)
+      .post(`/fhir/R4/Project`)
+      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .type('json')
+      .send({
+        resourceType: 'Project',
+        name: 'Project 1',
+        owner: { reference: 'Project/' + randomUUID() },
+      });
+
+    expect(res3.status).toBe(403);
   });
 
   test('Cannot access ProjectMembership resource', async () => {
@@ -112,6 +124,19 @@ describe('Register', () => {
       .set('Authorization', 'Bearer ' + res.body.accessToken);
 
     expect(res2.status).toBe(403);
+
+    const res3 = await request(app)
+      .post(`/fhir/R4/ProjectMembership`)
+      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .type('json')
+      .send({
+        resourceType: 'ProjectMembership',
+        project: { reference: 'Project/' + randomUUID() },
+        user: { reference: 'Project/' + randomUUID() },
+        profile: { reference: 'Project/' + randomUUID() },
+      });
+
+    expect(res3.status).toBe(403);
   });
 
   test('Can access Practitioner resource', async () => {
