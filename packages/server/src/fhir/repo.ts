@@ -896,6 +896,9 @@ export class Repository {
     if (this.isSystem() || this.isAdmin()) {
       return true;
     }
+    if (protectedResourceTypes.includes(resourceType)) {
+      return false;
+    }
     if (publicResourceTypes.includes(resourceType)) {
       return true;
     }
@@ -920,6 +923,9 @@ export class Repository {
   private canWriteResourceType(resourceType: string): boolean {
     if (this.isSystem() || this.isAdmin()) {
       return true;
+    }
+    if (protectedResourceTypes.includes(resourceType)) {
+      return false;
     }
     if (publicResourceTypes.includes(resourceType)) {
       return false;

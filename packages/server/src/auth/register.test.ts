@@ -89,7 +89,54 @@ describe('Register', () => {
       .get(`/fhir/R4/${res.body.project.reference}`)
       .set('Authorization', 'Bearer ' + res.body.accessToken);
 
-    expect(res2.status).toBe(404);
+    expect(res2.status).toBe(403);
+
+    const res3 = await request(app)
+      .post(`/fhir/R4/Project`)
+      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .type('json')
+      .send({
+        resourceType: 'Project',
+        name: 'Project 1',
+        owner: { reference: 'Project/' + randomUUID() },
+      });
+
+    expect(res3.status).toBe(403);
+  });
+
+  test('Cannot access ProjectMembership resource', async () => {
+    const res = await request(app)
+      .post('/auth/register')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'Hamilton Project',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#'
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.project.reference).toBeDefined();
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/ProjectMembership`)
+      .set('Authorization', 'Bearer ' + res.body.accessToken);
+
+    expect(res2.status).toBe(403);
+
+    const res3 = await request(app)
+      .post(`/fhir/R4/ProjectMembership`)
+      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .type('json')
+      .send({
+        resourceType: 'ProjectMembership',
+        project: { reference: 'Project/' + randomUUID() },
+        user: { reference: 'Project/' + randomUUID() },
+        profile: { reference: 'Project/' + randomUUID() },
+      });
+
+    expect(res3.status).toBe(403);
   });
 
   test('Can access Practitioner resource', async () => {

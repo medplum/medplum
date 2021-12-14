@@ -44,9 +44,6 @@ export async function createProjectMembership(
   logger.info('Create project membership: ' + project.name);
   const [outcome, result] = await repo.createResource<ProjectMembership>({
     resourceType: 'ProjectMembership',
-    meta: {
-      project: project.id
-    },
     project: createReference(project),
     user: createReference(user),
     profile: createReference(practitioner),
