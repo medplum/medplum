@@ -72,6 +72,13 @@ describe('Tokenizer', () => {
     expect(tokenize('')).toEqual([]);
   });
 
+  test('String escape sequence', () => {
+    expect(tokenize("'\\\\\\/\\f\\r\\n\\t\\\"\\`\\'\\u002a'")).toEqual([{
+      id: 'String',
+      value: "\\\\\\/\\f\\r\\n\\t\\\"\\`\\'\\u002a"
+    }]);
+  });
+
   test('FHIR Path', () => {
     const matches = tokenize('Patient.name.given');
     expect(matches).toMatchObject([

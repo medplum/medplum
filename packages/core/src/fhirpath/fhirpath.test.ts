@@ -659,7 +659,7 @@ describe('FHIRPath Test Suite', () => {
       expect(parseFhirPath("'test'.convertsToString()").eval(patient)).toEqual([true]);
     });
 
-    test.skip('testLiteralStringEscapes', () => {
+    test('testLiteralStringEscapes', () => {
       expect(parseFhirPath("'\\\\\\/\\f\\r\\n\\t\\\"\\`\\'\\u002a'.convertsToString()").eval(patient)).toEqual([true]);
     });
 

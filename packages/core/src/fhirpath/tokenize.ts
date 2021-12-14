@@ -111,7 +111,7 @@ class Tokenizer {
 
   private consumeString(): Token {
     this.pos++;
-    const result = buildToken('String', this.consumeWhile(() => this.curr() !== '\''));
+    const result = buildToken('String', this.consumeWhile(() => this.prev() === '\\' || this.curr() !== '\''));
     this.pos++;
     return result;
   }
@@ -203,6 +203,10 @@ class Tokenizer {
 
   private curr(): string {
     return this.str[this.pos];
+  }
+
+  private prev(): string {
+    return this.str[this.pos - 1] ?? '';
   }
 
   private peek(): string {
