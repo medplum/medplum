@@ -1,5 +1,6 @@
 import { Quantity } from '../fhir/Quantity';
 import { Atom } from './atoms';
+import { parseDateString } from './date';
 import { ensureArray, fhirPathIs, isQuantity, removeDuplicates, toJsBoolean } from './utils';
 
 /*
@@ -492,16 +493,18 @@ export function toBoolean(input: any[]): boolean[] {
     return [value];
   }
   if (typeof value === 'number') {
-    return [!!value];
+    if (value === 0 || value === 1) {
+      return [!!value];
+    }
   }
   if (typeof value === 'string') {
-    if (['true', 't', 'yes', 'y', '1', '1.0'].includes(value)) {
+    const lower = value.toLowerCase();
+    if (['true', 't', 'yes', 'y', '1', '1.0'].includes(lower)) {
       return [true];
     }
-    if (['false', 'f', 'no', 'n', '0', '0.0'].includes(value)) {
+    if (['false', 'f', 'no', 'n', '0', '0.0'].includes(lower)) {
       return [false];
     }
-    return [];
   }
   return [];
 }
@@ -596,13 +599,111 @@ export function convertsToInteger(input: any[]): boolean[] {
   return [toInteger(input).length === 1];
 }
 
-export const toDate = stub;
+/**
+ * If the input collection contains a single item, this function will return a single date if:
+ *   1) the item is a Date
+ *   2) the item is a DateTime
+ *   3) the item is a String and is convertible to a Date
+ *
+ * If the item is not one of the above types, the result is empty.
+ *
+ * If the item is a String, but the string is not convertible to a Date (using the format YYYY-MM-DD), the result is empty.
+ *
+ * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+ *
+ * If the input collection is empty, the result is empty.
+ *
+ * See: https://hl7.org/fhirpath/#todate-date
+ */
+export function toDate(input: any[]): string[] {
+  if (input.length === 0) {
+    return [];
+  }
+  const [value] = validateInput(input, 1);
+  if (typeof value === 'string' && value.match(/^\d{4}(-\d{2}(-\d{2})?)?/)) {
+    return [parseDateString(value)];
+  }
+  return [];
+}
 
-export const convertsToDate = stub;
+/**
+ * If the input collection contains a single item, this function will return true if:
+ *   1) the item is a Date
+ *   2) the item is a DateTime
+ *   3) the item is a String and is convertible to a Date
+ *
+ * If the item is not one of the above types, or is not convertible to a Date (using the format YYYY-MM-DD), the result is false.
+ *
+ * If the item contains a partial date (e.g. '2012-01'), the result is a partial date.
+ *
+ * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+ *
+ * If the input collection is empty, the result is empty.
+ *
+ * See: https://hl7.org/fhirpath/#convertstodate-boolean
+ */
+export function convertsToDate(input: any[]): boolean[] {
+  if (input.length === 0) {
+    return [];
+  }
+  return [toDate(input).length === 1];
+}
 
-export const toDateTime = stub;
+/**
+ * If the input collection contains a single item, this function will return a single datetime if:
+ *   1) the item is a DateTime
+ *   2) the item is a Date, in which case the result is a DateTime with the year, month, and day of the Date, and the time components empty (not set to zero)
+ *   3) the item is a String and is convertible to a DateTime
+ *
+ * If the item is not one of the above types, the result is empty.
+ *
+ * If the item is a String, but the string is not convertible to a DateTime (using the format YYYY-MM-DDThh:mm:ss.fff(+|-)hh:mm), the result is empty.
+ *
+ * If the item contains a partial datetime (e.g. '2012-01-01T10:00'), the result is a partial datetime.
+ *
+ * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+ *
+ * If the input collection is empty, the result is empty.
 
-export const convertsToDateTime = stub;
+ * See: https://hl7.org/fhirpath/#todatetime-datetime
+ *
+ * @param input
+ * @returns
+ */
+export function toDateTime(input: any[]): string[] {
+  if (input.length === 0) {
+    return [];
+  }
+  const [value] = validateInput(input, 1);
+  if (typeof value === 'string' && value.match(/^\d{4}(-\d{2}(-\d{2})?)?/)) {
+    return [parseDateString(value)];
+  }
+  return [];
+}
+
+/**
+ * If the input collection contains a single item, this function will return true if:
+ *   1) the item is a DateTime
+ *   2) the item is a Date
+ *   3) the item is a String and is convertible to a DateTime
+ *
+ * If the item is not one of the above types, or is not convertible to a DateTime (using the format YYYY-MM-DDThh:mm:ss.fff(+|-)hh:mm), the result is false.
+ *
+ * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+ *
+ * If the input collection is empty, the result is empty.
+ *
+ * See: https://hl7.org/fhirpath/#convertstodatetime-boolean
+ *
+ * @param input
+ * @returns
+ */
+export function convertsToDateTime(input: any[]): boolean[] {
+  if (input.length === 0) {
+    return [];
+  }
+  return [toDateTime(input).length === 1];
+}
 
 /**
  * If the input collection contains a single item, this function will return a single decimal if:
@@ -630,7 +731,7 @@ export function toDecimal(input: any[]): number[] {
   if (typeof value === 'number') {
     return [value];
   }
-  if (typeof value === 'string' && value.match(/-?\d{1,9}(\.\d{1,9})?/)) {
+  if (typeof value === 'string' && value.match(/^-?\d{1,9}(\.\d{1,9})?$/)) {
     return [parseFloat(input[0])];
   }
   if (typeof value === 'boolean') {
@@ -688,7 +789,7 @@ export function toQuantity(input: any[]): Quantity[] {
   if (typeof value === 'number') {
     return [{ value, unit: '1' }];
   }
-  if (typeof value === 'string' && value.match(/-?\d{1,9}(\.\d{1,9})?/)) {
+  if (typeof value === 'string' && value.match(/^-?\d{1,9}(\.\d{1,9})?/)) {
     return [{ value: parseFloat(input[0]), unit: '1' }];
   }
   if (typeof value === 'boolean') {
@@ -748,6 +849,9 @@ export function toString(input: any[]): string[] {
     return [];
   }
   const [value] = validateInput(input, 1);
+  if (isQuantity(value)) {
+    return [`${value.value} '${value.unit}'`];
+  }
   return [value.toString()];
 }
 
@@ -778,9 +882,59 @@ export function convertsToString(input: any[]): boolean[] {
   return [toString(input).length === 1];
 }
 
-export const toTime = stub;
+/**
+ * If the input collection contains a single item, this function will return a single time if:
+ *   1) the item is a Time
+ *   2) the item is a String and is convertible to a Time
+ *
+ * If the item is not one of the above types, the result is empty.
+ *
+ * If the item is a String, but the string is not convertible to a Time (using the format hh:mm:ss.fff(+|-)hh:mm), the result is empty.
+ *
+ * If the item contains a partial time (e.g. '10:00'), the result is a partial time.
+ *
+ * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+ *
+ * If the input collection is empty, the result is empty.
+ *
+ * See: https://hl7.org/fhirpath/#totime-time
+ *
+ * @param input
+ * @returns
+ */
+export function toTime(input: any[]): string[] {
+  if (input.length === 0) {
+    return [];
+  }
+  const [value] = validateInput(input, 1);
+  if (typeof value === 'string' && value.match(/^\d{2}(:\d{2}(:\d{2})?)?/)) {
+    return [parseDateString('T' + value)];
+  }
+  return [];
+}
 
-export const convertsToTime = stub;
+/**
+ * If the input collection contains a single item, this function will return true if:
+ *   1) the item is a Time
+ *   2) the item is a String and is convertible to a Time
+ *
+ * If the item is not one of the above types, or is not convertible to a Time (using the format hh:mm:ss.fff(+|-)hh:mm), the result is false.
+ *
+ * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+ *
+ * If the input collection is empty, the result is empty.
+ *
+ * See: https://hl7.org/fhirpath/#convertstotime-boolean
+ *
+ * @param input
+ * @returns
+ */
+export function convertsToTime(input: any[]): boolean[] {
+  if (input.length === 0) {
+    return [];
+  }
+  return [toTime(input).length === 1];
+}
 
 /*
  * 5.6. String Manipulation.
@@ -1193,6 +1347,28 @@ export function today(): string[] {
 }
 
 /*
+ * 6.3 Types
+ */
+
+/**
+ * The is() function is supported for backwards compatibility with previous
+ * implementations of FHIRPath. Just as with the is keyword, the type argument
+ * is an identifier that must resolve to the name of a type in a model.
+ *
+ * For implementations with compile-time typing, this requires special-case
+ * handling when processing the argument to treat it as a type specifier rather
+ * than an identifier expression:
+ *
+ * @param input
+ * @param typeAtom
+ * @returns
+ */
+export function is(input: any[], typeAtom: Atom): boolean[] {
+  const typeName = typeAtom.toString();
+  return input.map(value => fhirPathIs(value, typeName));
+}
+
+/*
  * 6.5 Boolean logic
  */
 
@@ -1275,11 +1451,6 @@ export function type(input: any[]): any[] {
     }
     return null;
   });
-}
-
-export function is(input: any[], typeAtom: Atom): boolean[] {
-  const typeName = typeAtom.toString();
-  return input.map(value => fhirPathIs(value, typeName));
 }
 
 export function conformsTo(input: any[], systemAtom: Atom): boolean[] {

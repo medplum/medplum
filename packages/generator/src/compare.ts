@@ -84,6 +84,8 @@ pre {
 <tbody>
 `];
 
+const counts = [[0, 0, 0], [0, 0, 0]];
+
 function getName(obj: any): string {
   return obj.attr['@_description'] || obj.attr['@_name'];
 }
@@ -155,13 +157,29 @@ function processTest(test: any): void {
   const specOutput = JSON.stringify(JSON.parse(outputStr ?? 'null'), undefined, 2);
   const fhirpathOutput = getFhirpathOutput(resource, expr);
   const medplumOutput = getMedplumOutput(resource, expr);
-  const fhirpathClassName = (fhirpathOutput === specOutput || anyOutput) ? 'good' : 'bad';
 
-  let medplumClassName = 'bad';
+  let fhirpathClassName;
+  if (fhirpathOutput === specOutput || (medplumOutput === fhirpathOutput && (anyOutput || !valid))) {
+    fhirpathClassName = 'good';
+    counts[0][0]++;
+  } else if (fhirpathOutput === specOutput || medplumOutput === fhirpathOutput || anyOutput || !valid) {
+    fhirpathClassName = 'mixed';
+    counts[0][1]++;
+  } else {
+    fhirpathClassName = 'bad';
+    counts[0][2]++;
+  }
+
+  let medplumClassName;
   if (medplumOutput === specOutput || (medplumOutput === fhirpathOutput && (anyOutput || !valid))) {
     medplumClassName = 'good';
+    counts[1][0]++;
   } else if (medplumOutput === specOutput || medplumOutput === fhirpathOutput || anyOutput || !valid) {
     medplumClassName = 'mixed';
+    counts[1][1]++;
+  } else {
+    medplumClassName = 'bad';
+    counts[1][2]++;
   }
 
   if (!valid) {
@@ -211,5 +229,8 @@ function unescapeXml(str: string): string {
 }
 
 processTests(jsonObj.tests);
+lines.push(`<tr><td></td><td></td><td>Good</td><td>${counts[0][0]}</td><td>${counts[1][0]}</td></tr>`);
+lines.push(`<tr><td></td><td></td><td>Mixed</td><td>${counts[0][1]}</td><td>${counts[1][1]}</td></tr>`);
+lines.push(`<tr><td></td><td></td><td>Bad</td><td>${counts[0][2]}</td><td>${counts[1][2]}</td></tr>`);
 lines.push('</tbody', '</table', '</body', '</html>');
 fs.writeFileSync('compare.html', lines.join('\n'));

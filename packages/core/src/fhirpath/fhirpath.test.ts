@@ -941,7 +941,7 @@ describe('FHIRPath Test Suite', () => {
 
   });
 
-  describe.skip('testTypes', () => {
+  describe('testTypes', () => {
 
     test('testStringYearConvertsToDate', () => {
       expect(parseFhirPath("'2015'.convertsToDate()").eval(patient)).toEqual([true]);
@@ -1071,7 +1071,7 @@ describe('FHIRPath Test Suite', () => {
       expect(parseFhirPath("1.convertsToDecimal()").eval(patient)).toEqual([true]);
     });
 
-    test('testIntegerLiteralIsNotDecimal', () => {
+    test.skip('testIntegerLiteralIsNotDecimal', () => {
       expect(parseFhirPath("1.is(Decimal).not()").eval(patient)).toEqual([true]);
     });
 
@@ -1163,11 +1163,11 @@ describe('FHIRPath Test Suite', () => {
       expect(parseFhirPath("'1 \\'wk\\''.convertsToQuantity()").eval(patient)).toEqual([true]);
     });
 
-    test('testStringQuantityWeekConvertsToQuantityFalse', () => {
+    test.skip('testStringQuantityWeekConvertsToQuantityFalse', () => {
       expect(parseFhirPath("'1 wk'.convertsToQuantity().not()").eval(patient)).toEqual([true]);
     });
 
-    test('testStringDecimalLiteralConvertsToQuantityFalse', () => {
+    test.skip('testStringDecimalLiteralConvertsToQuantityFalse', () => {
       expect(parseFhirPath("'1.a'.convertsToQuantity().not()").eval(patient)).toEqual([true]);
     });
 
@@ -1195,7 +1195,7 @@ describe('FHIRPath Test Suite', () => {
       expect(parseFhirPath("1.0.toQuantity() = 1.0 '1'").eval(patient)).toEqual([true]);
     });
 
-    test('testStringIntegerLiteralToQuantity', () => {
+    test.skip('testStringIntegerLiteralToQuantity', () => {
       expect(parseFhirPath("'1'.toQuantity()").eval(patient)).toEqual(["1 '1'"]);
     });
 
@@ -1304,23 +1304,23 @@ describe('FHIRPath Test Suite', () => {
     });
 
     test('testIntegerLiteralToString', () => {
-      expect(parseFhirPath("1.toString()").eval(patient)).toEqual([1]);
+      expect(parseFhirPath("1.toString()").eval(patient)).toEqual(['1']);
     });
 
     test('testNegativeIntegerLiteralToString', () => {
-      expect(parseFhirPath("(-1).toString()").eval(patient)).toEqual([-1]);
+      expect(parseFhirPath("(-1).toString()").eval(patient)).toEqual(['-1']);
     });
 
     test('testDecimalLiteralToString', () => {
-      expect(parseFhirPath("1.0.toString()").eval(patient)).toEqual([1]);
+      expect(parseFhirPath("1.0.toString()").eval(patient)).toEqual(['1']);
     });
 
     test('testStringLiteralToString', () => {
-      expect(parseFhirPath("'true'.toString()").eval(patient)).toEqual([true]);
+      expect(parseFhirPath("'true'.toString()").eval(patient)).toEqual(['true']);
     });
 
     test('testBooleanLiteralToString', () => {
-      expect(parseFhirPath("true.toString()").eval(patient)).toEqual([true]);
+      expect(parseFhirPath("true.toString()").eval(patient)).toEqual(['true']);
     });
 
     test('testQuantityLiteralWkToString', () => {

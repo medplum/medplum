@@ -184,6 +184,8 @@ function parseQuantity(str: string): Quantity {
   let unit = parts[1];
   if (unit && unit.startsWith('\'') && unit.endsWith('\'')) {
     unit = unit.substring(1, unit.length - 1);
+  } else {
+    unit = '{' + unit + '}';
   }
   return { value, unit };
 }

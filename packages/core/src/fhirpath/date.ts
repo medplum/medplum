@@ -6,7 +6,7 @@ export function parseDateString(str: string): string {
     return str + 'T00:00:00.000Z'.substring(str.length);
   }
 
-  if (str.length === 10) {
+  if (str.length <= 10) {
     // If a local date (i.e., "2021-01-01"),
     // then return as-is.
     return str;

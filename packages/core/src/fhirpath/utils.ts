@@ -158,6 +158,10 @@ export function fhirPathIs(value: any, desiredType: any): boolean {
   switch (desiredType) {
     case 'Boolean':
       return typeof value === 'boolean';
+    case 'Decimal':
+    case 'Integer':
+    case 'System.Integer':
+      return typeof value === 'number';
     case 'Date':
       return typeof value === 'string' && !!value.match(/^\d{4}(-\d{2}(-\d{2})?)?/);
     case 'DateTime':
