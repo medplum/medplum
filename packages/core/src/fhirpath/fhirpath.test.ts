@@ -1425,7 +1425,7 @@ describe('FHIRPath Test Suite', () => {
 
   });
 
-  describe.skip('testCollectionBoolean', () => {
+  describe('testCollectionBoolean', () => {
 
     test('testCollectionBoolean1', () => {
       expect(() => parseFhirPath("iif(1 | 2 | 3, true, false)").eval(patient)).toThrow();

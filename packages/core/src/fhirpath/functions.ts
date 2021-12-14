@@ -466,7 +466,44 @@ export function combine(input: any[], other: Atom): any[] {
  * See: https://hl7.org/fhirpath/#conversion
  */
 
-export const iif = stub;
+/**
+ * The iif function in FHIRPath is an immediate if,
+ * also known as a conditional operator (such as C’s ? : operator).
+ *
+ * The criterion expression is expected to evaluate to a Boolean.
+ *
+ * If criterion is true, the function returns the value of the true-result argument.
+ *
+ * If criterion is false or an empty collection, the function returns otherwise-result,
+ * unless the optional otherwise-result is not given, in which case the function returns an empty collection.
+ *
+ * Note that short-circuit behavior is expected in this function. In other words,
+ * true-result should only be evaluated if the criterion evaluates to true,
+ * and otherwise-result should only be evaluated otherwise. For implementations,
+ * this means delaying evaluation of the arguments.
+ *
+ * @param input
+ * @param criterion
+ * @param trueResult
+ * @param otherwiseResult
+ * @returns
+ */
+export function iif(input: any[], criterion: Atom, trueResult: Atom, otherwiseResult?: Atom): any[] {
+  const evalResult = criterion.eval(input);
+  if (evalResult.length > 1 || (evalResult.length === 1 && typeof evalResult[0] !== 'boolean')) {
+    throw new Error('Expected criterion to evaluate to a Boolean');
+  }
+
+  if (toJsBoolean(evalResult)) {
+    return trueResult.eval(input);
+  }
+
+  if (otherwiseResult) {
+    return otherwiseResult.eval(input);
+  }
+
+  return [];
+}
 
 /**
  * Converts an input collection to a boolean.
