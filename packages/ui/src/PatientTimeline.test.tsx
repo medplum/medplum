@@ -1,4 +1,4 @@
-import { Bundle, Communication, Media, Patient } from '@medplum/core';
+import { Bundle, Communication, Media, Patient, Practitioner } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
@@ -20,6 +20,15 @@ const patientHistory: Bundle = {
   type: 'history',
   entry: [{
     resource: patient
+  }]
+};
+
+const practitioner: Practitioner = {
+  resourceType: 'Practitioner',
+  id: '123',
+  name: [{
+    given: ['John'],
+    family: 'Doe',
   }]
 };
 
@@ -90,6 +99,32 @@ const serviceRequest: Bundle = {
   ]
 };
 
+const serviceRequestStructureBundle: Bundle = {
+  resourceType: 'Bundle',
+  entry: [{
+    resource: {
+      resourceType: 'StructureDefinition',
+      name: 'ServiceRequest',
+      snapshot: {
+        element: [
+          {
+            path: 'ServiceRequest.id',
+            type: [{
+              code: 'code'
+            }]
+          },
+          {
+            path: 'ServiceRequest.code',
+            type: [{
+              code: 'CodeableConcept'
+            }]
+          }
+        ]
+      }
+    }
+  }]
+};
+
 const newComment: Communication = {
   resourceType: 'Communication',
   id: randomUUID(),
@@ -116,6 +151,9 @@ const medplum = new MockClient({
   'fhir/R4/Patient/123': {
     'GET': patient
   },
+  'fhir/R4/Practitioner/123': {
+    'GET': practitioner
+  },
   'fhir/R4': {
     'POST': {
       resourceType: 'Bundle',
@@ -133,6 +171,9 @@ const medplum = new MockClient({
   },
   'fhir/R4/Media': {
     'POST': newMedia
+  },
+  'fhir/R4/StructureDefinition?name:exact=ServiceRequest': {
+    'GET': serviceRequestStructureBundle
   },
 });
 
@@ -199,7 +240,7 @@ describe('PatientTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(4);
+    expect(items.length).toEqual(5);
   });
 
   test('Upload media', async () => {
@@ -225,7 +266,7 @@ describe('PatientTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(4);
+    expect(items.length).toEqual(5);
   });
 
 });
