@@ -1,4 +1,4 @@
-import { Attachment, createReference, getReferenceString, Group, Operator, Patient, ProfileResource, Reference, Resource, ServiceRequest } from '@medplum/core';
+import { Attachment, createReference, getReferenceString, Group, Patient, ProfileResource, Reference, Resource, ServiceRequest } from '@medplum/core';
 import React from 'react';
 import { ResourceTimeline } from './ResourceTimeline';
 
@@ -10,38 +10,36 @@ export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.
   return (
     <ResourceTimeline
       value={props.serviceRequest}
-      buildSearchRequests={(serviceRequest: Resource) => {
-        const serviceRequestReference = getReferenceString(serviceRequest);
-        return [
+      buildSearchRequests={(resource: Resource) => ({
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
           {
-            resourceType: 'Communication',
-            filters: [{
-              code: 'based-on',
-              operator: Operator.EQUALS,
-              value: serviceRequestReference
-            }],
-            count: 100
+            request: {
+              method: 'GET',
+              url: `${getReferenceString(resource)}/_history`
+            }
           },
           {
-            resourceType: 'Media',
-            filters: [{
-              code: 'based-on',
-              operator: Operator.EQUALS,
-              value: serviceRequestReference
-            }],
-            count: 100
+            request: {
+              method: 'GET',
+              url: `Communication?based-on=${getReferenceString(resource)}`
+            }
           },
           {
-            resourceType: 'DiagnosticReport',
-            filters: [{
-              code: 'based-on',
-              operator: Operator.EQUALS,
-              value: serviceRequestReference
-            }],
-            count: 100
+            request: {
+              method: 'GET',
+              url: `Media?based-on=${getReferenceString(resource)}`
+            }
+          },
+          {
+            request: {
+              method: 'GET',
+              url: `DiagnosticReport?based-on=${getReferenceString(resource)}`
+            }
           }
-        ];
-      }}
+        ]
+      })}
       createCommunication={(resource: ServiceRequest, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
         basedOn: [createReference(resource)],

@@ -1,4 +1,4 @@
-import { Attachment, AuditEvent, Bundle, BundleEntry, Communication, DiagnosticReport, Media, ProfileResource, Reference, Resource, SearchRequest, stringify } from '@medplum/core';
+import { Attachment, AuditEvent, Bundle, BundleEntry, Communication, DiagnosticReport, Media, ProfileResource, Reference, Resource, stringify } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
 import { AttachmentDisplay } from './AttachmentDisplay';
 import { Button } from './Button';
@@ -7,16 +7,17 @@ import { Form } from './Form';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { ResourceDiff } from './ResourceDiff';
+import { ResourceTable } from './ResourceTable';
 import { TextField } from './TextField';
 import { Timeline, TimelineItem } from './Timeline';
 import { UploadButton } from './UploadButton';
 import { useResource } from './useResource';
-import { sortBundleByDate, sortByDate } from './utils/format';
+import { sortByDate } from './utils/format';
 import './ResourceTimeline.css';
 
 export interface ResourceTimelineProps<T extends Resource> {
   value: T | Reference<T>;
-  buildSearchRequests: (resource: T) => SearchRequest[];
+  buildSearchRequests: (resource: T) => Bundle;
   createCommunication?: (resource: T, sender: ProfileResource, text: string) => Communication;
   createMedia?: (resource: T, operator: ProfileResource, attachment: Attachment) => Media;
 }
@@ -38,28 +39,33 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   function loadItems(): void {
     if (!resource) {
       setItems([]);
+      setHistory({} as Bundle);
       return;
     }
 
-    medplum.readHistory(resource.resourceType, resource.id as string).then(bundle => {
-      sortBundleByDate(bundle); // Sort oldest to newest
-      setHistory(bundle);
-      addBundle(bundle);
-    });
+    const bathRequest = props.buildSearchRequests(resource);
+    medplum.post('fhir/R4', bathRequest)
+      .then(batchResponse => {
+        const newItems = [];
 
-    props.buildSearchRequests(resource).forEach(searchRequest => {
-      medplum.search(searchRequest).then(addBundle);
-    });
-  }
+        for (const batchEntry of batchResponse.entry) {
+          const bundle = batchEntry.resource as Bundle;
 
-  /**
-   * Adds a bundle of resources to the timeline.
-   * @param bundle Bundle of new resources for the timeline.
-   */
-  function addBundle(bundle: Bundle): void {
-    if (bundle.entry) {
-      addResources(bundle.entry?.map(entry => entry.resource as Resource));
-    }
+          if (bundle.type === 'history') {
+            setHistory(bundle);
+          }
+
+          if (bundle.entry) {
+            for (const entry of bundle.entry) {
+              newItems.push(entry.resource as Resource);
+            }
+          }
+        }
+
+        sortByDate(newItems);
+        newItems.reverse();
+        setItems(newItems);
+      });
   }
 
   /**
@@ -148,7 +154,11 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
           case 'Media':
             return <MediaTimelineItem key={item.id} media={item} />;
           default:
-            return null;
+            return (
+              <TimelineItem key={item.id} resource={item} padding={true}>
+                <ResourceTable value={item} ignoreMissingValues={true} />
+              </TimelineItem>
+            );
         }
       })}
     </Timeline>
@@ -180,10 +190,10 @@ function HistoryTimelineItem(props: HistoryTimelineItemProps) {
 function getPrevious(history: Bundle, version: Resource): Resource | undefined {
   const entries = history.entry as BundleEntry[];
   const index = entries.findIndex(entry => entry.resource?.meta?.versionId === version.meta?.versionId);
-  if (index === 0) {
+  if (index >= entries.length - 1) {
     return undefined;
   }
-  return entries[index - 1].resource;
+  return entries[index + 1].resource;
 }
 
 interface CommunicationTimelineItemProps {

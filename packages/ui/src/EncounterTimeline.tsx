@@ -1,4 +1,4 @@
-import { Attachment, createReference, Encounter, getReferenceString, Operator, ProfileResource, Reference, Resource } from '@medplum/core';
+import { Attachment, createReference, Encounter, getReferenceString, ProfileResource, Reference, Resource } from '@medplum/core';
 import React from 'react';
 import { ResourceTimeline } from './ResourceTimeline';
 
@@ -10,29 +10,30 @@ export function EncounterTimeline(props: EncounterTimelineProps): JSX.Element {
   return (
     <ResourceTimeline
       value={props.encounter}
-      buildSearchRequests={(encounter: Resource) => {
-        const encounterReference = getReferenceString(encounter);
-        return [
+      buildSearchRequests={(resource: Resource) => ({
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
           {
-            resourceType: 'Communication',
-            filters: [{
-              code: 'encounter',
-              operator: Operator.EQUALS,
-              value: encounterReference
-            }],
-            count: 100
+            request: {
+              method: 'GET',
+              url: `${getReferenceString(resource)}/_history`
+            }
           },
           {
-            resourceType: 'Media',
-            filters: [{
-              code: 'encounter',
-              operator: Operator.EQUALS,
-              value: encounterReference
-            }],
-            count: 100
+            request: {
+              method: 'GET',
+              url: `Communication?encounter=${getReferenceString(resource)}`
+            }
+          },
+          {
+            request: {
+              method: 'GET',
+              url: `Media?encounter=${getReferenceString(resource)}`
+            }
           }
-        ];
-      }}
+        ]
+      })}
       createCommunication={(resource: Encounter, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
         encounter: createReference(resource),

@@ -125,6 +125,9 @@ class BatchProcessor {
     if (path.length === 3) {
       return this.processReadResource(path[1], path[2]);
     }
+    if (path.length === 4 && path[3] === '_history') {
+      return this.processReadHistory(path[1], path[2]);
+    }
     return buildBundleResponse(notFound);
   }
 
@@ -148,6 +151,18 @@ class BatchProcessor {
    */
   private async processReadResource(resourceType: string, id: string): Promise<BundleEntry> {
     const [outcome, resource] = await this.repo.readResource(resourceType, id);
+    return buildBundleResponse(outcome, resource, true);
+  }
+
+  /**
+   * Process a batch read history request.
+   * @param repo The FHIR respostory.
+   * @param resourceType The FHIR resource type.
+   * @param id The FHIR resource ID.
+   * @returns The bundle entry response.
+   */
+  private async processReadHistory(resourceType: string, id: string): Promise<BundleEntry> {
+    const [outcome, resource] = await this.repo.readHistory(resourceType, id);
     return buildBundleResponse(outcome, resource, true);
   }
 

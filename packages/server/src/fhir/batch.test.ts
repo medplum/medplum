@@ -705,4 +705,29 @@ describe('Batch', () => {
     }
   });
 
+  test('Process batch read history', async () => {
+    const [createOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ family: 'Foo', given: ['Bar'] }]
+    });
+    assertOk(createOutcome);
+
+    const [outcome, bundle] = await processBatch(repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'GET',
+            url: `Patient/${patient?.id}/_history`
+          }
+        }
+      ]
+    });
+
+    expect(isOk(outcome)).toBe(true);
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
+  });
+
 });

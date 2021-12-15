@@ -17,6 +17,7 @@ const subscription: Subscription = {
 
 const subscriptionHistory: Bundle = {
   resourceType: 'Bundle',
+  type: 'history',
   entry: [{
     resource: subscription
   }]
@@ -50,12 +51,16 @@ const medplum = new MockClient({
   'fhir/R4/Subscription/123': {
     'GET': subscription
   },
-  'fhir/R4/Subscription/123/_history': {
-    'GET': subscriptionHistory
+  'fhir/R4': {
+    'POST': {
+      resourceType: 'Bundle',
+      type: 'batch-response',
+      entry: [
+        { resource: subscriptionHistory },
+        { resource: auditEvents },
+      ]
+    }
   },
-  'fhir/R4/AuditEvent?_count=100&_sort=-_lastUpdated&entity=Subscription/123': {
-    'GET': auditEvents
-  }
 });
 
 describe('DefaultResourceTimeline', () => {

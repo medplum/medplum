@@ -21,6 +21,7 @@ const practitioner: Practitioner = {
 
 const practitionerHistory: Bundle = {
   resourceType: 'Bundle',
+  type: 'history',
   entry: [{
     resource: practitioner
   }]
@@ -73,6 +74,14 @@ const patient: Patient = {
   meta: {
     versionId: '456'
   }
+};
+
+const patientHistory: Bundle = {
+  resourceType: 'Bundle',
+  type: 'history',
+  entry: [{
+    resource: patient
+  }]
 };
 
 const patientSearchBundle: Bundle = {
@@ -143,6 +152,15 @@ const medplum = new MockClient({
   },
   'fhir/R4/DiagnosticReport/123': {
     'GET': diagnosticReport
+  },
+  'fhir/R4': {
+    'POST': {
+      resourceType: 'Bundle',
+      type: 'batch-response',
+      entry: [
+        { resource: patientHistory },
+      ]
+    }
   },
 });
 

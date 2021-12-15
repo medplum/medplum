@@ -1,4 +1,4 @@
-import { Bundle, Communication, Media, Patient } from '@medplum/core';
+import { Bundle, Communication, Media, Patient, Practitioner } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
@@ -17,8 +17,18 @@ const patient: Patient = {
 
 const patientHistory: Bundle = {
   resourceType: 'Bundle',
+  type: 'history',
   entry: [{
     resource: patient
+  }]
+};
+
+const practitioner: Practitioner = {
+  resourceType: 'Practitioner',
+  id: '123',
+  name: [{
+    given: ['John'],
+    family: 'Doe',
   }]
 };
 
@@ -65,6 +75,56 @@ const media: Bundle = {
   ]
 };
 
+const serviceRequest: Bundle = {
+  resourceType: 'Bundle',
+  entry: [
+    {
+      resource: {
+        resourceType: 'ServiceRequest',
+        id: randomUUID(),
+        meta: {
+          lastUpdated: new Date().toISOString(),
+          author: {
+            reference: 'Practitioner/123'
+          }
+        },
+        code: {
+          coding: [{
+            system: 'http://snomed.info/sct',
+            code: 'SERVICE_REQUEST_CODE',
+          }]
+        }
+      }
+    }
+  ]
+};
+
+const serviceRequestStructureBundle: Bundle = {
+  resourceType: 'Bundle',
+  entry: [{
+    resource: {
+      resourceType: 'StructureDefinition',
+      name: 'ServiceRequest',
+      snapshot: {
+        element: [
+          {
+            path: 'ServiceRequest.id',
+            type: [{
+              code: 'code'
+            }]
+          },
+          {
+            path: 'ServiceRequest.code',
+            type: [{
+              code: 'CodeableConcept'
+            }]
+          }
+        ]
+      }
+    }
+  }]
+};
+
 const newComment: Communication = {
   resourceType: 'Communication',
   id: randomUUID(),
@@ -91,20 +151,29 @@ const medplum = new MockClient({
   'fhir/R4/Patient/123': {
     'GET': patient
   },
-  'fhir/R4/Patient/123/_history': {
-    'GET': patientHistory
+  'fhir/R4/Practitioner/123': {
+    'GET': practitioner
   },
-  'fhir/R4/Communication?_count=100&subject=Patient/123': {
-    'GET': communications
-  },
-  'fhir/R4/Media?_count=100&subject=Patient/123': {
-    'GET': media
+  'fhir/R4': {
+    'POST': {
+      resourceType: 'Bundle',
+      type: 'batch-response',
+      entry: [
+        { resource: patientHistory },
+        { resource: communications },
+        { resource: media },
+        { resource: serviceRequest },
+      ]
+    }
   },
   'fhir/R4/Communication': {
     'POST': newComment
   },
   'fhir/R4/Media': {
     'POST': newMedia
+  },
+  'fhir/R4/StructureDefinition?name:exact=ServiceRequest': {
+    'GET': serviceRequestStructureBundle
   },
 });
 
@@ -129,7 +198,8 @@ describe('PatientTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(3);
+    expect(items.length).toEqual(4);
+    expect(screen.getByText('SERVICE_REQUEST_CODE')).toBeInTheDocument();
   });
 
   test('Renders resource', async () => {
@@ -141,7 +211,8 @@ describe('PatientTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(3);
+    expect(items.length).toEqual(4);
+    expect(screen.getByText('SERVICE_REQUEST_CODE')).toBeInTheDocument();
   });
 
   test('Create comment', async () => {
@@ -169,7 +240,7 @@ describe('PatientTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(4);
+    expect(items.length).toEqual(5);
   });
 
   test('Upload media', async () => {
@@ -195,7 +266,7 @@ describe('PatientTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(4);
+    expect(items.length).toEqual(5);
   });
 
 });

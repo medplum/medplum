@@ -17,6 +17,7 @@ const encounter: Encounter = {
 
 const encounterHistory: Bundle = {
   resourceType: 'Bundle',
+  type: 'history',
   entry: [{
     resource: encounter
   }]
@@ -91,14 +92,16 @@ const medplum = new MockClient({
   'fhir/R4/Encounter/123': {
     'GET': encounter
   },
-  'fhir/R4/Encounter/123/_history': {
-    'GET': encounterHistory
-  },
-  'fhir/R4/Communication?_count=100&encounter=Encounter/123': {
-    'GET': communications
-  },
-  'fhir/R4/Media?_count=100&encounter=Encounter/123': {
-    'GET': media
+  'fhir/R4': {
+    'POST': {
+      resourceType: 'Bundle',
+      type: 'batch-response',
+      entry: [
+        { resource: encounterHistory },
+        { resource: communications },
+        { resource: media },
+      ]
+    }
   },
   'fhir/R4/Communication': {
     'POST': newComment

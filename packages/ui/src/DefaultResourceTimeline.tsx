@@ -1,4 +1,4 @@
-import { getReferenceString, Operator, Reference, Resource } from '@medplum/core';
+import { getReferenceString, Reference, Resource } from '@medplum/core';
 import React from 'react';
 import { ResourceTimeline } from './ResourceTimeline';
 
@@ -10,23 +10,24 @@ export function DefaultResourceTimeline(props: DefaultResourceTimelineProps): JS
   return (
     <ResourceTimeline
       value={props.resource}
-      buildSearchRequests={(resource: Resource) => {
-        return [
+      buildSearchRequests={(resource: Resource) => ({
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
           {
-            resourceType: 'AuditEvent',
-            filters: [{
-              code: 'entity',
-              operator: Operator.EQUALS,
-              value: getReferenceString(resource)
-            }],
-            sortRules: [{
-              code: '_lastUpdated',
-              descending: true
-            }],
-            count: 100
+            request: {
+              method: 'GET',
+              url: `${getReferenceString(resource)}/_history`
+            }
+          },
+          {
+            request: {
+              method: 'GET',
+              url: `AuditEvent?entity=${getReferenceString(resource)}`
+            }
           }
-        ];
-      }}
+        ]
+      })}
     />
   );
 }
