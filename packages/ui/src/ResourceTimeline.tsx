@@ -8,12 +8,12 @@ import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { ResourceDiff } from './ResourceDiff';
 import { ResourceTable } from './ResourceTable';
-import './ResourceTimeline.css';
 import { TextField } from './TextField';
 import { Timeline, TimelineItem } from './Timeline';
 import { UploadButton } from './UploadButton';
 import { useResource } from './useResource';
 import { sortByDate } from './utils/format';
+import './ResourceTimeline.css';
 
 export interface ResourceTimelineProps<T extends Resource> {
   value: T | Reference<T>;
@@ -52,15 +52,12 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
           const bundle = batchEntry.resource as Bundle;
 
           if (bundle.type === 'history') {
-            setHistory(batchEntry.resource as Bundle);
+            setHistory(bundle);
           }
 
           if (bundle.entry) {
             for (const entry of bundle.entry) {
-              const resource = entry.resource;
-              if (resource) {
-                newItems.push(resource);
-              }
+              newItems.push(entry.resource as Resource);
             }
           }
         }

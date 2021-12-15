@@ -66,6 +66,30 @@ const media: Bundle = {
   ]
 };
 
+const serviceRequest: Bundle = {
+  resourceType: 'Bundle',
+  entry: [
+    {
+      resource: {
+        resourceType: 'ServiceRequest',
+        id: randomUUID(),
+        meta: {
+          lastUpdated: new Date().toISOString(),
+          author: {
+            reference: 'Practitioner/123'
+          }
+        },
+        code: {
+          coding: [{
+            system: 'http://snomed.info/sct',
+            code: 'SERVICE_REQUEST_CODE',
+          }]
+        }
+      }
+    }
+  ]
+};
+
 const newComment: Communication = {
   resourceType: 'Communication',
   id: randomUUID(),
@@ -100,6 +124,7 @@ const medplum = new MockClient({
         { resource: patientHistory },
         { resource: communications },
         { resource: media },
+        { resource: serviceRequest },
       ]
     }
   },
@@ -132,7 +157,8 @@ describe('PatientTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(3);
+    expect(items.length).toEqual(4);
+    expect(screen.getByText('SERVICE_REQUEST_CODE')).toBeInTheDocument();
   });
 
   test('Renders resource', async () => {
@@ -144,7 +170,8 @@ describe('PatientTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(3);
+    expect(items.length).toEqual(4);
+    expect(screen.getByText('SERVICE_REQUEST_CODE')).toBeInTheDocument();
   });
 
   test('Create comment', async () => {
