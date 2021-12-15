@@ -3,7 +3,6 @@ import { Request, Response } from 'express';
 import { asyncWrap } from '../async';
 import { repo } from '../fhir';
 import { logger } from '../logger';
-import { getDefaultClientApplication } from '../seed';
 import { renderTemplate } from '../templates';
 import { MedplumIdTokenClaims, verifyJwt } from './keys';
 import { tryLogin } from './utils';
@@ -34,11 +33,9 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
     return;
   }
 
-  const clientId = (req.query.client_id as string | undefined) || getDefaultClientApplication().id as string;
-
   const [outcome, login] = await tryLogin({
     authMethod: 'password',
-    clientId,
+    clientId: req.query.client_id as string,
     codeChallenge: req.query.code_challenge as string,
     codeChallengeMethod: req.query.code_challenge_method as string,
     scope: req.query.scope as string,
@@ -71,8 +68,7 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
 async function validateAuthorizeRequest(req: Request, res: Response): Promise<boolean> {
   // First validate the client and the redirect URI.
   // If these are invalid, then show an error page.
-  const clientId = (req.query.client_id as string | undefined) || getDefaultClientApplication().id as string;
-  const [clientOutcome, client] = await repo.readResource<ClientApplication>('ClientApplication', clientId);
+  const [clientOutcome, client] = await repo.readResource<ClientApplication>('ClientApplication', req.query.client_id as string);
   if (!isOk(clientOutcome) || !client) {
     res.status(400).send('Client not found');
     return false;

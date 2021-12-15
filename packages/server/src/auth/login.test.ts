@@ -62,6 +62,51 @@ describe('Login', () => {
     expect(res.body.issue[0].details.text).toBe('Not found');
   });
 
+  test('Missing email', async () => {
+    const res = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({
+        clientId: getDefaultClientApplication().id,
+        email: '',
+        password: 'admin',
+        scope: 'openid'
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.issue).toBeDefined();
+    expect(res.body.issue[0].details.text).toBe('Valid email address is required');
+  });
+
+  test('Invalid email', async () => {
+    const res = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({
+        clientId: getDefaultClientApplication().id,
+        email: 'xyz',
+        password: 'admin',
+        scope: 'openid'
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.issue).toBeDefined();
+    expect(res.body.issue[0].details.text).toBe('Valid email address is required');
+  });
+
+  test('Missing password', async () => {
+    const res = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({
+        clientId: getDefaultClientApplication().id,
+        email: 'admin@medplum.com',
+        password: '',
+        scope: 'openid'
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.issue).toBeDefined();
+    expect(res.body.issue[0].details.text).toBe('Invalid password, must be at least 5 characters');
+  });
+
   test('Wrong password', async () => {
     const res = await request(app)
       .post('/auth/login')
@@ -83,6 +128,19 @@ describe('Login', () => {
       .type('json')
       .send({
         clientId: getDefaultClientApplication().id,
+        email: 'admin@medplum.com',
+        password: 'admin',
+        scope: 'openid'
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.code).toBeDefined();
+  });
+
+  test('Success default client', async () => {
+    const res = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({
         email: 'admin@medplum.com',
         password: 'admin',
         scope: 'openid'

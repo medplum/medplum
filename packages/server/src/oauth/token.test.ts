@@ -87,7 +87,7 @@ describe('OAuth2 Token', () => {
     expect(res.body.access_token).toBeDefined();
   });
 
-  test.skip('Token for client credentials with missing client_id', async () => {
+  test('Token for client credentials with missing client_id', async () => {
     const res = await request(app)
       .post('/oauth2/token')
       .type('form')

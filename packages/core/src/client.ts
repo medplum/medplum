@@ -634,7 +634,7 @@ export class MedplumClient extends EventTarget {
 
     return this.fetchTokens(
       'grant_type=authorization_code' +
-      '&client_id=' + encodeURIComponent(this.clientId) +
+      (this.clientId ? '&client_id=' + encodeURIComponent(this.clientId) : '') +
       '&code_verifier=' + encodeURIComponent(codeVerifier) +
       '&redirect_uri=' + encodeURIComponent(getBaseUrl()) +
       '&code=' + encodeURIComponent(code));
@@ -707,7 +707,7 @@ export class MedplumClient extends EventTarget {
     }
 
     // Verify app_client_id
-    if (tokenPayload.client_id !== this.clientId) {
+    if (this.clientId && tokenPayload.client_id !== this.clientId) {
       this.clear();
       return Promise.reject('Token was not issued for this audience');
     }

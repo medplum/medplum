@@ -192,6 +192,10 @@ describe('Client', () => {
       baseUrl: 'https://x/',
       fetch: mockFetch
     })).not.toThrow();
+
+    expect(() => new MedplumClient({
+      fetch: mockFetch
+    })).not.toThrow();
   });
 
   test('Clear', () => {
