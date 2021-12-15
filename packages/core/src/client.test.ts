@@ -173,11 +173,6 @@ describe('Client', () => {
 
   test('Constructor', () => {
     expect(() => new MedplumClient({
-      clientId: '',
-      baseUrl: 'https://example.com/',
-    })).toThrow('Client ID cannot be empty');
-
-    expect(() => new MedplumClient({
       clientId: 'xyz',
       baseUrl: 'x',
     })).toThrow('Base URL must start with http or https');

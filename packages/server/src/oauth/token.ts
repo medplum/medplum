@@ -3,6 +3,7 @@ import { createHash } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
 import { repo } from '../fhir';
+import { getDefaultClientApplication } from '../seed';
 import { generateAccessToken, MedplumRefreshTokenClaims, verifyJwt } from './keys';
 import { getAuthTokens, getReferenceIdPart, revokeLogin } from './utils';
 
@@ -46,7 +47,7 @@ export const tokenHandler: RequestHandler = asyncWrap(async (req: Request, res: 
  * @returns Async promise to the response.
  */
 async function handleClientCredentials(req: Request, res: Response): Promise<Response> {
-  const clientId = req.body.client_id;
+  const clientId = req.body.client_id || getDefaultClientApplication().id;
   if (!clientId) {
     return sendTokenError(res, 'invalid_request', 'Missing client_id');
   }
