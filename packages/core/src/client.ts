@@ -22,9 +22,10 @@ const PATCH_CONTENT_TYPE = 'application/json-patch+json';
 export interface MedplumClientOptions {
   /**
    * The client ID.
-   * Required.
+   * Optional.  Default is to defer to the server to use the default client.
+   * Use this to use a specific client for SMART-on-FHIR.
    */
-  clientId: string;
+  clientId?: string;
 
   /**
    * Base server URL.
@@ -155,16 +156,12 @@ export class MedplumClient extends EventTarget {
       }
     }
 
-    if (!options.clientId) {
-      throw new Error('Client ID cannot be empty');
-    }
-
     this.fetch = options.fetch || window.fetch.bind(window);
     this.storage = new ClientStorage();
     this.schema = new Map();
     this.resourceCache = new LRUCache(options.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
     this.baseUrl = options.baseUrl || DEFAULT_BASE_URL;
-    this.clientId = options.clientId;
+    this.clientId = options.clientId || '';
     this.authorizeUrl = options.authorizeUrl || this.baseUrl + 'oauth2/authorize';
     this.tokenUrl = options.tokenUrl || this.baseUrl + 'oauth2/token';
     this.logoutUrl = options.logoutUrl || this.baseUrl + 'oauth2/logout';
@@ -637,7 +634,7 @@ export class MedplumClient extends EventTarget {
 
     return this.fetchTokens(
       'grant_type=authorization_code' +
-      '&client_id=' + encodeURIComponent(this.clientId) +
+      (this.clientId ? '&client_id=' + encodeURIComponent(this.clientId) : '') +
       '&code_verifier=' + encodeURIComponent(codeVerifier) +
       '&redirect_uri=' + encodeURIComponent(getBaseUrl()) +
       '&code=' + encodeURIComponent(code));
@@ -710,7 +707,7 @@ export class MedplumClient extends EventTarget {
     }
 
     // Verify app_client_id
-    if (tokenPayload.client_id !== this.clientId) {
+    if (this.clientId && tokenPayload.client_id !== this.clientId) {
       this.clear();
       return Promise.reject('Token was not issued for this audience');
     }

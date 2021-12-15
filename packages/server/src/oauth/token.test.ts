@@ -6,7 +6,7 @@ import { initApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { repo } from '../fhir';
-import { getDefaultClientApplication, seedDatabase } from '../seed';
+import { seedDatabase } from '../seed';
 import { initKeys } from './keys';
 import { hashCode } from './token';
 
@@ -22,7 +22,14 @@ describe('OAuth2 Token', () => {
     await seedDatabase();
     await initApp(app);
     await initKeys(config);
-    client = getDefaultClientApplication();
+
+    const [outcome, resource] = await repo.createResource<ClientApplication>({
+      resourceType: 'ClientApplication',
+      secret: randomUUID(),
+      redirectUri: 'https://example.com/',
+    });
+    assertOk(outcome);
+    client = resource as ClientApplication;
   });
 
   afterAll(async () => {
@@ -207,7 +214,7 @@ describe('OAuth2 Token', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: config.appBaseUrl,
+      redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
@@ -248,7 +255,7 @@ describe('OAuth2 Token', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: config.appBaseUrl,
+      redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
@@ -290,7 +297,7 @@ describe('OAuth2 Token', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: config.appBaseUrl,
+      redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
@@ -328,7 +335,7 @@ describe('OAuth2 Token', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: config.appBaseUrl,
+      redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
@@ -407,7 +414,7 @@ describe('OAuth2 Token', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: config.appBaseUrl,
+      redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
@@ -468,7 +475,7 @@ describe('OAuth2 Token', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: config.appBaseUrl,
+      redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: codeHash,
       code_challenge_method: 'S256'
@@ -506,7 +513,7 @@ describe('OAuth2 Token', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: config.appBaseUrl,
+      redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: codeHash,
       code_challenge_method: 'S256'
@@ -564,7 +571,7 @@ describe('OAuth2 Token', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: config.appBaseUrl,
+      redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
@@ -623,7 +630,7 @@ describe('OAuth2 Token', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: config.appBaseUrl,
+      redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
@@ -678,7 +685,7 @@ describe('OAuth2 Token', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: config.appBaseUrl,
+      redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
@@ -733,7 +740,7 @@ describe('OAuth2 Token', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: config.appBaseUrl,
+      redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
