@@ -8,6 +8,7 @@ import { useResource } from './useResource';
 
 export interface ResourceTableProps {
   value: Resource | Reference;
+  ignoreMissingValues?: boolean;
 }
 
 export function ResourceTable(props: ResourceTableProps) {
@@ -40,12 +41,16 @@ export function ResourceTable(props: ResourceTableProps) {
           return null;
         }
         const property = entry[1];
+        const propertyValue = (value as any)[key];
+        if (props.ignoreMissingValues && !propertyValue) {
+          return null;
+        }
         return (
           <DescriptionListEntry key={key} term={getPropertyDisplayName(property)}>
             <ResourcePropertyDisplay
               schema={schema}
               property={property}
-              value={(value as any)[key]}
+              value={propertyValue}
             />
           </DescriptionListEntry>
         );

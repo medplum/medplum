@@ -17,6 +17,7 @@ const serviceRequest: ServiceRequest = {
 
 const serviceRequestHistory: Bundle = {
   resourceType: 'Bundle',
+  type: 'history',
   entry: [{
     resource: serviceRequest
   }]
@@ -91,14 +92,16 @@ const medplum = new MockClient({
   'fhir/R4/ServiceRequest/123': {
     'GET': serviceRequest
   },
-  'fhir/R4/ServiceRequest/123/_history': {
-    'GET': serviceRequestHistory
-  },
-  'fhir/R4/Communication?_count=100&based-on=ServiceRequest/123': {
-    'GET': communications
-  },
-  'fhir/R4/Media?_count=100&based-on=ServiceRequest/123': {
-    'GET': media
+  'fhir/R4': {
+    'POST': {
+      resourceType: 'Bundle',
+      type: 'batch-response',
+      entry: [
+        { resource: serviceRequestHistory },
+        { resource: communications },
+        { resource: media },
+      ]
+    }
   },
   'fhir/R4/Communication': {
     'POST': newComment

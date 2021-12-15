@@ -1,4 +1,4 @@
-import { Attachment, createReference, getReferenceString, Operator, Patient, ProfileResource, Reference, Resource } from '@medplum/core';
+import { Attachment, createReference, getReferenceString, Patient, ProfileResource, Reference, Resource } from '@medplum/core';
 import React from 'react';
 import { ResourceTimeline } from './ResourceTimeline';
 
@@ -10,47 +10,42 @@ export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
   return (
     <ResourceTimeline
       value={props.patient}
-      buildSearchRequests={(patient: Resource) => {
-        const patientReference = getReferenceString(patient);
-        return [
+      buildSearchRequests={(resource: Resource) => ({
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
           {
-            resourceType: 'Communication',
-            filters: [{
-              code: 'subject',
-              operator: Operator.EQUALS,
-              value: patientReference
-            }],
-            count: 100
+            request: {
+              method: 'GET',
+              url: `${getReferenceString(resource)}/_history`
+            }
           },
           {
-            resourceType: 'Media',
-            filters: [{
-              code: 'subject',
-              operator: Operator.EQUALS,
-              value: patientReference
-            }],
-            count: 100
+            request: {
+              method: 'GET',
+              url: `Communication?subject=${getReferenceString(resource)}`
+            }
           },
           {
-            resourceType: 'ServiceRequest',
-            filters: [{
-              code: 'subject',
-              operator: Operator.EQUALS,
-              value: patientReference
-            }],
-            count: 100
+            request: {
+              method: 'GET',
+              url: `Media?subject=${getReferenceString(resource)}`
+            }
           },
           {
-            resourceType: 'DiagnosticReport',
-            filters: [{
-              code: 'subject',
-              operator: Operator.EQUALS,
-              value: patientReference
-            }],
-            count: 100
+            request: {
+              method: 'GET',
+              url: `ServiceRequest?subject=${getReferenceString(resource)}`
+            }
+          },
+          {
+            request: {
+              method: 'GET',
+              url: `DiagnosticReport?subject=${getReferenceString(resource)}`
+            }
           }
-        ];
-      }}
+        ]
+      })}
       createCommunication={(resource: Patient, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
         subject: createReference(resource),

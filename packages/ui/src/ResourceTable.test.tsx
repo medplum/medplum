@@ -31,6 +31,12 @@ const practitionerStructureBundle: Bundle = {
               code: 'HumanName'
             }],
             max: '*'
+          },
+          {
+            path: 'Practitioner.gender',
+            type: [{
+              code: 'code'
+            }]
           }
         ]
       }
@@ -68,8 +74,7 @@ describe('ResourceTable', () => {
       await waitFor(() => screen.getByText('Resource Type'));
     });
 
-    const control = screen.getByText('Resource Type');
-    expect(control).toBeDefined();
+    expect(screen.getByText('Resource Type')).toBeInTheDocument();
   });
 
   test('Renders Practitioner resource', async () => {
@@ -83,8 +88,24 @@ describe('ResourceTable', () => {
       await waitFor(() => screen.getByText('Resource Type'));
     });
 
-    const control = screen.getByText('Resource Type');
-    expect(control).toBeDefined();
+    expect(screen.getByText('Resource Type')).toBeInTheDocument();
+    expect(screen.getByText('Gender')).toBeInTheDocument();
+  });
+
+  test('Ignore missing values', async () => {
+    setup({
+      value: {
+        reference: 'Practitioner/123'
+      },
+      ignoreMissingValues: true
+    });
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Resource Type'));
+    });
+
+    expect(screen.getByText('Resource Type')).toBeInTheDocument();
+    expect(screen.queryByText('Gender')).toBeNull();
   });
 
 });

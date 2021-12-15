@@ -17,6 +17,7 @@ const patient: Patient = {
 
 const patientHistory: Bundle = {
   resourceType: 'Bundle',
+  type: 'history',
   entry: [{
     resource: patient
   }]
@@ -91,14 +92,16 @@ const medplum = new MockClient({
   'fhir/R4/Patient/123': {
     'GET': patient
   },
-  'fhir/R4/Patient/123/_history': {
-    'GET': patientHistory
-  },
-  'fhir/R4/Communication?_count=100&subject=Patient/123': {
-    'GET': communications
-  },
-  'fhir/R4/Media?_count=100&subject=Patient/123': {
-    'GET': media
+  'fhir/R4': {
+    'POST': {
+      resourceType: 'Bundle',
+      type: 'batch-response',
+      entry: [
+        { resource: patientHistory },
+        { resource: communications },
+        { resource: media },
+      ]
+    }
   },
   'fhir/R4/Communication': {
     'POST': newComment

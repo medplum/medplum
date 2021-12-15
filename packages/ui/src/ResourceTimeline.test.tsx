@@ -1,4 +1,4 @@
-import { Attachment, Bundle, Communication, createReference, Encounter, getReferenceString, Media, Operator, ProfileResource, Resource, SearchRequest } from '@medplum/core';
+import { Attachment, Bundle, Communication, createReference, Encounter, getReferenceString, Media, ProfileResource, Resource } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
@@ -17,6 +17,7 @@ const encounter: Encounter = {
 
 const encounterHistory: Bundle = {
   resourceType: 'Bundle',
+  type: 'history',
   entry: [{
     resource: encounter
   }]
@@ -91,14 +92,16 @@ const medplum = new MockClient({
   'fhir/R4/Encounter/123': {
     'GET': encounter
   },
-  'fhir/R4/Encounter/123/_history': {
-    'GET': encounterHistory
-  },
-  'fhir/R4/Communication?_count=100&encounter=Encounter/123': {
-    'GET': communications
-  },
-  'fhir/R4/Media?_count=100&encounter=Encounter/123': {
-    'GET': media
+  'fhir/R4': {
+    'POST': {
+      resourceType: 'Bundle',
+      type: 'batch-response',
+      entry: [
+        { resource: encounterHistory },
+        { resource: communications },
+        { resource: media },
+      ]
+    }
   },
   'fhir/R4/Communication': {
     'POST': newComment
@@ -108,28 +111,31 @@ const medplum = new MockClient({
   },
 });
 
-function buildEncounterSearch(encounter: Resource): SearchRequest[] {
-  const encounterReference = getReferenceString(encounter);
-  return [
-    {
-      resourceType: 'Communication',
-      filters: [{
-        code: 'encounter',
-        operator: Operator.EQUALS,
-        value: encounterReference
-      }],
-      count: 100
-    },
-    {
-      resourceType: 'Media',
-      filters: [{
-        code: 'encounter',
-        operator: Operator.EQUALS,
-        value: encounterReference
-      }],
-      count: 100
-    }
-  ];
+function buildEncounterSearch(encounter: Resource): Bundle {
+  return {
+    resourceType: 'Bundle',
+    type: 'batch',
+    entry: [
+      {
+        request: {
+          method: 'GET',
+          url: `${getReferenceString(encounter)}/_history`
+        }
+      },
+      {
+        request: {
+          method: 'GET',
+          url: `Communication?encounter=${getReferenceString(encounter)}`
+        }
+      },
+      {
+        request: {
+          method: 'GET',
+          url: `Media?encounter=${getReferenceString(encounter)}`
+        }
+      }
+    ]
+  };
 }
 
 describe('ResourceTimeline', () => {
