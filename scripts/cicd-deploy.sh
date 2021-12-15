@@ -19,11 +19,11 @@ DEPLOY_STORYBOOK=false
 # Inspect files changed
 #
 
-if [[ "$FILES_CHANGED" =~ ^Dockerfile ]]; then
+if [[ "$FILES_CHANGED" =~ Dockerfile ]]; then
   DEPLOY_SERVER=true
 fi
 
-if [[ "$FILES_CHANGED" =~ ^package-lock.json ]]; then
+if [[ "$FILES_CHANGED" =~ package-lock.json ]]; then
   DEPLOY_APP=true
   DEPLOY_DOCS=true
   DEPLOY_GRAPHIQL=true
@@ -31,11 +31,11 @@ if [[ "$FILES_CHANGED" =~ ^package-lock.json ]]; then
   DEPLOY_STORYBOOK=true
 fi
 
-if [[ "$FILES_CHANGED" =~ ^packages/app ]]; then
+if [[ "$FILES_CHANGED" =~ packages/app ]]; then
   DEPLOY_APP=true
 fi
 
-if [[ "$FILES_CHANGED" =~ ^packages/core ]]; then
+if [[ "$FILES_CHANGED" =~ packages/core ]]; then
   DEPLOY_APP=true
   DEPLOY_DOCS=true
   DEPLOY_GRAPHIQL=true
@@ -43,26 +43,26 @@ if [[ "$FILES_CHANGED" =~ ^packages/core ]]; then
   DEPLOY_STORYBOOK=true
 fi
 
-if [[ "$FILES_CHANGED" =~ ^packages/definitions ]]; then
+if [[ "$FILES_CHANGED" =~ packages/definitions ]]; then
   DEPLOY_APP=true
   DEPLOY_GRAPHIQL=true
   DEPLOY_SERVER=true
   DEPLOY_STORYBOOK=true
 fi
 
-if [[ "$FILES_CHANGED" =~ ^packages/docs ]]; then
+if [[ "$FILES_CHANGED" =~ packages/docs ]]; then
   DEPLOY_DOCS=true
 fi
 
-if [[ "$FILES_CHANGED" =~ ^packages/graphiql ]]; then
+if [[ "$FILES_CHANGED" =~ packages/graphiql ]]; then
   DEPLOY_GRAPHIQL=true
 fi
 
-if [[ "$FILES_CHANGED" =~ ^packages/server ]]; then
+if [[ "$FILES_CHANGED" =~ packages/server ]]; then
   DEPLOY_SERVER=true
 fi
 
-if [[ "$FILES_CHANGED" =~ ^packages/ui ]]; then
+if [[ "$FILES_CHANGED" =~ packages/ui ]]; then
   DEPLOY_APP=true
   DEPLOY_STORYBOOK=true
 fi
