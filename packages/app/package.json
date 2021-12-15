@@ -21,7 +21,7 @@
   "devDependencies": {
     "@medplum/core": "0.2.2",
     "@medplum/ui": "0.2.2",
-    "@testing-library/jest-dom": "5.16.0",
+    "@testing-library/jest-dom": "5.16.1",
     "@testing-library/react": "12.1.2",
     "@types/react": "17.0.37",
     "@types/react-dom": "17.0.11",
@@ -34,7 +34,7 @@
     "mini-css-extract-plugin": "2.4.5",
     "react": "17.0.2",
     "react-dom": "17.0.2",
-    "react-router-dom": "6.0.2"
+    "react-router-dom": "6.1.1"
   },
   "browserslist": [
     "last 1 Chrome versions"
