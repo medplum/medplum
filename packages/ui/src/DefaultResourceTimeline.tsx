@@ -23,7 +23,7 @@ export function DefaultResourceTimeline(props: DefaultResourceTimelineProps): JS
           {
             request: {
               method: 'GET',
-              url: `AuditEvent?entity=${getReferenceString(resource)}`
+              url: `AuditEvent?entity=${getReferenceString(resource)}&_count=20&_sort=-_lastUpdated`
             }
           }
         ]
