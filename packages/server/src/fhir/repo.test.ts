@@ -1,4 +1,4 @@
-import { AccessPolicy, assertOk, Bundle, ClientApplication, Communication, createReference, Encounter, getReferenceString, isOk, Login, Observation, Operator, Patient, RegisterRequest, Resource, SearchParameter, ServiceRequest } from '@medplum/core';
+import { AccessPolicy, assertOk, Bundle, ClientApplication, Communication, createReference, Encounter, getReferenceString, isOk, Login, Observation, Operator, Patient, RegisterRequest, Resource, SearchParameter, ServiceRequest, StructureDefinition } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
@@ -1239,6 +1239,43 @@ describe('FHIR Repo', () => {
     expect(searchResult2?.entry?.length).toEqual(0);
   });
 
+  test('String filter', async () => {
+    const [outcome1, bundle1] = await repo.search({
+      resourceType: 'StructureDefinition',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Questionnaire'
+        }
+      ],
+      sortRules: [
+        {
+          code: 'name',
+          descending: false
+        }
+      ]
+    });
+    assertOk(outcome1);
+    expect(bundle1?.entry?.length).toEqual(2);
+    expect((bundle1?.entry?.[0]?.resource as StructureDefinition).name).toEqual('Questionnaire');
+    expect((bundle1?.entry?.[1]?.resource as StructureDefinition).name).toEqual('QuestionnaireResponse');
+
+    const [outcome2, bundle2] = await repo.search({
+      resourceType: 'StructureDefinition',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EXACT,
+          value: 'Questionnaire'
+        }
+      ]
+    });
+    assertOk(outcome2);
+    expect(bundle2?.entry?.length).toEqual(1);
+    expect((bundle2?.entry?.[0]?.resource as StructureDefinition).name).toEqual('Questionnaire');
+  });
+
   test('Filter by _id', async () => {
     // Unique family name to isolate the test
     const family = randomUUID();
@@ -1450,6 +1487,74 @@ describe('FHIR Repo', () => {
     expect(bundleContains(searchResult4 as Bundle, patient2 as Patient)).toEqual(true);
   });
 
+  test('Sort by _lastUpdated', async () => {
+    const project = randomUUID();
+
+    const [outcome1, patient1] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice1'], family: 'Smith1' }],
+      meta: {
+        lastUpdated: '2020-01-01T00:00:00.000Z',
+        project
+      }
+    });
+    assertOk(outcome1);
+    expect(patient1).toBeDefined();
+
+    const [outcome2, patient2] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice2'], family: 'Smith2' }],
+      meta: {
+        lastUpdated: '2020-01-02T00:00:00.000Z',
+        project
+      }
+    });
+    assertOk(outcome2);
+    expect(patient2).toBeDefined();
+
+    const [outcome3, bundle3] = await repo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: '_project',
+          operator: Operator.EQUALS,
+          value: project
+        }
+      ],
+      sortRules: [
+        {
+          code: '_lastUpdated',
+          descending: false
+        }
+      ]
+    });
+    assertOk(outcome3);
+    expect(bundle3?.entry?.length).toEqual(2);
+    expect(bundle3?.entry?.[0]?.resource?.id).toEqual(patient1.id);
+    expect(bundle3?.entry?.[1]?.resource?.id).toEqual(patient2.id);
+
+    const [outcome4, bundle4] = await repo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: '_project',
+          operator: Operator.EQUALS,
+          value: project
+        }
+      ],
+      sortRules: [
+        {
+          code: '_lastUpdated',
+          descending: true
+        }
+      ]
+    });
+    assertOk(outcome4);
+    expect(bundle4?.entry?.length).toEqual(2);
+    expect(bundle4?.entry?.[0]?.resource?.id).toEqual(patient2.id);
+    expect(bundle4?.entry?.[1]?.resource?.id).toEqual(patient1.id);
+  });
+
   test('Unsupported date search param', async () => {
     const [outcome, resource] = await repo.createResource<Encounter>({
       resourceType: 'Encounter',
@@ -1469,7 +1574,6 @@ describe('FHIR Repo', () => {
   });
 
 });
-
 
 function bundleContains(bundle: Bundle, resource: Resource): boolean {
   return !!bundle.entry?.some(entry => entry.resource?.id === resource.id);
