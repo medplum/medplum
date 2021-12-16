@@ -1,10 +1,10 @@
 import { Bundle, BundleEntry, Operator, Reference, Resource } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
-import { useResource } from '.';
 import { Autocomplete } from './Autocomplete';
 import { Avatar } from './Avatar';
 import { useMedplum } from './MedplumProvider';
 import { ResourceName } from './ResourceName';
+import { useResource } from './useResource';
 
 export interface ResourceInputProps<T extends Resource = Resource> {
   readonly resourceType: string;

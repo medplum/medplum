@@ -1,8 +1,8 @@
 import { Questionnaire, QuestionnaireItem, Reference } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
-import { QuestionnaireItemType } from '.';
 import { Button } from './Button';
 import { Form } from './Form';
+import { QuestionnaireItemType } from './QuestionnaireUtils';
 import { useResource } from './useResource';
 import './QuestionnaireBuilder.css';
 

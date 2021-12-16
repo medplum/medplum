@@ -1,5 +1,5 @@
 import { readJson } from '@medplum/definitions';
-import { AuditEvent } from '..';
+import { AuditEvent } from '../fhir/AuditEvent';
 import { Bundle, BundleEntry } from '../fhir/Bundle';
 import { Observation } from '../fhir/Observation';
 import { SearchParameter } from '../fhir/SearchParameter';
