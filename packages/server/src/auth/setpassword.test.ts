@@ -6,7 +6,7 @@ import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { generateSecret, initKeys } from '../oauth';
-import { getDefaultClientApplication, seedDatabase } from '../seed';
+import { seedDatabase } from '../seed';
 
 jest.mock('@aws-sdk/client-sesv2');
 
@@ -78,7 +78,6 @@ describe('Set Password', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        clientId: getDefaultClientApplication().id,
         email: email,
         password: 'my-new-password',
         scope: 'openid'

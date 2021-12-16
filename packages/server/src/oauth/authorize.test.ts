@@ -1,12 +1,11 @@
-import { ClientApplication, isOk } from '@medplum/core';
+import { ClientApplication } from '@medplum/core';
 import express from 'express';
 import setCookieParser from 'set-cookie-parser';
 import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
-import { MEDPLUM_PROJECT_ID } from '../constants';
 import { closeDatabase, initDatabase } from '../database';
-import { repo } from '../fhir';
+import { createTestClient } from '../jest.setup';
 import { seedDatabase } from '../seed';
 import { initKeys } from './keys';
 
@@ -21,21 +20,7 @@ describe('OAuth Authorize', () => {
     await seedDatabase();
     await initApp(app);
     await initKeys(config);
-
-    const [outcome, result] = await repo.createResource({
-      resourceType: 'ClientApplication',
-      meta: {
-        project: MEDPLUM_PROJECT_ID
-      },
-      secret: 'big-long-string',
-      redirectUri: 'https://example.com'
-    } as ClientApplication);
-
-    if (!isOk(outcome) || !result) {
-      throw new Error('Error creating application');
-    }
-
-    client = result;
+    client = await createTestClient();
   });
 
   afterAll(async () => {
@@ -46,7 +31,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: '123',
-      redirect_uri: 'https://example.com',
+      redirect_uri: client.redirectUri,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
@@ -74,7 +59,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'xyz',
       client_id: client.id as string,
-      redirect_uri: 'https://example.com',
+      redirect_uri: client.redirectUri,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
@@ -91,7 +76,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: 'https://example.com',
+      redirect_uri: client.redirectUri,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -109,7 +94,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: 'https://example.com',
+      redirect_uri: client.redirectUri,
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
     });
@@ -124,7 +109,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: 'https://example.com',
+      redirect_uri: client.redirectUri,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
@@ -138,7 +123,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: '123',
-      redirect_uri: 'https://example.com',
+      redirect_uri: client.redirectUri,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
@@ -147,7 +132,7 @@ describe('OAuth Authorize', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf'
       });
@@ -158,7 +143,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: 'https://example.com',
+      redirect_uri: client.redirectUri,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
@@ -167,7 +152,7 @@ describe('OAuth Authorize', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'wrong-password',
         nonce: 'asdf'
       });
@@ -179,14 +164,14 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: 'https://example.com',
+      redirect_uri: client.redirectUri,
       scope: 'openid'
     });
     const res = await request(app)
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf'
       });
@@ -201,7 +186,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: 'https://example.com',
+      redirect_uri: client.redirectUri,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
@@ -210,7 +195,7 @@ describe('OAuth Authorize', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf'
       });
@@ -225,7 +210,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: 'https://example.com',
+      redirect_uri: client.redirectUri,
       scope: 'openid',
       code_challenge: 'xyz'
     });
@@ -233,7 +218,7 @@ describe('OAuth Authorize', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf'
       });
@@ -246,7 +231,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: 'https://example.com',
+      redirect_uri: client.redirectUri,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -256,7 +241,7 @@ describe('OAuth Authorize', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf'
       });
@@ -271,7 +256,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: 'https://example.com',
+      redirect_uri: client.redirectUri,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
@@ -280,7 +265,7 @@ describe('OAuth Authorize', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf'
       });
@@ -292,7 +277,7 @@ describe('OAuth Authorize', () => {
     const params2 = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: 'https://example.com',
+      redirect_uri: client.redirectUri,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -303,7 +288,7 @@ describe('OAuth Authorize', () => {
       .set('Cookie', cookie.name + '=' + cookie.value)
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf'
       })
@@ -319,7 +304,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: 'https://example.com',
+      redirect_uri: client.redirectUri,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
@@ -328,7 +313,7 @@ describe('OAuth Authorize', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf'
       });
@@ -343,7 +328,7 @@ describe('OAuth Authorize', () => {
     const params2 = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: 'https://example.com',
+      redirect_uri: client.redirectUri,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -363,7 +348,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: 'https://example.com',
+      redirect_uri: client.redirectUri,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
@@ -372,7 +357,7 @@ describe('OAuth Authorize', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz'
@@ -397,7 +382,7 @@ describe('OAuth Authorize', () => {
     const params2 = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: 'https://example.com',
+      redirect_uri: client.redirectUri,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',

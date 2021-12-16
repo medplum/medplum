@@ -10,7 +10,7 @@ export interface MedplumBaseClaims extends JWTPayload {
    * Client application ID.
    * This is a reference a ClientApplication resource.
    */
-  client_id: string;
+  client_id?: string;
 
   /**
    * Login ID.
@@ -212,16 +212,11 @@ function generateJwt(exp: '1h' | '2w', claims: JWTPayload): Promise<string> {
     return Promise.reject('Missing issuer');
   }
 
-  const audience = claims.client_id as string;
-  if (!audience) {
-    return Promise.reject('Missing audience');
-  }
-
   return new SignJWT(claims)
     .setProtectedHeader({ alg: ALG, kid: signingKeyId })
     .setIssuedAt()
     .setIssuer(issuer)
-    .setAudience(audience)
+    .setAudience(claims.client_id as string)
     .setExpirationTime(exp)
     .sign(signingKey);
 }

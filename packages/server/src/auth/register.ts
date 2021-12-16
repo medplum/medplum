@@ -6,7 +6,6 @@ import { body, validationResult } from 'express-validator';
 import { invalidRequest, repo, sendOutcome } from '../fhir';
 import { logger } from '../logger';
 import { generateSecret, getAuthTokens, tryLogin } from '../oauth';
-import { getDefaultClientApplication } from '../seed';
 import { createPractitioner, createProjectMembership } from './utils';
 
 export interface RegisterRequest {
@@ -21,6 +20,7 @@ export interface RegisterRequest {
 }
 
 export interface RegisterResponse {
+  user: User;
   project: Project;
   profile: ProfileResource;
   client: ClientApplication;
@@ -48,10 +48,8 @@ export async function registerHandler(req: Request, res: Response) {
 
   const result = await registerNew(req.body as RegisterRequest);
   const scope = req.body.scope ?? 'launch/patient openid fhirUser offline_access user/*.*';
-  const client = getDefaultClientApplication();
   const [loginOutcome, login] = await tryLogin({
     authMethod: 'password',
-    clientId: client.id as string,
     email: email,
     password: password,
     scope: scope,
@@ -77,6 +75,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
   await createProjectMembership(user, project, profile, true);
   const client = await createClientApplication(project);
   return {
+    user,
     project,
     profile,
     client

@@ -4,7 +4,6 @@ import { applyPatch, Operation } from 'fast-json-patch';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getClient } from '../database';
-import { getPublicProject } from '../seed';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
 import { getPatientCompartmentResourceTypes, getPatientId } from './patient';
@@ -796,7 +795,7 @@ export class Repository {
    */
   private getProjectId(resource: Resource): string | undefined {
     if (publicResourceTypes.includes(resource.resourceType)) {
-      return getPublicProject().id as string;
+      return undefined;
     }
 
     if (protectedResourceTypes.includes(resource.resourceType)) {

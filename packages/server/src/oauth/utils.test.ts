@@ -1,7 +1,9 @@
 import { ClientApplication, isOk } from '@medplum/core';
+import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { getDefaultClientApplication, seedDatabase } from '../seed';
+import { createTestClient } from '../jest.setup';
+import { seedDatabase } from '../seed';
 import { initKeys } from './keys';
 import { tryLogin, validateLoginRequest } from './utils';
 
@@ -14,18 +16,18 @@ describe('OAuth utils', () => {
     await initDatabase(config.database);
     await seedDatabase();
     await initKeys(config);
-    client = getDefaultClientApplication();
+    client = await createTestClient();
   });
 
   afterAll(async () => {
     await closeDatabase();
   });
 
-  test('Login with missing client ID', async () => {
+  test('Login with invalid client ID', async () => {
     const [outcome, login] = await tryLogin({
-      clientId: '',
+      clientId: randomUUID(),
       authMethod: 'password',
-      email: 'admin@medplum.com',
+      email: 'admin@example.com',
       password: 'admin',
       scope: 'openid',
       nonce: 'nonce',
@@ -55,7 +57,7 @@ describe('OAuth utils', () => {
     const [outcome, login] = await tryLogin({
       clientId: client.id as string,
       authMethod: 'password',
-      email: 'admin@medplum.com',
+      email: 'admin@example.com',
       password: '',
       scope: 'openid',
       nonce: 'nonce',
@@ -70,7 +72,7 @@ describe('OAuth utils', () => {
     const [outcome, login] = await tryLogin({
       clientId: client.id as string,
       authMethod: 'password',
-      email: 'admin@medplum.com',
+      email: 'admin@example.com',
       password: 'admin',
       scope: 'openid',
       nonce: 'nonce',
@@ -85,7 +87,7 @@ describe('OAuth utils', () => {
     const [outcome, login] = await tryLogin({
       clientId: client.id as string,
       authMethod: 'password',
-      email: 'admin@medplum.com',
+      email: 'admin@example.com',
       password: 'admin',
       scope: 'openid',
       nonce: 'nonce',
@@ -101,7 +103,7 @@ describe('OAuth utils', () => {
     expect(validateLoginRequest({
       clientId: client.id as string,
       authMethod: 'password',
-      email: 'admin@medplum.com',
+      email: 'admin@example.com',
       password: 'admin',
       scope: 'openid',
       nonce: 'nonce',
@@ -113,7 +115,7 @@ describe('OAuth utils', () => {
     expect(validateLoginRequest({
       clientId: client.id as string,
       authMethod: 'password',
-      email: 'admin@medplum.com',
+      email: 'admin@example.com',
       password: 'admin',
       scope: 'openid',
       nonce: 'nonce',
@@ -125,7 +127,7 @@ describe('OAuth utils', () => {
     expect(validateLoginRequest({
       clientId: client.id as string,
       authMethod: 'password',
-      email: 'admin@medplum.com',
+      email: 'admin@example.com',
       password: 'admin',
       scope: 'openid',
       nonce: 'nonce',
@@ -138,7 +140,7 @@ describe('OAuth utils', () => {
     expect(validateLoginRequest({
       clientId: client.id as string,
       authMethod: 'password',
-      email: 'admin@medplum.com',
+      email: 'admin@example.com',
       password: 'admin',
       scope: 'openid',
       nonce: 'nonce',
@@ -151,7 +153,7 @@ describe('OAuth utils', () => {
     expect(validateLoginRequest({
       clientId: client.id as string,
       authMethod: 'password',
-      email: 'admin@medplum.com',
+      email: 'admin@example.com',
       password: 'admin',
       scope: 'openid',
       nonce: 'nonce',

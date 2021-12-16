@@ -5,13 +5,13 @@ import { repo, RepositoryResult } from '../fhir';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
 
 export interface LoginRequest {
-  readonly clientId: string;
   readonly email: string;
   readonly authMethod: 'password' | 'google';
   readonly password?: string;
   readonly scope: string;
   readonly nonce: string;
   readonly remember: boolean;
+  readonly clientId?: string;
   readonly codeChallenge?: string;
   readonly codeChallengeMethod?: string;
   readonly googleCredentials?: GoogleCredentialClaims;
@@ -61,9 +61,13 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     return [validateOutcome, undefined];
   }
 
-  const [clientOutcome, client] = await repo.readResource<ClientApplication>('ClientApplication', request.clientId);
-  if (!isOk(clientOutcome)) {
-    return [clientOutcome, undefined];
+  let clientOutcome: OperationOutcome | undefined;
+  let client: ClientApplication | undefined;
+  if (request.clientId) {
+    [clientOutcome, client] = await repo.readResource<ClientApplication>('ClientApplication', request.clientId);
+    if (!isOk(clientOutcome)) {
+      return [clientOutcome, undefined];
+    }
   }
 
   const [outcome, user] = await getUserByEmail(request.email);
@@ -97,7 +101,7 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
 
   return repo.createResource<Login>({
     resourceType: 'Login',
-    client: createReference(client as ClientApplication),
+    client: client && createReference(client),
     user: createReference(user),
     authTime: new Date().toISOString(),
     code: generateSecret(16),
@@ -115,10 +119,6 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
 }
 
 export function validateLoginRequest(request: LoginRequest): OperationOutcome | undefined {
-  if (!request.clientId) {
-    return badRequest('Invalid clientId', 'clientId');
-  }
-
   if (!request.email) {
     return badRequest('Invalid email', 'email');
   }
@@ -205,11 +205,7 @@ export async function getUserMemberships(user: Reference<User>): Promise<Project
 }
 
 export async function getAuthTokens(login: Login): Promise<[OperationOutcome, TokenResult | undefined]> {
-  const clientId = getReferenceIdPart(login.client);
-  if (!clientId) {
-    return [badRequest('Login missing client'), undefined];
-  }
-
+  const clientId = login.client && getReferenceIdPart(login.client);
   const userId = getReferenceIdPart(login.user);
   if (!userId) {
     return [badRequest('Login missing user'), undefined];

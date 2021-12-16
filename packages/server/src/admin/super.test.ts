@@ -6,8 +6,9 @@ import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { repo } from '../fhir';
+import { createTestClient } from '../jest.setup';
 import { generateAccessToken, initKeys } from '../oauth';
-import { getDefaultClientApplication, seedDatabase } from '../seed';
+import { seedDatabase } from '../seed';
 
 const app = express();
 
@@ -26,7 +27,7 @@ describe('Super Admin routes', () => {
   });
 
   test('Rebuild ValueSetElements as super admin', async () => {
-    const client = getDefaultClientApplication();
+    const client = await createTestClient();
 
     const [practitionerOutcome, practitioner] = await repo.createResource<Practitioner>({
       resourceType: 'Practitioner'
@@ -93,7 +94,7 @@ describe('Super Admin routes', () => {
   });
 
   test('Rebuild StructureDefinitions as super admin', async () => {
-    const client = getDefaultClientApplication();
+    const client = await createTestClient();
 
     const [practitionerOutcome, practitioner] = await repo.createResource<Practitioner>({
       resourceType: 'Practitioner'

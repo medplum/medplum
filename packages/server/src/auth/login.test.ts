@@ -1,17 +1,19 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { createReference } from '@medplum/core';
+import { ClientApplication, createReference } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
+import { createTestClient } from '../jest.setup';
 import { initKeys } from '../oauth';
-import { getDefaultClientApplication, seedDatabase } from '../seed';
+import { seedDatabase } from '../seed';
 
 jest.mock('@aws-sdk/client-sesv2');
 
 const app = express();
+let client: ClientApplication;
 
 describe('Login', () => {
 
@@ -21,6 +23,7 @@ describe('Login', () => {
     await seedDatabase();
     await initApp(app);
     await initKeys(config);
+    client = await createTestClient();
   });
 
   afterAll(async () => {
@@ -38,7 +41,7 @@ describe('Login', () => {
       .type('json')
       .send({
         clientId: '123',
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         scope: 'openid'
       });
@@ -53,7 +56,7 @@ describe('Login', () => {
       .type('json')
       .send({
         clientId: 'e99126bb-c748-4c00-8d28-4e88dfb88278',
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         scope: 'openid'
       });
@@ -67,7 +70,7 @@ describe('Login', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        clientId: getDefaultClientApplication().id,
+        clientId: client.id,
         email: '',
         password: 'admin',
         scope: 'openid'
@@ -82,7 +85,7 @@ describe('Login', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        clientId: getDefaultClientApplication().id,
+        clientId: client.id,
         email: 'xyz',
         password: 'admin',
         scope: 'openid'
@@ -97,8 +100,8 @@ describe('Login', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        clientId: getDefaultClientApplication().id,
-        email: 'admin@medplum.com',
+        clientId: client.id,
+        email: 'admin@example.com',
         password: '',
         scope: 'openid'
       });
@@ -112,8 +115,8 @@ describe('Login', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        clientId: getDefaultClientApplication().id,
-        email: 'admin@medplum.com',
+        clientId: client.id,
+        email: 'admin@example.com',
         password: 'wrong-password',
         scope: 'openid'
       });
@@ -127,8 +130,8 @@ describe('Login', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        clientId: getDefaultClientApplication().id,
-        email: 'admin@medplum.com',
+        clientId: client.id,
+        email: 'admin@example.com',
         password: 'admin',
         scope: 'openid'
       });
@@ -141,7 +144,7 @@ describe('Login', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         scope: 'openid'
       });
@@ -274,7 +277,7 @@ describe('Login', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        clientId: getDefaultClientApplication().id,
+        clientId: client.id,
         email: memberEmail,
         password: 'my-new-password',
         scope: 'openid'
@@ -288,7 +291,7 @@ describe('Login', () => {
       .type('form')
       .send({
         grant_type: 'authorization_code',
-        clientId: getDefaultClientApplication().id,
+        clientId: client.id,
         code: res8.body.code,
         code_verifier: 'xyz'
       });

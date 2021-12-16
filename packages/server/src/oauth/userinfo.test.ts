@@ -1,4 +1,5 @@
-import { ClientApplication, isOk } from '@medplum/core';
+import { assertOk, ClientApplication } from '@medplum/core';
+import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp } from '../app';
@@ -6,7 +7,7 @@ import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { repo } from '../fhir';
 import { initKeys } from '../oauth';
-import { getMedplumProject, seedDatabase } from '../seed';
+import { seedDatabase } from '../seed';
 
 const app = express();
 let client: ClientApplication;
@@ -20,22 +21,13 @@ describe('OAuth2 UserInfo', () => {
     await initApp(app);
     await initKeys(config);
 
-    const medplumProject = getMedplumProject();
-
-    const [outcome, result] = await repo.createResource({
+    const [outcome, resource] = await repo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
-      meta: {
-        project: medplumProject.id
-      },
-      secret: 'big-long-string',
-      redirectUri: 'https://example.com'
-    } as ClientApplication);
-
-    if (!isOk(outcome) || !result) {
-      throw new Error('Error creating application');
-    }
-
-    client = result;
+      secret: randomUUID(),
+      redirectUri: 'https://example.com/',
+    });
+    assertOk(outcome);
+    client = resource as ClientApplication;
   });
 
   afterAll(async () => {
@@ -46,7 +38,7 @@ describe('OAuth2 UserInfo', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: 'https://example.com',
+      redirect_uri: client.redirectUri as string,
       scope: 'openid profile email phone address',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
@@ -55,7 +47,7 @@ describe('OAuth2 UserInfo', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz'
@@ -86,14 +78,14 @@ describe('OAuth2 UserInfo', () => {
     expect(res3.body.name).toBe('Medplum Admin');
     expect(res3.body.given_name).toBe('Medplum');
     expect(res3.body.family_name).toBe('Admin');
-    expect(res3.body.email).toBe('admin@medplum.com');
+    expect(res3.body.email).toBe('admin@example.com');
   });
 
   test('Get userinfo with only openid', async () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id as string,
-      redirect_uri: 'https://example.com',
+      redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain'
@@ -102,7 +94,7 @@ describe('OAuth2 UserInfo', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz'

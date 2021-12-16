@@ -1,53 +1,15 @@
-import { assertOk, Bundle, BundleEntry, ClientApplication, createReference, getReferenceString, Operator, Project, SearchParameter, User } from '@medplum/core';
+import { assertOk, Bundle, BundleEntry, createReference, Project, SearchParameter, User } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { registerNew } from './auth/register';
 import { getConfig } from './config';
-import { PUBLIC_PROJECT_ID } from './constants';
 import { repo } from './fhir';
 import { logger } from './logger';
 import { createStructureDefinitions } from './seeds/structuredefinitions';
 import { createValueSetElements } from './seeds/valuesets';
 
-let adminUser: User | undefined = undefined;
-let medplumProject: Project | undefined = undefined;
-let publicProject: Project | undefined = undefined;
-let defaultClientApplication: ClientApplication | undefined = undefined;
-
-export function getAdminUser(): User {
-  if (!adminUser) {
-    throw new Error('Database not seeded');
-  }
-  return adminUser;
-}
-
-export function getMedplumProject(): Project {
-  if (!medplumProject) {
-    throw new Error('Database not seeded');
-  }
-  return medplumProject;
-}
-
-export function getPublicProject(): Project {
-  if (!publicProject) {
-    throw new Error('Database not seeded');
-  }
-  return publicProject;
-}
-
-export function getDefaultClientApplication(): ClientApplication {
-  if (!defaultClientApplication) {
-    throw new Error('Database not seeded');
-  }
-  return defaultClientApplication;
-}
-
 export async function seedDatabase(): Promise<void> {
-  adminUser = await findAdminUser();
-  if (adminUser) {
+  if (await isSeeded()) {
     logger.info('Already seeded');
-    medplumProject = await findAdminProject(adminUser, 'Medplum');
-    publicProject = await findAdminProject(adminUser, 'Public');
-    defaultClientApplication = await findDefaultClientApplication();
     return;
   }
 
@@ -56,20 +18,16 @@ export async function seedDatabase(): Promise<void> {
     firstName: 'Medplum',
     lastName: 'Admin',
     projectName: 'Medplum',
-    email: 'admin@medplum.com',
+    email: 'admin@example.com',
     password: 'admin'
   });
 
-  adminUser = await findAdminUser() as User;
-  medplumProject = registerResponse.project;
-  defaultClientApplication = registerResponse.client;
-
   await repo.updateResource({
-    ...defaultClientApplication,
+    ...registerResponse.client,
     redirectUri: getConfig().appBaseUrl
   });
 
-  await createPublicProject(adminUser);
+  await createPublicProject(registerResponse.user);
   await createValueSetElements();
   await createSearchParameters();
   await createStructureDefinitions();
@@ -79,61 +37,13 @@ export async function seedDatabase(): Promise<void> {
  * Returns true if the database is already seeded.
  * @returns True if already seeded.
  */
-async function findAdminUser(): Promise<User | undefined> {
+async function isSeeded(): Promise<boolean> {
   const [outcome, bundle] = await repo.search({
     resourceType: 'User',
-    filters: [{
-      code: 'email',
-      operator: Operator.EQUALS,
-      value: 'admin@medplum.com'
-    }]
+    count: 1
   });
   assertOk(outcome);
-  return bundle?.entry && bundle.entry.length > 0 ? bundle.entry[0].resource as User : undefined;
-}
-
-async function findAdminProject(owner: User, name: string): Promise<Project | undefined> {
-  if (medplumProject) {
-    return medplumProject;
-  }
-
-  const [outcome, bundle] = await repo.search({
-    resourceType: 'Project',
-    filters: [
-      {
-        code: 'owner',
-        operator: Operator.EQUALS,
-        value: getReferenceString(owner)
-      },
-      {
-        code: 'name',
-        operator: Operator.EXACT,
-        value: name
-      }
-    ]
-  });
-  assertOk(outcome);
-  return bundle?.entry && bundle.entry.length > 0 ? bundle.entry[0].resource as Project : undefined;
-}
-
-async function findDefaultClientApplication(): Promise<ClientApplication | undefined> {
-  const [outcome, bundle] = await repo.search({
-    resourceType: 'ClientApplication',
-    filters: [
-      {
-        code: '_project',
-        operator: Operator.EQUALS,
-        value: medplumProject?.id as string
-      },
-      {
-        code: 'name',
-        operator: Operator.EXACT,
-        value: 'Medplum Default Client'
-      }
-    ]
-  });
-  assertOk(outcome);
-  return bundle?.entry && bundle.entry.length > 0 ? bundle.entry[0].resource as ClientApplication : undefined;
+  return !!bundle?.entry && bundle.entry.length > 0;
 }
 
 /**
@@ -143,14 +53,12 @@ async function findDefaultClientApplication(): Promise<ClientApplication | undef
  */
 async function createPublicProject(owner: User): Promise<void> {
   logger.info('Create Public project...');
-  const [outcome, result] = await repo.updateResource<Project>({
+  const [outcome, result] = await repo.createResource<Project>({
     resourceType: 'Project',
-    id: PUBLIC_PROJECT_ID,
     name: 'Public',
     owner: createReference(owner)
   });
   assertOk(outcome);
-  publicProject = result as Project;
   logger.info('Created: ' + (result as Project).id);
 }
 

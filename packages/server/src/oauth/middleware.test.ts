@@ -6,8 +6,9 @@ import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { repo } from '../fhir';
+import { createTestClient } from '../jest.setup';
 import { initKeys } from '../oauth';
-import { getDefaultClientApplication, seedDatabase } from '../seed';
+import { seedDatabase } from '../seed';
 import { generateAccessToken } from './keys';
 
 const app = express();
@@ -21,7 +22,7 @@ describe('Auth middleware', () => {
     await seedDatabase();
     await initApp(app);
     await initKeys(config);
-    client = getDefaultClientApplication();
+    client = await createTestClient();
   });
 
   afterAll(async () => {

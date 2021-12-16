@@ -12,7 +12,7 @@ jest.mock('jose', () => {
     ...original,
     jwtVerify: jest.fn(() => ({
       payload: {
-        email: 'admin@medplum.com'
+        email: 'admin@example.com'
       }
     }))
   };

@@ -223,7 +223,7 @@ describe('OAuth2 Token', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz'
@@ -264,7 +264,7 @@ describe('OAuth2 Token', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz'
@@ -306,7 +306,7 @@ describe('OAuth2 Token', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz'
@@ -344,7 +344,7 @@ describe('OAuth2 Token', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz'
@@ -424,7 +424,7 @@ describe('OAuth2 Token', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz'
@@ -484,7 +484,7 @@ describe('OAuth2 Token', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz'
@@ -523,7 +523,7 @@ describe('OAuth2 Token', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz'
@@ -581,7 +581,7 @@ describe('OAuth2 Token', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz'
@@ -640,7 +640,7 @@ describe('OAuth2 Token', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz'
@@ -695,7 +695,7 @@ describe('OAuth2 Token', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz'
@@ -750,7 +750,7 @@ describe('OAuth2 Token', () => {
       .post('/oauth2/authorize?' + params.toString())
       .type('form')
       .send({
-        email: 'admin@medplum.com',
+        email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz'
