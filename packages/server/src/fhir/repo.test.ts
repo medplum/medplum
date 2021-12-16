@@ -1283,7 +1283,46 @@ describe('FHIR Repo', () => {
 
     expect(searchOutcome2.id).toEqual('ok');
     expect(searchResult2?.entry?.length).toEqual(0);
+  });
 
+  test('Filter by _project', async () => {
+    const project1 = randomUUID();
+    const project2 = randomUUID();
+
+    const [outcome1, patient1] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice1'], family: 'Smith1' }],
+      meta: {
+        project: project1
+      }
+    });
+    assertOk(outcome1);
+    expect(patient1).toBeDefined();
+
+    const [outcome2, patient2] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice2'], family: 'Smith2' }],
+      meta: {
+        project: project2
+      }
+    });
+    assertOk(outcome2);
+    expect(patient2).toBeDefined();
+
+    const [outcome3, bundle] = await repo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: '_project',
+          operator: Operator.EQUALS,
+          value: project1
+        }
+      ]
+    });
+    assertOk(outcome3);
+    expect(bundle?.entry?.length).toEqual(1);
+    expect(bundleContains(bundle as Bundle, patient1 as Patient)).toEqual(true);
+    expect(bundleContains(bundle as Bundle, patient2 as Patient)).toEqual(false);
   });
 
   test('Filter by _lastUpdated', async () => {

@@ -27,7 +27,7 @@ export async function seedDatabase(): Promise<void> {
     redirectUri: getConfig().appBaseUrl
   });
 
-  await createPublicProject(registerResponse.user as User);
+  await createPublicProject(registerResponse.user);
   await createValueSetElements();
   await createSearchParameters();
   await createStructureDefinitions();
