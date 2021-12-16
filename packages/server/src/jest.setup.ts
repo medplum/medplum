@@ -1,10 +1,32 @@
-import { createReference, isOk, Login } from '@medplum/core';
+import { assertOk, ClientApplication, createReference, isOk, Login, Project } from '@medplum/core';
+import { randomUUID } from 'crypto';
 import { repo } from './fhir';
 import { generateAccessToken } from './oauth';
-import { getDefaultClientApplication } from './seed';
+
+export async function createTestClient(): Promise<ClientApplication> {
+  const [projectOutcome, project] = await repo.createResource<Project>({
+    resourceType: 'Project',
+    name: 'Test Project',
+    owner: {
+      reference: 'User/' + randomUUID(),
+    }
+  });
+  assertOk(projectOutcome);
+
+  const [clientOutcome, client] = await repo.createResource<ClientApplication>({
+    resourceType: 'ClientApplication',
+    secret: randomUUID(),
+    redirectUri: 'https://example.com/',
+    meta: {
+      project: project?.id as string
+    },
+  });
+  assertOk(clientOutcome);
+  return client as ClientApplication;
+}
 
 export async function initTestAuth() {
-  const client = getDefaultClientApplication();
+  const client = await createTestClient();
   const scope = 'openid';
 
   const [loginOutcome, login] = await repo.createResource<Login>({

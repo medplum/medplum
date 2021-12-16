@@ -13,7 +13,7 @@ function mockFetch(url: string, options: any): Promise<any> {
 
   if (options.method === 'POST' && url.endsWith('/auth/login')) {
     const { email, password } = JSON.parse(options.body);
-    if (email === 'admin@medplum.com' && password === 'admin') {
+    if (email === 'admin@example.com' && password === 'admin') {
       status = 301;
       result = {
         login: '1',
@@ -48,7 +48,7 @@ function mockFetch(url: string, options: any): Promise<any> {
           }
         ]
       };
-    } else if (email !== 'admin@medplum.com') {
+    } else if (email !== 'admin@example.com') {
       result = {
         resourceType: 'OperationOutcome',
         issue: [{
@@ -163,7 +163,7 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), { target: { value: 'admin@medplum.com' } });
+      fireEvent.change(screen.getByTestId('email'), { target: { value: 'admin@example.com' } });
     });
 
     await act(async () => {
@@ -184,7 +184,7 @@ describe('SignInForm', () => {
     expect(medplum.getProfile()).toBeUndefined();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), { target: { value: 'admin@medplum.com' } });
+      fireEvent.change(screen.getByTestId('email'), { target: { value: 'admin@example.com' } });
     });
 
     await act(async () => {

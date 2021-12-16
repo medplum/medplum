@@ -4,7 +4,7 @@ import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { tryLogin } from '../oauth';
-import { getDefaultClientApplication, seedDatabase } from '../seed';
+import { seedDatabase } from '../seed';
 import { processBatch } from './batch';
 import { getRepoForLogin, repo, Repository } from './repo';
 
@@ -778,7 +778,6 @@ describe('FHIR Repo', () => {
 
     const [loginOutcome1, login1] = await tryLogin({
       authMethod: 'password',
-      clientId: getDefaultClientApplication().id,
       email: registration1.email,
       password: registration1.password,
       scope: 'openid',
@@ -816,7 +815,6 @@ describe('FHIR Repo', () => {
 
     const [loginOutcome2, login2] = await tryLogin({
       authMethod: 'password',
-      clientId: getDefaultClientApplication().id,
       email: registration2.email,
       password: registration2.password,
       scope: 'openid',

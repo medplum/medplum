@@ -212,7 +212,7 @@ describe('Client', () => {
 
   test('SignIn direct', async () => {
     const client = new MedplumClient(defaultOptions);
-    const result1 = await client.startLogin('admin@medplum.com', 'admin');
+    const result1 = await client.startLogin('admin@example.com', 'admin');
     expect(result1).toBeDefined();
     expect(result1.login).toBeDefined();
     expect(result1.code).toBeDefined();
@@ -290,7 +290,7 @@ describe('Client', () => {
 
     const client = new MedplumClient(defaultOptions);
 
-    const loginResponse = await client.startLogin('admin@medplum.com', 'admin');
+    const loginResponse = await client.startLogin('admin@example.com', 'admin');
     await client.processCode(loginResponse.code);
 
     const result = await client.get('expired');
@@ -303,7 +303,7 @@ describe('Client', () => {
 
     const onUnauthenticated = jest.fn();
     const client = new MedplumClient({ ...defaultOptions, onUnauthenticated });
-    const loginResponse = await client.startLogin('admin@medplum.com', 'admin');
+    const loginResponse = await client.startLogin('admin@example.com', 'admin');
     await expect(client.processCode(loginResponse.code)).rejects.toEqual('Failed to fetch tokens');
 
     const result = client.get('expired');

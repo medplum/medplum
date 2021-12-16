@@ -8,7 +8,7 @@ import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { repo } from '../fhir';
 import { initKeys } from '../oauth';
-import { getDefaultClientApplication, seedDatabase } from '../seed';
+import { seedDatabase } from '../seed';
 import { registerNew } from './register';
 
 jest.mock('@aws-sdk/client-sesv2');
@@ -95,7 +95,6 @@ describe('Profile', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        clientId: getDefaultClientApplication().id,
         scope: 'openid',
         email,
         password,
@@ -127,7 +126,6 @@ describe('Profile', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        clientId: getDefaultClientApplication().id,
         scope: 'openid',
         email,
         password,
@@ -159,7 +157,6 @@ describe('Profile', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        clientId: getDefaultClientApplication().id,
         scope: 'openid',
         email,
         password,
@@ -196,7 +193,6 @@ describe('Profile', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        clientId: getDefaultClientApplication().id,
         scope: 'openid',
         email,
         password,
@@ -226,7 +222,6 @@ describe('Profile', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        clientId: getDefaultClientApplication().id,
         scope: 'openid',
         email,
         password,

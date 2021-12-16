@@ -6,7 +6,6 @@ import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
 import { getConfig } from '../config';
 import { invalidRequest, sendOutcome } from '../fhir';
 import { GoogleCredentialClaims, tryLogin } from '../oauth';
-import { getDefaultClientApplication } from '../seed';
 import { sendLoginResult } from './utils';
 
 /*
@@ -64,10 +63,8 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
 
   const result = await jwtVerify(googleJwt, JWKS, verifyOptions);
   const claims = result.payload as GoogleCredentialClaims;
-  const client = getDefaultClientApplication();
   const [loginOutcome, login] = await tryLogin({
     authMethod: 'google',
-    clientId: client.id as string,
     email: claims.email,
     googleCredentials: claims,
     scope: 'openid',

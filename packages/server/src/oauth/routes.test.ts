@@ -4,7 +4,8 @@ import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { getDefaultClientApplication, seedDatabase } from '../seed';
+import { createTestClient } from '../jest.setup';
+import { seedDatabase } from '../seed';
 import { initKeys } from './keys';
 
 const app = express();
@@ -18,7 +19,7 @@ describe('OAuth Routes', () => {
     await seedDatabase();
     await initApp(app);
     await initKeys(config);
-    client = getDefaultClientApplication();
+    client = await createTestClient();
   });
 
   afterAll(async () => {
