@@ -1,6 +1,6 @@
 import { GoogleCredentialResponse, OperationOutcome, ProjectMembership } from '@medplum/core';
 import React, { useState } from 'react';
-import { Avatar } from '.';
+import { Avatar } from './Avatar';
 import { Button } from './Button';
 import { Document } from './Document';
 import { Form } from './Form';

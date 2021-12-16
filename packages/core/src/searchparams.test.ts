@@ -1,8 +1,9 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { Bundle, BundleEntry, indexStructureDefinition, isLowerCase, Resource, SearchParameter } from '.';
+import { Bundle, BundleEntry, Resource, SearchParameter } from './fhir';
 import { getSearchParameterDetails, SearchParameterType } from './searchparams';
-import { IndexedStructureDefinition } from './types';
+import { IndexedStructureDefinition, indexStructureDefinition } from './types';
+import { isLowerCase } from './utils';
 
 const searchParams = readJson('fhir/r4/search-parameters.json');
 const structureDefinitions = { types: {} } as IndexedStructureDefinition;

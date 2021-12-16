@@ -1,11 +1,10 @@
 import { assertOk, Bundle, BundleEntry, isOk, Observation, OperationOutcome, Patient } from '@medplum/core';
 import { randomUUID } from 'crypto';
-import { Repository } from '.';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { seedDatabase } from '../seed';
 import { processBatch } from './batch';
-import { repo } from './repo';
+import { repo, Repository } from './repo';
 
 describe('Batch', () => {
 

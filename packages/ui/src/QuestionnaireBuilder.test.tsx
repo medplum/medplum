@@ -1,10 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { act } from 'react-dom/test-utils';
-import { QuestionnaireItemType } from '.';
 import { MedplumProvider } from './MedplumProvider';
 import { MockClient } from './MockClient';
 import { QuestionnaireBuilder, QuestionnaireBuilderProps } from './QuestionnaireBuilder';
+import { QuestionnaireItemType } from './QuestionnaireUtils';
 
 const medplum = new MockClient({});
 

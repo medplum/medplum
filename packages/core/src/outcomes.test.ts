@@ -1,5 +1,4 @@
-import { gone, isGone } from '.';
-import { allOk, assertOk, badRequest, created, getStatus, isNotFound, isOk, notFound, notModified } from './outcomes';
+import { allOk, assertOk, badRequest, created, getStatus, gone, isGone, isNotFound, isOk, notFound, notModified } from './outcomes';
 
 describe('Outcomes', () => {
 
