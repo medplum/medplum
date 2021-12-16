@@ -1,8 +1,8 @@
 import { Atom, LiteralAtom } from './atoms';
-import { functions } from './functions';
+import * as functions from './functions';
 
 const isEven: Atom = {
-  eval: num => num % 2 === 0
+  eval: num => [num % 2 === 0]
 };
 
 describe('FHIRPath functions', () => {
@@ -181,7 +181,51 @@ describe('FHIRPath functions', () => {
     expect(functions.take([1, 2, 3], num2)).toEqual([1, 2]);
   });
 
+  test('intersect', () => {
+    expect(functions.intersect([], undefined)).toEqual([]);
+    expect(functions.intersect([], null)).toEqual([]);
+
+    const num1: Atom = { eval: () => 1 };
+    expect(functions.intersect([], num1)).toEqual([]);
+    expect(functions.intersect([1], num1)).toEqual([1]);
+    expect(functions.intersect([1, 2], num1)).toEqual([1]);
+    expect(functions.intersect([1, 1, 3], num1)).toEqual([1]);
+  });
+
+  test('exclude', () => {
+    expect(functions.exclude([], undefined)).toEqual([]);
+    expect(functions.exclude([], null)).toEqual([]);
+
+    const num1: Atom = { eval: () => 1 };
+    expect(functions.exclude([], num1)).toEqual([]);
+    expect(functions.exclude([1], num1)).toEqual([]);
+    expect(functions.exclude([1, 2], num1)).toEqual([2]);
+    expect(functions.exclude([1, 2, 3], num1)).toEqual([2, 3]);
+  });
+
   // 5.4. Combining
+
+  test('union', () => {
+    expect(functions.union([], undefined)).toEqual([]);
+    expect(functions.union([], null)).toEqual([]);
+
+    const num1: Atom = { eval: () => 1 };
+    expect(functions.union([], num1)).toEqual([1]);
+    expect(functions.union([1], num1)).toEqual([1]);
+    expect(functions.union([1, 2], num1)).toEqual([1, 2]);
+    expect(functions.union([1, 2, 3], num1)).toEqual([1, 2, 3]);
+  });
+
+  test('combine', () => {
+    expect(functions.combine([], undefined)).toEqual([]);
+    expect(functions.combine([], null)).toEqual([]);
+
+    const num1: Atom = { eval: () => 1 };
+    expect(functions.combine([], num1)).toEqual([1]);
+    expect(functions.combine([1], num1)).toEqual([1, 1]);
+    expect(functions.combine([1, 2], num1)).toEqual([1, 2, 1]);
+    expect(functions.combine([1, 2, 3], num1)).toEqual([1, 2, 3, 1]);
+  });
 
   // 5.5. Conversion
 
@@ -194,7 +238,19 @@ describe('FHIRPath functions', () => {
     expect(functions.toBoolean(['true'])).toEqual([true]);
     expect(functions.toBoolean(['false'])).toEqual([false]);
     expect(functions.toBoolean(['xyz'])).toEqual([]);
-    expect(functions.toBoolean([{}])).toEqual([true]);
+    expect(functions.toBoolean([{}])).toEqual([]);
+  });
+
+  test('convertsToBoolean', () => {
+    expect(functions.convertsToBoolean([])).toEqual([]);
+    expect(functions.convertsToBoolean([true])).toEqual([true]);
+    expect(functions.convertsToBoolean([false])).toEqual([true]);
+    expect(functions.convertsToBoolean([1])).toEqual([true]);
+    expect(() => functions.convertsToBoolean([1, 2])).toThrow();
+    expect(functions.convertsToBoolean(['true'])).toEqual([true]);
+    expect(functions.convertsToBoolean(['false'])).toEqual([true]);
+    expect(functions.convertsToBoolean(['xyz'])).toEqual([false]);
+    expect(functions.convertsToBoolean([{}])).toEqual([false]);
   });
 
   test('toInteger', () => {
@@ -223,6 +279,63 @@ describe('FHIRPath functions', () => {
     expect(functions.convertsToInteger(['false'])).toEqual([false]);
     expect(functions.convertsToInteger(['xyz'])).toEqual([false]);
     expect(functions.convertsToInteger([{}])).toEqual([false]);
+  });
+
+  test('toDecimal', () => {
+    expect(functions.toDecimal([])).toEqual([]);
+    expect(functions.toDecimal([true])).toEqual([1]);
+    expect(functions.toDecimal([false])).toEqual([0]);
+    expect(functions.toDecimal([0])).toEqual([0]);
+    expect(functions.toDecimal([1])).toEqual([1]);
+    expect(() => functions.toDecimal([1, 2])).toThrow();
+    expect(functions.toDecimal(['1'])).toEqual([1]);
+    expect(functions.toDecimal(['true'])).toEqual([]);
+    expect(functions.toDecimal(['false'])).toEqual([]);
+    expect(functions.toDecimal(['xyz'])).toEqual([]);
+    expect(functions.toDecimal([{}])).toEqual([]);
+  });
+
+  test('convertsToDecimal', () => {
+    expect(functions.convertsToDecimal([])).toEqual([]);
+    expect(functions.convertsToDecimal([true])).toEqual([true]);
+    expect(functions.convertsToDecimal([false])).toEqual([true]);
+    expect(functions.convertsToDecimal([0])).toEqual([true]);
+    expect(functions.convertsToDecimal([1])).toEqual([true]);
+    expect(() => functions.convertsToDecimal([1, 2])).toThrow();
+    expect(functions.convertsToDecimal(['1'])).toEqual([true]);
+    expect(functions.convertsToDecimal(['true'])).toEqual([false]);
+    expect(functions.convertsToDecimal(['false'])).toEqual([false]);
+    expect(functions.convertsToDecimal(['xyz'])).toEqual([false]);
+    expect(functions.convertsToDecimal([{}])).toEqual([false]);
+  });
+
+  test('toQuantity', () => {
+    expect(functions.toQuantity([])).toEqual([]);
+    expect(functions.toQuantity([{ value: 123, unit: 'mg' }])).toEqual([{ value: 123, unit: 'mg' }]);
+    expect(functions.toQuantity([true])).toEqual([{ value: 1, unit: '1' }]);
+    expect(functions.toQuantity([false])).toEqual([{ value: 0, unit: '1' }]);
+    expect(functions.toQuantity([0])).toEqual([{ value: 0, unit: '1' }]);
+    expect(functions.toQuantity([1])).toEqual([{ value: 1, unit: '1' }]);
+    expect(() => functions.toQuantity([1, 2])).toThrow();
+    expect(functions.toQuantity(['1'])).toEqual([{ value: 1, unit: '1' }]);
+    expect(functions.toQuantity(['true'])).toEqual([]);
+    expect(functions.toQuantity(['false'])).toEqual([]);
+    expect(functions.toQuantity(['xyz'])).toEqual([]);
+    expect(functions.toQuantity([{}])).toEqual([]);
+  });
+
+  test('convertsToQuantity', () => {
+    expect(functions.convertsToQuantity([])).toEqual([]);
+    expect(functions.convertsToQuantity([true])).toEqual([true]);
+    expect(functions.convertsToQuantity([false])).toEqual([true]);
+    expect(functions.convertsToQuantity([0])).toEqual([true]);
+    expect(functions.convertsToQuantity([1])).toEqual([true]);
+    expect(() => functions.convertsToQuantity([1, 2])).toThrow();
+    expect(functions.convertsToQuantity(['1'])).toEqual([true]);
+    expect(functions.convertsToQuantity(['true'])).toEqual([false]);
+    expect(functions.convertsToQuantity(['false'])).toEqual([false]);
+    expect(functions.convertsToQuantity(['xyz'])).toEqual([false]);
+    expect(functions.convertsToQuantity([{}])).toEqual([false]);
   });
 
   test('toString', () => {
@@ -259,6 +372,44 @@ describe('FHIRPath functions', () => {
     expect(functions.indexOf(['apple'], new LiteralAtom('a'))).toEqual([0]);
   });
 
+  test('substring', () => {
+    expect(functions.substring([], new LiteralAtom(0))).toEqual([]);
+    expect(() => functions.substring([1], new LiteralAtom(0))).toThrow();
+    expect(functions.substring(['apple'], new LiteralAtom(-1))).toEqual([]);
+    expect(functions.substring(['apple'], new LiteralAtom(6))).toEqual([]);
+    expect(functions.substring(['apple'], new LiteralAtom(0))).toEqual(['apple']);
+    expect(functions.substring(['apple'], new LiteralAtom(2))).toEqual(['ple']);
+  });
+
+  test('startsWith', () => {
+    expect(functions.startsWith(['apple'], new LiteralAtom('app'))).toEqual([true]);
+    expect(functions.startsWith(['apple'], new LiteralAtom('ple'))).toEqual([false]);
+  });
+
+  test('endsWith', () => {
+    expect(functions.endsWith(['apple'], new LiteralAtom('app'))).toEqual([false]);
+    expect(functions.endsWith(['apple'], new LiteralAtom('ple'))).toEqual([true]);
+  });
+
+  test('contains', () => {
+    expect(functions.contains(['apple'], new LiteralAtom('app'))).toEqual([true]);
+    expect(functions.contains(['apple'], new LiteralAtom('ple'))).toEqual([true]);
+    expect(functions.contains(['apple'], new LiteralAtom('ppl'))).toEqual([true]);
+    expect(functions.contains(['apple'], new LiteralAtom('xyz'))).toEqual([false]);
+  });
+
+  test('upper', () => {
+    expect(functions.upper(['apple'])).toEqual(['APPLE']);
+    expect(functions.upper(['Apple'])).toEqual(['APPLE']);
+    expect(functions.upper(['APPLE'])).toEqual(['APPLE']);
+  });
+
+  test('lower', () => {
+    expect(functions.lower(['apple'])).toEqual(['apple']);
+    expect(functions.lower(['Apple'])).toEqual(['apple']);
+    expect(functions.lower(['APPLE'])).toEqual(['apple']);
+  });
+
   test('replace', () => {
     expect(functions.replace(['banana'], new LiteralAtom('nana'), new LiteralAtom('tman'))).toEqual(['batman']);
   });
@@ -271,22 +422,44 @@ describe('FHIRPath functions', () => {
     expect(functions.replaceMatches(['banana'], new LiteralAtom('nana'), new LiteralAtom('tman'))).toEqual(['batman']);
   });
 
+  test('length', () => {
+    expect(functions.length([''])).toEqual([0]);
+    expect(functions.length(['x'])).toEqual([1]);
+    expect(functions.length(['xy'])).toEqual([2]);
+    expect(functions.length(['xyz'])).toEqual([3]);
+  });
+
+  test('toChars', () => {
+    expect(functions.toChars([''])).toEqual([]);
+    expect(functions.toChars(['x'])).toEqual([['x']]);
+    expect(functions.toChars(['xy'])).toEqual([['x', 'y']]);
+    expect(functions.toChars(['xyz'])).toEqual([['x', 'y', 'z']]);
+  });
+
   // 5.7. Math
+
+  test('abs', () => {
+    expect(() => functions.abs(['xyz'])).toThrow();
+    expect(functions.abs([])).toEqual([]);
+    expect(functions.abs([-1])).toEqual([1]);
+    expect(functions.abs([0])).toEqual([0]);
+    expect(functions.abs([1])).toEqual([1]);
+  });
 
   // 5.8. Tree navigation
 
   // 5.9. Utility functions
 
   test('now', () => {
-    expect(functions.now()[0]).toBeInstanceOf(Date);
+    expect(functions.now()[0]).toBeDefined();
   });
 
   test('timeOfDay', () => {
-    expect(functions.timeOfDay()[0]).toBeInstanceOf(Date);
+    expect(functions.timeOfDay()[0]).toBeDefined();
   });
 
   test('today', () => {
-    expect(functions.today()[0]).toBeInstanceOf(Date);
+    expect(functions.today()[0]).toBeDefined();
   });
 
   // Other

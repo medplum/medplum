@@ -1,3 +1,17 @@
+import { Quantity } from '../fhir/Quantity';
+import { deepEquals } from '../utils';
+
+/**
+ * Ensures that the value is wrapped in an array.
+ * @param input The input as a an array or a value.
+ * @returns The input as an array.
+ */
+export function ensureArray(input: any): any[] {
+  if (input === null || input === undefined) {
+    return [];
+  }
+  return Array.isArray(input) ? input : [input];
+}
 
 /**
  * Applies a function to single value or an array of values.
@@ -30,12 +44,39 @@ export function isFalsy(obj: any): boolean {
 }
 
 /**
- * Converts any object into a boolean.
+ * Converts any object into a JavaScript boolean.
+ * Note that this is different than the FHIRPath "toBoolean",
+ * which has particular semantics around arrays, empty arrays, and type conversions.
  * @param obj Any value or array of values.
  * @returns The converted boolean value according to FHIRPath rules.
  */
-export function toBoolean(obj: any): boolean {
-  return isEmptyArray(obj) ? false : !!obj;
+export function toJsBoolean(obj: any): boolean {
+  if (Array.isArray(obj)) {
+    return obj.length === 0 ? false : !!obj[0];
+  }
+  return !!obj;
+}
+
+/**
+ * Removes duplicates in array using FHIRPath equality rules.
+ * @param arr The input array.
+ * @returns The result array with duplicates removed.
+ */
+export function removeDuplicates(arr: any[]): any[] {
+  const result: any[] = [];
+  for (const i of arr) {
+    let found = false;
+    for (const j of result) {
+      if (fhirPathEquals(i, j)) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      result.push(i);
+    }
+  }
+  return result;
 }
 
 /**
@@ -51,23 +92,111 @@ export function fhirPathEquals(x: any, y: any): boolean | [] {
   if (isEmptyArray(x) || isEmptyArray(y)) {
     return [];
   }
-  if (x instanceof Date && y instanceof Date) {
-    return x.toISOString() === y.toISOString();
+  if (typeof x === 'number' && typeof y === 'number') {
+    return Math.abs(x - y) < 1e-8;
+  }
+  if (isQuantity(x) && isQuantity(y)) {
+    return isQuantityEquivalent(x, y);
+  }
+  if (Array.isArray(x) && Array.isArray(y)) {
+    return x.length === y.length && x.every((val, index) => fhirPathEquals(val, y[index]));
+  }
+  if (typeof x === 'object' && typeof y === 'object') {
+    return deepEquals(x, y);
+  }
+  return x === y;
+}
+
+/**
+ * Determines if two values are equal according to FHIRPath equality rules.
+ * @param x The first value.
+ * @param y The second value.
+ * @returns True if equal.
+ */
+export function fhirPathEquivalent(x: any, y: any): boolean | [] {
+  if (isFalsy(x) && isFalsy(y)) {
+    return true;
+  }
+  if (isEmptyArray(x) || isEmptyArray(y)) {
+    // Note that this implies that if the collections have a different number of items to compare,
+    // or if one input is a value and the other is empty ({ }), the result will be false.
+    return false;
   }
   if (typeof x === 'number' && typeof y === 'number') {
-    return Math.abs(x - y) < 0.00001;
+    // Use more generous threshold than equality
+    // Decimal: values must be equal, comparison is done on values rounded to the precision of the least precise operand.
+    // Trailing zeroes after the decimal are ignored in determining precision.
+    return Math.abs(x - y) < 0.01;
+  }
+  if (isQuantity(x) && isQuantity(y)) {
+    return isQuantityEquivalent(x, y);
+  }
+  if (Array.isArray(x) && Array.isArray(y)) {
+    // If both operands are collections with multiple items:
+    //   1) Each item must be equivalent
+    //   2) Comparison is not order dependent
+    x = x.sort();
+    y = y.sort();
+    return x.length === y.length && x.every((val: any, index: number) => fhirPathEquals(val, y[index]));
+  }
+  if (typeof x === 'object' && typeof y === 'object') {
+    return deepEquals(x, y);
+  }
+  if (typeof x === 'string' && typeof y === 'string') {
+    // String: the strings must be the same, ignoring case and locale, and normalizing whitespace
+    // (see String Equivalence for more details).
+    return x.toLowerCase() === y.toLowerCase();
   }
   return x === y;
 }
 
 export function fhirPathIs(value: any, desiredType: any): boolean {
-  if (typeof value === 'object' && value?.resourceType === desiredType) {
-    return true;
+  if (value === undefined || value === null) {
+    return false;
   }
 
-  if (typeof value === 'boolean' && desiredType === 'Boolean') {
-    return true;
+  switch (desiredType) {
+    case 'Boolean':
+      return typeof value === 'boolean';
+    case 'Decimal':
+    case 'Integer':
+    case 'System.Integer':
+      return typeof value === 'number';
+    case 'Date':
+      return typeof value === 'string' && !!value.match(/^\d{4}(-\d{2}(-\d{2})?)?/);
+    case 'DateTime':
+      return typeof value === 'string' && !!value.match(/^\d{4}(-\d{2}(-\d{2})?)?T/);
+    case 'Time':
+      return typeof value === 'string' && !!value.match(/^T\d/);
+    case 'Period':
+      return isPeriod(value);
+    case 'Quantity':
+      return isQuantity(value);
+    default:
+      return typeof value === 'object' && value?.resourceType === desiredType;
   }
+}
 
-  return false;
+/**
+ * Determines if the input is a Period object.
+ * This is heuristic based, as we do not have strong typing at runtime.
+ * @param input The input value.
+ * @returns True if the input is a period.
+ */
+export function isPeriod(input: any): boolean {
+  return input && typeof input === 'object' && 'start' in input;
+}
+
+/**
+ * Determines if the input is a Quantity object.
+ * This is heuristic based, as we do not have strong typing at runtime.
+ * @param input The input value.
+ * @returns True if the input is a quantity.
+ */
+export function isQuantity(input: any): boolean {
+  return input && typeof input === 'object' && 'value' in input && typeof input.value === 'number';
+}
+
+export function isQuantityEquivalent(x: Quantity, y: Quantity): boolean {
+  return Math.abs((x.value as number) - (y.value as number)) < 0.01 && (x.unit === y.unit || x.code === y.code || x.unit === y.code || x.code === y.unit);
 }

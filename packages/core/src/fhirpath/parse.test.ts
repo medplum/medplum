@@ -39,6 +39,10 @@ describe('FHIRPath parser', () => {
     expect(() => parseFhirPath('1 * ')).toThrowError('Cant consume any more tokens.');
   });
 
+  test('Function minus number', () => {
+    expect(parseFhirPath("'Peter'.length()-3").eval(0)).toEqual([2]);
+  });
+
   test('Evaluate FHIRPath Patient.name.given on empty resource', () => {
     const result = parseFhirPath('Patient.name.given').eval({});
     expect(result).toEqual([]);
@@ -164,7 +168,7 @@ describe('FHIRPath parser', () => {
         family: 'Jones'
       }]
     }]);
-    expect(result).toEqual(['Alice', 'Alice', 'Bob', 'Bob']);
+    expect(result).toEqual(['Alice', 'Bob']);
   });
 
   test('Evaluate ignores non-objects', () => {
