@@ -1,22 +1,47 @@
-import winston from 'winston';
+/*
+ * Once upon a time, we used Winston, and that was fine.
+ * Then the log4j fiasco happened, and everyone started auditing logging libraries.
+ * And we decided that we did not use any fancy logging features,
+ * and that logging to console.log was actually perfeectly adequate.
+ */
 
-export const logger = winston.createLogger({
-  level: 'info',
-  silent: process.env.NODE_ENV === 'test',
-  format: winston.format.combine(
-    winston.format.errors({ stack: true }),
-    winston.format.timestamp(),
-    winston.format.printf(logFormat),
-  ),
-  transports: [
-    new winston.transports.Console()
-  ]
-});
-
-function logFormat(info: winston.Logform.TransformableInfo): string {
-  const {level, message, timestamp, stack} = info;
-  if (stack) {
-    return `[${level.toUpperCase()}] ${timestamp} ${message}\n${stack}`;
-  }
-  return `[${level.toUpperCase()}] ${timestamp} ${message}`;
+export enum LogLevel {
+  NONE = 0,
+  ERROR = 1,
+  WARN = 2,
+  INFO = 3,
+  DEBUG = 4,
 }
+
+export const logger = {
+
+  level: process.env.NODE_ENV === 'test' ? LogLevel.NONE : LogLevel.INFO,
+
+  error(...args: any[]): void {
+    if (logger.level >= LogLevel.ERROR) {
+      logger.log('ERROR', ...args);
+    }
+  },
+
+  warn(...args: any[]): void {
+    if (logger.level >= LogLevel.WARN) {
+      logger.log('WARN', ...args);
+    }
+  },
+
+  info(...args: any[]): void {
+    if (logger.level >= LogLevel.INFO) {
+      logger.log('INFO', ...args);
+    }
+  },
+
+  debug(...args: any[]): void {
+    if (logger.level >= LogLevel.DEBUG) {
+      logger.log('DEBUG', ...args);
+    }
+  },
+
+  log(level: string, ...args: any[]): void {
+    console.log(level, new Date().toISOString(), ...args);
+  }
+};
