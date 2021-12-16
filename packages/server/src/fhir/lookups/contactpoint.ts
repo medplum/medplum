@@ -1,4 +1,5 @@
-import { ContactPoint, Filter, Resource, SearchParameter, SortRule, stringify } from '@medplum/core';
+import { Filter, SortRule, stringify } from '@medplum/core';
+import { ContactPoint, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { getClient } from '../../database';
 import { DeleteQuery, InsertQuery, Operator, SelectQuery } from '../sql';

@@ -1,4 +1,5 @@
-import { assertOk, createReference, Login, Practitioner, Project, ProjectMembership, Reference, User } from '@medplum/core';
+import { assertOk, createReference } from '@medplum/core';
+import { Login, Practitioner, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Response } from 'express';
 import { repo } from '../fhir';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';

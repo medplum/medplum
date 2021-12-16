@@ -1,4 +1,4 @@
-import { Bundle, Communication, Encounter, Media } from '@medplum/core';
+import { Bundle, Communication, Encounter, Media } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';

@@ -1,4 +1,4 @@
-import { Quantity } from '../fhir';
+import { Quantity } from '@medplum/fhirtypes';
 import { AndAtom, ArithemticOperatorAtom, Atom, BinaryOperatorAtom, ComparisonOperatorAtom, ConcatAtom, ContainsAtom, DotAtom, EmptySetAtom, EqualsAtom, EquivalentAtom, FhirPathAtom, FunctionAtom, InAtom, IsAtom, LiteralAtom, NotEqualsAtom, NotEquivalentAtom, OrAtom, SymbolAtom, UnaryOperatorAtom, UnionAtom, XorAtom } from './atoms';
 import { parseDateString } from './date';
 import * as functions from './functions';

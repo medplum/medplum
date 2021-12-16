@@ -1,4 +1,5 @@
-import { assertOk, AuditEvent, Bot, BundleEntry, createReference, Extension, Filter, isGone, Operator, parseFhirPath, Resource, SearchRequest, stringify, Subscription } from '@medplum/core';
+import { assertOk, createReference, Filter, isGone, Operator, parseFhirPath, SearchRequest, stringify } from '@medplum/core';
+import { AuditEvent, Bot, BundleEntry, Extension, Resource, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';

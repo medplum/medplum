@@ -1,5 +1,5 @@
-import { Bundle, BundleEntry, CodeSystem, CodeSystemConcept, ValueSet } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
+import { Bundle, BundleEntry, CodeSystem, CodeSystemConcept, ValueSet } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Pool } from 'pg';
 import { getClient } from '../database';

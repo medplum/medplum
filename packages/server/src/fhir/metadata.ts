@@ -1,6 +1,6 @@
-import { CapabilityStatement } from "@medplum/core";
-import { readJson } from "@medplum/definitions";
-import { getConfig } from "../config";
+import { readJson } from '@medplum/definitions';
+import { CapabilityStatement } from '@medplum/fhirtypes';
+import { getConfig } from '../config';
 
 let capabilityStatement: CapabilityStatement | undefined = undefined;
 

@@ -1,4 +1,4 @@
-import { Quantity } from '../fhir/Quantity';
+import { Quantity } from '@medplum/fhirtypes';
 import { Atom } from './atoms';
 import { parseDateString } from './date';
 import { ensureArray, fhirPathIs, isQuantity, removeDuplicates, toJsBoolean } from './utils';

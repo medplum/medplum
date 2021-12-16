@@ -1,4 +1,5 @@
-import { ClientApplication, isOk } from '@medplum/core';
+import { isOk } from '@medplum/core';
+import { ClientApplication } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';

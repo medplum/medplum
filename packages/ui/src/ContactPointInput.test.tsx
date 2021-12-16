@@ -1,4 +1,4 @@
-import { ContactPoint } from '@medplum/core';
+import { ContactPoint } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { ContactPointInput } from './ContactPointInput';

@@ -1,4 +1,4 @@
-import { Questionnaire } from '@medplum/core';
+import { Questionnaire } from '@medplum/fhirtypes';
 import { addQuestionnaireInitialValues } from './QuestionnaireUtils';
 
 describe('QuestionnaireUtils', () => {

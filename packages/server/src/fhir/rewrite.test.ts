@@ -1,4 +1,5 @@
-import { assertOk, Binary, Practitioner } from '@medplum/core';
+import { assertOk } from '@medplum/core';
+import { Binary, Practitioner } from '@medplum/fhirtypes';
 import { loadTestConfig, MedplumServerConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { seedDatabase } from '../seed';

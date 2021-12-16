@@ -1,4 +1,4 @@
-import { Questionnaire, QuestionnaireItem, Reference } from '@medplum/core';
+import { Questionnaire, QuestionnaireItem, Reference } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Form } from './Form';

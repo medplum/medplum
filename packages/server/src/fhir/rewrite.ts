@@ -1,4 +1,5 @@
-import { Binary, isOk, OperationOutcome, Resource } from '@medplum/core';
+import { isOk } from '@medplum/core';
+import { Binary, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { getConfig } from '../config';
 import { Repository } from './repo';
 import { getPresignedUrl } from './signer';

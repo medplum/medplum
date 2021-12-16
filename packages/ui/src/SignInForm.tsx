@@ -1,4 +1,5 @@
-import { GoogleCredentialResponse, OperationOutcome, ProjectMembership } from '@medplum/core';
+import { GoogleCredentialResponse } from '@medplum/core';
+import { OperationOutcome, ProjectMembership } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { Avatar } from './Avatar';
 import { Button } from './Button';

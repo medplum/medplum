@@ -1,4 +1,5 @@
-import { createReference, ElementDefinition, Reference, Resource } from '@medplum/core';
+import { createReference } from '@medplum/core';
+import { ElementDefinition, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
 import { ResourceInput } from './ResourceInput';
 

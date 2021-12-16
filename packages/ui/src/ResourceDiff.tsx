@@ -1,4 +1,5 @@
-import { Resource, stringify } from '@medplum/core';
+import { stringify } from '@medplum/core';
+import { Resource } from '@medplum/fhirtypes';
 import React from 'react';
 import { Delta, diff } from './utils/diff';
 

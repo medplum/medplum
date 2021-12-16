@@ -1,4 +1,5 @@
-import { assertOk, ClientApplication, createReference, isOk, Login, Project } from '@medplum/core';
+import { assertOk, createReference, isOk } from '@medplum/core';
+import { ClientApplication, Login, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { repo } from './fhir';
 import { generateAccessToken } from './oauth';

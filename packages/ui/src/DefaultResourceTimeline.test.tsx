@@ -1,4 +1,4 @@
-import { Bundle, Subscription } from '@medplum/core';
+import { Bundle, Subscription } from '@medplum/fhirtypes';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';

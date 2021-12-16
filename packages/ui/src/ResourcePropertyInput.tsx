@@ -1,4 +1,5 @@
-import { capitalize, ElementDefinition, ElementDefinitionType, IndexedStructureDefinition, OperationOutcome, PropertyType } from '@medplum/core';
+import { capitalize, IndexedStructureDefinition, PropertyType } from '@medplum/core';
+import { ElementDefinition, ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { AddressInput } from './AddressInput';
 import { AttachmentArrayInput } from './AttachmentArrayInput';
@@ -163,7 +164,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           type="checkbox"
           name={name}
           data-testid={name}
-          defaultChecked={!!value} 
+          defaultChecked={!!value}
           value="true"
           onChange={(e: React.ChangeEvent) => props.onChange && props.onChange((e.target as HTMLInputElement).value === 'true')}
         />

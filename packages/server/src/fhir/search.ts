@@ -1,5 +1,6 @@
-import { Bundle, BundleEntry, Filter, Operator, SearchParameter, SearchRequest, SortRule } from '@medplum/core';
+import { Filter, Operator, SearchRequest, SortRule } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
+import { Bundle, BundleEntry, SearchParameter } from '@medplum/fhirtypes';
 import { URL } from 'url';
 
 /**

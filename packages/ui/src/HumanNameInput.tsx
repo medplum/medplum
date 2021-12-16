@@ -1,4 +1,4 @@
-import { HumanName } from '@medplum/core';
+import { HumanName } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
 
 export interface HumanNameInputProps {

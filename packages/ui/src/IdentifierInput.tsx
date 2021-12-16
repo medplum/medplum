@@ -1,4 +1,4 @@
-import { Identifier } from '@medplum/core';
+import { Identifier } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { TextField } from './TextField';
 

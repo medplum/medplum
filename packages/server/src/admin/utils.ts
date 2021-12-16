@@ -1,4 +1,5 @@
-import { assertOk, Bundle, BundleEntry, Operator, Project, ProjectMembership } from '@medplum/core';
+import { assertOk, Operator } from '@medplum/core';
+import { Bundle, BundleEntry, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { repo } from '../fhir';
 

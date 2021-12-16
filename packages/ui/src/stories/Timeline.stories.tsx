@@ -1,4 +1,4 @@
-import { Reference } from '@medplum/core';
+import { Reference } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Timeline, TimelineItem } from '../Timeline';

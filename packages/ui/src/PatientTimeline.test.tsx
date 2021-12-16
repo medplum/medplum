@@ -1,4 +1,4 @@
-import { Bundle, Communication, Media, Patient, Practitioner } from '@medplum/core';
+import { Bundle, Communication, Media, Patient, Practitioner } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';

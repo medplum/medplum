@@ -1,4 +1,5 @@
-import { assertOk, badRequest, BundleEntry, ClientApplication, createReference, Login, Operator, ProfileResource, Project, User } from '@medplum/core';
+import { assertOk, badRequest, createReference, Operator, ProfileResource } from '@medplum/core';
+import { BundleEntry, ClientApplication, Login, Project, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';

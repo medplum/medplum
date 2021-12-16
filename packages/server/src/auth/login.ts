@@ -1,4 +1,5 @@
-import { assertOk, Login } from '@medplum/core';
+import { assertOk } from '@medplum/core';
+import { Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';

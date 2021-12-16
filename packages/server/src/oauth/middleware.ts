@@ -1,4 +1,5 @@
-import { ClientApplication, createReference, getReferenceString, isOk, Login } from '@medplum/core';
+import { createReference, getReferenceString, isOk } from '@medplum/core';
+import { ClientApplication, Login } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
 import { getRepoForLogin, repo } from '../fhir';
 import { logger } from '../logger';

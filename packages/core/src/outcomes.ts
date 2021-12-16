@@ -1,4 +1,4 @@
-import { OperationOutcome } from './fhir';
+import { OperationOutcome } from '@medplum/fhirtypes';
 
 const OK_ID = 'ok';
 const CREATED_ID = 'created';

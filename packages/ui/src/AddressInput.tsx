@@ -1,4 +1,4 @@
-import { Address } from '@medplum/core';
+import { Address } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
 
 function getLine(address: Address, index: number): string {

@@ -1,4 +1,5 @@
-import { assertOk, Bundle, BundleEntry, isOk, Observation, OperationOutcome, Patient } from '@medplum/core';
+import { assertOk, isOk } from '@medplum/core';
+import { Bundle, BundleEntry, Observation, OperationOutcome, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';

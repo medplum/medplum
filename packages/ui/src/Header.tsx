@@ -1,4 +1,5 @@
-import { getReferenceString, HumanName, Patient, ProfileResource } from '@medplum/core';
+import { getReferenceString, ProfileResource } from '@medplum/core';
+import { HumanName, Patient } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar } from './Avatar';

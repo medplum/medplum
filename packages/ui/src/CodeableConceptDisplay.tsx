@@ -1,4 +1,4 @@
-import { CodeableConcept } from '@medplum/core';
+import { CodeableConcept } from '@medplum/fhirtypes';
 import React from 'react';
 
 export interface CodeableConceptInputProps {

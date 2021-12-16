@@ -1,4 +1,5 @@
-import { assertOk, getStatus, Project, ProjectMembership } from '@medplum/core';
+import { assertOk, getStatus } from '@medplum/core';
+import { Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { repo } from '../fhir';

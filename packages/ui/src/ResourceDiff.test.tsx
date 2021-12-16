@@ -1,4 +1,4 @@
-import { Patient } from '@medplum/core';
+import { Patient } from '@medplum/fhirtypes';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { ResourceDiff } from './ResourceDiff';

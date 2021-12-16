@@ -1,4 +1,5 @@
-import { Bundle, IndexedStructureDefinition, OperationOutcome, Resource, SearchRequest } from '@medplum/core';
+import { IndexedStructureDefinition, SearchRequest } from '@medplum/core';
+import { Bundle, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Loading } from './Loading';

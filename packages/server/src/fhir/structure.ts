@@ -1,5 +1,6 @@
-import { Bundle, BundleEntry, IndexedStructureDefinition, indexStructureDefinition, Resource } from '@medplum/core';
+import { IndexedStructureDefinition, indexStructureDefinition } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
+import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
 
 const structureDefinitions = { types: {} } as IndexedStructureDefinition;
 

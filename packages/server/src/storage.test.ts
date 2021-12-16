@@ -1,4 +1,5 @@
-import { assertOk, Binary } from '@medplum/core';
+import { assertOk } from '@medplum/core';
+import { Binary } from '@medplum/fhirtypes';
 import express, { Request } from 'express';
 import { mkdtempSync, rmSync } from 'fs';
 import { sep } from 'path';

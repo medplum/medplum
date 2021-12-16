@@ -1,4 +1,5 @@
-import { assertOk, badRequest, OperationOutcome, User } from '@medplum/core';
+import { assertOk, badRequest } from '@medplum/core';
+import { OperationOutcome, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';

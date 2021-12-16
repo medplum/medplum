@@ -1,4 +1,5 @@
-import { Filter, Resource, SearchParameter, SortRule } from '@medplum/core';
+import { Filter, SortRule } from '@medplum/core';
+import { Resource, SearchParameter } from '@medplum/fhirtypes';
 import { SelectQuery } from '../sql';
 
 /**

@@ -1,4 +1,4 @@
-import { ContactPoint } from '@medplum/core';
+import { ContactPoint } from '@medplum/fhirtypes';
 import React from 'react';
 
 export interface ContactPointDisplayProps {

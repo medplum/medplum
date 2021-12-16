@@ -1,4 +1,5 @@
-import { Filter, formatFamilyName, formatGivenName, formatHumanName, HumanName, Resource, SearchParameter, SortRule, stringify } from '@medplum/core';
+import { Filter, formatFamilyName, formatGivenName, formatHumanName, SortRule, stringify } from '@medplum/core';
+import { HumanName, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { getClient } from '../../database';
 import { DeleteQuery, InsertQuery, Operator, SelectQuery } from '../sql';

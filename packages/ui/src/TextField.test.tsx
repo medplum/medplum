@@ -1,4 +1,4 @@
-import { OperationOutcome } from '@medplum/core';
+import { OperationOutcome } from '@medplum/fhirtypes';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { Select, TextField } from './TextField';

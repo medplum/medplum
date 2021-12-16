@@ -1,5 +1,6 @@
-import { allOk, OperationOutcome, OperationOutcomeIssue, Resource } from '@medplum/core';
+import { allOk } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
+import { OperationOutcome, OperationOutcomeIssue, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { JSONSchema4 } from 'json-schema';
 

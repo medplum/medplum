@@ -1,5 +1,6 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { Binary, stringify } from '@medplum/core';
+import { stringify } from '@medplum/core';
+import { Binary } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { IncomingMessage } from 'http';

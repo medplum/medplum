@@ -1,4 +1,4 @@
-import { Quantity } from '../fhir/Quantity';
+import { Quantity } from '@medplum/fhirtypes';
 import { deepEquals } from '../utils';
 
 /**

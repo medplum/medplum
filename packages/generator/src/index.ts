@@ -1,6 +1,6 @@
 import { Bundle, BundleEntry, capitalize, ElementDefinition, ElementDefinitionType, IndexedStructureDefinition, indexStructureDefinition, Resource, TypeSchema } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { writeFileSync } from 'fs';
+import { mkdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { FileBuilder, wordWrap } from './filebuilder';
 
@@ -53,6 +53,7 @@ export function main() {
     }
   }
 
+  mkdirSync(resolve(__dirname, '../../fhirtypes/dist'), { recursive: true });
   writeIndexFile(Object.keys(parentTypes).sort());
   writeResourceFile(Object.entries(parentTypes).filter(e => e[1].resource).map(e => e[0]).sort());
   Object.values(parentTypes).forEach(fhirType => writeInterfaceFile(fhirType));
@@ -116,7 +117,7 @@ function writeIndexFile(names: string[]): void {
     }
     b.append('export * from \'./' + resourceType + '\';');
   }
-  writeFileSync(resolve(__dirname, '../../core/src/fhir/index.ts'), b.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../fhirtypes/dist/index.d.ts'), b.toString(), 'utf8');
 }
 
 function writeResourceFile(names: string[]): void {
@@ -135,7 +136,7 @@ function writeResourceFile(names: string[]): void {
       b.append('| ' + names[i] + ';');
     }
   }
-  writeFileSync(resolve(__dirname, '../../core/src/fhir/Resource.ts'), b.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../fhirtypes/dist/Resource.d.ts'), b.toString(), 'utf8');
 }
 
 function writeInterfaceFile(fhirType: FhirType): void {
@@ -155,7 +156,7 @@ function writeInterfaceFile(fhirType: FhirType): void {
   }
 
   writeInterface(b, fhirType);
-  writeFileSync(resolve(__dirname, '../../core/src/fhir/' + fhirType.outputName + '.ts'), b.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../fhirtypes/dist/' + fhirType.outputName + '.d.ts'), b.toString(), 'utf8');
 }
 
 function writeInterface(b: FileBuilder, fhirType: FhirType): void {

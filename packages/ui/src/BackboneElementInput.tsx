@@ -1,4 +1,5 @@
-import { buildTypeName, ElementDefinition, getPropertyDisplayName, IndexedStructureDefinition, OperationOutcome } from '@medplum/core';
+import { buildTypeName, getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/core';
+import { ElementDefinition, OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { DEFAULT_IGNORED_PROPERTIES } from './constants';
 import { FormSection } from './FormSection';

@@ -1,4 +1,4 @@
-import { OperationOutcome } from '@medplum/core';
+import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { RefObject } from 'react';
 import { getIssuesForExpression } from './utils/outcomes';
 import './TextField.css';

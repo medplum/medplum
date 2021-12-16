@@ -1,4 +1,5 @@
-import { ElementDefinition, IndexedStructureDefinition } from '@medplum/core';
+import { IndexedStructureDefinition } from '@medplum/core';
+import { ElementDefinition } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
 import { Button } from './Button';
 import { ResourcePropertyInput } from './ResourcePropertyInput';

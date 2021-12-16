@@ -1,4 +1,5 @@
-import { Attachment, Bundle, Communication, createReference, Encounter, getReferenceString, Media, ProfileResource, Resource } from '@medplum/core';
+import { createReference, getReferenceString, ProfileResource } from '@medplum/core';
+import { Attachment, Bundle, Communication, Encounter, Media, Resource } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';

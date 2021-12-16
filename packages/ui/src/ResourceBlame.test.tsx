@@ -1,4 +1,4 @@
-import { Bundle, Patient } from '@medplum/core';
+import { Bundle, Patient } from '@medplum/fhirtypes';
 import { render } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';

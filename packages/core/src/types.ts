@@ -1,4 +1,4 @@
-import { ElementDefinition, SearchParameter, StructureDefinition } from './fhir';
+import { ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import { capitalize } from './utils';
 
 /**

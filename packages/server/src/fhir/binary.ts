@@ -1,4 +1,5 @@
-import { assertOk, Binary } from '@medplum/core';
+import { assertOk } from '@medplum/core';
+import { Binary } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { Repository } from './repo';

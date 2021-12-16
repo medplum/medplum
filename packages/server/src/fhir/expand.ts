@@ -1,4 +1,5 @@
-import { badRequest, ValueSet } from '@medplum/core';
+import { badRequest } from '@medplum/core';
+import { ValueSet } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../async';
 import { getClient } from '../database';

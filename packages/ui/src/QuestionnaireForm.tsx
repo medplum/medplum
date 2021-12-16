@@ -1,4 +1,5 @@
-import { createReference, ElementDefinition, getReferenceString, ProfileResource, Questionnaire, QuestionnaireItem, QuestionnaireResponse, QuestionnaireResponseItem, Reference } from '@medplum/core';
+import { createReference, getReferenceString, ProfileResource } from '@medplum/core';
+import { ElementDefinition, Questionnaire, QuestionnaireItem, QuestionnaireResponse, QuestionnaireResponseItem, Reference } from '@medplum/fhirtypes';
 import React from 'react';
 import { AttachmentInput } from './AttachmentInput';
 import { Button } from './Button';

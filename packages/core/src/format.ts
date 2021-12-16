@@ -1,4 +1,4 @@
-import { Address, HumanName } from './fhir';
+import { Address, HumanName } from '@medplum/fhirtypes';
 
 export interface AddressFormatOptions {
   all?: boolean;

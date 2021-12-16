@@ -1,5 +1,6 @@
-import { Bundle, BundleEntry, isOk, OperationOutcomeError, Resource, StructureDefinition } from '@medplum/core';
+import { isOk, OperationOutcomeError } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
+import { Bundle, BundleEntry, Resource, StructureDefinition } from '@medplum/fhirtypes';
 import { getClient } from '../database';
 import { repo } from '../fhir';
 import { logger } from '../logger';

@@ -1,4 +1,5 @@
-import { Address, Attachment, CodeableConcept, ContactPoint, ElementDefinition, HumanName, Identifier, IndexedStructureDefinition } from '@medplum/core';
+import { IndexedStructureDefinition } from '@medplum/core';
+import { Address, Attachment, CodeableConcept, ContactPoint, ElementDefinition, HumanName, Identifier } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';

@@ -1,4 +1,4 @@
-import { Bundle } from '@medplum/core';
+import { Bundle } from '@medplum/fhirtypes';
 import { blame } from './blame';
 
 describe('Blame', () => {

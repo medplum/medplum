@@ -1,4 +1,5 @@
-import { LoginState, MedplumClient, Practitioner, ProfileResource } from '@medplum/core';
+import { LoginState, MedplumClient, ProfileResource } from '@medplum/core';
+import { Practitioner } from '@medplum/fhirtypes';
 
 export class MockClient extends MedplumClient {
   activeLoginOverride?: LoginState;

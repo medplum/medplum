@@ -1,4 +1,5 @@
-import { Address, Filter, formatAddress, Resource, SearchParameter, SortRule, stringify } from '@medplum/core';
+import { Filter, formatAddress, SortRule, stringify } from '@medplum/core';
+import { Address, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { getClient } from '../../database';
 import { DeleteQuery, InsertQuery, Operator, SelectQuery } from '../sql';

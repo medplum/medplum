@@ -1,4 +1,5 @@
-import { Bundle, Operator, StructureDefinition } from '@medplum/core';
+import { Operator } from '@medplum/core';
+import { Bundle, StructureDefinition } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
