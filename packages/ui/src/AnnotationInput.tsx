@@ -1,4 +1,5 @@
-import { Annotation, createReference } from '@medplum/core';
+import { createReference } from '@medplum/core';
+import { Annotation } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
 import { useMedplumProfile } from './MedplumProvider';
 import { TextField } from './TextField';
