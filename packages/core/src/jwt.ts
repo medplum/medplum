@@ -5,13 +5,13 @@
  */
 function decodePayload(payload: string) {
   const cleanedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
-  const decodedPayload = window.atob(cleanedPayload)
+  const decodedPayload = window.atob(cleanedPayload);
   const uriEncodedPayload = Array.from(decodedPayload).reduce((acc, char) => {
-    const uriEncodedChar = ('00' + char.charCodeAt(0).toString(16)).slice(-2)
-    return `${acc}%${uriEncodedChar}`
-  }, '')
+    const uriEncodedChar = ('00' + char.charCodeAt(0).toString(16)).slice(-2);
+    return `${acc}%${uriEncodedChar}`;
+  }, '');
   const jsonPayload = decodeURIComponent(uriEncodedPayload);
-  return JSON.parse(jsonPayload)
+  return JSON.parse(jsonPayload);
 }
 
 /**

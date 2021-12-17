@@ -11,7 +11,6 @@ const app = express();
 let accessToken: string;
 
 describe('SCIM Routes', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -70,5 +69,4 @@ describe('SCIM Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
   });
-
 });

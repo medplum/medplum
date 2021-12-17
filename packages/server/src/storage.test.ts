@@ -15,7 +15,6 @@ const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
 let binary: Binary | undefined = undefined;
 
 describe('Storage Routes', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -25,7 +24,7 @@ describe('Storage Routes', () => {
 
     const [outcome, resource] = await repo.createResource<Binary>({
       resourceType: 'Binary',
-      contentType: 'text/plain'
+      contentType: 'text/plain',
     });
     assertOk(outcome);
     binary = resource;
@@ -39,15 +38,12 @@ describe('Storage Routes', () => {
   });
 
   test('Missing signature', async () => {
-    const res = await request(app)
-      .get(`/storage/${binary?.id}`);
+    const res = await request(app).get(`/storage/${binary?.id}`);
     expect(res.status).toBe(401);
   });
 
   test('Success', async () => {
-    const res = await request(app)
-      .get(`/storage/${binary?.id}?Signature=xyz&Expires=123`);
+    const res = await request(app).get(`/storage/${binary?.id}?Signature=xyz&Expires=123`);
     expect(res.status).toBe(200);
   });
-
 });

@@ -21,7 +21,6 @@ let profile1: ProfileResource;
 let profile2: ProfileResource;
 
 describe('Profile', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -36,14 +35,14 @@ describe('Profile', () => {
       lastName: 'Multi1',
       projectName: 'Multi Project',
       email,
-      password
+      password,
     });
 
     const inviteResult = await inviteUser({
       project: registerResult.project,
       firstName: 'Multi2',
       lastName: 'Multi2',
-      email
+      email,
     });
 
     profile1 = registerResult.profile;
@@ -55,24 +54,18 @@ describe('Profile', () => {
   });
 
   test('Missing login', async () => {
-    const res = await request(app)
-      .post('/auth/profile')
-      .type('json')
-      .send({
-        profile: 'Practitioner/123'
-      });
+    const res = await request(app).post('/auth/profile').type('json').send({
+      profile: 'Practitioner/123',
+    });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Missing login');
   });
 
   test('Missing profile', async () => {
-    const res = await request(app)
-      .post('/auth/profile')
-      .type('json')
-      .send({
-        login: '123'
-      });
+    const res = await request(app).post('/auth/profile').type('json').send({
+      login: '123',
+    });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Missing profile');
@@ -84,7 +77,7 @@ describe('Profile', () => {
       .type('json')
       .send({
         login: randomUUID(),
-        profile: getReferenceString(profile1)
+        profile: getReferenceString(profile1),
       });
     expect(res.status).toBe(404);
     expect(res.body.issue).toBeDefined();
@@ -92,14 +85,11 @@ describe('Profile', () => {
   });
 
   test('Login revoked', async () => {
-    const res1 = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        scope: 'openid',
-        email,
-        password,
-      });
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      scope: 'openid',
+      email,
+      password,
+    });
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
 
@@ -107,7 +97,7 @@ describe('Profile', () => {
     assertOk(readOutcome);
     await repo.updateResource({
       ...(login as Login),
-      revoked: true
+      revoked: true,
     });
 
     const res2 = await request(app)
@@ -115,7 +105,7 @@ describe('Profile', () => {
       .type('json')
       .send({
         login: res1.body.login,
-        profile: getReferenceString(profile1)
+        profile: getReferenceString(profile1),
       });
     expect(res2.status).toBe(400);
     expect(res2.body.issue).toBeDefined();
@@ -123,14 +113,11 @@ describe('Profile', () => {
   });
 
   test('Login granted', async () => {
-    const res1 = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        scope: 'openid',
-        email,
-        password,
-      });
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      scope: 'openid',
+      email,
+      password,
+    });
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
 
@@ -138,7 +125,7 @@ describe('Profile', () => {
     assertOk(readOutcome);
     await repo.updateResource({
       ...(login as Login),
-      granted: true
+      granted: true,
     });
 
     const res2 = await request(app)
@@ -146,7 +133,7 @@ describe('Profile', () => {
       .type('json')
       .send({
         login: res1.body.login,
-        profile: getReferenceString(profile1)
+        profile: getReferenceString(profile1),
       });
     expect(res2.status).toBe(400);
     expect(res2.body.issue).toBeDefined();
@@ -154,14 +141,11 @@ describe('Profile', () => {
   });
 
   test('Login profile already set', async () => {
-    const res1 = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        scope: 'openid',
-        email,
-        password,
-      });
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      scope: 'openid',
+      email,
+      password,
+    });
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
 
@@ -174,7 +158,7 @@ describe('Profile', () => {
       },
       profile: {
         reference: `Practitioner/${randomUUID()}`,
-      }
+      },
     });
 
     const res2 = await request(app)
@@ -182,7 +166,7 @@ describe('Profile', () => {
       .type('json')
       .send({
         login: res1.body.login,
-        profile: getReferenceString(profile1)
+        profile: getReferenceString(profile1),
       });
     expect(res2.status).toBe(400);
     expect(res2.body.issue).toBeDefined();
@@ -190,14 +174,11 @@ describe('Profile', () => {
   });
 
   test('Membership not found', async () => {
-    const res1 = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        scope: 'openid',
-        email,
-        password,
-      });
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      scope: 'openid',
+      email,
+      password,
+    });
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
     expect(res1.body.code).toBeUndefined();
@@ -206,27 +187,21 @@ describe('Profile', () => {
     expect(res1.body.memberships.find((p: any) => p.profile.reference === getReferenceString(profile1))).toBeDefined();
     expect(res1.body.memberships.find((p: any) => p.profile.reference === getReferenceString(profile2))).toBeDefined();
 
-    const res2 = await request(app)
-      .post('/auth/profile')
-      .type('json')
-      .send({
-        login: res1.body.login,
-        profile: randomUUID(),
-      });
+    const res2 = await request(app).post('/auth/profile').type('json').send({
+      login: res1.body.login,
+      profile: randomUUID(),
+    });
     expect(res2.status).toBe(400);
     expect(res2.body.issue).toBeDefined();
     expect(res2.body.issue[0].details.text).toBe('Profile not found');
   });
 
   test('Success', async () => {
-    const res1 = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        scope: 'openid',
-        email,
-        password,
-      });
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      scope: 'openid',
+      email,
+      password,
+    });
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
     expect(res1.body.code).toBeUndefined();
@@ -235,15 +210,11 @@ describe('Profile', () => {
     expect(res1.body.memberships.find((p: any) => p.profile.reference === getReferenceString(profile1))).toBeDefined();
     expect(res1.body.memberships.find((p: any) => p.profile.reference === getReferenceString(profile2))).toBeDefined();
 
-    const res2 = await request(app)
-      .post('/auth/profile')
-      .type('json')
-      .send({
-        login: res1.body.login,
-        profile: res1.body.memberships[0].id
-      });
+    const res2 = await request(app).post('/auth/profile').type('json').send({
+      login: res1.body.login,
+      profile: res1.body.memberships[0].id,
+    });
     expect(res2.status).toBe(200);
     expect(res2.body.code).toBeDefined();
   });
-
 });

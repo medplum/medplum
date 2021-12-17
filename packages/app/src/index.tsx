@@ -8,7 +8,7 @@ import { App } from './App';
 const medplum = new MedplumClient({
   baseUrl: process.env.MEDPLUM_BASE_URL as string,
   clientId: process.env.MEDPLUM_CLIENT_ID as string,
-  onUnauthenticated: () => window.location.href = '/signin'
+  onUnauthenticated: () => (window.location.href = '/signin'),
 });
 
 ReactDOM.render(

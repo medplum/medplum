@@ -18,13 +18,12 @@ const setup = (args: QuestionnaireFormProps) => {
 };
 
 describe('QuestionnaireForm', () => {
-
   test('Renders empty', () => {
     setup({
       questionnaire: {
-        resourceType: 'Questionnaire'
+        resourceType: 'Questionnaire',
       },
-      onSubmit: jest.fn()
+      onSubmit: jest.fn(),
     });
     expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
   });
@@ -33,37 +32,44 @@ describe('QuestionnaireForm', () => {
     setup({
       questionnaire: {
         resourceType: 'Questionnaire',
-        item: [{
-          linkId: 'group1',
-          text: 'Group 1',
-          type: QuestionnaireItemType.group,
-          item: [{
-            linkId: 'question1',
-            text: 'Question 1',
-            type: QuestionnaireItemType.string
+        item: [
+          {
+            linkId: 'group1',
+            text: 'Group 1',
+            type: QuestionnaireItemType.group,
+            item: [
+              {
+                linkId: 'question1',
+                text: 'Question 1',
+                type: QuestionnaireItemType.string,
+              },
+              {
+                linkId: 'question2',
+                text: 'Question 2',
+                type: QuestionnaireItemType.string,
+              },
+            ],
           },
           {
-            linkId: 'question2',
-            text: 'Question 2',
-            type: QuestionnaireItemType.string
-          }]
-        }, {
-          linkId: 'group2',
-          text: 'Group 2',
-          type: QuestionnaireItemType.group,
-          item: [{
-            linkId: 'question3',
-            text: 'Question 3',
-            type: QuestionnaireItemType.string
+            linkId: 'group2',
+            text: 'Group 2',
+            type: QuestionnaireItemType.group,
+            item: [
+              {
+                linkId: 'question3',
+                text: 'Question 3',
+                type: QuestionnaireItemType.string,
+              },
+              {
+                linkId: 'question4',
+                text: 'Question 4',
+                type: QuestionnaireItemType.string,
+              },
+            ],
           },
-          {
-            linkId: 'question4',
-            text: 'Question 4',
-            type: QuestionnaireItemType.string
-          }]
-        }]
+        ],
       },
-      onSubmit: jest.fn()
+      onSubmit: jest.fn(),
     });
 
     expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
@@ -81,31 +87,31 @@ describe('QuestionnaireForm', () => {
           {
             linkId: 'q1',
             type: QuestionnaireItemType.string,
-            text: 'q1'
+            text: 'q1',
           },
           {
             linkId: 'q2',
             type: QuestionnaireItemType.integer,
-            text: 'q2'
+            text: 'q2',
           },
           {
             linkId: 'q3',
             type: QuestionnaireItemType.date,
-            text: 'q3'
+            text: 'q3',
           },
           {
             linkId: '', // Silently ignore missing linkId
             type: QuestionnaireItemType.string,
-            text: 'q4'
+            text: 'q4',
           },
           {
             linkId: 'q5',
             type: '', // Silently ignore missing type
-            text: 'q5'
-          }
-        ]
+            text: 'q5',
+          },
+        ],
       },
-      onSubmit
+      onSubmit,
     });
 
     expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
@@ -113,9 +119,13 @@ describe('QuestionnaireForm', () => {
     expect(screen.queryByLabelText('q5')).toBeFalsy();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('q1'), { target: { value: 'a1' } });
+      fireEvent.change(screen.getByLabelText('q1'), {
+        target: { value: 'a1' },
+      });
       fireEvent.change(screen.getByLabelText('q2'), { target: { value: '2' } });
-      fireEvent.change(screen.getByLabelText('q3'), { target: { value: '2023-03-03' } });
+      fireEvent.change(screen.getByLabelText('q3'), {
+        target: { value: '2023-03-03' },
+      });
     });
 
     expect(screen.getByText('OK')).toBeDefined();
@@ -141,13 +151,15 @@ describe('QuestionnaireForm', () => {
     setup({
       questionnaire: {
         resourceType: 'Questionnaire',
-        item: [{
-          linkId: 'q1',
-          type: propertyType,
-          text: 'q1'
-        }]
+        item: [
+          {
+            linkId: 'q1',
+            type: propertyType,
+            text: 'q1',
+          },
+        ],
       },
-      onSubmit: jest.fn()
+      onSubmit: jest.fn(),
     });
 
     const input = screen.getByLabelText('q1') as HTMLInputElement;
@@ -165,13 +177,15 @@ describe('QuestionnaireForm', () => {
     setup({
       questionnaire: {
         resourceType: 'Questionnaire',
-        item: [{
-          linkId: 'q1',
-          type: QuestionnaireItemType.boolean,
-          text: 'q1'
-        }]
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.boolean,
+            text: 'q1',
+          },
+        ],
       },
-      onSubmit: jest.fn()
+      onSubmit: jest.fn(),
     });
 
     const input = screen.getByLabelText('q1') as HTMLInputElement;
@@ -188,13 +202,15 @@ describe('QuestionnaireForm', () => {
     setup({
       questionnaire: {
         resourceType: 'Questionnaire',
-        item: [{
-          linkId: 'q1',
-          type: QuestionnaireItemType.choice,
-          text: 'q1'
-        }]
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.choice,
+            text: 'q1',
+          },
+        ],
       },
-      onSubmit: jest.fn()
+      onSubmit: jest.fn(),
     });
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
@@ -205,13 +221,15 @@ describe('QuestionnaireForm', () => {
     setup({
       questionnaire: {
         resourceType: 'Questionnaire',
-        item: [{
-          linkId: 'q1',
-          type: QuestionnaireItemType.openChoice,
-          text: 'q1'
-        }]
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.openChoice,
+            text: 'q1',
+          },
+        ],
       },
-      onSubmit: jest.fn()
+      onSubmit: jest.fn(),
     });
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
@@ -222,13 +240,15 @@ describe('QuestionnaireForm', () => {
     setup({
       questionnaire: {
         resourceType: 'Questionnaire',
-        item: [{
-          linkId: 'q1',
-          type: QuestionnaireItemType.attachment,
-          text: 'q1'
-        }]
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.attachment,
+            text: 'q1',
+          },
+        ],
       },
-      onSubmit: jest.fn()
+      onSubmit: jest.fn(),
     });
 
     const input = screen.getByText('Upload...');
@@ -239,17 +259,18 @@ describe('QuestionnaireForm', () => {
     setup({
       questionnaire: {
         resourceType: 'Questionnaire',
-        item: [{
-          linkId: 'q1',
-          type: QuestionnaireItemType.reference,
-          text: 'q1'
-        }]
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.reference,
+            text: 'q1',
+          },
+        ],
       },
-      onSubmit: jest.fn()
+      onSubmit: jest.fn(),
     });
 
     const input = screen.getByTestId('reference-input-resource-type-input');
     expect(input).toBeInTheDocument();
   });
-
 });

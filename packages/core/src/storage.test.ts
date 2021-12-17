@@ -1,7 +1,6 @@
 import { ClientStorage, MemoryStorage } from './storage';
 
 describe('Storage', () => {
-
   test('Using localStorage', () => {
     const storage = new ClientStorage();
 
@@ -46,11 +45,9 @@ describe('Storage', () => {
 
     Object.defineProperty(window, 'localStorage', { value: localStorage });
   });
-
 });
 
 describe('MemoryStorage', () => {
-
   test('Get string', () => {
     const storage = new MemoryStorage();
     expect(storage.length).toEqual(0);
@@ -64,5 +61,4 @@ describe('MemoryStorage', () => {
     expect(storage.getItem('foo')).toBeNull();
     expect(storage.length).toEqual(0);
   });
-
 });

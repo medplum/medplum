@@ -12,18 +12,18 @@ export interface BlameRow {
 export function blame(history: Bundle): BlameRow[] {
   // Convert to array of array of lines
   const versions = (history.entry as BundleEntry[])
-    .map(entry => ({
+    .map((entry) => ({
       meta: entry.resource?.meta as Meta,
-      lines: stringify(entry.resource, true).match(/[^\r\n]+/g) as string[]
+      lines: stringify(entry.resource, true).match(/[^\r\n]+/g) as string[],
     }))
     .sort((a, b) => (a.meta.lastUpdated as string).localeCompare(b.meta.lastUpdated as string));
 
   // Start with array of lines from the first version
-  const table: BlameRow[] = versions[0].lines.map(line => ({
+  const table: BlameRow[] = versions[0].lines.map((line) => ({
     id: versions[0].meta.versionId as string,
     meta: versions[0].meta,
     value: line,
-    span: 1
+    span: 1,
   }));
 
   compareVersions(table, versions);
@@ -36,7 +36,7 @@ export function blame(history: Bundle): BlameRow[] {
  * @param table The output blame table.
  * @param versions The array of versions.
  */
-function compareVersions(table: BlameRow[], versions: { meta: Meta, lines: string[] }[]): void {
+function compareVersions(table: BlameRow[], versions: { meta: Meta; lines: string[] }[]): void {
   for (let i = 1; i < versions.length; i++) {
     const revisions = diff(versions[i - 1].lines, versions[i].lines);
 
@@ -57,7 +57,7 @@ function compareVersions(table: BlameRow[], versions: { meta: Meta, lines: strin
             id: versions[i].meta.versionId as string,
             meta: versions[i].meta,
             value: newLines[k],
-            span: 1
+            span: 1,
           });
         }
       }

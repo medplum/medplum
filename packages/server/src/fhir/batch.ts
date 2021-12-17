@@ -29,10 +29,7 @@ class BatchProcessor {
    * @param repo The FHIR repository.
    * @param bundle The input bundle.
    */
-  constructor(
-    private readonly repo: Repository,
-    private readonly bundle: Bundle
-  ) {
+  constructor(private readonly repo: Repository, private readonly bundle: Bundle) {
     this.ids = {};
   }
 
@@ -66,7 +63,7 @@ class BatchProcessor {
     const result: Bundle = {
       resourceType: 'Bundle',
       type: 'batch-response',
-      entry: resultEntries
+      entry: resultEntries,
     };
 
     return [allOk, result];
@@ -309,13 +306,11 @@ class BatchProcessor {
   }
 
   private rewriteIdsInArray(input: any[]): any[] {
-    return input.map(item => this.rewriteIds(item));
+    return input.map((item) => this.rewriteIds(item));
   }
 
   private rewriteIdsInObject(input: any): any {
-    return Object.fromEntries(
-      Object.entries(input).map(([k, v]) => [k, this.rewriteIds(v)])
-    );
+    return Object.fromEntries(Object.entries(input).map(([k, v]) => [k, this.rewriteIds(v)]));
   }
 
   private rewriteIdsInString(input: string) {
@@ -329,8 +324,8 @@ function buildBundleResponse(outcome: OperationOutcome, resource?: Resource, ful
     response: {
       outcome: outcome,
       status: getStatus(outcome).toString(),
-      location: isOk(outcome) && resource?.id ? getReferenceString(resource) : undefined
+      location: isOk(outcome) && resource?.id ? getReferenceString(resource) : undefined,
     },
-    resource: (full && resource) || undefined
+    resource: (full && resource) || undefined,
   };
 }

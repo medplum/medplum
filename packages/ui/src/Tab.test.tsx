@@ -29,11 +29,8 @@ function TabTest() {
 }
 
 describe('Tab', () => {
-
   test('Renders', async () => {
-    render(
-      <TabTest />
-    );
+    render(<TabTest />);
 
     expect(screen.getByText('First')).toBeDefined();
     expect(screen.getByText('First content')).toBeDefined();
@@ -48,5 +45,4 @@ describe('Tab', () => {
     expect(screen.getByText('Second content')).toBeDefined();
     expect(screen.queryByText('First content')).toBeNull();
   });
-
 });

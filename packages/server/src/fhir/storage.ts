@@ -29,7 +29,6 @@ export function getBinaryStorage(): BinaryStorage {
  * The BinaryStorage interface represents a method of reading and writing binary blobs.
  */
 interface BinaryStorage {
-
   writeBinary(binary: Binary, req: Request): Promise<void>;
 
   readBinary(binary: Binary, res: Response): Promise<void>;
@@ -93,19 +92,23 @@ class S3Storage implements BinaryStorage {
       body = req.body.toString();
     }
 
-    await this.client.send(new PutObjectCommand({
-      Bucket: this.bucket,
-      Key: this.getKey(binary),
-      ContentType: binary.contentType,
-      Body: body
-    }));
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: this.getKey(binary),
+        ContentType: binary.contentType,
+        Body: body,
+      })
+    );
   }
 
   async readBinary(binary: Binary, res: Response): Promise<void> {
-    const output = await this.client.send(new GetObjectCommand({
-      Bucket: this.bucket,
-      Key: this.getKey(binary)
-    }));
+    const output = await this.client.send(
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: this.getKey(binary),
+      })
+    );
     (output.Body as IncomingMessage).pipe(res);
   }
 

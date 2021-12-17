@@ -9,24 +9,27 @@ import { MockClient } from './MockClient';
 const patient: Patient = {
   resourceType: 'Patient',
   id: '123',
-  name: [{
-    given: ['Alice'],
-    family: 'Smith'
-  }],
-  photo: [{
-    contentType: 'image/jpeg',
-    url: 'https://example.com/picture.jpg'
-  }]
+  name: [
+    {
+      given: ['Alice'],
+      family: 'Smith',
+    },
+  ],
+  photo: [
+    {
+      contentType: 'image/jpeg',
+      url: 'https://example.com/picture.jpg',
+    },
+  ],
 };
 
 const medplum = new MockClient({
   'fhir/R4/Patient/123': {
-    'GET': patient
-  }
+    GET: patient,
+  },
 });
 
 describe('Avatar', () => {
-
   const setup = (args: AvatarProps) => {
     return render(
       <MemoryRouter>
@@ -49,7 +52,7 @@ describe('Avatar', () => {
 
   test('Avatar renders resource directly', async () => {
     const utils = setup({
-      value: patient
+      value: patient,
     });
 
     await waitFor(() => utils.getByTestId('avatar'));
@@ -60,7 +63,7 @@ describe('Avatar', () => {
   test('Avatar renders resource directly as link', async () => {
     const utils = setup({
       value: patient,
-      link: true
+      link: true,
     });
 
     await waitFor(() => utils.getByTestId('avatar'));
@@ -71,13 +74,12 @@ describe('Avatar', () => {
   test('Avatar renders after loading the resource', async () => {
     const utils = setup({
       value: {
-        reference: 'Patient/' + patient.id
-      }
+        reference: 'Patient/' + patient.id,
+      },
     });
 
     await waitFor(() => utils.getByTestId('avatar'));
 
     expect(utils.getByTestId('avatar')).toBeDefined();
   });
-
 });

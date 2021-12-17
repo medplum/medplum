@@ -26,16 +26,11 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps) {
 
   return (
     <div className="medplum-questionnaire-builder">
-      <Form
-        testid="questionnaire-form"
-        onSubmit={() => props.onSubmit(value)}>
-        <ItemBuilder
-          item={value}
-          selectedKey={selectedKey}
-          setSelectedKey={setSelectedKey}
-          onChange={setValue}
-        />
-        <Button type="submit" size="large">OK</Button>
+      <Form testid="questionnaire-form" onSubmit={() => props.onSubmit(value)}>
+        <ItemBuilder item={value} selectedKey={selectedKey} setSelectedKey={setSelectedKey} onChange={setValue} />
+        <Button type="submit" size="large">
+          OK
+        </Button>
       </Form>
     </div>
   );
@@ -85,7 +80,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   function removeItem(removedItem: QuestionnaireItem) {
     props.onChange({
       ...props.item,
-      item: props.item?.item?.filter(i => i !== removedItem)
+      item: props.item?.item?.filter((i) => i !== removedItem),
     });
   }
 
@@ -117,19 +112,12 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             />
           )}
           {!isResource && (
-            <input
-              type="text"
-              defaultValue={item.text}
-              onChange={(e) => changeProperty('text', e.target.value)}
-            />
+            <input type="text" defaultValue={item.text} onChange={(e) => changeProperty('text', e.target.value)} />
           )}
           {!isContainer && (
             <>
               <br />
-              <select
-                defaultValue={item.type}
-                onChange={(e) => changeProperty('type', e.target.value)}
-              >
+              <select defaultValue={item.type} onChange={(e) => changeProperty('type', e.target.value)}>
                 <option>display</option>
                 <optgroup label="question">
                   <option>boolean</option>
@@ -153,50 +141,68 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
         </>
       ) : (
         <>
-          {!isContainer && (<span>[{linkId}]&nbsp;</span>)}
+          {!isContainer && <span>[{linkId}]&nbsp;</span>}
           {title}
-          {!isContainer && (<p>{item.type}</p>)}
+          {!isContainer && <p>{item.type}</p>}
         </>
       )}
-      {item.item && item.item.map(i => (
-        <div key={(i as any).__key}>
-          <ItemBuilder
-            item={i}
-            selectedKey={props.selectedKey}
-            setSelectedKey={props.setSelectedKey}
-            onChange={changeItem}
-            onRemove={() => removeItem(i)}
-          />
+      {item.item &&
+        item.item.map((i) => (
+          <div key={(i as any).__key}>
+            <ItemBuilder
+              item={i}
+              selectedKey={props.selectedKey}
+              setSelectedKey={props.setSelectedKey}
+              onChange={changeItem}
+              onRemove={() => removeItem(i)}
+            />
+          </div>
+        ))}
+      {editing && props.onRemove && (
+        <div className="top-actions">
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              if (props.onRemove) {
+                props.onRemove();
+              }
+            }}
+          >
+            Remove
+          </a>
         </div>
-      ))}
-      {editing && props.onRemove && (<div className="top-actions">
-        <a href="#" onClick={e => {
-          e.preventDefault();
-          if (props.onRemove) {
-            props.onRemove();
-          }
-        }}>Remove</a>
-      </div>)}
+      )}
       {editing && isContainer && (
         <div className="bottom-actions">
-          <a href="#" onClick={e => {
-            e.preventDefault();
-            addItem({
-              __key: generateKey(),
-              linkId: generateKey(),
-              type: 'string',
-              text: 'Question'
-            } as QuestionnaireItem);
-          }}>Add item</a>
-          <a href="#" onClick={e => {
-            e.preventDefault();
-            addItem({
-              __key: generateKey(),
-              linkId: generateKey(),
-              type: 'group',
-              text: 'Group'
-            } as QuestionnaireItem);
-          }}>Add group</a>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              addItem({
+                __key: generateKey(),
+                linkId: generateKey(),
+                type: 'string',
+                text: 'Question',
+              } as QuestionnaireItem);
+            }}
+          >
+            Add item
+          </a>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              addItem({
+                __key: generateKey(),
+                linkId: generateKey(),
+                type: 'group',
+                text: 'Group',
+              } as QuestionnaireItem);
+            }}
+          >
+            Add group
+          </a>
         </div>
       )}
     </div>
@@ -208,16 +214,16 @@ let nextKeyId = 1;
 /**
  * Generates a short unique key that can be used for local identifiers.
  * @return A unique key.
-*/
+ */
 function generateKey(): string {
-  return 'key' + (nextKeyId++);
+  return 'key' + nextKeyId++;
 }
 
 function ensureQuestionnaireKeys(questionnaire: Questionnaire): Questionnaire {
   return {
     ...questionnaire,
     item: ensureQuestionnaireItemKeys(questionnaire.item),
-    __key: generateKey()
+    __key: generateKey(),
   } as Questionnaire;
 }
 
@@ -225,9 +231,9 @@ function ensureQuestionnaireItemKeys(items: QuestionnaireItem[] | undefined): Qu
   if (!items) {
     return undefined;
   }
-  return items.map(item => ({
+  return items.map((item) => ({
     ...item,
     item: ensureQuestionnaireItemKeys(item.item),
-    __key: generateKey()
+    __key: generateKey(),
   }));
 }

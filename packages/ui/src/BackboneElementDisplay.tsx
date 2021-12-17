@@ -20,12 +20,12 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps) {
   const typeName = buildTypeName(props.property.path?.split('.') as string[]);
   const typeSchema = props.schema.types[typeName];
   if (!typeSchema) {
-    return <div>Schema not found</div>
+    return <div>Schema not found</div>;
   }
 
   return (
     <DescriptionList>
-      {Object.entries(typeSchema.properties).map(entry => {
+      {Object.entries(typeSchema.properties).map((entry) => {
         const key = entry[0];
         if (DEFAULT_IGNORED_PROPERTIES.indexOf(key) >= 0) {
           return null;
@@ -33,11 +33,7 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps) {
         const property = entry[1];
         return (
           <DescriptionListEntry key={key} term={getPropertyDisplayName(property)}>
-            <ResourcePropertyDisplay
-              schema={props.schema}
-              property={property}
-              value={value[key]}
-            />
+            <ResourcePropertyDisplay schema={props.schema} property={property} value={value[key]} />
           </DescriptionListEntry>
         );
       })}

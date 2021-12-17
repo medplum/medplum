@@ -7,15 +7,15 @@ import { ResetPasswordPage } from './ResetPasswordPage';
 
 const medplum = new MockClient({
   'auth/resetpassword': {
-    'POST': (body: string) => {
+    POST: (body: string) => {
       const { email } = JSON.parse(body);
       if (email === 'admin@example.com') {
         return allOk;
       } else {
         return undefined;
       }
-    }
-  }
+    },
+  },
 });
 
 const setup = () => {
@@ -29,7 +29,6 @@ const setup = () => {
 };
 
 describe('ResetPasswordPage', () => {
-
   test('Renders', () => {
     const utils = setup();
     const input = utils.getByTestId('submit') as HTMLButtonElement;
@@ -40,7 +39,9 @@ describe('ResetPasswordPage', () => {
     setup();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), { target: { value: 'admin@example.com' } });
+      fireEvent.change(screen.getByTestId('email'), {
+        target: { value: 'admin@example.com' },
+      });
     });
 
     await act(async () => {
@@ -49,5 +50,4 @@ describe('ResetPasswordPage', () => {
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
   });
-
 });

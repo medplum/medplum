@@ -11,14 +11,7 @@ export function AttachmentDisplay(props: AttachmentDisplayProps) {
   const { contentType, url } = value ?? {};
 
   if (contentType?.startsWith('image/') && url) {
-    return (
-      <img
-        data-testid="attachment-image"
-        style={{ maxWidth: props.maxWidth }}
-        src={url}
-        alt={value?.title}
-      />
-    );
+    return <img data-testid="attachment-image" style={{ maxWidth: props.maxWidth }} src={url} alt={value?.title} />;
   }
 
   if (contentType?.startsWith('video/') && url) {
@@ -30,6 +23,8 @@ export function AttachmentDisplay(props: AttachmentDisplayProps) {
   }
 
   return (
-    <a href={value?.url} data-testid="attachment-details">{value?.title}</a>
+    <a href={value?.url} data-testid="attachment-details">
+      {value?.title}
+    </a>
   );
 }

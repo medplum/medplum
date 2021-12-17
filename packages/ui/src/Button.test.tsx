@@ -3,7 +3,6 @@ import React from 'react';
 import { Button } from './Button';
 
 describe('Button', () => {
-
   test('Renders', () => {
     render(<Button>test</Button>);
     expect(screen.getByText('test')).toBeDefined();
@@ -45,5 +44,4 @@ describe('Button', () => {
     expect(screen.getByText('test')).toBeDefined();
     expect(screen.getByText('test').className).toEqual('btn btn-large');
   });
-
 });

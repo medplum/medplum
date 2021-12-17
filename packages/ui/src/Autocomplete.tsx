@@ -165,11 +165,9 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
     if (selectedIndex >= 0 && selectedIndex < options.length) {
       // Currently highlighted row
       option = options[selectedIndex];
-
     } else if (selectedIndex === -1 && options.length > 0) {
       // Default to first row
       option = options[0];
-
     } else if (props.buildUnstructured && inputRef.current?.value) {
       // Build semi-structured item
       option = props.buildUnstructured(inputRef.current.value);
@@ -205,7 +203,8 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
 
     setLastValue(value);
 
-    props.loadOptions(value)
+    props
+      .loadOptions(value)
       .then((newOptions: T[]) => {
         setDropDownVisible(newOptions.length > 0);
         setOptions(newOptions);
@@ -263,13 +262,11 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
     <div
       data-testid="autocomplete"
       className={baseClassName + (focused ? ' focused' : '')}
-      onClick={() => handleClick()}>
+      onClick={() => handleClick()}
+    >
       <ul onClick={() => handleClick()}>
-        {values.map(value => (
-          <li
-            key={props.getId(value)}
-            data-testid="selected"
-            className="choice">
+        {values.map((value) => (
+          <li key={props.getId(value)} data-testid="selected" className="choice">
             {props.getDisplay(value)}
           </li>
         ))}
@@ -294,22 +291,18 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
           {options.map((option, index) => (
             <div
               key={props.getId(option)}
-              className={index === selectedIndex ? "medplum-autocomplete-row medplum-autocomplete-active" : "medplum-autocomplete-row"}
-              onMouseOver={e => handleDropDownHover(e, index)}
-              onClick={e => handleDropDownClick(e, option)}
+              className={
+                index === selectedIndex
+                  ? 'medplum-autocomplete-row medplum-autocomplete-active'
+                  : 'medplum-autocomplete-row'
+              }
+              onMouseOver={(e) => handleDropDownHover(e, index)}
+              onClick={(e) => handleDropDownClick(e, option)}
             >
-              {props.getIcon && (
-                <div className="medplum-autocomplete-icon">
-                  {props.getIcon(option)}
-                </div>
-              )}
+              {props.getIcon && <div className="medplum-autocomplete-icon">{props.getIcon(option)}</div>}
               <div className="medplum-autocomplete-label">
                 {props.getDisplay(option)}
-                {props.getHelpText && (
-                  <div className="medplum-autocomplete-help-text">
-                    {props.getHelpText(option)}
-                  </div>
-                )}
+                {props.getHelpText && <div className="medplum-autocomplete-help-text">{props.getHelpText(option)}</div>}
               </div>
             </div>
           ))}

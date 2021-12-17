@@ -53,12 +53,15 @@ export function ResourceArrayInput(props: ResourceArrayInputProps) {
               </td>
               <td>
                 <Button
-                  onClick={e => {
+                  onClick={(e) => {
                     killEvent(e);
                     const copy = [...(valuesRef.current as any[])];
                     copy.splice(index, 1);
                     setValuesWrapper(copy);
-                  }}>Remove</Button>
+                  }}
+                >
+                  Remove
+                </Button>
               </td>
             </tr>
           ))}
@@ -66,12 +69,15 @@ export function ResourceArrayInput(props: ResourceArrayInputProps) {
             <td></td>
             <td>
               <Button
-                onClick={e => {
+                onClick={(e) => {
                   killEvent(e);
                   const copy = [...(valuesRef.current as any[])];
                   copy.push(undefined);
                   setValuesWrapper(copy);
-                }}>Add</Button>
+                }}
+              >
+                Add
+              </Button>
             </td>
           </tr>
         </tbody>

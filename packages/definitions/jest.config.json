@@ -4,19 +4,9 @@
   "transform": {
     "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
   },
-  "moduleFileExtensions": [
-    "ts",
-    "js",
-    "json",
-    "node"
-  ],
-  "testMatch": [
-    "**/src/**/*.test.ts"
-  ],
+  "moduleFileExtensions": ["ts", "js", "json", "node"],
+  "testMatch": ["**/src/**/*.test.ts"],
   "collectCoverage": true,
   "coverageDirectory": "coverage",
-  "collectCoverageFrom": [
-    "src/**/*.ts",
-    "!src/**/*.d.ts"
-  ]
+  "collectCoverageFrom": ["src/**/*.ts", "!src/**/*.d.ts"]
 }

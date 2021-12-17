@@ -47,7 +47,7 @@ export function empty(input: any[]): boolean {
  */
 export function exists(input: any[], criteria?: Atom): boolean {
   if (criteria) {
-    return input.filter(e => toJsBoolean(criteria.eval(e))).length > 0;
+    return input.filter((e) => toJsBoolean(criteria.eval(e))).length > 0;
   } else {
     return input.length > 0;
   }
@@ -66,7 +66,7 @@ export function exists(input: any[], criteria?: Atom): boolean {
  * @returns True if for every element in the input collection, criteria evaluates to true.
  */
 export function all(input: any[], criteria: Atom): boolean {
-  return input.every(e => toJsBoolean(criteria.eval(e)));
+  return input.every((e) => toJsBoolean(criteria.eval(e)));
 }
 
 /**
@@ -242,7 +242,7 @@ export function isDistinct(input: any[]): boolean {
  * @returns A collection containing only those elements in the input collection for which the stated criteria expression evaluates to true.
  */
 export function where(input: any[], criteria: Atom): any[] {
-  return input.filter(e => toJsBoolean(criteria.eval(e)));
+  return input.filter((e) => toJsBoolean(criteria.eval(e)));
 }
 
 /**
@@ -403,7 +403,7 @@ export function intersect(input: any[], other: Atom): any[] {
     return input;
   }
   const otherArray = ensureArray(other.eval(0));
-  return removeDuplicates(input.filter(e => otherArray.includes(e)));
+  return removeDuplicates(input.filter((e) => otherArray.includes(e)));
 }
 
 /**
@@ -419,7 +419,7 @@ export function exclude(input: any[], other: Atom): any[] {
     return input;
   }
   const otherArray = ensureArray(other.eval(0));
-  return input.filter(e => !otherArray.includes(e));
+  return input.filter((e) => !otherArray.includes(e));
 }
 
 /*
@@ -994,10 +994,7 @@ export function convertsToTime(input: any[]): boolean[] {
  * @returns The index of the substring.
  */
 export function indexOf(input: any[], substringAtom: Atom): number[] {
-  return applyStringFunc(
-    (str, substring) => str.indexOf(substring),
-    input,
-    substringAtom);
+  return applyStringFunc((str, substring) => str.indexOf(substring), input, substringAtom);
 }
 
 /**
@@ -1016,10 +1013,11 @@ export function indexOf(input: any[], substringAtom: Atom): number[] {
  */
 export function substring(input: any[], startAtom: Atom, lengthAtom?: Atom): string[] {
   return applyStringFunc(
-    (str, start, length) => (start < 0 || start >= str.length) ? undefined : str.substr(start, length),
+    (str, start, length) => (start < 0 || start >= str.length ? undefined : str.substr(start, length)),
     input,
     startAtom,
-    lengthAtom);
+    lengthAtom
+  );
 }
 
 /**
@@ -1028,10 +1026,7 @@ export function substring(input: any[], startAtom: Atom, lengthAtom?: Atom): str
  * @returns The index of the substring.
  */
 export function startsWith(input: any[], prefixAtom: Atom): boolean[] {
-  return applyStringFunc(
-    (str, prefix) => str.startsWith(prefix),
-    input,
-    prefixAtom);
+  return applyStringFunc((str, prefix) => str.startsWith(prefix), input, prefixAtom);
 }
 
 /**
@@ -1040,10 +1035,7 @@ export function startsWith(input: any[], prefixAtom: Atom): boolean[] {
  * @returns The index of the substring.
  */
 export function endsWith(input: any[], suffixAtom: Atom): boolean[] {
-  return applyStringFunc(
-    (str, suffix) => str.endsWith(suffix),
-    input,
-    suffixAtom);
+  return applyStringFunc((str, suffix) => str.endsWith(suffix), input, suffixAtom);
 }
 
 /**
@@ -1052,10 +1044,7 @@ export function endsWith(input: any[], suffixAtom: Atom): boolean[] {
  * @returns The index of the substring.
  */
 export function contains(input: any[], substringAtom: Atom): boolean[] {
-  return applyStringFunc(
-    (str, substring) => str.includes(substring),
-    input,
-    substringAtom);
+  return applyStringFunc((str, substring) => str.includes(substring), input, substringAtom);
 }
 
 /**
@@ -1064,9 +1053,7 @@ export function contains(input: any[], substringAtom: Atom): boolean[] {
  * @returns The index of the substring.
  */
 export function upper(input: any[]): string[] {
-  return applyStringFunc(
-    (str) => str.toUpperCase(),
-    input);
+  return applyStringFunc((str) => str.toUpperCase(), input);
 }
 
 /**
@@ -1075,9 +1062,7 @@ export function upper(input: any[]): string[] {
  * @returns The index of the substring.
  */
 export function lower(input: any[]): string[] {
-  return applyStringFunc(
-    (str) => str.toLowerCase(),
-    input);
+  return applyStringFunc((str) => str.toLowerCase(), input);
 }
 
 /**
@@ -1090,7 +1075,8 @@ export function replace(input: any[], patternAtom: Atom, substitionAtom: Atom): 
     (str, pattern, substition) => str.replaceAll(pattern, substition),
     input,
     patternAtom,
-    substitionAtom);
+    substitionAtom
+  );
 }
 
 /**
@@ -1099,10 +1085,7 @@ export function replace(input: any[], patternAtom: Atom, substitionAtom: Atom): 
  * @returns The index of the substring.
  */
 export function matches(input: any[], regexAtom: Atom): boolean[] {
-  return applyStringFunc(
-    (str, regex) => !!str.match(regex),
-    input,
-    regexAtom);
+  return applyStringFunc((str, regex) => !!str.match(regex), input, regexAtom);
 }
 
 /**
@@ -1115,7 +1098,8 @@ export function replaceMatches(input: any[], regexAtom: Atom, substitionAtom: At
     (str, pattern, substition) => str.replaceAll(pattern, substition),
     input,
     regexAtom,
-    substitionAtom);
+    substitionAtom
+  );
 }
 
 /**
@@ -1124,9 +1108,7 @@ export function replaceMatches(input: any[], regexAtom: Atom, substitionAtom: At
  * @returns The index of the substring.
  */
 export function length(input: any[]): number[] {
-  return applyStringFunc(
-    (str) => str.length,
-    input);
+  return applyStringFunc((str) => str.length, input);
 }
 
 /**
@@ -1137,9 +1119,7 @@ export function length(input: any[]): number[] {
  * @param input The input collection.
  */
 export function toChars(input: any[]): string[][] {
-  return applyStringFunc(
-    (str) => str ? str.split('') : undefined,
-    input);
+  return applyStringFunc((str) => (str ? str.split('') : undefined), input);
 }
 
 /*
@@ -1321,7 +1301,7 @@ export function sqrt(input: any[]): number[] {
  * @returns A collection containing the result.
  */
 export function truncate(input: any[]): number[] {
-  return applyMathFunc(x => x | 0, input);
+  return applyMathFunc((x) => x | 0, input);
 }
 
 /*
@@ -1402,7 +1382,7 @@ export function today(): string[] {
  */
 export function is(input: any[], typeAtom: Atom): boolean[] {
   const typeName = typeAtom.toString();
-  return input.map(value => fhirPathIs(value, typeName));
+  return input.map((value) => fhirPathIs(value, typeName));
 }
 
 /*
@@ -1418,7 +1398,7 @@ export function is(input: any[], typeAtom: Atom): boolean[] {
  * @returns
  */
 export function not(input: any[]): boolean[] {
-  return toBoolean(input).map(value => !value);
+  return toBoolean(input).map((value) => !value);
 }
 
 /*
@@ -1433,19 +1413,21 @@ export function not(input: any[]): boolean[] {
  * @returns
  */
 export function resolve(input: any[]): any[] {
-  return input.map(e => {
-    let refStr: string | undefined;
-    if (typeof e === 'string') {
-      refStr = e;
-    } else if (typeof e === 'object') {
-      refStr = e.reference;
-    }
-    if (!refStr) {
-      return undefined;
-    }
-    const [resourceType, id] = refStr.split('/');
-    return { resourceType, id };
-  }).filter(e => !!e);
+  return input
+    .map((e) => {
+      let refStr: string | undefined;
+      if (typeof e === 'string') {
+        refStr = e;
+      } else if (typeof e === 'object') {
+        refStr = e.reference;
+      }
+      if (!refStr) {
+        return undefined;
+      }
+      const [resourceType, id] = refStr.split('/');
+      return { resourceType, id };
+    })
+    .filter((e) => !!e);
 }
 
 /**
@@ -1476,7 +1458,7 @@ export function as(context: any): any {
  * @returns
  */
 export function type(input: any[]): any[] {
-  return input.map(value => {
+  return input.map((value) => {
     if (typeof value === 'boolean') {
       return { namespace: 'System', name: 'Boolean' };
     }
@@ -1496,14 +1478,18 @@ export function conformsTo(input: any[], systemAtom: Atom): boolean[] {
     throw new Error('Expected a StructureDefinition URL');
   }
   const expectedResourceType = system.replace('http://hl7.org/fhir/StructureDefinition/', '');
-  return input.map(resource => resource?.resourceType === expectedResourceType);
+  return input.map((resource) => resource?.resourceType === expectedResourceType);
 }
 
 /*
  * Helper utilities
  */
 
-function applyStringFunc<T>(func: (str: string, ...args: any[]) => T | undefined, input: any[], ...argsAtoms: (Atom | undefined)[]): T[] {
+function applyStringFunc<T>(
+  func: (str: string, ...args: any[]) => T | undefined,
+  input: any[],
+  ...argsAtoms: (Atom | undefined)[]
+): T[] {
   if (input.length === 0) {
     return input;
   }
@@ -1511,7 +1497,7 @@ function applyStringFunc<T>(func: (str: string, ...args: any[]) => T | undefined
   if (typeof value !== 'string') {
     throw new Error('String function cannot be called with non-string');
   }
-  const result = func(value, ...argsAtoms.map(atom => atom && atom.eval(value)));
+  const result = func(value, ...argsAtoms.map((atom) => atom && atom.eval(value)));
   return result === undefined ? [] : [result];
 }
 
@@ -1525,7 +1511,7 @@ function applyMathFunc(func: (x: number, ...args: any[]) => number, input: any[]
   if (typeof numberInput !== 'number') {
     throw new Error('Math function cannot be called with non-number');
   }
-  const result = func(numberInput, ...argsAtoms.map(atom => atom.eval(undefined)));
+  const result = func(numberInput, ...argsAtoms.map((atom) => atom.eval(undefined)));
   return quantity ? [{ ...value, value: result }] : [result];
 }
 

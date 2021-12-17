@@ -6,7 +6,6 @@
 import { PoolClient } from 'pg';
 
 export async function run(client: PoolClient) {
-
   await client.query(`CREATE TABLE IF NOT EXISTS "Account" (
     "id" UUID NOT NULL PRIMARY KEY,
     "content" TEXT NOT NULL,

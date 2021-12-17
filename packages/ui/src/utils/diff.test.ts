@@ -1,7 +1,6 @@
 import { diff } from './diff';
 
 describe('Diff', () => {
-
   test('diff insert', () => {
     const before = ['a', 'b'];
     const after = ['a', 'c', 'b'];
@@ -10,11 +9,11 @@ describe('Diff', () => {
     expect(result[0].type).toEqual('insert');
     expect(result[0].original).toMatchObject({
       position: 1,
-      lines: []
+      lines: [],
     });
     expect(result[0].revised).toMatchObject({
       position: 1,
-      lines: ['c']
+      lines: ['c'],
     });
   });
 
@@ -26,11 +25,11 @@ describe('Diff', () => {
     expect(result[0].type).toEqual('insert');
     expect(result[0].original).toMatchObject({
       position: 2,
-      lines: []
+      lines: [],
     });
     expect(result[0].revised).toMatchObject({
       position: 2,
-      lines: ['c']
+      lines: ['c'],
     });
   });
 
@@ -42,11 +41,11 @@ describe('Diff', () => {
     expect(result[0].type).toEqual('delete');
     expect(result[0].original).toMatchObject({
       position: 2,
-      lines: ['c']
+      lines: ['c'],
     });
     expect(result[0].revised).toMatchObject({
       position: 2,
-      lines: []
+      lines: [],
     });
   });
 
@@ -58,12 +57,11 @@ describe('Diff', () => {
     expect(result[0].type).toEqual('change');
     expect(result[0].original).toMatchObject({
       position: 2,
-      lines: ['c']
+      lines: ['c'],
     });
     expect(result[0].revised).toMatchObject({
       position: 2,
-      lines: ['d']
+      lines: ['d'],
     });
   });
-
 });

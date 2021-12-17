@@ -2,7 +2,6 @@ import { Resource } from '@medplum/fhirtypes';
 import { validateResource, validateResourceType } from './schema';
 
 describe('FHIR schema', () => {
-
   test('validateResourceType', () => {
     expect(validateResourceType('').issue?.[0]?.severity).toEqual('error');
     expect(validateResourceType('FakeResource').issue?.[0]?.severity).toEqual('error');
@@ -17,21 +16,34 @@ describe('FHIR schema', () => {
   });
 
   test('Array properties', () => {
-    expect(validateResource({ resourceType: 'Patient', name: [{ given: ['Homer'] }] }).id).toEqual('ok');
+    expect(
+      validateResource({
+        resourceType: 'Patient',
+        name: [{ given: ['Homer'] }],
+      }).id
+    ).toEqual('ok');
 
-    const outcome = validateResource({ resourceType: 'Patient', name: 'Homer' } as any as Resource);
+    const outcome = validateResource({
+      resourceType: 'Patient',
+      name: 'Homer',
+    } as any as Resource);
     expect(outcome.issue?.[0]?.severity).toEqual('error');
     expect(outcome.issue?.[0]?.expression?.[0]).toEqual('name');
   });
 
   test('Additional properties', () => {
-    expect(validateResource({
-      resourceType: 'Patient',
-      name: [{ given: ['Homer'] }],
-      meta: {}
-    }).id).toEqual('ok');
+    expect(
+      validateResource({
+        resourceType: 'Patient',
+        name: [{ given: ['Homer'] }],
+        meta: {},
+      }).id
+    ).toEqual('ok');
 
-    const outcome = validateResource({ resourceType: 'Patient', fakeProperty: 'test' } as any as Resource);
+    const outcome = validateResource({
+      resourceType: 'Patient',
+      fakeProperty: 'test',
+    } as any as Resource);
     expect(outcome.issue?.[0]?.severity).toEqual('error');
     expect(outcome.issue?.[0]?.expression?.[0]).toEqual('fakeProperty');
   });
@@ -41,5 +53,4 @@ describe('FHIR schema', () => {
     expect(outcome.issue?.[0]?.severity).toEqual('error');
     expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code');
   });
-
 });

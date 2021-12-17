@@ -28,14 +28,14 @@
   color: rgba(0, 0, 0, 0.5);
   font-family: monospace;
   padding: 4px 8px;
-  text-align: right
+  text-align: right;
 }
 
 .medplum-blame .line {
   font-family: monospace;
-  padding: 4px 8px
+  padding: 4px 8px;
 }
 
 .medplum-blame .line-pre {
-  margin: 0
+  margin: 0;
 }

@@ -13,16 +13,12 @@
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && tsc",
-    "test": "jest",
-    "lint": "eslint src/ --ext .ts,.tsx"
+    "test": "jest"
   },
   "devDependencies": {
     "@medplum/definitions": "0.2.2",
     "@medplum/fhirtypes": "0.2.2"
   },
-  "files": [
-    "dist"
-  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "sideEffects": false,

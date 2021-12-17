@@ -39,10 +39,12 @@ export function ReferenceInput(props: ReferenceInputProps) {
               <select
                 data-testid="reference-input-resource-type-select"
                 defaultValue={resourceType}
-                onChange={e => setResourceType(e.currentTarget.value)}
+                onChange={(e) => setResourceType(e.currentTarget.value)}
               >
-                {targetTypes.map(targetType => (
-                  <option key={targetType} value={targetType}>{targetType}</option>
+                {targetTypes.map((targetType) => (
+                  <option key={targetType} value={targetType}>
+                    {targetType}
+                  </option>
                 ))}
               </select>
             ) : (
@@ -50,7 +52,7 @@ export function ReferenceInput(props: ReferenceInputProps) {
                 type="text"
                 data-testid="reference-input-resource-type-input"
                 defaultValue={resourceType}
-                onChange={e => {
+                onChange={(e) => {
                   setResourceType(e.currentTarget.value);
                 }}
               />
@@ -75,11 +77,14 @@ export function ReferenceInput(props: ReferenceInputProps) {
 }
 
 function getTargetTypes(property?: ElementDefinition): string[] | undefined {
-  return property?.type?.[0]?.targetProfile?.map(p => p.split('/').pop() as string);
+  return property?.type?.[0]?.targetProfile?.map((p) => p.split('/').pop() as string);
 }
 
-function getInitialResourceType(defaultValue: Reference | undefined, targetTypes: string[] | undefined): string | undefined {
-  const defaultValueResourceType = defaultValue?.reference?.split('/')[0]
+function getInitialResourceType(
+  defaultValue: Reference | undefined,
+  targetTypes: string[] | undefined
+): string | undefined {
+  const defaultValueResourceType = defaultValue?.reference?.split('/')[0];
   if (defaultValueResourceType) {
     return defaultValueResourceType;
   }

@@ -2,14 +2,13 @@ import { LoginState } from '@medplum/core';
 import { MockClient } from './MockClient';
 
 describe('MockClient', () => {
-
   test('Simple route', async () => {
-    const foo = { 'foo': 'bar' };
+    const foo = { foo: 'bar' };
 
     const client = new MockClient({
-      'x': {
-        'GET': foo
-      }
+      x: {
+        GET: foo,
+      },
     });
 
     const result = await client.get('x');
@@ -17,12 +16,12 @@ describe('MockClient', () => {
   });
 
   test('Function route', async () => {
-    const foo = { 'foo': 'bar' };
+    const foo = { foo: 'bar' };
 
     const client = new MockClient({
-      'x': {
-        'GET': () => foo
-      }
+      x: {
+        GET: () => foo,
+      },
     });
 
     const result = await client.get('x');
@@ -41,5 +40,4 @@ describe('MockClient', () => {
     client.setActiveLoginOverride({} as LoginState);
     expect(client.getActiveLogin()).toBeDefined();
   });
-
 });

@@ -2,7 +2,6 @@ import { generateKeyPairSync } from 'crypto';
 import { Signer } from './signer';
 
 describe('Signer', () => {
-
   test('Presign URL', () => {
     const keyId = 'xyz';
     const passphrase = 'top secret';
@@ -11,14 +10,14 @@ describe('Signer', () => {
       modulusLength: 4096,
       publicKeyEncoding: {
         type: 'spki',
-        format: 'pem'
+        format: 'pem',
       },
       privateKeyEncoding: {
         type: 'pkcs8',
         format: 'pem',
         cipher: 'aes-256-cbc',
-        passphrase
-      }
+        passphrase,
+      },
     });
 
     const signer = new Signer(keyId, privateKey, passphrase);
@@ -28,5 +27,4 @@ describe('Signer', () => {
     const resultUrl = new URL(result);
     expect(resultUrl.hostname).toBe('example.com');
   });
-
 });

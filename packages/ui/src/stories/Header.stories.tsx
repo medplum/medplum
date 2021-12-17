@@ -10,7 +10,7 @@ export default {
 
 const manyLinks: SidebarLink[] = new Array(50).fill(0).map((el, index) => ({
   label: 'Link ' + (index + 1),
-  href: '/link/' + index
+  href: '/link/' + index,
 }));
 
 export const Basic = (args: HeaderProps) => {
@@ -30,12 +30,12 @@ export const Basic = (args: HeaderProps) => {
             { label: 'Patient', href: '/Patient' },
             { label: 'Observation', href: '/Observation' },
             { label: 'Practitioner', href: '/Practitioner' },
-          ]
+          ],
         },
         {
           title: 'More',
-          links: manyLinks
-        }
+          links: manyLinks,
+        },
       ]}
       {...args}
     />

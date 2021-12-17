@@ -10,12 +10,12 @@ import { SubMenu } from './SubMenu';
 export interface SearchPopupMenuProps {
   schema: IndexedStructureDefinition;
   search: SearchRequest;
-  visible: boolean,
-  x: number,
-  y: number,
-  property: string,
-  onChange?: (definition: SearchRequest) => void,
-  onClose: () => void
+  visible: boolean;
+  x: number;
+  y: number;
+  property: string;
+  onChange?: (definition: SearchRequest) => void;
+  onClose: () => void;
 }
 
 export function SearchPopupMenu(props: SearchPopupMenuProps) {
@@ -38,17 +38,21 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
   function getProperty(): ElementDefinition | undefined {
     if (props.property === '_lastUpdated') {
       return {
-        type: [{
-          code: 'datetime'
-        }]
+        type: [
+          {
+            code: 'datetime',
+          },
+        ],
       };
     }
 
     if (props.property === 'meta.versionId') {
       return {
-        type: [{
-          code: 'id'
-        }]
+        type: [
+          {
+            code: 'id',
+          },
+        ],
       };
     }
 
@@ -170,7 +174,8 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
    * @param {Operator} op The filter operation.
    */
   function prompt(op: Operator) {
-    const caption = buildFieldNameString(props.schema, props.search.resourceType, props.property) + ' ' + getOpString(op) + '...';
+    const caption =
+      buildFieldNameString(props.schema, props.search.resourceType, props.property) + ' ' + getOpString(op) + '...';
 
     const retVal = window.prompt(caption, '');
     if (retVal !== null) {

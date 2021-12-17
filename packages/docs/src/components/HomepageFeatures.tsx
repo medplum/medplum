@@ -13,9 +13,7 @@ const FeatureList: FeatureItem[] = [
     title: 'Easy to Use',
     image: '/img/undraw_docusaurus_mountain.svg',
     description: (
-      <>
-        Medplum was designed from the ground up to let you build your healthcare app quickly and compliantly.
-      </>
+      <>Medplum was designed from the ground up to let you build your healthcare app quickly and compliantly.</>
     ),
   },
   {
@@ -23,23 +21,19 @@ const FeatureList: FeatureItem[] = [
     image: '/img/undraw_docusaurus_tree.svg',
     description: (
       <>
-        Medplum lets you focus on your app, and we&apos;ll do the chores. Focus on your clinical scenarios
-        and let us handle the infrastructure and compliance.
+        Medplum lets you focus on your app, and we&apos;ll do the chores. Focus on your clinical scenarios and let us
+        handle the infrastructure and compliance.
       </>
     ),
   },
   {
     title: 'Powered by FHIR',
     image: '/img/undraw_docusaurus_react.svg',
-    description: (
-      <>
-        Data is stored natively in FHIR. Deploy in your own environment or use our hosted service.
-      </>
-    ),
+    description: <>Data is stored natively in FHIR. Deploy in your own environment or use our hosted service.</>,
   },
 ];
 
-function Feature({title, image, description}: FeatureItem) {
+function Feature({ title, image, description }: FeatureItem) {
   return (
     <div className={clsx('col col--4')}>
       <div className="text--center">

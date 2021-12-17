@@ -1,4 +1,13 @@
-import { formatAddress, formatFamilyName, formatGivenName, formatHumanName, getDateProperty, getReferenceString, isOk, ProfileResource } from '@medplum/core';
+import {
+  formatAddress,
+  formatFamilyName,
+  formatGivenName,
+  formatHumanName,
+  getDateProperty,
+  getReferenceString,
+  isOk,
+  ProfileResource,
+} from '@medplum/core';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
 import { repo } from '../fhir';
@@ -9,10 +18,12 @@ import { repo } from '../fhir';
  */
 export const userInfoHandler: RequestHandler = asyncWrap(async (req: Request, res: Response) => {
   const userInfo: Record<string, any> = {
-    sub: res.locals.user
+    sub: res.locals.user,
   };
 
-  const [outcome, resource] = await repo.readReference({ reference: res.locals.profile });
+  const [outcome, resource] = await repo.readReference({
+    reference: res.locals.profile,
+  });
   if (!isOk(outcome) || !resource) {
     res.sendStatus(500);
     return;
@@ -66,7 +77,7 @@ function buildProfile(userInfo: Record<string, any>, profile: ProfileResource): 
 }
 
 function buildEmail(userInfo: Record<string, any>, profile: ProfileResource): void {
-  const contactPoint = profile.telecom?.find(cp => cp.system === 'email');
+  const contactPoint = profile.telecom?.find((cp) => cp.system === 'email');
   if (contactPoint) {
     userInfo.email = contactPoint.value;
     userInfo.email_verified = false;
@@ -74,7 +85,7 @@ function buildEmail(userInfo: Record<string, any>, profile: ProfileResource): vo
 }
 
 function buildPhone(userInfo: Record<string, any>, profile: ProfileResource): void {
-  const contactPoint = profile.telecom?.find(cp => cp.system === 'phone');
+  const contactPoint = profile.telecom?.find((cp) => cp.system === 'phone');
   if (contactPoint) {
     userInfo.phone_number = contactPoint.value;
     userInfo.phone_number_verified = false;

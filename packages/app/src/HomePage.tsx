@@ -18,18 +18,15 @@ export function HomePage() {
       setDefaultResourceType(parsedSearch.resourceType);
       setDefaultSearchForResourceType(parsedSearch);
       setSearch(parsedSearch);
-
     } else if (parsedSearch.resourceType) {
       // If the URL has a resourceType but no fields,
       // use the default search for that resourceType
       setDefaultResourceType(parsedSearch.resourceType);
       setSearch(getDefaultSearchForResourceType(parsedSearch.resourceType));
-
     } else {
       // Otherwise, use the default search
       setSearch(getDefaultSearch());
     }
-
   }, [location]);
 
   if (!search.resourceType) {
@@ -40,8 +37,8 @@ export function HomePage() {
     <SearchControl
       checkboxesEnabled={true}
       search={search}
-      onClick={e => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
-      onChange={e => {
+      onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+      onChange={(e) => {
         if (e.definition.resourceType && e.definition.fields && e.definition.fields.length > 0) {
           navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
         }
@@ -51,16 +48,17 @@ export function HomePage() {
       }}
       onDelete={(ids: string[]) => {
         if (window.confirm('Are you sure you want to delete these resources?')) {
-          medplum.post('fhir/R4', {
-            resourceType: 'Bundle',
-            type: 'batch',
-            entry: ids.map(id => ({
-              request: {
-                method: 'DELETE',
-                url: `${search.resourceType}/${id}`,
-              }
-            }))
-          })
+          medplum
+            .post('fhir/R4', {
+              resourceType: 'Bundle',
+              type: 'batch',
+              entry: ids.map((id) => ({
+                request: {
+                  method: 'DELETE',
+                  url: `${search.resourceType}/${id}`,
+                },
+              })),
+            })
             .then(() => setSearch({ ...search }));
         }
       }}
@@ -124,12 +122,14 @@ export function getDefaultSearchForResourceType(resourceType: string): SearchReq
   return {
     resourceType,
     fields,
-    sortRules: [{
-      code: '_lastUpdated',
-      descending: true
-    }],
+    sortRules: [
+      {
+        code: '_lastUpdated',
+        descending: true,
+      },
+    ],
     page: 0,
-    count: 20
+    count: 20,
   };
 }
 

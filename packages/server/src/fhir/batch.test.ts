@@ -8,7 +8,6 @@ import { processBatch } from './batch';
 import { repo, Repository } from './repo';
 
 describe('Batch', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -21,7 +20,7 @@ describe('Batch', () => {
 
   test('Process batch with missing bundle type', async () => {
     const [outcome, bundle] = await processBatch(repo, {
-      resourceType: 'Bundle'
+      resourceType: 'Bundle',
     });
 
     expect(isOk(outcome)).toBe(false);
@@ -32,7 +31,7 @@ describe('Batch', () => {
   test('Process batch with invalid bundle type', async () => {
     const [outcome, bundle] = await processBatch(repo, {
       resourceType: 'Bundle',
-      type: 'xyz'
+      type: 'xyz',
     });
 
     expect(isOk(outcome)).toBe(false);
@@ -43,7 +42,7 @@ describe('Batch', () => {
   test('Process batch with missing entries', async () => {
     const [outcome, bundle] = await processBatch(repo, {
       resourceType: 'Bundle',
-      type: 'batch'
+      type: 'batch',
     });
 
     expect(isOk(outcome)).toBe(false);
@@ -61,16 +60,13 @@ describe('Batch', () => {
     // Need to verify that normal users can link urn:uuid requests.
     const userRepo = new Repository({
       author: {
-        reference: 'Practitioner/' + authorId
+        reference: 'Practitioner/' + authorId,
       },
       project: projectId,
       accessPolicy: {
         resourceType: 'AccessPolicy',
-        resource: [
-          { resourceType: 'Patient' },
-          { resourceType: 'Observation' }
-        ]
-      }
+        resource: [{ resourceType: 'Patient' }, { resourceType: 'Observation' }],
+      },
     });
 
     const [outcome, bundle] = await processBatch(userRepo, {
@@ -81,52 +77,52 @@ describe('Batch', () => {
           fullUrl: 'urn:uuid:' + patientId,
           request: {
             method: 'POST',
-            url: 'Patient'
+            url: 'Patient',
           },
           resource: {
             resourceType: 'Patient',
-            id: patientId
-          }
+            id: patientId,
+          },
         },
         {
           fullUrl: 'urn:uuid:' + observationId,
           request: {
             method: 'POST',
-            url: 'Observation'
+            url: 'Observation',
           },
           resource: {
             resourceType: 'Observation',
             id: observationId,
             subject: {
-              reference: 'urn:uuid:' + patientId
+              reference: 'urn:uuid:' + patientId,
             },
             code: {
-              text: 'test'
-            }
-          }
+              text: 'test',
+            },
+          },
         },
         {
           // Search
           request: {
             method: 'GET',
-            url: 'Patient?_count=1'
+            url: 'Patient?_count=1',
           },
         },
         {
           // Read resource
           request: {
             method: 'GET',
-            url: 'Patient/' + randomUUID()
+            url: 'Patient/' + randomUUID(),
           },
         },
         {
           // Delete resource
           request: {
             method: 'DELETE',
-            url: 'Patient/' + randomUUID()
+            url: 'Patient/' + randomUUID(),
           },
-        }
-      ]
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -144,11 +140,15 @@ describe('Batch', () => {
     expect(results[3].response?.status).toEqual('404');
     expect(results[4].response?.status).toEqual('404');
 
-    const [patientOutcome, patient] = await userRepo.readReference({ reference: results[0].response?.location as string });
+    const [patientOutcome, patient] = await userRepo.readReference({
+      reference: results[0].response?.location as string,
+    });
     expect(isOk(patientOutcome)).toBe(true);
     expect(patient).toBeDefined();
 
-    const [observationOutcome, observation] = await userRepo.readReference({ reference: results[1].response?.location as string });
+    const [observationOutcome, observation] = await userRepo.readReference({
+      reference: results[1].response?.location as string,
+    });
     expect(isOk(observationOutcome)).toBe(true);
     expect(observation).toBeDefined();
     expect((observation as Observation).subject?.reference).toEqual('Patient/' + patient?.id);
@@ -162,13 +162,13 @@ describe('Batch', () => {
         {
           request: {
             method: 'POST',
-            url: 'Patient'
+            url: 'Patient',
           },
           resource: {
-            resourceType: 'Patient'
-          }
-        }
-      ]
+            resourceType: 'Patient',
+          },
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -188,10 +188,10 @@ describe('Batch', () => {
         {
           request: {
             method: 'POST',
-            url: 'Patient'
-          }
-        }
-      ]
+            url: 'Patient',
+          },
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -211,11 +211,11 @@ describe('Batch', () => {
         {
           request: {
             method: 'POST',
-            url: 'Patient'
+            url: 'Patient',
           },
-          resource: {} as any
-        }
-      ]
+          resource: {} as any,
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -235,13 +235,13 @@ describe('Batch', () => {
         {
           request: {
             method: 'POST',
-            url: 'Observation'
+            url: 'Observation',
           },
           resource: {
-            resourceType: 'Observation'
-          }
-        }
-      ]
+            resourceType: 'Observation',
+          },
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -262,13 +262,13 @@ describe('Batch', () => {
           fullUrl: 'https://example.com/ignore-this',
           request: {
             method: 'POST',
-            url: 'Patient'
+            url: 'Patient',
           },
           resource: {
-            resourceType: 'Patient'
-          }
-        }
-      ]
+            resourceType: 'Patient',
+          },
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -291,18 +291,20 @@ describe('Batch', () => {
           fullUrl: 'urn:uuid:' + id,
           request: {
             method: 'POST',
-            url: 'Patient'
+            url: 'Patient',
           },
           resource: {
             resourceType: 'Patient',
             id,
-            identifier: [{
-              system: 'https://github.com/synthetichealth/synthea',
-              value: id
-            }]
-          }
-        }
-      ]
+            identifier: [
+              {
+                system: 'https://github.com/synthetichealth/synthea',
+                value: id,
+              },
+            ],
+          },
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -313,7 +315,9 @@ describe('Batch', () => {
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('201');
 
-    const [readOutcome, readResult] = await repo.readReference({ reference: results[0].response?.location as string });
+    const [readOutcome, readResult] = await repo.readReference({
+      reference: results[0].response?.location as string,
+    });
     expect(isOk(readOutcome)).toBe(true);
     expect(readResult).toBeDefined();
     expect((readResult as Patient).identifier?.[0]?.value).toEqual(id);
@@ -330,31 +334,35 @@ describe('Batch', () => {
           request: {
             method: 'POST',
             url: 'Patient',
-            ifNoneExist: 'identifier=' + identifier
+            ifNoneExist: 'identifier=' + identifier,
           },
           resource: {
             resourceType: 'Patient',
-            identifier: [{
-              system: 'test',
-              value: identifier
-            }]
-          }
+            identifier: [
+              {
+                system: 'test',
+                value: identifier,
+              },
+            ],
+          },
         },
         {
           request: {
             method: 'POST',
             url: 'Patient',
-            ifNoneExist: 'identifier=' + identifier
+            ifNoneExist: 'identifier=' + identifier,
           },
           resource: {
             resourceType: 'Patient',
-            identifier: [{
-              system: 'test',
-              value: identifier
-            }]
-          }
-        }
-      ]
+            identifier: [
+              {
+                system: 'test',
+                value: identifier,
+              },
+            ],
+          },
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -379,13 +387,13 @@ describe('Batch', () => {
           request: {
             method: 'POST',
             url: 'XXX',
-            ifNoneExist: 'identifier=' + identifier
+            ifNoneExist: 'identifier=' + identifier,
           },
           resource: {
-            resourceType: 'XXX'
-          } as any
-        }
-      ]
+            resourceType: 'XXX',
+          } as any,
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -411,44 +419,50 @@ describe('Batch', () => {
         {
           request: {
             method: 'POST',
-            url: 'Patient'
+            url: 'Patient',
           },
           resource: {
             resourceType: 'Patient',
-            identifier: [{
-              system: 'test',
-              value: identifier
-            }]
-          }
-        },
-        {
-          request: {
-            method: 'POST',
-            url: 'Patient'
+            identifier: [
+              {
+                system: 'test',
+                value: identifier,
+              },
+            ],
           },
-          resource: {
-            resourceType: 'Patient',
-            identifier: [{
-              system: 'test',
-              value: identifier
-            }]
-          }
         },
         {
           request: {
             method: 'POST',
             url: 'Patient',
-            ifNoneExist: 'identifier=' + identifier
           },
           resource: {
             resourceType: 'Patient',
-            identifier: [{
-              system: 'test',
-              value: identifier
-            }]
-          }
-        }
-      ]
+            identifier: [
+              {
+                system: 'test',
+                value: identifier,
+              },
+            ],
+          },
+        },
+        {
+          request: {
+            method: 'POST',
+            url: 'Patient',
+            ifNoneExist: 'identifier=' + identifier,
+          },
+          resource: {
+            resourceType: 'Patient',
+            identifier: [
+              {
+                system: 'test',
+                value: identifier,
+              },
+            ],
+          },
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -464,7 +478,7 @@ describe('Batch', () => {
 
   test('Process batch update', async () => {
     const [patientOutcome, patient] = await repo.createResource<Patient>({
-      resourceType: 'Patient'
+      resourceType: 'Patient',
     });
     assertOk(patientOutcome);
 
@@ -475,14 +489,14 @@ describe('Batch', () => {
         {
           request: {
             method: 'PUT',
-            url: 'Patient/' + patient?.id
+            url: 'Patient/' + patient?.id,
           },
           resource: {
             ...(patient as Patient),
-            active: true
-          }
-        }
-      ]
+            active: true,
+          },
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -502,10 +516,10 @@ describe('Batch', () => {
         {
           request: {
             method: 'PUT',
-            url: 'Patient/' + randomUUID()
-          }
-        }
-      ]
+            url: 'Patient/' + randomUUID(),
+          },
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -524,8 +538,8 @@ describe('Batch', () => {
       entry: [
         {
           // Empty entry
-        }
-      ]
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -535,12 +549,14 @@ describe('Batch', () => {
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
-    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual('Missing entry.request');
+    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+      'Missing entry.request'
+    );
   });
 
   test('Process batch delete', async () => {
     const [patientOutcome, patient] = await repo.createResource<Patient>({
-      resourceType: 'Patient'
+      resourceType: 'Patient',
     });
     assertOk(patientOutcome);
 
@@ -551,10 +567,10 @@ describe('Batch', () => {
         {
           request: {
             method: 'DELETE',
-            url: 'Patient/' + patient?.id
-          }
-        }
-      ]
+            url: 'Patient/' + patient?.id,
+          },
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -574,10 +590,10 @@ describe('Batch', () => {
         {
           request: {
             method: 'DELETE',
-            url: 'Patient'
-          }
-        }
-      ]
+            url: 'Patient',
+          },
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -596,13 +612,13 @@ describe('Batch', () => {
       entry: [
         {
           request: {
-            url: 'Patient'
+            url: 'Patient',
           },
           resource: {
-            resourceType: 'Patient'
-          }
-        }
-      ]
+            resourceType: 'Patient',
+          },
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -612,7 +628,9 @@ describe('Batch', () => {
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
-    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual('Missing entry.request.method');
+    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+      'Missing entry.request.method'
+    );
   });
 
   test('Process batch unsupported request.method', async () => {
@@ -623,13 +641,13 @@ describe('Batch', () => {
         {
           request: {
             method: 'XXX',
-            url: 'Patient'
+            url: 'Patient',
           },
           resource: {
-            resourceType: 'Patient'
-          }
-        }
-      ]
+            resourceType: 'Patient',
+          },
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -639,7 +657,9 @@ describe('Batch', () => {
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
-    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual('Unsupported entry.request.method');
+    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+      'Unsupported entry.request.method'
+    );
   });
 
   test('Process batch missing request.url', async () => {
@@ -649,13 +669,13 @@ describe('Batch', () => {
       entry: [
         {
           request: {
-            method: 'POST'
+            method: 'POST',
           },
           resource: {
-            resourceType: 'Patient'
-          }
-        }
-      ]
+            resourceType: 'Patient',
+          },
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -665,7 +685,9 @@ describe('Batch', () => {
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
-    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual('Missing entry.request.url');
+    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+      'Missing entry.request.url'
+    );
   });
 
   test('Process batch not found', async () => {
@@ -676,22 +698,22 @@ describe('Batch', () => {
         {
           request: {
             method: 'GET',
-            url: 'x/x/x/x/x'
-          }
+            url: 'x/x/x/x/x',
+          },
         },
         {
           request: {
             method: 'POST',
-            url: 'x/x/x/x/x'
-          }
+            url: 'x/x/x/x/x',
+          },
         },
         {
           request: {
             method: 'PUT',
-            url: 'x/x/x/x/x'
-          }
-        }
-      ]
+            url: 'x/x/x/x/x',
+          },
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -708,7 +730,7 @@ describe('Batch', () => {
   test('Process batch read history', async () => {
     const [createOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ family: 'Foo', given: ['Bar'] }]
+      name: [{ family: 'Foo', given: ['Bar'] }],
     });
     assertOk(createOutcome);
 
@@ -719,15 +741,14 @@ describe('Batch', () => {
         {
           request: {
             method: 'GET',
-            url: `Patient/${patient?.id}/_history`
-          }
-        }
-      ]
+            url: `Patient/${patient?.id}/_history`,
+          },
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
   });
-
 });

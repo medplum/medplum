@@ -6,7 +6,6 @@
 import { PoolClient } from 'pg';
 
 export async function run(client: PoolClient) {
-
   await client.query(`CREATE TABLE IF NOT EXISTS "AccessPolicy" (
     "id" UUID NOT NULL PRIMARY KEY,
     "content" TEXT NOT NULL,
@@ -21,5 +20,4 @@ export async function run(client: PoolClient) {
     "content" TEXT NOT NULL,
     "lastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL
   )`);
-
 }

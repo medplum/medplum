@@ -12,7 +12,6 @@ const app = express();
 let client: ClientApplication;
 
 describe('OAuth Routes', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -33,7 +32,7 @@ describe('OAuth Routes', () => {
       .send({
         grant_type: 'client_credentials',
         client_id: client?.id as string,
-        client_secret: client?.secret as string
+        client_secret: client?.secret as string,
       });
 
     expect(res.status).toBe(200);
@@ -45,5 +44,4 @@ describe('OAuth Routes', () => {
 
     expect(res2.status).toBe(200);
   });
-
 });

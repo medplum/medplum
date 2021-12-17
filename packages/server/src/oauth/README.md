@@ -1,4 +1,3 @@
-
 ## OpenID Certification
 
 https://openid.net/certification/
@@ -20,7 +19,7 @@ docker-compose up
 
 Open browser to <https://localhost:8443/>
 
-Test the Docker localhost URL:  <http://host.docker.internal:5000/>
+Test the Docker localhost URL: <http://host.docker.internal:5000/>
 
 Be sure to logout between each test by visiting <http://host.docker.internal:5000/oauth2/logout>
 
@@ -40,7 +39,7 @@ docker-compose up
 
 Open browser to <http://localhost:4567/>
 
-Test the Docker localhost URL:  <http://host.docker.internal:5000/>
+Test the Docker localhost URL: <http://host.docker.internal:5000/>
 
 Be sure to logout between each test by visiting <http://host.docker.internal:5000/oauth2/logout>
 
@@ -48,17 +47,17 @@ Be sure to logout between each test by visiting <http://host.docker.internal:500
 
 In "EHR Launch Sequence":
 
-Make sure "Scopes" includes "fhirUser launch launch/patient offline_access openid profile user/*.* patient/*.*"
+Make sure "Scopes" includes "fhirUser launch launch/patient offline*access openid profile user/*._ patient/_.\_"
 
 Launch URL's:
 
-* Redirect URI: http://localhost:4567/inferno/oauth2/static/redirect
-* Launch URI: http://localhost:4567/inferno/oauth2/static/launch
-* Launch URI: http://localhost:4567/inferno/oauth2/static/launch
+- Redirect URI: http://localhost:4567/inferno/oauth2/static/redirect
+- Launch URI: http://localhost:4567/inferno/oauth2/static/launch
+- Launch URI: http://localhost:4567/inferno/oauth2/static/launch
 
 Launch parameters:
 
-* "iss" - Issuer, must be full FHIR base URL
-* "state" - Must be unique random state
+- "iss" - Issuer, must be full FHIR base URL
+- "state" - Must be unique random state
 
 http://localhost:4567/inferno/oauth2/static/launch?iss=http%3A%2F%2Fhost.docker.internal%3A5000%2Ffhir%2FR4&launch=xyz1234

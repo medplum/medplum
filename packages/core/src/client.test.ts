@@ -7,7 +7,7 @@ import { stringify } from './utils';
 const defaultOptions = {
   clientId: 'xyz',
   baseUrl: 'https://x/',
-  fetch: mockFetch
+  fetch: mockFetch,
 };
 
 const patientStructureDefinition: StructureDefinition = {
@@ -17,17 +17,19 @@ const patientStructureDefinition: StructureDefinition = {
     element: [
       {
         path: 'Patient.id',
-        type: [{
-          code: 'code'
-        }]
-      }
-    ]
-  }
+        type: [
+          {
+            code: 'code',
+          },
+        ],
+      },
+    ],
+  },
 };
 
 const patientStructureDefinitionBundle: Bundle<StructureDefinition> = {
   resourceType: 'Bundle',
-  entry: [{ resource: patientStructureDefinition }]
+  entry: [{ resource: patientStructureDefinition }],
 };
 
 const patientSearchParameter: SearchParameter = {
@@ -35,12 +37,12 @@ const patientSearchParameter: SearchParameter = {
   id: 'Patient-name',
   code: 'name',
   name: 'name',
-  expression: 'Patient.name'
+  expression: 'Patient.name',
 };
 
 const patientSearchParameterBundle: Bundle<SearchParameter> = {
   resourceType: 'Bundle',
-  entry: [{ resource: patientSearchParameter }]
+  entry: [{ resource: patientSearchParameter }],
 };
 
 let canRefresh = true;
@@ -56,13 +58,11 @@ function mockFetch(url: string, options: any): Promise<any> {
       login: '123',
       code: '123',
     };
-
   } else if (method === 'POST' && url.endsWith('auth/google')) {
     result = {
       login: '123',
       code: '123',
     };
-
   } else if (method === 'POST' && url.endsWith('auth/register')) {
     result = {
       status: 200,
@@ -72,96 +72,86 @@ function mockFetch(url: string, options: any): Promise<any> {
         reference: 'Project/123',
       },
       profile: {
-        reference: 'Practitioner/123'
+        reference: 'Practitioner/123',
       },
     };
-
   } else if (method === 'GET' && url.endsWith('Practitioner/123')) {
     result = {
       resourceType: 'Practitioner',
-      id: '123'
+      id: '123',
     };
-
   } else if (method === 'GET' && url.endsWith('Patient/123')) {
     result = {
       resourceType: 'Patient',
-      id: '123'
+      id: '123',
     };
-
   } else if (method === 'POST' && url.endsWith('oauth2/token')) {
     if (canRefresh) {
       result = {
         status: 200,
         access_token: 'header.' + window.btoa(stringify({ client_id: defaultOptions.clientId })) + '.signature',
-        refresh_token: 'header.' + window.btoa(stringify({ client_id: defaultOptions.clientId })) + '.signature'
+        refresh_token: 'header.' + window.btoa(stringify({ client_id: defaultOptions.clientId })) + '.signature',
       };
     } else {
       result = {
-        status: 400
+        status: 400,
       };
     }
-
   } else if (method === 'GET' && url.includes('expired')) {
     if (tokenExpired) {
       result = {
-        status: 401
+        status: 401,
       };
       tokenExpired = false;
     } else {
       result = {
-        ok: true
+        ok: true,
       };
     }
-
   } else if (method === 'GET' && url.includes('/fhir/R4/StructureDefinition?name:exact=Patient')) {
     result = patientStructureDefinitionBundle;
-
   } else if (method === 'GET' && url.includes('/fhir/R4/SearchParameter?_count=100&base=Patient')) {
     result = patientSearchParameterBundle;
-
   } else if (method === 'PUT' && url.endsWith('Patient/777')) {
     result = {
-      status: 304 // Not modified
+      status: 304, // Not modified
     };
-
   } else if (method === 'PUT' && url.endsWith('Patient/888')) {
     result = {
       status: 400,
       resourceType: 'OperationOutcome',
-      id: 'bad-request'
+      id: 'bad-request',
     };
-
   } else if (method === 'GET' && url.endsWith('ValueSet/%24expand?url=system&filter=filter')) {
     result = {
-      resourceType: 'ValueSet'
+      resourceType: 'ValueSet',
     };
   }
 
   const response: any = {
     request: {
       url,
-      options
+      options,
     },
-    ...result
+    ...result,
   };
 
   return Promise.resolve({
     ok: response.status === 200 || response.status === undefined,
     status: response.status,
     blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
+    json: () => Promise.resolve(response),
   });
 }
 
 describe('Client', () => {
-
   beforeAll(() => {
     Object.defineProperty(global, 'TextEncoder', {
-      value: TextEncoder
+      value: TextEncoder,
     });
 
     Object.defineProperty(global.self, 'crypto', {
-      value: crypto.webcrypto
+      value: crypto.webcrypto,
     });
   });
 
@@ -172,30 +162,45 @@ describe('Client', () => {
   });
 
   test('Constructor', () => {
-    expect(() => new MedplumClient({
-      clientId: 'xyz',
-      baseUrl: 'x',
-    })).toThrow('Base URL must start with http or https');
+    expect(
+      () =>
+        new MedplumClient({
+          clientId: 'xyz',
+          baseUrl: 'x',
+        })
+    ).toThrow('Base URL must start with http or https');
 
-    expect(() => new MedplumClient({
-      clientId: 'xyz',
-      baseUrl: 'https://x',
-    })).toThrow('Base URL must end with a trailing slash');
+    expect(
+      () =>
+        new MedplumClient({
+          clientId: 'xyz',
+          baseUrl: 'https://x',
+        })
+    ).toThrow('Base URL must end with a trailing slash');
 
-    expect(() => new MedplumClient({
-      clientId: 'xyz',
-      baseUrl: 'https://x/',
-    })).toThrow();
+    expect(
+      () =>
+        new MedplumClient({
+          clientId: 'xyz',
+          baseUrl: 'https://x/',
+        })
+    ).toThrow();
 
-    expect(() => new MedplumClient({
-      clientId: 'xyz',
-      baseUrl: 'https://x/',
-      fetch: mockFetch
-    })).not.toThrow();
+    expect(
+      () =>
+        new MedplumClient({
+          clientId: 'xyz',
+          baseUrl: 'https://x/',
+          fetch: mockFetch,
+        })
+    ).not.toThrow();
 
-    expect(() => new MedplumClient({
-      fetch: mockFetch
-    })).not.toThrow();
+    expect(
+      () =>
+        new MedplumClient({
+          fetch: mockFetch,
+        })
+    ).not.toThrow();
   });
 
   test('Clear', () => {
@@ -222,7 +227,7 @@ describe('Client', () => {
     const client = new MedplumClient(defaultOptions);
     const result1 = await client.startGoogleLogin({
       clientId: 'google-client-id',
-      credential: 'google-credential'
+      credential: 'google-credential',
     });
     expect(result1).toBeDefined();
     expect(result1.login).toBeDefined();
@@ -233,7 +238,7 @@ describe('Client', () => {
     global.window = Object.create(window);
     Object.defineProperty(window, 'location', {
       value: {
-        assign: jest.fn()
+        assign: jest.fn(),
       },
       writable: true,
     });
@@ -248,7 +253,7 @@ describe('Client', () => {
     Object.defineProperty(window, 'location', {
       value: {
         assign: jest.fn(),
-        search: new URLSearchParams({ code: 'test-code' })
+        search: new URLSearchParams({ code: 'test-code' }),
       },
       writable: true,
     });
@@ -263,7 +268,7 @@ describe('Client', () => {
     global.window = Object.create(window);
     Object.defineProperty(window, 'location', {
       value: {
-        assign: jest.fn()
+        assign: jest.fn(),
       },
       writable: true,
     });
@@ -280,7 +285,7 @@ describe('Client', () => {
       password: 'testtest',
       firstName: 'Sally',
       lastName: 'Foo',
-      projectName: 'Sally World'
+      projectName: 'Sally World',
     });
     expect(client.getActiveLogin()).toBeDefined();
   });
@@ -346,7 +351,9 @@ describe('Client', () => {
 
   test('Read cached reference', async () => {
     const client = new MedplumClient(defaultOptions);
-    const result = await client.readCachedReference({ reference: 'Patient/123' });
+    const result = await client.readCachedReference({
+      reference: 'Patient/123',
+    });
     expect(result).toBeDefined();
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
     expect(result.resourceType).toBe('Patient');
@@ -451,5 +458,4 @@ describe('Client', () => {
     expect(result).toBeDefined();
     expect(result.resourceType).toBe('ValueSet');
   });
-
 });

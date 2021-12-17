@@ -11,7 +11,6 @@ import { SelectQuery } from '../sql';
  *   3) Contact Points - email addresses and phone numbers
  */
 export interface LookupTable {
-
   /**
    * Returns the unique name of the lookup table.
    * @returns The unique name of the lookup table.

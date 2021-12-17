@@ -6,13 +6,11 @@ import { InvitePage } from './InvitePage';
 
 const medplum = new MockClient({
   'admin/projects/123': {
-    'GET': {
+    GET: {
       project: { id: '123', name: 'Project 123' },
-      members: [
-        { profile: 'Practitioner/456', name: 'Alice Smith' }
-      ]
-    }
-  }
+      members: [{ profile: 'Practitioner/456', name: 'Alice Smith' }],
+    },
+  },
 });
 
 const setup = (url: string) => {
@@ -28,7 +26,6 @@ const setup = (url: string) => {
 };
 
 describe('InvitePage', () => {
-
   test('Renders', async () => {
     setup('/admin/projects/123/invite');
 
@@ -49,9 +46,15 @@ describe('InvitePage', () => {
     expect(screen.getByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('firstName'), { target: { value: 'George' } });
-      fireEvent.change(screen.getByTestId('lastName'), { target: { value: 'Washington' } });
-      fireEvent.change(screen.getByTestId('email'), { target: { value: 'george@example.com' } });
+      fireEvent.change(screen.getByTestId('firstName'), {
+        target: { value: 'George' },
+      });
+      fireEvent.change(screen.getByTestId('lastName'), {
+        target: { value: 'Washington' },
+      });
+      fireEvent.change(screen.getByTestId('email'), {
+        target: { value: 'george@example.com' },
+      });
     });
 
     await act(async () => {
@@ -60,5 +63,4 @@ describe('InvitePage', () => {
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
   });
-
 });

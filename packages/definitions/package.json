@@ -13,12 +13,8 @@
   "scripts": {
     "clean": "rimraf dist/index.*",
     "build": "npm run clean && tsc",
-    "test": "jest",
-    "lint": "eslint src/ --ext .ts,.tsx"
+    "test": "jest"
   },
-  "files": [
-    "dist"
-  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "sideEffects": false,

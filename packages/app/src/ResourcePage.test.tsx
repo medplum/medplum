@@ -1,4 +1,5 @@
-import { Bot, Bundle, DiagnosticReport, notFound, Patient, Practitioner, Questionnaire } from '@medplum/core';
+import { notFound } from '@medplum/core';
+import { Bot, Bundle, DiagnosticReport, Patient, Practitioner, Questionnaire } from '@medplum/fhirtypes';
 import { MedplumProvider, MockClient } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -14,49 +15,57 @@ const practitioner: Practitioner = {
     versionId: '456',
     lastUpdated: '2021-01-01T12:00:00Z',
     author: {
-      reference: 'Practitioner/123'
-    }
-  }
+      reference: 'Practitioner/123',
+    },
+  },
 };
 
 const practitionerHistory: Bundle = {
   resourceType: 'Bundle',
   type: 'history',
-  entry: [{
-    resource: practitioner
-  }]
+  entry: [
+    {
+      resource: practitioner,
+    },
+  ],
 };
 
 const practitionerStructureBundle: Bundle = {
   resourceType: 'Bundle',
-  entry: [{
-    resource: {
-      resourceType: 'StructureDefinition',
-      name: 'Practitioner',
-      snapshot: {
-        element: [
-          {
-            path: 'Practitioner.id',
-            type: [{
-              code: 'code'
-            }]
-          }
-        ]
-      }
-    }
-  }]
+  entry: [
+    {
+      resource: {
+        resourceType: 'StructureDefinition',
+        name: 'Practitioner',
+        snapshot: {
+          element: [
+            {
+              path: 'Practitioner.id',
+              type: [
+                {
+                  code: 'code',
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
+  ],
 };
 
 const practitionerSearchParameter: Bundle = {
   resourceType: 'Bundle',
-  entry: [{
-    resource: {
-      resourceType: 'SearchParameter',
-      id: 'Practitioner-name',
-      code: 'name',
-      name: 'name'
-    }
-  }]
+  entry: [
+    {
+      resource: {
+        resourceType: 'SearchParameter',
+        id: 'Practitioner-name',
+        code: 'name',
+        name: 'name',
+      },
+    },
+  ],
 };
 
 const patient: Patient = {
@@ -64,109 +73,111 @@ const patient: Patient = {
   id: '123',
   identifier: [
     { system: 'abc', value: '123' },
-    { system: 'def', value: '456' }
+    { system: 'def', value: '456' },
   ],
-  name: [{
-    given: ['Alice'],
-    family: 'Smith'
-  }],
+  name: [
+    {
+      given: ['Alice'],
+      family: 'Smith',
+    },
+  ],
   birthDate: '1990-01-01',
   meta: {
-    versionId: '456'
-  }
+    versionId: '456',
+  },
 };
 
 const patientHistory: Bundle = {
   resourceType: 'Bundle',
   type: 'history',
-  entry: [{
-    resource: patient
-  }]
+  entry: [
+    {
+      resource: patient,
+    },
+  ],
 };
 
 const patientSearchBundle: Bundle = {
   resourceType: 'Bundle',
   total: 100,
-  entry: [{
-    resource: patient
-  }]
+  entry: [
+    {
+      resource: patient,
+    },
+  ],
 };
 
 const questionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
   id: '123',
-  item: [{
-    linkId: '1',
-    text: 'Hello',
-    type: 'string'
-  }]
+  item: [
+    {
+      linkId: '1',
+      text: 'Hello',
+      type: 'string',
+    },
+  ],
 };
 
 const bot: Bot = {
   resourceType: 'Bot',
   id: '123',
   name: 'Test Bot',
-  code: 'console.log("hello world");'
+  code: 'console.log("hello world");',
 };
 
 const diagnosticReport: DiagnosticReport = {
   resourceType: 'DiagnosticReport',
   id: '123',
   status: 'final',
-  result: [
-    { reference: 'Observation/123' }
-  ]
+  result: [{ reference: 'Observation/123' }],
 };
 
 const medplum = new MockClient({
   'fhir/R4/StructureDefinition?name:exact=Practitioner': {
-    'GET': practitionerStructureBundle
+    GET: practitionerStructureBundle,
   },
   'fhir/R4/SearchParameter?name=Practitioner': {
-    'GET': practitionerSearchParameter
+    GET: practitionerSearchParameter,
   },
   'fhir/R4/Patient?': {
-    'GET': patientSearchBundle
+    GET: patientSearchBundle,
   },
   'fhir/R4/Patient/123': {
-    'GET': patient
+    GET: patient,
   },
   'fhir/R4/Patient/123/_history': {
-    'GET': patientSearchBundle
+    GET: patientSearchBundle,
   },
   'fhir/R4/Practitioner/123': {
-    'GET': practitioner,
-    'PUT': practitioner
+    GET: practitioner,
+    PUT: practitioner,
   },
   'fhir/R4/Practitioner/123/_history': {
-    'GET': practitionerHistory
+    GET: practitionerHistory,
   },
   'fhir/R4/Practitioner/not-found': {
-    'GET': notFound
+    GET: notFound,
   },
   'fhir/R4/Questionnaire/123': {
-    'GET': questionnaire
+    GET: questionnaire,
   },
   'fhir/R4/Bot/123': {
-    'GET': bot
+    GET: bot,
   },
   'fhir/R4/DiagnosticReport/123': {
-    'GET': diagnosticReport
+    GET: diagnosticReport,
   },
   'fhir/R4': {
-    'POST': {
+    POST: {
       resourceType: 'Bundle',
       type: 'batch-response',
-      entry: [
-        { resource: patientHistory },
-      ]
-    }
+      entry: [{ resource: patientHistory }],
+    },
   },
 });
 
 describe('ResourcePage', () => {
-
-
   const setup = (url: string) => {
     return render(
       <MedplumProvider medplum={medplum}>
@@ -285,7 +296,9 @@ describe('ResourcePage', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('resource-json'), { target: { value: '{"resourceType":"Practitioner","id":"123"}' } });
+      fireEvent.change(screen.getByTestId('resource-json'), {
+        target: { value: '{"resourceType":"Practitioner","id":"123"}' },
+      });
     });
 
     await act(async () => {
@@ -303,22 +316,20 @@ describe('ResourcePage', () => {
     });
 
     await act(async () => {
-      fireEvent.change(
-        screen.getByTestId('resource-json'),
-        {
-          target: {
-            value: JSON.stringify({
-              resourceType: 'Practitioner',
-              id: '123',
-              meta: {
-                lastUpdated: '2020-01-01T00:00:00.000Z',
-                author: {
-                  reference: 'Practitioner/111'
-                }
-              }
-            })
-          }
-        });
+      fireEvent.change(screen.getByTestId('resource-json'), {
+        target: {
+          value: JSON.stringify({
+            resourceType: 'Practitioner',
+            id: '123',
+            meta: {
+              lastUpdated: '2020-01-01T00:00:00.000Z',
+              author: {
+                reference: 'Practitioner/111',
+              },
+            },
+          }),
+        },
+      });
     });
 
     await act(async () => {
@@ -393,5 +404,4 @@ describe('ResourcePage', () => {
 
     expect(screen.getByText('Report')).toBeInTheDocument();
   });
-
 });

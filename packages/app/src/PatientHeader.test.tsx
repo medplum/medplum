@@ -8,7 +8,6 @@ import { PatientHeader } from './PatientHeader';
 const medplum = new MockClient({});
 
 describe('PatientHeader', () => {
-
   const setup = (patient: Patient) => {
     return render(
       <MemoryRouter>
@@ -22,10 +21,12 @@ describe('PatientHeader', () => {
   test('Renders', async () => {
     setup({
       resourceType: 'Patient',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }]
+      name: [
+        {
+          given: ['Alice'],
+          family: 'Smith',
+        },
+      ],
     });
 
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();
@@ -34,14 +35,16 @@ describe('PatientHeader', () => {
   test('Renders identifiers', async () => {
     setup({
       resourceType: 'Patient',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }],
+      name: [
+        {
+          given: ['Alice'],
+          family: 'Smith',
+        },
+      ],
       identifier: [
         { system: 'abc', value: '123' },
-        { system: 'def', value: '456' }
-      ]
+        { system: 'def', value: '456' },
+      ],
     });
 
     expect(screen.getByText('abc')).toBeInTheDocument();
@@ -53,11 +56,13 @@ describe('PatientHeader', () => {
   test('Male avatar', async () => {
     setup({
       resourceType: 'Patient',
-      name: [{
-        given: ['Bob'],
-        family: 'Jones'
-      }],
-      gender: 'male'
+      name: [
+        {
+          given: ['Bob'],
+          family: 'Jones',
+        },
+      ],
+      gender: 'male',
     });
 
     const avatar = screen.getByTestId('avatar');
@@ -68,11 +73,13 @@ describe('PatientHeader', () => {
   test('Female avatar', async () => {
     setup({
       resourceType: 'Patient',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }],
-      gender: 'female'
+      name: [
+        {
+          given: ['Alice'],
+          family: 'Smith',
+        },
+      ],
+      gender: 'female',
     });
 
     const avatar = screen.getByTestId('avatar');
@@ -83,11 +90,13 @@ describe('PatientHeader', () => {
   test('Other gender avatar', async () => {
     setup({
       resourceType: 'Patient',
-      name: [{
-        given: ['Unknown'],
-        family: 'Smith'
-      }],
-      gender: 'other'
+      name: [
+        {
+          given: ['Unknown'],
+          family: 'Smith',
+        },
+      ],
+      gender: 'other',
     });
 
     const avatar = screen.getByTestId('avatar');
@@ -103,11 +112,13 @@ describe('PatientHeader', () => {
 
     setup({
       resourceType: 'Patient',
-      name: [{
-        given: ['Unknown'],
-        family: 'Smith'
-      }],
-      birthDate: birthDate.toISOString().substring(0, 10)
+      name: [
+        {
+          given: ['Unknown'],
+          family: 'Smith',
+        },
+      ],
+      birthDate: birthDate.toISOString().substring(0, 10),
     });
 
     expect(screen.getByText('030Y')).toBeInTheDocument();
@@ -121,11 +132,13 @@ describe('PatientHeader', () => {
 
     setup({
       resourceType: 'Patient',
-      name: [{
-        given: ['Unknown'],
-        family: 'Smith'
-      }],
-      birthDate: birthDate.toISOString().substring(0, 10)
+      name: [
+        {
+          given: ['Unknown'],
+          family: 'Smith',
+        },
+      ],
+      birthDate: birthDate.toISOString().substring(0, 10),
     });
 
     expect(screen.getByText('029Y')).toBeInTheDocument();
@@ -139,11 +152,13 @@ describe('PatientHeader', () => {
 
     setup({
       resourceType: 'Patient',
-      name: [{
-        given: ['Unknown'],
-        family: 'Smith'
-      }],
-      birthDate: birthDate.toISOString().substring(0, 10)
+      name: [
+        {
+          given: ['Unknown'],
+          family: 'Smith',
+        },
+      ],
+      birthDate: birthDate.toISOString().substring(0, 10),
     });
 
     expect(screen.getByText('020M')).toBeInTheDocument();
@@ -157,14 +172,15 @@ describe('PatientHeader', () => {
 
     setup({
       resourceType: 'Patient',
-      name: [{
-        given: ['Unknown'],
-        family: 'Smith'
-      }],
-      birthDate: birthDate.toISOString().substring(0, 10)
+      name: [
+        {
+          given: ['Unknown'],
+          family: 'Smith',
+        },
+      ],
+      birthDate: birthDate.toISOString().substring(0, 10),
     });
 
     expect(screen.getByText('019M')).toBeInTheDocument();
   });
-
 });

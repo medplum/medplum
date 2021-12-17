@@ -6,7 +6,6 @@ jest.mock('@aws-sdk/client-secrets-manager');
 jest.mock('@aws-sdk/client-ssm');
 
 describe('Config', () => {
-
   beforeAll(() => {
     (SSMClient as any).mockImplementation(() => {
       return {
@@ -15,10 +14,10 @@ describe('Config', () => {
             Parameters: [
               { Name: 'baseUrl', Value: 'https://www.example.com/' },
               { Name: 'DatabaseSecrets', Value: 'DatabaseSecretsArn' },
-              { Name: 'RedisSecrets', Value: 'RedisSecretsArn' }
-            ]
+              { Name: 'RedisSecrets', Value: 'RedisSecretsArn' },
+            ],
           };
-        }
+        },
       };
     });
 
@@ -26,9 +25,9 @@ describe('Config', () => {
       return {
         send: () => {
           return {
-            SecretString: JSON.stringify({ host: 'host', port: 123 })
+            SecretString: JSON.stringify({ host: 'host', port: 123 }),
           };
-        }
+        },
       };
     });
   });
@@ -55,5 +54,4 @@ describe('Config', () => {
     expect(config.baseUrl).toBeDefined();
     expect(getConfig()).toBe(config);
   });
-
 });

@@ -6,11 +6,7 @@ export interface DescriptionListProps {
 }
 
 export function DescriptionList(props: DescriptionListProps) {
-  return (
-    <dl className="medplum-description-list">
-      {props.children}
-    </dl>
-  );
+  return <dl className="medplum-description-list">{props.children}</dl>;
 }
 
 export interface DescriptionListEntryProps {

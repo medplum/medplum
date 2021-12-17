@@ -16,15 +16,17 @@ export function getStructureDefinitions(): IndexedStructureDefinition {
 
 function buildStructureDefinitions(fileName: string): void {
   const resourceDefinitions = readJson(`fhir/r4/${fileName}`) as Bundle;
-  for (const entry of (resourceDefinitions.entry as BundleEntry[])) {
+  for (const entry of resourceDefinitions.entry as BundleEntry[]) {
     const resource = entry.resource as Resource;
-    if (resource.resourceType === 'StructureDefinition' &&
+    if (
+      resource.resourceType === 'StructureDefinition' &&
       resource.name &&
       resource.name !== 'Resource' &&
       resource.name !== 'BackboneElement' &&
       resource.name !== 'DomainResource' &&
       resource.name !== 'MetadataResource' &&
-      !isLowerCase(resource.name[0])) {
+      !isLowerCase(resource.name[0])
+    ) {
       indexStructureDefinition(resource, structureDefinitions);
     }
   }

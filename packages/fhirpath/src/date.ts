@@ -1,4 +1,3 @@
-
 export function parseDateString(str: string): string {
   if (str.startsWith('T')) {
     // If a time string,

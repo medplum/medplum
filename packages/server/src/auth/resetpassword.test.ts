@@ -13,7 +13,6 @@ jest.mock('@aws-sdk/client-sesv2');
 const app = express();
 
 describe('Reset Password', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -36,7 +35,7 @@ describe('Reset Password', () => {
       .post('/auth/resetpassword')
       .type('json')
       .send({
-        email: `alex${randomUUID()}@example.com`
+        email: `alex${randomUUID()}@example.com`,
       });
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toBe('User not found');
@@ -46,25 +45,19 @@ describe('Reset Password', () => {
   test('Success', async () => {
     const email = `george${randomUUID()}@example.com`;
 
-    const res = await request(app)
-      .post('/auth/register')
-      .type('json')
-      .send({
-        firstName: 'George',
-        lastName: 'Washington',
-        projectName: 'Washington Project',
-        email,
-        password: 'password!@#'
-      })
+    const res = await request(app).post('/auth/register').type('json').send({
+      firstName: 'George',
+      lastName: 'Washington',
+      projectName: 'Washington Project',
+      email,
+      password: 'password!@#',
+    });
     expect(res.status).toBe(200);
     expect(res.body.profile).toBeDefined();
 
-    const res2 = await request(app)
-      .post('/auth/resetpassword')
-      .type('json')
-      .send({
-        email
-      });
+    const res2 = await request(app).post('/auth/resetpassword').type('json').send({
+      email,
+    });
     expect(res2.status).toBe(200);
     expect(SESv2Client).toHaveBeenCalledTimes(1);
     expect(SendEmailCommand).toHaveBeenCalledTimes(1);
@@ -72,16 +65,15 @@ describe('Reset Password', () => {
     const args = (SendEmailCommand as any).mock.calls[0][0];
     expect(args).toMatchObject({
       Destination: {
-        ToAddresses: [email]
+        ToAddresses: [email],
       },
       Content: {
         Simple: {
           Subject: {
-            Data: 'Medplum Password Reset'
-          }
-        }
-      }
+            Data: 'Medplum Password Reset',
+          },
+        },
+      },
     });
   });
-
 });

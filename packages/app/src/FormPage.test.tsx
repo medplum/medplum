@@ -1,4 +1,5 @@
-import { notFound, Practitioner, Questionnaire } from '@medplum/core';
+import { notFound } from '@medplum/core';
+import { Practitioner, Questionnaire } from '@medplum/fhirtypes';
 import { MedplumProvider, MockClient } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -13,35 +14,36 @@ const practitioner: Practitioner = {
     versionId: '456',
     lastUpdated: '2021-01-01T12:00:00Z',
     author: {
-      reference: 'Practitioner/123'
-    }
-  }
+      reference: 'Practitioner/123',
+    },
+  },
 };
 
 const questionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
   id: '123',
-  item: [{
-    linkId: '1',
-    text: 'First question',
-    type: 'string'
-  }]
+  item: [
+    {
+      linkId: '1',
+      text: 'First question',
+      type: 'string',
+    },
+  ],
 };
 
 const medplum = new MockClient({
   'fhir/R4/Practitioner/123': {
-    'GET': practitioner
+    GET: practitioner,
   },
   'fhir/R4/Questionnaire/not-found': {
-    'GET': notFound
+    GET: notFound,
   },
   'fhir/R4/Questionnaire/123': {
-    'GET': questionnaire
+    GET: questionnaire,
   },
 });
 
 describe('FormPage', () => {
-
   const setup = (url: string) => {
     return render(
       <MedplumProvider medplum={medplum}>
@@ -87,5 +89,4 @@ describe('FormPage', () => {
 
     expect(screen.getByText('First question')).toBeInTheDocument();
   });
-
 });

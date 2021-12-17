@@ -32,7 +32,7 @@ export class ClientStorage {
 
   getObject<T>(key: string): T | undefined {
     const str = this.getString(key);
-    return str ? JSON.parse(str) as T : undefined;
+    return str ? (JSON.parse(str) as T) : undefined;
   }
 
   setObject<T>(key: string, value: T) {

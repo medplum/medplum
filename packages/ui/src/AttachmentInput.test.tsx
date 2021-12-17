@@ -21,21 +21,21 @@ function mockFetch(url: string, options: any): Promise<any> {
   const response: any = {
     request: {
       url,
-      options
+      options,
     },
-    ...result
+    ...result,
   };
 
   return Promise.resolve({
     blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
+    json: () => Promise.resolve(response),
   });
 }
 
 const medplum = new MedplumClient({
   baseUrl: 'https://example.com/',
   clientId: 'my-client-id',
-  fetch: mockFetch
+  fetch: mockFetch,
 });
 
 const setup = (args?: AttachmentInputProps) => {
@@ -47,7 +47,6 @@ const setup = (args?: AttachmentInputProps) => {
 };
 
 describe('AttachmentInput', () => {
-
   beforeAll(async () => {
     global.URL.createObjectURL = jest.fn(() => 'details');
   });
@@ -63,8 +62,8 @@ describe('AttachmentInput', () => {
         defaultValue: {
           contentType: 'image/jpeg',
           url: 'https://example.com/test.jpg',
-          title: 'test.jpg'
-        }
+          title: 'test.jpg',
+        },
       });
       await waitFor(() => screen.getByAltText('test.jpg'));
     });
@@ -74,10 +73,10 @@ describe('AttachmentInput', () => {
     setup();
 
     await act(async () => {
-      const files = [
-        new File(['hello'], 'hello.txt', { type: 'text/plain' })
-      ];
-      fireEvent.change(screen.getByTestId('upload-file-input'), { target: { files } });
+      const files = [new File(['hello'], 'hello.txt', { type: 'text/plain' })];
+      fireEvent.change(screen.getByTestId('upload-file-input'), {
+        target: { files },
+      });
     });
 
     expect(screen.getByText('hello.txt')).toBeInTheDocument();
@@ -90,8 +89,8 @@ describe('AttachmentInput', () => {
         defaultValue: {
           contentType: 'image/jpeg',
           url: 'https://example.com/test.jpg',
-          title: 'test.jpg'
-        }
+          title: 'test.jpg',
+        },
       });
     });
 
@@ -111,17 +110,16 @@ describe('AttachmentInput', () => {
 
     setup({
       name: 'test',
-      onChange
+      onChange,
     });
 
     await act(async () => {
-      const files = [
-        new File(['hello'], 'hello.txt', { type: 'text/plain' })
-      ];
-      fireEvent.change(screen.getByTestId('upload-file-input'), { target: { files } });
+      const files = [new File(['hello'], 'hello.txt', { type: 'text/plain' })];
+      fireEvent.change(screen.getByTestId('upload-file-input'), {
+        target: { files },
+      });
     });
 
     expect(onChange).toHaveBeenCalled();
   });
-
 });

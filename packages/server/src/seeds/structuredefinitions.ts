@@ -16,14 +16,14 @@ export async function createStructureDefinitions(): Promise<void> {
 }
 
 async function createStructureDefinitionsForBundle(structureDefinitions: Bundle): Promise<void> {
-  for (const entry of (structureDefinitions.entry as BundleEntry[])) {
+  for (const entry of structureDefinitions.entry as BundleEntry[]) {
     const resource = entry.resource as Resource;
 
     if (resource.resourceType === 'StructureDefinition' && resource.name) {
       logger.debug('StructureDefinition: ' + resource.name);
       const [outcome, result] = await repo.createResource<StructureDefinition>({
         ...resource,
-        text: undefined
+        text: undefined,
       });
 
       if (!isOk(outcome)) {

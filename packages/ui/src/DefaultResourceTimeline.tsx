@@ -18,16 +18,16 @@ export function DefaultResourceTimeline(props: DefaultResourceTimelineProps): JS
           {
             request: {
               method: 'GET',
-              url: `${getReferenceString(resource)}/_history`
-            }
+              url: `${getReferenceString(resource)}/_history`,
+            },
           },
           {
             request: {
               method: 'GET',
-              url: `AuditEvent?entity=${getReferenceString(resource)}&_count=20&_sort=-_lastUpdated`
-            }
-          }
-        ]
+              url: `AuditEvent?entity=${getReferenceString(resource)}&_count=20&_sort=-_lastUpdated`,
+            },
+          },
+        ],
       })}
     />
   );

@@ -20,15 +20,15 @@ export class MockClient extends MedplumClient {
         const response: any = {
           request: {
             url,
-            options
+            options,
           },
-          ...result
+          ...result,
         };
 
         return Promise.resolve({
-          json: () => Promise.resolve(response)
+          json: () => Promise.resolve(response),
         });
-      }
+      },
     });
   }
 
@@ -42,8 +42,8 @@ export class MockClient extends MedplumClient {
       resourceType: 'Practitioner',
       id: '123',
       meta: {
-        versionId: '456'
-      }
+        versionId: '456',
+      },
     } as Practitioner;
   }
 

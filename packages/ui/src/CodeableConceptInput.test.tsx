@@ -8,29 +8,30 @@ import { MockClient } from './MockClient';
 
 const statusProperty: ElementDefinition = {
   binding: {
-    valueSet: 'https://example.com/test'
-  }
+    valueSet: 'https://example.com/test',
+  },
 };
 
 const valueSet: ValueSet = {
   resourceType: 'ValueSet',
   expansion: {
-    contains: [{
-      system: 'x',
-      code: 'test-code',
-      display: 'Test Display'
-    }]
-  }
+    contains: [
+      {
+        system: 'x',
+        code: 'test-code',
+        display: 'Test Display',
+      },
+    ],
+  },
 };
 
 const medplum = new MockClient({
   'fhir/R4/ValueSet/%24expand?url=https%3A%2F%2Fexample.com%2Ftest&filter=xyz': {
-    'GET': valueSet
-  }
+    GET: valueSet,
+  },
 });
 
 describe('CodeableConceptInput', () => {
-
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -90,5 +91,4 @@ describe('CodeableConceptInput', () => {
 
     expect(screen.getByText('Test Display')).toBeDefined();
   });
-
 });

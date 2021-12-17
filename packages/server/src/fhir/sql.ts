@@ -5,7 +5,7 @@ const DEBUG = false;
 export enum ColumnType {
   UUID = 'uuid',
   TIMESTAMP = 'timestamp',
-  TEXT = 'text'
+  TEXT = 'text',
 }
 
 export enum Operator {
@@ -17,7 +17,7 @@ export enum Operator {
   LESS_THAN_OR_EQUALS = '<=',
   GREATER_THAN = '>',
   GREATER_THAN_OR_EQUALS = '>=',
-  ARRAY_CONTAINS = 'ARRAY_CONTAINS'
+  ARRAY_CONTAINS = 'ARRAY_CONTAINS',
 }
 
 export interface Column {
@@ -106,7 +106,7 @@ export abstract class BaseQuery {
       column: getColumn(column),
       operator,
       parameter: value,
-      parameterType: type
+      parameterType: type,
     });
     return this;
   }
@@ -202,7 +202,7 @@ export class SelectQuery extends BaseQuery {
   join(rightTableName: string, leftColumnName: string, rightColumnName: string): this {
     this.joins.push({
       left: { tableName: this.tableName, columnName: leftColumnName },
-      right: { tableName: rightTableName, columnName: rightColumnName }
+      right: { tableName: rightTableName, columnName: rightColumnName },
     });
     return this;
   }

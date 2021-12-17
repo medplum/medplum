@@ -7,9 +7,7 @@ import { sendEmail } from '../email';
 import { invalidRequest, repo, sendOutcome } from '../fhir';
 import { generateSecret } from '../oauth';
 
-export const resetPasswordValidators = [
-  body('email').isEmail().withMessage('Valid email address is required')
-];
+export const resetPasswordValidators = [body('email').isEmail().withMessage('Valid email address is required')];
 
 export async function resetPasswordHandler(req: Request, res: Response) {
   const errors = validationResult(req);
@@ -19,11 +17,13 @@ export async function resetPasswordHandler(req: Request, res: Response) {
 
   const [existingOutcome, existingBundle] = await repo.search<User>({
     resourceType: 'User',
-    filters: [{
-      code: 'email',
-      operator: Operator.EQUALS,
-      value: req.body.email
-    }]
+    filters: [
+      {
+        code: 'email',
+        operator: Operator.EQUALS,
+        value: req.body.email,
+      },
+    ],
   });
   assertOk(existingOutcome);
 
@@ -49,7 +49,7 @@ export async function resetPasswordHandler(req: Request, res: Response) {
       '',
       'Thank you,',
       'Medplum',
-      ''
+      '',
     ].join('\n')
   );
 
@@ -67,7 +67,7 @@ export async function resetPassword(user: User): Promise<string> {
   const [createOutcome, pcr] = await repo.createResource<PasswordChangeRequest>({
     resourceType: 'PasswordChangeRequest',
     user: createReference(user),
-    secret: generateSecret(16)
+    secret: generateSecret(16),
   });
   assertOk(createOutcome);
 

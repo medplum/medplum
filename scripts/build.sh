@@ -30,7 +30,7 @@ npm run build --workspace=packages/docs
 node --expose-gc --trace-uncaught --max_old_space_size=4096 ./node_modules/jest/bin/jest.js --runInBand --logHeapUsage
 
 # Lint
-npm run lint --workspaces
+npm run lint
 
 # Build server tar
 tar \
@@ -44,6 +44,8 @@ tar \
   packages/core/dist \
   packages/definitions/package.json \
   packages/definitions/dist \
+  packages/fhirpath/package.json \
+  packages/fhirpath/dist \
   packages/server/package.json \
   packages/server/dist \
   packages/server/templates

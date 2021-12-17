@@ -7,23 +7,23 @@ import { ProjectPage } from './ProjectPage';
 
 const medplum = new MockClient({
   'admin/projects/123': {
-    'GET': {
+    GET: {
       project: { id: '123', name: 'Project 123' },
-      members: [
-        { profile: 'Practitioner/456', name: 'Alice Smith' }
-      ]
-    }
+      members: [{ profile: 'Practitioner/456', name: 'Alice Smith' }],
+    },
   },
   'fhir/R4/Practitioner/456': {
-    'GET': {
+    GET: {
       resourceType: 'Practitioner',
       id: '456',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }]
-    }
-  }
+      name: [
+        {
+          given: ['Alice'],
+          family: 'Smith',
+        },
+      ],
+    },
+  },
 });
 
 const setup = (url: string) => {
@@ -39,17 +39,16 @@ const setup = (url: string) => {
 };
 
 describe('ProjectPage', () => {
-
   test('Renders', async () => {
     medplum.setActiveLoginOverride({
       accessToken: '123',
       refreshToken: '456',
       profile: {
-        reference: 'Practitioner/456'
+        reference: 'Practitioner/456',
       },
       project: {
-        reference: 'Project/123'
-      }
+        reference: 'Project/123',
+      },
     });
 
     setup('/admin/project');
@@ -60,5 +59,4 @@ describe('ProjectPage', () => {
 
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();
   });
-
 });

@@ -1,4 +1,16 @@
-import { arrayBufferToBase64, arrayBufferToHex, capitalize, createReference, deepEquals, getDateProperty, getDisplayString, getImageSrc, isLowerCase, isProfileResource, stringify } from './utils';
+import {
+  arrayBufferToBase64,
+  arrayBufferToHex,
+  capitalize,
+  createReference,
+  deepEquals,
+  getDateProperty,
+  getDisplayString,
+  getImageSrc,
+  isLowerCase,
+  isProfileResource,
+  stringify,
+} from './utils';
 
 if (typeof btoa === 'undefined') {
   global.btoa = function (str) {
@@ -7,24 +19,30 @@ if (typeof btoa === 'undefined') {
 }
 
 describe('Core Utils', () => {
-
   test('Create reference', () => {
-    expect(createReference({
-      resourceType: 'Patient',
-      id: '123',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }]
-    })).toMatchObject({
+    expect(
+      createReference({
+        resourceType: 'Patient',
+        id: '123',
+        name: [
+          {
+            given: ['Alice'],
+            family: 'Smith',
+          },
+        ],
+      })
+    ).toMatchObject({
       reference: 'Patient/123',
-      display: 'Alice Smith'
+      display: 'Alice Smith',
     });
 
-    expect(createReference({
-      resourceType: 'Device', id: '123'
-    })).toMatchObject({
-      reference: 'Device/123'
+    expect(
+      createReference({
+        resourceType: 'Device',
+        id: '123',
+      })
+    ).toMatchObject({
+      reference: 'Device/123',
     });
   });
 
@@ -40,8 +58,19 @@ describe('Core Utils', () => {
     expect(getDisplayString({ resourceType: 'Patient', id: '123', name: [] })).toEqual('Patient/123');
     expect(getDisplayString({ resourceType: 'Observation', id: '123' })).toEqual('Observation/123');
     expect(getDisplayString({ resourceType: 'ClientApplication', id: '123' })).toEqual('ClientApplication/123');
-    expect(getDisplayString({ resourceType: 'ClientApplication', id: '123', name: 'foo' })).toEqual('foo');
-    expect(getDisplayString({ resourceType: 'Device', deviceName: [{ name: 'Foo' }] })).toEqual('Foo');
+    expect(
+      getDisplayString({
+        resourceType: 'ClientApplication',
+        id: '123',
+        name: 'foo',
+      })
+    ).toEqual('foo');
+    expect(
+      getDisplayString({
+        resourceType: 'Device',
+        deviceName: [{ name: 'Foo' }],
+      })
+    ).toEqual('Foo');
     expect(getDisplayString({ resourceType: 'Device', id: '123', deviceName: [{}] })).toEqual('Device/123');
     expect(getDisplayString({ resourceType: 'Device', id: '123', deviceName: [] })).toEqual('Device/123');
     expect(getDisplayString({ resourceType: 'User', email: 'foo@example.com' })).toEqual('foo@example.com');
@@ -53,26 +82,38 @@ describe('Core Utils', () => {
     expect(getImageSrc({ resourceType: 'Patient' })).toBeUndefined();
     expect(getImageSrc({ resourceType: 'Patient', photo: [] })).toBeUndefined();
     expect(getImageSrc({ resourceType: 'Patient', photo: [{}] })).toBeUndefined();
-    expect(getImageSrc({
-      resourceType: 'Patient',
-      photo: [{
-        url: 'http://abc/xyz.txt',
-        contentType: 'text/plain'
-      }]
-    })).toBeUndefined();
-    expect(getImageSrc({
-      resourceType: 'Patient',
-      photo: [{
-        contentType: 'image/jpeg'
-      }]
-    })).toBeUndefined();
-    expect(getImageSrc({
-      resourceType: 'Patient',
-      photo: [{
-        url: 'http://abc/xyz.jpg',
-        contentType: 'image/jpeg'
-      }]
-    })).toEqual('http://abc/xyz.jpg');
+    expect(
+      getImageSrc({
+        resourceType: 'Patient',
+        photo: [
+          {
+            url: 'http://abc/xyz.txt',
+            contentType: 'text/plain',
+          },
+        ],
+      })
+    ).toBeUndefined();
+    expect(
+      getImageSrc({
+        resourceType: 'Patient',
+        photo: [
+          {
+            contentType: 'image/jpeg',
+          },
+        ],
+      })
+    ).toBeUndefined();
+    expect(
+      getImageSrc({
+        resourceType: 'Patient',
+        photo: [
+          {
+            url: 'http://abc/xyz.jpg',
+            contentType: 'image/jpeg',
+          },
+        ],
+      })
+    ).toEqual('http://abc/xyz.jpg');
   });
 
   test('Convert ArrayBuffer to hex string', () => {
@@ -133,8 +174,12 @@ describe('Core Utils', () => {
     expect(deepEquals({ value: { x: 1 } }, { value: { x: 1 } })).toEqual(true);
     expect(deepEquals({ value: { x: 1, y: '2' } }, { value: { x: 1, y: '2' } })).toEqual(true);
     expect(deepEquals({ value: { x: 1, y: '2' } }, { value: { y: '2', x: 1 } })).toEqual(true);
-    expect(deepEquals({ value: { x: 1, y: '2', z: { n: 1 } } }, { value: { x: 1, y: '2', z: { n: 1 } } })).toEqual(true);
-    expect(deepEquals({ value: { x: 1, y: '2', z: { n: 1 } } }, { value: { y: '2', x: 1, z: { n: 1 } } })).toEqual(true);
+    expect(deepEquals({ value: { x: 1, y: '2', z: { n: 1 } } }, { value: { x: 1, y: '2', z: { n: 1 } } })).toEqual(
+      true
+    );
+    expect(deepEquals({ value: { x: 1, y: '2', z: { n: 1 } } }, { value: { y: '2', x: 1, z: { n: 1 } } })).toEqual(
+      true
+    );
     expect(deepEquals({ value: { x: 1 } }, { value: { x: 2 } })).toEqual(false);
     expect(deepEquals({ value: { x: 1 } }, { value: { y: 1 } })).toEqual(false);
 
@@ -151,17 +196,35 @@ describe('Core Utils', () => {
     expect(deepEquals({ resourceType: 'Patient' }, { resourceType: 'Observation' })).toEqual(false);
     expect(deepEquals({ resourceType: 'Patient' }, { resourceType: 'Patient', x: 'y' })).toEqual(false);
     expect(deepEquals({ resourceType: 'Patient', x: 'y' }, { resourceType: 'Patient' })).toEqual(false);
-    expect(deepEquals(
-      { resourceType: 'Patient', meta: { versionId: '1' } },
-      { resourceType: 'Patient', meta: { versionId: '1' } })).toEqual(true);
-    expect(deepEquals(
-      { resourceType: 'Patient', meta: { lastUpdated: '1' } },
-      { resourceType: 'Patient', meta: { lastUpdated: '1' } })).toEqual(true);
+    expect(
+      deepEquals(
+        { resourceType: 'Patient', meta: { versionId: '1' } },
+        { resourceType: 'Patient', meta: { versionId: '1' } }
+      )
+    ).toEqual(true);
+    expect(
+      deepEquals(
+        { resourceType: 'Patient', meta: { lastUpdated: '1' } },
+        { resourceType: 'Patient', meta: { lastUpdated: '1' } }
+      )
+    ).toEqual(true);
 
     // Ignore changes to certain meta fields
-    expect(deepEquals({ resourceType: 'Patient', meta: { versionId: '1' } }, { resourceType: 'Patient', meta: { versionId: '2' } })).toEqual(true);
-    expect(deepEquals({ resourceType: 'Patient', meta: { lastUpdated: '1' } }, { resourceType: 'Patient', meta: { lastUpdated: '2' } })).toEqual(true);
-    expect(deepEquals({ resourceType: 'Patient', meta: { author: '1' } }, { resourceType: 'Patient', meta: { author: '2' } })).toEqual(true);
+    expect(
+      deepEquals(
+        { resourceType: 'Patient', meta: { versionId: '1' } },
+        { resourceType: 'Patient', meta: { versionId: '2' } }
+      )
+    ).toEqual(true);
+    expect(
+      deepEquals(
+        { resourceType: 'Patient', meta: { lastUpdated: '1' } },
+        { resourceType: 'Patient', meta: { lastUpdated: '2' } }
+      )
+    ).toEqual(true);
+    expect(
+      deepEquals({ resourceType: 'Patient', meta: { author: '1' } }, { resourceType: 'Patient', meta: { author: '2' } })
+    ).toEqual(true);
   });
 
   test('Capitalize', () => {
@@ -172,5 +235,4 @@ describe('Core Utils', () => {
     expect(isLowerCase('a')).toEqual(true);
     expect(isLowerCase('A')).toEqual(false);
   });
-
 });

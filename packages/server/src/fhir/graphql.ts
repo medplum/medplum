@@ -14,7 +14,7 @@ import {
   GraphQLResolveInfo,
   GraphQLSchema,
   GraphQLString,
-  GraphQLUnionType
+  GraphQLUnionType,
 } from 'graphql';
 import { JSONSchema4 } from 'json-schema';
 import { Repository } from './repo';
@@ -22,25 +22,25 @@ import { getResourceTypes, getSchemaDefinition } from './schema';
 import { getSearchParameters } from './search';
 
 const typeCache: Record<string, GraphQLOutputType> = {
-  'base64Binary': GraphQLString,
-  'boolean': GraphQLBoolean,
-  'canonical': GraphQLString,
-  'code': GraphQLString,
-  'date': GraphQLString,
-  'dateTime': GraphQLString,
-  'decimal': GraphQLFloat,
-  'id': GraphQLID,
-  'instant': GraphQLString,
-  'integer': GraphQLFloat,
-  'markdown': GraphQLString,
-  'number': GraphQLFloat,
-  'positiveInt': GraphQLFloat,
-  'string': GraphQLString,
-  'time': GraphQLString,
-  'unsignedInt': GraphQLFloat,
-  'uri': GraphQLString,
-  'url': GraphQLString,
-  'xhtml': GraphQLString,
+  base64Binary: GraphQLString,
+  boolean: GraphQLBoolean,
+  canonical: GraphQLString,
+  code: GraphQLString,
+  date: GraphQLString,
+  dateTime: GraphQLString,
+  decimal: GraphQLFloat,
+  id: GraphQLID,
+  instant: GraphQLString,
+  integer: GraphQLFloat,
+  markdown: GraphQLString,
+  number: GraphQLFloat,
+  positiveInt: GraphQLFloat,
+  string: GraphQLString,
+  time: GraphQLString,
+  unsignedInt: GraphQLFloat,
+  uri: GraphQLString,
+  url: GraphQLString,
+  xhtml: GraphQLString,
 };
 
 let rootSchema: GraphQLSchema | undefined;
@@ -66,10 +66,10 @@ function buildRootSchema(): GraphQLSchema {
       args: {
         id: {
           type: new GraphQLNonNull(GraphQLID),
-          description: resourceType + ' ID'
-        }
+          description: resourceType + ' ID',
+        },
       },
-      resolve: resolveById
+      resolve: resolveById,
     };
 
     // Search resource by search parameters
@@ -79,30 +79,32 @@ function buildRootSchema(): GraphQLSchema {
       for (const [name, searchParam] of Object.entries(searchParams)) {
         args[name.replaceAll('-', '_')] = {
           type: GraphQLString,
-          description: searchParam.description
+          description: searchParam.description,
         };
       }
     }
     fields[resourceType + 'List'] = {
       type: new GraphQLList(graphQLType),
       args,
-      resolve: resolveBySearch
+      resolve: resolveBySearch,
     };
   }
 
   return new GraphQLSchema({
     query: new GraphQLObjectType({
       name: 'QueryType',
-      fields
-    })
+      fields,
+    }),
   });
 }
 
 function getGraphQLType(resourceType: string): GraphQLOutputType | undefined {
-  if (resourceType === 'Extension' ||
+  if (
+    resourceType === 'Extension' ||
     resourceType === 'ExampleScenario' ||
     resourceType === 'GraphDefinition' ||
-    resourceType === 'QuestionnaireResponse') {
+    resourceType === 'QuestionnaireResponse'
+  ) {
     return undefined;
   }
 
@@ -121,8 +123,11 @@ function buildGraphQLType(resourceType: string): GraphQLOutputType | undefined {
   if (resourceType === 'ResourceList') {
     return new GraphQLUnionType({
       name: 'ResourceList',
-      types: () => getResourceTypes().map(getGraphQLType).filter(t => !!t) as GraphQLObjectType[],
-      resolveType: resolveTypeByReference
+      types: () =>
+        getResourceTypes()
+          .map(getGraphQLType)
+          .filter((t) => !!t) as GraphQLObjectType[],
+      resolveType: resolveTypeByReference,
     });
   }
 
@@ -131,12 +136,14 @@ function buildGraphQLType(resourceType: string): GraphQLOutputType | undefined {
   const fields: GraphQLFieldConfigMap<any, any> = {};
 
   for (const [propertyName, property] of Object.entries(properties)) {
-    if (propertyName.startsWith('_') ||
+    if (
+      propertyName.startsWith('_') ||
       propertyName === 'contained' ||
       propertyName === 'extension' ||
       propertyName === 'modifierExtension' ||
       (resourceType === 'Reference' && propertyName === 'identifier') ||
-      (resourceType === 'Bundle_Response' && propertyName === 'outcome')) {
+      (resourceType === 'Bundle_Response' && propertyName === 'outcome')
+    ) {
       continue;
     }
 
@@ -147,7 +154,7 @@ function buildGraphQLType(resourceType: string): GraphQLOutputType | undefined {
 
     const fieldConfig: GraphQLFieldConfig<any, any> = {
       type: propertyType,
-      description: (property as any).description
+      description: (property as any).description,
     };
 
     if (resourceType === 'Reference' && propertyName === 'resource') {
@@ -160,7 +167,7 @@ function buildGraphQLType(resourceType: string): GraphQLOutputType | undefined {
   return new GraphQLObjectType({
     name: resourceType,
     description: schema.description,
-    fields
+    fields,
   });
 }
 
@@ -211,20 +218,28 @@ function getRefString(property: any): string | undefined {
  * @returns Promise to read the resoures for the query.
  * @implements {GraphQLFieldResolver}
  */
-async function resolveBySearch(source: any, args: any, ctx: any, info: GraphQLResolveInfo): Promise<Resource[] | undefined> {
+async function resolveBySearch(
+  source: any,
+  args: any,
+  ctx: any,
+  info: GraphQLResolveInfo
+): Promise<Resource[] | undefined> {
   const fieldName = info.fieldName;
   const resourceType = fieldName.substr(0, fieldName.length - 4);
   const repo = ctx.res.locals.repo as Repository;
   const [outcome, bundle] = await repo.search({
     resourceType,
-    filters: Object.entries(args).map(e => ({
-      code: e[0],
-      operator: Operator.EQUALS,
-      value: e[1] as string
-    } as Filter))
+    filters: Object.entries(args).map(
+      (e) =>
+        ({
+          code: e[0],
+          operator: Operator.EQUALS,
+          value: e[1] as string,
+        } as Filter)
+    ),
   });
   assertOk(outcome);
-  return bundle?.entry?.map(e => e.resource as Resource);
+  return bundle?.entry?.map((e) => e.resource as Resource);
 }
 
 /**

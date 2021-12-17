@@ -33,14 +33,14 @@ export async function setPasswordHandler(req: Request, res: Response) {
 
   const passwordHash = await bcrypt.hash(req.body.password, 10);
   const [updateUserOutcome] = await repo.updateResource<User>({
-    ...user as User,
-    passwordHash
+    ...(user as User),
+    passwordHash,
   });
   assertOk(updateUserOutcome);
 
   const [updatePcrOutcome] = await repo.updateResource<PasswordChangeRequest>({
-    ...pcr as PasswordChangeRequest,
-    used: true
+    ...(pcr as PasswordChangeRequest),
+    used: true,
   });
   assertOk(updatePcrOutcome);
 

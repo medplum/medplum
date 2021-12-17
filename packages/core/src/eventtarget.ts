@@ -39,7 +39,7 @@ export class EventTarget {
   dispatchEvent(event: Event): boolean {
     const array = this.listeners[event.type];
     if (array) {
-      array.forEach(listener => listener.call(this, event));
+      array.forEach((listener) => listener.call(this, event));
     }
     return !event.defaultPrevented;
   }

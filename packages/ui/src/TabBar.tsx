@@ -13,11 +13,11 @@ export function TabBar(props: TabBarProps) {
     <div className="medplum-tabbar">
       <div className="medplum-tabbar-background"></div>
       <div className="medplum-tabbar-foreground">
-        {React.Children.map(props.children, child => {
+        {React.Children.map(props.children, (child) => {
           if (React.isValidElement(child) && child.type === Tab) {
             return React.cloneElement(child as React.ReactElement<any>, {
               selected: child.props.name === props.value,
-              onClick: props.onChange
+              onClick: props.onChange,
             });
           } else {
             return null;

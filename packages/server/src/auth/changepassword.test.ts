@@ -10,7 +10,6 @@ import { seedDatabase } from '../seed';
 const app = express();
 
 describe('Change Password', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -32,7 +31,7 @@ describe('Change Password', () => {
         lastName: 'Adams',
         projectName: 'Adams Project',
         email: `john${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res.status).toBe(200);
@@ -43,7 +42,7 @@ describe('Change Password', () => {
       .set('Authorization', 'Bearer ' + res.body.accessToken)
       .send({
         oldPassword: 'password!@#',
-        newPassword: 'password!@#123'
+        newPassword: 'password!@#123',
       });
 
     expect(res2.status).toBe(200);
@@ -58,7 +57,7 @@ describe('Change Password', () => {
         lastName: 'Jefferson',
         projectName: 'Jefferson Project',
         email: `thomas${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res.status).toBe(200);
@@ -69,7 +68,7 @@ describe('Change Password', () => {
       .set('Authorization', 'Bearer ' + res.body.accessToken)
       .send({
         oldPassword: '',
-        newPassword: 'password!@#123'
+        newPassword: 'password!@#123',
       });
 
     expect(res2.status).toBe(400);
@@ -84,7 +83,7 @@ describe('Change Password', () => {
         lastName: 'Jefferson',
         projectName: 'Jefferson Project',
         email: `thomas${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res.status).toBe(200);
@@ -95,10 +94,9 @@ describe('Change Password', () => {
       .set('Authorization', 'Bearer ' + res.body.accessToken)
       .send({
         oldPassword: 'foobarbang',
-        newPassword: 'password!@#123'
+        newPassword: 'password!@#123',
       });
 
     expect(res2.status).toBe(400);
   });
-
 });

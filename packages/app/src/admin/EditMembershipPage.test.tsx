@@ -6,13 +6,11 @@ import { EditMembershipPage } from './EditMembershipPage';
 
 const medplum = new MockClient({
   'admin/projects/123': {
-    'GET': {
+    GET: {
       project: { id: '123', name: 'Project 123' },
-      members: [
-        { profile: 'Practitioner/456', name: 'Alice Smith' }
-      ]
-    }
-  }
+      members: [{ profile: 'Practitioner/456', name: 'Alice Smith' }],
+    },
+  },
 });
 
 const setup = (url: string) => {
@@ -28,7 +26,6 @@ const setup = (url: string) => {
 };
 
 describe('EditMembershipPage', () => {
-
   test('Renders', async () => {
     setup('/admin/projects/123/members/456');
 
@@ -54,5 +51,4 @@ describe('EditMembershipPage', () => {
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
   });
-
 });

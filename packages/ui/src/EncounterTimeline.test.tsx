@@ -11,17 +11,19 @@ const encounter: Encounter = {
   resourceType: 'Encounter',
   id: '123',
   meta: {
-    versionId: '456'
-  }
+    versionId: '456',
+  },
 };
 
 const encounterHistory: Bundle = {
   resourceType: 'Bundle',
   type: 'history',
-  entry: [{
-    resource: encounter
-  }]
-}
+  entry: [
+    {
+      resource: encounter,
+    },
+  ],
+};
 
 const communications: Bundle = {
   resourceType: 'Bundle',
@@ -33,15 +35,17 @@ const communications: Bundle = {
         meta: {
           lastUpdated: new Date().toISOString(),
           author: {
-            reference: 'Practitioner/123'
-          }
+            reference: 'Practitioner/123',
+          },
         },
-        payload: [{
-          contentString: 'Hello world'
-        }]
-      }
-    }
-  ]
+        payload: [
+          {
+            contentString: 'Hello world',
+          },
+        ],
+      },
+    },
+  ],
 };
 
 const media: Bundle = {
@@ -54,24 +58,26 @@ const media: Bundle = {
         meta: {
           lastUpdated: new Date().toISOString(),
           author: {
-            reference: 'Practitioner/123'
-          }
+            reference: 'Practitioner/123',
+          },
         },
         content: {
           contentType: 'text/plain',
-          url: 'https://example.com/test.txt'
-        }
-      }
-    }
-  ]
+          url: 'https://example.com/test.txt',
+        },
+      },
+    },
+  ],
 };
 
 const newComment: Communication = {
   resourceType: 'Communication',
   id: randomUUID(),
-  payload: [{
-    contentString: 'Test comment'
-  }]
+  payload: [
+    {
+      contentString: 'Test comment',
+    },
+  ],
 };
 
 const newMedia: Media = {
@@ -79,40 +85,35 @@ const newMedia: Media = {
   id: randomUUID(),
   content: {
     contentType: 'text/plain',
-    url: 'https://example.com/test2.txt'
-  }
+    url: 'https://example.com/test2.txt',
+  },
 };
 
 const medplum = new MockClient({
   'auth/login': {
-    'POST': {
-      profile: { reference: 'Practitioner/123' }
-    }
+    POST: {
+      profile: { reference: 'Practitioner/123' },
+    },
   },
   'fhir/R4/Encounter/123': {
-    'GET': encounter
+    GET: encounter,
   },
   'fhir/R4': {
-    'POST': {
+    POST: {
       resourceType: 'Bundle',
       type: 'batch-response',
-      entry: [
-        { resource: encounterHistory },
-        { resource: communications },
-        { resource: media },
-      ]
-    }
+      entry: [{ resource: encounterHistory }, { resource: communications }, { resource: media }],
+    },
   },
   'fhir/R4/Communication': {
-    'POST': newComment
+    POST: newComment,
   },
   'fhir/R4/Media': {
-    'POST': newMedia
+    POST: newMedia,
   },
 });
 
 describe('EncounterTimeline', () => {
-
   const setup = (args: EncounterTimelineProps) => {
     return render(
       <MemoryRouter>
@@ -157,12 +158,16 @@ describe('EncounterTimeline', () => {
 
     // Enter the comment text
     await act(async () => {
-      fireEvent.change(screen.getByTestId('timeline-input'), { target: { value: 'Test comment' } });
+      fireEvent.change(screen.getByTestId('timeline-input'), {
+        target: { value: 'Test comment' },
+      });
     });
 
     // Submit the form
     await act(async () => {
-      fireEvent.submit(screen.getByTestId('timeline-form'), { target: { text: 'Test comment' } });
+      fireEvent.submit(screen.getByTestId('timeline-form'), {
+        target: { text: 'Test comment' },
+      });
     });
 
     // Wait for new comment
@@ -185,10 +190,10 @@ describe('EncounterTimeline', () => {
 
     // Upload the file
     await act(async () => {
-      const files = [
-        new File(['hello'], 'hello.txt', { type: 'text/plain' })
-      ];
-      fireEvent.change(screen.getByTestId('upload-file-input'), { target: { files } });
+      const files = [new File(['hello'], 'hello.txt', { type: 'text/plain' })];
+      fireEvent.change(screen.getByTestId('upload-file-input'), {
+        target: { files },
+      });
     });
 
     // Wait for new comment
@@ -200,5 +205,4 @@ describe('EncounterTimeline', () => {
     expect(items).toBeDefined();
     expect(items.length).toEqual(4);
   });
-
 });

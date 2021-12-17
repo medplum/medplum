@@ -4,22 +4,10 @@
   "transform": {
     "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
   },
-  "moduleFileExtensions": [
-    "ts",
-    "tsx",
-    "js",
-    "jsx",
-    "json",
-    "node"
-  ],
+  "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
   "moduleNameMapper": {
     "\\.css$": "identity-obj-proxy"
   },
-  "testMatch": [
-    "**/src/**/*.test.ts",
-    "**/src/**/*.test.tsx"
-  ],
-  "setupFilesAfterEnv": [
-    "./src/jest.setup.ts"
-  ]
+  "testMatch": ["**/src/**/*.test.ts", "**/src/**/*.test.tsx"],
+  "setupFilesAfterEnv": ["./src/jest.setup.ts"]
 }

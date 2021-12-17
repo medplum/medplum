@@ -19,7 +19,9 @@ export class FrontEnd extends cdk.Construct {
     super(parent, id);
     this.id = id;
 
-    const zone = route53.HostedZone.fromLookup(this, 'Zone', { domainName: DOMAIN_NAME });
+    const zone = route53.HostedZone.fromLookup(this, 'Zone', {
+      domainName: DOMAIN_NAME,
+    });
 
     // S3 bucket
     const appBucket = new s3.Bucket(this, 'AppBucket', {
@@ -29,7 +31,7 @@ export class FrontEnd extends cdk.Construct {
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
-      encryption: s3.BucketEncryption.S3_MANAGED
+      encryption: s3.BucketEncryption.S3_MANAGED,
     });
 
     // Access Identity for CloudFront to access S3
@@ -43,32 +45,37 @@ export class FrontEnd extends cdk.Construct {
         {
           aliases: [APP_DOMAIN_NAME],
           sslMethod: cloudfront.SSLMethod.SNI,
-          securityPolicy: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021
-        }),
-      originConfigs: [{
-        s3OriginSource: {
-          s3BucketSource: appBucket,
-          originAccessIdentity: accessIdentity
+          securityPolicy: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
+        }
+      ),
+      originConfigs: [
+        {
+          s3OriginSource: {
+            s3BucketSource: appBucket,
+            originAccessIdentity: accessIdentity,
+          },
+          behaviors: [{ isDefaultBehavior: true }],
         },
-        behaviors: [{ isDefaultBehavior: true }],
-      }],
-      errorConfigurations: [{
-        errorCode: 403,
-        responseCode: 200,
-        responsePagePath: '/index.html'
-      },
-      {
-        errorCode: 404,
-        responseCode: 200,
-        responsePagePath: '/index.html'
-      }],
+      ],
+      errorConfigurations: [
+        {
+          errorCode: 403,
+          responseCode: 200,
+          responsePagePath: '/index.html',
+        },
+        {
+          errorCode: 404,
+          responseCode: 200,
+          responsePagePath: '/index.html',
+        },
+      ],
     });
 
     // Route53 alias record for the CloudFront distribution
     const record = new route53.ARecord(this, 'AppAliasRecord', {
       recordName: APP_DOMAIN_NAME,
       target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(distribution)),
-      zone
+      zone,
     });
 
     // Debug

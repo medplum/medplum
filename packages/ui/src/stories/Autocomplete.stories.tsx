@@ -46,7 +46,7 @@ const presidents = [
   'George H. W. Bush',
   'Bill Clinton',
   'George W. Bush',
-  'Barack Obama'
+  'Barack Obama',
 ];
 
 export default {
@@ -55,8 +55,7 @@ export default {
 } as Meta;
 
 async function search(input: string): Promise<string[]> {
-  return presidents.filter(s => s.toLowerCase().includes(input.toLowerCase()))
-    .slice(0, 10);
+  return presidents.filter((s) => s.toLowerCase().includes(input.toLowerCase())).slice(0, 10);
 }
 
 export const Single = () => (
@@ -65,9 +64,7 @@ export const Single = () => (
       name="foo"
       loadOptions={search}
       getId={(option: string) => option}
-      getDisplay={(option: string) => (
-        <div>{option}</div>
-      )}
+      getDisplay={(option: string) => <div>{option}</div>}
     />
   </Document>
 );
@@ -79,9 +76,7 @@ export const Multiple = () => (
       multiple={true}
       loadOptions={search}
       getId={(option: string) => option}
-      getDisplay={(option: string) => (
-        <div>{option}</div>
-      )}
+      getDisplay={(option: string) => <div>{option}</div>}
     />
   </Document>
 );
@@ -93,9 +88,7 @@ export const Prefilled = () => (
       defaultValue={['Barack Obama']}
       loadOptions={search}
       getId={(option: string) => option}
-      getDisplay={(option: string) => (
-        <div>{option}</div>
-      )}
+      getDisplay={(option: string) => <div>{option}</div>}
     />
   </Document>
 );
@@ -106,9 +99,7 @@ export const HelpText = () => (
       name="foo"
       loadOptions={search}
       getId={(option: string) => option}
-      getDisplay={(option: string) => (
-        <div>{option}</div>
-      )}
+      getDisplay={(option: string) => <div>{option}</div>}
       getHelpText={(option: string) => option.length + ' chars'}
     />
   </Document>

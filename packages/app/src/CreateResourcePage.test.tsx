@@ -14,57 +14,62 @@ const practitioner: Practitioner = {
     versionId: '456',
     lastUpdated: '2021-01-01T12:00:00Z',
     author: {
-      reference: 'Practitioner/123'
-    }
-  }
+      reference: 'Practitioner/123',
+    },
+  },
 };
 
 const practitionerStructureBundle: Bundle = {
   resourceType: 'Bundle',
-  entry: [{
-    resource: {
-      resourceType: 'StructureDefinition',
-      name: 'Practitioner',
-      snapshot: {
-        element: [
-          {
-            path: 'Practitioner.id',
-            type: [{
-              code: 'code'
-            }]
-          }
-        ]
-      }
-    }
-  }]
+  entry: [
+    {
+      resource: {
+        resourceType: 'StructureDefinition',
+        name: 'Practitioner',
+        snapshot: {
+          element: [
+            {
+              path: 'Practitioner.id',
+              type: [
+                {
+                  code: 'code',
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
+  ],
 };
 
 const practitionerSearchParameter: Bundle = {
   resourceType: 'Bundle',
-  entry: [{
-    resource: {
-      resourceType: 'SearchParameter',
-      id: 'Practitioner-name',
-      code: 'name',
-      name: 'name'
-    }
-  }]
+  entry: [
+    {
+      resource: {
+        resourceType: 'SearchParameter',
+        id: 'Practitioner-name',
+        code: 'name',
+        name: 'name',
+      },
+    },
+  ],
 };
 
 const medplum = new MockClient({
   'fhir/R4/StructureDefinition?name:exact=Practitioner': {
-    'GET': practitionerStructureBundle
+    GET: practitionerStructureBundle,
   },
   'fhir/R4/SearchParameter?name=Practitioner': {
-    'GET': practitionerSearchParameter
+    GET: practitionerSearchParameter,
   },
   'fhir/R4/Practitioner/123': {
-    'GET': practitioner
+    GET: practitioner,
   },
 });
 
 describe('CreateResourcePage', () => {
-
   const setup = (url: string) => {
     return render(
       <MedplumProvider medplum={medplum}>

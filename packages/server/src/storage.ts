@@ -7,17 +7,20 @@ import { getBinaryStorage } from './fhir/storage';
 
 export const storageRouter = Router();
 
-storageRouter.get('/:id/:versionId?', asyncWrap(async (req: Request, res: Response) => {
-  if (!req.query['Signature']) {
-    res.sendStatus(401);
-    return;
-  }
+storageRouter.get(
+  '/:id/:versionId?',
+  asyncWrap(async (req: Request, res: Response) => {
+    if (!req.query['Signature']) {
+      res.sendStatus(401);
+      return;
+    }
 
-  const { id } = req.params;
-  const [outcome, resource] = await repo.readResource('Binary', id);
-  assertOk(outcome);
+    const { id } = req.params;
+    const [outcome, resource] = await repo.readResource('Binary', id);
+    assertOk(outcome);
 
-  const binary = resource as Binary;
-  res.status(200).contentType(binary.contentType as string);
-  await getBinaryStorage().readBinary(binary, res);
-}));
+    const binary = resource as Binary;
+    res.status(200).contentType(binary.contentType as string);
+    await getBinaryStorage().readBinary(binary, res);
+  })
+);

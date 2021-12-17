@@ -12,9 +12,5 @@ export function CodeableConceptDisplay(props: CodeableConceptInputProps) {
   }
 
   const text = value.text ?? value.coding?.[0]?.display ?? value.coding?.[0]?.code;
-  return (
-    <>
-      {text}
-    </>
-  );
+  return <>{text}</>;
 }

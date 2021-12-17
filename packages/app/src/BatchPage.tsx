@@ -28,30 +28,25 @@ export function BatchPage() {
     <Document>
       <h1>Batch Create</h1>
       <p>
-        Use this page to create, read, or update multiple resources.
-        For more details, see&nbsp;<a href="https://www.hl7.org/fhir/http.html#transaction">FHIR Batch and Transaction</a>.
+        Use this page to create, read, or update multiple resources. For more details, see&nbsp;
+        <a href="https://www.hl7.org/fhir/http.html#transaction">FHIR Batch and Transaction</a>.
       </p>
       <h3>Input</h3>
-      <Form onSubmit={(formData: any) => {
-        setOutput(undefined);
-        medplum.post('fhir/R4', JSON.parse(formData.input))
-          .then(response => {
+      <Form
+        onSubmit={(formData: any) => {
+          setOutput(undefined);
+          medplum.post('fhir/R4', JSON.parse(formData.input)).then((response) => {
             setOutput(response);
           });
-      }}>
-        <textarea
-          name="input"
-          data-testid="batch-input"
-          rows={20}
-          cols={80}
-          defaultValue={DEFAULT_VALUE}
-        />
+        }}
+      >
+        <textarea name="input" data-testid="batch-input" rows={20} cols={80} defaultValue={DEFAULT_VALUE} />
         <Button type="submit">Submit</Button>
       </Form>
       {output && (
         <>
           <h3>Output</h3>
-          <pre style={{border: '1px solid #888'}}>{JSON.stringify(output, undefined, 2)}</pre>
+          <pre style={{ border: '1px solid #888' }}>{JSON.stringify(output, undefined, 2)}</pre>
         </>
       )}
     </Document>

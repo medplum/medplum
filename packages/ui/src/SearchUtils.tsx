@@ -1,4 +1,11 @@
-import { Filter, getPropertyDisplayName, IndexedStructureDefinition, Operator, SearchRequest, stringify } from '@medplum/core';
+import {
+  Filter,
+  getPropertyDisplayName,
+  IndexedStructureDefinition,
+  Operator,
+  SearchRequest,
+  stringify,
+} from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import React from 'react';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
@@ -12,7 +19,7 @@ export function setFilters(definition: SearchRequest, filters: Filter[]): Search
   return {
     ...definition,
     filters: filters,
-    name: undefined
+    name: undefined,
   };
 }
 
@@ -29,7 +36,10 @@ export function clearFilters(definition: SearchRequest): SearchRequest {
  * @param {string} code The field key name to clear filters.
  */
 export function clearFiltersOnField(definition: SearchRequest, code: string): SearchRequest {
-  return setFilters(definition, (definition.filters || []).filter(f => f.code !== code));
+  return setFilters(
+    definition,
+    (definition.filters || []).filter((f) => f.code !== code)
+  );
 }
 
 /**
@@ -45,8 +55,8 @@ export function addFilter(
   field: string,
   op: Operator,
   value?: string,
-  opt_clear?: boolean): SearchRequest {
-
+  opt_clear?: boolean
+): SearchRequest {
   if (opt_clear) {
     definition = clearFiltersOnField(definition, field);
   }
@@ -77,7 +87,7 @@ export function addField(definition: SearchRequest, field: string): SearchReques
   return {
     ...definition,
     fields: newFields,
-    name: undefined
+    name: undefined,
   };
 }
 
@@ -95,7 +105,7 @@ export function deleteFilter(definition: SearchRequest, index: number): SearchRe
   return {
     ...definition,
     filters: newFilters,
-    name: undefined
+    name: undefined,
   };
 }
 
@@ -210,11 +220,7 @@ export function addYearToDateFilter(definition: SearchRequest, field: string): S
 
   definition = clearFiltersOnField(definition, field);
 
-  return addFilter(
-    definition,
-    field,
-    Operator.STARTS_AFTER,
-    startTime.toISOString());
+  return addFilter(definition, field, Operator.STARTS_AFTER, startTime.toISOString());
 }
 
 /**
@@ -247,8 +253,13 @@ export function addDateFilter(definition: SearchRequest, field: string, op: Oper
  * @param {Date} d2 The end date.
  * @param {boolean=} opt_exclusive Optional flag for exclusive end date.
  */
-export function addDateFilterBetween(definition: SearchRequest, field: string, d1: Date, d2: Date, opt_exclusive?: boolean): SearchRequest {
-
+export function addDateFilterBetween(
+  definition: SearchRequest,
+  field: string,
+  d1: Date,
+  d2: Date,
+  opt_exclusive?: boolean
+): SearchRequest {
   if (!opt_exclusive) {
     // Between is inclusive.  Therefore, we need to push out the end date.
     d2 = new Date(d2.getTime());
@@ -272,11 +283,7 @@ function addDateFilterImpl(definition: SearchRequest, field: string, op: Operato
   const dateTime = new Date(value.getFullYear(), value.getMonth(), value.getDate());
   dateTime.setHours(0, 0, 0, 0);
 
-  return addFilter(
-    definition,
-    field,
-    op,
-    dateTime.toISOString());
+  return addFilter(definition, field, op, dateTime.toISOString());
 }
 
 /**
@@ -300,7 +307,7 @@ export function hasFilterOnField(definition: SearchRequest, code: string): boole
   if (!definition.filters) {
     return false;
   }
-  return definition.filters.find(f => f.code === code) !== undefined;
+  return definition.filters.find((f) => f.code === code) !== undefined;
 }
 
 /**
@@ -315,7 +322,7 @@ export function setPage(definition: SearchRequest, page: number): SearchRequest 
   return {
     ...definition,
     page: page,
-    name: undefined
+    name: undefined,
   };
 }
 
@@ -336,18 +343,19 @@ export function movePage(definition: SearchRequest, delta: number): SearchReques
  * @param {string} sortField The sort key.
  */
 export function setSort(definition: SearchRequest, sort: string, desc?: boolean): SearchRequest {
-  if (sort === getSortField(definition) &&
-    (desc !== undefined && desc === isSortDescending(definition))) {
+  if (sort === getSortField(definition) && desc !== undefined && desc === isSortDescending(definition)) {
     return definition;
   }
   return {
     ...definition,
-    sortRules: [{
-      code: sort,
-      descending: !!desc
-    }],
-    name: undefined
-  }
+    sortRules: [
+      {
+        code: sort,
+        descending: !!desc,
+      },
+    ],
+    name: undefined,
+  };
 }
 
 /**
@@ -467,7 +475,12 @@ export function getValue(resource: Resource, key: string): any | undefined {
  * @param {*} value The filter value
  * @return {string} An HTML fragment that represents the value.
  */
-export function renderValue(schema: IndexedStructureDefinition, resourceType: string, key: string, value: any): string | JSX.Element {
+export function renderValue(
+  schema: IndexedStructureDefinition,
+  resourceType: string,
+  key: string,
+  value: any
+): string | JSX.Element {
   if (!value) {
     return <span className="muted">none</span>;
   }
@@ -485,12 +498,5 @@ export function renderValue(schema: IndexedStructureDefinition, resourceType: st
     return stringify(value);
   }
 
-  return (
-    <ResourcePropertyDisplay
-      schema={schema}
-      property={property}
-      value={value}
-      maxWidth={200}
-    />
-  );
+  return <ResourcePropertyDisplay schema={schema} property={property} value={value} maxWidth={200} />;
 }

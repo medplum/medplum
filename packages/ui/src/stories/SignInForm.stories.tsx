@@ -17,9 +17,7 @@ export function Basic() {
       {ctx.profile ? (
         <div>
           <pre>User: {JSON.stringify(ctx.profile)}</pre>
-          <Button onClick={() => ctx.medplum.signOut().then(() => alert('Signed out!'))}>
-            Sign out
-          </Button>
+          <Button onClick={() => ctx.medplum.signOut().then(() => alert('Signed out!'))}>Sign out</Button>
         </div>
       ) : (
         <SignInForm onSuccess={() => alert('Signed in!')} />
@@ -35,9 +33,7 @@ export function WithLinks() {
       {ctx.profile ? (
         <div>
           <pre>User: {JSON.stringify(ctx.profile)}</pre>
-          <Button onClick={() => ctx.medplum.signOut().then(() => alert('Signed out!'))}>
-            Sign out
-          </Button>
+          <Button onClick={() => ctx.medplum.signOut().then(() => alert('Signed out!'))}>Sign out</Button>
         </div>
       ) : (
         <SignInForm
@@ -58,9 +54,7 @@ export function WithFooter() {
         {ctx.profile ? (
           <div>
             <pre>User: {JSON.stringify(ctx.profile)}</pre>
-            <Button onClick={() => ctx.medplum.signOut().then(() => alert('Signed out!'))}>
-              Sign out
-            </Button>
+            <Button onClick={() => ctx.medplum.signOut().then(() => alert('Signed out!'))}>Sign out</Button>
           </div>
         ) : (
           <SignInForm
@@ -87,9 +81,7 @@ export function WithGoogle() {
         {ctx.profile ? (
           <div>
             <pre>User: {JSON.stringify(ctx.profile)}</pre>
-            <Button onClick={() => ctx.medplum.signOut().then(() => alert('Signed out!'))}>
-              Sign out
-            </Button>
+            <Button onClick={() => ctx.medplum.signOut().then(() => alert('Signed out!'))}>Sign out</Button>
           </div>
         ) : (
           <SignInForm

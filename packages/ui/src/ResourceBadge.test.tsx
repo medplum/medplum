@@ -10,22 +10,24 @@ const patient: Patient = {
   resourceType: 'Patient',
   id: '123',
   meta: {
-    versionId: '456'
+    versionId: '456',
   },
-  name: [{
-    given: ['Alice'],
-    family: 'Smith'
-  }]
+  name: [
+    {
+      given: ['Alice'],
+      family: 'Smith',
+    },
+  ],
 };
 
 const medplum = new MockClient({
   'auth/login': {
-    'POST': {
-      profile: { reference: 'Practitioner/123' }
-    }
+    POST: {
+      profile: { reference: 'Practitioner/123' },
+    },
   },
   'fhir/R4/Patient/123': {
-    'GET': patient
+    GET: patient,
   },
 });
 
@@ -40,7 +42,6 @@ const setup = (args: ResourceBadgeProps) => {
 };
 
 describe('ResourceBadge', () => {
-
   test('Renders system', () => {
     const utils = setup({ value: { reference: 'system' } });
     expect(utils.getByText('System')).toBeDefined();
@@ -48,7 +49,7 @@ describe('ResourceBadge', () => {
 
   test('Renders resource directly', async () => {
     const utils = setup({
-      value: patient
+      value: patient,
     });
 
     await waitFor(() => utils.getByText('Alice Smith'));
@@ -59,7 +60,7 @@ describe('ResourceBadge', () => {
   test('Renders resource directly as link', async () => {
     const utils = setup({
       value: patient,
-      link: true
+      link: true,
     });
 
     await waitFor(() => utils.getByText('Alice Smith'));
@@ -70,13 +71,12 @@ describe('ResourceBadge', () => {
   test('Renders after loading the resource', async () => {
     const utils = setup({
       value: {
-        reference: 'Patient/' + patient.id
-      }
+        reference: 'Patient/' + patient.id,
+      },
     });
 
     await waitFor(() => utils.getByText('Alice Smith'));
 
     expect(utils.getByText('Alice Smith')).toBeDefined();
   });
-
 });

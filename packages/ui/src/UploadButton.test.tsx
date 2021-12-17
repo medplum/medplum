@@ -8,11 +8,10 @@ import { UploadButton, UploadButtonProps } from './UploadButton';
 const medplum = new MockClient({});
 
 describe('UploadButton', () => {
-
   const setup = (args?: UploadButtonProps) => {
     return render(
       <MedplumProvider medplum={medplum}>
-        <UploadButton onUpload={attachment => console.log('upload', attachment)} {...args} />
+        <UploadButton onUpload={(attachment) => console.log('upload', attachment)} {...args} />
       </MedplumProvider>
     );
   };
@@ -23,7 +22,7 @@ describe('UploadButton', () => {
     setup({
       onUpload: (attachment: Attachment) => {
         results.push(attachment);
-      }
+      },
     });
 
     await act(async () => {
@@ -39,11 +38,13 @@ describe('UploadButton', () => {
     setup({
       onUpload: (attachment: Attachment) => {
         results.push(attachment);
-      }
+      },
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('upload-file-input'), { target: { files: [null] } });
+      fireEvent.change(screen.getByTestId('upload-file-input'), {
+        target: { files: [null] },
+      });
     });
 
     expect(results.length).toEqual(0);
@@ -55,11 +56,13 @@ describe('UploadButton', () => {
     setup({
       onUpload: (attachment: Attachment) => {
         results.push(attachment);
-      }
+      },
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('upload-file-input'), { target: { files: [{}] } });
+      fireEvent.change(screen.getByTestId('upload-file-input'), {
+        target: { files: [{}] },
+      });
     });
 
     expect(results.length).toEqual(0);
@@ -71,14 +74,14 @@ describe('UploadButton', () => {
     setup({
       onUpload: (attachment: Attachment) => {
         results.push(attachment);
-      }
+      },
     });
 
     await act(async () => {
-      const files = [
-        new File(['hello'], 'hello.txt', { type: 'text/plain' })
-      ];
-      fireEvent.change(screen.getByTestId('upload-file-input'), { target: { files } });
+      const files = [new File(['hello'], 'hello.txt', { type: 'text/plain' })];
+      fireEvent.change(screen.getByTestId('upload-file-input'), {
+        target: { files },
+      });
     });
 
     expect(results.length).toEqual(1);
@@ -90,13 +93,11 @@ describe('UploadButton', () => {
     setup({
       onUpload: (attachment: Attachment) => {
         results.push(attachment);
-      }
+      },
     });
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('upload-button'));
     });
-
   });
-
 });

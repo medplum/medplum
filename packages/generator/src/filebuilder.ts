@@ -1,4 +1,3 @@
-
 const DEFAULT_INDENT = ' '.repeat(2);
 
 export class FileBuilder {
@@ -67,7 +66,7 @@ export function wordWrap(text: string, maxLength: number): string[] {
   let line: string[] = [];
   let length = 0;
   text.split(' ').forEach(function (word) {
-    if ((length + word.length) > maxLength) {
+    if (length + word.length > maxLength) {
       result.push(line.join(' ').trim());
       line = [];
       length = 0;

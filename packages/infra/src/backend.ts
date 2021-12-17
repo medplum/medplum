@@ -30,23 +30,23 @@ export class BackEnd extends cdk.Construct {
     // VPC Flow Logs
     const vpcFlowLogs = new logs.LogGroup(this, 'VpcFlowLogs', {
       logGroupName: '/medplum/flowlogs/' + name,
-      removalPolicy: cdk.RemovalPolicy.DESTROY
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // VPC
     const vpc = new ec2.Vpc(this, 'VPC', {
       flowLogs: {
-        'cloudwatch': {
+        cloudwatch: {
           destination: ec2.FlowLogDestination.toCloudWatchLogs(vpcFlowLogs),
-          trafficType: ec2.FlowLogTrafficType.ALL
-        }
-      }
+          trafficType: ec2.FlowLogTrafficType.ALL,
+        },
+      },
     });
 
     // RDS
     const rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
       engine: rds.DatabaseClusterEngine.auroraPostgres({
-        version: rds.AuroraPostgresEngineVersion.VER_12_4
+        version: rds.AuroraPostgresEngineVersion.VER_12_4,
       }),
       credentials: rds.Credentials.fromGeneratedSecret('clusteradmin'),
       defaultDatabaseName: 'medplum',
@@ -59,16 +59,16 @@ export class BackEnd extends cdk.Construct {
         },
       },
       backup: {
-        retention: cdk.Duration.days(7)
+        retention: cdk.Duration.days(7),
       },
-      cloudwatchLogsExports: ['postgresql']
+      cloudwatchLogsExports: ['postgresql'],
     });
 
     // Redis
     // Important: For HIPAA compliance, you must specify TransitEncryptionEnabled as true, an AuthToken, and a CacheSubnetGroup.
     const redisSubnetGroup = new elasticache.CfnSubnetGroup(this, 'RedisSubnetGroup', {
       description: 'Redis Subnet Group',
-      subnetIds: vpc.privateSubnets.map(subnet => subnet.subnetId)
+      subnetIds: vpc.privateSubnets.map((subnet) => subnet.subnetId),
     });
 
     const redisSecurityGroup = new ec2.SecurityGroup(this, 'RedisSecurityGroup', {
@@ -81,12 +81,12 @@ export class BackEnd extends cdk.Construct {
       generateSecretString: {
         secretStringTemplate: '{}',
         generateStringKey: 'password',
-        excludeCharacters: '@%*()_+=`~{}|[]\\:";\'?,./'
-      }
+        excludeCharacters: '@%*()_+=`~{}|[]\\:";\'?,./',
+      },
     });
 
     const redisCluster = new elasticache.CfnReplicationGroup(this, 'RedisCluster', {
-      engine: "Redis",
+      engine: 'Redis',
       engineVersion: '6.x',
       cacheNodeType: 'cache.t2.medium',
       replicationGroupDescription: 'RedisReplicationGroup',
@@ -107,10 +107,10 @@ export class BackEnd extends cdk.Construct {
           host: redisCluster.attrPrimaryEndPointAddress,
           port: redisCluster.attrPrimaryEndPointPort,
           password: redisPassword.secretValueFromJson('password').toString(),
-          tls: {}
+          tls: {},
         }),
-        generateStringKey: 'unused'
-      }
+        generateStringKey: 'unused',
+      },
     });
     redisSecrets.node.addDependency(redisPassword);
     redisSecrets.node.addDependency(redisCluster);
@@ -134,7 +134,7 @@ export class BackEnd extends cdk.Construct {
       'AmazonSESFullAccess', // Send emails with SES
       'AmazonS3FullAccess', // upload content to content bucket
     ];
-    policies.forEach(policy => taskRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName(policy)));
+    policies.forEach((policy) => taskRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName(policy)));
 
     // Task Definitions
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDefinition', {
@@ -155,11 +155,7 @@ export class BackEnd extends cdk.Construct {
     });
 
     // Amazon ECR Repositories
-    const serviceRepo = ecr.Repository.fromRepositoryName(
-      this,
-      'MedplumRepo',
-      'medplum-server'
-    );
+    const serviceRepo = ecr.Repository.fromRepositoryName(this, 'MedplumRepo', 'medplum-server');
 
     // Task Containers
     const serviceContainer = taskDefinition.addContainer('MedplumTaskDefinition', {
@@ -186,7 +182,7 @@ export class BackEnd extends cdk.Construct {
       taskDefinition: taskDefinition,
       assignPublicIp: false,
       vpcSubnets: {
-        subnetType: ec2.SubnetType.PRIVATE_WITH_NAT
+        subnetType: ec2.SubnetType.PRIVATE_WITH_NAT,
       },
       desiredCount: 2,
       securityGroups: [fargateSecurityGroup],
@@ -204,25 +200,27 @@ export class BackEnd extends cdk.Construct {
         healthyThresholdCount: 2,
         unhealthyThresholdCount: 5,
       },
-      targets: [fargateService]
+      targets: [fargateService],
     });
 
     // Load Balancer
     const loadBalancer = new elbv2.ApplicationLoadBalancer(this, 'LoadBalancer', {
       vpc: vpc,
       internetFacing: true,
-      http2Enabled: true
+      http2Enabled: true,
     });
 
     // HTTPS Listener
     // Forward to the target group
     loadBalancer.addListener('HttpsListener', {
       port: 443,
-      certificates: [{
-        certificateArn: API_SSL_CERT_ARN
-      }],
+      certificates: [
+        {
+          certificateArn: API_SSL_CERT_ARN,
+        },
+      ],
       sslPolicy: elbv2.SslPolicy.FORWARD_SECRECY_TLS12_RES_GCM,
-      defaultAction: elbv2.ListenerAction.forward([targetGroup])
+      defaultAction: elbv2.ListenerAction.forward([targetGroup]),
     });
 
     // Grant RDS access to the fargate group
@@ -232,13 +230,15 @@ export class BackEnd extends cdk.Construct {
     redisSecurityGroup.addIngressRule(fargateSecurityGroup, ec2.Port.tcp(6379));
 
     // Route 53
-    const zone = route53.HostedZone.fromLookup(this, 'Zone', { domainName: DOMAIN_NAME });
+    const zone = route53.HostedZone.fromLookup(this, 'Zone', {
+      domainName: DOMAIN_NAME,
+    });
 
     // Route53 alias record for the load balancer
     const record = new route53.ARecord(this, 'LoadBalancerAliasRecord', {
       recordName: API_DOMAIN_NAME,
       target: route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(loadBalancer)),
-      zone: zone
+      zone: zone,
     });
 
     // SSM Parameters
@@ -246,14 +246,14 @@ export class BackEnd extends cdk.Construct {
       tier: ssm.ParameterTier.STANDARD,
       parameterName: `/medplum/${name}/DatabaseSecrets`,
       description: 'Database secrets ARN',
-      stringValue: rdsCluster.secret?.secretArn as string
+      stringValue: rdsCluster.secret?.secretArn as string,
     });
 
     const redisSecretsParameter = new ssm.StringParameter(this, 'RedisSecretsParameter', {
       tier: ssm.ParameterTier.STANDARD,
       parameterName: `/medplum/${name}/RedisSecrets`,
       description: 'Redis secrets ARN',
-      stringValue: redisSecrets.secretArn
+      stringValue: redisSecrets.secretArn,
     });
 
     // Debug

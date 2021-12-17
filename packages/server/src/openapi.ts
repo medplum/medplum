@@ -1,10 +1,17 @@
 import { Request, Response } from 'express';
 import { JSONSchema4 } from 'json-schema';
-import { ComponentsObject, OpenAPIObject, ReferenceObject, SchemaObject, SecurityRequirementObject, TagObject } from 'openapi3-ts';
+import {
+  ComponentsObject,
+  OpenAPIObject,
+  ReferenceObject,
+  SchemaObject,
+  SecurityRequirementObject,
+  TagObject,
+} from 'openapi3-ts';
 import { getConfig } from './config';
 import { getSchemaDefinitions } from './fhir';
 
-type SchemaMap = { [schema: string]: SchemaObject | ReferenceObject; };
+type SchemaMap = { [schema: string]: SchemaObject | ReferenceObject };
 
 let cachedSpec: any;
 
@@ -37,25 +44,26 @@ function buildBaseSpec(): OpenAPIObject {
     openapi: '3.0.2',
     info: {
       title: 'Medplum - OpenAPI 3.0',
-      description: 'Medplum OpenAPI 3.0 specification.  You can find out more about Medplum at [https://www.medplum.com](https://www.medplum.com).',
+      description:
+        'Medplum OpenAPI 3.0 specification.  You can find out more about Medplum at [https://www.medplum.com](https://www.medplum.com).',
       termsOfService: 'https://www.medplum.com/docs/terms/',
       contact: {
-        email: 'hello@medplum.com'
+        email: 'hello@medplum.com',
       },
       license: {
         name: 'Apache 2.0',
-        url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
+        url: 'https://www.apache.org/licenses/LICENSE-2.0.html',
       },
-      version: '1.0.5'
+      version: '1.0.5',
     },
     externalDocs: {
       description: 'Find out more about Medplum',
-      url: 'https://www.medplum.com/'
+      url: 'https://www.medplum.com/',
     },
     servers: [
       {
-        url: config.baseUrl
-      }
+        url: config.baseUrl,
+      },
     ],
     security: buildSecurity(),
     tags: [],
@@ -70,13 +78,13 @@ function buildBaseSpec(): OpenAPIObject {
               authorizationUrl: config.authorizeUrl,
               tokenUrl: config.tokenUrl,
               scopes: {
-                openid: 'OpenID'
-              }
-            }
-          }
-        }
-      }
-    }
+                openid: 'OpenID',
+              },
+            },
+          },
+        },
+      },
+    },
   };
 }
 
@@ -85,9 +93,11 @@ function buildBaseSpec(): OpenAPIObject {
  * @returns The OpenAPI security defintions.
  */
 function buildSecurity(): SecurityRequirementObject[] {
-  return [{
-    OAuth2: ['openid']
-  }];
+  return [
+    {
+      OAuth2: ['openid'],
+    },
+  ];
 }
 
 /**
@@ -103,10 +113,7 @@ function buildFhirType(result: OpenAPIObject, typeName: string, typeDefinition: 
   }
 
   ((result.components as ComponentsObject).schemas as SchemaMap)['Resource'] = {
-    oneOf: [
-      { $ref: '#/components/schemas/Patient' },
-      { $ref: '#/components/schemas/Observation' },
-    ]
+    oneOf: [{ $ref: '#/components/schemas/Patient' }, { $ref: '#/components/schemas/Observation' }],
   };
 }
 
@@ -118,7 +125,10 @@ function buildFhirType(result: OpenAPIObject, typeName: string, typeDefinition: 
  * @param typeDefinition The FHIR type definition.
  */
 function buildSchema(result: OpenAPIObject, typeName: string, typeDefinition: JSONSchema4): void {
-  ((result.components as ComponentsObject).schemas as SchemaMap)[typeName] = buildObjectSchema(typeName, typeDefinition);
+  ((result.components as ComponentsObject).schemas as SchemaMap)[typeName] = buildObjectSchema(
+    typeName,
+    typeDefinition
+  );
 }
 
 /**
@@ -166,8 +176,8 @@ function buildTags(result: OpenAPIObject, typeName: string, typeDefinition: JSON
     name: typeName,
     description: typeDefinition.description,
     externalDocs: {
-      url: 'https://docs.medplum.com/fhir/R4/' + typeName
-    }
+      url: 'https://docs.medplum.com/fhir/R4/' + typeName,
+    },
   });
 }
 
@@ -178,22 +188,22 @@ function buildTags(result: OpenAPIObject, typeName: string, typeDefinition: JSON
 function buildPaths(result: OpenAPIObject): void {
   result.paths[`/fhir/R4/{resourceType}`] = {
     get: buildSearchPath(),
-    post: buildCreatePath()
+    post: buildCreatePath(),
   };
 
   result.paths[`/fhir/R4/{resourceType}/{id}`] = {
     get: buildReadPath(),
     put: buildUpdatePath(),
     delete: buildDeletePath(),
-    patch: buildPatchPath()
+    patch: buildPatchPath(),
   };
 
   result.paths[`/fhir/R4/{resourceType}/{id}/_history`] = {
-    get: buildReadHistoryPath()
+    get: buildReadHistoryPath(),
   };
 
   result.paths[`/fhir/R4/{resourceType}/{id}/_history/{versionId}`] = {
-    get: buildReadVersionPath()
+    get: buildReadVersionPath(),
   };
 }
 
@@ -209,9 +219,9 @@ function buildSearchPath(): any {
         description: 'Resource Type',
         required: true,
         schema: {
-          type: 'string'
-        }
-      }
+          type: 'string',
+        },
+      },
     ],
     responses: {
       '200': {
@@ -219,12 +229,12 @@ function buildSearchPath(): any {
         content: {
           'application/fhir+json': {
             schema: {
-              $ref: '#/components/schemas/Bundle'
-            }
-          }
-        }
-      }
-    }
+              $ref: '#/components/schemas/Bundle',
+            },
+          },
+        },
+      },
+    },
   };
 }
 
@@ -240,20 +250,20 @@ function buildCreatePath(): any {
         description: 'Resource Type',
         required: true,
         schema: {
-          type: 'string'
-        }
-      }
+          type: 'string',
+        },
+      },
     ],
     requestBody: {
       description: 'Create Resource',
       content: {
         'application/fhir+json': {
           schema: {
-            $ref: '#/components/schemas/Resource'
-          }
-        }
+            $ref: '#/components/schemas/Resource',
+          },
+        },
       },
-      required: true
+      required: true,
     },
     responses: {
       '201': {
@@ -261,12 +271,12 @@ function buildCreatePath(): any {
         content: {
           'application/fhir+json': {
             schema: {
-              $ref: '#/components/schemas/Resource'
-            }
-          }
-        }
-      }
-    }
+              $ref: '#/components/schemas/Resource',
+            },
+          },
+        },
+      },
+    },
   };
 }
 
@@ -282,8 +292,8 @@ function buildReadPath(): any {
         description: 'Resource Type',
         required: true,
         schema: {
-          type: 'string'
-        }
+          type: 'string',
+        },
       },
       {
         name: 'id',
@@ -292,9 +302,9 @@ function buildReadPath(): any {
         required: true,
         schema: {
           type: 'string',
-          format: 'uuid'
-        }
-      }
+          format: 'uuid',
+        },
+      },
     ],
     responses: {
       '200': {
@@ -302,12 +312,12 @@ function buildReadPath(): any {
         content: {
           'application/fhir+json': {
             schema: {
-              $ref: '#/components/schemas/Resource'
-            }
-          }
-        }
-      }
-    }
+              $ref: '#/components/schemas/Resource',
+            },
+          },
+        },
+      },
+    },
   };
 }
 
@@ -323,8 +333,8 @@ function buildReadHistoryPath(): any {
         description: 'Resource Type',
         required: true,
         schema: {
-          type: 'string'
-        }
+          type: 'string',
+        },
       },
       {
         name: 'id',
@@ -333,9 +343,9 @@ function buildReadHistoryPath(): any {
         required: true,
         schema: {
           type: 'string',
-          format: 'uuid'
-        }
-      }
+          format: 'uuid',
+        },
+      },
     ],
     responses: {
       '200': {
@@ -343,12 +353,12 @@ function buildReadHistoryPath(): any {
         content: {
           'application/fhir+json': {
             schema: {
-              $ref: '#/components/schemas/Bundle'
-            }
-          }
-        }
-      }
-    }
+              $ref: '#/components/schemas/Bundle',
+            },
+          },
+        },
+      },
+    },
   };
 }
 
@@ -364,8 +374,8 @@ function buildReadVersionPath(): any {
         description: 'Resource Type',
         required: true,
         schema: {
-          type: 'string'
-        }
+          type: 'string',
+        },
       },
       {
         name: 'id',
@@ -374,8 +384,8 @@ function buildReadVersionPath(): any {
         required: true,
         schema: {
           type: 'string',
-          format: 'uuid'
-        }
+          format: 'uuid',
+        },
       },
       {
         name: 'versionId',
@@ -384,9 +394,9 @@ function buildReadVersionPath(): any {
         required: true,
         schema: {
           type: 'string',
-          format: 'uuid'
-        }
-      }
+          format: 'uuid',
+        },
+      },
     ],
     responses: {
       '200': {
@@ -394,12 +404,12 @@ function buildReadVersionPath(): any {
         content: {
           'application/fhir+json': {
             schema: {
-              $ref: '#/components/schemas/Resource'
-            }
-          }
-        }
-      }
-    }
+              $ref: '#/components/schemas/Resource',
+            },
+          },
+        },
+      },
+    },
   };
 }
 
@@ -415,8 +425,8 @@ function buildUpdatePath(): any {
         description: 'Resource Type',
         required: true,
         schema: {
-          type: 'string'
-        }
+          type: 'string',
+        },
       },
       {
         name: 'id',
@@ -425,20 +435,20 @@ function buildUpdatePath(): any {
         required: true,
         schema: {
           type: 'string',
-          format: 'uuid'
-        }
-      }
+          format: 'uuid',
+        },
+      },
     ],
     requestBody: {
       description: 'Update Resource',
       content: {
         'application/fhir+json': {
           schema: {
-            $ref: '#/components/schemas/Resource'
-          }
-        }
+            $ref: '#/components/schemas/Resource',
+          },
+        },
       },
-      required: true
+      required: true,
     },
     responses: {
       '200': {
@@ -446,12 +456,12 @@ function buildUpdatePath(): any {
         content: {
           'application/fhir+json': {
             schema: {
-              $ref: '#/components/schemas/Resource'
-            }
-          }
-        }
-      }
-    }
+              $ref: '#/components/schemas/Resource',
+            },
+          },
+        },
+      },
+    },
   };
 }
 
@@ -467,8 +477,8 @@ function buildDeletePath(): any {
         description: 'Resource Type',
         required: true,
         schema: {
-          type: 'string'
-        }
+          type: 'string',
+        },
       },
       {
         name: 'id',
@@ -477,15 +487,15 @@ function buildDeletePath(): any {
         required: true,
         schema: {
           type: 'string',
-          format: 'uuid'
-        }
-      }
+          format: 'uuid',
+        },
+      },
     ],
     responses: {
       '204': {
-        description: 'Success'
-      }
-    }
+        description: 'Success',
+      },
+    },
   };
 }
 
@@ -501,8 +511,8 @@ function buildPatchPath(): any {
         description: 'Resource Type',
         required: true,
         schema: {
-          type: 'string'
-        }
+          type: 'string',
+        },
       },
       {
         name: 'id',
@@ -511,19 +521,19 @@ function buildPatchPath(): any {
         required: true,
         schema: {
           type: 'string',
-          format: 'uuid'
-        }
-      }
+          format: 'uuid',
+        },
+      },
     ],
     responses: {
       '204': {
-        description: 'Success'
-      }
-    }
+        description: 'Success',
+      },
+    },
   };
 }
 
 function hasEndpoint(definition: any): boolean {
   const props = definition?.properties;
-  return props && ('resourceType' in props) && ('id' in props);
+  return props && 'resourceType' in props && 'id' in props;
 }

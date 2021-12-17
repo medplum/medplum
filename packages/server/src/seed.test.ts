@@ -3,7 +3,6 @@ import { closeDatabase, initDatabase } from './database';
 import { seedDatabase } from './seed';
 
 describe('Seed', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -20,5 +19,4 @@ describe('Seed', () => {
     // Second time, seeder should silently ignore
     await seedDatabase();
   });
-
 });

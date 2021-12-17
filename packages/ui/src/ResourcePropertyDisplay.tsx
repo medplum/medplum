@@ -28,13 +28,13 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
 
   if (property.max === '*' && !props.arrayElement) {
     if (propertyType === 'Attachment') {
-      return <AttachmentArrayDisplay values={value} maxWidth={props.maxWidth} />
+      return <AttachmentArrayDisplay values={value} maxWidth={props.maxWidth} />;
     }
-    return <ResourceArrayDisplay schema={props.schema} property={property} values={value} />
+    return <ResourceArrayDisplay schema={props.schema} property={property} values={value} />;
   }
   switch (propertyType) {
     case PropertyType.boolean:
-      return <div>{value === undefined ? '' : Boolean(value).toString()}</div>
+      return <div>{value === undefined ? '' : Boolean(value).toString()}</div>;
     case PropertyType.SystemString:
     case PropertyType.canonical:
     case PropertyType.code:
@@ -49,7 +49,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
     case PropertyType.url:
       return <div>{value}</div>;
     case PropertyType.markdown:
-      return <pre>{value}</pre>
+      return <pre>{value}</pre>;
     case PropertyType.Address:
       return <AddressDisplay value={value} />;
     case PropertyType.Annotation:

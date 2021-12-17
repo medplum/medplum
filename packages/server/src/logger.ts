@@ -14,7 +14,6 @@ export enum LogLevel {
 }
 
 export const logger = {
-
   level: process.env.NODE_ENV === 'test' ? LogLevel.NONE : LogLevel.INFO,
 
   error(...args: any[]): void {
@@ -43,5 +42,5 @@ export const logger = {
 
   log(level: string, ...args: any[]): void {
     console.log(level, new Date().toISOString(), ...args);
-  }
+  },
 };

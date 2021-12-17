@@ -7,7 +7,7 @@
   z-index: 20000;
   border-radius: 0;
   box-shadow: 0 2px 4px var(--medplum-shadow);
-  transition: opacity .2s;
+  transition: opacity 0.2s;
   border: 0.1px solid var(--medplum-gray-400);
 }
 

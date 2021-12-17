@@ -1,4 +1,3 @@
-
 /**
  * Kills a browser event.
  * Prevents default behavior.

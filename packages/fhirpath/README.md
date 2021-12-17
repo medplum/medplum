@@ -16,10 +16,12 @@ import { parseFhirPath } from '@medplum/fhirpath';
 
 const patient: Patient = {
   resourceType: 'Patient',
-  name: [{ 
-    given: ['John'], 
-    family: 'Doe' 
-  }],
+  name: [
+    {
+      given: ['John'],
+      family: 'Doe',
+    },
+  ],
   birthDate: '1980-01-01',
 };
 
@@ -28,4 +30,4 @@ console.log(parseFhirPath('birthDate').eval(patient));
 
 ## License
 
-Apache 2.0.  Copyright &copy; Medplum 2021
+Apache 2.0. Copyright &copy; Medplum 2021

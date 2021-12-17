@@ -18,36 +18,36 @@ export function EncounterTimeline(props: EncounterTimelineProps): JSX.Element {
           {
             request: {
               method: 'GET',
-              url: `${getReferenceString(resource)}/_history`
-            }
+              url: `${getReferenceString(resource)}/_history`,
+            },
           },
           {
             request: {
               method: 'GET',
-              url: `Communication?encounter=${getReferenceString(resource)}`
-            }
+              url: `Communication?encounter=${getReferenceString(resource)}`,
+            },
           },
           {
             request: {
               method: 'GET',
-              url: `Media?encounter=${getReferenceString(resource)}`
-            }
-          }
-        ]
+              url: `Media?encounter=${getReferenceString(resource)}`,
+            },
+          },
+        ],
       })}
       createCommunication={(resource: Encounter, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
         encounter: createReference(resource),
         subject: resource.subject,
         sender: createReference(sender),
-        payload: [{ contentString: text }]
+        payload: [{ contentString: text }],
       })}
       createMedia={(resource: Encounter, operator: ProfileResource, content: Attachment) => ({
         resourceType: 'Media',
         encounter: createReference(resource),
         subject: resource.subject,
         operator: createReference(operator),
-        content
+        content,
       })}
     />
   );

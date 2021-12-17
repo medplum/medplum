@@ -8,7 +8,6 @@ import { initKeys } from './oauth';
 const app = express();
 
 describe('OpenAPI', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -21,11 +20,9 @@ describe('OpenAPI', () => {
   });
 
   test('Get /openapi.json', async () => {
-    const res = await request(app)
-      .get('/openapi.json');
+    const res = await request(app).get('/openapi.json');
     expect(res.status).toBe(200);
     expect(res.body.openapi).toBeDefined();
     expect(res.body.info).toBeDefined();
   });
-
 });

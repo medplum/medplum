@@ -36,13 +36,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
 
   if (property.max === '*' && !props.arrayElement) {
     if (propertyType === 'Attachment') {
-      return (
-        <AttachmentArrayInput
-          name={name}
-          defaultValue={value}
-          onChange={props.onChange}
-        />
-      );
+      return <AttachmentArrayInput name={name} defaultValue={value} onChange={props.onChange} />;
     }
     return (
       <ResourceArrayInput
@@ -57,13 +51,9 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
 
   const propertyTypes = property.type as ElementDefinitionType[];
   if (propertyTypes.length > 1) {
-    return (
-      <ElementDefinitionInputSelector elementDefinitionTypes={propertyTypes} {...props} />
-    );
+    return <ElementDefinitionInputSelector elementDefinitionTypes={propertyTypes} {...props} />;
   } else {
-    return (
-      <ElementDefinitionTypeInput elementDefinitionType={propertyTypes[0]} {...props} />
-    );
+    return <ElementDefinitionTypeInput elementDefinitionType={propertyTypes[0]} {...props} />;
   }
 }
 
@@ -79,11 +69,19 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
       <tbody>
         <tr>
           <td style={{ width: '20%' }}>
-            <select onChange={(e: React.ChangeEvent) => {
-              setSelectedType(propertyTypes.find((type: ElementDefinitionType) => type.code === (e.target as HTMLSelectElement).value) as ElementDefinitionType);
-            }}>
+            <select
+              onChange={(e: React.ChangeEvent) => {
+                setSelectedType(
+                  propertyTypes.find(
+                    (type: ElementDefinitionType) => type.code === (e.target as HTMLSelectElement).value
+                  ) as ElementDefinitionType
+                );
+              }}
+            >
               {propertyTypes.map((type: ElementDefinitionType) => (
-                <option key={type.code} value={type.code}>{type.code}</option>
+                <option key={type.code} value={type.code}>
+                  {type.code}
+                </option>
               ))}
             </select>
           </td>
@@ -100,7 +98,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
           </td>
         </tr>
       </tbody>
-    </table >
+    </table>
   );
 }
 
@@ -151,14 +149,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
         />
       );
     case PropertyType.code:
-      return (
-        <CodeInput
-          property={property}
-          name={name}
-          defaultValue={value}
-          onChange={props.onChange}
-        />
-      );
+      return <CodeInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.boolean:
       return (
         <input
@@ -167,7 +158,9 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           data-testid={name}
           defaultChecked={!!value}
           value="true"
-          onChange={(e: React.ChangeEvent) => props.onChange && props.onChange((e.target as HTMLInputElement).value === 'true')}
+          onChange={(e: React.ChangeEvent) =>
+            props.onChange && props.onChange((e.target as HTMLInputElement).value === 'true')
+          }
         />
       );
     case PropertyType.markdown:
@@ -179,95 +172,27 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
         />
       );
     case PropertyType.Address:
-      return (
-        <AddressInput
-          name={name}
-          defaultValue={value}
-          onChange={props.onChange}
-        />
-      );
+      return <AddressInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Annotation:
-      return (
-        <AnnotationInput
-          name={name}
-          defaultValue={value}
-          onChange={props.onChange}
-        />
-      );
+      return <AnnotationInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Attachment:
-      return (
-        <AttachmentInput
-          name={name}
-          defaultValue={value}
-        />
-      );
+      return <AttachmentInput name={name} defaultValue={value} />;
     case PropertyType.CodeableConcept:
-      return (
-        <CodeableConceptInput
-          property={property}
-          name={name}
-          defaultValue={value}
-          onChange={props.onChange}
-        />
-      );
+      return <CodeableConceptInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Coding:
-      return (
-        <CodingInput
-          property={property}
-          name={name}
-          defaultValue={value}
-          onChange={props.onChange}
-        />
-      );
+      return <CodingInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.ContactPoint:
-      return (
-        <ContactPointInput
-          name={name}
-          defaultValue={value}
-          onChange={props.onChange}
-        />
-      );
+      return <ContactPointInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.HumanName:
-      return (
-        <HumanNameInput
-          name={name}
-          defaultValue={value}
-          onChange={props.onChange}
-        />
-      );
+      return <HumanNameInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Identifier:
-      return (
-        <IdentifierInput
-          name={name}
-          defaultValue={value}
-          onChange={props.onChange}
-        />
-      );
+      return <IdentifierInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Quantity:
-      return (
-        <QuantityInput
-          name={name}
-          defaultValue={value}
-          onChange={props.onChange}
-        />
-      );
+      return <QuantityInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Reference:
-      return (
-        <ReferenceInput
-          property={property}
-          name={name}
-          defaultValue={value}
-          onChange={props.onChange}
-        />
-      );
+      return <ReferenceInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Extension:
-      return (
-        <ExtensionInput
-          name={name}
-          defaultValue={value}
-          onChange={props.onChange}
-        />
-      );
+      return <ExtensionInput name={name} defaultValue={value} onChange={props.onChange} />;
     default:
       return (
         <BackboneElementInput

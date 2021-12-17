@@ -23,7 +23,10 @@ export function applyMaybeArray(context: any, fn: (context: any) => any): any {
     return undefined;
   }
   if (Array.isArray(context)) {
-    return context.map(e => fn(e)).filter(e => !!e).flat();
+    return context
+      .map((e) => fn(e))
+      .filter((e) => !!e)
+      .flat();
   } else {
     return fn(context);
   }
@@ -197,7 +200,10 @@ export function isQuantity(input: any): boolean {
 }
 
 export function isQuantityEquivalent(x: Quantity, y: Quantity): boolean {
-  return Math.abs((x.value as number) - (y.value as number)) < 0.01 && (x.unit === y.unit || x.code === y.code || x.unit === y.code || x.code === y.unit);
+  return (
+    Math.abs((x.value as number) - (y.value as number)) < 0.01 &&
+    (x.unit === y.unit || x.code === y.code || x.unit === y.code || x.code === y.unit)
+  );
 }
 
 /**
@@ -212,8 +218,8 @@ export function deepEquals(object1: any, object2: any, path?: string): boolean {
   let keys1 = Object.keys(object1);
   let keys2 = Object.keys(object2);
   if (path === 'meta') {
-    keys1 = keys1.filter(k => k !== 'versionId' && k !== 'lastUpdated' && k !== 'author');
-    keys2 = keys2.filter(k => k !== 'versionId' && k !== 'lastUpdated' && k !== 'author');
+    keys1 = keys1.filter((k) => k !== 'versionId' && k !== 'lastUpdated' && k !== 'author');
+    keys2 = keys2.filter((k) => k !== 'versionId' && k !== 'lastUpdated' && k !== 'author');
   }
   if (keys1.length !== keys2.length) {
     return false;

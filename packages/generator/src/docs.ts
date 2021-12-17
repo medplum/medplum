@@ -1,4 +1,15 @@
-import { Bundle, BundleEntry, ElementDefinition, getExpressionForResourceType, IndexedStructureDefinition, indexStructureDefinition, isLowerCase, Resource, SearchParameter, TypeSchema } from '@medplum/core';
+import {
+  Bundle,
+  BundleEntry,
+  ElementDefinition,
+  getExpressionForResourceType,
+  IndexedStructureDefinition,
+  indexStructureDefinition,
+  isLowerCase,
+  Resource,
+  SearchParameter,
+  TypeSchema,
+} from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path/posix';
@@ -15,22 +26,24 @@ export function main() {
 
 function buildStructureDefinitions(fileName: string): void {
   const resourceDefinitions = readJson(`fhir/r4/${fileName}`) as Bundle;
-  for (const entry of (resourceDefinitions.entry as BundleEntry[])) {
+  for (const entry of resourceDefinitions.entry as BundleEntry[]) {
     const resource = entry.resource as Resource;
-    if (resource.resourceType === 'StructureDefinition' &&
+    if (
+      resource.resourceType === 'StructureDefinition' &&
       resource.name &&
       resource.name !== 'Resource' &&
       resource.name !== 'BackboneElement' &&
       resource.name !== 'DomainResource' &&
       resource.name !== 'MetadataResource' &&
-      !isLowerCase(resource.name[0])) {
+      !isLowerCase(resource.name[0])
+    ) {
       indexStructureDefinition(resource, structureDefinitions);
     }
   }
 }
 
 function writeDocs(): void {
-  const entries = Object.entries(structureDefinitions.types)
+  const entries = Object.entries(structureDefinitions.types);
   for (let i = 0; i < entries.length; i++) {
     const [resourceType, typeSchema] = entries[i];
     if (isResourceType(typeSchema) && resourceType !== 'Parameters') {
@@ -61,9 +74,10 @@ function writeDocsForType(i: number, resourceType: string, typeSchema: TypeSchem
     const [propertyName, propertySchema] = properties[j];
     fileBuilder.append(
       `| ${propertyName} ` +
-      `| ${propertySchema.min}..${propertySchema.max} ` +
-      `| ${getPropertyType(propertySchema)} ` +
-      `| ${escapeTableCell(propertySchema.short)}`);
+        `| ${propertySchema.min}..${propertySchema.max} ` +
+        `| ${getPropertyType(propertySchema)} ` +
+        `| ${escapeTableCell(propertySchema.short)}`
+    );
   }
   fileBuilder.newLine();
 
@@ -72,20 +86,25 @@ function writeDocsForType(i: number, resourceType: string, typeSchema: TypeSchem
   fileBuilder.append(`| Name | Type | Description | Expression`);
   fileBuilder.append(`| --- | --- | --- | --- |`);
 
-  for (const entry of (searchParams.entry as BundleEntry[])) {
+  for (const entry of searchParams.entry as BundleEntry[]) {
     const searchParam = entry.resource as SearchParameter;
     if (!searchParam.base?.includes(resourceType)) {
       continue;
     }
     fileBuilder.appendNoWrap(
       `| ${searchParam.name} ` +
-      `| ${searchParam.type} ` +
-      `| ${escapeTableCell(getSearchParamDescription(searchParam, resourceType))} ` +
-      `| ${escapeTableCell(getExpressionForResourceType(resourceType, searchParam.expression as string))}`);
+        `| ${searchParam.type} ` +
+        `| ${escapeTableCell(getSearchParamDescription(searchParam, resourceType))} ` +
+        `| ${escapeTableCell(getExpressionForResourceType(resourceType, searchParam.expression as string))}`
+    );
   }
 
   fileBuilder.newLine();
-  writeFileSync(resolve(__dirname, `../../docs/docs/fhir/${resourceType.toLowerCase()}.md`), fileBuilder.toString(), 'utf8');
+  writeFileSync(
+    resolve(__dirname, `../../docs/docs/fhir/${resourceType.toLowerCase()}.md`),
+    fileBuilder.toString(),
+    'utf8'
+  );
 }
 
 function isResourceType(typeSchema: TypeSchema): boolean {
@@ -122,7 +141,7 @@ function getSearchParamDescription(searchParam: SearchParameter, resourceType: s
 
   if (desc.startsWith('Multiple Resources:')) {
     const lines = desc.split('\n');
-    const resourceTypeLine = lines.find(line => line.startsWith(`* [${resourceType}]`));
+    const resourceTypeLine = lines.find((line) => line.startsWith(`* [${resourceType}]`));
     if (resourceTypeLine) {
       return resourceTypeLine.substring(resourceTypeLine.indexOf(':') + 1);
     }

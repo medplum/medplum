@@ -8,97 +8,104 @@ import { ResourceForm, ResourceFormProps } from './ResourceForm';
 const practitioner: Practitioner = {
   resourceType: 'Practitioner',
   id: '123',
-  name: [{ given: ['Medplum'], family: 'Admin' }]
+  name: [{ given: ['Medplum'], family: 'Admin' }],
 };
 
 const observation: Observation = {
   resourceType: 'Observation',
   id: '123',
   code: {
-    coding: [{
-      system: 'http://loinc.org',
-      code: '123',
-      display: 'Test Observation'
-    }]
+    coding: [
+      {
+        system: 'http://loinc.org',
+        code: '123',
+        display: 'Test Observation',
+      },
+    ],
   },
   valueQuantity: {
     value: 1,
-    unit: 'kg'
-  }
+    unit: 'kg',
+  },
 };
 
 const practitionerStructureBundle: Bundle = {
   resourceType: 'Bundle',
-  entry: [{
-    resource: {
-      resourceType: 'StructureDefinition',
-      name: 'Practitioner',
-      snapshot: {
-        element: [
-          {
-            path: 'Practitioner.id',
-            type: [{
-              code: 'code'
-            }]
-          },
-          {
-            path: 'Practitioner.name',
-            type: [{
-              code: 'HumanName'
-            }],
-            max: '*'
-          }
-        ]
-      }
-    }
-  }]
+  entry: [
+    {
+      resource: {
+        resourceType: 'StructureDefinition',
+        name: 'Practitioner',
+        snapshot: {
+          element: [
+            {
+              path: 'Practitioner.id',
+              type: [
+                {
+                  code: 'code',
+                },
+              ],
+            },
+            {
+              path: 'Practitioner.name',
+              type: [
+                {
+                  code: 'HumanName',
+                },
+              ],
+              max: '*',
+            },
+          ],
+        },
+      },
+    },
+  ],
 };
 
 const observationStructureBundle: Bundle = {
   resourceType: 'Bundle',
-  entry: [{
-    resource: {
-      resourceType: 'StructureDefinition',
-      name: 'Observation',
-      snapshot: {
-        element: [
-          {
-            path: 'Observation.id',
-            type: [{
-              code: 'code'
-            }]
-          },
-          {
-            path: 'Observation.value[x]',
-            type: [
-              { code: 'Quantity' },
-              { code: 'string' },
-              { code: 'integer' },
-            ]
-          }
-        ]
-      }
-    }
-  }]
+  entry: [
+    {
+      resource: {
+        resourceType: 'StructureDefinition',
+        name: 'Observation',
+        snapshot: {
+          element: [
+            {
+              path: 'Observation.id',
+              type: [
+                {
+                  code: 'code',
+                },
+              ],
+            },
+            {
+              path: 'Observation.value[x]',
+              type: [{ code: 'Quantity' }, { code: 'string' }, { code: 'integer' }],
+            },
+          ],
+        },
+      },
+    },
+  ],
 };
 
 const medplum = new MockClient({
   'fhir/R4/StructureDefinition?name:exact=Practitioner': {
-    'GET': practitionerStructureBundle
+    GET: practitionerStructureBundle,
   },
   'fhir/R4/StructureDefinition?name:exact=Observation': {
-    'GET': observationStructureBundle
+    GET: observationStructureBundle,
   },
   'fhir/R4/Practitioner/123': {
-    'GET': practitioner
+    GET: practitioner,
   },
   'fhir/R4/Observation/123': {
-    'GET': observation
+    GET: observation,
   },
 });
 
 describe('ResourceForm', () => {
-
   function setup(props: ResourceFormProps) {
     return render(
       <MedplumProvider medplum={medplum}>
@@ -112,7 +119,7 @@ describe('ResourceForm', () => {
 
     setup({
       defaultValue: {},
-      onSubmit
+      onSubmit,
     });
   });
 
@@ -121,9 +128,9 @@ describe('ResourceForm', () => {
 
     setup({
       defaultValue: {
-        resourceType: 'Practitioner'
+        resourceType: 'Practitioner',
       },
-      onSubmit
+      onSubmit,
     });
 
     await act(async () => {
@@ -139,9 +146,9 @@ describe('ResourceForm', () => {
 
     setup({
       defaultValue: {
-        reference: 'Practitioner/123'
+        reference: 'Practitioner/123',
       },
-      onSubmit
+      onSubmit,
     });
 
     await act(async () => {
@@ -157,9 +164,9 @@ describe('ResourceForm', () => {
 
     setup({
       defaultValue: {
-        resourceType: 'Practitioner'
+        resourceType: 'Practitioner',
       },
-      onSubmit
+      onSubmit,
     });
 
     await act(async () => {
@@ -178,9 +185,9 @@ describe('ResourceForm', () => {
 
     setup({
       defaultValue: {
-        resourceType: 'Observation'
+        resourceType: 'Observation',
       },
-      onSubmit
+      onSubmit,
     });
 
     await act(async () => {
@@ -196,9 +203,9 @@ describe('ResourceForm', () => {
 
     setup({
       defaultValue: {
-        reference: 'Observation/123'
+        reference: 'Observation/123',
       },
-      onSubmit
+      onSubmit,
     });
 
     await act(async () => {
@@ -217,10 +224,10 @@ describe('ResourceForm', () => {
         resourceType: 'Observation',
         valueQuantity: {
           value: 1,
-          unit: 'kg'
-        }
+          unit: 'kg',
+        },
       },
-      onSubmit
+      onSubmit,
     });
 
     await act(async () => {
@@ -230,10 +237,14 @@ describe('ResourceForm', () => {
     // Change the value[x] from Quantity to string
     // and set a value
     await act(async () => {
-      fireEvent.change(screen.getByDisplayValue('Quantity'), { target: { value: 'string' } });
+      fireEvent.change(screen.getByDisplayValue('Quantity'), {
+        target: { value: 'string' },
+      });
     });
     await act(async () => {
-      fireEvent.change(screen.getByTestId('value[x]'), { target: { value: 'hello' } });
+      fireEvent.change(screen.getByTestId('value[x]'), {
+        target: { value: 'hello' },
+      });
     });
 
     await act(async () => {
@@ -256,10 +267,10 @@ describe('ResourceForm', () => {
       setup({
         defaultValue: {
           resourceType: 'Practitioner',
-          id: 'xyz'
+          id: 'xyz',
         },
         onSubmit,
-        onDelete
+        onDelete,
       });
     });
 
@@ -272,5 +283,4 @@ describe('ResourceForm', () => {
     expect(onSubmit).not.toBeCalled();
     expect(onDelete).toBeCalled();
   });
-
 });

@@ -1,5 +1,18 @@
 import { assertOk, createReference, getReferenceString, isOk, Operator, RegisterRequest } from '@medplum/core';
-import { AccessPolicy, Bundle, ClientApplication, Communication, Encounter, Login, Observation, Patient, Resource, SearchParameter, ServiceRequest, StructureDefinition } from '@medplum/fhirtypes';
+import {
+  AccessPolicy,
+  Bundle,
+  ClientApplication,
+  Communication,
+  Encounter,
+  Login,
+  Observation,
+  Patient,
+  Resource,
+  SearchParameter,
+  ServiceRequest,
+  StructureDefinition,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
@@ -10,7 +23,6 @@ import { processBatch } from './batch';
 import { getRepoForLogin, repo, Repository } from './repo';
 
 describe('FHIR Repo', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -42,18 +54,20 @@ describe('FHIR Repo', () => {
     const [createOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
-      identifier: [{ system: 'https://www.example.com', value: identifier }]
+      identifier: [{ system: 'https://www.example.com', value: identifier }],
     });
 
     expect(createOutcome.id).toEqual('created');
 
     const [searchOutcome, searchResult] = await repo.search({
       resourceType: 'Patient',
-      filters: [{
-        code: 'identifier',
-        operator: Operator.EQUALS,
-        value: identifier
-      }]
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value: identifier,
+        },
+      ],
     });
 
     expect(searchOutcome.id).toEqual('ok');
@@ -67,18 +81,20 @@ describe('FHIR Repo', () => {
     const [createOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: familyName }],
-      identifier: [{ system: 'https://www.example.com', value: '123' }]
+      identifier: [{ system: 'https://www.example.com', value: '123' }],
     });
 
     expect(createOutcome.id).toEqual('created');
 
     const [searchOutcome, searchResult] = await repo.search({
       resourceType: 'Patient',
-      filters: [{
-        code: 'family',
-        operator: Operator.EQUALS,
-        value: familyName
-      }]
+      filters: [
+        {
+          code: 'family',
+          operator: Operator.EQUALS,
+          value: familyName,
+        },
+      ],
     });
 
     expect(searchOutcome.id).toEqual('ok');
@@ -93,25 +109,29 @@ describe('FHIR Repo', () => {
     const [createOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
-      address: [{
-        use: 'both',
-        line: [addressLine],
-        city: addressCity,
-        state: 'CA',
-        postalCode: '94111',
-        country: 'US'
-      }]
+      address: [
+        {
+          use: 'both',
+          line: [addressLine],
+          city: addressCity,
+          state: 'CA',
+          postalCode: '94111',
+          country: 'US',
+        },
+      ],
     });
 
     expect(createOutcome.id).toEqual('created');
 
     const [searchOutcome1, searchResult1] = await repo.search({
       resourceType: 'Patient',
-      filters: [{
-        code: 'address',
-        operator: Operator.CONTAINS,
-        value: addressLine
-      }]
+      filters: [
+        {
+          code: 'address',
+          operator: Operator.CONTAINS,
+          value: addressLine,
+        },
+      ],
     });
 
     expect(searchOutcome1.id).toEqual('ok');
@@ -120,11 +140,13 @@ describe('FHIR Repo', () => {
 
     const [searchOutcome2, searchResult2] = await repo.search({
       resourceType: 'Patient',
-      filters: [{
-        code: 'address-city',
-        operator: Operator.EQUALS,
-        value: addressCity
-      }]
+      filters: [
+        {
+          code: 'address-city',
+          operator: Operator.EQUALS,
+          value: addressCity,
+        },
+      ],
     });
 
     expect(searchOutcome2.id).toEqual('ok');
@@ -142,24 +164,26 @@ describe('FHIR Repo', () => {
       telecom: [
         {
           system: 'email',
-          value: email
+          value: email,
         },
         {
           system: 'phone',
-          value: phone
-        }
-      ]
+          value: phone,
+        },
+      ],
     });
 
     expect(createOutcome.id).toEqual('created');
 
     const [searchOutcome1, searchResult1] = await repo.search({
       resourceType: 'Patient',
-      filters: [{
-        code: 'email',
-        operator: Operator.CONTAINS,
-        value: email
-      }]
+      filters: [
+        {
+          code: 'email',
+          operator: Operator.CONTAINS,
+          value: email,
+        },
+      ],
     });
 
     expect(searchOutcome1.id).toEqual('ok');
@@ -168,11 +192,13 @@ describe('FHIR Repo', () => {
 
     const [searchOutcome2, searchResult2] = await repo.search({
       resourceType: 'Patient',
-      filters: [{
-        code: 'phone',
-        operator: Operator.EQUALS,
-        value: phone
-      }]
+      filters: [
+        {
+          code: 'phone',
+          operator: Operator.EQUALS,
+          value: phone,
+        },
+      ],
     });
 
     expect(searchOutcome2.id).toEqual('ok');
@@ -181,7 +207,9 @@ describe('FHIR Repo', () => {
   });
 
   test('Repo read malformed reference', async () => {
-    const [outcome1, resource1] = await repo.readReference({ reference: undefined });
+    const [outcome1, resource1] = await repo.readReference({
+      reference: undefined,
+    });
     expect(outcome1.id).not.toBe('ok');
     expect(resource1).toBeUndefined();
 
@@ -189,11 +217,15 @@ describe('FHIR Repo', () => {
     expect(outcome2.id).not.toBe('ok');
     expect(resource2).toBeUndefined();
 
-    const [outcome3, resource3] = await repo.readReference({ reference: '////' });
+    const [outcome3, resource3] = await repo.readReference({
+      reference: '////',
+    });
     expect(outcome3.id).not.toBe('ok');
     expect(resource3).toBeUndefined();
 
-    const [outcome4, resource4] = await repo.readReference({ reference: 'Patient/123/foo' });
+    const [outcome4, resource4] = await repo.readReference({
+      reference: 'Patient/123/foo',
+    });
     expect(outcome4.id).not.toBe('ok');
     expect(resource4).toBeUndefined();
   });
@@ -202,8 +234,8 @@ describe('FHIR Repo', () => {
     const [outcome1, version1] = await repo.createResource<Patient>({
       resourceType: 'Patient',
       meta: {
-        lastUpdated: new Date(Date.now() - 1000 * 60).toISOString()
-      }
+        lastUpdated: new Date(Date.now() - 1000 * 60).toISOString(),
+      },
     });
     expect(isOk(outcome1)).toBe(true);
     expect(version1).toBeDefined();
@@ -214,8 +246,8 @@ describe('FHIR Repo', () => {
       id: version1?.id,
       active: true,
       meta: {
-        lastUpdated: new Date().toISOString()
-      }
+        lastUpdated: new Date().toISOString(),
+      },
     });
     expect(isOk(outcome2)).toBe(true);
     expect(version2).toBeDefined();
@@ -233,14 +265,14 @@ describe('FHIR Repo', () => {
   test('Update patient', async () => {
     const [createOutcome, patient1] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Update1'], family: 'Update1' }]
+      name: [{ given: ['Update1'], family: 'Update1' }],
     });
 
     expect(createOutcome.id).toEqual('created');
 
     const [updateOutcome, patient2] = await repo.updateResource<Patient>({
-      ...patient1 as Patient,
-      active: true
+      ...(patient1 as Patient),
+      active: true,
     });
 
     expect(updateOutcome.id).toEqual('ok');
@@ -251,13 +283,13 @@ describe('FHIR Repo', () => {
   test('Update patient no changes', async () => {
     const [createOutcome, patient1] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Update1'], family: 'Update1' }]
+      name: [{ given: ['Update1'], family: 'Update1' }],
     });
 
     expect(createOutcome.id).toEqual('created');
 
     const [updateOutcome, patient2] = await repo.updateResource<Patient>({
-      ...patient1 as Patient
+      ...(patient1 as Patient),
     });
 
     expect(updateOutcome.id).toEqual('not-modified');
@@ -268,17 +300,17 @@ describe('FHIR Repo', () => {
   test('Update patient multiple names', async () => {
     const [createOutcome1, patient1] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Suzy'], family: 'Smith' }]
+      name: [{ given: ['Suzy'], family: 'Smith' }],
     });
 
     expect(createOutcome1.id).toEqual('created');
 
     const [updateOutcome2, patient2] = await repo.updateResource<Patient>({
-      ...patient1 as Patient,
+      ...(patient1 as Patient),
       name: [
         { given: ['Suzy'], family: 'Smith' },
-        { given: ['Suzy'], family: 'Jones' }
-      ]
+        { given: ['Suzy'], family: 'Jones' },
+      ],
     });
 
     expect(updateOutcome2.id).toEqual('ok');
@@ -295,8 +327,8 @@ describe('FHIR Repo', () => {
     const repo = new Repository({
       project: randomUUID(),
       author: {
-        reference: author
-      }
+        reference: author,
+      },
     });
 
     // Try to "update" a resource, which does not exist.
@@ -305,7 +337,7 @@ describe('FHIR Repo', () => {
     const [createOutcome, patient] = await repo.updateResource<Patient>({
       resourceType: 'Patient',
       id: randomUUID(),
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(createOutcome.id).toEqual('not-found');
@@ -315,7 +347,7 @@ describe('FHIR Repo', () => {
   test('Create Patient with no author', async () => {
     const [createOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(createOutcome.id).toEqual('created');
@@ -329,9 +361,9 @@ describe('FHIR Repo', () => {
       name: [{ given: ['Alice'], family: 'Smith' }],
       meta: {
         author: {
-          reference: author
-        }
-      }
+          reference: author,
+        },
+      },
     });
 
     expect(createOutcome.id).toEqual('created');
@@ -343,13 +375,13 @@ describe('FHIR Repo', () => {
 
     const repo = new Repository({
       author: {
-        reference: clientApp
-      }
+        reference: clientApp,
+      },
     });
 
     const [createOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(createOutcome.id).toEqual('created');
@@ -362,8 +394,8 @@ describe('FHIR Repo', () => {
 
     const repo = new Repository({
       author: {
-        reference: clientApp
-      }
+        reference: clientApp,
+      },
     });
 
     const [createOutcome, patient] = await repo.createResource<Patient>({
@@ -371,9 +403,9 @@ describe('FHIR Repo', () => {
       name: [{ given: ['Alice'], family: 'Smith' }],
       meta: {
         author: {
-          reference: author
-        }
-      }
+          reference: author,
+        },
+      },
     });
 
     expect(createOutcome.id).toEqual('created');
@@ -385,13 +417,13 @@ describe('FHIR Repo', () => {
 
     const repo = new Repository({
       author: {
-        reference: author
-      }
+        reference: author,
+      },
     });
 
     const [createOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(createOutcome.id).toEqual('created');
@@ -404,8 +436,8 @@ describe('FHIR Repo', () => {
 
     const repo = new Repository({
       author: {
-        reference: author
-      }
+        reference: author,
+      },
     });
 
     // We are acting as a Practitioner
@@ -417,9 +449,9 @@ describe('FHIR Repo', () => {
       name: [{ given: ['Alice'], family: 'Smith' }],
       meta: {
         author: {
-          reference: fakeAuthor
-        }
-      }
+          reference: fakeAuthor,
+        },
+      },
     });
 
     expect(createOutcome.id).toEqual('created');
@@ -434,8 +466,8 @@ describe('FHIR Repo', () => {
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
       meta: {
-        lastUpdated
-      }
+        lastUpdated,
+      },
     });
 
     expect(createOutcome.id).toEqual('created');
@@ -450,8 +482,8 @@ describe('FHIR Repo', () => {
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
       meta: {
-        lastUpdated
-      }
+        lastUpdated,
+      },
     });
     expect(createOutcome.id).toEqual('created');
     expect(patient1?.meta?.lastUpdated).toEqual(lastUpdated);
@@ -461,8 +493,8 @@ describe('FHIR Repo', () => {
       ...(patient1 as Patient),
       active: true,
       meta: {
-        lastUpdated
-      }
+        lastUpdated,
+      },
     });
     expect(updateOutcome.id).toEqual('ok');
     expect(patient2?.meta?.lastUpdated).not.toEqual(lastUpdated);
@@ -471,7 +503,7 @@ describe('FHIR Repo', () => {
   test('Search for Communications by Encounter', async () => {
     const [outcome1, patient1] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(outcome1.id).toEqual('created');
@@ -479,11 +511,11 @@ describe('FHIR Repo', () => {
 
     const [outcome2, encounter1] = await repo.createResource<Encounter>({
       resourceType: 'Encounter',
-      'class': {
+      class: {
         code: 'HH',
-        display: 'home health'
+        display: 'home health',
       },
-      subject: createReference(patient1 as Patient)
+      subject: createReference(patient1 as Patient),
     });
 
     expect(outcome2.id).toEqual('created');
@@ -494,7 +526,7 @@ describe('FHIR Repo', () => {
       encounter: createReference(encounter1 as Encounter),
       subject: createReference(patient1 as Patient),
       sender: createReference(patient1 as Patient),
-      payload: [{ contentString: 'This is a test' }]
+      payload: [{ contentString: 'This is a test' }],
     });
 
     expect(outcome3.id).toEqual('created');
@@ -502,7 +534,7 @@ describe('FHIR Repo', () => {
 
     const [outcome4, patient2] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Bob'], family: 'Jones' }]
+      name: [{ given: ['Bob'], family: 'Jones' }],
     });
 
     expect(outcome4.id).toEqual('created');
@@ -510,11 +542,11 @@ describe('FHIR Repo', () => {
 
     const [outcome5, encounter2] = await repo.createResource<Encounter>({
       resourceType: 'Encounter',
-      'class': {
+      class: {
         code: 'HH',
-        display: 'home health'
+        display: 'home health',
       },
-      subject: createReference(patient2 as Patient)
+      subject: createReference(patient2 as Patient),
     });
 
     expect(outcome5.id).toEqual('created');
@@ -525,7 +557,7 @@ describe('FHIR Repo', () => {
       encounter: createReference(encounter2 as Encounter),
       subject: createReference(patient2 as Patient),
       sender: createReference(patient2 as Patient),
-      payload: [{ contentString: 'This is another test' }]
+      payload: [{ contentString: 'This is another test' }],
     });
 
     expect(outcome6.id).toEqual('created');
@@ -533,11 +565,13 @@ describe('FHIR Repo', () => {
 
     const [searchOutcome, searchResult] = await repo.search({
       resourceType: 'Communication',
-      filters: [{
-        code: 'encounter',
-        operator: Operator.EQUALS,
-        value: getReferenceString(encounter1 as Encounter)
-      }]
+      filters: [
+        {
+          code: 'encounter',
+          operator: Operator.EQUALS,
+          value: getReferenceString(encounter1 as Encounter),
+        },
+      ],
     });
 
     expect(searchOutcome.id).toEqual('ok');
@@ -548,7 +582,7 @@ describe('FHIR Repo', () => {
   test('Search for Communications by ServiceRequest', async () => {
     const [outcome1, patient1] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(outcome1.id).toEqual('created');
@@ -557,9 +591,9 @@ describe('FHIR Repo', () => {
     const [outcome2, serviceRequest1] = await repo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
       code: {
-        text: 'text'
+        text: 'text',
       },
-      subject: createReference(patient1 as Patient)
+      subject: createReference(patient1 as Patient),
     });
 
     expect(outcome2.id).toEqual('created');
@@ -570,7 +604,7 @@ describe('FHIR Repo', () => {
       basedOn: [createReference(serviceRequest1 as ServiceRequest)],
       subject: createReference(patient1 as Patient),
       sender: createReference(patient1 as Patient),
-      payload: [{ contentString: 'This is a test' }]
+      payload: [{ contentString: 'This is a test' }],
     });
 
     expect(outcome3.id).toEqual('created');
@@ -578,7 +612,7 @@ describe('FHIR Repo', () => {
 
     const [outcome4, patient2] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Bob'], family: 'Jones' }]
+      name: [{ given: ['Bob'], family: 'Jones' }],
     });
 
     expect(outcome4.id).toEqual('created');
@@ -587,9 +621,9 @@ describe('FHIR Repo', () => {
     const [outcome5, serviceRequest2] = await repo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
       code: {
-        text: 'test'
+        text: 'test',
       },
-      subject: createReference(patient2 as Patient)
+      subject: createReference(patient2 as Patient),
     });
 
     expect(outcome5.id).toEqual('created');
@@ -600,7 +634,7 @@ describe('FHIR Repo', () => {
       basedOn: [createReference(serviceRequest2 as ServiceRequest)],
       subject: createReference(patient2 as Patient),
       sender: createReference(patient2 as Patient),
-      payload: [{ contentString: 'This is another test' }]
+      payload: [{ contentString: 'This is another test' }],
     });
 
     expect(outcome6.id).toEqual('created');
@@ -608,11 +642,13 @@ describe('FHIR Repo', () => {
 
     const [searchOutcome, searchResult] = await repo.search({
       resourceType: 'Communication',
-      filters: [{
-        code: 'based-on',
-        operator: Operator.EQUALS,
-        value: getReferenceString(serviceRequest1 as ServiceRequest)
-      }]
+      filters: [
+        {
+          code: 'based-on',
+          operator: Operator.EQUALS,
+          value: getReferenceString(serviceRequest1 as ServiceRequest),
+        },
+      ],
     });
 
     expect(searchOutcome.id).toEqual('ok');
@@ -623,23 +659,25 @@ describe('FHIR Repo', () => {
   test('Search for token in array', async () => {
     const [outcome, bundle] = await repo.search({
       resourceType: 'SearchParameter',
-      filters: [{
-        code: 'base',
-        operator: Operator.EQUALS,
-        value: 'Patient'
-      }],
-      count: 100
+      filters: [
+        {
+          code: 'base',
+          operator: Operator.EQUALS,
+          value: 'Patient',
+        },
+      ],
+      count: 100,
     });
 
     expect(outcome.id).toEqual('ok');
-    expect(bundle?.entry?.find(e => (e.resource as SearchParameter).code === 'name')).toBeDefined();
-    expect(bundle?.entry?.find(e => (e.resource as SearchParameter).code === 'email')).toBeDefined();
+    expect(bundle?.entry?.find((e) => (e.resource as SearchParameter).code === 'name')).toBeDefined();
+    expect(bundle?.entry?.find((e) => (e.resource as SearchParameter).code === 'email')).toBeDefined();
   });
 
   test('Search sort by Patient.id', async () => {
     const [outcome, bundle] = await repo.search({
       resourceType: 'Patient',
-      sortRules: [{ code: 'id' }]
+      sortRules: [{ code: 'id' }],
     });
 
     expect(outcome.id).toEqual('ok');
@@ -649,7 +687,7 @@ describe('FHIR Repo', () => {
   test('Search sort by Patient.meta.lastUpdated', async () => {
     const [outcome, bundle] = await repo.search({
       resourceType: 'Patient',
-      sortRules: [{ code: 'lastUpdated' }]
+      sortRules: [{ code: 'lastUpdated' }],
     });
 
     expect(outcome.id).toEqual('ok');
@@ -659,7 +697,7 @@ describe('FHIR Repo', () => {
   test('Search sort by Patient.identifier', async () => {
     const [outcome, bundle] = await repo.search({
       resourceType: 'Patient',
-      sortRules: [{ code: 'identifier' }]
+      sortRules: [{ code: 'identifier' }],
     });
 
     expect(outcome.id).toEqual('ok');
@@ -669,7 +707,7 @@ describe('FHIR Repo', () => {
   test('Search sort by Patient.name', async () => {
     const [outcome, bundle] = await repo.search({
       resourceType: 'Patient',
-      sortRules: [{ code: 'name' }]
+      sortRules: [{ code: 'name' }],
     });
 
     expect(outcome.id).toEqual('ok');
@@ -679,7 +717,7 @@ describe('FHIR Repo', () => {
   test('Search sort by Patient.given', async () => {
     const [outcome, bundle] = await repo.search({
       resourceType: 'Patient',
-      sortRules: [{ code: 'given' }]
+      sortRules: [{ code: 'given' }],
     });
 
     expect(outcome.id).toEqual('ok');
@@ -689,7 +727,7 @@ describe('FHIR Repo', () => {
   test('Search sort by Patient.address', async () => {
     const [outcome, bundle] = await repo.search({
       resourceType: 'Patient',
-      sortRules: [{ code: 'address' }]
+      sortRules: [{ code: 'address' }],
     });
 
     expect(outcome.id).toEqual('ok');
@@ -699,7 +737,7 @@ describe('FHIR Repo', () => {
   test('Search sort by Patient.telecom', async () => {
     const [outcome, bundle] = await repo.search({
       resourceType: 'Patient',
-      sortRules: [{ code: 'telecom' }]
+      sortRules: [{ code: 'telecom' }],
     });
 
     expect(outcome.id).toEqual('ok');
@@ -709,7 +747,7 @@ describe('FHIR Repo', () => {
   test('Search sort by Patient.email', async () => {
     const [outcome, bundle] = await repo.search({
       resourceType: 'Patient',
-      sortRules: [{ code: 'email' }]
+      sortRules: [{ code: 'email' }],
     });
 
     expect(outcome.id).toEqual('ok');
@@ -719,7 +757,7 @@ describe('FHIR Repo', () => {
   test('Search sort by Patient.birthDate', async () => {
     const [outcome, bundle] = await repo.search({
       resourceType: 'Patient',
-      sortRules: [{ code: 'birthdate' }]
+      sortRules: [{ code: 'birthdate' }],
     });
 
     expect(outcome.id).toEqual('ok');
@@ -730,25 +768,28 @@ describe('FHIR Repo', () => {
     const [createOutcome, createBundle] = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
-      entry: [{
-        request: {
-          method: 'POST',
-          url: 'Patient'
+      entry: [
+        {
+          request: {
+            method: 'POST',
+            url: 'Patient',
+          },
+          resource: {
+            resourceType: 'Patient',
+            name: [{ given: ['Marge'], family: 'Simpson' }],
+          },
         },
-        resource: {
-          resourceType: 'Patient',
-          name: [{ given: ['Marge'], family: 'Simpson' }]
-        }
-      }, {
-        request: {
-          method: 'POST',
-          url: 'Patient'
+        {
+          request: {
+            method: 'POST',
+            url: 'Patient',
+          },
+          resource: {
+            resourceType: 'Patient',
+            name: [{ given: ['Homer'], family: 'Simpson' }],
+          },
         },
-        resource: {
-          resourceType: 'Patient',
-          name: [{ given: ['Homer'], family: 'Simpson' }]
-        }
-      }]
+      ],
     });
 
     expect(isOk(createOutcome)).toBe(true);
@@ -757,7 +798,7 @@ describe('FHIR Repo', () => {
     const [searchOutcome, bundle] = await repo.search({
       resourceType: 'Patient',
       filters: [{ code: 'family', operator: Operator.EQUALS, value: 'Simpson' }],
-      sortRules: [{ code: 'family' }]
+      sortRules: [{ code: 'family' }],
     });
 
     expect(isOk(searchOutcome)).toBe(true);
@@ -771,7 +812,7 @@ describe('FHIR Repo', () => {
       lastName: randomUUID(),
       projectName: randomUUID(),
       email: randomUUID() + '@example.com',
-      password: randomUUID()
+      password: randomUUID(),
     };
 
     const result1 = await registerNew(registration1);
@@ -783,7 +824,7 @@ describe('FHIR Repo', () => {
       password: registration1.password,
       scope: 'openid',
       nonce: randomUUID(),
-      remember: true
+      remember: true,
     });
 
     assertOk(loginOutcome1);
@@ -791,7 +832,7 @@ describe('FHIR Repo', () => {
 
     const repo1 = await getRepoForLogin(login1 as Login);
     const [patientOutcome1, patient1] = await repo1.createResource<Patient>({
-      resourceType: 'Patient'
+      resourceType: 'Patient',
     });
 
     assertOk(patientOutcome1);
@@ -808,7 +849,7 @@ describe('FHIR Repo', () => {
       lastName: randomUUID(),
       projectName: randomUUID(),
       email: randomUUID() + '@example.com',
-      password: randomUUID()
+      password: randomUUID(),
     };
 
     const result2 = await registerNew(registration2);
@@ -820,7 +861,7 @@ describe('FHIR Repo', () => {
       password: registration2.password,
       scope: 'openid',
       nonce: randomUUID(),
-      remember: true
+      remember: true,
     });
 
     assertOk(loginOutcome2);
@@ -836,21 +877,21 @@ describe('FHIR Repo', () => {
     const [createOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
-      birthDate: '1970-01-01'
+      birthDate: '1970-01-01',
     });
     assertOk(createOutcome);
     expect(patient).toBeDefined();
 
     // Empty access policy effectively blocks all reads and writes
     const accessPolicy: AccessPolicy = {
-      resourceType: 'AccessPolicy'
+      resourceType: 'AccessPolicy',
     };
 
     const repo2 = new Repository({
       author: {
-        reference: 'Practitioner/123'
+        reference: 'Practitioner/123',
       },
-      accessPolicy
+      accessPolicy,
     });
 
     const [readOutcome] = await repo2.readResource('Patient', patient?.id as string);
@@ -860,14 +901,14 @@ describe('FHIR Repo', () => {
   test('Access policy restricting search', async () => {
     // Empty access policy effectively blocks all reads and writes
     const accessPolicy: AccessPolicy = {
-      resourceType: 'AccessPolicy'
+      resourceType: 'AccessPolicy',
     };
 
     const repo2 = new Repository({
       author: {
-        reference: 'Practitioner/123'
+        reference: 'Practitioner/123',
       },
-      accessPolicy
+      accessPolicy,
     });
 
     const [searchOutcome] = await repo2.search({ resourceType: 'Patient' });
@@ -876,17 +917,19 @@ describe('FHIR Repo', () => {
 
   test('Access policy allows public resources', async () => {
     const accessPolicy: AccessPolicy = {
-      resourceType: 'AccessPolicy'
+      resourceType: 'AccessPolicy',
     };
 
     const repo2 = new Repository({
       author: {
-        reference: 'Practitioner/123'
+        reference: 'Practitioner/123',
       },
-      accessPolicy
+      accessPolicy,
     });
 
-    const [searchOutcome] = await repo2.search({ resourceType: 'StructureDefinition' });
+    const [searchOutcome] = await repo2.search({
+      resourceType: 'StructureDefinition',
+    });
     expect(searchOutcome.id).toEqual('ok');
   });
 
@@ -894,24 +937,26 @@ describe('FHIR Repo', () => {
     const [createOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
-      birthDate: '1970-01-01'
+      birthDate: '1970-01-01',
     });
     assertOk(createOutcome);
     expect(patient).toBeDefined();
 
     const accessPolicy: AccessPolicy = {
       resourceType: 'AccessPolicy',
-      resource: [{
-        resourceType: 'Patient',
-        readonly: true
-      }]
+      resource: [
+        {
+          resourceType: 'Patient',
+          readonly: true,
+        },
+      ],
     };
 
     const repo2 = new Repository({
       author: {
-        reference: 'Practitioner/123'
+        reference: 'Practitioner/123',
       },
-      accessPolicy
+      accessPolicy,
     });
 
     const [readOutcome] = await repo2.readResource('Patient', patient?.id as string);
@@ -925,24 +970,26 @@ describe('FHIR Repo', () => {
     const [createOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
-      birthDate: '1970-01-01'
+      birthDate: '1970-01-01',
     });
     assertOk(createOutcome);
     expect(patient).toBeDefined();
 
     const accessPolicy: AccessPolicy = {
       resourceType: 'AccessPolicy',
-      resource: [{
-        resourceType: 'Patient',
-        readonly: true
-      }]
+      resource: [
+        {
+          resourceType: 'Patient',
+          readonly: true,
+        },
+      ],
     };
 
     const repo2 = new Repository({
       author: {
-        reference: 'Practitioner/123'
+        reference: 'Practitioner/123',
       },
-      accessPolicy
+      accessPolicy,
     });
 
     const [readOutcome] = await repo2.readResource('Patient', patient?.id as string);
@@ -958,27 +1005,29 @@ describe('FHIR Repo', () => {
     const accessPolicy: AccessPolicy = {
       resourceType: 'AccessPolicy',
       compartment: {
-        reference: 'Organization/' + orgId
+        reference: 'Organization/' + orgId,
       },
-      resource: [{
-        resourceType: 'Patient',
-        compartment: {
-          reference: 'Organization/' + orgId
-        }
-      }]
+      resource: [
+        {
+          resourceType: 'Patient',
+          compartment: {
+            reference: 'Organization/' + orgId,
+          },
+        },
+      ],
     };
 
     const repo = new Repository({
       author: {
-        reference: 'Practitioner/123'
+        reference: 'Practitioner/123',
       },
-      accessPolicy
+      accessPolicy,
     });
 
     const [createOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
-      birthDate: '1970-01-01'
+      birthDate: '1970-01-01',
     });
     assertOk(createOutcome);
     expect(patient).toBeDefined();
@@ -997,47 +1046,51 @@ describe('FHIR Repo', () => {
     const accessPolicy1: AccessPolicy = {
       resourceType: 'AccessPolicy',
       compartment: {
-        reference: 'Organization/' + org1
+        reference: 'Organization/' + org1,
       },
-      resource: [{
-        resourceType: 'Patient',
-        compartment: {
-          reference: 'Organization/' + org1
-        }
-      }]
+      resource: [
+        {
+          resourceType: 'Patient',
+          compartment: {
+            reference: 'Organization/' + org1,
+          },
+        },
+      ],
     };
 
     const accessPolicy2: AccessPolicy = {
       resourceType: 'AccessPolicy',
       compartment: {
-        reference: 'Organization/' + org2
+        reference: 'Organization/' + org2,
       },
-      resource: [{
-        resourceType: 'Patient',
-        compartment: {
-          reference: 'Organization/' + org2
-        }
-      }]
+      resource: [
+        {
+          resourceType: 'Patient',
+          compartment: {
+            reference: 'Organization/' + org2,
+          },
+        },
+      ],
     };
 
     const repo1 = new Repository({
       author: {
-        reference: 'Practitioner/123'
+        reference: 'Practitioner/123',
       },
-      accessPolicy: accessPolicy1
+      accessPolicy: accessPolicy1,
     });
 
     const repo2 = new Repository({
       author: {
-        reference: 'Practitioner/123'
+        reference: 'Practitioner/123',
       },
-      accessPolicy: accessPolicy2
+      accessPolicy: accessPolicy2,
     });
 
     const [createOutcome1, patient1] = await repo1.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
-      birthDate: '1970-01-01'
+      birthDate: '1970-01-01',
     });
     assertOk(createOutcome1);
     expect(patient1).toBeDefined();
@@ -1052,7 +1105,7 @@ describe('FHIR Repo', () => {
     const [createOutcome2, patient2] = await repo2.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
-      birthDate: '1970-01-01'
+      birthDate: '1970-01-01',
     });
     assertOk(createOutcome2);
     expect(patient2).toBeDefined();
@@ -1088,9 +1141,9 @@ describe('FHIR Repo', () => {
       redirectUri: 'https://example.com/',
       meta: {
         account: {
-          reference: account
-        }
-      }
+          reference: account,
+        },
+      },
     });
     assertOk(outcome1);
     expect(clientApplication).toBeDefined();
@@ -1100,16 +1153,16 @@ describe('FHIR Repo', () => {
     const clientRepo = await getRepoForLogin({
       resourceType: 'Login',
       project: {
-        reference: 'Project/' + project
+        reference: 'Project/' + project,
       },
-      profile: createReference(clientApplication as ClientApplication)
+      profile: createReference(clientApplication as ClientApplication),
     });
 
     // Create a Patient using the ClientApplication
     const [outcome2, patient] = await clientRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Al'], family: 'Bundy' }],
-      birthDate: '1975-12-12'
+      birthDate: '1975-12-12',
     });
     assertOk(outcome2);
     expect(patient).toBeDefined();
@@ -1122,9 +1175,9 @@ describe('FHIR Repo', () => {
       resourceType: 'Observation',
       subject: createReference(patient as Patient),
       code: {
-        text: 'test'
+        text: 'test',
       },
-      valueString: 'positive'
+      valueString: 'positive',
     });
     assertOk(outcome3);
     expect(observation).toBeDefined();
@@ -1136,7 +1189,7 @@ describe('FHIR Repo', () => {
     const [outcome4, patient2] = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Peggy'], family: 'Bundy' }],
-      birthDate: '1975-11-11'
+      birthDate: '1975-11-11',
     });
     assertOk(outcome4);
     expect(patient2).toBeDefined();
@@ -1150,9 +1203,9 @@ describe('FHIR Repo', () => {
       resourceType: 'Observation',
       subject: createReference(patient2 as Patient),
       code: {
-        text: 'test'
+        text: 'test',
       },
-      valueString: 'positive'
+      valueString: 'positive',
     });
     assertOk(outcome6);
     expect(observation2).toBeDefined();
@@ -1166,18 +1219,20 @@ describe('FHIR Repo', () => {
     const [createOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
-      birthDate: '1971-02-02'
+      birthDate: '1971-02-02',
     });
 
     expect(createOutcome.id).toEqual('created');
 
     const [searchOutcome1, searchResult1] = await repo.search({
       resourceType: 'Patient',
-      filters: [{
-        code: 'birthdate',
-        operator: Operator.EQUALS,
-        value: '1971-02-02'
-      }]
+      filters: [
+        {
+          code: 'birthdate',
+          operator: Operator.EQUALS,
+          value: '1971-02-02',
+        },
+      ],
     });
 
     expect(searchOutcome1.id).toEqual('ok');
@@ -1189,11 +1244,13 @@ describe('FHIR Repo', () => {
 
     const [searchOutcome2, searchResult2] = await repo.search({
       resourceType: 'Patient',
-      filters: [{
-        code: 'birthdate',
-        operator: Operator.EQUALS,
-        value: '1971-02-02'
-      }]
+      filters: [
+        {
+          code: 'birthdate',
+          operator: Operator.EQUALS,
+          value: '1971-02-02',
+        },
+      ],
     });
 
     expect(searchOutcome2.id).toEqual('ok');
@@ -1206,18 +1263,20 @@ describe('FHIR Repo', () => {
     const [createOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
-      identifier: [{ system: 'https://www.example.com', value: identifier }]
+      identifier: [{ system: 'https://www.example.com', value: identifier }],
     });
 
     expect(createOutcome.id).toEqual('created');
 
     const [searchOutcome1, searchResult1] = await repo.search({
       resourceType: 'Patient',
-      filters: [{
-        code: 'identifier',
-        operator: Operator.EQUALS,
-        value: identifier
-      }]
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value: identifier,
+        },
+      ],
     });
 
     expect(searchOutcome1.id).toEqual('ok');
@@ -1229,11 +1288,13 @@ describe('FHIR Repo', () => {
 
     const [searchOutcome2, searchResult2] = await repo.search({
       resourceType: 'Patient',
-      filters: [{
-        code: 'identifier',
-        operator: Operator.EQUALS,
-        value: identifier
-      }]
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value: identifier,
+        },
+      ],
     });
 
     expect(searchOutcome2.id).toEqual('ok');
@@ -1247,15 +1308,15 @@ describe('FHIR Repo', () => {
         {
           code: 'name',
           operator: Operator.EQUALS,
-          value: 'Questionnaire'
-        }
+          value: 'Questionnaire',
+        },
       ],
       sortRules: [
         {
           code: 'name',
-          descending: false
-        }
-      ]
+          descending: false,
+        },
+      ],
     });
     assertOk(outcome1);
     expect(bundle1?.entry?.length).toEqual(2);
@@ -1268,9 +1329,9 @@ describe('FHIR Repo', () => {
         {
           code: 'name',
           operator: Operator.EXACT,
-          value: 'Questionnaire'
-        }
-      ]
+          value: 'Questionnaire',
+        },
+      ],
     });
     assertOk(outcome2);
     expect(bundle2?.entry?.length).toEqual(1);
@@ -1283,7 +1344,7 @@ describe('FHIR Repo', () => {
 
     const [createOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family }]
+      name: [{ given: ['Alice'], family }],
     });
     assertOk(createOutcome);
     expect(patient).toBeDefined();
@@ -1294,9 +1355,9 @@ describe('FHIR Repo', () => {
         {
           code: '_id',
           operator: Operator.EQUALS,
-          value: patient?.id as string
-        }
-      ]
+          value: patient?.id as string,
+        },
+      ],
     });
 
     expect(searchOutcome1.id).toEqual('ok');
@@ -1309,14 +1370,14 @@ describe('FHIR Repo', () => {
         {
           code: 'name',
           operator: Operator.EQUALS,
-          value: family
+          value: family,
         },
         {
           code: '_id',
           operator: Operator.NOT_EQUALS,
-          value: patient?.id as string
-        }
-      ]
+          value: patient?.id as string,
+        },
+      ],
     });
 
     expect(searchOutcome2.id).toEqual('ok');
@@ -1331,8 +1392,8 @@ describe('FHIR Repo', () => {
       resourceType: 'Patient',
       name: [{ given: ['Alice1'], family: 'Smith1' }],
       meta: {
-        project: project1
-      }
+        project: project1,
+      },
     });
     assertOk(outcome1);
     expect(patient1).toBeDefined();
@@ -1341,8 +1402,8 @@ describe('FHIR Repo', () => {
       resourceType: 'Patient',
       name: [{ given: ['Alice2'], family: 'Smith2' }],
       meta: {
-        project: project2
-      }
+        project: project2,
+      },
     });
     assertOk(outcome2);
     expect(patient2).toBeDefined();
@@ -1353,9 +1414,9 @@ describe('FHIR Repo', () => {
         {
           code: '_project',
           operator: Operator.EQUALS,
-          value: project1
-        }
-      ]
+          value: project1,
+        },
+      ],
     });
     assertOk(outcome3);
     expect(bundle?.entry?.length).toEqual(1);
@@ -1377,8 +1438,8 @@ describe('FHIR Repo', () => {
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family }],
       meta: {
-        lastUpdated: nowMinus1Second.toISOString()
-      }
+        lastUpdated: nowMinus1Second.toISOString(),
+      },
     });
     assertOk(outcome1);
     expect(patient1).toBeDefined();
@@ -1387,8 +1448,8 @@ describe('FHIR Repo', () => {
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family }],
       meta: {
-        lastUpdated: nowMinus2Seconds.toISOString()
-      }
+        lastUpdated: nowMinus2Seconds.toISOString(),
+      },
     });
     assertOk(outcome2);
     expect(patient2).toBeDefined();
@@ -1400,14 +1461,14 @@ describe('FHIR Repo', () => {
         {
           code: 'name',
           operator: Operator.EQUALS,
-          value: family
+          value: family,
         },
         {
           code: '_lastUpdated',
           operator: Operator.GREATER_THAN,
-          value: nowMinus2Seconds.toISOString()
-        }
-      ]
+          value: nowMinus2Seconds.toISOString(),
+        },
+      ],
     });
 
     expect(searchOutcome1.id).toEqual('ok');
@@ -1421,14 +1482,14 @@ describe('FHIR Repo', () => {
         {
           code: 'name',
           operator: Operator.EQUALS,
-          value: family
+          value: family,
         },
         {
           code: '_lastUpdated',
           operator: Operator.GREATER_THAN_OR_EQUALS,
-          value: nowMinus2Seconds.toISOString()
-        }
-      ]
+          value: nowMinus2Seconds.toISOString(),
+        },
+      ],
     });
 
     expect(searchOutcome2.id).toEqual('ok');
@@ -1442,19 +1503,19 @@ describe('FHIR Repo', () => {
         {
           code: 'name',
           operator: Operator.EQUALS,
-          value: family
+          value: family,
         },
         {
           code: '_lastUpdated',
           operator: Operator.GREATER_THAN,
-          value: nowMinus3Seconds.toISOString()
+          value: nowMinus3Seconds.toISOString(),
         },
         {
           code: '_lastUpdated',
           operator: Operator.LESS_THAN,
-          value: nowMinus1Second.toISOString()
-        }
-      ]
+          value: nowMinus1Second.toISOString(),
+        },
+      ],
     });
 
     expect(searchOutcome3.id).toEqual('ok');
@@ -1468,19 +1529,19 @@ describe('FHIR Repo', () => {
         {
           code: 'name',
           operator: Operator.EQUALS,
-          value: family
+          value: family,
         },
         {
           code: '_lastUpdated',
           operator: Operator.GREATER_THAN,
-          value: nowMinus3Seconds.toISOString()
+          value: nowMinus3Seconds.toISOString(),
         },
         {
           code: '_lastUpdated',
           operator: Operator.LESS_THAN_OR_EQUALS,
-          value: nowMinus1Second.toISOString()
-        }
-      ]
+          value: nowMinus1Second.toISOString(),
+        },
+      ],
     });
 
     expect(searchOutcome4.id).toEqual('ok');
@@ -1496,8 +1557,8 @@ describe('FHIR Repo', () => {
       name: [{ given: ['Alice1'], family: 'Smith1' }],
       meta: {
         lastUpdated: '2020-01-01T00:00:00.000Z',
-        project
-      }
+        project,
+      },
     });
     assertOk(outcome1);
     expect(patient1).toBeDefined();
@@ -1507,8 +1568,8 @@ describe('FHIR Repo', () => {
       name: [{ given: ['Alice2'], family: 'Smith2' }],
       meta: {
         lastUpdated: '2020-01-02T00:00:00.000Z',
-        project
-      }
+        project,
+      },
     });
     assertOk(outcome2);
     expect(patient2).toBeDefined();
@@ -1519,15 +1580,15 @@ describe('FHIR Repo', () => {
         {
           code: '_project',
           operator: Operator.EQUALS,
-          value: project
-        }
+          value: project,
+        },
       ],
       sortRules: [
         {
           code: '_lastUpdated',
-          descending: false
-        }
-      ]
+          descending: false,
+        },
+      ],
     });
     assertOk(outcome3);
     expect(bundle3?.entry?.length).toEqual(2);
@@ -1540,15 +1601,15 @@ describe('FHIR Repo', () => {
         {
           code: '_project',
           operator: Operator.EQUALS,
-          value: project
-        }
+          value: project,
+        },
       ],
       sortRules: [
         {
           code: '_lastUpdated',
-          descending: true
-        }
-      ]
+          descending: true,
+        },
+      ],
     });
     assertOk(outcome4);
     expect(bundle4?.entry?.length).toEqual(2);
@@ -1562,20 +1623,19 @@ describe('FHIR Repo', () => {
       status: 'finished',
       class: {
         system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
-        code: 'AMB'
+        code: 'AMB',
       },
       period: {
         start: '2014-01-11T21:23:39-08:00',
-        end: '2014-01-11T21:38:39-08:00'
-      }
+        end: '2014-01-11T21:38:39-08:00',
+      },
     });
     expect(outcome.id).toEqual('created');
     expect(resource).toBeDefined();
     expect(resource?.id).toBeDefined();
   });
-
 });
 
 function bundleContains(bundle: Bundle, resource: Resource): boolean {
-  return !!bundle.entry?.some(entry => entry.resource?.id === resource.id);
+  return !!bundle.entry?.some((entry) => entry.resource?.id === resource.id);
 }

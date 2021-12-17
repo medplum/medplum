@@ -15,11 +15,11 @@ Consider the following untyped code:
 ```typescript
 const myPatient = {
   resourceType: 'Patient',
-  name: 'George Washington'
+  name: 'George Washington',
 };
 ```
 
-Keen observers will note that `Patient.name` should not be a string.  Instead, it should be an array of `HumanName` objects.
+Keen observers will note that `Patient.name` should not be a string. Instead, it should be an array of `HumanName` objects.
 
 Let's add the type definition and see what happens:
 
@@ -28,11 +28,11 @@ import { Patient } from '@medplum/fhirtypes';
 
 const myPatient: Patient = {
   resourceType: 'Patient',
-  name: 'George Wasington'
+  name: 'George Wasington',
 };
 ```
 
-Now "name" is a compile error.  Developer tools with TypeScript support should provide feedback.  For example, VS Code adds red squigglies and a helpful error message:
+Now "name" is a compile error. Developer tools with TypeScript support should provide feedback. For example, VS Code adds red squigglies and a helpful error message:
 
 ![Medplum fhirtypes screenshot](https://user-images.githubusercontent.com/749094/146444130-ac3a2c5d-3a9a-429d-8db3-5581986c05dc.png)
 
@@ -47,13 +47,15 @@ import { Patient } from '@medplum/fhirtypes';
 
 const myPatient: Patient = {
   resourceType: 'Patient',
-  name: [{
-    given: ['George'],
-    family: 'Washington'
-  }]
+  name: [
+    {
+      given: ['George'],
+      family: 'Washington',
+    },
+  ],
 };
 ```
 
 ## License
 
-Apache 2.0.  Copyright &copy; Medplum 2021
+Apache 2.0. Copyright &copy; Medplum 2021

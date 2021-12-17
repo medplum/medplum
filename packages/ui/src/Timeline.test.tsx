@@ -9,14 +9,13 @@ import { Timeline, TimelineItem } from './Timeline';
 const medplum = new MedplumClient({
   baseUrl: 'https://example.com/',
   clientId: 'my-client-id',
-  fetch: (() => undefined) as any
+  fetch: (() => undefined) as any,
 });
 
 describe('Timeline', () => {
-
   test('Renders', async () => {
     const resource: Communication = {
-      resourceType: 'Communication'
+      resourceType: 'Communication',
     };
 
     render(
@@ -36,14 +35,16 @@ describe('Timeline', () => {
 
   test('Renders with social interactions', async () => {
     const resource: Communication = {
-      resourceType: 'Communication'
+      resourceType: 'Communication',
     };
 
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <Timeline>
-            <TimelineItem resource={resource} socialEnabled={true}>test</TimelineItem>
+            <TimelineItem resource={resource} socialEnabled={true}>
+              test
+            </TimelineItem>
           </Timeline>
         </MedplumProvider>
       </MemoryRouter>
@@ -53,5 +54,4 @@ describe('Timeline', () => {
     expect(screen.queryByText('Like')).not.toBeNull();
     expect(screen.queryByText('Comment')).not.toBeNull();
   });
-
 });

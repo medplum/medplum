@@ -62,9 +62,7 @@ export class AddressTable implements LookupTable {
   async deleteResource(resource: Resource): Promise<void> {
     const resourceId = resource.id as string;
     const client = getClient();
-    await new DeleteQuery('Address')
-      .where('resourceId', Operator.EQUALS, resourceId)
-      .execute(client);
+    await new DeleteQuery('Address').where('resourceId', Operator.EQUALS, resourceId).execute(client);
   }
 
   /**
@@ -101,7 +99,7 @@ export class AddressTable implements LookupTable {
           country: address.country,
           postalCode: address.postalCode,
           state: address.state,
-          use: address.use
+          use: address.use,
         }).execute(client);
       }
     }
@@ -124,7 +122,8 @@ export class AddressTable implements LookupTable {
     selectQuery.where(
       { tableName: 'Address', columnName: this.getColumnName(filter.code) },
       Operator.LIKE,
-      '%' + filter.value + '%');
+      '%' + filter.value + '%'
+    );
   }
 
   /**
@@ -133,9 +132,7 @@ export class AddressTable implements LookupTable {
    * @param sortRule The sort rule details.
    */
   addOrderBy(selectQuery: SelectQuery, sortRule: SortRule): void {
-    selectQuery.orderBy(
-      { tableName: 'Address', columnName: this.getColumnName(sortRule.code) },
-      sortRule.descending);
+    selectQuery.orderBy({ tableName: 'Address', columnName: this.getColumnName(sortRule.code) }, sortRule.descending);
   }
 
   /**
@@ -158,16 +155,19 @@ export class AddressTable implements LookupTable {
   }
 
   private getIncomingAddresses(resource: Resource): Address[] | undefined {
-    if (resource.resourceType === 'Patient' ||
+    if (
+      resource.resourceType === 'Patient' ||
       resource.resourceType === 'Person' ||
       resource.resourceType === 'Practitioner' ||
-      resource.resourceType === 'RelatedPerson') {
+      resource.resourceType === 'RelatedPerson'
+    ) {
       return resource.address;
     }
 
     if (resource.resourceType === 'InsurancePlan') {
-      return resource.contact?.map(contact => contact.address)
-        .filter(address => !!address) as Address[] | undefined;
+      return resource.contact?.map((contact) => contact.address).filter((address) => !!address) as
+        | Address[]
+        | undefined;
     }
 
     if (resource.resourceType === 'Location') {
@@ -193,6 +193,6 @@ export class AddressTable implements LookupTable {
       .where('resourceId', Operator.EQUALS, resourceId)
       .orderBy('index')
       .execute(getClient())
-      .then(result => result.map(row => JSON.parse(row.content) as Address));
+      .then((result) => result.map((row) => JSON.parse(row.content) as Address));
   }
 }

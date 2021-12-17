@@ -15,7 +15,7 @@ import { verifyProjectAdmin } from './utils';
 export const inviteValidators = [
   body('firstName').notEmpty().withMessage('First name is required'),
   body('lastName').notEmpty().withMessage('Last name is required'),
-  body('email').isEmail().withMessage('Valid email address is required')
+  body('email').isEmail().withMessage('Valid email address is required'),
 ];
 
 export async function inviteHandler(req: Request, res: Response): Promise<Response> {
@@ -34,7 +34,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<Respon
     project: project,
     firstName: req.body.firstName,
     lastName: req.body.lastName,
-    email: req.body.email
+    email: req.body.email,
   });
 
   return res.status(200).json({ profile });
@@ -65,10 +65,9 @@ export async function inviteUser(request: InviteRequest): Promise<Practitioner> 
         '',
         'Thank you,',
         'Medplum',
-        ''
+        '',
       ].join('\n')
     );
-
   } else {
     // New user
     user = await createUser(request);
@@ -85,7 +84,7 @@ export async function inviteUser(request: InviteRequest): Promise<Practitioner> 
         '',
         'Thank you,',
         'Medplum',
-        ''
+        '',
       ].join('\n')
     );
   }
@@ -97,11 +96,13 @@ export async function inviteUser(request: InviteRequest): Promise<Practitioner> 
 async function searchForExisting(email: string): Promise<User | undefined> {
   const [outcome, bundle] = await repo.search<User>({
     resourceType: 'User',
-    filters: [{
-      code: 'email',
-      operator: Operator.EQUALS,
-      value: email
-    }]
+    filters: [
+      {
+        code: 'email',
+        operator: Operator.EQUALS,
+        value: email,
+      },
+    ],
   });
   assertOk(outcome);
   if (bundle?.entry && bundle.entry.length > 0) {
@@ -118,7 +119,7 @@ async function createUser(request: InviteRequest): Promise<User> {
   const [outcome, result] = await repo.createResource<User>({
     resourceType: 'User',
     email,
-    passwordHash
+    passwordHash,
   });
   assertOk(outcome);
   logger.info('Created: ' + (result as User).id);

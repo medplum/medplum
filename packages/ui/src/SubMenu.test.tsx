@@ -11,19 +11,14 @@ import { SubMenu } from './SubMenu';
 const medplum = new MedplumClient({
   baseUrl: 'https://example.com/',
   clientId: 'my-client-id',
-  fetch: async () => undefined
+  fetch: async () => undefined,
 });
 
 const setup = (children: React.ReactNode) => {
-  return render(
-    <MedplumProvider medplum={medplum}>
-      {children}
-    </MedplumProvider>
-  );
+  return render(<MedplumProvider medplum={medplum}>{children}</MedplumProvider>);
 };
 
 describe('SubMenu', () => {
-
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -121,5 +116,4 @@ describe('SubMenu', () => {
 
     expect(screen.getByTestId('popup').style.display).toEqual('none');
   });
-
 });

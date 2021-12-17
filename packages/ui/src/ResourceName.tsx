@@ -17,9 +17,5 @@ export function ResourceName(props: ResourceNameProps) {
 
   const text = getDisplayString(resource);
 
-  return props.link ? (
-    <MedplumLink to={resource}>{text}</MedplumLink>
-  ) : (
-    <span>{text}</span>
-  );
+  return props.link ? <MedplumLink to={resource}>{text}</MedplumLink> : <span>{text}</span>;
 }

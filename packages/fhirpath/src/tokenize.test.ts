@@ -1,7 +1,6 @@
 import { tokenize } from './tokenize';
 
 describe('Tokenizer', () => {
-
   test('Single line comment', () => {
     expect(tokenize('2 + 2 // This is a single-line comment')).toMatchObject([
       { id: 'Number', value: '2' },
@@ -12,7 +11,8 @@ describe('Tokenizer', () => {
   });
 
   test('Multi line comment', () => {
-    expect(tokenize(`
+    expect(
+      tokenize(`
     /*
      * Comment before
      */
@@ -20,7 +20,8 @@ describe('Tokenizer', () => {
     /*
      * Comment after
      */
-    `)).toMatchObject([
+    `)
+    ).toMatchObject([
       { id: 'Comment' },
       { id: 'Number', value: '2' },
       { id: '+', value: '+' },
@@ -37,7 +38,7 @@ describe('Tokenizer', () => {
       { id: ')', value: ')' },
       { id: '/', value: '/' },
       { id: '(', value: '(' },
-      { id: '*', value: '*' }
+      { id: '*', value: '*' },
     ]);
   });
 
@@ -49,12 +50,20 @@ describe('Tokenizer', () => {
     expect(tokenize('1')).toMatchObject([{ id: 'Number', value: '1' }]);
     expect(tokenize('1 ')).toMatchObject([{ id: 'Number', value: '1' }]);
     expect(tokenize('1.0')).toMatchObject([{ id: 'Number', value: '1.0' }]);
-    expect(tokenize('-1')).toMatchObject([{ id: '-', value: '-' }, { id: 'Number', value: '1' }]);
-    expect(tokenize('-1.0')).toMatchObject([{ id: '-', value: '-' }, { id: 'Number', value: '1.0' }]);
+    expect(tokenize('-1')).toMatchObject([
+      { id: '-', value: '-' },
+      { id: 'Number', value: '1' },
+    ]);
+    expect(tokenize('-1.0')).toMatchObject([
+      { id: '-', value: '-' },
+      { id: 'Number', value: '1.0' },
+    ]);
   });
 
   test('DateTime matching', () => {
-    expect(tokenize('@2012-04-15T15:00:00+02:00')).toMatchObject([{ id: 'DateTime', value: '2012-04-15T15:00:00+02:00' }]);
+    expect(tokenize('@2012-04-15T15:00:00+02:00')).toMatchObject([
+      { id: 'DateTime', value: '2012-04-15T15:00:00+02:00' },
+    ]);
   });
 
   test('Regular expression matching', () => {
@@ -64,7 +73,7 @@ describe('Tokenizer', () => {
       { id: '+', value: '+' },
       { id: 'Symbol', value: 'dsf' },
       { id: '-', value: '-' },
-      { id: 'Comment', value: '// the comment + - dasdas' }
+      { id: 'Comment', value: '// the comment + - dasdas' },
     ]);
   });
 
@@ -73,10 +82,12 @@ describe('Tokenizer', () => {
   });
 
   test('String escape sequence', () => {
-    expect(tokenize("'\\\\\\/\\f\\r\\n\\t\\\"\\`\\'\\u002a'")).toEqual([{
-      id: 'String',
-      value: "\\\\\\/\\f\\r\\n\\t\\\"\\`\\'\\u002a"
-    }]);
+    expect(tokenize("'\\\\\\/\\f\\r\\n\\t\\\"\\`\\'\\u002a'")).toEqual([
+      {
+        id: 'String',
+        value: '\\\\\\/\\f\\r\\n\\t\\"\\`\\\'\\u002a',
+      },
+    ]);
   });
 
   test('FHIR Path', () => {
@@ -86,7 +97,7 @@ describe('Tokenizer', () => {
       { id: '.', value: '.' },
       { id: 'Symbol', value: 'name' },
       { id: '.', value: '.' },
-      { id: 'Symbol', value: 'given' }
+      { id: 'Symbol', value: 'given' },
     ]);
   });
 
@@ -103,12 +114,12 @@ describe('Tokenizer', () => {
       { id: '.', value: '.' },
       { id: 'Symbol', value: 'name' },
       { id: '.', value: '.' },
-      { id: 'Symbol', value: 'given' }
+      { id: 'Symbol', value: 'given' },
     ]);
   });
 
   test('FHIR Path function', () => {
-    const matches = tokenize('Patient.telecom.where(system=\'email\')');
+    const matches = tokenize("Patient.telecom.where(system='email')");
     expect(matches).toMatchObject([
       { id: 'Symbol', value: 'Patient' },
       { id: '.', value: '.' },
@@ -119,17 +130,16 @@ describe('Tokenizer', () => {
       { id: 'Symbol', value: 'system' },
       { id: '=', value: '=' },
       { id: 'String', value: 'email' },
-      { id: ')', value: ')' }
+      { id: ')', value: ')' },
     ]);
   });
 
   test('Quantity units', () => {
-    expect(tokenize('1.0 \'mg\'')).toMatchObject([{ id: 'Quantity', value: '1.0 \'mg\'' }]);
+    expect(tokenize("1.0 'mg'")).toMatchObject([{ id: 'Quantity', value: "1.0 'mg'" }]);
     expect(tokenize('7 days = 1 week')).toMatchObject([
       { id: 'Quantity', value: '7 days' },
       { id: '=', value: '=' },
       { id: 'Quantity', value: '1 week' },
     ]);
   });
-
 });

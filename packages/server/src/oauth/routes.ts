@@ -8,10 +8,12 @@ import { userInfoHandler } from './userinfo';
 
 export const oauthRouter = Router();
 oauthRouter.use(cookieParser()); // lgtm [js/missing-token-validation]
-oauthRouter.use(rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
-}));
+oauthRouter.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+  })
+);
 
 oauthRouter.get('/authorize', authorizeGetHandler);
 oauthRouter.post('/authorize', authorizePostHandler);

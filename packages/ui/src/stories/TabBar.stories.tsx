@@ -23,7 +23,9 @@ export const Basic = () => {
       <Document>
         <TabSwitch value={value}>
           <TabPanel name="item1">This is item #1!</TabPanel>
-          <TabPanel name="item2"><strong>Panel number two</strong></TabPanel>
+          <TabPanel name="item2">
+            <strong>Panel number two</strong>
+          </TabPanel>
           <TabPanel name="item3">Three</TabPanel>
         </TabSwitch>
       </Document>

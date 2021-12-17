@@ -43,7 +43,7 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
     nonce: req.query.nonce as string,
     email: req.body.email as string,
     password: req.body.password as string,
-    remember: true
+    remember: true,
   });
 
   if (!isOk(outcome)) {
@@ -52,7 +52,9 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
   }
 
   const cookieName = 'medplum-' + req.query.client_id;
-  res.cookie(cookieName, (login as Login).cookie as string, { httpOnly: true }); // lgtm [js/clear-text-storage-of-sensitive-data]
+  res.cookie(cookieName, (login as Login).cookie as string, {
+    httpOnly: true,
+  }); // lgtm [js/clear-text-storage-of-sensitive-data]
 
   const redirectUrl = new URL(req.query.redirect_uri as string);
   redirectUrl.searchParams.append('code', (login as Login).code as string);
@@ -69,7 +71,10 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
 async function validateAuthorizeRequest(req: Request, res: Response): Promise<boolean> {
   // First validate the client and the redirect URI.
   // If these are invalid, then show an error page.
-  const [clientOutcome, client] = await repo.readResource<ClientApplication>('ClientApplication', req.query.client_id as string);
+  const [clientOutcome, client] = await repo.readResource<ClientApplication>(
+    'ClientApplication',
+    req.query.client_id as string
+  );
   if (!isOk(clientOutcome) || !client) {
     res.status(400).send('Client not found');
     return false;
@@ -123,7 +128,7 @@ async function validateAuthorizeRequest(req: Request, res: Response): Promise<bo
     await repo.updateResource<Login>({
       ...existingLogin,
       nonce: req.query.nonce as string,
-      granted: false
+      granted: false,
     });
 
     const redirectUrl = new URL(req.query.redirect_uri as string);
@@ -143,8 +148,7 @@ async function validateAuthorizeRequest(req: Request, res: Response): Promise<bo
  * @returns Existing login if found; undefined otherwise.
  */
 async function getExistingLogin(req: Request, client: ClientApplication): Promise<Login | undefined> {
-  const login = (await getExistingLoginFromIdTokenHint(req)) ||
-    (await getExistingLoginFromCookie(req, client));
+  const login = (await getExistingLoginFromIdTokenHint(req)) || (await getExistingLoginFromCookie(req, client));
 
   if (!login) {
     return undefined;
@@ -209,11 +213,13 @@ async function getExistingLoginFromCookie(req: Request, client: ClientApplicatio
 
   const [outcome, bundle] = await repo.search({
     resourceType: 'Login',
-    filters: [{
-      code: 'cookie',
-      operator: Operator.EQUALS,
-      value: cookieValue
-    }]
+    filters: [
+      {
+        code: 'cookie',
+        operator: Operator.EQUALS,
+        value: cookieValue,
+      },
+    ],
   });
 
   if (!isOk(outcome) || !bundle?.entry || bundle.entry.length === 0) {
@@ -240,11 +246,11 @@ function sendErrorRedirect(res: Response, redirectUri: string, error: string, st
 function buildView(outcome?: OperationOutcome): any {
   const view = {
     title: 'Sign In',
-    errors: {} as Record<string, string[]>
+    errors: {} as Record<string, string[]>,
   };
 
   if (outcome) {
-    outcome.issue?.forEach(issue => {
+    outcome.issue?.forEach((issue) => {
       const param = issue.expression?.[0] as string;
       if (!view.errors[param]) {
         view.errors[param] = [];

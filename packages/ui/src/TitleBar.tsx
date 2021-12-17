@@ -6,9 +6,5 @@ export interface TitleBarProps {
 }
 
 export function TitleBar(props: TitleBarProps): JSX.Element {
-  return (
-    <div className="medplum-title-bar">
-      {props.children}
-    </div>
-  );
+  return <div className="medplum-title-bar">{props.children}</div>;
 }

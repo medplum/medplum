@@ -13,7 +13,6 @@ jest.mock('@aws-sdk/client-sesv2');
 const app = express();
 
 describe('Admin Invite', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -41,7 +40,7 @@ describe('Admin Invite', () => {
         lastName: 'Smith',
         projectName: 'Alice Project',
         email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res.status).toBe(200);
@@ -55,7 +54,7 @@ describe('Admin Invite', () => {
       .send({
         firstName: 'Bob',
         lastName: 'Jones',
-        email: bobEmail
+        email: bobEmail,
       });
 
     expect(res2.status).toBe(200);
@@ -65,15 +64,15 @@ describe('Admin Invite', () => {
     const args = (SendEmailCommand as any).mock.calls[0][0];
     expect(args).toMatchObject({
       Destination: {
-        ToAddresses: [bobEmail]
+        ToAddresses: [bobEmail],
       },
       Content: {
         Simple: {
           Subject: {
-            Data: 'Welcome to Medplum'
-          }
-        }
-      }
+            Data: 'Welcome to Medplum',
+          },
+        },
+      },
     });
   });
 
@@ -87,7 +86,7 @@ describe('Admin Invite', () => {
         lastName: 'Smith',
         projectName: 'Alice Project',
         email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res.status).toBe(200);
@@ -95,16 +94,13 @@ describe('Admin Invite', () => {
 
     // Second, Bob creates a project
     const bobEmail = `bob${randomUUID()}@example.com`;
-    const res2 = await request(app)
-      .post('/auth/register')
-      .type('json')
-      .send({
-        firstName: 'Bob',
-        lastName: 'Jones',
-        projectName: 'Bob Project',
-        email: bobEmail,
-        password: 'password!@#'
-      });
+    const res2 = await request(app).post('/auth/register').type('json').send({
+      firstName: 'Bob',
+      lastName: 'Jones',
+      projectName: 'Bob Project',
+      email: bobEmail,
+      password: 'password!@#',
+    });
 
     expect(res2.status).toBe(200);
     expect(res2.body.project).toBeDefined();
@@ -117,7 +113,7 @@ describe('Admin Invite', () => {
       .send({
         firstName: 'Bob',
         lastName: 'Jones',
-        email: bobEmail
+        email: bobEmail,
       });
 
     expect(res3.status).toBe(200);
@@ -127,15 +123,15 @@ describe('Admin Invite', () => {
     const args = (SendEmailCommand as any).mock.calls[0][0];
     expect(args).toMatchObject({
       Destination: {
-        ToAddresses: [bobEmail]
+        ToAddresses: [bobEmail],
       },
       Content: {
         Simple: {
           Subject: {
-            Data: 'Medplum: Welcome to Alice Project'
-          }
-        }
-      }
+            Data: 'Medplum: Welcome to Alice Project',
+          },
+        },
+      },
     });
   });
 
@@ -149,7 +145,7 @@ describe('Admin Invite', () => {
         lastName: 'Smith',
         projectName: 'Alice Project',
         email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res.status).toBe(200);
@@ -164,7 +160,7 @@ describe('Admin Invite', () => {
         lastName: 'Jones',
         projectName: 'Bob Project',
         email: `bob${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res2.status).toBe(200);
@@ -179,7 +175,7 @@ describe('Admin Invite', () => {
       .send({
         firstName: 'Carol',
         lastName: 'Brown',
-        email: `carol${randomUUID()}@example.com`
+        email: `carol${randomUUID()}@example.com`,
       });
 
     expect(res3.status).toBe(404);
@@ -197,7 +193,7 @@ describe('Admin Invite', () => {
         lastName: 'Smith',
         projectName: 'Alice Project',
         email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res.status).toBe(200);
@@ -212,7 +208,7 @@ describe('Admin Invite', () => {
       .send({
         firstName: 'Bob',
         lastName: 'Jones',
-        email: ''
+        email: '',
       });
 
     expect(res2.status).toBe(400);
@@ -220,5 +216,4 @@ describe('Admin Invite', () => {
     expect(SESv2Client).not.toHaveBeenCalled();
     expect(SendEmailCommand).not.toHaveBeenCalled();
   });
-
 });

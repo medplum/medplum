@@ -26,20 +26,24 @@ export function IdentifierInput(props: IdentifierInputProps) {
             <TextField
               placeholder="System"
               defaultValue={value?.system}
-              onChange={e => setValueWrapper({
-                ...value,
-                system: (e.currentTarget as HTMLInputElement).value
-              })}
+              onChange={(e) =>
+                setValueWrapper({
+                  ...value,
+                  system: (e.currentTarget as HTMLInputElement).value,
+                })
+              }
             />
           </td>
           <td>
             <TextField
               placeholder="Value"
               defaultValue={value?.value}
-              onChange={e => setValueWrapper({
-                ...value,
-                value: (e.currentTarget as HTMLInputElement).value
-              })}
+              onChange={(e) =>
+                setValueWrapper({
+                  ...value,
+                  value: (e.currentTarget as HTMLInputElement).value,
+                })
+              }
             />
           </td>
         </tr>

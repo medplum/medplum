@@ -9,7 +9,6 @@ import { initKeys } from './oauth';
 const app = express();
 
 describe('Well Known', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -22,8 +21,7 @@ describe('Well Known', () => {
   });
 
   test('Get /.well-known/jwks.json', async () => {
-    const res = await request(app)
-      .get('/.well-known/jwks.json');
+    const res = await request(app).get('/.well-known/jwks.json');
     expect(res.status).toBe(200);
 
     const keys = res.body.keys;
@@ -54,8 +52,7 @@ describe('Well Known', () => {
   });
 
   test('Get /.well-known/openid-configuration', async () => {
-    const res = await request(app)
-      .get('/.well-known/openid-configuration');
+    const res = await request(app).get('/.well-known/openid-configuration');
     expect(res.status).toBe(200);
     expect(res.body.issuer).toBeDefined();
     expect(res.body.authorization_endpoint).toBeDefined();
@@ -66,5 +63,4 @@ describe('Well Known', () => {
     expect(res.body.response_types_supported).toBeDefined();
     expect(res.body.subject_types_supported).toBeDefined();
   });
-
 });

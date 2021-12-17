@@ -4,11 +4,11 @@ sidebar_position: 1
 
 # Authenticating to the service
 
-The Medplum API uses standard OAuth2/OpenID authentication.  "Client Credentials Flow" is recommended for machine-to-machine access.
+The Medplum API uses standard OAuth2/OpenID authentication. "Client Credentials Flow" is recommended for machine-to-machine access.
 
 ## Obtaining Credentials
 
-This tutorial assumes you already have a Medplum account in good standing.  (If not, please [register](https://app.medplum.com/register).)
+This tutorial assumes you already have a Medplum account in good standing. (If not, please [register](https://app.medplum.com/register).)
 
 You will need to create a [ClientApplication](https://app.medplum.com/ClientApplication) if one does not already exist. You can create a new ClientApp [here](https://app.medplum.com/ClientApplication/new).
 
@@ -37,6 +37,7 @@ On success, the response will be a JSON object with the following properties:
 The value of "access_token" can then be used in future requests for authentication.
 
 For more details about OAuth2 Client Credentials Flow:
-* https://datatracker.ietf.org/doc/html/rfc6749#section-4.4
-* https://oauth.net/2/grant-types/client-credentials/
-* https://auth0.com/docs/flows/client-credentials-flow
+
+- https://datatracker.ietf.org/doc/html/rfc6749#section-4.4
+- https://oauth.net/2/grant-types/client-credentials/
+- https://auth0.com/docs/flows/client-credentials-flow

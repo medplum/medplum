@@ -66,7 +66,9 @@ export const WithText = () => (
     <a href="#">
       <div style={{ display: 'flex', width: 180, justifyContent: 'space-between' }}>
         <Avatar alt="George Washington" src="/avatars/1.jpg" />
-        George Washington<br />View profile
+        George Washington
+        <br />
+        View profile
       </div>
     </a>
   </Document>

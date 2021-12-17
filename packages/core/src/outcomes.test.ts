@@ -1,7 +1,18 @@
-import { allOk, assertOk, badRequest, created, getStatus, gone, isGone, isNotFound, isOk, notFound, notModified } from './outcomes';
+import {
+  allOk,
+  assertOk,
+  badRequest,
+  created,
+  getStatus,
+  gone,
+  isGone,
+  isNotFound,
+  isOk,
+  notFound,
+  notModified,
+} from './outcomes';
 
 describe('Outcomes', () => {
-
   test('OK', () => {
     expect(isOk(allOk)).toBe(true);
     expect(isOk(created)).toBe(true);
@@ -38,5 +49,4 @@ describe('Outcomes', () => {
     expect(() => assertOk(allOk)).not.toThrow();
     expect(() => assertOk(notFound)).toThrowError('Not found');
   });
-
 });

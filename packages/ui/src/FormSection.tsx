@@ -21,8 +21,10 @@ export function FormSection(props: FormSectionProps) {
       {props.children}
       {invalid && (
         <div id={props.htmlFor + '-errors'} className="medplum-input-error">
-          {issues?.map(issue => (
-            <div data-testid="text-field-error" key={issue.details?.text}>{issue.details?.text}</div>
+          {issues?.map((issue) => (
+            <div data-testid="text-field-error" key={issue.details?.text}>
+              {issue.details?.text}
+            </div>
           ))}
         </div>
       )}

@@ -24,8 +24,8 @@ export function main() {
   const stack = new MedplumStack(app, 'MedplumStack', {
     env: {
       region: REGION,
-      account: ACCOUNT_NUMBER
-    }
+      account: ACCOUNT_NUMBER,
+    },
   });
 
   console.log('Stack', stack.stackId);

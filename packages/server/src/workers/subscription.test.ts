@@ -15,7 +15,6 @@ jest.mock('node-fetch');
 let repo: Repository;
 
 describe('Subscription Worker', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -25,8 +24,8 @@ describe('Subscription Worker', () => {
     repo = new Repository({
       project: randomUUID(),
       author: {
-        reference: 'ClientApplication/' + randomUUID()
-      }
+        reference: 'ClientApplication/' + randomUUID(),
+      },
     });
   });
 
@@ -50,8 +49,8 @@ describe('Subscription Worker', () => {
       criteria: 'Patient',
       channel: {
         type: 'rest-hook',
-        endpoint: url
-      }
+        endpoint: url,
+      },
     });
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
@@ -61,7 +60,7 @@ describe('Subscription Worker', () => {
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(patientOutcome.id).toEqual('created');
@@ -73,10 +72,13 @@ describe('Subscription Worker', () => {
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
     await sendSubscription(job);
 
-    expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({
-      method: 'POST',
-      body: stringify(patient)
-    }));
+    expect(fetch).toHaveBeenCalledWith(
+      url,
+      expect.objectContaining({
+        method: 'POST',
+        body: stringify(patient),
+      })
+    );
   });
 
   test('Send subscription with custom headers', async () => {
@@ -89,10 +91,8 @@ describe('Subscription Worker', () => {
       channel: {
         type: 'rest-hook',
         endpoint: url,
-        header: [
-          'Authorization: Basic xyz'
-        ]
-      }
+        header: ['Authorization: Basic xyz'],
+      },
     });
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
@@ -102,7 +102,7 @@ describe('Subscription Worker', () => {
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(patientOutcome.id).toEqual('created');
@@ -114,14 +114,17 @@ describe('Subscription Worker', () => {
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
     await sendSubscription(job);
 
-    expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({
-      method: 'POST',
-      body: stringify(patient),
-      headers: {
-        'Content-Type': 'application/fhir+json',
-        'Authorization': 'Basic xyz'
-      }
-    }));
+    expect(fetch).toHaveBeenCalledWith(
+      url,
+      expect.objectContaining({
+        method: 'POST',
+        body: stringify(patient),
+        headers: {
+          'Content-Type': 'application/fhir+json',
+          Authorization: 'Basic xyz',
+        },
+      })
+    );
   });
 
   test('Send subscriptions with signature', async () => {
@@ -134,12 +137,14 @@ describe('Subscription Worker', () => {
       criteria: 'Patient',
       channel: {
         type: 'rest-hook',
-        endpoint: url
+        endpoint: url,
       },
-      extension: [{
-        url: 'https://www.medplum.com/fhir/StructureDefinition-subscriptionSecret',
-        valueString: secret
-      }]
+      extension: [
+        {
+          url: 'https://www.medplum.com/fhir/StructureDefinition-subscriptionSecret',
+          valueString: secret,
+        },
+      ],
     });
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
@@ -149,7 +154,7 @@ describe('Subscription Worker', () => {
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(patientOutcome.id).toEqual('created');
@@ -164,14 +169,17 @@ describe('Subscription Worker', () => {
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
     await sendSubscription(job);
 
-    expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({
-      method: 'POST',
-      body,
-      headers: {
-        'Content-Type': 'application/fhir+json',
-        'X-Signature': signature
-      }
-    }));
+    expect(fetch).toHaveBeenCalledWith(
+      url,
+      expect.objectContaining({
+        method: 'POST',
+        body,
+        headers: {
+          'Content-Type': 'application/fhir+json',
+          'X-Signature': signature,
+        },
+      })
+    );
   });
 
   test('Ignore non-subscription subscriptions', async () => {
@@ -180,8 +188,8 @@ describe('Subscription Worker', () => {
       status: 'active',
       criteria: 'Patient',
       channel: {
-        type: 'email'
-      }
+        type: 'email',
+      },
     });
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
@@ -191,7 +199,7 @@ describe('Subscription Worker', () => {
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(patientOutcome.id).toEqual('created');
@@ -206,8 +214,8 @@ describe('Subscription Worker', () => {
       criteria: 'Patient',
       channel: {
         type: 'rest-hook',
-        endpoint: ''
-      }
+        endpoint: '',
+      },
     });
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
@@ -217,7 +225,7 @@ describe('Subscription Worker', () => {
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(patientOutcome.id).toEqual('created');
@@ -231,8 +239,8 @@ describe('Subscription Worker', () => {
       status: 'active',
       channel: {
         type: 'rest-hook',
-        endpoint: 'https://example.com/subscription'
-      }
+        endpoint: 'https://example.com/subscription',
+      },
     });
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
@@ -242,7 +250,7 @@ describe('Subscription Worker', () => {
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(patientOutcome.id).toEqual('created');
@@ -257,8 +265,8 @@ describe('Subscription Worker', () => {
       criteria: 'Observation',
       channel: {
         type: 'rest-hook',
-        endpoint: 'https://example.com/subscription'
-      }
+        endpoint: 'https://example.com/subscription',
+      },
     });
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
@@ -268,7 +276,7 @@ describe('Subscription Worker', () => {
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(patientOutcome.id).toEqual('created');
@@ -283,8 +291,8 @@ describe('Subscription Worker', () => {
       criteria: 'Observation?status=final',
       channel: {
         type: 'rest-hook',
-        endpoint: 'https://example.com/subscription'
-      }
+        endpoint: 'https://example.com/subscription',
+      },
     });
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
@@ -295,7 +303,7 @@ describe('Subscription Worker', () => {
     await repo.createResource<Observation>({
       resourceType: 'Observation',
       status: 'preliminary',
-      code: { text: 'ok' }
+      code: { text: 'ok' },
     });
 
     expect(queue.add).not.toHaveBeenCalled();
@@ -303,7 +311,7 @@ describe('Subscription Worker', () => {
     await repo.createResource<Observation>({
       resourceType: 'Observation',
       status: 'final',
-      code: { text: 'ok' }
+      code: { text: 'ok' },
     });
 
     expect(queue.add).toHaveBeenCalled();
@@ -316,8 +324,8 @@ describe('Subscription Worker', () => {
       criteria: 'Patient',
       channel: {
         type: 'rest-hook',
-        endpoint: 'https://example.com/subscription'
-      }
+        endpoint: 'https://example.com/subscription',
+      },
     });
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
@@ -327,7 +335,7 @@ describe('Subscription Worker', () => {
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(patientOutcome.id).toEqual('created');
@@ -342,14 +350,14 @@ describe('Subscription Worker', () => {
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       meta: {
-        project: project1
+        project: project1,
       },
       status: 'active',
       criteria: 'Patient',
       channel: {
         type: 'rest-hook',
-        endpoint: 'https://example.com/subscription'
-      }
+        endpoint: 'https://example.com/subscription',
+      },
     });
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
@@ -360,9 +368,9 @@ describe('Subscription Worker', () => {
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
       meta: {
-        project: project2
+        project: project2,
       },
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(patientOutcome.id).toEqual('created');
@@ -379,15 +387,15 @@ describe('Subscription Worker', () => {
       meta: {
         project,
         account: {
-          reference: account
-        }
+          reference: account,
+        },
       },
       status: 'active',
       criteria: 'Patient',
       channel: {
         type: 'rest-hook',
-        endpoint: 'https://example.com/subscription'
-      }
+        endpoint: 'https://example.com/subscription',
+      },
     });
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
@@ -398,9 +406,9 @@ describe('Subscription Worker', () => {
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
       meta: {
-        project
+        project,
       },
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(patientOutcome.id).toEqual('created');
@@ -417,8 +425,8 @@ describe('Subscription Worker', () => {
       criteria: 'Patient',
       channel: {
         type: 'rest-hook',
-        endpoint: url
-      }
+        endpoint: url,
+      },
     });
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
@@ -428,7 +436,7 @@ describe('Subscription Worker', () => {
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(patientOutcome.id).toEqual('created');
@@ -452,8 +460,8 @@ describe('Subscription Worker', () => {
       criteria: 'Patient',
       channel: {
         type: 'rest-hook',
-        endpoint: url
-      }
+        endpoint: url,
+      },
     });
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
@@ -463,7 +471,7 @@ describe('Subscription Worker', () => {
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(patientOutcome.id).toEqual('created');
@@ -488,7 +496,7 @@ describe('Subscription Worker', () => {
       resourceType: 'Bot',
       name: 'Test Bot',
       description: 'Test Bot',
-      code: `console.log('${nonce}');`
+      code: `console.log('${nonce}');`,
     });
     expect(botOutcome.id).toEqual('created');
     expect(bot).toBeDefined();
@@ -499,8 +507,8 @@ describe('Subscription Worker', () => {
       criteria: 'Patient',
       channel: {
         type: 'rest-hook',
-        endpoint: getReferenceString(bot as Bot)
-      }
+        endpoint: getReferenceString(bot as Bot),
+      },
     });
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
@@ -510,7 +518,7 @@ describe('Subscription Worker', () => {
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(patientOutcome.id).toEqual('created');
@@ -525,11 +533,13 @@ describe('Subscription Worker', () => {
 
     const [searchOutcome, bundle] = await repo.search<AuditEvent>({
       resourceType: 'AuditEvent',
-      filters: [{
-        code: 'entity',
-        operator: Operator.EQUALS,
-        value: getReferenceString(subscription as Subscription)
-      }]
+      filters: [
+        {
+          code: 'entity',
+          operator: Operator.EQUALS,
+          value: getReferenceString(subscription as Subscription),
+        },
+      ],
     });
     assertOk(searchOutcome);
     expect(bundle).toBeDefined();
@@ -546,7 +556,7 @@ describe('Subscription Worker', () => {
       resourceType: 'Bot',
       name: 'Test Bot',
       description: 'Test Bot',
-      code: `throw new Error('${nonce}');`
+      code: `throw new Error('${nonce}');`,
     });
     expect(botOutcome.id).toEqual('created');
     expect(bot).toBeDefined();
@@ -557,8 +567,8 @@ describe('Subscription Worker', () => {
       criteria: 'Patient',
       channel: {
         type: 'rest-hook',
-        endpoint: getReferenceString(bot as Bot)
-      }
+        endpoint: getReferenceString(bot as Bot),
+      },
     });
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
@@ -568,7 +578,7 @@ describe('Subscription Worker', () => {
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(patientOutcome.id).toEqual('created');
@@ -583,11 +593,13 @@ describe('Subscription Worker', () => {
 
     const [searchOutcome, bundle] = await repo.search<AuditEvent>({
       resourceType: 'AuditEvent',
-      filters: [{
-        code: 'entity',
-        operator: Operator.EQUALS,
-        value: getReferenceString(subscription as Subscription)
-      }]
+      filters: [
+        {
+          code: 'entity',
+          operator: Operator.EQUALS,
+          value: getReferenceString(subscription as Subscription),
+        },
+      ],
     });
     assertOk(searchOutcome);
     expect(bundle).toBeDefined();
@@ -604,8 +616,8 @@ describe('Subscription Worker', () => {
       criteria: 'Patient',
       channel: {
         type: 'rest-hook',
-        endpoint: 'https://example.com/'
-      }
+        endpoint: 'https://example.com/',
+      },
     });
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
@@ -615,7 +627,7 @@ describe('Subscription Worker', () => {
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(patientOutcome.id).toEqual('created');
@@ -626,7 +638,7 @@ describe('Subscription Worker', () => {
     // But let's change the subscription status to something else
     const [updateOutcome] = await repo.updateResource<Subscription>({
       ...(subscription as Subscription),
-      status: 'off'
+      status: 'off',
     });
     expect(updateOutcome.id).toEqual('ok');
 
@@ -639,11 +651,13 @@ describe('Subscription Worker', () => {
     // No AuditEvent resources should have been created
     const [searchOutcome, bundle] = await repo.search<AuditEvent>({
       resourceType: 'AuditEvent',
-      filters: [{
-        code: 'entity',
-        operator: Operator.EQUALS,
-        value: getReferenceString(subscription as Subscription)
-      }]
+      filters: [
+        {
+          code: 'entity',
+          operator: Operator.EQUALS,
+          value: getReferenceString(subscription as Subscription),
+        },
+      ],
     });
     assertOk(searchOutcome);
     expect(bundle).toBeDefined();
@@ -657,8 +671,8 @@ describe('Subscription Worker', () => {
       criteria: 'Patient',
       channel: {
         type: 'rest-hook',
-        endpoint: 'https://example.com/'
-      }
+        endpoint: 'https://example.com/',
+      },
     });
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
@@ -668,7 +682,7 @@ describe('Subscription Worker', () => {
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(patientOutcome.id).toEqual('created');
@@ -689,11 +703,13 @@ describe('Subscription Worker', () => {
     // No AuditEvent resources should have been created
     const [searchOutcome, bundle] = await repo.search<AuditEvent>({
       resourceType: 'AuditEvent',
-      filters: [{
-        code: 'entity',
-        operator: Operator.EQUALS,
-        value: getReferenceString(subscription as Subscription)
-      }]
+      filters: [
+        {
+          code: 'entity',
+          operator: Operator.EQUALS,
+          value: getReferenceString(subscription as Subscription),
+        },
+      ],
     });
     assertOk(searchOutcome);
     expect(bundle).toBeDefined();
@@ -707,8 +723,8 @@ describe('Subscription Worker', () => {
       criteria: 'Patient',
       channel: {
         type: 'rest-hook',
-        endpoint: 'https://example.com/'
-      }
+        endpoint: 'https://example.com/',
+      },
     });
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
@@ -718,7 +734,7 @@ describe('Subscription Worker', () => {
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }]
+      name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
     expect(patientOutcome.id).toEqual('created');
@@ -739,15 +755,16 @@ describe('Subscription Worker', () => {
     // No AuditEvent resources should have been created
     const [searchOutcome, bundle] = await repo.search<AuditEvent>({
       resourceType: 'AuditEvent',
-      filters: [{
-        code: 'entity',
-        operator: Operator.EQUALS,
-        value: getReferenceString(subscription as Subscription)
-      }]
+      filters: [
+        {
+          code: 'entity',
+          operator: Operator.EQUALS,
+          value: getReferenceString(subscription as Subscription),
+        },
+      ],
     });
     assertOk(searchOutcome);
     expect(bundle).toBeDefined();
     expect(bundle?.entry?.length).toEqual(0);
   });
-
 });

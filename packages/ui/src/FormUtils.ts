@@ -1,4 +1,3 @@
-
 /**
  * Parses an HTML form and returns the result as a JavaScript object.
  * @param form The HTML form element.
@@ -9,10 +8,8 @@ export function parseForm(form: HTMLFormElement): Record<string, string> {
   for (const element of Array.from(form.elements)) {
     if (element instanceof HTMLInputElement) {
       parseInputElement(result, element);
-
     } else if (element instanceof HTMLTextAreaElement) {
       result[element.name] = element.value;
-
     } else if (element instanceof HTMLSelectElement) {
       parseSelectElement(result, element);
     }

@@ -1,0 +1,6 @@
+node_modules
+packages/**/dist/**/*
+packages/docs/.docusaurus/
+packages/docs/build/
+packages/ui/storybook-static/
+coverage/

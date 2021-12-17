@@ -13,5 +13,5 @@ export function HumanNameDisplay(props: HumanNameDisplayProps) {
     return null;
   }
 
-  return <>{formatHumanName(name, props.options)}</>
+  return <>{formatHumanName(name, props.options)}</>;
 }

@@ -6,22 +6,24 @@ import { ChangePasswordPage } from './ChangePasswordPage';
 
 const medplum = new MockClient({
   'auth/changepassword': {
-    'POST': (body: string) => {
+    POST: (body: string) => {
       const { oldPassword } = JSON.parse(body);
       if (oldPassword === 'orange') {
         return allOk;
       } else {
         return {
           resourceType: 'OperationOutcome',
-          issue: [{
-            expression: ['oldPassword'],
-            details: {
-              text: 'Incorrect password'
-            }
-          }]
+          issue: [
+            {
+              expression: ['oldPassword'],
+              details: {
+                text: 'Incorrect password',
+              },
+            },
+          ],
         };
       }
-    }
+    },
   },
 });
 
@@ -34,7 +36,6 @@ const setup = () => {
 };
 
 describe('ChangePasswordPage', () => {
-
   test('Renders', () => {
     const utils = setup();
     const input = utils.getByTestId('submit') as HTMLButtonElement;
@@ -45,9 +46,15 @@ describe('ChangePasswordPage', () => {
     setup();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('oldPassword'), { target: { value: 'orange' } });
-      fireEvent.change(screen.getByTestId('newPassword'), { target: { value: 'purple' } });
-      fireEvent.change(screen.getByTestId('confirmPassword'), { target: { value: 'purple' } });
+      fireEvent.change(screen.getByTestId('oldPassword'), {
+        target: { value: 'orange' },
+      });
+      fireEvent.change(screen.getByTestId('newPassword'), {
+        target: { value: 'purple' },
+      });
+      fireEvent.change(screen.getByTestId('confirmPassword'), {
+        target: { value: 'purple' },
+      });
     });
 
     await act(async () => {
@@ -61,9 +68,15 @@ describe('ChangePasswordPage', () => {
     setup();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('oldPassword'), { target: { value: 'watermelon' } });
-      fireEvent.change(screen.getByTestId('newPassword'), { target: { value: 'purple' } });
-      fireEvent.change(screen.getByTestId('confirmPassword'), { target: { value: 'purple' } });
+      fireEvent.change(screen.getByTestId('oldPassword'), {
+        target: { value: 'watermelon' },
+      });
+      fireEvent.change(screen.getByTestId('newPassword'), {
+        target: { value: 'purple' },
+      });
+      fireEvent.change(screen.getByTestId('confirmPassword'), {
+        target: { value: 'purple' },
+      });
     });
 
     await act(async () => {
@@ -72,5 +85,4 @@ describe('ChangePasswordPage', () => {
 
     expect(screen.getByText('Incorrect password')).toBeInTheDocument();
   });
-
 });

@@ -13,29 +13,35 @@ superAdminRouter.use(authenticateToken);
 // POST to /admin/super/valuesets
 // to rebuild the "ValueSetElements" table.
 // Run this after changes to how ValueSet elements are defined.
-superAdminRouter.post('/valuesets', asyncWrap(async (req: Request, res: Response) => {
-  const [outcome, user] = await repo.readResource<User>('User', res.locals.user);
-  assertOk(outcome);
+superAdminRouter.post(
+  '/valuesets',
+  asyncWrap(async (req: Request, res: Response) => {
+    const [outcome, user] = await repo.readResource<User>('User', res.locals.user);
+    assertOk(outcome);
 
-  if (!user?.admin) {
-    return sendOutcome(res, badRequest('Requires super administrator privileges'));
-  }
+    if (!user?.admin) {
+      return sendOutcome(res, badRequest('Requires super administrator privileges'));
+    }
 
-  await createValueSetElements();
-  return sendOutcome(res, allOk);
-}));
+    await createValueSetElements();
+    return sendOutcome(res, allOk);
+  })
+);
 
 // POST to /admin/super/structuredefinitions
 // to rebuild the "StructureDefinition" table.
 // Run this after any changes to the built-in StructureDefinitions.
-superAdminRouter.post('/structuredefinitions', asyncWrap(async (req: Request, res: Response) => {
-  const [outcome, user] = await repo.readResource<User>('User', res.locals.user);
-  assertOk(outcome);
+superAdminRouter.post(
+  '/structuredefinitions',
+  asyncWrap(async (req: Request, res: Response) => {
+    const [outcome, user] = await repo.readResource<User>('User', res.locals.user);
+    assertOk(outcome);
 
-  if (!user?.admin) {
-    return sendOutcome(res, badRequest('Requires super administrator privileges'));
-  }
+    if (!user?.admin) {
+      return sendOutcome(res, badRequest('Requires super administrator privileges'));
+    }
 
-  await createStructureDefinitions();
-  return sendOutcome(res, allOk);
-}));
+    await createStructureDefinitions();
+    return sendOutcome(res, allOk);
+  })
+);

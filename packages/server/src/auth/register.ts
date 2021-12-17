@@ -55,7 +55,7 @@ export async function registerHandler(req: Request, res: Response) {
     password: password,
     scope: scope,
     nonce: randomUUID(),
-    remember: true
+    remember: true,
   });
   assertOk(loginOutcome);
 
@@ -65,7 +65,7 @@ export async function registerHandler(req: Request, res: Response) {
   return res.status(200).json({
     ...token,
     project: result.project && createReference(result.project),
-    profile: result.profile && createReference(result.profile)
+    profile: result.profile && createReference(result.profile),
   });
 }
 
@@ -79,18 +79,20 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     user,
     project,
     profile,
-    client
-  }
+    client,
+  };
 }
 
 async function searchForExisting(email: string): Promise<boolean> {
   const [outcome, bundle] = await repo.search<User>({
     resourceType: 'User',
-    filters: [{
-      code: 'email',
-      operator: Operator.EQUALS,
-      value: email
-    }]
+    filters: [
+      {
+        code: 'email',
+        operator: Operator.EQUALS,
+        value: email,
+      },
+    ],
   });
 
   assertOk(outcome);
@@ -105,7 +107,7 @@ async function createUser(request: RegisterRequest): Promise<User> {
     resourceType: 'User',
     email,
     passwordHash,
-    admin
+    admin,
   });
   assertOk(outcome);
   logger.info('Created: ' + (result as User).id);
@@ -117,7 +119,7 @@ async function createProject(request: RegisterRequest, user: User): Promise<Proj
   const [outcome, result] = await repo.createResource<Project>({
     resourceType: 'Project',
     name: request.projectName,
-    owner: createReference(user)
+    owner: createReference(user),
   });
   assertOk(outcome);
   logger.info('Created: ' + (result as Project).id);
@@ -133,8 +135,8 @@ async function createClientApplication(project: Project): Promise<ClientApplicat
     secret: generateSecret(32),
     redirectUri: 'https://example.com/',
     meta: {
-      project: project.id
-    }
+      project: project.id,
+    },
   });
   assertOk(outcome);
   logger.info('Created: ' + (result as ClientApplication).id);

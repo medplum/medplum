@@ -10,23 +10,23 @@ module.exports = (env, argv) => ({
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'js/[name].[contenthash].js',
-    publicPath: '/'
+    publicPath: '/',
   },
   resolve: {
-    extensions: ['.ts', '.tsx', '.js']
+    extensions: ['.ts', '.tsx', '.js'],
   },
   plugins: [
     new BundleAnalyzerPlugin({
       analyzerMode: 'static',
-      openAnalyzer: false
+      openAnalyzer: false,
     }),
     new DotenvPlugin({
       defaults: true,
-      systemvars: true
+      systemvars: true,
     }),
     new HtmlWebpackPlugin({
       template: 'index.html',
-      favicon: 'favicon.ico'
+      favicon: 'favicon.ico',
     }),
     new MiniCssExtractPlugin({
       filename: 'css/[name].[contenthash].css',
@@ -37,13 +37,13 @@ module.exports = (env, argv) => ({
       {
         test: /\.(js|jsx|ts|tsx)$/,
         exclude: '/node_modules/',
-        loader: 'babel-loader'
+        loader: 'babel-loader',
       },
       {
         test: /\.css$/i,
         use: [MiniCssExtractPlugin.loader, 'css-loader'],
-      }
-    ]
+      },
+    ],
   },
   devServer: {
     port: 3000,
@@ -51,11 +51,11 @@ module.exports = (env, argv) => ({
     devMiddleware: {
       index: true,
       publicPath: '/',
-      writeToDisk: true
+      writeToDisk: true,
     },
     historyApiFallback: {
-      index: '/index.html'
-    }
+      index: '/index.html',
+    },
   },
   optimization: {
     usedExports: true,
@@ -71,5 +71,5 @@ module.exports = (env, argv) => ({
         },
       },
     },
-  }
+  },
 });

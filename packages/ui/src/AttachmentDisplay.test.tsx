@@ -10,21 +10,21 @@ function mockFetch(url: string, options: any): Promise<any> {
   const response: any = {
     request: {
       url,
-      options
+      options,
     },
-    ...result
+    ...result,
   };
 
   return Promise.resolve({
     blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
+    json: () => Promise.resolve(response),
   });
 }
 
 const medplum = new MedplumClient({
   baseUrl: 'https://example.com/',
   clientId: 'my-client-id',
-  fetch: mockFetch
+  fetch: mockFetch,
 });
 
 const setup = (args?: AttachmentDisplayProps) => {
@@ -36,7 +36,6 @@ const setup = (args?: AttachmentDisplayProps) => {
 };
 
 describe('AttachmentDisplay', () => {
-
   beforeAll(async () => {
     global.URL.createObjectURL = jest.fn(() => 'details');
   });
@@ -50,8 +49,8 @@ describe('AttachmentDisplay', () => {
       await setup({
         value: {
           contentType: 'image/jpeg',
-          url: 'https://example.com/test.jpg'
-        }
+          url: 'https://example.com/test.jpg',
+        },
       });
       await waitFor(() => screen.getByTestId('attachment-image'));
     });
@@ -62,8 +61,8 @@ describe('AttachmentDisplay', () => {
       await setup({
         value: {
           contentType: 'video/mp4',
-          url: 'https://example.com/test.mp4'
-        }
+          url: 'https://example.com/test.mp4',
+        },
       });
       await waitFor(() => screen.getByTestId('attachment-video'));
     });
@@ -74,11 +73,10 @@ describe('AttachmentDisplay', () => {
       await setup({
         value: {
           contentType: 'text/plain',
-          url: 'https://example.com/test.txt'
-        }
+          url: 'https://example.com/test.txt',
+        },
       });
       await waitFor(() => screen.getByTestId('attachment-details'));
     });
   });
-
-})
+});

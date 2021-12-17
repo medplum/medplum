@@ -1,7 +1,6 @@
 import { LRUCache } from './cache';
 
 describe('Cache', () => {
-
   test('LRU', () => {
     const cache = new LRUCache<string>(3); // Create cache with capacity of 3
     cache.set('a', 'a');
@@ -26,5 +25,4 @@ describe('Cache', () => {
     expect(cache.get('c')).toEqual('c');
     expect(cache.get('d')).toEqual('d');
   });
-
 });

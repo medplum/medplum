@@ -1,4 +1,3 @@
-
 export interface SearchRequest {
   readonly resourceType: string;
   readonly filters?: Filter[];
@@ -55,13 +54,12 @@ export enum Operator {
   OF_TYPE = 'of-type',
 }
 
-
 /**
  * Parses a URL into a SearchRequest.
  * @param location The URL to parse.
  * @returns Parsed search definition.
  */
-export function parseSearchDefinition(location: { pathname: string, search?: string }): SearchRequest {
+export function parseSearchDefinition(location: { pathname: string; search?: string }): SearchRequest {
   const resourceType = location.pathname.split('/').pop() as string;
   const params = new URLSearchParams(location.search);
   const filters: Filter[] = [];
@@ -87,7 +85,7 @@ export function parseSearchDefinition(location: { pathname: string, search?: str
       filters.push({
         code: key,
         operator: Operator.EQUALS,
-        value: value
+        value: value,
       });
     }
   });
@@ -98,7 +96,7 @@ export function parseSearchDefinition(location: { pathname: string, search?: str
     fields,
     page,
     count,
-    sortRules
+    sortRules,
   };
 }
 
@@ -116,7 +114,7 @@ export function formatSearchQuery(definition: SearchRequest): string {
   }
 
   if (definition.filters) {
-    definition.filters.forEach(filter => {
+    definition.filters.forEach((filter) => {
       params.push(filter.code + '=' + filter.value);
     });
   }
@@ -145,5 +143,5 @@ function formatSortRules(sortRules: SortRule[] | undefined): string {
   if (!sortRules || sortRules.length === 0) {
     return '';
   }
-  return '_sort=' + sortRules.map(sr => sr.descending ? '-' + sr.code : sr.code).join(',');
+  return '_sort=' + sortRules.map((sr) => (sr.descending ? '-' + sr.code : sr.code)).join(',');
 }

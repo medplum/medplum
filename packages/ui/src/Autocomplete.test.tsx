@@ -3,7 +3,6 @@ import React from 'react';
 import { Autocomplete } from './Autocomplete';
 
 describe('Autocomplete', () => {
-
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -560,5 +559,4 @@ describe('Autocomplete', () => {
     expect(option).toBeDefined();
     expect(option?.innerHTML).toMatch(/Carol Brown/);
   });
-
 });

@@ -94,8 +94,8 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
       ...config.database,
       host: process.env['POSTGRES_HOST'] ?? 'localhost',
       port: process.env['POSTGRES_PORT'] ? parseInt(process.env['POSTGRES_PORT']) : 5432,
-      dbname: 'medplum_test'
-    }
+      dbname: 'medplum_test',
+    },
   };
 }
 
@@ -120,11 +120,13 @@ async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
 
   let nextToken: string | undefined;
   do {
-    const response = await client.send(new GetParametersByPathCommand({
-      Path: path,
-      NextToken: nextToken,
-      WithDecryption: true
-    }));
+    const response = await client.send(
+      new GetParametersByPathCommand({
+        Path: path,
+        NextToken: nextToken,
+        WithDecryption: true,
+      })
+    );
     if (response?.Parameters) {
       for (const param of response.Parameters) {
         const key = (param.Name as string).replace(path, '');
@@ -141,7 +143,7 @@ async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
     nextToken = response.NextToken;
   } while (nextToken);
 
-  return (config as unknown) as MedplumServerConfig;
+  return config as unknown as MedplumServerConfig;
 }
 
 /**
@@ -151,12 +153,14 @@ async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
  */
 async function loadAwsSecrets(secretId: string): Promise<Record<string, any> | undefined> {
   const client = new SecretsManagerClient({
-    region: AWS_REGION
+    region: AWS_REGION,
   });
 
-  const result = await client.send(new GetSecretValueCommand({
-    SecretId: secretId
-  }));
+  const result = await client.send(
+    new GetSecretValueCommand({
+      SecretId: secretId,
+    })
+  );
 
   if (!result.SecretString) {
     return undefined;

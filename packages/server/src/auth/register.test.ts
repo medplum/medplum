@@ -11,7 +11,6 @@ import { seedDatabase } from '../seed';
 const app = express();
 
 describe('Register', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -33,7 +32,7 @@ describe('Register', () => {
         lastName: 'Hamilton',
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res.status).toBe(200);
@@ -49,21 +48,15 @@ describe('Register', () => {
       lastName: 'Washington',
       projectName: 'Washington Project',
       email: `george${randomUUID()}@example.com`,
-      password: 'password!@#'
+      password: 'password!@#',
     };
 
-    const res = await request(app)
-      .post('/auth/register')
-      .type('json')
-      .send(registerRequest);
+    const res = await request(app).post('/auth/register').type('json').send(registerRequest);
 
     expect(res.status).toBe(200);
     expect(res.body.profile).toBeDefined();
 
-    const res2 = await request(app)
-      .post('/auth/register')
-      .type('json')
-      .send(registerRequest);
+    const res2 = await request(app).post('/auth/register').type('json').send(registerRequest);
 
     expect(res2.status).toBe(400);
     expect(res2.body.issue[0].details.text).toBe('Email already registered');
@@ -79,7 +72,7 @@ describe('Register', () => {
         lastName: 'Hamilton',
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res.status).toBe(200);
@@ -113,7 +106,7 @@ describe('Register', () => {
         lastName: 'Hamilton',
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res.status).toBe(200);
@@ -148,7 +141,7 @@ describe('Register', () => {
         lastName: 'Hamilton',
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res.status).toBe(200);
@@ -170,7 +163,7 @@ describe('Register', () => {
         lastName: 'Hamilton',
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res.status).toBe(200);
@@ -195,7 +188,7 @@ describe('Register', () => {
         lastName: 'Hamilton',
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res.status).toBe(200);
@@ -205,7 +198,7 @@ describe('Register', () => {
       resourceType: 'ClientApplication',
       name: 'Test App',
       secret: generateSecret(48),
-      redirectUri: 'https://example.com'
+      redirectUri: 'https://example.com',
     };
 
     const res2 = await request(app)
@@ -232,7 +225,7 @@ describe('Register', () => {
         lastName: 'User1',
         projectName: 'User1 Project',
         email: `user1-${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res.status).toBe(200);
@@ -240,10 +233,12 @@ describe('Register', () => {
 
     const patient: Patient = {
       resourceType: 'Patient',
-      name: [{
-        given: ['Patient1'],
-        family: 'Patient1'
-      }]
+      name: [
+        {
+          given: ['Patient1'],
+          family: 'Patient1',
+        },
+      ],
     };
 
     const res2 = await request(app)
@@ -262,7 +257,7 @@ describe('Register', () => {
         lastName: 'User2',
         projectName: 'User2 Project',
         email: `user2-${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res3.status).toBe(200);
@@ -280,7 +275,7 @@ describe('Register', () => {
       resourceType: 'ClientApplication',
       name: 'User2 Client',
       secret: generateSecret(48),
-      redirectUri: 'https://example.com'
+      redirectUri: 'https://example.com',
     };
 
     const res5 = await request(app)
@@ -292,14 +287,11 @@ describe('Register', () => {
     expect(res5.status).toBe(201);
 
     // Get a token using the client
-    const res6 = await request(app)
-      .post('/oauth2/token')
-      .type('form')
-      .send({
-        grant_type: 'client_credentials',
-        client_id: res5.body.id,
-        client_secret: res5.body.secret
-      });
+    const res6 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: res5.body.id,
+      client_secret: res5.body.secret,
+    });
     expect(res6.status).toBe(200);
     expect(res6.body.error).toBeUndefined();
     expect(res6.body.access_token).toBeDefined();
@@ -334,7 +326,7 @@ describe('Register', () => {
         lastName: 'User1',
         projectName: 'User1 Project',
         email: `user1-${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res.status).toBe(200);
@@ -342,10 +334,12 @@ describe('Register', () => {
 
     const patient: Patient = {
       resourceType: 'Patient',
-      name: [{
-        given: ['Patient1'],
-        family: 'Patient1'
-      }]
+      name: [
+        {
+          given: ['Patient1'],
+          family: 'Patient1',
+        },
+      ],
     };
 
     const res2 = await request(app)
@@ -364,7 +358,7 @@ describe('Register', () => {
         lastName: 'User2',
         projectName: 'User2 Project',
         email: `user2-${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res3.status).toBe(200);
@@ -390,12 +384,11 @@ describe('Register', () => {
               family
             }
           }
-        }`
+        }`,
       });
     expect(res5.status).toBe(200);
     expect(res5.body.data).toBeDefined();
     expect(res5.body.data.PatientList).toBeDefined();
     expect(res5.body.data.PatientList.length).toEqual(0);
   });
-
 });

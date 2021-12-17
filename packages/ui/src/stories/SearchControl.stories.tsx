@@ -11,16 +11,16 @@ export default {
 export const Checkboxes = () => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Patient',
-    fields: ['id', '_lastUpdated', 'name']
+    fields: ['id', '_lastUpdated', 'name'],
   });
 
   return (
     <SearchControl
       search={search}
       checkboxesEnabled={true}
-      onLoad={e => console.log('onLoad', e)}
-      onClick={e => console.log('onClick', e)}
-      onChange={e => {
+      onLoad={(e) => console.log('onLoad', e)}
+      onClick={(e) => console.log('onClick', e)}
+      onChange={(e) => {
         console.log('onChange', e);
         setSearch(e.definition);
       }}
@@ -30,15 +30,15 @@ export const Checkboxes = () => {
 
 export const NoCheckboxes = () => {
   const [search, setSearch] = useState<SearchRequest>({
-    resourceType: 'Patient'
+    resourceType: 'Patient',
   });
 
   return (
     <SearchControl
       search={search}
-      onLoad={e => console.log('onLoad', e)}
-      onClick={e => console.log('onClick', e)}
-      onChange={e => {
+      onLoad={(e) => console.log('onLoad', e)}
+      onClick={(e) => console.log('onClick', e)}
+      onChange={(e) => {
         console.log('onChange', e);
         setSearch(e.definition);
       }}
@@ -49,15 +49,15 @@ export const NoCheckboxes = () => {
 export const ExtraFields = () => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Patient',
-    fields: ['id', '_lastUpdated', 'name', 'birthDate']
+    fields: ['id', '_lastUpdated', 'name', 'birthDate'],
   });
 
   return (
     <SearchControl
       search={search}
-      onLoad={e => console.log('onLoad', e)}
-      onClick={e => console.log('onClick', e)}
-      onChange={e => {
+      onLoad={(e) => console.log('onLoad', e)}
+      onClick={(e) => console.log('onClick', e)}
+      onChange={(e) => {
         console.log('onChange', e);
         setSearch(e.definition);
       }}

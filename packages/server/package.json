@@ -16,8 +16,7 @@
     "prestart": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node-dev --poll --respawn --transpile-only src/index.ts",
-    "test": "jest --runInBand",
-    "lint": "eslint src/ --ext .ts,.tsx"
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.44.0",
@@ -65,7 +64,6 @@
     "@types/uuid": "8.3.3",
     "@types/validator": "13.7.0",
     "enhanced-resolve": "5.8.3",
-    "eslint": "8.4.1",
     "openapi3-ts": "2.0.1",
     "set-cookie-parser": "2.4.8",
     "supertest": "6.1.6",

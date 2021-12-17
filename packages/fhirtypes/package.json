@@ -13,12 +13,8 @@
   "scripts": {
     "clean": "",
     "build": "",
-    "test": "",
-    "lint": ""
+    "test": ""
   },
-  "files": [
-    "dist"
-  ],
   "main": "",
   "types": "dist/index.d.ts",
   "sideEffects": false,

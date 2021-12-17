@@ -17,11 +17,11 @@ Fast Healthcare Interoperability Resources (FHIR) specification is a data standa
 
 Major healthcare platforms such as Epic and Cerner, as well as big tech - Apple, Google, etc. support FHIR in various capacities, making it increasingly popular.
 
-FHIR is very powerful and expressive, but that can make it hard to understand.  It can feel indimidating, even for those with a healthcare background and a lot of domain expertise.
+FHIR is very powerful and expressive, but that can make it hard to understand. It can feel indimidating, even for those with a healthcare background and a lot of domain expertise.
 
-Medplum is designed to help you implement FHIR, of course, but also to help you learn FHIR.  The app is built on a JAM stack (Javascript, APIs and Markup), and the API calls are... FHIR API calls!
+Medplum is designed to help you implement FHIR, of course, but also to help you learn FHIR. The app is built on a JAM stack (Javascript, APIs and Markup), and the API calls are... FHIR API calls!
 
-Using Chrome Developer tools can see directly which calls are made to render the page and quickly get a feel for FHIR and how to write your own app.  Here's a brief video tutorial:
+Using Chrome Developer tools can see directly which calls are made to render the page and quickly get a feel for FHIR and how to write your own app. Here's a brief video tutorial:
 
 [![FHIR Search Tutorial Video](https://img.youtube.com/vi/0aneLa_S-PY/0.jpg)](https://www.youtube.com/watch?v=0aneLa_S-PY)
 

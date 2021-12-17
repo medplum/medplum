@@ -10,31 +10,37 @@ import { MockClient } from './MockClient';
 const contactProperty: ElementDefinition = {
   id: 'Patient.contact',
   path: 'Patient.contact',
-  type: [{
-    code: 'BackboneElement'
-  }],
+  type: [
+    {
+      code: 'BackboneElement',
+    },
+  ],
   min: 0,
-  max: '*'
+  max: '*',
 };
 
 const idProperty: ElementDefinition = {
   id: 'Patient.contact.id',
   path: 'Patient.contact.id',
-  type: [{
-    code: 'string'
-  }],
+  type: [
+    {
+      code: 'string',
+    },
+  ],
   min: 0,
-  max: '1'
+  max: '1',
 };
 
 const nameProperty: ElementDefinition = {
   id: 'Patient.contact.name',
   path: 'Patient.contact.name',
-  type: [{
-    code: 'HumanName'
-  }],
+  type: [
+    {
+      code: 'HumanName',
+    },
+  ],
   min: 0,
-  max: '1'
+  max: '1',
 };
 
 const schema: IndexedStructureDefinition = {
@@ -42,23 +48,22 @@ const schema: IndexedStructureDefinition = {
     Patient: {
       display: 'Patient',
       properties: {
-        contact: contactProperty
-      }
+        contact: contactProperty,
+      },
     },
     PatientContact: {
       display: 'Patient Contact',
       properties: {
         id: idProperty,
-        name: nameProperty
-      }
-    }
-  }
+        name: nameProperty,
+      },
+    },
+  },
 };
 
 const medplum = new MockClient({});
 
 describe('BackboneElementDisplay', () => {
-
   const setup = (args: BackboneElementDisplayProps) => {
     return render(
       <MemoryRouter>
@@ -73,7 +78,7 @@ describe('BackboneElementDisplay', () => {
     setup({
       schema,
       property: contactProperty,
-      value: null
+      value: null,
     });
   });
 
@@ -85,11 +90,10 @@ describe('BackboneElementDisplay', () => {
         id: '123',
         name: {
           given: ['John'],
-          family: 'Doe'
-        }
-      }
+          family: 'Doe',
+        },
+      },
     });
     expect(screen.getByText('Name')).toBeDefined();
   });
-
 });

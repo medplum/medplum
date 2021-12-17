@@ -16,72 +16,81 @@ const patientStructure: StructureDefinition = {
       {
         id: 'Patient.name',
         path: 'Patient.name',
-        type: [{
-          code: 'HumanName'
-        }]
-      }
-    ]
-  }
+        type: [
+          {
+            code: 'HumanName',
+          },
+        ],
+      },
+    ],
+  },
 };
 
 const patientSearchParams: Bundle = {
   resourceType: 'Bundle',
-  entry: [{
-    resource: {
-      resourceType: 'SearchParameter',
-      id: 'Patient-name',
-      code: 'name',
-      name: 'name',
-      expression: 'Patient.name'
-    }
-  }]
+  entry: [
+    {
+      resource: {
+        resourceType: 'SearchParameter',
+        id: 'Patient-name',
+        code: 'name',
+        name: 'name',
+        expression: 'Patient.name',
+      },
+    },
+  ],
 };
 
 const patientStructureBundle: Bundle = {
   resourceType: 'Bundle',
-  entry: [{
-    resource: patientStructure
-  }]
+  entry: [
+    {
+      resource: patientStructure,
+    },
+  ],
 };
 
 const aliceSearchBundle: Bundle = {
   resourceType: 'Bundle',
   total: 100,
-  entry: [{
-    resource: {
-      resourceType: 'Patient',
-      id: '123',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }]
-    }
-  }]
+  entry: [
+    {
+      resource: {
+        resourceType: 'Patient',
+        id: '123',
+        name: [
+          {
+            given: ['Alice'],
+            family: 'Smith',
+          },
+        ],
+      },
+    },
+  ],
 };
 
 const emptySearchBundle: Bundle = {
   resourceType: 'Bundle',
   total: 0,
-  entry: []
+  entry: [],
 };
 
 const medplum = new MockClient({
   'fhir/R4/StructureDefinition?name:exact=Patient': {
-    'GET': patientStructureBundle
+    GET: patientStructureBundle,
   },
   'fhir/R4/SearchParameter?_count=100&base=Patient': {
-    'GET': patientSearchParams
+    GET: patientSearchParams,
   },
   'fhir/R4/Patient?name=Alice': {
-    'GET': aliceSearchBundle
+    GET: aliceSearchBundle,
   },
   'fhir/R4/Patient?name=Bob': {
-    'GET': emptySearchBundle
+    GET: emptySearchBundle,
   },
 });
 
 describe('SearchControl', () => {
-
   const setup = (args: SearchControlProps) => {
     return render(
       <MemoryRouter>
@@ -96,16 +105,18 @@ describe('SearchControl', () => {
     const props = {
       search: {
         resourceType: 'Patient',
-        filters: [{
-          code: 'name',
-          operator: Operator.EQUALS,
-          value: 'Alice'
-        }]
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Alice',
+          },
+        ],
       },
-      onLoad: jest.fn()
+      onLoad: jest.fn(),
     };
 
-    setup(props)
+    setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -120,16 +131,18 @@ describe('SearchControl', () => {
     const props = {
       search: {
         resourceType: 'Patient',
-        filters: [{
-          code: 'name',
-          operator: Operator.EQUALS,
-          value: 'Bob'
-        }]
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Bob',
+          },
+        ],
       },
-      onLoad: jest.fn()
+      onLoad: jest.fn(),
     };
 
-    setup(props)
+    setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('empty-search'));
@@ -144,17 +157,19 @@ describe('SearchControl', () => {
     const props = {
       search: {
         resourceType: 'Patient',
-        filters: [{
-          code: 'name',
-          operator: Operator.EQUALS,
-          value: 'Alice'
-        }]
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Alice',
+          },
+        ],
       },
       onLoad: jest.fn(),
-      checkboxesEnabled: true
+      checkboxesEnabled: true,
     };
 
-    setup(props)
+    setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -169,17 +184,19 @@ describe('SearchControl', () => {
     const props = {
       search: {
         resourceType: 'Patient',
-        filters: [{
-          code: 'name',
-          operator: Operator.EQUALS,
-          value: 'Bob'
-        }]
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Bob',
+          },
+        ],
       },
       onLoad: jest.fn(),
-      checkboxesEnabled: true
+      checkboxesEnabled: true,
     };
 
-    setup(props)
+    setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('empty-search'));
@@ -195,16 +212,18 @@ describe('SearchControl', () => {
       search: {
         resourceType: 'Patient',
         fields: ['id', 'name'],
-        filters: [{
-          code: 'name',
-          operator: Operator.EQUALS,
-          value: 'Alice'
-        }]
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Alice',
+          },
+        ],
       },
-      onLoad: jest.fn()
+      onLoad: jest.fn(),
     };
 
-    setup(props)
+    setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -219,13 +238,15 @@ describe('SearchControl', () => {
     const props = {
       search: {
         resourceType: 'Patient',
-        filters: [{
-          code: 'name',
-          operator: Operator.EQUALS,
-          value: 'Alice'
-        }]
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Alice',
+          },
+        ],
       },
-      onChange: jest.fn()
+      onChange: jest.fn(),
     };
 
     setup(props);
@@ -245,12 +266,14 @@ describe('SearchControl', () => {
     const props = {
       search: {
         resourceType: 'Patient',
-        filters: [{
-          code: 'name',
-          operator: Operator.EQUALS,
-          value: 'Alice'
-        }]
-      }
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Alice',
+          },
+        ],
+      },
     };
 
     setup(props);
@@ -262,20 +285,21 @@ describe('SearchControl', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('next-page-button'));
     });
-
   });
 
   test('Prev page button', async () => {
     const props = {
       search: {
         resourceType: 'Patient',
-        filters: [{
-          code: 'name',
-          operator: Operator.EQUALS,
-          value: 'Alice'
-        }]
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Alice',
+          },
+        ],
       },
-      onChange: jest.fn()
+      onChange: jest.fn(),
     };
 
     setup(props);
@@ -296,9 +320,9 @@ describe('SearchControl', () => {
 
     setup({
       search: {
-        resourceType: 'Patient'
+        resourceType: 'Patient',
       },
-      onNew
+      onNew,
     });
 
     await act(async () => {
@@ -317,9 +341,9 @@ describe('SearchControl', () => {
 
     setup({
       search: {
-        resourceType: 'Patient'
+        resourceType: 'Patient',
       },
-      onDelete
+      onDelete,
     });
 
     await act(async () => {
@@ -337,13 +361,15 @@ describe('SearchControl', () => {
     const props = {
       search: {
         resourceType: 'Patient',
-        filters: [{
-          code: 'name',
-          operator: Operator.EQUALS,
-          value: 'Alice'
-        }]
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Alice',
+          },
+        ],
       },
-      onClick: jest.fn()
+      onClick: jest.fn(),
     };
 
     setup(props);
@@ -368,16 +394,18 @@ describe('SearchControl', () => {
     const props = {
       search: {
         resourceType: 'Patient',
-        filters: [{
-          code: 'name',
-          operator: Operator.EQUALS,
-          value: 'Alice'
-        }]
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Alice',
+          },
+        ],
       },
-      onLoad: jest.fn()
+      onLoad: jest.fn(),
     };
 
-    setup(props)
+    setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -396,16 +424,18 @@ describe('SearchControl', () => {
     const props = {
       search: {
         resourceType: 'Patient',
-        filters: [{
-          code: 'name',
-          operator: Operator.EQUALS,
-          value: 'Alice'
-        }]
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Alice',
+          },
+        ],
       },
-      onLoad: jest.fn()
+      onLoad: jest.fn(),
     };
 
-    setup(props)
+    setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -422,23 +452,24 @@ describe('SearchControl', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('dialog-ok'));
     });
-
   });
 
   test('Field editor onCancel', async () => {
     const props = {
       search: {
         resourceType: 'Patient',
-        filters: [{
-          code: 'name',
-          operator: Operator.EQUALS,
-          value: 'Alice'
-        }]
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Alice',
+          },
+        ],
       },
-      onLoad: jest.fn()
+      onLoad: jest.fn(),
     };
 
-    setup(props)
+    setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -455,23 +486,24 @@ describe('SearchControl', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('dialog-cancel'));
     });
-
   });
 
   test('Open filter editor', async () => {
     const props = {
       search: {
         resourceType: 'Patient',
-        filters: [{
-          code: 'name',
-          operator: Operator.EQUALS,
-          value: 'Alice'
-        }]
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Alice',
+          },
+        ],
       },
-      onLoad: jest.fn()
+      onLoad: jest.fn(),
     };
 
-    setup(props)
+    setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -490,17 +522,19 @@ describe('SearchControl', () => {
     const props = {
       search: {
         resourceType: 'Patient',
-        filters: [{
-          code: 'name',
-          operator: Operator.EQUALS,
-          value: 'Alice'
-        }]
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Alice',
+          },
+        ],
       },
       onLoad: jest.fn(),
-      checkboxesEnabled: true
+      checkboxesEnabled: true,
     };
 
-    setup(props)
+    setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -528,17 +562,19 @@ describe('SearchControl', () => {
     const props = {
       search: {
         resourceType: 'Patient',
-        filters: [{
-          code: 'name',
-          operator: Operator.EQUALS,
-          value: 'Alice'
-        }]
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Alice',
+          },
+        ],
       },
       onLoad: jest.fn(),
-      checkboxesEnabled: true
+      checkboxesEnabled: true,
     };
 
-    setup(props)
+    setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -561,5 +597,4 @@ describe('SearchControl', () => {
     expect(rowCheckboxes.length).toEqual(1);
     expect((rowCheckboxes[0] as HTMLInputElement).checked).toEqual(true);
   });
-
 });

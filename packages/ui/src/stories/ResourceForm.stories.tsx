@@ -12,7 +12,7 @@ export const Patient = () => (
   <Document>
     <ResourceForm
       defaultValue={{
-        reference: `Patient/${process.env.SAMPLE_PATIENT_ID}`
+        reference: `Patient/${process.env.SAMPLE_PATIENT_ID}`,
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
@@ -25,7 +25,7 @@ export const Organization = () => (
   <Document>
     <ResourceForm
       defaultValue={{
-        reference: `Organization/${process.env.SAMPLE_ORGANIZATION_ID}`
+        reference: `Organization/${process.env.SAMPLE_ORGANIZATION_ID}`,
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
@@ -38,7 +38,7 @@ export const Practitioner = () => (
   <Document>
     <ResourceForm
       defaultValue={{
-        reference: `Practitioner/${process.env.SAMPLE_PRACTITIONER_ID}`
+        reference: `Practitioner/${process.env.SAMPLE_PRACTITIONER_ID}`,
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
@@ -51,7 +51,7 @@ export const DiagnosticReport = () => (
   <Document>
     <ResourceForm
       defaultValue={{
-        resourceType: 'DiagnosticReport'
+        resourceType: 'DiagnosticReport',
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
@@ -64,7 +64,7 @@ export const DiagnosticReportIssues = () => (
   <Document>
     <ResourceForm
       defaultValue={{
-        resourceType: 'DiagnosticReport'
+        resourceType: 'DiagnosticReport',
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
@@ -77,11 +77,11 @@ export const DiagnosticReportIssues = () => (
             severity: 'error',
             code: 'structure',
             details: {
-              text: 'Missing required property "code"'
+              text: 'Missing required property "code"',
             },
-            expression: ['code']
-          }
-        ]
+            expression: ['code'],
+          },
+        ],
       }}
     />
   </Document>
@@ -91,7 +91,7 @@ export const Observation = () => (
   <Document>
     <ResourceForm
       defaultValue={{
-        resourceType: 'Observation'
+        resourceType: 'Observation',
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
@@ -104,7 +104,7 @@ export const Questionnaire = () => (
   <Document>
     <ResourceForm
       defaultValue={{
-        resourceType: 'Questionnaire'
+        resourceType: 'Questionnaire',
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
@@ -117,7 +117,7 @@ export const Subscription = () => (
   <Document>
     <ResourceForm
       defaultValue={{
-        resourceType: 'Subscription'
+        resourceType: 'Subscription',
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
@@ -130,7 +130,7 @@ export const ValueSet = () => (
   <Document>
     <ResourceForm
       defaultValue={{
-        resourceType: 'ValueSet'
+        resourceType: 'ValueSet',
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
@@ -143,7 +143,7 @@ export const DeviceRequest = () => (
   <Document>
     <ResourceForm
       defaultValue={{
-        resourceType: 'DeviceRequest'
+        resourceType: 'DeviceRequest',
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
@@ -156,7 +156,7 @@ export const Specimen = () => (
   <Document>
     <ResourceForm
       defaultValue={{
-        resourceType: 'Specimen'
+        resourceType: 'Specimen',
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);

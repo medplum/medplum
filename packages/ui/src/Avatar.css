@@ -47,7 +47,7 @@
   font-size: 28px;
 }
 
-.medplum-avatar>a {
+.medplum-avatar > a {
   color: var(--medplum-surface);
   text-decoration: none;
 }

@@ -1,12 +1,12 @@
-input[type=date],
-input[type=datetime-local],
-input[type=email],
-input[type=number],
-input[type=password],
-input[type=tel],
-input[type=text],
-input[type=time],
-input[type=url],
+input[type='date'],
+input[type='datetime-local'],
+input[type='email'],
+input[type='number'],
+input[type='password'],
+input[type='tel'],
+input[type='text'],
+input[type='time'],
+input[type='url'],
 select,
 textarea {
   border: 0.1px solid var(--medplum-gray-300);
@@ -17,28 +17,28 @@ textarea {
   font-size: var(--medplum-font-normal);
 }
 
-input[type=date],
-input[type=datetime-local],
-input[type=email],
-input[type=number],
-input[type=password],
-input[type=tel],
-input[type=text],
-input[type=time],
-input[type=url],
+input[type='date'],
+input[type='datetime-local'],
+input[type='email'],
+input[type='number'],
+input[type='password'],
+input[type='tel'],
+input[type='text'],
+input[type='time'],
+input[type='url'],
 select {
   line-height: 28px;
 }
 
-input[type=date],
-input[type=datetime-local],
-input[type=email],
-input[type=number],
-input[type=password],
-input[type=tel],
-input[type=text],
-input[type=time],
-input[type=url] {
+input[type='date'],
+input[type='datetime-local'],
+input[type='email'],
+input[type='number'],
+input[type='password'],
+input[type='tel'],
+input[type='text'],
+input[type='time'],
+input[type='url'] {
   padding: 2px 8px;
   margin: 0;
 }
@@ -49,15 +49,15 @@ textarea {
   margin: 0;
 }
 
-input[type=date]:focus,
-input[type=datetime-local]:focus,
-input[type=email]:focus,
-input[type=number]:focus,
-input[type=password]:focus,
-input[type=tel]:focus,
-input[type=text]:focus,
-input[type=time]:focus,
-input[type=url]:focus,
+input[type='date']:focus,
+input[type='datetime-local']:focus,
+input[type='email']:focus,
+input[type='number']:focus,
+input[type='password']:focus,
+input[type='tel']:focus,
+input[type='text']:focus,
+input[type='time']:focus,
+input[type='url']:focus,
 select:focus,
 textarea:focus {
   background: var(--medplum-surface);
@@ -66,15 +66,15 @@ textarea:focus {
   box-shadow: 0 0 0 2px var(--medplum-blue-200);
 }
 
-input[type=date]:disabled,
-input[type=datetime-local]:disabled,
-input[type=email]:disabled,
-input[type=number]:disabled,
-input[type=password]:disabled,
-input[type=tel]:disabled,
-input[type=text]:disabled,
-input[type=time]:disabled,
-input[type=url]:disabled,
+input[type='date']:disabled,
+input[type='datetime-local']:disabled,
+input[type='email']:disabled,
+input[type='number']:disabled,
+input[type='password']:disabled,
+input[type='tel']:disabled,
+input[type='text']:disabled,
+input[type='time']:disabled,
+input[type='url']:disabled,
 select:disabled,
 textarea:disabled {
   background: var(--medplum-gray-100);
@@ -118,23 +118,23 @@ select.large:not([size]) {
   color: red;
 }
 
-input[type=checkbox],
-input[type=radio] {
+input[type='checkbox'],
+input[type='radio'] {
   border: 0.1px solid var(--medplum-gray-300);
   border-radius: 0;
   background: var(--medplum-surface);
   box-shadow: 0 1px 1px 0 var(--medplum-gray-200);
 }
 
-input[type=checkbox]:focus,
-input[type=radio]:focus {
+input[type='checkbox']:focus,
+input[type='radio']:focus {
   background: var(--medplum-surface);
   color: var(--medplum-gray-900);
   border: 0.1px solid var(--medplum-blue-300);
   box-shadow: 0 0 0 2px var(--medplum-blue-200);
 }
 
-input[type=checkbox]:disabled,
-input[type=radio]:disabled {
+input[type='checkbox']:disabled,
+input[type='radio']:disabled {
   background: var(--medplum-gray-100);
 }

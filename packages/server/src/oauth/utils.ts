@@ -1,5 +1,26 @@
-import { allOk, assertOk, badRequest, createReference, getDateProperty, isNotFound, isOk, notFound, Operator, ProfileResource } from '@medplum/core';
-import { AccessPolicy, BundleEntry, ClientApplication, Login, OperationOutcome, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import {
+  allOk,
+  assertOk,
+  badRequest,
+  createReference,
+  getDateProperty,
+  isNotFound,
+  isOk,
+  notFound,
+  Operator,
+  ProfileResource,
+} from '@medplum/core';
+import {
+  AccessPolicy,
+  BundleEntry,
+  ClientApplication,
+  Login,
+  OperationOutcome,
+  Project,
+  ProjectMembership,
+  Reference,
+  User,
+} from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import { JWTPayload } from 'jose';
 import { repo, RepositoryResult } from '../fhir';
@@ -148,9 +169,11 @@ export function validateLoginRequest(request: LoginRequest): OperationOutcome | 
     return badRequest('Invalid code challenge method', 'code_challenge_method');
   }
 
-  if (request.codeChallengeMethod &&
+  if (
+    request.codeChallengeMethod &&
     request.codeChallengeMethod !== 'plain' &&
-    request.codeChallengeMethod !== 'S256') {
+    request.codeChallengeMethod !== 'S256'
+  ) {
     return badRequest('Invalid code challenge method', 'code_challenge_method');
   }
 
@@ -195,14 +218,16 @@ export async function getUserMemberships(user: Reference<User>): Promise<Project
 
   const [membershipsOutcome, memberships] = await repo.search<ProjectMembership>({
     resourceType: 'ProjectMembership',
-    filters: [{
-      code: 'user',
-      operator: Operator.EQUALS,
-      value: user.reference
-    }]
+    filters: [
+      {
+        code: 'user',
+        operator: Operator.EQUALS,
+        value: user.reference,
+      },
+    ],
   });
   assertOk(membershipsOutcome);
-  return (memberships?.entry as BundleEntry<ProjectMembership>[]).map(entry => entry.resource as ProjectMembership);
+  return (memberships?.entry as BundleEntry<ProjectMembership>[]).map((entry) => entry.resource as ProjectMembership);
 }
 
 export async function getAuthTokens(login: Login): Promise<[OperationOutcome, TokenResult | undefined]> {
@@ -215,7 +240,7 @@ export async function getAuthTokens(login: Login): Promise<[OperationOutcome, To
   if (!login.granted) {
     await repo.updateResource<Login>({
       ...login,
-      granted: true
+      granted: true,
     });
   }
 
@@ -225,7 +250,7 @@ export async function getAuthTokens(login: Login): Promise<[OperationOutcome, To
     fhirUser: login.profile?.reference,
     sub: userId,
     nonce: login.nonce as string,
-    auth_time: (getDateProperty(login.authTime) as Date).getTime() / 1000
+    auth_time: (getDateProperty(login.authTime) as Date).getTime() / 1000,
   });
 
   const accessToken = await generateAccessToken({
@@ -234,26 +259,31 @@ export async function getAuthTokens(login: Login): Promise<[OperationOutcome, To
     sub: userId,
     username: userId,
     scope: login.scope as string,
-    profile: login.profile?.reference as string
+    profile: login.profile?.reference as string,
   });
 
-  const refreshToken = login.refreshSecret ? await generateRefreshToken({
-    client_id: clientId,
-    login_id: login.id as string,
-    refresh_secret: login.refreshSecret
-  }) : undefined;
+  const refreshToken = login.refreshSecret
+    ? await generateRefreshToken({
+        client_id: clientId,
+        login_id: login.id as string,
+        refresh_secret: login.refreshSecret,
+      })
+    : undefined;
 
-  return [allOk, {
-    idToken,
-    accessToken,
-    refreshToken
-  }];
+  return [
+    allOk,
+    {
+      idToken,
+      accessToken,
+      refreshToken,
+    },
+  ];
 }
 
 export async function revokeLogin(login: Login): Promise<void> {
   repo.updateResource<Login>({
     ...login,
-    revoked: true
+    revoked: true,
   });
 }
 
@@ -278,11 +308,13 @@ export function getReferenceIdPart(reference: Reference | undefined): string | u
 async function getUserByEmail(email: string): RepositoryResult<User | undefined> {
   const [outcome, bundle] = await repo.search({
     resourceType: 'User',
-    filters: [{
-      code: 'email',
-      operator: Operator.EQUALS,
-      value: email
-    }]
+    filters: [
+      {
+        code: 'email',
+        operator: Operator.EQUALS,
+        value: email,
+      },
+    ],
   });
 
   if (!isOk(outcome)) {

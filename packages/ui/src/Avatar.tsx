@@ -22,22 +22,15 @@ export function Avatar(props: AvatarProps) {
   const imageUrl = resource && getImageSrc(resource);
   const innerContent = imageUrl ? <img src={imageUrl} alt={text} /> : initials;
   return (
-    <div
-      className={className}
-      style={{ backgroundColor: props.color }}
-      data-testid="avatar"
-    >
-      {props.link && resource ? (
-        <MedplumLink to={resource}>
-          {innerContent}
-        </MedplumLink>
-      ) : (
-        innerContent
-      )}
+    <div className={className} style={{ backgroundColor: props.color }} data-testid="avatar">
+      {props.link && resource ? <MedplumLink to={resource}>{innerContent}</MedplumLink> : innerContent}
     </div>
   );
 }
 
 function getInitials(text: string): string {
-  return text.split(' ').map(n => n[0]).join('');
+  return text
+    .split(' ')
+    .map((n) => n[0])
+    .join('');
 }

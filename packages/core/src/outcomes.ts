@@ -10,86 +10,100 @@ const ACCESS_DENIED = 'access-denied';
 export const allOk: OperationOutcome = {
   resourceType: 'OperationOutcome',
   id: OK_ID,
-  issue: [{
-    severity: 'information',
-    code: 'information',
-    details: {
-      text: 'All OK'
-    }
-  }]
+  issue: [
+    {
+      severity: 'information',
+      code: 'information',
+      details: {
+        text: 'All OK',
+      },
+    },
+  ],
 };
 
 export const created: OperationOutcome = {
   resourceType: 'OperationOutcome',
   id: CREATED_ID,
-  issue: [{
-    severity: 'information',
-    code: 'information',
-    details: {
-      text: 'Created'
-    }
-  }]
+  issue: [
+    {
+      severity: 'information',
+      code: 'information',
+      details: {
+        text: 'Created',
+      },
+    },
+  ],
 };
 
 export const notModified: OperationOutcome = {
   resourceType: 'OperationOutcome',
   id: NOT_MODIFIED_ID,
-  issue: [{
-    severity: 'information',
-    code: 'information',
-    details: {
-      text: 'Not Modified'
-    }
-  }]
+  issue: [
+    {
+      severity: 'information',
+      code: 'information',
+      details: {
+        text: 'Not Modified',
+      },
+    },
+  ],
 };
 
 export const notFound: OperationOutcome = {
   resourceType: 'OperationOutcome',
   id: NOT_FOUND_ID,
-  issue: [{
-    severity: 'error',
-    code: 'not-found',
-    details: {
-      text: 'Not found'
-    }
-  }]
+  issue: [
+    {
+      severity: 'error',
+      code: 'not-found',
+      details: {
+        text: 'Not found',
+      },
+    },
+  ],
 };
 
 export const gone: OperationOutcome = {
   resourceType: 'OperationOutcome',
   id: GONE_ID,
-  issue: [{
-    severity: 'error',
-    code: 'gone',
-    details: {
-      text: 'Gone'
-    }
-  }]
+  issue: [
+    {
+      severity: 'error',
+      code: 'gone',
+      details: {
+        text: 'Gone',
+      },
+    },
+  ],
 };
 
 export const accessDenied: OperationOutcome = {
   resourceType: 'OperationOutcome',
   id: ACCESS_DENIED,
-  issue: [{
-    severity: 'error',
-    code: 'access-denied',
-    details: {
-      text: 'Access Denied'
-    }
-  }]
-}
+  issue: [
+    {
+      severity: 'error',
+      code: 'access-denied',
+      details: {
+        text: 'Access Denied',
+      },
+    },
+  ],
+};
 
 export function badRequest(details: string, expression?: string): OperationOutcome {
   return {
     resourceType: 'OperationOutcome',
-    issue: [{
-      severity: 'error',
-      code: 'invalid',
-      details: {
-        text: details
+    issue: [
+      {
+        severity: 'error',
+        code: 'invalid',
+        details: {
+          text: details,
+        },
+        expression: expression ? [expression] : undefined,
       },
-      expression: (expression ? [expression] : undefined)
-    }]
+    ],
   };
 }
 

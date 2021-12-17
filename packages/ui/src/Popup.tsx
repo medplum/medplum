@@ -35,16 +35,18 @@ export function Popup(props: PopupProps) {
   // If the user clicks outside of the popup, close it
   useEffect(() => {
     function handleClick(e: Event) {
-      if (propsRef.current?.visible &&
+      if (
+        propsRef.current?.visible &&
         propsRef.current?.autoClose &&
-        ref?.current && !ref.current.contains(e.target as Node)) {
+        ref?.current &&
+        !ref.current.contains(e.target as Node)
+      ) {
         props.onClose();
       }
     }
 
     document.addEventListener('click', handleClick, true);
     return () => document.removeEventListener('click', handleClick, true);
-
   }, []);
 
   // Listen for changes in the location
@@ -56,7 +58,7 @@ export function Popup(props: PopupProps) {
   }, [location]);
 
   const style: React.CSSProperties = {
-    display: props.visible ? 'block' : 'none'
+    display: props.visible ? 'block' : 'none',
   };
 
   if (props.x !== undefined && props.y !== undefined) {
@@ -64,13 +66,13 @@ export function Popup(props: PopupProps) {
     const height = window.innerHeight;
 
     if (props.x > width - 250) {
-      style.right = (width - props.x) + 'px';
+      style.right = width - props.x + 'px';
     } else {
       style.left = props.x + 'px';
     }
 
     if (props.y > height - 300) {
-      style.bottom = (height - props.y) + 'px';
+      style.bottom = height - props.y + 'px';
     } else {
       style.top = props.y + 'px';
     }
@@ -79,16 +81,14 @@ export function Popup(props: PopupProps) {
   return (
     <>
       {props.modal && (
-        <div
-          className={props.visible ? 'medplum-backdrop active' : 'medplum-backdrop'}
-          onClick={props.onClose}
-        />
+        <div className={props.visible ? 'medplum-backdrop active' : 'medplum-backdrop'} onClick={props.onClose} />
       )}
       <div
         ref={ref}
         className={'medplum-popup ' + (props.visible ? props.activeClassName : props.inactiveClassName)}
         style={style}
-        data-testid="popup">
+        data-testid="popup"
+      >
         {props.children}
       </div>
     </>

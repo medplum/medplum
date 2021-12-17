@@ -9,12 +9,13 @@ export function ProjectPage() {
   const [error, setError] = useState();
 
   useEffect(() => {
-    medplum.get('admin/projects/' + id)
-      .then(response => {
+    medplum
+      .get('admin/projects/' + id)
+      .then((response) => {
         setResult(response);
         setLoading(false);
       })
-      .catch(reason => setError(reason));
+      .catch((reason) => setError(reason));
   }, [id]);
 
   if (error) {

@@ -1,4 +1,3 @@
-
 export const DEFAULT_IGNORED_PROPERTIES = [
   'id',
   'meta',
@@ -7,5 +6,5 @@ export const DEFAULT_IGNORED_PROPERTIES = [
   'text',
   'contained',
   'extension',
-  'modifierExtension'
+  'modifierExtension',
 ];

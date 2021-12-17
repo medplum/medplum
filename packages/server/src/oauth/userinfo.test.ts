@@ -12,7 +12,6 @@ const app = express();
 let client: ClientApplication;
 
 describe('OAuth2 UserInfo', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -33,7 +32,7 @@ describe('OAuth2 UserInfo', () => {
       redirect_uri: client.redirectUri as string,
       scope: 'openid profile email phone address',
       code_challenge: 'xyz',
-      code_challenge_method: 'plain'
+      code_challenge_method: 'plain',
     });
     const res = await request(app)
       .post('/oauth2/authorize?' + params.toString())
@@ -42,7 +41,7 @@ describe('OAuth2 UserInfo', () => {
         email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf',
-        state: 'xyz'
+        state: 'xyz',
       });
     expect(res.status).toBe(302);
     expect(res.headers.location).toBeDefined();
@@ -56,7 +55,7 @@ describe('OAuth2 UserInfo', () => {
       .send({
         grant_type: 'authorization_code',
         code: location.searchParams.get('code'),
-        code_verifier: 'xyz'
+        code_verifier: 'xyz',
       });
     expect(res2.status).toBe(200);
     expect(res2.body.access_token).toBeDefined();
@@ -80,7 +79,7 @@ describe('OAuth2 UserInfo', () => {
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
-      code_challenge_method: 'plain'
+      code_challenge_method: 'plain',
     });
     const res = await request(app)
       .post('/oauth2/authorize?' + params.toString())
@@ -89,7 +88,7 @@ describe('OAuth2 UserInfo', () => {
         email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf',
-        state: 'xyz'
+        state: 'xyz',
       });
     expect(res.status).toBe(302);
     expect(res.headers.location).toBeDefined();
@@ -103,7 +102,7 @@ describe('OAuth2 UserInfo', () => {
       .send({
         grant_type: 'authorization_code',
         code: location.searchParams.get('code'),
-        code_verifier: 'xyz'
+        code_verifier: 'xyz',
       });
     expect(res2.status).toBe(200);
     expect(res2.body.access_token).toBeDefined();
@@ -121,5 +120,4 @@ describe('OAuth2 UserInfo', () => {
     expect(res3.body.phone_number).toBeUndefined();
     expect(res3.body.address).toBeUndefined();
   });
-
 });

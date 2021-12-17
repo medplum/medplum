@@ -10,6 +10,10 @@ export default {
 
 export const Simple = () => (
   <Document>
-    <DiagnosticReportDisplay value={{ reference: `DiagnosticReport/${process.env.SAMPLE_DIAGNOSTIC_REPORT_ID}` }} />
+    <DiagnosticReportDisplay
+      value={{
+        reference: `DiagnosticReport/${process.env.SAMPLE_DIAGNOSTIC_REPORT_ID}`,
+      }}
+    />
   </Document>
 );

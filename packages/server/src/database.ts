@@ -18,7 +18,7 @@ export async function initDatabase(config: MedplumDatabaseConfig): Promise<void>
     port: config.port,
     database: config.dbname,
     user: config.username,
-    password: config.password
+    password: config.password,
   });
 
   let client: PoolClient | undefined;

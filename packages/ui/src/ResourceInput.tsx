@@ -38,15 +38,18 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
   return (
     <Autocomplete
       loadOptions={(input: string): Promise<T[]> => {
-        return medplum.search({
-          resourceType: resourceTypeRef.current,
-          filters: [{
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: input
-          }]
-        })
-          .then((bundle: Bundle) => (bundle.entry as BundleEntry[]).map(entry => entry.resource as T));
+        return medplum
+          .search({
+            resourceType: resourceTypeRef.current,
+            filters: [
+              {
+                code: 'name',
+                operator: Operator.EQUALS,
+                value: input,
+              },
+            ],
+          })
+          .then((bundle: Bundle) => (bundle.entry as BundleEntry[]).map((entry) => entry.resource as T));
       }}
       getId={(item: T) => {
         return item.id as string;

@@ -13,7 +13,7 @@ export default {
 export const Example = () => {
   const [visible, setVisible] = useState<boolean>(false);
   const [search, setSearch] = useState<SearchRequest>({
-    resourceType: 'Patient'
+    resourceType: 'Patient',
   });
 
   return (
@@ -22,9 +22,9 @@ export const Example = () => {
       <SearchControl
         search={search}
         checkboxesEnabled={true}
-        onLoad={e => console.log('onLoad', e)}
-        onClick={e => console.log('onClick', e)}
-        onChange={e => {
+        onLoad={(e) => console.log('onLoad', e)}
+        onClick={(e) => console.log('onClick', e)}
+        onChange={(e) => {
           console.log('onChange', e);
           setSearch(e.definition);
         }}
@@ -33,7 +33,7 @@ export const Example = () => {
         schema={{} as IndexedStructureDefinition}
         search={search}
         visible={visible}
-        onOk={e => setSearch(e)}
+        onOk={(e) => setSearch(e)}
         onCancel={() => setVisible(false)}
       />
     </>

@@ -18,42 +18,42 @@ export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.
           {
             request: {
               method: 'GET',
-              url: `${getReferenceString(resource)}/_history`
-            }
+              url: `${getReferenceString(resource)}/_history`,
+            },
           },
           {
             request: {
               method: 'GET',
-              url: `Communication?based-on=${getReferenceString(resource)}`
-            }
+              url: `Communication?based-on=${getReferenceString(resource)}`,
+            },
           },
           {
             request: {
               method: 'GET',
-              url: `Media?based-on=${getReferenceString(resource)}`
-            }
+              url: `Media?based-on=${getReferenceString(resource)}`,
+            },
           },
           {
             request: {
               method: 'GET',
-              url: `DiagnosticReport?based-on=${getReferenceString(resource)}`
-            }
-          }
-        ]
+              url: `DiagnosticReport?based-on=${getReferenceString(resource)}`,
+            },
+          },
+        ],
       })}
       createCommunication={(resource: ServiceRequest, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
         basedOn: [createReference(resource)],
         subject: resource.subject as Reference<Group | Patient>,
         sender: createReference(sender),
-        payload: [{ contentString: text }]
+        payload: [{ contentString: text }],
       })}
       createMedia={(resource: ServiceRequest, operator: ProfileResource, content: Attachment) => ({
         resourceType: 'Media',
         basedOn: [createReference(resource)],
         subject: resource.subject,
         operator: createReference(operator),
-        content
+        content,
       })}
     />
   );

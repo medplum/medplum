@@ -1,7 +1,18 @@
 import { isOk, Operator } from '@medplum/core';
 import { JsonWebKey } from '@medplum/fhirtypes';
 import { randomBytes } from 'crypto';
-import { exportJWK, generateKeyPair, importJWK, JWK, JWSHeaderParameters, JWTPayload, jwtVerify, JWTVerifyOptions, KeyLike, SignJWT } from 'jose';
+import {
+  exportJWK,
+  generateKeyPair,
+  importJWK,
+  JWK,
+  JWSHeaderParameters,
+  JWTPayload,
+  jwtVerify,
+  JWTVerifyOptions,
+  KeyLike,
+  SignJWT,
+} from 'jose';
 import { MedplumServerConfig } from '../config';
 import { repo } from '../fhir';
 import { logger } from '../logger';
@@ -85,7 +96,7 @@ export async function initKeys(config: MedplumServerConfig) {
 
   const [searchOutcome, searchResult] = await repo.search({
     resourceType: 'JsonWebKey',
-    filters: [{ code: 'active', operator: Operator.EQUALS, value: 'true' }]
+    filters: [{ code: 'active', operator: Operator.EQUALS, value: 'true' }],
   });
 
   if (!isOk(searchOutcome)) {
@@ -96,8 +107,7 @@ export async function initKeys(config: MedplumServerConfig) {
 
   if (searchResult?.entry && searchResult.entry.length > 0) {
     logger.info(`Loaded ${searchResult.entry.length} key(s) from the database`);
-    jsonWebKeys = searchResult.entry.map(entry => entry.resource as JsonWebKey);
-
+    jsonWebKeys = searchResult.entry.map((entry) => entry.resource as JsonWebKey);
   } else {
     // Generate a key pair
     // https://github.com/panva/jose/blob/HEAD/docs/functions/util_generate_key_pair.generatekeypair.md
@@ -107,7 +117,7 @@ export async function initKeys(config: MedplumServerConfig) {
     const [createOutcome, createResult] = await repo.createResource<JsonWebKey>({
       resourceType: 'JsonWebKey',
       active: true,
-      ...jwk
+      ...jwk,
     } as JsonWebKey);
 
     if (!isOk(createOutcome) || !createResult) {
@@ -129,7 +139,7 @@ export async function initKeys(config: MedplumServerConfig) {
       kty: 'RSA',
       use: 'sig',
       e: jwk.e,
-      n: jwk.n
+      n: jwk.n,
     };
 
     // Add to the JWKS (JSON Web Key Set)
@@ -137,16 +147,16 @@ export async function initKeys(config: MedplumServerConfig) {
     jwks.keys.push(publicKey);
 
     // Convert from JWK to PKCS and add to the collection of public keys
-    publicKeys[jwk.id as string] = await importJWK(publicKey) as KeyLike;
+    publicKeys[jwk.id as string] = (await importJWK(publicKey)) as KeyLike;
   }
 
   // Use the first key as the signing key
   signingKeyId = jsonWebKeys[0].id;
-  signingKey = await importJWK({
+  signingKey = (await importJWK({
     ...jsonWebKeys[0],
     alg: ALG,
     use: 'sig',
-  }) as KeyLike;
+  })) as KeyLike;
 }
 
 /**
@@ -227,7 +237,7 @@ function generateJwt(exp: '1h' | '2w', claims: JWTPayload): Promise<string> {
  * @param jwt The jwt token / bearer token.
  * @returns Returns the decoded claims on success.
  */
-export function verifyJwt(token: string): Promise<{ payload: JWTPayload, protectedHeader: JWSHeaderParameters }> {
+export function verifyJwt(token: string): Promise<{ payload: JWTPayload; protectedHeader: JWSHeaderParameters }> {
   const issuer = serverConfig?.issuer;
   if (!issuer) {
     return Promise.reject('Missing issuer');
@@ -235,7 +245,7 @@ export function verifyJwt(token: string): Promise<{ payload: JWTPayload, protect
 
   const verifyOptions: JWTVerifyOptions = {
     issuer,
-    algorithms: [ALG]
+    algorithms: [ALG],
   };
 
   return jwtVerify(token, getKeyForHeader, verifyOptions);
