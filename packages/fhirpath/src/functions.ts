@@ -535,11 +535,11 @@ export function toBoolean(input: any[]): boolean[] {
     }
   }
   if (typeof value === 'string') {
-    const lower = value.toLowerCase();
-    if (['true', 't', 'yes', 'y', '1', '1.0'].includes(lower)) {
+    const lowerStr = value.toLowerCase();
+    if (['true', 't', 'yes', 'y', '1', '1.0'].includes(lowerStr)) {
       return [true];
     }
-    if (['false', 'f', 'no', 'n', '0', '0.0'].includes(lower)) {
+    if (['false', 'f', 'no', 'n', '0', '0.0'].includes(lowerStr)) {
       return [false];
     }
   }
