@@ -1,4 +1,5 @@
-import { getDisplayString, getImageSrc, Reference, Resource } from '@medplum/core';
+import { getDisplayString, getImageSrc } from '@medplum/core';
+import { Reference, Resource } from '@medplum/fhirtypes';
 import React from 'react';
 import { MedplumLink } from './MedplumLink';
 import { useResource } from './useResource';

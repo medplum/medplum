@@ -1,4 +1,5 @@
-import { Address, formatAddress } from '@medplum/core';
+import { formatAddress } from '@medplum/core';
+import { Address } from '@medplum/fhirtypes';
 import React from 'react';
 
 export interface AddressDisplayProps {

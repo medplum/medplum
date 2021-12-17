@@ -1,4 +1,4 @@
-import { Bundle, Observation, Practitioner } from '@medplum/core';
+import { Bundle, Observation, Practitioner } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';

@@ -1,4 +1,5 @@
-import { buildTypeName, ElementDefinition, getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/core';
+import { buildTypeName, getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/core';
+import { ElementDefinition } from '@medplum/fhirtypes';
 import React from 'react';
 import { DEFAULT_IGNORED_PROPERTIES } from './constants';
 import { DescriptionList, DescriptionListEntry } from './DescriptionList';

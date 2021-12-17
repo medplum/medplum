@@ -1,4 +1,5 @@
-import { Attachment, createReference, Encounter, getReferenceString, ProfileResource, Reference, Resource } from '@medplum/core';
+import { createReference, getReferenceString, ProfileResource } from '@medplum/core';
+import { Attachment, Encounter, Reference, Resource } from '@medplum/fhirtypes';
 import React from 'react';
 import { ResourceTimeline } from './ResourceTimeline';
 

@@ -1,4 +1,5 @@
-import { Binary, MedplumClient } from '@medplum/core';
+import { MedplumClient } from '@medplum/core';
+import { Binary } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';

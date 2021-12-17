@@ -1,4 +1,5 @@
-import { capitalize, ElementDefinition, ElementDefinitionType, getPropertyDisplayName, IndexedStructureDefinition, OperationOutcome, Reference, Resource } from '@medplum/core';
+import { capitalize, getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/core';
+import { ElementDefinition, ElementDefinitionType, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { Button } from './Button';
 import { DEFAULT_IGNORED_PROPERTIES } from './constants';

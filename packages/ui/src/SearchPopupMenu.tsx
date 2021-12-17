@@ -1,4 +1,5 @@
-import { ElementDefinition, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
+import { IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
+import { ElementDefinition } from '@medplum/fhirtypes';
 import React from 'react';
 import { MenuItem } from './MenuItem';
 import { MenuSeparator } from './MenuSeparator';

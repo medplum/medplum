@@ -1,4 +1,5 @@
-import { allOk, badRequest, Bundle, BundleEntry, getReferenceString, getStatus, isOk, notFound, OperationOutcome, Resource } from '@medplum/core';
+import { allOk, badRequest, getReferenceString, getStatus, isOk, notFound } from '@medplum/core';
+import { Bundle, BundleEntry, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { URL } from 'url';
 import { Repository, RepositoryResult } from './repo';
 import { parseSearchUrl } from './search';

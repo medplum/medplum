@@ -1,4 +1,4 @@
-import { Bundle } from '@medplum/core';
+import { Bundle } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { Avatar } from './Avatar';
 import { useMedplum } from './MedplumProvider';

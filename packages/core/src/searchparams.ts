@@ -1,4 +1,4 @@
-import { SearchParameter } from './fhir';
+import { SearchParameter } from '@medplum/fhirtypes';
 import { IndexedStructureDefinition } from './types';
 import { capitalize } from './utils';
 

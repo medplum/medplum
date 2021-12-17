@@ -1,4 +1,5 @@
-import { assertOk, ClientApplication, createReference, getReferenceString, isOk, Login, Operator } from '@medplum/core';
+import { assertOk, createReference, getReferenceString, isOk, Operator } from '@medplum/core';
+import { ClientApplication, Login } from '@medplum/fhirtypes';
 import { createHash } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';

@@ -1,14 +1,14 @@
+import { Bundle, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import crypto, { randomUUID } from 'crypto';
 import { TextEncoder } from 'util';
 import { MedplumClient } from './client';
-import { Bundle, SearchParameter, StructureDefinition } from './fhir';
 import { stringify } from './utils';
 
 const defaultOptions = {
   clientId: 'xyz',
   baseUrl: 'https://x/',
   fetch: mockFetch
-}
+};
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',

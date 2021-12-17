@@ -1,28 +1,25 @@
 {
-  "name": "@medplum/core",
+  "name": "@medplum/fhirtypes",
   "version": "0.2.2",
-  "description": "Medplum TS/JS Library",
+  "description": "Medplum FHIR Type Definitions",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
   "homepage": "https://www.medplum.com/",
   "repository": {
     "type": "git",
     "url": "https://github.com/medplum/medplum.git",
-    "directory": "packages/core"
+    "directory": "packages/fhirtypes"
   },
   "scripts": {
-    "clean": "rimraf dist",
-    "build": "npm run clean && tsc",
-    "test": "jest",
-    "lint": "eslint src/ --ext .ts,.tsx"
-  },
-  "devDependencies": {
-    "@medplum/fhirtypes": "0.2.2"
+    "clean": "",
+    "build": "",
+    "test": "",
+    "lint": ""
   },
   "files": [
     "dist"
   ],
-  "main": "dist/index.js",
+  "main": "",
   "types": "dist/index.d.ts",
   "sideEffects": false,
   "keywords": [

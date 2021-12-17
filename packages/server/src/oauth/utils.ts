@@ -1,4 +1,5 @@
-import { AccessPolicy, allOk, assertOk, badRequest, BundleEntry, ClientApplication, createReference, getDateProperty, isNotFound, isOk, Login, notFound, OperationOutcome, Operator, ProfileResource, Project, ProjectMembership, Reference, User } from '@medplum/core';
+import { allOk, assertOk, badRequest, createReference, getDateProperty, isNotFound, isOk, notFound, Operator, ProfileResource } from '@medplum/core';
+import { AccessPolicy, BundleEntry, ClientApplication, Login, OperationOutcome, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import { JWTPayload } from 'jose';
 import { repo, RepositoryResult } from '../fhir';

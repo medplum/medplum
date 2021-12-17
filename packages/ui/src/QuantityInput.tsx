@@ -1,4 +1,4 @@
-import { Quantity } from '@medplum/core';
+import { Quantity } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { TextField } from './TextField';
 

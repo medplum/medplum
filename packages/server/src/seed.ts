@@ -1,5 +1,6 @@
-import { assertOk, Bundle, BundleEntry, createReference, Project, SearchParameter, User } from '@medplum/core';
+import { assertOk, createReference } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
+import { Bundle, BundleEntry, Project, SearchParameter, User } from '@medplum/fhirtypes';
 import { registerNew } from './auth/register';
 import { getConfig } from './config';
 import { repo } from './fhir';

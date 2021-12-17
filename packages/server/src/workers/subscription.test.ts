@@ -1,4 +1,5 @@
-import { assertOk, AuditEvent, Bot, getReferenceString, Observation, Operator, Patient, stringify, Subscription } from '@medplum/core';
+import { assertOk, getReferenceString, Operator, stringify } from '@medplum/core';
+import { AuditEvent, Bot, Observation, Patient, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue } from 'bullmq';
 import { createHmac, randomUUID } from 'crypto';
 import fetch from 'node-fetch';

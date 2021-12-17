@@ -1,4 +1,4 @@
-import { Device, Patient, Practitioner, Reference, RelatedPerson, Resource } from './fhir';
+import { Device, Patient, Practitioner, Reference, RelatedPerson, Resource } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
 
 export type ProfileResource = Patient | Practitioner | RelatedPerson;

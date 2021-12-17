@@ -1,4 +1,4 @@
-import { OperationOutcome, OperationOutcomeIssue } from '@medplum/core';
+import { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 
 export function getIssuesForExpression(
   outcome: OperationOutcome | undefined,

@@ -1,4 +1,5 @@
-import { accessDenied, AccessPolicy, allOk, assertOk, badRequest, Bundle, created, deepEquals, Filter, getSearchParameterDetails, gone, isGone, isNotFound, isOk, Login, Meta, notFound, notModified, OperationOutcome, Operator as FhirOperator, parseFhirPath, Reference, Resource, SearchParameter, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
+import { accessDenied, allOk, assertOk, badRequest, created, deepEquals, Filter, getSearchParameterDetails, gone, isGone, isNotFound, isOk, notFound, notModified, Operator as FhirOperator, parseFhirPath, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
+import { AccessPolicy, Bundle, Login, Meta, OperationOutcome, Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { applyPatch, Operation } from 'fast-json-patch';
 import validator from 'validator';
@@ -15,6 +16,9 @@ import { getStructureDefinitions } from './structure';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
+ * In practice, there will be one Repository per HTTP request.
+ * And the RepositoryContext represents the context of that request,
+ * such as "who is the current user?" and "what is the current project?"
  */
 export interface RepositoryContext {
   /**

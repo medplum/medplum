@@ -1,4 +1,5 @@
-import { createReference, Patient, Reference, Resource } from '@medplum/core';
+import { createReference } from '@medplum/core';
+import { Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';

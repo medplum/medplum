@@ -1,5 +1,5 @@
-import { CompartmentDefinition, CompartmentDefinitionResource, Reference, Resource } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
+import { CompartmentDefinition, CompartmentDefinitionResource, Reference, Resource } from '@medplum/fhirtypes';
 
 /**
  * Patient compartment definitions.

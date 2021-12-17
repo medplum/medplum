@@ -1,4 +1,5 @@
-import { isOk, JsonWebKey, Operator } from '@medplum/core';
+import { isOk, Operator } from '@medplum/core';
+import { JsonWebKey } from '@medplum/fhirtypes';
 import { randomBytes } from 'crypto';
 import { exportJWK, generateKeyPair, importJWK, JWK, JWSHeaderParameters, JWTPayload, jwtVerify, JWTVerifyOptions, KeyLike, SignJWT } from 'jose';
 import { MedplumServerConfig } from '../config';

@@ -1,4 +1,5 @@
-import { assertOk, Filter, Operator, Reference, Resource } from '@medplum/core';
+import { assertOk, Filter, Operator } from '@medplum/core';
+import { Reference, Resource } from '@medplum/fhirtypes';
 import {
   GraphQLBoolean,
   GraphQLFieldConfig,

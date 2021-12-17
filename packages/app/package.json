@@ -20,6 +20,7 @@
   },
   "devDependencies": {
     "@medplum/core": "0.2.2",
+    "@medplum/fhirtypes": "0.2.2",
     "@medplum/ui": "0.2.2",
     "@testing-library/jest-dom": "5.16.1",
     "@testing-library/react": "12.1.2",

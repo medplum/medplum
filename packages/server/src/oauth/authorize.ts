@@ -1,4 +1,5 @@
-import { ClientApplication, getDateProperty, isOk, Login, OperationOutcome, Operator } from '@medplum/core';
+import { getDateProperty, isOk, Operator } from '@medplum/core';
+import { ClientApplication, Login, OperationOutcome } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../async';
 import { repo } from '../fhir';

@@ -1,4 +1,5 @@
-import { Filter, IndexedStructureDefinition, Operator, SearchParameter, SearchRequest, stringify } from '@medplum/core';
+import { Filter, IndexedStructureDefinition, Operator, SearchRequest, stringify } from '@medplum/core';
+import { SearchParameter } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Dialog } from './Dialog';
 import { ReferenceInput } from './ReferenceInput';

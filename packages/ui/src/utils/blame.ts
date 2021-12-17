@@ -1,4 +1,5 @@
-import { Bundle, BundleEntry, Meta, stringify } from '@medplum/core';
+import { stringify } from '@medplum/core';
+import { Bundle, BundleEntry, Meta } from '@medplum/fhirtypes';
 import { diff } from './diff';
 
 export interface BlameRow {

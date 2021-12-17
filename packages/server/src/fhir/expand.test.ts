@@ -1,4 +1,4 @@
-import { OperationOutcome } from '@medplum/core';
+import { OperationOutcome } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp } from '../app';

@@ -1,4 +1,5 @@
-import { assertOk, badRequest, createReference, Login, ProfileResource, Project, Reference, User } from '@medplum/core';
+import { assertOk, badRequest, createReference, ProfileResource } from '@medplum/core';
+import { Login, Project, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { invalidRequest, repo, sendOutcome } from '../fhir';

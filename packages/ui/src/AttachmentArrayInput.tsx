@@ -1,4 +1,4 @@
-import { Attachment } from '@medplum/core';
+import { Attachment } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
 import { AttachmentDisplay } from './AttachmentDisplay';
 import { UploadButton } from './UploadButton';

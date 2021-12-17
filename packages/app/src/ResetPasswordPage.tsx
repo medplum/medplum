@@ -1,4 +1,4 @@
-import { OperationOutcome } from '@medplum/core';
+import { OperationOutcome } from '@medplum/fhirtypes';
 import { Button, Document, Form, FormSection, Logo, MedplumLink, TextField, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
 

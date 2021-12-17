@@ -1,4 +1,4 @@
-import { Reference, Resource } from '@medplum/core';
+import { Reference, Resource } from '@medplum/fhirtypes';
 import React from 'react';
 import { Avatar } from './Avatar';
 import { ResourceName } from './ResourceName';

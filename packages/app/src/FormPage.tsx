@@ -1,4 +1,4 @@
-import { Questionnaire } from '@medplum/core';
+import { Questionnaire } from '@medplum/fhirtypes';
 import { addQuestionnaireInitialValues, Document, Loading, QuestionnaireForm, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';

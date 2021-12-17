@@ -1,4 +1,5 @@
-import { CodeableConcept, ElementDefinition, stringify, ValueSet, ValueSetExpansion, ValueSetExpansionContains } from '@medplum/core';
+import { stringify } from '@medplum/core';
+import { CodeableConcept, ElementDefinition, ValueSet, ValueSetExpansion, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import React from 'react';
 import { Autocomplete } from './Autocomplete';
 import { useMedplum } from './MedplumProvider';

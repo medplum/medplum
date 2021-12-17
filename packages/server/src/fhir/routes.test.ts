@@ -1,4 +1,5 @@
-import { isOk, Meta, Patient } from '@medplum/core';
+import { isOk } from '@medplum/core';
+import { Meta, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';

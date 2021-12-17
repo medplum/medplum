@@ -1,4 +1,5 @@
-import { Filter, getPropertyDisplayName, IndexedStructureDefinition, Operator, Resource, SearchRequest, stringify } from '@medplum/core';
+import { Filter, getPropertyDisplayName, IndexedStructureDefinition, Operator, SearchRequest, stringify } from '@medplum/core';
+import { Resource } from '@medplum/fhirtypes';
 import React from 'react';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 

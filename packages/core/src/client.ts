@@ -1,10 +1,10 @@
 // PKCE auth ased on:
 // https://aws.amazon.com/blogs/security/how-to-add-authentication-single-page-web-application-with-amazon-cognito-oauth2-implementation/
 
+import { Binary, Bundle, Project, ProjectMembership, Reference, Resource, SearchParameter, StructureDefinition, Subscription, ValueSet } from '@medplum/fhirtypes';
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
-import { Binary, Bundle, Project, ProjectMembership, Reference, Resource, SearchParameter, StructureDefinition, Subscription, ValueSet } from './fhir';
 import { parseJWTPayload } from './jwt';
 import { isOk, OperationOutcomeError } from './outcomes';
 import { formatSearchQuery, Operator, SearchRequest } from './search';

@@ -1,4 +1,5 @@
-import { PropertyType, Questionnaire, QuestionnaireItem, QuestionnaireItemInitial } from '@medplum/core';
+import { PropertyType } from '@medplum/core';
+import { Questionnaire, QuestionnaireItem, QuestionnaireItemInitial } from '@medplum/fhirtypes';
 
 export enum QuestionnaireItemType {
   group = 'group',

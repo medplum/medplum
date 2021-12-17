@@ -1,4 +1,4 @@
-import { Bundle, Resource } from '@medplum/core';
+import { Bundle, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';

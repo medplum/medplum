@@ -1,4 +1,5 @@
-import { allOk, assertOk, badRequest, User } from '@medplum/core';
+import { allOk, assertOk, badRequest } from '@medplum/core';
+import { User } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { repo, sendOutcome } from '../fhir';

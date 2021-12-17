@@ -1,4 +1,4 @@
-import { Binary } from '@medplum/core';
+import { Binary } from '@medplum/fhirtypes';
 import crypto from 'crypto';
 import { getConfig } from '../config';
 

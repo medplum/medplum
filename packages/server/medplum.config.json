@@ -19,14 +19,14 @@
   "maxJsonSize": "1mb",
   "maxUploadSize": "10mb",
   "database": {
-    "host": "host.docker.internal",
+    "host": "localhost",
     "port": 5432,
     "dbname": "medplum",
     "username": "medplum",
     "password": "medplum"
   },
   "redis": {
-    "host": "host.docker.internal",
+    "host": "localhost",
     "port": 6379,
     "password": "medplum"
   }

@@ -1,4 +1,5 @@
-import { assertOk, ClientApplication } from '@medplum/core';
+import { assertOk } from '@medplum/core';
+import { ClientApplication } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';

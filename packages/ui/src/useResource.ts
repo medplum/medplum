@@ -1,4 +1,4 @@
-import { Device, Reference, Resource } from '@medplum/core';
+import { Device, Reference, Resource } from '@medplum/fhirtypes';
 import { useEffect, useState } from 'react';
 import { useMedplum } from './MedplumProvider';
 

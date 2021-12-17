@@ -1,4 +1,5 @@
-import { ElementDefinition, IndexedStructureDefinition, PropertyType } from '@medplum/core';
+import { IndexedStructureDefinition, PropertyType } from '@medplum/core';
+import { ElementDefinition } from '@medplum/fhirtypes';
 import React from 'react';
 import { AddressDisplay } from './AddressDisplay';
 import { AttachmentArrayDisplay } from './AttachmentArrayDisplay';

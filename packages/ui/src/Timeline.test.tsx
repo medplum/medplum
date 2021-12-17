@@ -1,4 +1,5 @@
-import { Communication, MedplumClient } from '@medplum/core';
+import { MedplumClient } from '@medplum/core';
+import { Communication } from '@medplum/fhirtypes';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';

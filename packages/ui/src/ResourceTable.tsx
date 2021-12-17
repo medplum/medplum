@@ -1,4 +1,5 @@
-import { getPropertyDisplayName, IndexedStructureDefinition, Reference, Resource } from '@medplum/core';
+import { getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/core';
+import { Reference, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { DEFAULT_IGNORED_PROPERTIES } from './constants';
 import { DescriptionList, DescriptionListEntry } from './DescriptionList';

@@ -1,4 +1,5 @@
-import { allOk, assertOk, badRequest, Bundle, BundleEntry, createReference, Operator, PasswordChangeRequest, User } from '@medplum/core';
+import { allOk, assertOk, badRequest, createReference, Operator } from '@medplum/core';
+import { Bundle, BundleEntry, PasswordChangeRequest, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { getConfig } from '../config';

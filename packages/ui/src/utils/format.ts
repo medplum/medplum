@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry, Resource } from '@medplum/core';
+import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
 
 /**
  * Returns a formatted date string.

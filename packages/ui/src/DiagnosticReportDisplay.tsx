@@ -1,4 +1,5 @@
-import { capitalize, DiagnosticReport, Observation, ObservationComponent, ObservationReferenceRange, Reference } from '@medplum/core';
+import { capitalize } from '@medplum/core';
+import { DiagnosticReport, Observation, ObservationComponent, ObservationReferenceRange, Reference } from '@medplum/fhirtypes';
 import React from 'react';
 import { CodeableConceptDisplay } from './CodeableConceptDisplay';
 import { MedplumLink } from './MedplumLink';

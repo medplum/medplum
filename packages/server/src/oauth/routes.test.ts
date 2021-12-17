@@ -1,4 +1,4 @@
-import { ClientApplication } from '@medplum/core';
+import { ClientApplication } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp } from '../app';

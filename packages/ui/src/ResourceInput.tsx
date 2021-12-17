@@ -1,4 +1,5 @@
-import { Bundle, BundleEntry, Operator, Reference, Resource } from '@medplum/core';
+import { Operator } from '@medplum/core';
+import { Bundle, BundleEntry, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Autocomplete } from './Autocomplete';
 import { Avatar } from './Avatar';

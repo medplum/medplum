@@ -1,4 +1,5 @@
-import { Attachment, AuditEvent, Bundle, BundleEntry, Communication, DiagnosticReport, Media, ProfileResource, Reference, Resource, stringify } from '@medplum/core';
+import { ProfileResource, stringify } from '@medplum/core';
+import { Attachment, AuditEvent, Bundle, BundleEntry, Communication, DiagnosticReport, Media, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { AttachmentDisplay } from './AttachmentDisplay';
 import { Button } from './Button';

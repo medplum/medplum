@@ -1,4 +1,5 @@
-import { assertOk, badRequest, getStatus, OperationOutcome } from '@medplum/core';
+import { assertOk, badRequest, getStatus } from '@medplum/core';
+import { OperationOutcome } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { graphqlHTTP } from 'express-graphql';
 import { Operation } from 'fast-json-patch';

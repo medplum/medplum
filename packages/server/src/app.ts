@@ -1,4 +1,5 @@
-import { badRequest, OperationOutcome } from '@medplum/core';
+import { badRequest } from '@medplum/core';
+import { OperationOutcome } from '@medplum/fhirtypes';
 import { json, raw, urlencoded } from 'body-parser';
 import cors from 'cors';
 import { Express, NextFunction, Request, Response } from 'express';

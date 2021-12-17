@@ -1,11 +1,10 @@
-import { assertOk, ClientApplication } from '@medplum/core';
-import { randomUUID } from 'crypto';
+import { ClientApplication } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { repo } from '../fhir';
+import { createTestClient } from '../jest.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 
@@ -20,14 +19,7 @@ describe('OAuth2 UserInfo', () => {
     await seedDatabase();
     await initApp(app);
     await initKeys(config);
-
-    const [outcome, resource] = await repo.createResource<ClientApplication>({
-      resourceType: 'ClientApplication',
-      secret: randomUUID(),
-      redirectUri: 'https://example.com/',
-    });
-    assertOk(outcome);
-    client = resource as ClientApplication;
+    client = await createTestClient();
   });
 
   afterAll(async () => {

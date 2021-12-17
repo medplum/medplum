@@ -1,4 +1,4 @@
-import { Bundle, Communication, Media, ServiceRequest } from '@medplum/core';
+import { Bundle, Communication, Media, ServiceRequest } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';

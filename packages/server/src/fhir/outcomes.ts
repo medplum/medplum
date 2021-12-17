@@ -1,4 +1,5 @@
-import { getStatus, OperationOutcome } from '@medplum/core';
+import { getStatus } from '@medplum/core';
+import { OperationOutcome } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Response } from 'express';
 import { Result, ValidationError } from 'express-validator';
