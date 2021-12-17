@@ -182,8 +182,8 @@ describe('FHIRPath functions', () => {
   });
 
   test('intersect', () => {
-    expect(functions.intersect([], undefined)).toEqual([]);
-    expect(functions.intersect([], null)).toEqual([]);
+    expect(functions.intersect([], undefined as any as Atom)).toEqual([]);
+    expect(functions.intersect([], null as any as Atom)).toEqual([]);
 
     const num1: Atom = { eval: () => 1 };
     expect(functions.intersect([], num1)).toEqual([]);
@@ -193,8 +193,8 @@ describe('FHIRPath functions', () => {
   });
 
   test('exclude', () => {
-    expect(functions.exclude([], undefined)).toEqual([]);
-    expect(functions.exclude([], null)).toEqual([]);
+    expect(functions.exclude([], undefined as any as Atom)).toEqual([]);
+    expect(functions.exclude([], null as any as Atom)).toEqual([]);
 
     const num1: Atom = { eval: () => 1 };
     expect(functions.exclude([], num1)).toEqual([]);
@@ -206,8 +206,8 @@ describe('FHIRPath functions', () => {
   // 5.4. Combining
 
   test('union', () => {
-    expect(functions.union([], undefined)).toEqual([]);
-    expect(functions.union([], null)).toEqual([]);
+    expect(functions.union([], undefined as any as Atom)).toEqual([]);
+    expect(functions.union([], null as any as Atom)).toEqual([]);
 
     const num1: Atom = { eval: () => 1 };
     expect(functions.union([], num1)).toEqual([1]);
@@ -217,8 +217,8 @@ describe('FHIRPath functions', () => {
   });
 
   test('combine', () => {
-    expect(functions.combine([], undefined)).toEqual([]);
-    expect(functions.combine([], null)).toEqual([]);
+    expect(functions.combine([], undefined as any as Atom)).toEqual([]);
+    expect(functions.combine([], null as any as Atom)).toEqual([]);
 
     const num1: Atom = { eval: () => 1 };
     expect(functions.combine([], num1)).toEqual([1]);
