@@ -43,8 +43,7 @@
     "mustache": "4.2.0",
     "node-fetch": "2.6.6",
     "pg": "8.7.1",
-    "validator": "13.7.0",
-    "winston": "3.3.3"
+    "validator": "13.7.0"
   },
   "devDependencies": {
     "@jest/test-sequencer": "27.4.5",
