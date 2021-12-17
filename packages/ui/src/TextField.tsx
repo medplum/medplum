@@ -11,7 +11,7 @@ export interface TextFieldProps {
   required?: boolean;
   autoFocus?: boolean;
   inputRef?: RefObject<HTMLInputElement>;
-  onChange?: (e: React.ChangeEvent) => void;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   outcome?: OperationOutcome;
   placeholder?: string;
   testid?: string;

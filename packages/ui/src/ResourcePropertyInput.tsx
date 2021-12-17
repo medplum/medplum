@@ -2,6 +2,7 @@ import { capitalize, IndexedStructureDefinition, PropertyType } from '@medplum/c
 import { ElementDefinition, ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { AddressInput } from './AddressInput';
+import { AnnotationInput } from './AnnotationInput';
 import { AttachmentArrayInput } from './AttachmentArrayInput';
 import { AttachmentInput } from './AttachmentInput';
 import { BackboneElementInput } from './BackboneElementInput';
@@ -180,6 +181,14 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.Address:
       return (
         <AddressInput
+          name={name}
+          defaultValue={value}
+          onChange={props.onChange}
+        />
+      );
+    case PropertyType.Annotation:
+      return (
+        <AnnotationInput
           name={name}
           defaultValue={value}
           onChange={props.onChange}
