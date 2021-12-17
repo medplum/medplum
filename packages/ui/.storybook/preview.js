@@ -1,5 +1,5 @@
-import React from 'react';
 import { MedplumClient } from '@medplum/core';
+import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { MedplumProvider } from '../src/MedplumProvider';
 import '../src/CssBaseline.css';
@@ -17,8 +17,7 @@ export const parameters = {
 }
 
 const medplum = new MedplumClient({
-  baseUrl: process.env.MEDPLUM_BASE_URL,
-  clientId: process.env.MEDPLUM_CLIENT_ID,
+  baseUrl: process.env.MEDPLUM_BASE_URL
 });
 
 export const decorators = [

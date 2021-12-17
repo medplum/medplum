@@ -52,6 +52,8 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
       return <pre>{value}</pre>
     case PropertyType.Address:
       return <AddressDisplay value={value} />;
+    case PropertyType.Annotation:
+      return <div>{value?.text}</div>;
     case PropertyType.Attachment:
       return <AttachmentDisplay value={value} maxWidth={props.maxWidth} />;
     case PropertyType.CodeableConcept:

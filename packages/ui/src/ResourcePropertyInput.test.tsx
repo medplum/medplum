@@ -1,5 +1,5 @@
 import { IndexedStructureDefinition } from '@medplum/core';
-import { Address, Attachment, CodeableConcept, ContactPoint, ElementDefinition, HumanName, Identifier } from '@medplum/fhirtypes';
+import { Address, Annotation, Attachment, CodeableConcept, ContactPoint, ElementDefinition, HumanName, Identifier } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
@@ -94,6 +94,15 @@ const observationValueProperty: ElementDefinition = {
   ]
 };
 
+const specimenNoteProperty: ElementDefinition = {
+  id: 'Specimen.note',
+  path: 'Specimen.note',
+  type: [{
+    code: 'Annotation'
+  }],
+  max: '*'
+};
+
 const schema: IndexedStructureDefinition = {
   types: {
     Patient: {
@@ -114,6 +123,12 @@ const schema: IndexedStructureDefinition = {
       display: 'Observation',
       properties: {
         valueInteger: observationValueProperty
+      }
+    },
+    Specimen: {
+      display: 'Specimen',
+      properties: {
+        note: specimenNoteProperty
       }
     }
   }
@@ -309,6 +324,20 @@ describe('ResourcePropertyInput', () => {
 
     expect(onChange).toHaveBeenCalledWith(123, 'valueInteger');
     onChange.mockClear();
+  });
+
+  test('Renders Annotation property', () => {
+    const note: Annotation[] = [{
+      text: 'This is a note'
+    }];
+
+    setup({
+      schema,
+      property: specimenNoteProperty,
+      name: 'note',
+      defaultValue: note
+    });
+    expect(screen.getByDisplayValue('This is a note')).toBeDefined();
   });
 
 });

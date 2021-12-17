@@ -1,5 +1,5 @@
 import { IndexedStructureDefinition } from '@medplum/core';
-import { Address, Attachment, CodeableConcept, ContactPoint, HumanName, Identifier, Quantity } from '@medplum/fhirtypes';
+import { Address, Annotation, Attachment, CodeableConcept, ContactPoint, HumanName, Identifier, Quantity } from '@medplum/fhirtypes';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
@@ -110,6 +110,22 @@ describe('ResourcePropertyDisplay', () => {
     );
 
     expect(screen.getByText('London')).toBeDefined();
+  });
+
+  test('Renders Annotation', () => {
+    const value: Annotation = {
+      text: 'hello'
+    };
+
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'Annotation' }] }}
+        value={value}
+      />
+    );
+
+    expect(screen.getByText('hello')).toBeDefined();
   });
 
   test('Renders Attachment', () => {

@@ -152,3 +152,15 @@ export const DeviceRequest = () => (
   </Document>
 );
 
+export const Specimen = () => (
+  <Document>
+    <ResourceForm
+      defaultValue={{
+        resourceType: 'Specimen'
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
