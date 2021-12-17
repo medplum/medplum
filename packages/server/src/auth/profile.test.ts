@@ -1,4 +1,5 @@
-import { assertOk, getReferenceString, Login, ProfileResource } from '@medplum/core';
+import { assertOk, getReferenceString, ProfileResource } from '@medplum/core';
+import { Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -105,7 +106,7 @@ describe('Profile', () => {
     const [readOutcome, login] = await repo.readResource<Login>('Login', res1.body.login);
     assertOk(readOutcome);
     await repo.updateResource({
-      ...login,
+      ...(login as Login),
       revoked: true
     });
 
@@ -136,7 +137,7 @@ describe('Profile', () => {
     const [readOutcome, login] = await repo.readResource<Login>('Login', res1.body.login);
     assertOk(readOutcome);
     await repo.updateResource({
-      ...login,
+      ...(login as Login),
       granted: true
     });
 
@@ -167,7 +168,7 @@ describe('Profile', () => {
     const [readOutcome, login] = await repo.readResource<Login>('Login', res1.body.login);
     assertOk(readOutcome);
     await repo.updateResource({
-      ...login,
+      ...(login as Login),
       project: {
         reference: `Project/${randomUUID()}`,
       },
@@ -202,8 +203,8 @@ describe('Profile', () => {
     expect(res1.body.code).toBeUndefined();
     expect(res1.body.memberships).toBeDefined();
     expect(res1.body.memberships.length).toBe(2);
-    expect(res1.body.memberships.find(p => p.profile.reference === getReferenceString(profile1))).toBeDefined();
-    expect(res1.body.memberships.find(p => p.profile.reference === getReferenceString(profile2))).toBeDefined();
+    expect(res1.body.memberships.find((p: any) => p.profile.reference === getReferenceString(profile1))).toBeDefined();
+    expect(res1.body.memberships.find((p: any) => p.profile.reference === getReferenceString(profile2))).toBeDefined();
 
     const res2 = await request(app)
       .post('/auth/profile')
@@ -231,8 +232,8 @@ describe('Profile', () => {
     expect(res1.body.code).toBeUndefined();
     expect(res1.body.memberships).toBeDefined();
     expect(res1.body.memberships.length).toBe(2);
-    expect(res1.body.memberships.find(p => p.profile.reference === getReferenceString(profile1))).toBeDefined();
-    expect(res1.body.memberships.find(p => p.profile.reference === getReferenceString(profile2))).toBeDefined();
+    expect(res1.body.memberships.find((p: any) => p.profile.reference === getReferenceString(profile1))).toBeDefined();
+    expect(res1.body.memberships.find((p: any) => p.profile.reference === getReferenceString(profile2))).toBeDefined();
 
     const res2 = await request(app)
       .post('/auth/profile')

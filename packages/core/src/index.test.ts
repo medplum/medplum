@@ -1,12 +1,12 @@
-import { Patient } from '.';
+import { MedplumClient } from '.';
 
 describe('Index', () => {
 
-  test('Patient import', () => {
-    const patient: Patient = {
-      resourceType: 'Patient'
-    };
-    expect(patient).toBeDefined();
+  test('MedplumClient import', () => {
+    const client = new MedplumClient({
+      fetch: jest.fn()
+    });
+    expect(client).toBeDefined();
   });
 });
 

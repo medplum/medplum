@@ -1,4 +1,4 @@
-import { ClientApplication, Patient } from '@medplum/core';
+import { ClientApplication, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';

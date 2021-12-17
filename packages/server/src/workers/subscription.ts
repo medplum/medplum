@@ -1,4 +1,5 @@
-import { assertOk, createReference, Filter, isGone, Operator, parseFhirPath, SearchRequest, stringify } from '@medplum/core';
+import { assertOk, createReference, Filter, isGone, Operator, SearchRequest, stringify } from '@medplum/core';
+import { parseFhirPath } from '@medplum/fhirpath';
 import { AuditEvent, Bot, BundleEntry, Extension, Resource, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import { createHmac } from 'crypto';

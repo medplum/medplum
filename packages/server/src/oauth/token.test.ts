@@ -160,7 +160,7 @@ describe('OAuth2 Token', () => {
       .type('form')
       .send({
         grant_type: 'client_credentials',
-        client_id: badClient.id,
+        client_id: badClient?.id,
         client_secret: 'wrong-client-secret'
       });
     expect(res.status).toBe(400);

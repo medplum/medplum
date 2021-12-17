@@ -1,5 +1,4 @@
 import { Quantity } from '@medplum/fhirtypes';
-import { deepEquals } from '../utils';
 
 /**
  * Ensures that the value is wrapped in an array.
@@ -199,4 +198,42 @@ export function isQuantity(input: any): boolean {
 
 export function isQuantityEquivalent(x: Quantity, y: Quantity): boolean {
   return Math.abs((x.value as number) - (y.value as number)) < 0.01 && (x.unit === y.unit || x.code === y.code || x.unit === y.code || x.code === y.unit);
+}
+
+/**
+ * Resource equality.
+ * Ignores meta.versionId and meta.lastUpdated.
+ * See: https://dmitripavlutin.com/how-to-compare-objects-in-javascript/#4-deep-equality
+ * @param object1 The first object.
+ * @param object2 The second object.
+ * @returns True if the objects are equal.
+ */
+export function deepEquals(object1: any, object2: any, path?: string): boolean {
+  let keys1 = Object.keys(object1);
+  let keys2 = Object.keys(object2);
+  if (path === 'meta') {
+    keys1 = keys1.filter(k => k !== 'versionId' && k !== 'lastUpdated' && k !== 'author');
+    keys2 = keys2.filter(k => k !== 'versionId' && k !== 'lastUpdated' && k !== 'author');
+  }
+  if (keys1.length !== keys2.length) {
+    return false;
+  }
+  for (const key of keys1) {
+    const val1 = object1[key];
+    const val2 = object2[key];
+    if (isObject(val1) && isObject(val2)) {
+      if (!deepEquals(val1, val2, key)) {
+        return false;
+      }
+    } else {
+      if (val1 !== val2) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+function isObject(object: any): boolean {
+  return object !== null && typeof object === 'object';
 }

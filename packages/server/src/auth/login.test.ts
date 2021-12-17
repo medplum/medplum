@@ -1,5 +1,6 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { ClientApplication, createReference } from '@medplum/core';
+import { createReference } from '@medplum/core';
+import { ClientApplication } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -223,9 +224,9 @@ describe('Login', () => {
     expect(res3.body.members).toBeDefined();
     expect(res3.body.members.length).toEqual(2);
 
-    const owner = res3.body.members.find(m => m.role === 'owner');
+    const owner = res3.body.members.find((m: any) => m.role === 'owner');
     expect(owner).toBeDefined();
-    const member = res3.body.members.find(m => m.role === 'member');
+    const member = res3.body.members.find((m: any) => m.role === 'member');
     expect(member).toBeDefined();
 
     // Get the new membership details
@@ -256,7 +257,7 @@ describe('Login', () => {
     expect(res6.body.members).toBeDefined();
     expect(res6.body.members.length).toEqual(2);
 
-    const member2 = res6.body.members.find(m => m.role === 'member');
+    const member2 = res6.body.members.find((m: any) => m.role === 'member');
     expect(member2).toBeDefined();
     expect(member2.accessPolicy).toBeDefined();
 

@@ -1,6 +1,6 @@
+import { Bundle, BundleEntry, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { Bundle, BundleEntry, Resource, SearchParameter } from './fhir';
 import { getSearchParameterDetails, SearchParameterType } from './searchparams';
 import { IndexedStructureDefinition, indexStructureDefinition } from './types';
 import { isLowerCase } from './utils';

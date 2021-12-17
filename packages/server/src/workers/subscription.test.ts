@@ -625,7 +625,7 @@ describe('Subscription Worker', () => {
     // At this point the job should be in the queue
     // But let's change the subscription status to something else
     const [updateOutcome] = await repo.updateResource<Subscription>({
-      ...subscription,
+      ...(subscription as Subscription),
       status: 'off'
     });
     expect(updateOutcome.id).toEqual('ok');
