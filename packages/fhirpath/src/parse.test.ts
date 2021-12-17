@@ -1,8 +1,5 @@
 import { readJson } from '@medplum/definitions';
-import { AuditEvent } from '../fhir/AuditEvent';
-import { Bundle, BundleEntry } from '../fhir/Bundle';
-import { Observation } from '../fhir/Observation';
-import { SearchParameter } from '../fhir/SearchParameter';
+import { AuditEvent, Bundle, BundleEntry, Observation, SearchParameter } from '@medplum/fhirtypes';
 import { parseFhirPath } from './parse';
 
 describe('FHIRPath parser', () => {

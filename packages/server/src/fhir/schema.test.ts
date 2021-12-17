@@ -1,5 +1,5 @@
-import { Resource } from "@medplum/core";
-import { validateResource, validateResourceType } from ".";
+import { Resource } from '@medplum/fhirtypes';
+import { validateResource, validateResourceType } from './schema';
 
 describe('FHIR schema', () => {
 

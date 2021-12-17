@@ -1,5 +1,4 @@
 export * from './client';
-export * from './fhirpath';
 export * from './format';
 export * from './outcomes';
 export * from './search';

@@ -387,7 +387,3 @@ export class FunctionAtom implements Atom {
     return this.impl(ensureArray(context), ...this.args);
   }
 }
-
-// export class ThisAtom implements Atom {
-
-// }

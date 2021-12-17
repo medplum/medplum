@@ -1,4 +1,4 @@
-import { Account, Observation, Patient, Reference } from '@medplum/core';
+import { Account, Observation, Patient, Reference } from '@medplum/fhirtypes';
 import { getPatientCompartmentProperties, getPatientCompartmentResourceTypes, getPatientId } from './patient';
 
 describe('FHIR Patient utils', () => {

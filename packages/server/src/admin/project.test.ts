@@ -72,9 +72,9 @@ describe('Project Admin routes', () => {
     expect(res3.body.members).toBeDefined();
     expect(res3.body.members.length).toEqual(2);
 
-    const owner = res3.body.members.find(m => m.role === 'owner');
+    const owner = res3.body.members.find((m: any) => m.role === 'owner');
     expect(owner).toBeDefined();
-    const member = res3.body.members.find(m => m.role === 'member');
+    const member = res3.body.members.find((m: any) => m.role === 'member');
     expect(member).toBeDefined();
 
     // Get the new membership details
@@ -126,7 +126,7 @@ describe('Project Admin routes', () => {
     expect(res8.body.members).toBeDefined();
     expect(res8.body.members.length).toEqual(2);
 
-    const admin = res8.body.members.find(m => m.role === 'admin');
+    const admin = res8.body.members.find((m: any) => m.role === 'admin');
     expect(admin).toBeDefined();
   });
 

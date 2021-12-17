@@ -1,4 +1,5 @@
-import { accessDenied, allOk, assertOk, badRequest, created, deepEquals, Filter, getSearchParameterDetails, gone, isGone, isNotFound, isOk, notFound, notModified, Operator as FhirOperator, parseFhirPath, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
+import { accessDenied, allOk, assertOk, badRequest, created, deepEquals, Filter, getSearchParameterDetails, gone, isGone, isNotFound, isOk, notFound, notModified, Operator as FhirOperator, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
+import { parseFhirPath } from '@medplum/fhirpath';
 import { AccessPolicy, Bundle, Login, Meta, OperationOutcome, Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { applyPatch, Operation } from 'fast-json-patch';

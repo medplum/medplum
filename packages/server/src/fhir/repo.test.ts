@@ -1,4 +1,5 @@
-import { AccessPolicy, assertOk, Bundle, ClientApplication, Communication, createReference, Encounter, getReferenceString, isOk, Login, Observation, Operator, Patient, RegisterRequest, Resource, SearchParameter, ServiceRequest, StructureDefinition } from '@medplum/core';
+import { assertOk, createReference, getReferenceString, isOk, Operator, RegisterRequest } from '@medplum/core';
+import { AccessPolicy, Bundle, ClientApplication, Communication, Encounter, Login, Observation, Patient, Resource, SearchParameter, ServiceRequest, StructureDefinition } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
@@ -221,12 +222,12 @@ describe('FHIR Repo', () => {
     expect(version2?.id).toEqual(version1?.id);
     expect(version2?.meta?.versionId).not.toEqual(version1?.meta?.versionId);
 
-    const [outcome3, history] = await repo.readHistory('Patient', version1?.id);
+    const [outcome3, history] = await repo.readHistory('Patient', version1?.id as string);
     expect(isOk(outcome3)).toBe(true);
     expect(history).toBeDefined();
-    expect(history.entry?.length).toBe(2);
-    expect(history.entry?.[0]?.resource?.id).toBe(version2?.id);
-    expect(history.entry?.[1]?.resource?.id).toBe(version1?.id);
+    expect(history?.entry?.length).toBe(2);
+    expect(history?.entry?.[0]?.resource?.id).toBe(version2?.id);
+    expect(history?.entry?.[1]?.resource?.id).toBe(version1?.id);
   });
 
   test('Update patient', async () => {
@@ -457,7 +458,7 @@ describe('FHIR Repo', () => {
 
     // But system cannot update the timestamp
     const [updateOutcome, patient2] = await repo.updateResource<Patient>({
-      ...patient1,
+      ...(patient1 as Patient),
       active: true,
       meta: {
         lastUpdated
@@ -1530,8 +1531,8 @@ describe('FHIR Repo', () => {
     });
     assertOk(outcome3);
     expect(bundle3?.entry?.length).toEqual(2);
-    expect(bundle3?.entry?.[0]?.resource?.id).toEqual(patient1.id);
-    expect(bundle3?.entry?.[1]?.resource?.id).toEqual(patient2.id);
+    expect(bundle3?.entry?.[0]?.resource?.id).toEqual(patient1?.id);
+    expect(bundle3?.entry?.[1]?.resource?.id).toEqual(patient2?.id);
 
     const [outcome4, bundle4] = await repo.search({
       resourceType: 'Patient',
@@ -1551,8 +1552,8 @@ describe('FHIR Repo', () => {
     });
     assertOk(outcome4);
     expect(bundle4?.entry?.length).toEqual(2);
-    expect(bundle4?.entry?.[0]?.resource?.id).toEqual(patient2.id);
-    expect(bundle4?.entry?.[1]?.resource?.id).toEqual(patient1.id);
+    expect(bundle4?.entry?.[0]?.resource?.id).toEqual(patient2?.id);
+    expect(bundle4?.entry?.[1]?.resource?.id).toEqual(patient1?.id);
   });
 
   test('Unsupported date search param', async () => {

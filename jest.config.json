@@ -37,6 +37,7 @@
   "projects": [
     "packages/app",
     "packages/core",
+    "packages/fhirpath",
     "packages/infra",
     "packages/server",
     "packages/ui"

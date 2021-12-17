@@ -26,6 +26,7 @@
     "@aws-sdk/client-secrets-manager": "3.43.0",
     "@medplum/core": "0.2.2",
     "@medplum/definitions": "0.2.2",
+    "@medplum/fhirpath": "0.2.2",
     "bcrypt": "5.0.1",
     "body-parser": "1.19.1",
     "bullmq": "1.57.4",

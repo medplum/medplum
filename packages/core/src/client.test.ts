@@ -291,7 +291,7 @@ describe('Client', () => {
     const client = new MedplumClient(defaultOptions);
 
     const loginResponse = await client.startLogin('admin@example.com', 'admin');
-    await client.processCode(loginResponse.code);
+    await client.processCode(loginResponse.code as string);
 
     const result = await client.get('expired');
     expect(result).toBeDefined();
@@ -304,7 +304,7 @@ describe('Client', () => {
     const onUnauthenticated = jest.fn();
     const client = new MedplumClient({ ...defaultOptions, onUnauthenticated });
     const loginResponse = await client.startLogin('admin@example.com', 'admin');
-    await expect(client.processCode(loginResponse.code)).rejects.toEqual('Failed to fetch tokens');
+    await expect(client.processCode(loginResponse.code as string)).rejects.toEqual('Failed to fetch tokens');
 
     const result = client.get('expired');
     await expect(result).rejects.toEqual('Invalid refresh token');
