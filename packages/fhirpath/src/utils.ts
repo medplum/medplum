@@ -214,13 +214,9 @@ export function isQuantityEquivalent(x: Quantity, y: Quantity): boolean {
  * @param object2 The second object.
  * @returns True if the objects are equal.
  */
-export function deepEquals(object1: any, object2: any, path?: string): boolean {
-  let keys1 = Object.keys(object1);
-  let keys2 = Object.keys(object2);
-  if (path === 'meta') {
-    keys1 = keys1.filter((k) => k !== 'versionId' && k !== 'lastUpdated' && k !== 'author');
-    keys2 = keys2.filter((k) => k !== 'versionId' && k !== 'lastUpdated' && k !== 'author');
-  }
+function deepEquals(object1: any, object2: any): boolean {
+  const keys1 = Object.keys(object1);
+  const keys2 = Object.keys(object2);
   if (keys1.length !== keys2.length) {
     return false;
   }
@@ -228,7 +224,7 @@ export function deepEquals(object1: any, object2: any, path?: string): boolean {
     const val1 = object1[key];
     const val2 = object2[key];
     if (isObject(val1) && isObject(val2)) {
-      if (!deepEquals(val1, val2, key)) {
+      if (!deepEquals(val1, val2)) {
         return false;
       }
     } else {
