@@ -2,11 +2,10 @@ import { Atom, LiteralAtom } from './atoms';
 import * as functions from './functions';
 
 const isEven: Atom = {
-  eval: num => [num % 2 === 0]
+  eval: (num) => [num % 2 === 0],
 };
 
 describe('FHIRPath functions', () => {
-
   // 5.1 Existence
 
   test('empty', () => {
@@ -477,13 +476,9 @@ describe('FHIRPath functions', () => {
   // 12. Formal Specifications
 
   test('type', () => {
-    expect(functions.type([true]))
-      .toEqual([{ namespace: 'System', name: 'Boolean' }]);
-    expect(functions.type([123]))
-      .toEqual([{ namespace: 'System', name: 'Integer' }]);
-    expect(functions.type([{ resourceType: 'Patient', id: '123' }]))
-      .toEqual([{ namespace: 'FHIR', name: 'Patient' }]);
+    expect(functions.type([true])).toEqual([{ namespace: 'System', name: 'Boolean' }]);
+    expect(functions.type([123])).toEqual([{ namespace: 'System', name: 'Integer' }]);
+    expect(functions.type([{ resourceType: 'Patient', id: '123' }])).toEqual([{ namespace: 'FHIR', name: 'Patient' }]);
     expect(functions.type([{}])).toEqual([null]);
   });
-
 });

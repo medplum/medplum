@@ -4,11 +4,8 @@ import React from 'react';
 import { HumanNameInput } from './HumanNameInput';
 
 describe('HumanNameInput', () => {
-
   test('Renders', () => {
-    render(
-      <HumanNameInput name="test" defaultValue={{ given: ['Alice'], family: 'Smith' }} />
-    );
+    render(<HumanNameInput name="test" defaultValue={{ given: ['Alice'], family: 'Smith' }} />);
 
     const given = screen.getByPlaceholderText('Given') as HTMLInputElement;
     expect(given).toBeDefined();
@@ -22,28 +19,36 @@ describe('HumanNameInput', () => {
   test('Change events', async () => {
     let lastValue = undefined;
 
-    render(
-      <HumanNameInput name="test" defaultValue={{}} onChange={value => lastValue = value} />
-    );
+    render(<HumanNameInput name="test" defaultValue={{}} onChange={(value) => (lastValue = value)} />);
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('use'), { target: { value: 'official' } });
+      fireEvent.change(screen.getByTestId('use'), {
+        target: { value: 'official' },
+      });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Prefix'), { target: { value: 'Mr' } });
+      fireEvent.change(screen.getByPlaceholderText('Prefix'), {
+        target: { value: 'Mr' },
+      });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Given'), { target: { value: 'Homer J' } });
+      fireEvent.change(screen.getByPlaceholderText('Given'), {
+        target: { value: 'Homer J' },
+      });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Family'), { target: { value: 'Simpson' } });
+      fireEvent.change(screen.getByPlaceholderText('Family'), {
+        target: { value: 'Simpson' },
+      });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Suffix'), { target: { value: 'Sr' } });
+      fireEvent.change(screen.getByPlaceholderText('Suffix'), {
+        target: { value: 'Sr' },
+      });
     });
 
     expect(lastValue).toMatchObject({
@@ -51,7 +56,7 @@ describe('HumanNameInput', () => {
       prefix: ['Mr'],
       given: ['Homer', 'J'],
       family: 'Simpson',
-      suffix: ['Sr']
+      suffix: ['Sr'],
     });
   });
 
@@ -59,14 +64,16 @@ describe('HumanNameInput', () => {
     let lastValue: HumanName | undefined = undefined;
 
     render(
-      <HumanNameInput name="test" defaultValue={{
-        use: 'official',
-        prefix: ['Mr'],
-        given: ['Homer', 'J'],
-        family: 'Simpson',
-        suffix: ['Sr']
-      }}
-        onChange={value => lastValue = value}
+      <HumanNameInput
+        name="test"
+        defaultValue={{
+          use: 'official',
+          prefix: ['Mr'],
+          given: ['Homer', 'J'],
+          family: 'Simpson',
+          suffix: ['Sr'],
+        }}
+        onChange={(value) => (lastValue = value)}
       />
     );
 
@@ -75,23 +82,30 @@ describe('HumanNameInput', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Prefix'), { target: { value: '' } });
+      fireEvent.change(screen.getByPlaceholderText('Prefix'), {
+        target: { value: '' },
+      });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Given'), { target: { value: '' } });
+      fireEvent.change(screen.getByPlaceholderText('Given'), {
+        target: { value: '' },
+      });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Family'), { target: { value: '' } });
+      fireEvent.change(screen.getByPlaceholderText('Family'), {
+        target: { value: '' },
+      });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Suffix'), { target: { value: '' } });
+      fireEvent.change(screen.getByPlaceholderText('Suffix'), {
+        target: { value: '' },
+      });
     });
 
     expect(lastValue).toBeDefined();
     expect(JSON.stringify(lastValue)).toEqual('{}');
   });
-
 });

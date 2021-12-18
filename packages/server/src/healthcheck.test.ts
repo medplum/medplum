@@ -11,7 +11,6 @@ jest.mock('ioredis');
 const app = express();
 
 describe('Health check', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -29,5 +28,4 @@ describe('Health check', () => {
     const res = await request(app).get('/healthcheck');
     expect(res.status).toBe(200);
   });
-
 });

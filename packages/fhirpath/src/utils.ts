@@ -23,7 +23,10 @@ export function applyMaybeArray(context: any, fn: (context: any) => any): any {
     return undefined;
   }
   if (Array.isArray(context)) {
-    return context.map(e => fn(e)).filter(e => !!e).flat();
+    return context
+      .map((e) => fn(e))
+      .filter((e) => !!e)
+      .flat();
   } else {
     return fn(context);
   }
@@ -197,7 +200,10 @@ export function isQuantity(input: any): boolean {
 }
 
 export function isQuantityEquivalent(x: Quantity, y: Quantity): boolean {
-  return Math.abs((x.value as number) - (y.value as number)) < 0.01 && (x.unit === y.unit || x.code === y.code || x.unit === y.code || x.code === y.unit);
+  return (
+    Math.abs((x.value as number) - (y.value as number)) < 0.01 &&
+    (x.unit === y.unit || x.code === y.code || x.unit === y.code || x.code === y.unit)
+  );
 }
 
 /**
@@ -208,13 +214,9 @@ export function isQuantityEquivalent(x: Quantity, y: Quantity): boolean {
  * @param object2 The second object.
  * @returns True if the objects are equal.
  */
-export function deepEquals(object1: any, object2: any, path?: string): boolean {
-  let keys1 = Object.keys(object1);
-  let keys2 = Object.keys(object2);
-  if (path === 'meta') {
-    keys1 = keys1.filter(k => k !== 'versionId' && k !== 'lastUpdated' && k !== 'author');
-    keys2 = keys2.filter(k => k !== 'versionId' && k !== 'lastUpdated' && k !== 'author');
-  }
+function deepEquals(object1: any, object2: any): boolean {
+  const keys1 = Object.keys(object1);
+  const keys2 = Object.keys(object2);
   if (keys1.length !== keys2.length) {
     return false;
   }
@@ -222,7 +224,7 @@ export function deepEquals(object1: any, object2: any, path?: string): boolean {
     const val1 = object1[key];
     const val2 = object2[key];
     if (isObject(val1) && isObject(val2)) {
-      if (!deepEquals(val1, val2, key)) {
+      if (!deepEquals(val1, val2)) {
         return false;
       }
     } else {

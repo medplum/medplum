@@ -12,7 +12,6 @@ import { compareArrays } from './util';
  * Each identifier is represented as a separate row in the "Identifier" table.
  */
 export class IdentifierTable implements LookupTable {
-
   /**
    * Returns the table name.
    * @returns The table name.
@@ -37,9 +36,7 @@ export class IdentifierTable implements LookupTable {
   async deleteResource(resource: Resource): Promise<void> {
     const resourceId = resource.id as string;
     const client = getClient();
-    await new DeleteQuery('Identifier')
-      .where('resourceId', Operator.EQUALS, resourceId)
-      .execute(client);
+    await new DeleteQuery('Identifier').where('resourceId', Operator.EQUALS, resourceId).execute(client);
   }
 
   /**
@@ -76,7 +73,7 @@ export class IdentifierTable implements LookupTable {
           index: i,
           content: stringify(identifier),
           system: identifier.system,
-          value: identifier.value
+          value: identifier.value,
         }).execute(client);
       }
     }
@@ -96,10 +93,7 @@ export class IdentifierTable implements LookupTable {
    * @param filter The search filter details.
    */
   addWhere(selectQuery: SelectQuery, filter: Filter): void {
-    selectQuery.where(
-      { tableName: 'Identifier', columnName: 'value' },
-      Operator.EQUALS,
-      filter.value);
+    selectQuery.where({ tableName: 'Identifier', columnName: 'value' }, Operator.EQUALS, filter.value);
   }
 
   /**
@@ -108,9 +102,7 @@ export class IdentifierTable implements LookupTable {
    * @param sortRule The sort rule details.
    */
   addOrderBy(selectQuery: SelectQuery, sortRule: SortRule): void {
-    selectQuery.orderBy(
-      { tableName: 'Identifier', columnName: 'value' },
-      sortRule.descending);
+    selectQuery.orderBy({ tableName: 'Identifier', columnName: 'value' }, sortRule.descending);
   }
 
   /**
@@ -124,6 +116,6 @@ export class IdentifierTable implements LookupTable {
       .where('resourceId', Operator.EQUALS, resourceId)
       .orderBy('index')
       .execute(getClient())
-      .then(result => result.map(row => JSON.parse(row.content) as Identifier));
+      .then((result) => result.map((row) => JSON.parse(row.content) as Identifier));
   }
 }

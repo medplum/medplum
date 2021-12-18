@@ -6,9 +6,5 @@ export interface FooterLinksProps {
 }
 
 export function FooterLinks(props: FooterLinksProps) {
-  return (
-    <div className="medplum-footer">
-      {props.children}
-    </div>
-  );
+  return <div className="medplum-footer">{props.children}</div>;
 }

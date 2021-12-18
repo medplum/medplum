@@ -26,20 +26,24 @@ export function QuantityInput(props: QuantityInputProps) {
             <TextField
               placeholder="Value"
               defaultValue={value?.value?.toString()}
-              onChange={e => setValueWrapper({
-                ...value,
-                value: tryParseNumber((e.currentTarget as HTMLInputElement).value)
-              })}
+              onChange={(e) =>
+                setValueWrapper({
+                  ...value,
+                  value: tryParseNumber((e.currentTarget as HTMLInputElement).value),
+                })
+              }
             />
           </td>
           <td>
             <TextField
               placeholder="Unit"
               defaultValue={value?.unit}
-              onChange={e => setValueWrapper({
-                ...value,
-                unit: (e.currentTarget as HTMLInputElement).value
-              })}
+              onChange={(e) =>
+                setValueWrapper({
+                  ...value,
+                  unit: (e.currentTarget as HTMLInputElement).value,
+                })
+              }
             />
           </td>
         </tr>

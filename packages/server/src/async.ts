@@ -12,5 +12,5 @@ import { NextFunction, Request, RequestHandler, Response } from 'express';
 export function asyncWrap(callback: (req: Request, res: Response, next: NextFunction) => Promise<any>): RequestHandler {
   return function (req: Request, res: Response, next: NextFunction): void {
     callback(req, res, next).catch(next);
-  }
+  };
 }

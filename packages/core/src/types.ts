@@ -120,7 +120,10 @@ export interface TypeSchema {
  * @param structureDefinition The original StructureDefinition.
  * @return An indexed IndexedStructureDefinition.
  */
-export function indexStructureDefinition(structureDefinition: StructureDefinition, output?: IndexedStructureDefinition): IndexedStructureDefinition {
+export function indexStructureDefinition(
+  structureDefinition: StructureDefinition,
+  output?: IndexedStructureDefinition
+): IndexedStructureDefinition {
   const typeName = structureDefinition.name;
   if (!typeName) {
     throw new Error('Invalid StructureDefinition');
@@ -128,26 +131,26 @@ export function indexStructureDefinition(structureDefinition: StructureDefinitio
 
   if (!output) {
     output = {
-      types: {}
+      types: {},
     } as IndexedStructureDefinition;
   }
 
   output.types[typeName] = {
     display: typeName,
     description: structureDefinition.description,
-    properties: {}
+    properties: {},
   };
 
   const elements = structureDefinition.snapshot?.element;
   if (elements) {
     // Filter out any elements missing path or type
-    const filtered = elements.filter(e => e.path !== typeName && e.path);// && e.type && e.type.length > 0);
+    const filtered = elements.filter((e) => e.path !== typeName && e.path); // && e.type && e.type.length > 0);
 
     // First pass, build types
-    filtered.forEach(element => indexType(output as IndexedStructureDefinition, element));
+    filtered.forEach((element) => indexType(output as IndexedStructureDefinition, element));
 
     // Second pass, build properties
-    filtered.forEach(element => indexProperty(output as IndexedStructureDefinition, element));
+    filtered.forEach((element) => indexProperty(output as IndexedStructureDefinition, element));
   }
 
   return output;
@@ -173,7 +176,7 @@ function indexType(output: IndexedStructureDefinition, element: ElementDefinitio
       display: typeName,
       description: element.definition,
       parentType: buildTypeName(parts.slice(0, parts.length - 1)),
-      properties: {}
+      properties: {},
     };
   }
 }

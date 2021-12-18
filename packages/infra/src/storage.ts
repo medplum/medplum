@@ -17,14 +17,16 @@ export class Storage extends cdk.Construct {
     super(parent, id);
     this.id = id;
 
-    const zone = route53.HostedZone.fromLookup(this, 'Zone', { domainName: DOMAIN_NAME });
+    const zone = route53.HostedZone.fromLookup(this, 'Zone', {
+      domainName: DOMAIN_NAME,
+    });
 
     // S3 bucket
     const storageBucket = new s3.Bucket(this, 'StorageBucket', {
       bucketName: STORAGE_BUCKET_NAME,
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      encryption: s3.BucketEncryption.S3_MANAGED
+      encryption: s3.BucketEncryption.S3_MANAGED,
     });
 
     // Access Identity for CloudFront to access S3
@@ -38,9 +40,7 @@ export class Storage extends cdk.Construct {
 
     // Authorized key group for presigned URLs
     const keyGroup = new cloudfront.KeyGroup(this, 'StorageKeyGroup', {
-      items: [
-        publicKey,
-      ],
+      items: [publicKey],
     });
 
     // CloudFront distribution
@@ -48,9 +48,7 @@ export class Storage extends cdk.Construct {
       defaultBehavior: {
         origin: new origins.S3Origin(storageBucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        trustedKeyGroups: [
-          keyGroup,
-        ],
+        trustedKeyGroups: [keyGroup],
       },
       certificate: acm.Certificate.fromCertificateArn(this, 'StorageCertificate', STORAGE_SSL_CERT_ARN),
       domainNames: [STORAGE_DOMAIN_NAME],
@@ -60,7 +58,7 @@ export class Storage extends cdk.Construct {
     const record = new route53.ARecord(this, 'StorageAliasRecord', {
       recordName: STORAGE_DOMAIN_NAME,
       target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(distribution)),
-      zone
+      zone,
     });
 
     // Debug

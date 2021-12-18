@@ -49,7 +49,7 @@ export interface SelectProps {
   inputRef?: RefObject<HTMLSelectElement>;
   onChange?: (e: React.ChangeEvent) => void;
   children: React.ReactNode;
-  outcome?: OperationOutcome
+  outcome?: OperationOutcome;
 }
 
 export function Select(props: SelectProps) {
@@ -68,6 +68,8 @@ export function Select(props: SelectProps) {
       onChange={props.onChange}
       aria-invalid={invalid}
       aria-describedby={invalid ? props.name + '-errors' : ''}
-    >{props.children}</select>
+    >
+      {props.children}
+    </select>
   );
 }

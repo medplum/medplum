@@ -11,25 +11,29 @@ const patient: Patient = {
   resourceType: 'Patient',
   id: '123',
   meta: {
-    versionId: '456'
-  }
+    versionId: '456',
+  },
 };
 
 const patientHistory: Bundle = {
   resourceType: 'Bundle',
   type: 'history',
-  entry: [{
-    resource: patient
-  }]
+  entry: [
+    {
+      resource: patient,
+    },
+  ],
 };
 
 const practitioner: Practitioner = {
   resourceType: 'Practitioner',
   id: '123',
-  name: [{
-    given: ['John'],
-    family: 'Doe',
-  }]
+  name: [
+    {
+      given: ['John'],
+      family: 'Doe',
+    },
+  ],
 };
 
 const communications: Bundle = {
@@ -42,15 +46,17 @@ const communications: Bundle = {
         meta: {
           lastUpdated: new Date().toISOString(),
           author: {
-            reference: 'Practitioner/123'
-          }
+            reference: 'Practitioner/123',
+          },
         },
-        payload: [{
-          contentString: 'Hello world'
-        }]
-      }
-    }
-  ]
+        payload: [
+          {
+            contentString: 'Hello world',
+          },
+        ],
+      },
+    },
+  ],
 };
 
 const media: Bundle = {
@@ -63,16 +69,16 @@ const media: Bundle = {
         meta: {
           lastUpdated: new Date().toISOString(),
           author: {
-            reference: 'Practitioner/123'
-          }
+            reference: 'Practitioner/123',
+          },
         },
         content: {
           contentType: 'text/plain',
-          url: 'https://example.com/test.txt'
-        }
-      }
-    }
-  ]
+          url: 'https://example.com/test.txt',
+        },
+      },
+    },
+  ],
 };
 
 const serviceRequest: Bundle = {
@@ -85,52 +91,62 @@ const serviceRequest: Bundle = {
         meta: {
           lastUpdated: new Date().toISOString(),
           author: {
-            reference: 'Practitioner/123'
-          }
+            reference: 'Practitioner/123',
+          },
         },
         code: {
-          coding: [{
-            system: 'http://snomed.info/sct',
-            code: 'SERVICE_REQUEST_CODE',
-          }]
-        }
-      }
-    }
-  ]
+          coding: [
+            {
+              system: 'http://snomed.info/sct',
+              code: 'SERVICE_REQUEST_CODE',
+            },
+          ],
+        },
+      },
+    },
+  ],
 };
 
 const serviceRequestStructureBundle: Bundle = {
   resourceType: 'Bundle',
-  entry: [{
-    resource: {
-      resourceType: 'StructureDefinition',
-      name: 'ServiceRequest',
-      snapshot: {
-        element: [
-          {
-            path: 'ServiceRequest.id',
-            type: [{
-              code: 'code'
-            }]
-          },
-          {
-            path: 'ServiceRequest.code',
-            type: [{
-              code: 'CodeableConcept'
-            }]
-          }
-        ]
-      }
-    }
-  }]
+  entry: [
+    {
+      resource: {
+        resourceType: 'StructureDefinition',
+        name: 'ServiceRequest',
+        snapshot: {
+          element: [
+            {
+              path: 'ServiceRequest.id',
+              type: [
+                {
+                  code: 'code',
+                },
+              ],
+            },
+            {
+              path: 'ServiceRequest.code',
+              type: [
+                {
+                  code: 'CodeableConcept',
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
+  ],
 };
 
 const newComment: Communication = {
   resourceType: 'Communication',
   id: randomUUID(),
-  payload: [{
-    contentString: 'Test comment'
-  }]
+  payload: [
+    {
+      contentString: 'Test comment',
+    },
+  ],
 };
 
 const newMedia: Media = {
@@ -138,24 +154,24 @@ const newMedia: Media = {
   id: randomUUID(),
   content: {
     contentType: 'text/plain',
-    url: 'https://example.com/test2.txt'
-  }
+    url: 'https://example.com/test2.txt',
+  },
 };
 
 const medplum = new MockClient({
   'auth/login': {
-    'POST': {
-      profile: { reference: 'Practitioner/123' }
-    }
+    POST: {
+      profile: { reference: 'Practitioner/123' },
+    },
   },
   'fhir/R4/Patient/123': {
-    'GET': patient
+    GET: patient,
   },
   'fhir/R4/Practitioner/123': {
-    'GET': practitioner
+    GET: practitioner,
   },
   'fhir/R4': {
-    'POST': {
+    POST: {
       resourceType: 'Bundle',
       type: 'batch-response',
       entry: [
@@ -163,22 +179,21 @@ const medplum = new MockClient({
         { resource: communications },
         { resource: media },
         { resource: serviceRequest },
-      ]
-    }
+      ],
+    },
   },
   'fhir/R4/Communication': {
-    'POST': newComment
+    POST: newComment,
   },
   'fhir/R4/Media': {
-    'POST': newMedia
+    POST: newMedia,
   },
   'fhir/R4/StructureDefinition?name:exact=ServiceRequest': {
-    'GET': serviceRequestStructureBundle
+    GET: serviceRequestStructureBundle,
   },
 });
 
 describe('PatientTimeline', () => {
-
   const setup = (args: PatientTimelineProps) => {
     return render(
       <MemoryRouter>
@@ -225,12 +240,16 @@ describe('PatientTimeline', () => {
 
     // Enter the comment text
     await act(async () => {
-      fireEvent.change(screen.getByTestId('timeline-input'), { target: { value: 'Test comment' } });
+      fireEvent.change(screen.getByTestId('timeline-input'), {
+        target: { value: 'Test comment' },
+      });
     });
 
     // Submit the form
     await act(async () => {
-      fireEvent.submit(screen.getByTestId('timeline-form'), { target: { text: 'Test comment' } });
+      fireEvent.submit(screen.getByTestId('timeline-form'), {
+        target: { text: 'Test comment' },
+      });
     });
 
     // Wait for new comment
@@ -253,10 +272,10 @@ describe('PatientTimeline', () => {
 
     // Upload the file
     await act(async () => {
-      const files = [
-        new File(['hello'], 'hello.txt', { type: 'text/plain' })
-      ];
-      fireEvent.change(screen.getByTestId('upload-file-input'), { target: { files } });
+      const files = [new File(['hello'], 'hello.txt', { type: 'text/plain' })];
+      fireEvent.change(screen.getByTestId('upload-file-input'), {
+        target: { files },
+      });
     });
 
     // Wait for new comment
@@ -268,5 +287,4 @@ describe('PatientTimeline', () => {
     expect(items).toBeDefined();
     expect(items.length).toEqual(5);
   });
-
 });

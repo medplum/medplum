@@ -3,14 +3,13 @@ import React from 'react';
 import { HumanNameDisplay } from './HumanNameDisplay';
 
 describe('HumanNameDisplay', () => {
-
   test('Renders', () => {
     render(
       <HumanNameDisplay
         value={{
           given: ['Alice'],
           family: 'Smith',
-          use: 'official'
+          use: 'official',
         }}
       />
     );
@@ -24,7 +23,7 @@ describe('HumanNameDisplay', () => {
         value={{
           given: ['Alice'],
           family: 'Smith',
-          use: 'official'
+          use: 'official',
         }}
         options={{ all: true }}
       />
@@ -36,5 +35,4 @@ describe('HumanNameDisplay', () => {
   test('Handles null name', () => {
     expect(HumanNameDisplay({})).toBeNull();
   });
-
 });

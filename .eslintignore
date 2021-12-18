@@ -1,0 +1,9 @@
+node_modules/
+packages/**/dist/
+packages/docs/build/
+packages/docs/docusaurus.config.js
+packages/docs/sidebars.js
+babel.config.js
+jest.sequencer.js
+package-lock.json
+webpack.config.js

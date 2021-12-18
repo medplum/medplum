@@ -6,21 +6,11 @@
   "transform": {
     "^.+\\.(js|ts)$": "babel-jest"
   },
-  "moduleFileExtensions": [
-    "ts",
-    "tsx",
-    "js",
-    "jsx",
-    "json",
-    "node"
-  ],
+  "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
   "moduleNameMapper": {
     "\\.css$": "identity-obj-proxy"
   },
-  "testMatch": [
-    "**/src/**/*.test.ts",
-    "**/src/**/*.test.tsx"
-  ],
+  "testMatch": ["**/src/**/*.test.ts", "**/src/**/*.test.tsx"],
   "collectCoverage": true,
   "coverageDirectory": "coverage",
   "collectCoverageFrom": [
@@ -34,12 +24,5 @@
     "!packages/generator/**/*.ts",
     "!packages/server/src/migrations/**/*.ts"
   ],
-  "projects": [
-    "packages/app",
-    "packages/core",
-    "packages/fhirpath",
-    "packages/infra",
-    "packages/server",
-    "packages/ui"
-  ]
+  "projects": ["packages/app", "packages/core", "packages/fhirpath", "packages/infra", "packages/server", "packages/ui"]
 }

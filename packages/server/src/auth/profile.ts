@@ -33,7 +33,7 @@ export async function profileHandler(req: Request, res: Response) {
 
   // Find the membership for the user
   const memberships = await getUserMemberships(login?.user as Reference<User>);
-  const membership = memberships.find(m => m.id === req.body.profile);
+  const membership = memberships.find((m) => m.id === req.body.profile);
   if (!membership) {
     return sendOutcome(res, badRequest('Profile not found'));
   }
@@ -42,7 +42,9 @@ export async function profileHandler(req: Request, res: Response) {
   const [projectOutcome, project] = await repo.readReference<Project>(membership.project as Reference<Project>);
   assertOk(projectOutcome);
 
-  const [profileOutcome, profile] = await repo.readReference<ProfileResource>(membership.profile as Reference<ProfileResource>);
+  const [profileOutcome, profile] = await repo.readReference<ProfileResource>(
+    membership.profile as Reference<ProfileResource>
+  );
   assertOk(profileOutcome);
 
   // Update the login
@@ -56,6 +58,6 @@ export async function profileHandler(req: Request, res: Response) {
 
   return res.status(200).json({
     login: login?.id,
-    code: login?.code
+    code: login?.code,
   });
 }

@@ -88,7 +88,7 @@ async function importSnomed(client: Pool): Promise<void> {
     { id: '316791000119102', name: 'Pain in left knee' },
     { id: '316931000119104', name: 'Pain in right knee' },
     { id: '287045000', name: 'Pain in left arm' },
-    { id: '287046004', name: 'Pain in right arm' }
+    { id: '287046004', name: 'Pain in right arm' },
   ];
 
   for (const value of values) {
@@ -101,6 +101,6 @@ async function insertValueSetElement(client: Pool, system: string, code: string,
     id: randomUUID(),
     system,
     code,
-    display
+    display,
   }).execute(client);
 }

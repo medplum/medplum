@@ -8,41 +8,48 @@ import { ResourceInput, ResourceInputProps } from './ResourceInput';
 const alice: Patient = {
   resourceType: 'Patient',
   id: '123',
-  name: [{
-    given: ['Alice'],
-    family: 'Smith'
-  }]
+  name: [
+    {
+      given: ['Alice'],
+      family: 'Smith',
+    },
+  ],
 };
 
 const bob: Patient = {
   resourceType: 'Patient',
   id: '345',
-  name: [{
-    given: ['Bob'],
-    family: 'Jones'
-  }]
+  name: [
+    {
+      given: ['Bob'],
+      family: 'Jones',
+    },
+  ],
 };
 
 const searchResult: Bundle = {
   resourceType: 'Bundle',
-  entry: [{
-    resource: alice
-  }, {
-    resource: bob
-  }]
+  entry: [
+    {
+      resource: alice,
+    },
+    {
+      resource: bob,
+    },
+  ],
 };
 
 const medplum = new MockClient({
   'auth/login': {
-    'POST': {
-      profile: { reference: 'Practitioner/123' }
-    }
+    POST: {
+      profile: { reference: 'Practitioner/123' },
+    },
   },
   'fhir/R4/Patient?name=Alice': {
-    'GET': searchResult
+    GET: searchResult,
   },
   'fhir/R4/Patient/123': {
-    'GET': alice
+    GET: alice,
   },
 });
 
@@ -55,7 +62,6 @@ const setup = (args: ResourceInputProps) => {
 };
 
 describe('ResourceInput', () => {
-
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -70,7 +76,7 @@ describe('ResourceInput', () => {
   test('Renders empty', () => {
     setup({
       resourceType: 'Patient',
-      name: 'foo'
+      name: 'foo',
     });
     expect(screen.getByTestId('autocomplete')).toBeInTheDocument();
   });
@@ -81,8 +87,8 @@ describe('ResourceInput', () => {
         resourceType: 'Patient',
         name: 'foo',
         defaultValue: {
-          reference: 'Patient/123'
-        }
+          reference: 'Patient/123',
+        },
       });
     });
     expect(screen.getByTestId('autocomplete')).toBeInTheDocument();
@@ -91,7 +97,7 @@ describe('ResourceInput', () => {
   test('Use autocomplete', async () => {
     setup({
       resourceType: 'Patient',
-      name: 'foo'
+      name: 'foo',
     });
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
@@ -121,7 +127,7 @@ describe('ResourceInput', () => {
     setup({
       resourceType: 'Patient',
       name: 'foo',
-      onChange
+      onChange,
     });
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
@@ -145,5 +151,4 @@ describe('ResourceInput', () => {
     expect(screen.getByText('Alice Smith')).toBeDefined();
     expect(onChange).toHaveBeenCalled();
   });
-
 });

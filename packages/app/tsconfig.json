@@ -2,15 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "lib": [
-      "esnext",
-      "dom",
-      "dom.iterable"
-    ]
+    "lib": ["esnext", "dom", "dom.iterable"]
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "./jest.setup.ts"
-  ]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "./jest.setup.ts"]
 }

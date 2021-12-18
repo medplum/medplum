@@ -15,65 +15,73 @@ projectAdminRouter.post('/:projectId/invite', inviteValidators, asyncWrap(invite
  * Handles requests to "/admin/projects/{projectId}"
  * Returns project metadata and a list of members.
  */
-projectAdminRouter.get('/:projectId', asyncWrap(async (req: Request, res: Response) => {
-  const projectDetails = await verifyProjectAdmin(req, res);
-  if (!projectDetails) {
-    return res.sendStatus(404);
-  }
+projectAdminRouter.get(
+  '/:projectId',
+  asyncWrap(async (req: Request, res: Response) => {
+    const projectDetails = await verifyProjectAdmin(req, res);
+    if (!projectDetails) {
+      return res.sendStatus(404);
+    }
 
-  const { project, memberships } = projectDetails;
-  const members = [];
-  for (const membership of memberships) {
-    members.push({
-      membershipId: membership.id,
-      profile: membership.profile?.reference,
-      user: membership.user?.reference,
-      name: membership.profile?.display,
-      accessPolicy: membership.accessPolicy,
-      role: getRole(project, membership)
+    const { project, memberships } = projectDetails;
+    const members = [];
+    for (const membership of memberships) {
+      members.push({
+        membershipId: membership.id,
+        profile: membership.profile?.reference,
+        user: membership.user?.reference,
+        name: membership.profile?.display,
+        accessPolicy: membership.accessPolicy,
+        role: getRole(project, membership),
+      });
+    }
+
+    return res.status(200).json({
+      project: {
+        id: project?.id,
+        name: project?.name,
+      },
+      members,
     });
-  }
+  })
+);
 
-  return res.status(200).json({
-    project: {
-      id: project?.id,
-      name: project?.name
-    },
-    members
-  });
-}));
+projectAdminRouter.get(
+  '/:projectId/members/:membershipId',
+  asyncWrap(async (req: Request, res: Response) => {
+    const projectDetails = await verifyProjectAdmin(req, res);
+    if (!projectDetails) {
+      res.sendStatus(404);
+      return;
+    }
 
-projectAdminRouter.get('/:projectId/members/:membershipId', asyncWrap(async (req: Request, res: Response) => {
-  const projectDetails = await verifyProjectAdmin(req, res);
-  if (!projectDetails) {
-    res.sendStatus(404);
-    return;
-  }
+    const { membershipId } = req.params;
+    const [outcome, membership] = await repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+    assertOk(outcome);
+    res.status(getStatus(outcome)).json(membership);
+  })
+);
 
-  const { membershipId } = req.params;
-  const [outcome, membership] = await repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
-  assertOk(outcome);
-  res.status(getStatus(outcome)).json(membership);
-}));
+projectAdminRouter.post(
+  '/:projectId/members/:membershipId',
+  asyncWrap(async (req: Request, res: Response) => {
+    const projectDetails = await verifyProjectAdmin(req, res);
+    if (!projectDetails) {
+      res.sendStatus(404);
+      return;
+    }
 
-projectAdminRouter.post('/:projectId/members/:membershipId', asyncWrap(async (req: Request, res: Response) => {
-  const projectDetails = await verifyProjectAdmin(req, res);
-  if (!projectDetails) {
-    res.sendStatus(404);
-    return;
-  }
+    const resource = req.body;
+    if (resource?.resourceType !== 'ProjectMembership' || resource.id !== req.params.membershipId) {
+      res.sendStatus(400);
+      return;
+    }
 
-  const resource = req.body;
-  if (resource?.resourceType !== 'ProjectMembership' ||
-    resource.id !== req.params.membershipId) {
-    res.sendStatus(400);
-    return;
-  }
-
-  const [outcome, result] = await repo.updateResource(resource);
-  assertOk(outcome);
-  res.status(getStatus(outcome)).json(result);
-}));
+    const [outcome, result] = await repo.updateResource(resource);
+    assertOk(outcome);
+    res.status(getStatus(outcome)).json(result);
+  })
+);
 
 /**
  * Returns the role of the membership in the project.

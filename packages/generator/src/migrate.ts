@@ -1,4 +1,15 @@
-import { Bundle, BundleEntry, getSearchParameterDetails, IndexedStructureDefinition, indexStructureDefinition, isLowerCase, Resource, SearchParameterDetails, SearchParameterType, TypeSchema } from '@medplum/core';
+import {
+  Bundle,
+  BundleEntry,
+  getSearchParameterDetails,
+  IndexedStructureDefinition,
+  indexStructureDefinition,
+  isLowerCase,
+  Resource,
+  SearchParameterDetails,
+  SearchParameterType,
+  TypeSchema,
+} from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
@@ -17,15 +28,17 @@ export function main() {
 
 function buildStructureDefinitions(fileName: string): void {
   const resourceDefinitions = readJson(`fhir/r4/${fileName}`) as Bundle;
-  for (const entry of (resourceDefinitions.entry as BundleEntry[])) {
+  for (const entry of resourceDefinitions.entry as BundleEntry[]) {
     const resource = entry.resource as Resource;
-    if (resource.resourceType === 'StructureDefinition' &&
+    if (
+      resource.resourceType === 'StructureDefinition' &&
       resource.name &&
       resource.name !== 'Resource' &&
       resource.name !== 'BackboneElement' &&
       resource.name !== 'DomainResource' &&
       resource.name !== 'MetadataResource' &&
-      !isLowerCase(resource.name[0])) {
+      !isLowerCase(resource.name[0])
+    ) {
       indexStructureDefinition(resource, structureDefinitions);
     }
   }
@@ -39,12 +52,12 @@ function writeMigrations(): void {
 }
 
 function buildMigrationUp(b: FileBuilder): void {
-  b.append('import { PoolClient } from \'pg\';');
+  b.append("import { PoolClient } from 'pg';");
   b.newLine();
   b.append('export async function run(client: PoolClient) {');
   b.indentCount++;
 
-  v6Builder.append('import { PoolClient } from \'pg\';');
+  v6Builder.append("import { PoolClient } from 'pg';");
   v6Builder.newLine();
   v6Builder.append('export async function run(client: PoolClient) {');
   v6Builder.indentCount++;
@@ -109,7 +122,7 @@ function buildCreateTables(b: FileBuilder, resourceType: string, fhirType: TypeS
     b.append(columns[i] + (i !== columns.length - 1 ? ',' : ''));
   }
   b.indentCount--;
-  b.append(')`);')
+  b.append(')`);');
   b.newLine();
 
   buildSearchIndexes(b, resourceType);
@@ -121,7 +134,7 @@ function buildCreateTables(b: FileBuilder, resourceType: string, fhirType: TypeS
   b.append('"content" TEXT NOT NULL,');
   b.append('"lastUpdated" TIMESTAMP WITH TIME ZONE NOT NULL');
   b.indentCount--;
-  b.append(')`);')
+  b.append(')`);');
   b.newLine();
 }
 
@@ -151,15 +164,27 @@ function isLookupTableParam(searchParam: any) {
   }
 
   // HumanName
-  const nameParams = ['individual-given', 'individual-family',
-    'Patient-name', 'Person-name', 'Practitioner-name', 'RelatedPerson-name'];
+  const nameParams = [
+    'individual-given',
+    'individual-family',
+    'Patient-name',
+    'Person-name',
+    'Practitioner-name',
+    'RelatedPerson-name',
+  ];
   if (nameParams.includes(searchParam.id)) {
     return true;
   }
 
   // Telecom
-  const telecomParams = ['individual-telecom', 'individual-email', 'individual-phone',
-    'OrganizationAffiliation-telecom', 'OrganizationAffiliation-email', 'OrganizationAffiliation-phone'];
+  const telecomParams = [
+    'individual-telecom',
+    'individual-email',
+    'individual-phone',
+    'OrganizationAffiliation-telecom',
+    'OrganizationAffiliation-email',
+    'OrganizationAffiliation-phone',
+  ];
   if (telecomParams.includes(searchParam.id)) {
     return true;
   }

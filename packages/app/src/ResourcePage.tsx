@@ -1,16 +1,14 @@
+import { getDisplayString, OperationOutcomeError, stringify } from '@medplum/core';
 import {
   Bot,
   Bundle,
   DiagnosticReport,
-  getDisplayString,
   OperationOutcome,
-  OperationOutcomeError,
   Patient,
   Questionnaire,
   Reference,
   Resource,
-  stringify
-} from '@medplum/core';
+} from '@medplum/fhirtypes';
 import {
   Button,
   DefaultResourceTimeline,
@@ -33,7 +31,7 @@ import {
   TabPanel,
   TabSwitch,
   TitleBar,
-  useMedplum
+  useMedplum,
 } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -42,10 +40,12 @@ import { PatientHeader } from './PatientHeader';
 function getTabs(resourceType: string): string[] {
   const result = [];
 
-  if (resourceType === 'Encounter' ||
+  if (
+    resourceType === 'Encounter' ||
     resourceType === 'Patient' ||
     resourceType === 'Subscription' ||
-    resourceType === 'ServiceRequest') {
+    resourceType === 'ServiceRequest'
+  ) {
     result.push('Timeline');
   }
 
@@ -65,22 +65,28 @@ function getTabs(resourceType: string): string[] {
   return result;
 }
 
-function getPatient(resource: Resource): Patient | Reference | undefined {
+function getPatient(resource: Resource): Patient | Reference<Patient> | undefined {
   if (resource.resourceType === 'Patient') {
     return resource;
   }
-  if (resource.resourceType === 'DiagnosticReport' ||
+  if (
+    resource.resourceType === 'DiagnosticReport' ||
     resource.resourceType === 'Encounter' ||
     resource.resourceType === 'Observation' ||
-    resource.resourceType === 'ServiceRequest') {
-    return resource.subject;
+    resource.resourceType === 'ServiceRequest'
+  ) {
+    return resource.subject as Reference<Patient>;
   }
   return undefined;
 }
 
 export function ResourcePage() {
   const navigate = useNavigate();
-  const { resourceType, id, tab } = useParams() as { resourceType: string, id: string, tab: string };
+  const { resourceType, id, tab } = useParams() as {
+    resourceType: string;
+    id: string;
+    tab: string;
+  };
   const medplum = useMedplum();
   const [loading, setLoading] = useState<boolean>(true);
   const [value, setValue] = useState<Resource | undefined>();
@@ -90,12 +96,13 @@ export function ResourcePage() {
   function loadResource(): Promise<void> {
     setError(undefined);
     setLoading(true);
-    return medplum.read(resourceType, id)
-      .then(result => setValue(result))
+    return medplum
+      .read(resourceType, id)
+      .then((result) => setValue(result))
       .then(() => medplum.readHistory(resourceType, id))
-      .then(result => setHistoryBundle(result))
+      .then((result) => setHistoryBundle(result))
       .then(() => setLoading(false))
-      .catch(reason => {
+      .catch((reason) => {
         setError(reason);
         setLoading(false);
       });
@@ -124,38 +131,33 @@ export function ResourcePage() {
 
   return (
     <>
-      {patient && (
-        <PatientHeader patient={patient} />
-      )}
+      {patient && <PatientHeader patient={patient} />}
       {resourceType !== 'Patient' && (
         <TitleBar>
           <h1>{value ? getDisplayString(value) : `${resourceType} ${id}`}</h1>
         </TitleBar>
       )}
-      <TabBar
-        value={tab || defaultTab}
-        onChange={(name: string) => navigate(`/${resourceType}/${id}/${name}`)}>
-        {tabs.map(t => <Tab key={t} name={t.toLowerCase()} label={t} />)}
+      <TabBar value={tab || defaultTab} onChange={(name: string) => navigate(`/${resourceType}/${id}/${name}`)}>
+        {tabs.map((t) => (
+          <Tab key={t} name={t.toLowerCase()} label={t} />
+        ))}
       </TabBar>
       <Document>
-        {error && (
-          <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>
-        )}
+        {error && <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>}
         <TabSwitch value={tab || defaultTab}>
-          {tabs.map(t => (
+          {tabs.map((t) => (
             <TabPanel key={t} name={t.toLowerCase()}>
               <ResourceTab
                 name={t.toLowerCase()}
                 resource={value}
                 resourceHistory={historyBundle}
                 onSubmit={(resource: Resource) => {
-                  medplum.update(cleanResource(resource))
-                    .then(loadResource)
-                    .catch(setError);
+                  medplum.update(cleanResource(resource)).then(loadResource).catch(setError);
                 }}
                 onDelete={() => {
                   if (window.confirm('Are you sure you want to delete this resource?')) {
-                    medplum.deleteResource(resourceType, id)
+                    medplum
+                      .deleteResource(resourceType, id)
                       .then(() => navigate(`/${resourceType}`))
                       .catch(setError);
                   }
@@ -182,9 +184,7 @@ interface ResourceTabProps {
 function ResourceTab(props: ResourceTabProps): JSX.Element | null {
   switch (props.name) {
     case 'details':
-      return (
-        <ResourceTable value={props.resource} />
-      );
+      return <ResourceTable value={props.resource} />;
     case 'edit':
       return (
         <ResourceForm
@@ -195,18 +195,16 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
         />
       );
     case 'history':
-      return (
-        <ResourceHistoryTable history={props.resourceHistory} />
-      );
+      return <ResourceHistoryTable history={props.resourceHistory} />;
     case 'blame':
-      return (
-        <ResourceBlame history={props.resourceHistory} />
-      );
+      return <ResourceBlame history={props.resourceHistory} />;
     case 'json':
       return (
-        <Form onSubmit={(formData: Record<string, string>) => {
-          props.onSubmit(JSON.parse(formData.resource));
-        }}>
+        <Form
+          onSubmit={(formData: Record<string, string>) => {
+            props.onSubmit(JSON.parse(formData.resource));
+          }}
+        >
           <textarea
             id="resource"
             data-testid="resource-json"
@@ -218,60 +216,42 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
       );
     case 'editor':
       return (
-        <Form onSubmit={(formData: Record<string, string>) => {
-          props.onSubmit({
-            ...JSON.parse(stringify(props.resource)),
-            code: formData.code
-          });
-        }}>
-          <textarea
-            id="code"
-            data-testid="resource-code"
-            name="code"
-            defaultValue={(props.resource as Bot).code}
-          />
+        <Form
+          onSubmit={(formData: Record<string, string>) => {
+            props.onSubmit({
+              ...JSON.parse(stringify(props.resource)),
+              code: formData.code,
+            });
+          }}
+        >
+          <textarea id="code" data-testid="resource-code" name="code" defaultValue={(props.resource as Bot).code} />
           <Button type="submit">OK</Button>
         </Form>
       );
     case 'timeline':
       switch (props.resource.resourceType) {
         case 'Encounter':
-          return (
-            <EncounterTimeline encounter={props.resource} />
-          );
+          return <EncounterTimeline encounter={props.resource} />;
         case 'Patient':
-          return (
-            <PatientTimeline patient={props.resource} />
-          );
+          return <PatientTimeline patient={props.resource} />;
         case 'ServiceRequest':
-          return (
-            <ServiceRequestTimeline serviceRequest={props.resource} />
-          );
+          return <ServiceRequestTimeline serviceRequest={props.resource} />;
         default:
-          return (
-            <DefaultResourceTimeline resource={props.resource} />
-          );
+          return <DefaultResourceTimeline resource={props.resource} />;
       }
     case 'builder':
-      return (
-        <QuestionnaireBuilder
-          questionnaire={props.resource as Questionnaire}
-          onSubmit={props.onSubmit}
-        />
-      );
+      return <QuestionnaireBuilder questionnaire={props.resource as Questionnaire} onSubmit={props.onSubmit} />;
     case 'preview':
       return (
         <QuestionnaireForm
           questionnaire={props.resource as Questionnaire}
-          onSubmit={formData => {
+          onSubmit={(formData) => {
             console.log('formData', formData);
           }}
         />
       );
     case 'report':
-      return (
-        <DiagnosticReportDisplay value={props.resource as DiagnosticReport} />
-      );
+      return <DiagnosticReportDisplay value={props.resource as DiagnosticReport} />;
   }
   return null;
 }
@@ -291,11 +271,11 @@ function cleanResource(resource: Resource): Resource {
       ...meta,
       lastUpdated: undefined,
       versionId: undefined,
-      author: undefined
+      author: undefined,
     };
   }
   return {
     ...resource,
-    meta
+    meta,
   };
 }

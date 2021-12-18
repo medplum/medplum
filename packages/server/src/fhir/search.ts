@@ -15,15 +15,15 @@ import { URL } from 'url';
  * See: https://www.hl7.org/fhir/search.html#prefix
  */
 const prefixMap: Record<string, Operator> = {
-  'eq': Operator.EQUALS,
-  'ne': Operator.NOT_EQUALS,
-  'lt': Operator.LESS_THAN,
-  'le': Operator.LESS_THAN_OR_EQUALS,
-  'gt': Operator.GREATER_THAN,
-  'ge': Operator.GREATER_THAN_OR_EQUALS,
-  'sa': Operator.STARTS_AFTER,
-  'eb': Operator.ENDS_BEFORE,
-  'ap': Operator.APPROXIMATELY
+  eq: Operator.EQUALS,
+  ne: Operator.NOT_EQUALS,
+  lt: Operator.LESS_THAN,
+  le: Operator.LESS_THAN_OR_EQUALS,
+  gt: Operator.GREATER_THAN,
+  ge: Operator.GREATER_THAN_OR_EQUALS,
+  sa: Operator.STARTS_AFTER,
+  eb: Operator.ENDS_BEFORE,
+  ap: Operator.APPROXIMATELY,
 };
 
 /**
@@ -32,15 +32,15 @@ const prefixMap: Record<string, Operator> = {
  * See: https://www.hl7.org/fhir/search.html#modifiers
  */
 const modifierMap: Record<string, Operator> = {
-  'contains': Operator.CONTAINS,
-  'exact': Operator.EXACT,
-  'above': Operator.ABOVE,
-  'below': Operator.BELOW,
-  'text': Operator.TEXT,
-  'not': Operator.NOT_EQUALS,
-  'in': Operator.IN,
+  contains: Operator.CONTAINS,
+  exact: Operator.EXACT,
+  above: Operator.ABOVE,
+  below: Operator.BELOW,
+  text: Operator.TEXT,
+  not: Operator.NOT_EQUALS,
+  in: Operator.IN,
   'not-in': Operator.NOT_IN,
-  'of-type': Operator.OF_TYPE
+  'of-type': Operator.OF_TYPE,
 };
 
 /**
@@ -77,7 +77,7 @@ function getSearchMappings(): Record<string, Record<string, SearchParameter>> {
  */
 function buildMappings(): Record<string, Record<string, SearchParameter>> {
   const mappings: Record<string, Record<string, SearchParameter>> = {};
-  for (const entry of (getSearchParams().entry as BundleEntry[])) {
+  for (const entry of getSearchParams().entry as BundleEntry[]) {
     const searchParam = entry.resource as SearchParameter;
     if (!searchParam.expression || !searchParam.code || !searchParam.base) {
       // Ignore special case search parameters
@@ -176,7 +176,7 @@ class SearchParser {
         this.filters.push({
           code: '_id',
           operator: Operator.EQUALS,
-          value
+          value,
         });
         break;
 
@@ -192,13 +192,12 @@ class SearchParser {
         this.count = parseInt(value);
         break;
 
-      default:
-        {
-          const param = getSearchParameter(this.resourceType, code);
-          if (param) {
-            this.parseParameter(param, modifier, value);
-          }
+      default: {
+        const param = getSearchParameter(this.resourceType, code);
+        if (param) {
+          this.parseParameter(param, modifier, value);
         }
+      }
     }
   }
 
@@ -241,7 +240,7 @@ class SearchParser {
     this.filters.push({
       code: param.code as string,
       operator,
-      value
+      value,
     });
   }
 
@@ -249,7 +248,7 @@ class SearchParser {
     this.filters.push({
       code: param.code as string,
       operator: parseModifier(modifier),
-      value
+      value,
     });
   }
 
@@ -257,7 +256,7 @@ class SearchParser {
     this.filters.push({
       code: param.code as string,
       operator: Operator.EQUALS,
-      value: value
+      value: value,
     });
   }
 
@@ -269,12 +268,12 @@ class SearchParser {
       operator,
       value,
       unitSystem,
-      unitCode
+      unitCode,
     });
   }
 }
 
-function parsePrefix(input: string): { operator: Operator, value: string } {
+function parsePrefix(input: string): { operator: Operator; value: string } {
   const prefix = input.substring(0, 2);
   if (prefix in prefixMap) {
     return { operator: prefixMap[prefix], value: input.substring(2) };

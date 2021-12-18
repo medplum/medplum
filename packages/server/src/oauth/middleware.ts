@@ -37,7 +37,6 @@ async function authenticateBearerToken(req: Request, res: Response, next: NextFu
     res.locals.scope = claims.scope;
     res.locals.repo = await getRepoForLogin(login);
     next();
-
   } catch (err) {
     logger.error('verify error', err);
     res.sendStatus(401);
@@ -67,9 +66,9 @@ async function authenticateBasicAuth(req: Request, res: Response, next: NextFunc
   const login: Login = {
     resourceType: 'Login',
     project: {
-      reference: `Project/${client.meta?.project}`
+      reference: `Project/${client.meta?.project}`,
     },
-    profile: createReference(client)
+    profile: createReference(client),
   };
 
   res.locals.user = client.id;

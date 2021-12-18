@@ -10,11 +10,10 @@ import { MedplumProvider } from './MedplumProvider';
 const medplum = new MedplumClient({
   baseUrl: 'https://example.com/',
   clientId: 'my-client-id',
-  fetch: (() => undefined) as any
+  fetch: (() => undefined) as any,
 });
 
 describe('FooterLinks', () => {
-
   test('Renders', async () => {
     const onHelp = jest.fn();
 
@@ -34,5 +33,4 @@ describe('FooterLinks', () => {
 
     expect(onHelp).toHaveBeenCalled();
   });
-
 });

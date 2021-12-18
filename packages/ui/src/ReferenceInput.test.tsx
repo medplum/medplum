@@ -8,41 +8,48 @@ import { ReferenceInput, ReferenceInputProps } from './ReferenceInput';
 const alice: Patient = {
   resourceType: 'Patient',
   id: '123',
-  name: [{
-    given: ['Alice'],
-    family: 'Smith'
-  }]
+  name: [
+    {
+      given: ['Alice'],
+      family: 'Smith',
+    },
+  ],
 };
 
 const bob: Patient = {
   resourceType: 'Patient',
   id: '345',
-  name: [{
-    given: ['Bob'],
-    family: 'Jones'
-  }]
+  name: [
+    {
+      given: ['Bob'],
+      family: 'Jones',
+    },
+  ],
 };
 
 const searchResult: Bundle = {
   resourceType: 'Bundle',
-  entry: [{
-    resource: alice
-  }, {
-    resource: bob
-  }]
+  entry: [
+    {
+      resource: alice,
+    },
+    {
+      resource: bob,
+    },
+  ],
 };
 
 const medplum = new MockClient({
   'auth/login': {
-    'POST': {
-      profile: { reference: 'Practitioner/123' }
-    }
+    POST: {
+      profile: { reference: 'Practitioner/123' },
+    },
   },
   'fhir/R4/Patient?name=Alice': {
-    'GET': searchResult
+    GET: searchResult,
   },
   'fhir/R4/Patient/123': {
-    'GET': alice
+    GET: alice,
   },
 });
 
@@ -55,7 +62,6 @@ const setup = (args: ReferenceInputProps) => {
 };
 
 describe('ReferenceInput', () => {
-
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -70,7 +76,7 @@ describe('ReferenceInput', () => {
   test('Renders empty property', () => {
     setup({
       name: 'foo',
-      property: {}
+      property: {},
     });
     expect(screen.getByTestId('reference-input-resource-type-input')).toBeInTheDocument();
   });
@@ -81,8 +87,8 @@ describe('ReferenceInput', () => {
         name: 'foo',
         property: {},
         defaultValue: {
-          reference: 'Patient/123'
-        }
+          reference: 'Patient/123',
+        },
       });
     });
     expect(screen.getByTestId('reference-input-resource-type-input')).toBeInTheDocument();
@@ -93,14 +99,18 @@ describe('ReferenceInput', () => {
     setup({
       name: 'foo',
       property: {
-        type: [{
-          code: 'subject'
-        }]
-      }
+        type: [
+          {
+            code: 'subject',
+          },
+        ],
+      },
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('reference-input-resource-type-input'), { target: { value: 'Practitioner' } });
+      fireEvent.change(screen.getByTestId('reference-input-resource-type-input'), {
+        target: { value: 'Practitioner' },
+      });
     });
 
     expect(screen.getByTestId('reference-input-resource-type-input')).toBeInTheDocument();
@@ -110,14 +120,13 @@ describe('ReferenceInput', () => {
     setup({
       name: 'foo',
       property: {
-        type: [{
-          code: 'subject',
-          targetProfile: [
-            'Patient',
-            'Practitioner'
-          ]
-        }]
-      }
+        type: [
+          {
+            code: 'subject',
+            targetProfile: ['Patient', 'Practitioner'],
+          },
+        ],
+      },
     });
     expect(screen.getByTestId('reference-input-resource-type-select')).toBeInTheDocument();
   });
@@ -126,18 +135,19 @@ describe('ReferenceInput', () => {
     setup({
       name: 'foo',
       property: {
-        type: [{
-          code: 'subject',
-          targetProfile: [
-            'Patient',
-            'Practitioner'
-          ]
-        }]
-      }
+        type: [
+          {
+            code: 'subject',
+            targetProfile: ['Patient', 'Practitioner'],
+          },
+        ],
+      },
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('reference-input-resource-type-select'), { target: { value: 'Practitioner' } });
+      fireEvent.change(screen.getByTestId('reference-input-resource-type-select'), {
+        target: { value: 'Practitioner' },
+      });
     });
 
     expect(screen.getByTestId('reference-input-resource-type-select')).toBeInTheDocument();
@@ -147,14 +157,13 @@ describe('ReferenceInput', () => {
     setup({
       name: 'foo',
       property: {
-        type: [{
-          code: 'subject',
-          targetProfile: [
-            'Patient',
-            'Practitioner'
-          ]
-        }]
-      }
+        type: [
+          {
+            code: 'subject',
+            targetProfile: ['Patient', 'Practitioner'],
+          },
+        ],
+      },
     });
 
     // Select "Patient" resource type
@@ -189,15 +198,14 @@ describe('ReferenceInput', () => {
     setup({
       name: 'foo',
       property: {
-        type: [{
-          code: 'subject',
-          targetProfile: [
-            'Patient',
-            'Practitioner'
-          ]
-        }]
+        type: [
+          {
+            code: 'subject',
+            targetProfile: ['Patient', 'Practitioner'],
+          },
+        ],
       },
-      onChange
+      onChange,
     });
 
     // Select "Patient" resource type
@@ -228,5 +236,4 @@ describe('ReferenceInput', () => {
     expect(screen.getByText('Alice Smith')).toBeDefined();
     expect(onChange).toHaveBeenCalled();
   });
-
 });

@@ -18,11 +18,13 @@ export function AnnotationInput(props: AnnotationInputProps) {
   valueRef.current = value;
 
   function setText(text: string): void {
-    const newValue: Annotation = text ? {
-      text,
-      authorReference: author && createReference(author),
-      time: new Date().toISOString(),
-    } : {};
+    const newValue: Annotation = text
+      ? {
+          text,
+          authorReference: author && createReference(author),
+          time: new Date().toISOString(),
+        }
+      : {};
 
     setValue(newValue);
     if (props.onChange) {
@@ -36,7 +38,7 @@ export function AnnotationInput(props: AnnotationInputProps) {
       type="text"
       placeholder="Annotation text"
       defaultValue={value.text}
-      onChange={e => setText(e.currentTarget.value)}
+      onChange={(e) => setText(e.currentTarget.value)}
     />
   );
 }

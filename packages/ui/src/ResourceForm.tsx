@@ -29,32 +29,32 @@ export function ResourceForm(props: ResourceFormProps) {
   }, [defaultValue]);
 
   if (!schema || !value) {
-    return (
-      <div>Loading...</div>
-    );
+    return <div>Loading...</div>;
   }
 
   const typeSchema = schema.types[value.resourceType];
   if (!typeSchema) {
-    return (
-      <div>Schema not found</div>
-    );
+    return <div>Schema not found</div>;
   }
 
   return (
-    <form noValidate autoComplete="off" onSubmit={(e: React.FormEvent) => {
-      e.preventDefault();
-      if (props.onSubmit) {
-        props.onSubmit(value);
-      }
-    }}>
+    <form
+      noValidate
+      autoComplete="off"
+      onSubmit={(e: React.FormEvent) => {
+        e.preventDefault();
+        if (props.onSubmit) {
+          props.onSubmit(value);
+        }
+      }}
+    >
       <FormSection title="Resource Type">
         <input name="resourceType" type="text" defaultValue={value.resourceType} disabled={true} />
       </FormSection>
       <FormSection title="ID">
         <input name="id" type="text" defaultValue={value.id} disabled={true} />
       </FormSection>
-      {Object.entries(typeSchema.properties).map(entry => {
+      {Object.entries(typeSchema.properties).map((entry) => {
         const key = entry[0];
         if (DEFAULT_IGNORED_PROPERTIES.indexOf(key) >= 0) {
           return null;
@@ -66,7 +66,8 @@ export function ResourceForm(props: ResourceFormProps) {
             title={getPropertyDisplayName(property)}
             description={property.definition}
             htmlFor={key}
-            outcome={props.outcome}>
+            outcome={props.outcome}
+          >
             <ResourcePropertyInput
               schema={schema}
               property={property}
@@ -80,11 +81,19 @@ export function ResourceForm(props: ResourceFormProps) {
           </FormSection>
         );
       })}
-      <Button type="submit" size="large">OK</Button>
+      <Button type="submit" size="large">
+        OK
+      </Button>
       {props.onDelete && (
-        <Button type="button" size="large" onClick={() => {
-          (props.onDelete as (resource: Resource) => void)(value);
-        }}>Delete</Button>
+        <Button
+          type="button"
+          size="large"
+          onClick={() => {
+            (props.onDelete as (resource: Resource) => void)(value);
+          }}
+        >
+          Delete
+        </Button>
       )}
     </form>
   );
@@ -104,7 +113,13 @@ export function getDefaultValue(obj: any, key: string, elementDefinition: Elemen
   return undefined;
 }
 
-export function setPropertyValue(obj: any, key: string, propName: string, elementDefinition: ElementDefinition, value: any): any {
+export function setPropertyValue(
+  obj: any,
+  key: string,
+  propName: string,
+  elementDefinition: ElementDefinition,
+  value: any
+): any {
   const types = elementDefinition.type as ElementDefinitionType[];
   if (types.length > 1) {
     for (const type of types) {

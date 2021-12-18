@@ -56,14 +56,15 @@ export function useMedplumProfile(): ProfileResource | undefined {
 function createMedplumContext(medplum: MedplumClient): MedplumContext {
   const [state, setState] = useState({
     profile: medplum.getProfile(),
-    loading: false
+    loading: false,
   });
 
   useEffect(() => {
-    const eventListener = () => setState({
-      ...state,
-      profile: medplum.getProfile()
-    });
+    const eventListener = () =>
+      setState({
+        ...state,
+        profile: medplum.getProfile(),
+      });
 
     medplum.addEventListener('change', eventListener);
     return () => medplum.removeEventListeneer('change', eventListener);
@@ -71,6 +72,6 @@ function createMedplumContext(medplum: MedplumClient): MedplumContext {
 
   return {
     ...state,
-    medplum
+    medplum,
   };
 }

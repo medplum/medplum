@@ -40,10 +40,7 @@ const medplum = new MedplumClient({
 function App() {
   const profile = useMedplumProfile();
   return profile ? (
-    <GraphiQL
-      fetcher={async graphQLParams => medplum.graphql(graphQLParams)}
-      defaultQuery={HELP_TEXT}
-    />
+    <GraphiQL fetcher={async (graphQLParams) => medplum.graphql(graphQLParams)} defaultQuery={HELP_TEXT} />
   ) : (
     <Document width={450}>
       <SignInForm onSuccess={() => undefined} />
@@ -51,8 +48,9 @@ function App() {
   );
 }
 
-render((
+render(
   <MedplumProvider medplum={medplum}>
     <App />
-  </MedplumProvider>
-), document.getElementById('root'));
+  </MedplumProvider>,
+  document.getElementById('root')
+);

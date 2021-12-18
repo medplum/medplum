@@ -11,7 +11,6 @@ const app = express();
 let accessToken: string;
 
 describe('DICOM Routes', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -133,5 +132,4 @@ describe('DICOM Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
   });
-
 });

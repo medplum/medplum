@@ -10,31 +10,37 @@ import { MockClient } from './MockClient';
 const contactProperty: ElementDefinition = {
   id: 'Patient.contact',
   path: 'Patient.contact',
-  type: [{
-    code: 'BackboneElement'
-  }],
+  type: [
+    {
+      code: 'BackboneElement',
+    },
+  ],
   min: 0,
-  max: '*'
+  max: '*',
 };
 
 const idProperty: ElementDefinition = {
   id: 'Patient.contact.id',
   path: 'Patient.contact.id',
-  type: [{
-    code: 'string'
-  }],
+  type: [
+    {
+      code: 'string',
+    },
+  ],
   min: 0,
-  max: '1'
+  max: '1',
 };
 
 const nameProperty: ElementDefinition = {
   id: 'Patient.contact.name',
   path: 'Patient.contact.name',
-  type: [{
-    code: 'HumanName'
-  }],
+  type: [
+    {
+      code: 'HumanName',
+    },
+  ],
   min: 0,
-  max: '1'
+  max: '1',
 };
 
 const valueSetComposeProperty: ElementDefinition = {
@@ -45,13 +51,13 @@ const valueSetComposeProperty: ElementDefinition = {
   base: {
     path: 'ValueSet.compose',
     min: 0,
-    max: '1'
+    max: '1',
   },
   type: [
     {
-      code: 'BackboneElement'
-    }
-  ]
+      code: 'BackboneElement',
+    },
+  ],
 };
 
 const valueSetComposeLockedDateProperty: ElementDefinition = {
@@ -62,9 +68,9 @@ const valueSetComposeLockedDateProperty: ElementDefinition = {
   max: '1',
   type: [
     {
-      code: 'date'
-    }
-  ]
+      code: 'date',
+    },
+  ],
 };
 
 const valueSetComposeExcludeProperty: ElementDefinition = {
@@ -76,9 +82,9 @@ const valueSetComposeExcludeProperty: ElementDefinition = {
   base: {
     path: 'ValueSet.compose.exclude',
     min: 0,
-    max: '*'
+    max: '*',
   },
-  contentReference: '#ValueSet.compose.include'
+  contentReference: '#ValueSet.compose.include',
 };
 
 const schema: IndexedStructureDefinition = {
@@ -86,36 +92,35 @@ const schema: IndexedStructureDefinition = {
     Patient: {
       display: 'Patient',
       properties: {
-        contact: contactProperty
-      }
+        contact: contactProperty,
+      },
     },
     PatientContact: {
       display: 'Patient Contact',
       properties: {
         id: idProperty,
-        name: nameProperty
-      }
+        name: nameProperty,
+      },
     },
     ValueSet: {
       display: 'Value Set',
       properties: {
-        compose: valueSetComposeProperty
-      }
+        compose: valueSetComposeProperty,
+      },
     },
     ValueSetCompose: {
       display: 'Value Set Compose',
       properties: {
         lockedDate: valueSetComposeLockedDateProperty,
-        exclude: valueSetComposeExcludeProperty
-      }
-    }
-  }
+        exclude: valueSetComposeExcludeProperty,
+      },
+    },
+  },
 };
 
 const medplum = new MockClient({});
 
 describe('BackboneElementInput', () => {
-
   const setup = (args: BackboneElementInputProps) => {
     return render(
       <MemoryRouter>
@@ -130,7 +135,7 @@ describe('BackboneElementInput', () => {
     setup({
       schema,
       property: contactProperty,
-      name: 'contact'
+      name: 'contact',
     });
     expect(screen.getByText('Name')).toBeDefined();
   });
@@ -139,10 +144,9 @@ describe('BackboneElementInput', () => {
     setup({
       schema,
       property: valueSetComposeProperty,
-      name: 'compose'
+      name: 'compose',
     });
     expect(screen.getByText('Locked Date')).toBeInTheDocument();
     expect(screen.queryByText('Exclude')).toBeNull();
   });
-
 });

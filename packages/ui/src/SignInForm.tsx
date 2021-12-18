@@ -36,7 +36,8 @@ export function SignInForm(props: SignInFormProps) {
     }
 
     if (response.code) {
-      medplum.processCode(response.code)
+      medplum
+        .processCode(response.code)
         .then(() => {
           if (props.onSuccess) {
             props.onSuccess();
@@ -59,17 +60,9 @@ export function SignInForm(props: SignInFormProps) {
             />
           );
         } else if (memberships) {
-          return (
-            <ProfileForm
-              login={login}
-              memberships={memberships}
-              handleAuthResponse={handleAuthResponse}
-            />
-          );
+          return <ProfileForm login={login} memberships={memberships} handleAuthResponse={handleAuthResponse} />;
         } else {
-          return (
-            <div>Success</div>
-          );
+          return <div>Success</div>;
         }
       })()}
     </Document>
@@ -94,11 +87,12 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
   }
 
   return (
-    <Form style={{ maxWidth: 400 }} onSubmit={(formData: Record<string, string>) => {
-      medplum.startLogin(formData.email, formData.password)
-        .then(props.handleAuthResponse)
-        .catch(handleError);
-    }}>
+    <Form
+      style={{ maxWidth: 400 }}
+      onSubmit={(formData: Record<string, string>) => {
+        medplum.startLogin(formData.email, formData.password).then(props.handleAuthResponse).catch(handleError);
+      }}
+    >
       <div className="center">
         <Logo size={32} />
         <h1>Sign in to Medplum</h1>
@@ -112,38 +106,57 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
       <div className="medplum-signin-buttons">
         <div>
           {props.onForgotPassword && (
-            <MedplumLink testid="forgotpassword" onClick={props.onForgotPassword}>Forgot password</MedplumLink>
+            <MedplumLink testid="forgotpassword" onClick={props.onForgotPassword}>
+              Forgot password
+            </MedplumLink>
           )}
           {props.onRegister && (
-            <MedplumLink testid="register" onClick={props.onRegister}>Register</MedplumLink>
+            <MedplumLink testid="register" onClick={props.onRegister}>
+              Register
+            </MedplumLink>
           )}
         </div>
         <div>
-          <Button type="submit" testid="submit">Sign in</Button>
+          <Button type="submit" testid="submit">
+            Sign in
+          </Button>
         </div>
       </div>
       {props.googleClientId && (
         <div className="medplum-signin-google-container">
-          <Button type="button" onClick={() => {
-            // Sign In With Google JavaScript API reference
-            // https://developers.google.com/identity/gsi/web/reference/js-reference
-            const google = (window as any).google;
-            google.accounts.id.initialize({
-              client_id: props.googleClientId,
-              callback: (response: GoogleCredentialResponse) => {
-                medplum.startGoogleLogin(response)
-                  .then(props.handleAuthResponse)
-                  .catch(handleError);
-              }
-            });
-            google.accounts.id.prompt();
-          }}>
+          <Button
+            type="button"
+            onClick={() => {
+              // Sign In With Google JavaScript API reference
+              // https://developers.google.com/identity/gsi/web/reference/js-reference
+              const google = (window as any).google;
+              google.accounts.id.initialize({
+                client_id: props.googleClientId,
+                callback: (response: GoogleCredentialResponse) => {
+                  medplum.startGoogleLogin(response).then(props.handleAuthResponse).catch(handleError);
+                },
+              });
+              google.accounts.id.prompt();
+            }}
+          >
             <span className="medplum-signin-google-icon">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 40 40">
-                <path fill="#4285F4" d="M35 20.345c0-1.02-.084-2.045-.264-3.048H20.302v5.776h8.266c-.343 1.863-1.445 3.51-3.06 4.558v3.748h4.932c2.896-2.613 4.56-6.47 4.56-11.034z"></path>
-                <path fill="#34A853" d="M20.302 35c4.127 0 7.607-1.328 10.143-3.62l-4.93-3.749c-1.373.915-3.144 1.433-5.207 1.433-3.993 0-7.377-2.64-8.592-6.189H6.627v3.863C9.225 31.804 14.517 35 20.302 35z"></path>
-                <path fill="#FBBC04" d="M11.71 22.875c-.64-1.863-.64-3.88 0-5.743V13.27H6.629c-2.17 4.238-2.17 9.231 0 13.47l5.083-3.864z"></path>
-                <path fill="#EA4335" d="M20.302 10.937c2.181-.033 4.29.772 5.87 2.249l4.369-4.283c-2.767-2.546-6.438-3.946-10.24-3.902-5.785 0-11.076 3.197-13.674 8.267l5.083 3.864c1.21-3.555 4.6-6.195 8.592-6.195z"></path>
+                <path
+                  fill="#4285F4"
+                  d="M35 20.345c0-1.02-.084-2.045-.264-3.048H20.302v5.776h8.266c-.343 1.863-1.445 3.51-3.06 4.558v3.748h4.932c2.896-2.613 4.56-6.47 4.56-11.034z"
+                ></path>
+                <path
+                  fill="#34A853"
+                  d="M20.302 35c4.127 0 7.607-1.328 10.143-3.62l-4.93-3.749c-1.373.915-3.144 1.433-5.207 1.433-3.993 0-7.377-2.64-8.592-6.189H6.627v3.863C9.225 31.804 14.517 35 20.302 35z"
+                ></path>
+                <path
+                  fill="#FBBC04"
+                  d="M11.71 22.875c-.64-1.863-.64-3.88 0-5.743V13.27H6.629c-2.17 4.238-2.17 9.231 0 13.47l5.083-3.864z"
+                ></path>
+                <path
+                  fill="#EA4335"
+                  d="M20.302 10.937c2.181-.033 4.29.772 5.87 2.249l4.369-4.283c-2.767-2.546-6.438-3.946-10.24-3.902-5.785 0-11.076 3.197-13.674 8.267l5.083 3.864c1.21-3.555 4.6-6.195 8.592-6.195z"
+                ></path>
               </svg>
             </span>
             <span>Sign in with Google</span>
@@ -173,7 +186,11 @@ function ProfileForm(props: ProfileFormProps): JSX.Element {
           className="medplum-nav-menu-profile"
           key={membership.id}
           onClick={() => {
-            medplum.post('auth/profile', { login: props.login, profile: membership.id })
+            medplum
+              .post('auth/profile', {
+                login: props.login,
+                profile: membership.id,
+              })
               .then(props.handleAuthResponse);
           }}
         >
@@ -182,9 +199,7 @@ function ProfileForm(props: ProfileFormProps): JSX.Element {
           </div>
           <div className="medplum-nav-menu-profile-label">
             {membership.profile?.display}
-            <div className="medplum-nav-menu-profile-help-text">
-              {membership.project?.display}
-            </div>
+            <div className="medplum-nav-menu-profile-help-text">{membership.project?.display}</div>
           </div>
         </div>
       ))}

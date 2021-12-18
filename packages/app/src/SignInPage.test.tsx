@@ -13,19 +13,18 @@ const practitioner: Practitioner = {
     versionId: '456',
     lastUpdated: '2021-01-01T12:00:00Z',
     author: {
-      reference: 'Practitioner/123'
-    }
-  }
+      reference: 'Practitioner/123',
+    },
+  },
 };
 
 const medplum = new MockClient({
   'fhir/R4/Practitioner/123': {
-    'GET': practitioner
-  }
+    GET: practitioner,
+  },
 });
 
 describe('SignInPage', () => {
-
   const setup = () => {
     render(
       <MemoryRouter>
@@ -66,5 +65,4 @@ describe('SignInPage', () => {
       fireEvent.click(screen.getByTestId('register'));
     });
   });
-
 });

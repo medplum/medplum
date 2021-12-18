@@ -12,15 +12,11 @@ export interface TimelineProps {
 }
 
 export function Timeline(props: TimelineProps) {
-  return (
-    <main className="medplum-timeline">
-      {props.children}
-    </main>
-  );
+  return <main className="medplum-timeline">{props.children}</main>;
 }
 
 export interface TimelineItemProps {
-  resource: Resource
+  resource: Resource;
   profile?: Reference;
   socialEnabled?: boolean;
   children?: React.ReactNode;
@@ -44,14 +40,8 @@ export function TimelineItem(props: TimelineItemProps) {
           </div>
         </div>
       </div>
-      {props.padding && (
-        <div style={{ padding: '2px 16px 16px 16px' }}>
-          {props.children}
-        </div>
-      )}
-      {!props.padding && (
-        <>{props.children}</>
-      )}
+      {props.padding && <div style={{ padding: '2px 16px 16px 16px' }}>{props.children}</div>}
+      {!props.padding && <>{props.children}</>}
       {props.socialEnabled && (
         <div className="medplum-timeline-item-footer">
           <Button borderless={true}>Like</Button>

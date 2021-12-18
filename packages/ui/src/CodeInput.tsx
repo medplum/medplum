@@ -24,12 +24,11 @@ export function CodeInput(props: CodeInputProps) {
     <Autocomplete
       loadOptions={(input: string): Promise<string[]> => {
         const system = props.property.binding?.valueSet as string;
-        return medplum.searchValueSet(system, input)
-          .then((valueSet: ValueSet) => {
-            const contains = (valueSet.expansion as ValueSetExpansion).contains as ValueSetExpansionContains[];
-            contains.forEach(e => cachedDisplayValues[e.code as string] = e.display as string);
-            return contains.map(e => e.code as string);
-          });
+        return medplum.searchValueSet(system, input).then((valueSet: ValueSet) => {
+          const contains = (valueSet.expansion as ValueSetExpansion).contains as ValueSetExpansionContains[];
+          contains.forEach((e) => (cachedDisplayValues[e.code as string] = e.display as string));
+          return contains.map((e) => e.code as string);
+        });
       }}
       buildUnstructured={(str: string) => str}
       getId={(item: string) => item}

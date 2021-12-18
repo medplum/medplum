@@ -8,12 +8,12 @@ export function invalidRequest(errors: Result<ValidationError>): OperationOutcom
   return {
     resourceType: 'OperationOutcome',
     id: randomUUID(),
-    issue: errors.array().map(error => ({
+    issue: errors.array().map((error) => ({
       severity: 'error',
       code: 'invalid',
       expression: [error.param],
-      details: { text: error.msg }
-    }))
+      details: { text: error.msg },
+    })),
   };
 }
 

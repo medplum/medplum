@@ -79,9 +79,9 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
     authTime: new Date().toISOString(),
     granted: true,
     project: {
-      reference: 'Project/' + client.meta?.project
+      reference: 'Project/' + client.meta?.project,
     },
-    scope
+    scope,
   });
   assertOk(loginOutcome);
 
@@ -91,14 +91,14 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
     sub: client.id as string,
     username: client.id as string,
     profile: getReferenceString(client),
-    scope: scope
+    scope: scope,
   });
 
   return res.status(200).json({
     token_type: 'Bearer',
     access_token: accessToken,
     expires_in: 3600,
-    scope
+    scope,
   });
 }
 
@@ -117,17 +117,16 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
 
   const [searchOutcome, searchResult] = await repo.search({
     resourceType: 'Login',
-    filters: [{
-      code: 'code',
-      operator: Operator.EQUALS,
-      value: code
-    }]
+    filters: [
+      {
+        code: 'code',
+        operator: Operator.EQUALS,
+        value: code,
+      },
+    ],
   });
 
-  if (!isOk(searchOutcome) ||
-    !searchResult ||
-    !searchResult.entry ||
-    searchResult.entry.length === 0) {
+  if (!isOk(searchOutcome) || !searchResult || !searchResult.entry || searchResult.entry.length === 0) {
     return sendTokenError(res, 'invalid_request', 'Invalid code');
   }
 
@@ -258,7 +257,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
 function sendTokenError(res: Response, error: string, description?: string): Response<any, Record<string, any>> {
   return res.status(400).json({
     error,
-    error_description: description
+    error_description: description,
   });
 }
 

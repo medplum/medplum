@@ -24,23 +24,26 @@ export async function verifyProjectAdmin(req: Request, res: Response): Promise<P
 
   const [membershipOutcome, bundle] = await repo.search<ProjectMembership>({
     resourceType: 'ProjectMembership',
-    filters: [{
-      code: 'project',
-      operator: Operator.EQUALS,
-      value: 'Project/' + projectId
-    }]
+    filters: [
+      {
+        code: 'project',
+        operator: Operator.EQUALS,
+        value: 'Project/' + projectId,
+      },
+    ],
   });
   assertOk(membershipOutcome);
 
-  const memberships = ((bundle as Bundle<ProjectMembership>).entry as BundleEntry<ProjectMembership>[])
-    .map(entry => entry.resource as ProjectMembership);
+  const memberships = ((bundle as Bundle<ProjectMembership>).entry as BundleEntry<ProjectMembership>[]).map(
+    (entry) => entry.resource as ProjectMembership
+  );
 
-  if (!memberships.find(m => m.user?.reference === 'User/' + res.locals.user && m.admin)) {
+  if (!memberships.find((m) => m.user?.reference === 'User/' + res.locals.user && m.admin)) {
     return undefined;
   }
 
   return {
     project: project as Project,
-    memberships
+    memberships,
   };
 }

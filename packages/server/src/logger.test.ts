@@ -1,7 +1,6 @@
 import { logger, LogLevel } from './logger';
 
 describe('Logger', () => {
-
   test('Debug', () => {
     console.log = jest.fn();
 

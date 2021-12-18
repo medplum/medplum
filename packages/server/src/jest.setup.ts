@@ -10,7 +10,7 @@ export async function createTestClient(): Promise<ClientApplication> {
     name: 'Test Project',
     owner: {
       reference: 'User/' + randomUUID(),
-    }
+    },
   });
   assertOk(projectOutcome);
 
@@ -19,7 +19,7 @@ export async function createTestClient(): Promise<ClientApplication> {
     secret: randomUUID(),
     redirectUri: 'https://example.com/',
     meta: {
-      project: project?.id as string
+      project: project?.id as string,
     },
   });
   assertOk(clientOutcome);
@@ -35,7 +35,7 @@ export async function initTestAuth() {
     client: createReference(client),
     profile: createReference(client),
     authTime: new Date().toISOString(),
-    scope
+    scope,
   });
 
   if (!isOk(loginOutcome) || !login) {
@@ -48,6 +48,6 @@ export async function initTestAuth() {
     username: client.id as string,
     client_id: client.id as string,
     profile: client.resourceType + '/' + client.id,
-    scope
+    scope,
   });
 }

@@ -29,18 +29,24 @@ export enum QuestionnaireItemType {
  * @param values Key value pairs for initial values.
  * @returns Rewritten questionnaire with initial values.
  */
-export function addQuestionnaireInitialValues(questionnaire: Questionnaire, values: Record<string, string>): Questionnaire {
+export function addQuestionnaireInitialValues(
+  questionnaire: Questionnaire,
+  values: Record<string, string>
+): Questionnaire {
   return {
     ...questionnaire,
-    item: addInitialValuesToItemArray(questionnaire.item, values)
+    item: addInitialValuesToItemArray(questionnaire.item, values),
   };
 }
 
-function addInitialValuesToItemArray(items: QuestionnaireItem[] | undefined, values: any): QuestionnaireItem[] | undefined {
+function addInitialValuesToItemArray(
+  items: QuestionnaireItem[] | undefined,
+  values: any
+): QuestionnaireItem[] | undefined {
   if (!items) {
     return undefined;
   }
-  return items.map(item => addInitialValueToItem(item, values));
+  return items.map((item) => addInitialValueToItem(item, values));
 }
 
 function addInitialValueToItem(item: QuestionnaireItem, values: Record<string, string>): QuestionnaireItem {
@@ -52,7 +58,7 @@ function addInitialValueToItem(item: QuestionnaireItem, values: Record<string, s
   if (type === 'group') {
     return {
       ...item,
-      item: addInitialValuesToItemArray(item.item, values)
+      item: addInitialValuesToItemArray(item.item, values),
     };
   }
 
@@ -109,6 +115,6 @@ function addInitialValueToItem(item: QuestionnaireItem, values: Record<string, s
 
   return {
     ...item,
-    initial: [initialValue]
+    initial: [initialValue],
   };
 }

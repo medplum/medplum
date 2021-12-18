@@ -9,34 +9,31 @@ function mockFetch(url: string, options: any): Promise<any> {
   const response: any = {
     request: {
       url,
-      options
-    }
+      options,
+    },
   };
 
   return Promise.resolve({
     blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response)
+    json: () => Promise.resolve(response),
   });
 }
 
 const medplum = new MedplumClient({
   baseUrl: 'https://example.com/',
   clientId: 'my-client-id',
-  fetch: mockFetch
+  fetch: mockFetch,
 });
 
 const setup = (ui: React.ReactElement) => {
   return render(
     <MemoryRouter>
-      <MedplumProvider medplum={medplum}>
-        {ui}
-      </MedplumProvider>
+      <MedplumProvider medplum={medplum}>{ui}</MedplumProvider>
     </MemoryRouter>
   );
 };
 
 describe('MedplumLink', () => {
-
   test('Renders', () => {
     setup(<MedplumLink>test</MedplumLink>);
     expect(screen.getByText('test')).toBeDefined();
@@ -69,7 +66,11 @@ describe('MedplumLink', () => {
 
   test('Handles click with onClick', () => {
     const onClick = jest.fn();
-    setup(<MedplumLink to="xyz" onClick={onClick}>test</MedplumLink>);
+    setup(
+      <MedplumLink to="xyz" onClick={onClick}>
+        test
+      </MedplumLink>
+    );
     expect(screen.getByText('test')).toBeDefined();
     fireEvent.click(screen.getByText('test'));
     expect(onClick).toHaveBeenCalled();
@@ -86,5 +87,4 @@ describe('MedplumLink', () => {
     expect(screen.getByText('test')).toBeDefined();
     fireEvent.click(screen.getByText('test'));
   });
-
 });

@@ -1,5 +1,11 @@
 import { capitalize } from '@medplum/core';
-import { DiagnosticReport, Observation, ObservationComponent, ObservationReferenceRange, Reference } from '@medplum/fhirtypes';
+import {
+  DiagnosticReport,
+  Observation,
+  ObservationComponent,
+  ObservationReferenceRange,
+  Reference,
+} from '@medplum/fhirtypes';
 import React from 'react';
 import { CodeableConceptDisplay } from './CodeableConceptDisplay';
 import { MedplumLink } from './MedplumLink';
@@ -33,15 +39,20 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps) {
         {diagnosticReport.subject && (
           <dl>
             <dt>Subject</dt>
-            <dd><ResourceBadge value={diagnosticReport.subject} link={true} /></dd>
+            <dd>
+              <ResourceBadge value={diagnosticReport.subject} link={true} />
+            </dd>
           </dl>
         )}
-        {diagnosticReport.resultsInterpreter && diagnosticReport.resultsInterpreter.map(interpreter => (
-          <dl key={interpreter.reference}>
-            <dt>Interpreter</dt>
-            <dd><ResourceBadge value={interpreter} link={true} /></dd>
-          </dl>
-        ))}
+        {diagnosticReport.resultsInterpreter &&
+          diagnosticReport.resultsInterpreter.map((interpreter) => (
+            <dl key={interpreter.reference}>
+              <dt>Interpreter</dt>
+              <dd>
+                <ResourceBadge value={interpreter} link={true} />
+              </dd>
+            </dl>
+          ))}
         {diagnosticReport.issued && (
           <dl>
             <dt>Issued</dt>
@@ -55,12 +66,8 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps) {
           </dl>
         )}
       </div>
-      {textContent && (
-        <pre>{textContent}</pre>
-      )}
-      {diagnosticReport.result && (
-        <ObservationTable value={diagnosticReport.result} />
-      )}
+      {textContent && <pre>{textContent}</pre>}
+      {diagnosticReport.result && <ObservationTable value={diagnosticReport.result} />}
     </div>
   );
 }
@@ -83,10 +90,7 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
       </thead>
       <tbody>
         {props.value?.map((observation, index) => (
-          <ObservationRow
-            key={'obs-' + index}
-            value={observation}
-          />
+          <ObservationRow key={'obs-' + index} value={observation} />
         ))}
       </tbody>
     </table>
@@ -112,7 +116,9 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
       </td>
       <td>{getUnitsDisplayString(observation)}</td>
       <td>{getValueDisplayString(observation)}</td>
-      <td><ReferenceRangeDisplay value={observation.referenceRange} /></td>
+      <td>
+        <ReferenceRangeDisplay value={observation.referenceRange} />
+      </td>
       <td>
         {observation.interpretation && observation.interpretation.length > 0 && (
           <CodeableConceptDisplay value={observation.interpretation[0]} />
@@ -128,7 +134,7 @@ function getUnitsDisplayString(observation: Observation | ObservationComponent):
   }
 
   if ('component' in observation && observation.component) {
-    return observation.component.map(c => getUnitsDisplayString(c)).join('/');
+    return observation.component.map((c) => getUnitsDisplayString(c)).join('/');
   }
 
   return undefined;
@@ -144,7 +150,7 @@ function getValueDisplayString(observation: Observation | ObservationComponent):
   }
 
   if ('component' in observation && observation.component) {
-    return observation.component.map(c => getValueDisplayString(c)).join('/');
+    return observation.component.map((c) => getValueDisplayString(c)).join('/');
   }
 
   return undefined;
@@ -164,20 +170,18 @@ function ReferenceRangeDisplay(props: ReferenceRangeProps): JSX.Element | null {
 
   if (low && high) {
     return (
-      <>{low.value}&nbsp;-&nbsp;{high.value}</>
+      <>
+        {low.value}&nbsp;-&nbsp;{high.value}
+      </>
     );
   }
 
   if (low) {
-    return (
-      <>&gt;{low.value}</>
-    );
+    return <>&gt;{low.value}</>;
   }
 
   if (high) {
-    return (
-      <>&lt;{high.value}</>
-    );
+    return <>&lt;{high.value}</>;
   }
 
   return null;

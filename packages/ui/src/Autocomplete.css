@@ -18,7 +18,7 @@
   box-shadow: 0 0 0 2px var(--medplum-blue-200);
 }
 
-.medplum-autocomplete-container>ul {
+.medplum-autocomplete-container > ul {
   margin: 0;
   list-style-type: none;
   overflow: hidden;
@@ -26,7 +26,7 @@
   height: 32px;
 }
 
-.medplum-autocomplete-container>ul>li {
+.medplum-autocomplete-container > ul > li {
   margin: 0;
   padding: 0;
   display: inline-block;
@@ -35,7 +35,7 @@
   user-select: none;
 }
 
-.medplum-autocomplete-container>ul>li.choice {
+.medplum-autocomplete-container > ul > li.choice {
   margin: 1px 0 1px 4px;
   padding: 0 6px;
   border: 0.1px solid var(--medplum-orange-200);
@@ -45,11 +45,11 @@
   line-height: 22px;
 }
 
-.medplum-autocomplete-container>ul>li.unstructured {
+.medplum-autocomplete-container > ul > li.unstructured {
   border: 0.1px dashed var(--medplum-red-700) !important;
 }
 
-.medplum-autocomplete-container>ul>li>input {
+.medplum-autocomplete-container > ul > li > input {
   display: inline-block;
   width: 80px;
   line-height: 26px;
@@ -61,11 +61,11 @@
   background: transparent;
 }
 
-.medplum-autocomplete-container>ul>li>input::-moz-focus-inner {
+.medplum-autocomplete-container > ul > li > input::-moz-focus-inner {
   border: 0px;
 }
 
-.medplum-autocomplete-container>ul>li>input:focus {
+.medplum-autocomplete-container > ul > li > input:focus {
   border: none;
   box-shadow: none;
   outline: none;
@@ -80,7 +80,7 @@
   border: 0.1px solid var(--medplum-gray-300);
   border-radius: 2px;
   box-shadow: 0 2px 4px var(--medplum-shadow);
-  transition: opacity .218s;
+  transition: opacity 0.218s;
 }
 
 .medplum-autocomplete-row {

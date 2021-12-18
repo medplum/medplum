@@ -3,7 +3,6 @@ import React from 'react';
 import { QuantityDisplay } from './QuantityDisplay';
 
 describe('QuantityDisplay', () => {
-
   test('Renders', () => {
     render(<QuantityDisplay value={{ value: 1, unit: 'mg' }} />);
     expect(screen.getByText('1 mg')).toBeInTheDocument();
@@ -12,5 +11,4 @@ describe('QuantityDisplay', () => {
   test('Renders undefined value', () => {
     render(<QuantityDisplay />);
   });
-
 });

@@ -26,15 +26,17 @@ export function AttachmentInput(props: AttachmentInputProps) {
     return (
       <>
         <AttachmentDisplay value={value} maxWidth={200} />
-        <Button onClick={e => {
-          killEvent(e);
-          setValueWrapper(undefined);
-        }}>Remove</Button>
+        <Button
+          onClick={(e) => {
+            killEvent(e);
+            setValueWrapper(undefined);
+          }}
+        >
+          Remove
+        </Button>
       </>
     );
   }
 
-  return (
-    <UploadButton onUpload={setValueWrapper} />
-  );
+  return <UploadButton onUpload={setValueWrapper} />;
 }

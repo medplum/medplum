@@ -1,5 +1,15 @@
 import { ProfileResource, stringify } from '@medplum/core';
-import { Attachment, AuditEvent, Bundle, BundleEntry, Communication, DiagnosticReport, Media, Reference, Resource } from '@medplum/fhirtypes';
+import {
+  Attachment,
+  AuditEvent,
+  Bundle,
+  BundleEntry,
+  Communication,
+  DiagnosticReport,
+  Media,
+  Reference,
+  Resource,
+} from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { AttachmentDisplay } from './AttachmentDisplay';
 import { Button } from './Button';
@@ -45,28 +55,27 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     }
 
     const bathRequest = props.buildSearchRequests(resource);
-    medplum.post('fhir/R4', bathRequest)
-      .then(batchResponse => {
-        const newItems = [];
+    medplum.post('fhir/R4', bathRequest).then((batchResponse) => {
+      const newItems = [];
 
-        for (const batchEntry of batchResponse.entry) {
-          const bundle = batchEntry.resource as Bundle;
+      for (const batchEntry of batchResponse.entry) {
+        const bundle = batchEntry.resource as Bundle;
 
-          if (bundle.type === 'history') {
-            setHistory(bundle);
-          }
-
-          if (bundle.entry) {
-            for (const entry of bundle.entry) {
-              newItems.push(entry.resource as Resource);
-            }
-          }
+        if (bundle.type === 'history') {
+          setHistory(bundle);
         }
 
-        sortByDate(newItems);
-        newItems.reverse();
-        setItems(newItems);
-      });
+        if (bundle.entry) {
+          for (const entry of bundle.entry) {
+            newItems.push(entry.resource as Resource);
+          }
+        }
+      }
+
+      sortByDate(newItems);
+      newItems.reverse();
+      setItems(newItems);
+    });
   }
 
   /**
@@ -89,10 +98,9 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       // Encounter not loaded yet
       return;
     }
-    medplum.create(props.createCommunication(resource, sender, contentString))
-      .then(result => {
-        addResources([result]);
-      });
+    medplum.create(props.createCommunication(resource, sender, contentString)).then((result) => {
+      addResources([result]);
+    });
   }
 
   /**
@@ -104,10 +112,9 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       // Encounter not loaded yet
       return;
     }
-    medplum.create(props.createMedia(resource, sender, attachment))
-      .then(result => {
-        addResources([result]);
-      });
+    medplum.create(props.createMedia(resource, sender, attachment)).then((result) => {
+      addResources([result]);
+    });
   }
 
   useEffect(() => {
@@ -133,7 +140,8 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
                   input.value = '';
                   input.focus();
                 }
-              }}>
+              }}
+            >
               <TextField name="text" testid="timeline-input" inputRef={inputRef} />
               <Button type="submit">Comment</Button>
               <UploadButton onUpload={createMedia} />
@@ -141,9 +149,9 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
           </div>
         </article>
       )}
-      {items.map(item => {
+      {items.map((item) => {
         if (item.resourceType === resource.resourceType && item.id === resource.id) {
-          return <HistoryTimelineItem key={item.meta?.versionId} history={history} version={item} />
+          return <HistoryTimelineItem key={item.meta?.versionId} history={history} version={item} />;
         }
         switch (item.resourceType) {
           case 'AuditEvent':
@@ -190,7 +198,7 @@ function HistoryTimelineItem(props: HistoryTimelineItemProps) {
 
 function getPrevious(history: Bundle, version: Resource): Resource | undefined {
   const entries = history.entry as BundleEntry[];
-  const index = entries.findIndex(entry => entry.resource?.meta?.versionId === version.meta?.versionId);
+  const index = entries.findIndex((entry) => entry.resource?.meta?.versionId === version.meta?.versionId);
   if (index >= entries.length - 1) {
     return undefined;
   }

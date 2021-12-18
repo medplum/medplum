@@ -16,11 +16,14 @@ article {
   box-shadow: 0 1px 3px 0 var(--medplum-gray-300);
 }
 
-article h1, article h2, article h3 {
+article h1,
+article h2,
+article h3 {
   margin: 12px 0;
 }
 
-article p, article li {
+article p,
+article li {
   line-height: 175%;
   margin: 8px 0 16px 0;
 }

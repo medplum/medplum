@@ -22,7 +22,7 @@ const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
     // TODO: Check origin against whitelist
     callback(null, true);
-  }
+  },
 };
 
 /**
@@ -48,7 +48,7 @@ function cacheHandler(req: Request, res: Response, next: NextFunction): void {
  */
 function errorHandler(err: any, req: Request, res: Response, next: NextFunction): void {
   if (res.headersSent) {
-    return next(err)
+    return next(err);
   }
   if (err.outcome) {
     sendOutcome(res, err.outcome as OperationOutcome);
@@ -73,17 +73,23 @@ export async function initApp(app: Express): Promise<Express> {
   app.set('json spaces', 2);
   app.use(cacheHandler);
   app.use(cors(corsOptions));
-  app.use(urlencoded({
-    extended: false
-  }));
-  app.use(json({
-    type: ['application/json', 'application/fhir+json', 'application/json-patch+json'],
-    limit: config.maxJsonSize
-  }));
-  app.use(raw({
-    type: '*/*',
-    limit: config.maxUploadSize
-  }));
+  app.use(
+    urlencoded({
+      extended: false,
+    })
+  );
+  app.use(
+    json({
+      type: ['application/json', 'application/fhir+json', 'application/json-patch+json'],
+      limit: config.maxJsonSize,
+    })
+  );
+  app.use(
+    raw({
+      type: '*/*',
+      limit: config.maxUploadSize,
+    })
+  );
   app.get('/', (req: Request, res: Response) => res.sendStatus(200));
   app.get('/healthcheck', asyncWrap(healthcheckHandler));
   app.get('/openapi.json', openApiHandler);

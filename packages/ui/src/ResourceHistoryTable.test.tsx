@@ -17,14 +17,16 @@ const historyBundle: Bundle = {
           lastUpdated: new Date().toISOString(),
           versionId: '2',
           author: {
-            reference: 'Practitioner/123'
-          }
+            reference: 'Practitioner/123',
+          },
         },
-        name: [{
-          given: ['Alice'],
-          family: 'Smith'
-        }]
-      } as Patient
+        name: [
+          {
+            given: ['Alice'],
+            family: 'Smith',
+          },
+        ],
+      } as Patient,
     },
     {
       resource: {
@@ -34,27 +36,28 @@ const historyBundle: Bundle = {
           lastUpdated: new Date().toISOString(),
           versionId: '1',
           author: {
-            reference: 'Practitioner/456'
-          }
+            reference: 'Practitioner/456',
+          },
         },
-        name: [{
-          given: ['Alice'],
-          family: 'Smith'
-        }],
-        active: true
-      } as Patient
-    }
-  ]
-}
+        name: [
+          {
+            given: ['Alice'],
+            family: 'Smith',
+          },
+        ],
+        active: true,
+      } as Patient,
+    },
+  ],
+};
 
 const medplum = new MockClient({
   'fhir/R4/Patient/123/_history': {
-    'GET': historyBundle
-  }
+    GET: historyBundle,
+  },
 });
 
 describe('ResourceHistoryTable', () => {
-
   const setup = (args: ResourceHistoryTableProps) => {
     return render(
       <MemoryRouter>
@@ -68,7 +71,7 @@ describe('ResourceHistoryTable', () => {
   test('Renders', async () => {
     const utils = setup({
       resourceType: 'Patient',
-      id: '123'
+      id: '123',
     });
 
     const el = await utils.findByText('Loading...');
@@ -77,7 +80,7 @@ describe('ResourceHistoryTable', () => {
 
   test('Renders preloaded history', async () => {
     const utils = setup({
-      history: historyBundle
+      history: historyBundle,
     });
 
     const el = await utils.findByText('1');
@@ -87,11 +90,10 @@ describe('ResourceHistoryTable', () => {
   test('Renders after loading the resource', async () => {
     const utils = setup({
       resourceType: 'Patient',
-      id: '123'
+      id: '123',
     });
 
     const el = await utils.findByText('1');
     expect(el).toBeDefined();
   });
-
 });

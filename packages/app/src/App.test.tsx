@@ -8,116 +8,134 @@ import { App } from './App';
 const practitioner: Practitioner = {
   resourceType: 'Practitioner',
   id: '123',
-  name: [{ given: ['Medplum'], family: 'Admin' }]
+  name: [{ given: ['Medplum'], family: 'Admin' }],
 };
 
 const practitionerHistory: Bundle = {
   resourceType: 'Bundle',
-  entry: [{
-    resource: practitioner
-  }]
+  entry: [
+    {
+      resource: practitioner,
+    },
+  ],
 };
 
 const practitionerStructureBundle: Bundle = {
   resourceType: 'Bundle',
-  entry: [{
-    resource: {
-      resourceType: 'StructureDefinition',
-      name: 'Practitioner',
-      snapshot: {
-        element: [
-          {
-            path: 'Practitioner.id',
-            type: [{
-              code: 'code'
-            }]
-          }
-        ]
-      }
-    }
-  }]
+  entry: [
+    {
+      resource: {
+        resourceType: 'StructureDefinition',
+        name: 'Practitioner',
+        snapshot: {
+          element: [
+            {
+              path: 'Practitioner.id',
+              type: [
+                {
+                  code: 'code',
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
+  ],
 };
 
 const practitionerSearchParameter: Bundle = {
   resourceType: 'Bundle',
-  entry: [{
-    resource: {
-      resourceType: 'SearchParameter',
-      id: 'Practitioner-name',
-      code: 'name',
-      name: 'name'
-    }
-  }]
+  entry: [
+    {
+      resource: {
+        resourceType: 'SearchParameter',
+        id: 'Practitioner-name',
+        code: 'name',
+        name: 'name',
+      },
+    },
+  ],
 };
 
 const patientStructureBundle: Bundle = {
   resourceType: 'Bundle',
-  entry: [{
-    resource: {
-      resourceType: 'StructureDefinition',
-      name: 'Patient',
-      snapshot: {
-        element: [
-          {
-            path: 'Patient.id',
-            type: [{
-              code: 'code'
-            }]
-          }
-        ]
-      }
-    }
-  }]
+  entry: [
+    {
+      resource: {
+        resourceType: 'StructureDefinition',
+        name: 'Patient',
+        snapshot: {
+          element: [
+            {
+              path: 'Patient.id',
+              type: [
+                {
+                  code: 'code',
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
+  ],
 };
 
 const patientSearchParameter: Bundle = {
   resourceType: 'Bundle',
-  entry: [{
-    resource: {
-      resourceType: 'SearchParameter',
-      id: 'Patient-name',
-      code: 'name',
-      name: 'name'
-    }
-  }]
+  entry: [
+    {
+      resource: {
+        resourceType: 'SearchParameter',
+        id: 'Patient-name',
+        code: 'name',
+        name: 'name',
+      },
+    },
+  ],
 };
 
 const patientSearchBundle: Bundle = {
   resourceType: 'Bundle',
   total: 100,
-  entry: [{
-    resource: {
-      resourceType: 'Patient',
-      id: '123',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }]
-    }
-  }]
+  entry: [
+    {
+      resource: {
+        resourceType: 'Patient',
+        id: '123',
+        name: [
+          {
+            given: ['Alice'],
+            family: 'Smith',
+          },
+        ],
+      },
+    },
+  ],
 };
 
 const medplum = new MockClient({
   'fhir/R4/StructureDefinition?name:exact=Practitioner': {
-    'GET': practitionerStructureBundle,
+    GET: practitionerStructureBundle,
   },
   'fhir/R4/StructureDefinition?name:exact=Patient': {
-    'GET': patientStructureBundle
+    GET: patientStructureBundle,
   },
   'fhir/R4/SearchParameter?name=Practitioner': {
-    'GET': practitionerSearchParameter
+    GET: practitionerSearchParameter,
   },
   'fhir/R4/SearchParameter?name=Patient': {
-    'GET': patientSearchParameter
+    GET: patientSearchParameter,
   },
   'fhir/R4/Patient?': {
-    'GET': patientSearchBundle
+    GET: patientSearchBundle,
   },
   'fhir/R4/Practitioner/123': {
-    'GET': practitioner
+    GET: practitioner,
   },
   'fhir/R4/Practitioner/123/_history': {
-    'GET': practitionerHistory
+    GET: practitionerHistory,
   },
 });
 
@@ -132,7 +150,6 @@ const setup = () => {
 };
 
 describe('App', () => {
-
   test('Renders', async () => {
     setup();
 
@@ -187,5 +204,4 @@ describe('App', () => {
       fireEvent.click(screen.getByTestId('header-signout-button'));
     });
   });
-
 });

@@ -1,7 +1,6 @@
 import { EventTarget } from './eventtarget';
 
 describe('EventTarget', () => {
-
   test('No listeners', () => {
     const target = new EventTarget();
     expect(() => target.dispatchEvent({ type: 'test' })).not.toThrow();
@@ -44,5 +43,4 @@ describe('EventTarget', () => {
     expect(() => target.dispatchEvent({ type: 'test' })).not.toThrow();
     expect(myCallback).toBeCalled();
   });
-
 });

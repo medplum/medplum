@@ -7,72 +7,164 @@ import { PoolClient } from 'pg';
 
 export async function run(client: PoolClient) {
   await client.query('ALTER TABLE "Appointment" ALTER COLUMN "basedOn" TYPE TEXT[] USING array["basedOn"]::TEXT[]');
-  await client.query('ALTER TABLE "Appointment" ALTER COLUMN "reasonCode" TYPE TEXT[] USING array["reasonCode"]::TEXT[]');
-  await client.query('ALTER TABLE "Appointment" ALTER COLUMN "reasonReference" TYPE TEXT[] USING array["reasonReference"]::TEXT[]');
-  await client.query('ALTER TABLE "Appointment" ALTER COLUMN "serviceCategory" TYPE TEXT[] USING array["serviceCategory"]::TEXT[]');
-  await client.query('ALTER TABLE "Appointment" ALTER COLUMN "serviceType" TYPE TEXT[] USING array["serviceType"]::TEXT[]');
+  await client.query(
+    'ALTER TABLE "Appointment" ALTER COLUMN "reasonCode" TYPE TEXT[] USING array["reasonCode"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "Appointment" ALTER COLUMN "reasonReference" TYPE TEXT[] USING array["reasonReference"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "Appointment" ALTER COLUMN "serviceCategory" TYPE TEXT[] USING array["serviceCategory"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "Appointment" ALTER COLUMN "serviceType" TYPE TEXT[] USING array["serviceType"]::TEXT[]'
+  );
   await client.query('ALTER TABLE "CarePlan" ALTER COLUMN "basedOn" TYPE TEXT[] USING array["basedOn"]::TEXT[]');
   await client.query('ALTER TABLE "CarePlan" ALTER COLUMN "careTeam" TYPE TEXT[] USING array["careTeam"]::TEXT[]');
-  await client.query('ALTER TABLE "CarePlan" ALTER COLUMN "instantiatesCanonical" TYPE TEXT[] USING array["instantiatesCanonical"]::TEXT[]');
-  await client.query('ALTER TABLE "CarePlan" ALTER COLUMN "instantiatesUri" TYPE TEXT[] USING array["instantiatesUri"]::TEXT[]');
+  await client.query(
+    'ALTER TABLE "CarePlan" ALTER COLUMN "instantiatesCanonical" TYPE TEXT[] USING array["instantiatesCanonical"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "CarePlan" ALTER COLUMN "instantiatesUri" TYPE TEXT[] USING array["instantiatesUri"]::TEXT[]'
+  );
   await client.query('ALTER TABLE "CarePlan" ALTER COLUMN "partOf" TYPE TEXT[] USING array["partOf"]::TEXT[]');
   await client.query('ALTER TABLE "Claim" ALTER COLUMN "careTeam" TYPE TEXT[] USING array["careTeam"]::TEXT[]');
-  await client.query('ALTER TABLE "ClinicalImpression" ALTER COLUMN "supportingInfo" TYPE TEXT[] USING array["supportingInfo"]::TEXT[]');
+  await client.query(
+    'ALTER TABLE "ClinicalImpression" ALTER COLUMN "supportingInfo" TYPE TEXT[] USING array["supportingInfo"]::TEXT[]'
+  );
   await client.query('ALTER TABLE "Communication" ALTER COLUMN "basedOn" TYPE TEXT[] USING array["basedOn"]::TEXT[]');
-  await client.query('ALTER TABLE "Communication" ALTER COLUMN "instantiatesCanonical" TYPE TEXT[] USING array["instantiatesCanonical"]::TEXT[]');
-  await client.query('ALTER TABLE "Communication" ALTER COLUMN "instantiatesUri" TYPE TEXT[] USING array["instantiatesUri"]::TEXT[]');
+  await client.query(
+    'ALTER TABLE "Communication" ALTER COLUMN "instantiatesCanonical" TYPE TEXT[] USING array["instantiatesCanonical"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "Communication" ALTER COLUMN "instantiatesUri" TYPE TEXT[] USING array["instantiatesUri"]::TEXT[]'
+  );
   await client.query('ALTER TABLE "Communication" ALTER COLUMN "partOf" TYPE TEXT[] USING array["partOf"]::TEXT[]');
-  await client.query('ALTER TABLE "CommunicationRequest" ALTER COLUMN "basedOn" TYPE TEXT[] USING array["basedOn"]::TEXT[]');
+  await client.query(
+    'ALTER TABLE "CommunicationRequest" ALTER COLUMN "basedOn" TYPE TEXT[] USING array["basedOn"]::TEXT[]'
+  );
   await client.query('ALTER TABLE "Condition" ALTER COLUMN "bodySite" TYPE TEXT[] USING array["bodySite"]::TEXT[]');
   await client.query('ALTER TABLE "Device" ALTER COLUMN "deviceName" TYPE TEXT[] USING array["deviceName"]::TEXT[]');
   await client.query('ALTER TABLE "Device" ALTER COLUMN "udiCarrier" TYPE TEXT[] USING array["udiCarrier"]::TEXT[]');
   await client.query('ALTER TABLE "DeviceRequest" ALTER COLUMN "basedOn" TYPE TEXT[] USING array["basedOn"]::TEXT[]');
-  await client.query('ALTER TABLE "DeviceRequest" ALTER COLUMN "instantiatesCanonical" TYPE TEXT[] USING array["instantiatesCanonical"]::TEXT[]');
-  await client.query('ALTER TABLE "DeviceRequest" ALTER COLUMN "instantiatesUri" TYPE TEXT[] USING array["instantiatesUri"]::TEXT[]');
-  await client.query('ALTER TABLE "DeviceRequest" ALTER COLUMN "priorRequest" TYPE TEXT[] USING array["priorRequest"]::TEXT[]');
-  await client.query('ALTER TABLE "DiagnosticReport" ALTER COLUMN "basedOn" TYPE TEXT[] USING array["basedOn"]::TEXT[]');
-  await client.query('ALTER TABLE "DiagnosticReport" ALTER COLUMN "resultsInterpreter" TYPE TEXT[] USING array["resultsInterpreter"]::TEXT[]');
-  await client.query('ALTER TABLE "DocumentReference" ALTER COLUMN "securityLabel" TYPE TEXT[] USING array["securityLabel"]::TEXT[]');
+  await client.query(
+    'ALTER TABLE "DeviceRequest" ALTER COLUMN "instantiatesCanonical" TYPE TEXT[] USING array["instantiatesCanonical"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "DeviceRequest" ALTER COLUMN "instantiatesUri" TYPE TEXT[] USING array["instantiatesUri"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "DeviceRequest" ALTER COLUMN "priorRequest" TYPE TEXT[] USING array["priorRequest"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "DiagnosticReport" ALTER COLUMN "basedOn" TYPE TEXT[] USING array["basedOn"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "DiagnosticReport" ALTER COLUMN "resultsInterpreter" TYPE TEXT[] USING array["resultsInterpreter"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "DocumentReference" ALTER COLUMN "securityLabel" TYPE TEXT[] USING array["securityLabel"]::TEXT[]'
+  );
   await client.query('ALTER TABLE "Encounter" ALTER COLUMN "basedOn" TYPE TEXT[] USING array["basedOn"]::TEXT[]');
-  await client.query('ALTER TABLE "Encounter" ALTER COLUMN "episodeOfCare" TYPE TEXT[] USING array["episodeOfCare"]::TEXT[]');
+  await client.query(
+    'ALTER TABLE "Encounter" ALTER COLUMN "episodeOfCare" TYPE TEXT[] USING array["episodeOfCare"]::TEXT[]'
+  );
   await client.query('ALTER TABLE "Encounter" ALTER COLUMN "reasonCode" TYPE TEXT[] USING array["reasonCode"]::TEXT[]');
-  await client.query('ALTER TABLE "Encounter" ALTER COLUMN "reasonReference" TYPE TEXT[] USING array["reasonReference"]::TEXT[]');
-  await client.query('ALTER TABLE "Endpoint" ALTER COLUMN "payloadType" TYPE TEXT[] USING array["payloadType"]::TEXT[]');
-  await client.query('ALTER TABLE "ExplanationOfBenefit" ALTER COLUMN "careTeam" TYPE TEXT[] USING array["careTeam"]::TEXT[]');
-  await client.query('ALTER TABLE "FamilyMemberHistory" ALTER COLUMN "instantiatesCanonical" TYPE TEXT[] USING array["instantiatesCanonical"]::TEXT[]');
-  await client.query('ALTER TABLE "FamilyMemberHistory" ALTER COLUMN "instantiatesUri" TYPE TEXT[] USING array["instantiatesUri"]::TEXT[]');
-  await client.query('ALTER TABLE "HealthcareService" ALTER COLUMN "coverageArea" TYPE TEXT[] USING array["coverageArea"]::TEXT[]');
-  await client.query('ALTER TABLE "Immunization" ALTER COLUMN "reasonCode" TYPE TEXT[] USING array["reasonCode"]::TEXT[]');
-  await client.query('ALTER TABLE "Immunization" ALTER COLUMN "reasonReference" TYPE TEXT[] USING array["reasonReference"]::TEXT[]');
-  await client.query('ALTER TABLE "ImplementationGuide" ALTER COLUMN "dependsOn" TYPE TEXT[] USING array["dependsOn"]::TEXT[]');
-  await client.query('ALTER TABLE "MeasureReport" ALTER COLUMN "evaluatedResource" TYPE TEXT[] USING array["evaluatedResource"]::TEXT[]');
+  await client.query(
+    'ALTER TABLE "Encounter" ALTER COLUMN "reasonReference" TYPE TEXT[] USING array["reasonReference"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "Endpoint" ALTER COLUMN "payloadType" TYPE TEXT[] USING array["payloadType"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "ExplanationOfBenefit" ALTER COLUMN "careTeam" TYPE TEXT[] USING array["careTeam"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "FamilyMemberHistory" ALTER COLUMN "instantiatesCanonical" TYPE TEXT[] USING array["instantiatesCanonical"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "FamilyMemberHistory" ALTER COLUMN "instantiatesUri" TYPE TEXT[] USING array["instantiatesUri"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "HealthcareService" ALTER COLUMN "coverageArea" TYPE TEXT[] USING array["coverageArea"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "Immunization" ALTER COLUMN "reasonCode" TYPE TEXT[] USING array["reasonCode"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "Immunization" ALTER COLUMN "reasonReference" TYPE TEXT[] USING array["reasonReference"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "ImplementationGuide" ALTER COLUMN "dependsOn" TYPE TEXT[] USING array["dependsOn"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "MeasureReport" ALTER COLUMN "evaluatedResource" TYPE TEXT[] USING array["evaluatedResource"]::TEXT[]'
+  );
   await client.query('ALTER TABLE "Media" ALTER COLUMN "basedOn" TYPE TEXT[] USING array["basedOn"]::TEXT[]');
-  await client.query('ALTER TABLE "MedicationStatement" ALTER COLUMN "partOf" TYPE TEXT[] USING array["partOf"]::TEXT[]');
-  await client.query('ALTER TABLE "NutritionOrder" ALTER COLUMN "instantiatesCanonical" TYPE TEXT[] USING array["instantiatesCanonical"]::TEXT[]');
-  await client.query('ALTER TABLE "NutritionOrder" ALTER COLUMN "instantiatesUri" TYPE TEXT[] USING array["instantiatesUri"]::TEXT[]');
+  await client.query(
+    'ALTER TABLE "MedicationStatement" ALTER COLUMN "partOf" TYPE TEXT[] USING array["partOf"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "NutritionOrder" ALTER COLUMN "instantiatesCanonical" TYPE TEXT[] USING array["instantiatesCanonical"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "NutritionOrder" ALTER COLUMN "instantiatesUri" TYPE TEXT[] USING array["instantiatesUri"]::TEXT[]'
+  );
   await client.query('ALTER TABLE "Observation" ALTER COLUMN "basedOn" TYPE TEXT[] USING array["basedOn"]::TEXT[]');
-  await client.query('ALTER TABLE "Observation" ALTER COLUMN "derivedFrom" TYPE TEXT[] USING array["derivedFrom"]::TEXT[]');
+  await client.query(
+    'ALTER TABLE "Observation" ALTER COLUMN "derivedFrom" TYPE TEXT[] USING array["derivedFrom"]::TEXT[]'
+  );
   await client.query('ALTER TABLE "Observation" ALTER COLUMN "hasMember" TYPE TEXT[] USING array["hasMember"]::TEXT[]');
   await client.query('ALTER TABLE "Observation" ALTER COLUMN "partOf" TYPE TEXT[] USING array["partOf"]::TEXT[]');
-  await client.query('ALTER TABLE "Patient" ALTER COLUMN "generalPractitioner" TYPE TEXT[] USING array["generalPractitioner"]::TEXT[]');
+  await client.query(
+    'ALTER TABLE "Patient" ALTER COLUMN "generalPractitioner" TYPE TEXT[] USING array["generalPractitioner"]::TEXT[]'
+  );
   await client.query('ALTER TABLE "Procedure" ALTER COLUMN "basedOn" TYPE TEXT[] USING array["basedOn"]::TEXT[]');
-  await client.query('ALTER TABLE "Procedure" ALTER COLUMN "instantiatesCanonical" TYPE TEXT[] USING array["instantiatesCanonical"]::TEXT[]');
-  await client.query('ALTER TABLE "Procedure" ALTER COLUMN "instantiatesUri" TYPE TEXT[] USING array["instantiatesUri"]::TEXT[]');
+  await client.query(
+    'ALTER TABLE "Procedure" ALTER COLUMN "instantiatesCanonical" TYPE TEXT[] USING array["instantiatesCanonical"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "Procedure" ALTER COLUMN "instantiatesUri" TYPE TEXT[] USING array["instantiatesUri"]::TEXT[]'
+  );
   await client.query('ALTER TABLE "Procedure" ALTER COLUMN "partOf" TYPE TEXT[] USING array["partOf"]::TEXT[]');
   await client.query('ALTER TABLE "Procedure" ALTER COLUMN "reasonCode" TYPE TEXT[] USING array["reasonCode"]::TEXT[]');
-  await client.query('ALTER TABLE "Procedure" ALTER COLUMN "reasonReference" TYPE TEXT[] USING array["reasonReference"]::TEXT[]');
-  await client.query('ALTER TABLE "Questionnaire" ALTER COLUMN "subjectType" TYPE TEXT[] USING array["subjectType"]::TEXT[]');
-  await client.query('ALTER TABLE "QuestionnaireResponse" ALTER COLUMN "basedOn" TYPE TEXT[] USING array["basedOn"]::TEXT[]');
-  await client.query('ALTER TABLE "QuestionnaireResponse" ALTER COLUMN "partOf" TYPE TEXT[] USING array["partOf"]::TEXT[]');
-  await client.query('ALTER TABLE "RequestGroup" ALTER COLUMN "instantiatesCanonical" TYPE TEXT[] USING array["instantiatesCanonical"]::TEXT[]');
-  await client.query('ALTER TABLE "RequestGroup" ALTER COLUMN "instantiatesUri" TYPE TEXT[] USING array["instantiatesUri"]::TEXT[]');
-  await client.query('ALTER TABLE "Schedule" ALTER COLUMN "serviceCategory" TYPE TEXT[] USING array["serviceCategory"]::TEXT[]');
-  await client.query('ALTER TABLE "Schedule" ALTER COLUMN "serviceType" TYPE TEXT[] USING array["serviceType"]::TEXT[]');
+  await client.query(
+    'ALTER TABLE "Procedure" ALTER COLUMN "reasonReference" TYPE TEXT[] USING array["reasonReference"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "Questionnaire" ALTER COLUMN "subjectType" TYPE TEXT[] USING array["subjectType"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "QuestionnaireResponse" ALTER COLUMN "basedOn" TYPE TEXT[] USING array["basedOn"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "QuestionnaireResponse" ALTER COLUMN "partOf" TYPE TEXT[] USING array["partOf"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "RequestGroup" ALTER COLUMN "instantiatesCanonical" TYPE TEXT[] USING array["instantiatesCanonical"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "RequestGroup" ALTER COLUMN "instantiatesUri" TYPE TEXT[] USING array["instantiatesUri"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "Schedule" ALTER COLUMN "serviceCategory" TYPE TEXT[] USING array["serviceCategory"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "Schedule" ALTER COLUMN "serviceType" TYPE TEXT[] USING array["serviceType"]::TEXT[]'
+  );
   await client.query('ALTER TABLE "ServiceRequest" ALTER COLUMN "basedOn" TYPE TEXT[] USING array["basedOn"]::TEXT[]');
-  await client.query('ALTER TABLE "ServiceRequest" ALTER COLUMN "bodySite" TYPE TEXT[] USING array["bodySite"]::TEXT[]');
-  await client.query('ALTER TABLE "ServiceRequest" ALTER COLUMN "instantiatesCanonical" TYPE TEXT[] USING array["instantiatesCanonical"]::TEXT[]');
-  await client.query('ALTER TABLE "ServiceRequest" ALTER COLUMN "instantiatesUri" TYPE TEXT[] USING array["instantiatesUri"]::TEXT[]');
-  await client.query('ALTER TABLE "Slot" ALTER COLUMN "serviceCategory" TYPE TEXT[] USING array["serviceCategory"]::TEXT[]');
+  await client.query(
+    'ALTER TABLE "ServiceRequest" ALTER COLUMN "bodySite" TYPE TEXT[] USING array["bodySite"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "ServiceRequest" ALTER COLUMN "instantiatesCanonical" TYPE TEXT[] USING array["instantiatesCanonical"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "ServiceRequest" ALTER COLUMN "instantiatesUri" TYPE TEXT[] USING array["instantiatesUri"]::TEXT[]'
+  );
+  await client.query(
+    'ALTER TABLE "Slot" ALTER COLUMN "serviceCategory" TYPE TEXT[] USING array["serviceCategory"]::TEXT[]'
+  );
   await client.query('ALTER TABLE "Slot" ALTER COLUMN "serviceType" TYPE TEXT[] USING array["serviceType"]::TEXT[]');
   await client.query('ALTER TABLE "Task" ALTER COLUMN "basedOn" TYPE TEXT[] USING array["basedOn"]::TEXT[]');
   await client.query('ALTER TABLE "Task" ALTER COLUMN "partOf" TYPE TEXT[] USING array["partOf"]::TEXT[]');

@@ -16,7 +16,7 @@ export function MedplumLink(props: MedplumLinkProps) {
   let href = '#';
   if (props.to) {
     if (typeof props.to === 'string') {
-      href = props.to
+      href = props.to;
     } else if ('resourceType' in props.to) {
       href = `/${props.to.resourceType}/${props.to.id}`;
     } else if ('reference' in props.to) {
@@ -36,6 +36,8 @@ export function MedplumLink(props: MedplumLinkProps) {
           navigate(href);
         }
       }}
-    >{props.children}</a>
+    >
+      {props.children}
+    </a>
   );
 }

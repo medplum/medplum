@@ -28,12 +28,12 @@ export function BackboneElementInput(props: BackboneElementInputProps) {
   const typeName = buildTypeName(props.property.path?.split('.') as string[]);
   const typeSchema = props.schema.types[typeName];
   if (!typeSchema) {
-    return <div>Schema not found</div>
+    return <div>Schema not found</div>;
   }
 
   return (
     <>
-      {Object.entries(typeSchema.properties).map(entry => {
+      {Object.entries(typeSchema.properties).map((entry) => {
         const key = entry[0];
         if (DEFAULT_IGNORED_PROPERTIES.indexOf(key) >= 0) {
           return null;

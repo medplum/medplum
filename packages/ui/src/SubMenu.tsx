@@ -53,15 +53,11 @@ export function SubMenu(props: SubMenuProps): JSX.Element {
       className="medplum-menu-item medplum-submenu-item"
       onClick={() => show()}
       onMouseOver={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}>
+      onMouseLeave={() => setHover(false)}
+    >
       {props.title}
       <span className="medplum-submenu-arrow">{'\u25BA'}</span>
-      <Popup
-        visible={visible}
-        x={x}
-        y={0}
-        autoClose={true}
-        onClose={() => setVisible(false)}>
+      <Popup visible={visible} x={x} y={0} autoClose={true} onClose={() => setVisible(false)}>
         {props.children}
       </Popup>
     </div>

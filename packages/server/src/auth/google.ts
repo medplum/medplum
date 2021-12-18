@@ -59,7 +59,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
   const verifyOptions: JWTVerifyOptions = {
     issuer: 'https://accounts.google.com',
     algorithms: ['RS256'],
-    audience: clientId
+    audience: clientId,
   };
 
   const result = await jwtVerify(googleJwt, JWKS, verifyOptions);
@@ -70,7 +70,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     googleCredentials: claims,
     scope: 'openid',
     nonce: randomUUID(),
-    remember: true
+    remember: true,
   });
   assertOk(loginOutcome);
   await sendLoginResult(res, login as Login);

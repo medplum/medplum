@@ -12,16 +12,15 @@ jest.mock('jose', () => {
     ...original,
     jwtVerify: jest.fn(() => ({
       payload: {
-        email: 'admin@example.com'
-      }
-    }))
+        email: 'admin@example.com',
+      },
+    })),
   };
 });
 
 const app = express();
 
 describe('Google Auth', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -35,54 +34,41 @@ describe('Google Auth', () => {
   });
 
   test('Missing client ID', async () => {
-    const res = await request(app)
-      .post('/auth/google')
-      .type('json')
-      .send({
-        clientId: '',
-        credential: 'xyz'
-      });
+    const res = await request(app).post('/auth/google').type('json').send({
+      clientId: '',
+      credential: 'xyz',
+    });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Missing clientId');
   });
 
   test('Invalid client ID', async () => {
-    const res = await request(app)
-      .post('/auth/google')
-      .type('json')
-      .send({
-        clientId: '123',
-        credential: 'xyz'
-      });
+    const res = await request(app).post('/auth/google').type('json').send({
+      clientId: '123',
+      credential: 'xyz',
+    });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Invalid Google Client ID');
   });
 
   test('Missing credential', async () => {
-    const res = await request(app)
-      .post('/auth/google')
-      .type('json')
-      .send({
-        clientId: getConfig().googleClientId,
-        credential: ''
-      });
+    const res = await request(app).post('/auth/google').type('json').send({
+      clientId: getConfig().googleClientId,
+      credential: '',
+    });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Missing credential');
   });
 
   test('Success', async () => {
-    const res = await request(app)
-      .post('/auth/google')
-      .type('json')
-      .send({
-        clientId: getConfig().googleClientId,
-        credential: 'xyz'
-      });
+    const res = await request(app).post('/auth/google').type('json').send({
+      clientId: getConfig().googleClientId,
+      credential: 'xyz',
+    });
     expect(res.status).toBe(200);
     expect(res.body.code).toBeDefined();
   });
-
 });

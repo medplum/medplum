@@ -1,13 +1,5 @@
 import { getReferenceString } from '@medplum/core';
-import {
-  CssBaseline,
-  DefaultTheme,
-  FooterLinks,
-  Header,
-  Loading,
-  useMedplum,
-  useMedplumProfile
-} from '@medplum/ui';
+import { CssBaseline, DefaultTheme, FooterLinks, Header, Loading, useMedplum, useMedplumProfile } from '@medplum/ui';
 import React from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 import { EditMembershipPage } from './admin/EditMembershipPage';
@@ -64,14 +56,14 @@ export function App() {
                 { label: 'Encounters', href: '/Encounter' },
                 { label: 'Diagnostic Reports', href: '/DiagnosticReport' },
                 { label: 'Questionnaires', href: '/Questionnaire' },
-              ]
+              ],
             },
             {
               title: 'Admin',
               links: [
                 { label: 'Project', href: '/admin/project' },
-                { label: 'AccessPolicy', href: '/AccessPolicy' }
-              ]
+                { label: 'AccessPolicy', href: '/AccessPolicy' },
+              ],
             },
             {
               title: 'Developer',
@@ -79,16 +71,19 @@ export function App() {
                 { label: 'Client Applications', href: '/ClientApplication' },
                 { label: 'Subscriptions', href: '/Subscription' },
                 { label: 'Bots', href: '/Bot' },
-                { label: 'Batch', href: '/batch' }
-              ]
+                { label: 'Batch', href: '/batch' },
+              ],
             },
             {
               title: 'Settings',
               links: [
-                { label: 'Profile', href: `/${profile.resourceType}/${profile.id}` },
-                { label: 'Change Password', href: '/changepassword' }
-              ]
-            }
+                {
+                  label: 'Profile',
+                  href: `/${profile.resourceType}/${profile.id}`,
+                },
+                { label: 'Change Password', href: '/changepassword' },
+              ],
+            },
           ]}
         />
       )}

@@ -1,4 +1,13 @@
-src/
-node_modules/
-storybook-static/
 .storybook/
+coverage/
+dist/**/*.test.d.ts
+dist/**/*.test.js
+dist/**/*.test.js.map
+public/
+src/
+storybook-static/
+.env
+.env.defaults
+babel.config.json
+jest.config.json
+tsconfig.json

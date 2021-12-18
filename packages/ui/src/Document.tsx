@@ -9,9 +9,7 @@ export interface DocumentProps {
 export function Document(props: DocumentProps) {
   return (
     <main>
-      <article style={{ maxWidth: props.width }}>
-        {props.children}
-      </article>
+      <article style={{ maxWidth: props.width }}>{props.children}</article>
     </main>
   );
 }

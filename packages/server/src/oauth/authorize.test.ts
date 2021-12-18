@@ -13,7 +13,6 @@ const app = express();
 let client: ClientApplication;
 
 describe('OAuth Authorize', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -34,10 +33,9 @@ describe('OAuth Authorize', () => {
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
-      code_challenge_method: 'plain'
+      code_challenge_method: 'plain',
     });
-    const res = await request(app)
-      .get('/oauth2/authorize?' + params.toString());
+    const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(400);
   });
 
@@ -48,10 +46,9 @@ describe('OAuth Authorize', () => {
       redirect_uri: 'https://example2.com',
       scope: 'openid',
       code_challenge: 'xyz',
-      code_challenge_method: 'plain'
+      code_challenge_method: 'plain',
     });
-    const res = await request(app)
-      .get('/oauth2/authorize?' + params.toString());
+    const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(400);
   });
 
@@ -62,10 +59,9 @@ describe('OAuth Authorize', () => {
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
-      code_challenge_method: 'plain'
+      code_challenge_method: 'plain',
     });
-    const res = await request(app)
-      .get('/oauth2/authorize?' + params.toString())
+    const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(302);
 
     const location = new URL(res.headers.location);
@@ -80,10 +76,9 @@ describe('OAuth Authorize', () => {
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
-      request: 'unsupported-request'
+      request: 'unsupported-request',
     });
-    const res = await request(app)
-      .get('/oauth2/authorize?' + params.toString());
+    const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(302);
 
     const location = new URL(res.headers.location);
@@ -96,10 +91,9 @@ describe('OAuth Authorize', () => {
       client_id: client.id as string,
       redirect_uri: client.redirectUri as string,
       code_challenge: 'xyz',
-      code_challenge_method: 'plain'
+      code_challenge_method: 'plain',
     });
-    const res = await request(app)
-      .get('/oauth2/authorize?' + params.toString());
+    const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(302);
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('error')).toEqual('invalid_request');
@@ -112,10 +106,9 @@ describe('OAuth Authorize', () => {
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
-      code_challenge_method: 'plain'
+      code_challenge_method: 'plain',
     });
-    const res = await request(app)
-      .get('/oauth2/authorize?' + params.toString());
+    const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(200);
   });
 
@@ -126,7 +119,7 @@ describe('OAuth Authorize', () => {
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
-      code_challenge_method: 'plain'
+      code_challenge_method: 'plain',
     });
     const res = await request(app)
       .post('/oauth2/authorize?' + params.toString())
@@ -134,7 +127,7 @@ describe('OAuth Authorize', () => {
       .send({
         email: 'admin@example.com',
         password: 'admin',
-        nonce: 'asdf'
+        nonce: 'asdf',
       });
     expect(res.status).toBe(400);
   });
@@ -146,7 +139,7 @@ describe('OAuth Authorize', () => {
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
-      code_challenge_method: 'plain'
+      code_challenge_method: 'plain',
     });
     const res = await request(app)
       .post('/oauth2/authorize?' + params.toString())
@@ -154,7 +147,7 @@ describe('OAuth Authorize', () => {
       .send({
         email: 'admin@example.com',
         password: 'wrong-password',
-        nonce: 'asdf'
+        nonce: 'asdf',
       });
     expect(res.status).toBe(200);
     expect(res.text).toContain('Incorrect password');
@@ -165,7 +158,7 @@ describe('OAuth Authorize', () => {
       response_type: 'code',
       client_id: client.id as string,
       redirect_uri: client.redirectUri as string,
-      scope: 'openid'
+      scope: 'openid',
     });
     const res = await request(app)
       .post('/oauth2/authorize?' + params.toString())
@@ -173,7 +166,7 @@ describe('OAuth Authorize', () => {
       .send({
         email: 'admin@example.com',
         password: 'admin',
-        nonce: 'asdf'
+        nonce: 'asdf',
       });
     expect(res.status).toBe(302);
     expect(res.headers.location).toBeDefined();
@@ -189,7 +182,7 @@ describe('OAuth Authorize', () => {
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
-      code_challenge_method: 'plain'
+      code_challenge_method: 'plain',
     });
     const res = await request(app)
       .post('/oauth2/authorize?' + params.toString())
@@ -197,7 +190,7 @@ describe('OAuth Authorize', () => {
       .send({
         email: 'admin@example.com',
         password: 'admin',
-        nonce: 'asdf'
+        nonce: 'asdf',
       });
     expect(res.status).toBe(302);
     expect(res.headers.location).toBeDefined();
@@ -212,7 +205,7 @@ describe('OAuth Authorize', () => {
       client_id: client.id as string,
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
-      code_challenge: 'xyz'
+      code_challenge: 'xyz',
     });
     const res = await request(app)
       .post('/oauth2/authorize?' + params.toString())
@@ -220,7 +213,7 @@ describe('OAuth Authorize', () => {
       .send({
         email: 'admin@example.com',
         password: 'admin',
-        nonce: 'asdf'
+        nonce: 'asdf',
       });
     expect(res.status).toBe(302);
     const location = new URL(res.headers.location);
@@ -235,7 +228,7 @@ describe('OAuth Authorize', () => {
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
-      prompt: 'none'
+      prompt: 'none',
     });
     const res = await request(app)
       .post('/oauth2/authorize?' + params.toString())
@@ -243,7 +236,7 @@ describe('OAuth Authorize', () => {
       .send({
         email: 'admin@example.com',
         password: 'admin',
-        nonce: 'asdf'
+        nonce: 'asdf',
       });
     expect(res.status).toBe(302);
     expect(res.headers.location).toBeDefined();
@@ -259,7 +252,7 @@ describe('OAuth Authorize', () => {
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
-      code_challenge_method: 'plain'
+      code_challenge_method: 'plain',
     });
     const res = await request(app)
       .post('/oauth2/authorize?' + params.toString())
@@ -267,7 +260,7 @@ describe('OAuth Authorize', () => {
       .send({
         email: 'admin@example.com',
         password: 'admin',
-        nonce: 'asdf'
+        nonce: 'asdf',
       });
     expect(res.status).toBe(302);
     expect(res.headers['set-cookie']).toBeDefined();
@@ -281,7 +274,7 @@ describe('OAuth Authorize', () => {
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
-      prompt: 'none'
+      prompt: 'none',
     });
     const res2 = await request(app)
       .post('/oauth2/authorize?' + params2.toString())
@@ -290,8 +283,8 @@ describe('OAuth Authorize', () => {
       .send({
         email: 'admin@example.com',
         password: 'admin',
-        nonce: 'asdf'
-      })
+        nonce: 'asdf',
+      });
     expect(res2.status).toBe(302);
     expect(res2.headers.location).toBeDefined();
     const location = new URL(res2.headers.location);
@@ -307,7 +300,7 @@ describe('OAuth Authorize', () => {
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
-      code_challenge_method: 'plain'
+      code_challenge_method: 'plain',
     });
     const res = await request(app)
       .post('/oauth2/authorize?' + params.toString())
@@ -315,7 +308,7 @@ describe('OAuth Authorize', () => {
       .send({
         email: 'admin@example.com',
         password: 'admin',
-        nonce: 'asdf'
+        nonce: 'asdf',
       });
     expect(res.status).toBe(302);
     expect(res.status).toBe(302);
@@ -332,7 +325,7 @@ describe('OAuth Authorize', () => {
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
-      prompt: 'login'
+      prompt: 'login',
     });
     const res2 = await request(app)
       .get('/oauth2/authorize?' + params2.toString())
@@ -351,7 +344,7 @@ describe('OAuth Authorize', () => {
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
-      code_challenge_method: 'plain'
+      code_challenge_method: 'plain',
     });
     const res = await request(app)
       .post('/oauth2/authorize?' + params.toString())
@@ -360,7 +353,7 @@ describe('OAuth Authorize', () => {
         email: 'admin@example.com',
         password: 'admin',
         nonce: 'asdf',
-        state: 'xyz'
+        state: 'xyz',
       });
     expect(res.status).toBe(302);
     expect(res.status).toBe(302);
@@ -375,7 +368,7 @@ describe('OAuth Authorize', () => {
       .send({
         grant_type: 'authorization_code',
         code: location.searchParams.get('code'),
-        code_verifier: 'xyz'
+        code_verifier: 'xyz',
       });
     expect(res2.status).toBe(200);
     expect(res2.body.id_token).toBeDefined();
@@ -386,10 +379,9 @@ describe('OAuth Authorize', () => {
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
-      id_token_hint: res2.body.id_token
+      id_token_hint: res2.body.id_token,
     });
-    const res3 = await request(app)
-      .get('/oauth2/authorize?' + params2.toString());
+    const res3 = await request(app).get('/oauth2/authorize?' + params2.toString());
     expect(res3.status).toBe(302);
     expect(res3.headers.location).toBeDefined();
 
@@ -398,5 +390,4 @@ describe('OAuth Authorize', () => {
     expect(location2.searchParams.get('error')).toBeNull();
     expect(location2.searchParams.get('code')).not.toBeNull();
   });
-
 });

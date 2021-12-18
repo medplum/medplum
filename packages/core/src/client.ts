@@ -1,7 +1,18 @@
 // PKCE auth ased on:
 // https://aws.amazon.com/blogs/security/how-to-add-authentication-single-page-web-application-with-amazon-cognito-oauth2-implementation/
 
-import { Binary, Bundle, Project, ProjectMembership, Reference, Resource, SearchParameter, StructureDefinition, Subscription, ValueSet } from '@medplum/fhirtypes';
+import {
+  Binary,
+  Bundle,
+  Project,
+  ProjectMembership,
+  Reference,
+  Resource,
+  SearchParameter,
+  StructureDefinition,
+  Subscription,
+  ValueSet,
+} from '@medplum/fhirtypes';
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
@@ -228,7 +239,7 @@ export class MedplumClient extends EventTarget {
       codeChallenge: this.storage.getString('codeChallenge') as string,
       email,
       password,
-      remember: !!remember
+      remember: !!remember,
     }) as Promise<LoginAuthenticationResponse>;
   }
 
@@ -279,7 +290,7 @@ export class MedplumClient extends EventTarget {
 
   fhirUrl(...path: string[]): string {
     const builder = [this.baseUrl, 'fhir/R4'];
-    path.forEach(p => builder.push('/', encodeURIComponent(p)))
+    path.forEach((p) => builder.push('/', encodeURIComponent(p)));
     return builder.join('');
   }
 
@@ -301,17 +312,17 @@ export class MedplumClient extends EventTarget {
   searchValueSet(system: string, filter: string): Promise<ValueSet> {
     return this.get(
       this.fhirUrl('ValueSet', '$expand') +
-      `?url=${encodeURIComponent(system)}` +
-      `&filter=${encodeURIComponent(filter)}`);
+        `?url=${encodeURIComponent(system)}` +
+        `&filter=${encodeURIComponent(filter)}`
+    );
   }
 
   read<T extends Resource>(resourceType: string, id: string): Promise<T> {
     const cacheKey = resourceType + '/' + id;
-    const promise = this.get(this.fhirUrl(resourceType, id))
-      .then((resource: T) => {
-        this.resourceCache.set(cacheKey, resource);
-        return resource;
-      });
+    const promise = this.get(this.fhirUrl(resourceType, id)).then((resource: T) => {
+      this.resourceCache.set(cacheKey, resource);
+      return resource;
+    });
     this.resourceCache.set(cacheKey, promise);
     return promise;
   }
@@ -359,20 +370,24 @@ export class MedplumClient extends EventTarget {
         }
         typeDef = indexStructureDefinition(resource);
       })
-      .then(() => this.search<SearchParameter>({
-        resourceType: 'SearchParameter',
-        count: 100,
-        filters: [{
-          code: 'base',
-          operator: Operator.EQUALS,
-          value: resourceType
-        }]
-      }))
+      .then(() =>
+        this.search<SearchParameter>({
+          resourceType: 'SearchParameter',
+          count: 100,
+          filters: [
+            {
+              code: 'base',
+              operator: Operator.EQUALS,
+              value: resourceType,
+            },
+          ],
+        })
+      )
       .then((result: Bundle<SearchParameter>) => {
         const entries = result.entry;
         if (entries) {
           typeDef.types[resourceType].searchParams = entries
-            .map(e => e.resource as SearchParameter)
+            .map((e) => e.resource as SearchParameter)
             .sort((a, b) => a.name?.localeCompare(b.name as string) ?? 0);
         }
         this.schema.set(resourceType, typeDef);
@@ -427,11 +442,11 @@ export class MedplumClient extends EventTarget {
       status: 'active',
       criteria: criteria,
       channel: {
-        type: 'sse'
-      }
+        type: 'sse',
+      },
     }).then((sub: Subscription) => {
       const eventSource = new EventSource(this.baseUrl + 'sse?subscription=' + encodeURIComponent(sub.id as string), {
-        withCredentials: true
+        withCredentials: true,
       });
 
       eventSource.onmessage = (e: MessageEvent) => {
@@ -460,7 +475,7 @@ export class MedplumClient extends EventTarget {
   }
 
   private addLogin(newLogin: LoginState): void {
-    const logins = this.getLogins().filter(login => login.profile?.reference !== newLogin.profile?.reference);
+    const logins = this.getLogins().filter((login) => login.profile?.reference !== newLogin.profile?.reference);
     logins.push(newLogin);
     this.storage.setObject('logins', logins);
   }
@@ -492,12 +507,7 @@ export class MedplumClient extends EventTarget {
    * @param {string=} contentType
    * @param {Object=} body
    */
-  private async request(
-    method: string,
-    url: string,
-    contentType?: string,
-    body?: any): Promise<any> {
-
+  private async request(method: string, url: string, contentType?: string, body?: any): Promise<any> {
     if (this.refreshPromise) {
       await this.refreshPromise;
     }
@@ -507,7 +517,7 @@ export class MedplumClient extends EventTarget {
     }
 
     const headers: Record<string, string> = {
-      'Content-Type': contentType || FHIR_CONTENT_TYPE
+      'Content-Type': contentType || FHIR_CONTENT_TYPE,
     };
 
     const accessToken = this.getActiveLogin()?.accessToken;
@@ -519,7 +529,7 @@ export class MedplumClient extends EventTarget {
       method: method,
       cache: 'no-cache',
       credentials: 'include',
-      headers
+      headers,
     };
 
     if (body) {
@@ -557,14 +567,10 @@ export class MedplumClient extends EventTarget {
    * @param contentType The content type of the original request.
    * @param body The body of the original request.
    */
-  private async handleUnauthenticated(
-    method: string,
-    url: string,
-    contentType?: string,
-    body?: any): Promise<any> {
+  private async handleUnauthenticated(method: string, url: string, contentType?: string, body?: any): Promise<any> {
     return this.refresh()
       .then(() => this.request(method, url, contentType, body))
-      .catch(error => {
+      .catch((error) => {
         this.clear();
         if (this.onUnauthenticated) {
           this.onUnauthenticated();
@@ -585,10 +591,7 @@ export class MedplumClient extends EventTarget {
     this.storage.setString('codeVerifier', codeVerifier);
 
     const arrayHash = await encryptSHA256(codeVerifier);
-    const codeChallenge = arrayBufferToBase64(arrayHash)
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
+    const codeChallenge = arrayBufferToBase64(arrayHash).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
     this.storage.setString('codeChallenge', codeChallenge);
   }
 
@@ -604,14 +607,21 @@ export class MedplumClient extends EventTarget {
 
     this.startPkce();
 
-    window.location.assign(this.authorizeUrl +
-      '?response_type=code' +
-      '&state=' + encodeURIComponent(this.storage.getString('pkceState') as string) +
-      '&client_id=' + encodeURIComponent(this.clientId) +
-      '&redirect_uri=' + encodeURIComponent(getBaseUrl()) +
-      '&scope=' + encodeURIComponent(DEFAULT_SCOPE) +
-      '&code_challenge_method=S256' +
-      '&code_challenge=' + encodeURIComponent(this.storage.getString('codeChallenge') as string));
+    window.location.assign(
+      this.authorizeUrl +
+        '?response_type=code' +
+        '&state=' +
+        encodeURIComponent(this.storage.getString('pkceState') as string) +
+        '&client_id=' +
+        encodeURIComponent(this.clientId) +
+        '&redirect_uri=' +
+        encodeURIComponent(getBaseUrl()) +
+        '&scope=' +
+        encodeURIComponent(DEFAULT_SCOPE) +
+        '&code_challenge_method=S256' +
+        '&code_challenge=' +
+        encodeURIComponent(this.storage.getString('codeChallenge') as string)
+    );
   }
 
   /**
@@ -634,10 +644,14 @@ export class MedplumClient extends EventTarget {
 
     return this.fetchTokens(
       'grant_type=authorization_code' +
-      (this.clientId ? '&client_id=' + encodeURIComponent(this.clientId) : '') +
-      '&code_verifier=' + encodeURIComponent(codeVerifier) +
-      '&redirect_uri=' + encodeURIComponent(getBaseUrl()) +
-      '&code=' + encodeURIComponent(code));
+        (this.clientId ? '&client_id=' + encodeURIComponent(this.clientId) : '') +
+        '&code_verifier=' +
+        encodeURIComponent(codeVerifier) +
+        '&redirect_uri=' +
+        encodeURIComponent(getBaseUrl()) +
+        '&code=' +
+        encodeURIComponent(code)
+    );
   }
 
   /**
@@ -657,8 +671,11 @@ export class MedplumClient extends EventTarget {
 
     this.refreshPromise = this.fetchTokens(
       'grant_type=refresh_token' +
-      '&client_id=' + encodeURIComponent(this.clientId) +
-      '&refresh_token=' + encodeURIComponent(refreshToken));
+        '&client_id=' +
+        encodeURIComponent(this.clientId) +
+        '&refresh_token=' +
+        encodeURIComponent(refreshToken)
+    );
 
     await this.refreshPromise;
   }
@@ -673,20 +690,18 @@ export class MedplumClient extends EventTarget {
       return Promise.reject('Missing token URL');
     }
 
-    return this.fetch(
-      this.tokenUrl,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: formBody
-      })
-      .then(response => {
+    return this.fetch(this.tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formBody,
+    })
+      .then((response) => {
         if (!response.ok) {
           return Promise.reject('Failed to fetch tokens');
         }
         return response.json();
       })
-      .then(tokens => this.verifyTokens(tokens))
+      .then((tokens) => this.verifyTokens(tokens))
       .then(() => this.profile as ProfileResource);
   }
 

@@ -17,7 +17,7 @@ function mockFetch(url: string, options: any): Promise<any> {
       status = 301;
       result = {
         login: '1',
-        code: '1'
+        code: '1',
       };
     } else if (email === 'multiple@medplum.com' && password === 'admin') {
       status = 200;
@@ -28,54 +28,56 @@ function mockFetch(url: string, options: any): Promise<any> {
             id: '100',
             profile: {
               reference: 'Practitioner/123',
-              display: 'Alice Smith'
+              display: 'Alice Smith',
             },
             project: {
               reference: 'Project/1',
-              display: 'Project 1'
+              display: 'Project 1',
             },
           },
           {
             id: '101',
             profile: {
               reference: 'Practitioner/234',
-              display: 'Bob Jones'
+              display: 'Bob Jones',
             },
             project: {
               reference: 'Project/2',
-              display: 'Project 2'
+              display: 'Project 2',
             },
-          }
-        ]
+          },
+        ],
       };
     } else if (email !== 'admin@example.com') {
       result = {
         resourceType: 'OperationOutcome',
-        issue: [{
-          expression: ['email'],
-          details: {
-            text: 'User not found'
-          }
-        }]
+        issue: [
+          {
+            expression: ['email'],
+            details: {
+              text: 'User not found',
+            },
+          },
+        ],
       };
     } else {
       result = {
         resourceType: 'OperationOutcome',
-        issue: [{
-          expression: ['password'],
-          details: {
-            text: 'Incorrect password'
-          }
-        }]
+        issue: [
+          {
+            expression: ['password'],
+            details: {
+              text: 'Incorrect password',
+            },
+          },
+        ],
       };
     }
-
   } else if (options.method === 'POST' && url.endsWith('auth/profile')) {
     result = {
       login: '1',
-      code: '1'
+      code: '1',
     };
-
   } else if (options.method === 'GET' && url.endsWith('Practitioner/123')) {
     status = 200;
     result = {
@@ -83,7 +85,6 @@ function mockFetch(url: string, options: any): Promise<any> {
       id: '123',
       name: [{ given: ['Medplum'], family: ['Admin'] }],
     };
-
   } else if (options.method === 'POST' && url.endsWith('/oauth2/token')) {
     status = 200;
     result = {
@@ -93,9 +94,8 @@ function mockFetch(url: string, options: any): Promise<any> {
       token_type: 'Bearer',
       scope: 'openid',
       project: { reference: 'Project/123' },
-      profile: { reference: 'Practitioner/123' }
+      profile: { reference: 'Practitioner/123' },
     };
-
   } else {
     console.log(options.method, url);
   }
@@ -103,22 +103,22 @@ function mockFetch(url: string, options: any): Promise<any> {
   const response: any = {
     request: {
       url,
-      options
+      options,
     },
     status,
-    ...result
+    ...result,
   };
 
   return Promise.resolve({
     ok: status < 400,
-    json: () => Promise.resolve(response)
+    json: () => Promise.resolve(response),
   });
 }
 
 const medplum = new MedplumClient({
   baseUrl: 'https://example.com/',
   clientId: 'my-client-id',
-  fetch: mockFetch
+  fetch: mockFetch,
 });
 
 const setup = (args?: SignInFormProps) => {
@@ -126,7 +126,7 @@ const setup = (args?: SignInFormProps) => {
 
   const props = {
     onSuccess: jest.fn(),
-    ...args
+    ...args,
   };
   return render(
     <MemoryRouter>
@@ -138,14 +138,13 @@ const setup = (args?: SignInFormProps) => {
 };
 
 describe('SignInForm', () => {
-
   beforeAll(() => {
     Object.defineProperty(global, 'TextEncoder', {
-      value: TextEncoder
+      value: TextEncoder,
     });
 
     Object.defineProperty(global.self, 'crypto', {
-      value: crypto.webcrypto
+      value: crypto.webcrypto,
     });
   });
 
@@ -159,15 +158,19 @@ describe('SignInForm', () => {
     let success = false;
 
     setup({
-      onSuccess: () => success = true
+      onSuccess: () => (success = true),
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), { target: { value: 'admin@example.com' } });
+      fireEvent.change(screen.getByTestId('email'), {
+        target: { value: 'admin@example.com' },
+      });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), { target: { value: 'admin' } });
+      fireEvent.change(screen.getByTestId('password'), {
+        target: { value: 'admin' },
+      });
     });
 
     await act(async () => {
@@ -184,11 +187,15 @@ describe('SignInForm', () => {
     expect(medplum.getProfile()).toBeUndefined();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), { target: { value: 'admin@example.com' } });
+      fireEvent.change(screen.getByTestId('email'), {
+        target: { value: 'admin@example.com' },
+      });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), { target: { value: 'admin' } });
+      fireEvent.change(screen.getByTestId('password'), {
+        target: { value: 'admin' },
+      });
     });
 
     await act(async () => {
@@ -204,15 +211,19 @@ describe('SignInForm', () => {
     let success = false;
 
     setup({
-      onSuccess: () => success = true
+      onSuccess: () => (success = true),
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), { target: { value: 'multiple@medplum.com' } });
+      fireEvent.change(screen.getByTestId('email'), {
+        target: { value: 'multiple@medplum.com' },
+      });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), { target: { value: 'admin' } });
+      fireEvent.change(screen.getByTestId('password'), {
+        target: { value: 'admin' },
+      });
     });
 
     await act(async () => {
@@ -236,11 +247,15 @@ describe('SignInForm', () => {
     setup();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), { target: { value: 'not-found@example.com' } });
+      fireEvent.change(screen.getByTestId('email'), {
+        target: { value: 'not-found@example.com' },
+      });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), { target: { value: 'admin' } });
+      fireEvent.change(screen.getByTestId('password'), {
+        target: { value: 'admin' },
+      });
     });
 
     await act(async () => {
@@ -258,11 +273,15 @@ describe('SignInForm', () => {
     setup();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), { target: { value: 'not-found@example.com' } });
+      fireEvent.change(screen.getByTestId('email'), {
+        target: { value: 'not-found@example.com' },
+      });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), { target: { value: 'admin' } });
+      fireEvent.change(screen.getByTestId('password'), {
+        target: { value: 'admin' },
+      });
     });
 
     await act(async () => {
@@ -279,7 +298,7 @@ describe('SignInForm', () => {
   test('Forgot password', async () => {
     const props = {
       onForgotPassword: jest.fn(),
-      onSuccess: jest.fn()
+      onSuccess: jest.fn(),
     };
 
     setup(props);
@@ -294,7 +313,7 @@ describe('SignInForm', () => {
   test('Register', async () => {
     const props = {
       onRegister: jest.fn(),
-      onSuccess: jest.fn()
+      onSuccess: jest.fn(),
     };
 
     setup(props);
@@ -311,14 +330,14 @@ describe('SignInForm', () => {
       accounts: {
         id: {
           initialize: jest.fn(),
-          prompt: jest.fn()
-        }
-      }
+          prompt: jest.fn(),
+        },
+      },
     };
 
     setup({
       onSuccess: jest.fn(),
-      googleClientId: '123'
+      googleClientId: '123',
     });
 
     await act(async () => {
@@ -328,5 +347,4 @@ describe('SignInForm', () => {
     expect((window as any).google.accounts.id.initialize).toHaveBeenCalled();
     expect((window as any).google.accounts.id.prompt).toHaveBeenCalled();
   });
-
 });

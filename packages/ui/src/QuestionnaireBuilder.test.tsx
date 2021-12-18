@@ -17,13 +17,12 @@ const setup = (args: QuestionnaireBuilderProps) => {
 };
 
 describe('QuestionnaireBuilder', () => {
-
   test('Renders empty', () => {
     setup({
       questionnaire: {
-        resourceType: 'Questionnaire'
+        resourceType: 'Questionnaire',
       },
-      onSubmit: jest.fn()
+      onSubmit: jest.fn(),
     });
     expect(screen.getByTestId('questionnaire-form')).toBeDefined();
   });
@@ -32,37 +31,44 @@ describe('QuestionnaireBuilder', () => {
     setup({
       questionnaire: {
         resourceType: 'Questionnaire',
-        item: [{
-          linkId: 'group1',
-          text: 'Group 1',
-          type: 'group',
-          item: [{
-            linkId: 'question1',
-            text: 'Question 1',
-            type: 'string'
+        item: [
+          {
+            linkId: 'group1',
+            text: 'Group 1',
+            type: 'group',
+            item: [
+              {
+                linkId: 'question1',
+                text: 'Question 1',
+                type: 'string',
+              },
+              {
+                linkId: 'question2',
+                text: 'Question 2',
+                type: 'string',
+              },
+            ],
           },
           {
-            linkId: 'question2',
-            text: 'Question 2',
-            type: 'string'
-          }]
-        }, {
-          linkId: 'group2',
-          text: 'Group 2',
-          type: 'group',
-          item: [{
-            linkId: 'question3',
-            text: 'Question 3',
-            type: 'string'
+            linkId: 'group2',
+            text: 'Group 2',
+            type: 'group',
+            item: [
+              {
+                linkId: 'question3',
+                text: 'Question 3',
+                type: 'string',
+              },
+              {
+                linkId: 'question4',
+                text: 'Question 4',
+                type: 'string',
+              },
+            ],
           },
-          {
-            linkId: 'question4',
-            text: 'Question 4',
-            type: 'string'
-          }]
-        }]
+        ],
       },
-      onSubmit: jest.fn()
+      onSubmit: jest.fn(),
     });
 
     expect(screen.getByTestId('questionnaire-form')).toBeDefined();
@@ -80,31 +86,31 @@ describe('QuestionnaireBuilder', () => {
           {
             linkId: 'q1',
             type: QuestionnaireItemType.string,
-            text: 'q1'
+            text: 'q1',
           },
           {
             linkId: 'q2',
             type: QuestionnaireItemType.integer,
-            text: 'q1'
+            text: 'q1',
           },
           {
             linkId: 'q3',
             type: QuestionnaireItemType.date,
-            text: 'q3'
+            text: 'q3',
           },
           {
             linkId: '', // Silently ignore missing linkId
             type: QuestionnaireItemType.string,
-            text: 'q4'
+            text: 'q4',
           },
           {
             linkId: 'q5',
             type: '', // Silently ignore missing type
-            text: 'q5'
-          }
-        ]
+            text: 'q5',
+          },
+        ],
       },
-      onSubmit
+      onSubmit,
     });
 
     expect(screen.getByText('OK')).toBeDefined();
@@ -122,13 +128,15 @@ describe('QuestionnaireBuilder', () => {
     setup({
       questionnaire: {
         resourceType: 'Questionnaire',
-        item: [{
-          linkId: 'question1',
-          text: 'Question 1',
-          type: 'string'
-        }]
+        item: [
+          {
+            linkId: 'question1',
+            text: 'Question 1',
+            type: 'string',
+          },
+        ],
       },
-      onSubmit
+      onSubmit,
     });
 
     expect(screen.getByText('Question 1')).toBeDefined();
@@ -138,7 +146,9 @@ describe('QuestionnaireBuilder', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByDisplayValue('Question 1'), { target: { value: 'Renamed' } });
+      fireEvent.change(screen.getByDisplayValue('Question 1'), {
+        target: { value: 'Renamed' },
+      });
     });
 
     await act(async () => {
@@ -148,13 +158,14 @@ describe('QuestionnaireBuilder', () => {
     expect(onSubmit).toBeCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
-      item: [{
-        linkId: 'question1',
-        text: 'Renamed',
-        type: 'string'
-      }]
+      item: [
+        {
+          linkId: 'question1',
+          text: 'Renamed',
+          type: 'string',
+        },
+      ],
     });
-
   });
 
   test('Add item', async () => {
@@ -164,13 +175,15 @@ describe('QuestionnaireBuilder', () => {
       questionnaire: {
         resourceType: 'Questionnaire',
         title: 'My questionnaire',
-        item: [{
-          linkId: 'question1',
-          text: 'Question 1',
-          type: 'string'
-        }]
+        item: [
+          {
+            linkId: 'question1',
+            text: 'Question 1',
+            type: 'string',
+          },
+        ],
       },
-      onSubmit
+      onSubmit,
     });
 
     await act(async () => {
@@ -188,16 +201,18 @@ describe('QuestionnaireBuilder', () => {
     expect(onSubmit).toBeCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
-      item: [{
-        linkId: 'question1',
-        text: 'Question 1',
-        type: 'string'
-      }, {
-        text: 'Question',
-        type: 'string'
-      }]
+      item: [
+        {
+          linkId: 'question1',
+          text: 'Question 1',
+          type: 'string',
+        },
+        {
+          text: 'Question',
+          type: 'string',
+        },
+      ],
     });
-
   });
 
   test('Remove item', async () => {
@@ -207,17 +222,20 @@ describe('QuestionnaireBuilder', () => {
       questionnaire: {
         resourceType: 'Questionnaire',
         title: 'My questionnaire',
-        item: [{
-          linkId: 'question1',
-          text: 'Question 1',
-          type: 'string'
-        }, {
-          linkId: 'question2',
-          text: 'Question 2',
-          type: 'string'
-        }]
+        item: [
+          {
+            linkId: 'question1',
+            text: 'Question 1',
+            type: 'string',
+          },
+          {
+            linkId: 'question2',
+            text: 'Question 2',
+            type: 'string',
+          },
+        ],
       },
-      onSubmit
+      onSubmit,
     });
 
     await act(async () => {
@@ -235,13 +253,14 @@ describe('QuestionnaireBuilder', () => {
     expect(onSubmit).toBeCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
-      item: [{
-        linkId: 'question2',
-        text: 'Question 2',
-        type: 'string'
-      }]
+      item: [
+        {
+          linkId: 'question2',
+          text: 'Question 2',
+          type: 'string',
+        },
+      ],
     });
-
   });
 
   test('Add group', async () => {
@@ -251,13 +270,15 @@ describe('QuestionnaireBuilder', () => {
       questionnaire: {
         resourceType: 'Questionnaire',
         title: 'My questionnaire',
-        item: [{
-          linkId: 'question1',
-          text: 'Question 1',
-          type: 'string'
-        }]
+        item: [
+          {
+            linkId: 'question1',
+            text: 'Question 1',
+            type: 'string',
+          },
+        ],
       },
-      onSubmit
+      onSubmit,
     });
 
     await act(async () => {
@@ -275,15 +296,17 @@ describe('QuestionnaireBuilder', () => {
     expect(onSubmit).toBeCalled();
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
-      item: [{
-        linkId: 'question1',
-        text: 'Question 1',
-        type: 'string'
-      }, {
-        type: 'group'
-      }]
+      item: [
+        {
+          linkId: 'question1',
+          text: 'Question 1',
+          type: 'string',
+        },
+        {
+          type: 'group',
+        },
+      ],
     });
-
   });
 
   test('Change title', async () => {
@@ -293,13 +316,15 @@ describe('QuestionnaireBuilder', () => {
       questionnaire: {
         resourceType: 'Questionnaire',
         title: 'My questionnaire',
-        item: [{
-          linkId: 'question1',
-          text: 'Question 1',
-          type: 'string'
-        }]
+        item: [
+          {
+            linkId: 'question1',
+            text: 'Question 1',
+            type: 'string',
+          },
+        ],
       },
-      onSubmit
+      onSubmit,
     });
 
     await act(async () => {
@@ -307,7 +332,9 @@ describe('QuestionnaireBuilder', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByDisplayValue('My questionnaire'), { target: { value: 'Renamed' } });
+      fireEvent.change(screen.getByDisplayValue('My questionnaire'), {
+        target: { value: 'Renamed' },
+      });
     });
 
     await act(async () => {
@@ -318,13 +345,13 @@ describe('QuestionnaireBuilder', () => {
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       title: 'Renamed',
-      item: [{
-        linkId: 'question1',
-        text: 'Question 1',
-        type: 'string'
-      }]
+      item: [
+        {
+          linkId: 'question1',
+          text: 'Question 1',
+          type: 'string',
+        },
+      ],
     });
-
   });
-
 });

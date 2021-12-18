@@ -25,19 +25,31 @@ export function HumanNameInput(props: HumanNameInputProps) {
   }
 
   function setPrefix(prefix: string) {
-    setValueWrapper({ ...valueRef.current, prefix: prefix ? prefix.split(' ') : undefined });
+    setValueWrapper({
+      ...valueRef.current,
+      prefix: prefix ? prefix.split(' ') : undefined,
+    });
   }
 
   function setGiven(given: string) {
-    setValueWrapper({ ...valueRef.current, given: given ? given.split(' ') : undefined });
+    setValueWrapper({
+      ...valueRef.current,
+      given: given ? given.split(' ') : undefined,
+    });
   }
 
   function setFamily(family: string) {
-    setValueWrapper({ ...valueRef.current, family: family ? family : undefined });
+    setValueWrapper({
+      ...valueRef.current,
+      family: family ? family : undefined,
+    });
   }
 
   function setSuffix(suffix: string) {
-    setValueWrapper({ ...valueRef.current, suffix: suffix ? suffix.split(' ') : undefined });
+    setValueWrapper({
+      ...valueRef.current,
+      suffix: suffix ? suffix.split(' ') : undefined,
+    });
   }
 
   return (
@@ -45,11 +57,7 @@ export function HumanNameInput(props: HumanNameInputProps) {
       <tbody>
         <tr>
           <td>
-            <select
-              defaultValue={value?.use}
-              onChange={e => setUse(e.currentTarget.value)}
-              data-testid="use"
-            >
+            <select defaultValue={value?.use} onChange={(e) => setUse(e.currentTarget.value)} data-testid="use">
               <option></option>
               <option>usual</option>
               <option>official</option>
@@ -65,7 +73,7 @@ export function HumanNameInput(props: HumanNameInputProps) {
               type="text"
               placeholder="Prefix"
               defaultValue={value?.prefix?.join(' ')}
-              onChange={e => setPrefix(e.currentTarget.value)}
+              onChange={(e) => setPrefix(e.currentTarget.value)}
             />
           </td>
           <td>
@@ -73,7 +81,7 @@ export function HumanNameInput(props: HumanNameInputProps) {
               type="text"
               placeholder="Given"
               defaultValue={value?.given?.join(' ')}
-              onChange={e => setGiven(e.currentTarget.value)}
+              onChange={(e) => setGiven(e.currentTarget.value)}
             />
           </td>
           <td>
@@ -81,7 +89,7 @@ export function HumanNameInput(props: HumanNameInputProps) {
               type="text"
               placeholder="Family"
               defaultValue={value?.family}
-              onChange={e => setFamily(e.currentTarget.value)}
+              onChange={(e) => setFamily(e.currentTarget.value)}
             />
           </td>
           <td>
@@ -89,7 +97,7 @@ export function HumanNameInput(props: HumanNameInputProps) {
               type="text"
               placeholder="Suffix"
               defaultValue={value?.suffix?.join(' ')}
-              onChange={e => setSuffix(e.currentTarget.value)}
+              onChange={(e) => setSuffix(e.currentTarget.value)}
             />
           </td>
         </tr>

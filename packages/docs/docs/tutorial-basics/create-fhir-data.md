@@ -6,20 +6,20 @@ sidebar_position: 2
 
 This is a quickstart sample application that introduces some basic FHIR and Medplum concepts.
 
-[Full source code](https://github.com/codyebberson/lab-demo-js) for this sample application is available.  The core logic for the application can be found [here](https://github.com/codyebberson/lab-demo-js/blob/main/index.js)
+[Full source code](https://github.com/codyebberson/lab-demo-js) for this sample application is available. The core logic for the application can be found [here](https://github.com/codyebberson/lab-demo-js/blob/main/index.js)
 
 ## Prerequisites
 
 You will need the following to get started and instructions on how to set this up were covered in the previous article.
 
-* Make sure you have an account and log into [Medplum](https://app.medplum.com)
-* Log in and create [Client Application](https://app.medplum.com/ClientApplication)
-* Save the Client ID and Client Secret, they will be needed to get your sample to run.
+- Make sure you have an account and log into [Medplum](https://app.medplum.com)
+- Log in and create [Client Application](https://app.medplum.com/ClientApplication)
+- Save the Client ID and Client Secret, they will be needed to get your sample to run.
 
 These three requirements will need to be in place to connect
 
 ```js
-const BASE_URL = 'https://api.medplum.com/' // if you are connecting to an on premise deployment, these values may be different;
+const BASE_URL = 'https://api.medplum.com/'; // if you are connecting to an on premise deployment, these values may be different;
 const MY_CLIENT_ID = 'MY_CLIENT_ID';
 const MY_CLIENT_SECRET = 'MY_CLIENT_SECRET';
 ```
@@ -32,13 +32,13 @@ This example will illustrate how to create FHIR object, how to update them, how 
 
 Here is a breakdown of workflow at a high level
 
-* Authenticate with the server using OAuth client credentials flow
-* Use FHIR batch request to create a [Patient](../fhir/patient) and a [ServiceRequest](../fhir/servicerequest)
-  * The example will use a conditional to only create the Patient if it does not already exist
-  * The example will link the ServiceRequest to the Patient
-* Create an [Observation](../fhir/observation) and DiagnosticReport resources
-* Read back the [DiagnosticReport](../fhir/diagnosticreport) and [Observations](../fhir/observations)
-  * Use a batch request to read all Observations in one go, versus making mulitple requests
+- Authenticate with the server using OAuth client credentials flow
+- Use FHIR batch request to create a [Patient](../fhir/patient) and a [ServiceRequest](../fhir/servicerequest)
+  - The example will use a conditional to only create the Patient if it does not already exist
+  - The example will link the ServiceRequest to the Patient
+- Create an [Observation](../fhir/observation) and DiagnosticReport resources
+- Read back the [DiagnosticReport](../fhir/diagnosticreport) and [Observations](../fhir/observations)
+  - Use a batch request to read all Observations in one go, versus making mulitple requests
 
 ## Authenticating using OAuth client credentials flow
 
@@ -54,9 +54,9 @@ async function authenticate() {
   const response = await fetch(BASE_URL + 'oauth2/token', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
+      'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: `grant_type=client_credentials&client_id=${MY_CLIENT_ID}&client_secret=${MY_CLIENT_SECRET}`
+    body: `grant_type=client_credentials&client_id=${MY_CLIENT_ID}&client_secret=${MY_CLIENT_SECRET}`,
   });
 
   if (!response.ok) {
@@ -72,9 +72,9 @@ async function authenticate() {
 
 ## Using a FHIR batch request to write data
 
-[Patient](../fhir/patient) and a [ServiceRequest](../fhir/servicerequest) sounds simple, but there are several nuances.  If the [Patient](../fhir/patient) already exists, a new one should not be created.  We also need to ensure that the [ServiceRequest](../fhir/servicerequest) is linked to the correct patient.
+[Patient](../fhir/patient) and a [ServiceRequest](../fhir/servicerequest) sounds simple, but there are several nuances. If the [Patient](../fhir/patient) already exists, a new one should not be created. We also need to ensure that the [ServiceRequest](../fhir/servicerequest) is linked to the correct patient.
 
-Creating a Patient if one does not exist uses the **conditional create** logic in FHIR.  In this example, a patient has an Medical Record Number or MRN.  If that MRN exists, then a new patient should not be created.  In a lab workflow, it is common for a lab to serve patients repeatedly.  In this case where there is already a patient in the system, it would be incorrect (and confusing) to make a new patient record.
+Creating a Patient if one does not exist uses the **conditional create** logic in FHIR. In this example, a patient has an Medical Record Number or MRN. If that MRN exists, then a new patient should not be created. In a lab workflow, it is common for a lab to serve patients repeatedly. In this case where there is already a patient in the system, it would be incorrect (and confusing) to make a new patient record.
 
 ```js
 /**
@@ -99,8 +99,8 @@ async function createServiceRequest() {
   const response = await fetch(BASE_URL + 'fhir/R4/', {
     method: 'POST',
     headers: {
-      'Authorization': 'Bearer ' + accessToken,
-      'Content-Type': 'application/fhir+json'
+      Authorization: 'Bearer ' + accessToken,
+      'Content-Type': 'application/fhir+json',
     },
     body: JSON.stringify({
       resourceType: 'Bundle',
@@ -113,41 +113,48 @@ async function createServiceRequest() {
           request: {
             method: 'POST',
             url: 'Patient',
-            ifNoneExist: 'identifier=' + exampleMrn
+            ifNoneExist: 'identifier=' + exampleMrn,
           },
           resource: {
             resourceType: 'Patient',
             name: [{ given: ['Batch'], family: 'Test' }],
             birthDate: '2020-01-01',
             gender: 'male',
-            identifier: [{ system: 'https://namespace.example.health/', value: exampleMrn }]
-          }
+            identifier: [
+              {
+                system: 'https://namespace.example.health/',
+                value: exampleMrn,
+              },
+            ],
+          },
         },
         // Next, create the service request.
         // Use the local ID feature ("urn:uuid:") to link the ServiceRequest to the Patient.
         {
           request: {
             method: 'POST',
-            url: 'ServiceRequest'
+            url: 'ServiceRequest',
           },
           resource: {
             resourceType: 'ServiceRequest',
             subject: {
-              reference: patientUrn
+              reference: patientUrn,
             },
             code: {
-              coding: [{
-                system: 'https://samplelab.com/tests',
-                code: 'SAMPLE_SKU'
-              }]
-            }
-          }
-        }
-      ]
-    })
+              coding: [
+                {
+                  system: 'https://samplelab.com/tests',
+                  code: 'SAMPLE_SKU',
+                },
+              ],
+            },
+          },
+        },
+      ],
+    }),
   });
 
-    const data = await response.json();
+  const data = await response.json();
   console.log(JSON.stringify(data, undefined, 2));
 
   // Should print "Created" or "OK"
@@ -167,17 +174,17 @@ async function createServiceRequest() {
 }
 ```
 
-The behavior of the the `Patient.identifier` field is important to note.  `Patient.identifier` usually has a reference string or URL that describes which system that identifier came from.  [Identifiers](http://www.hl7.org/fhir/datatypes.html#Identifier) are a concept in FHIR which describe the context in which that identifier is generated, for example, and identifier could be a Social Security Number (SSN) or be created by a health system for their own internal purposes.  Here is an example of an identifier scheme for the [Australian Healthcare system](https://namespaces.digitalhealth.gov.au/id/hi/ihi/1.0/).
+The behavior of the the `Patient.identifier` field is important to note. `Patient.identifier` usually has a reference string or URL that describes which system that identifier came from. [Identifiers](http://www.hl7.org/fhir/datatypes.html#Identifier) are a concept in FHIR which describe the context in which that identifier is generated, for example, and identifier could be a Social Security Number (SSN) or be created by a health system for their own internal purposes. Here is an example of an identifier scheme for the [Australian Healthcare system](https://namespaces.digitalhealth.gov.au/id/hi/ihi/1.0/).
 
 We recommend that providers put documentation of their identifier system online for interoperability purposes.
 
-Creating a new [ServiceRequest](../fhir/servicerequest) also has some nuance to it.  ServiceRequests in this context can be thought of as a "requisition for a lab test" and the `ServiceRequest.code` specifies *what test panel* is being ordered.  Most labs will have a concept of a test menu and that should indicate which labs should be run for this service request.
+Creating a new [ServiceRequest](../fhir/servicerequest) also has some nuance to it. ServiceRequests in this context can be thought of as a "requisition for a lab test" and the `ServiceRequest.code` specifies _what test panel_ is being ordered. Most labs will have a concept of a test menu and that should indicate which labs should be run for this service request.
 
 TODO: Add to sample how to indicate that this is a lab requisition (vs procedure)
 
-Note that there are many fields on the requisition, and filling them in with the right data is crucial.  This example is minimal for clarity.
+Note that there are many fields on the requisition, and filling them in with the right data is crucial. This example is minimal for clarity.
 
-If you are using the [hosted Medplum service](https://app.medplum.com) you can see your `ServiceRequest` objects [here](https://app.medplum.com/ServiceRequest).  Similarly, you can see `Patients` [here](https://app.medplum.com/Patient).
+If you are using the [hosted Medplum service](https://app.medplum.com) you can see your `ServiceRequest` objects [here](https://app.medplum.com/ServiceRequest). Similarly, you can see `Patients` [here](https://app.medplum.com/Patient).
 
 ## Creating the Diagnostic Report
 
@@ -196,8 +203,8 @@ async function createReport(patientId, serviceRequestId) {
   const response = await fetch(BASE_URL + 'fhir/R4/', {
     method: 'POST',
     headers: {
-      'Authorization': 'Bearer ' + accessToken,
-      'Content-Type': 'application/fhir+json'
+      Authorization: 'Bearer ' + accessToken,
+      'Content-Type': 'application/fhir+json',
     },
     body: JSON.stringify({
       resourceType: 'Bundle',
@@ -208,93 +215,105 @@ async function createReport(patientId, serviceRequestId) {
           fullUrl: observtionUrn1,
           request: {
             method: 'POST',
-            url: 'Observation'
+            url: 'Observation',
           },
           resource: {
             resourceType: 'Observation',
-            basedOn: [{
-              reference: serviceRequestId
-            }],
+            basedOn: [
+              {
+                reference: serviceRequestId,
+              },
+            ],
             subject: {
-              reference: patientId
+              reference: patientId,
             },
             code: {
-              coding: [{
-                system: 'https://samplelabtests.com/tests',
-                code: 'A1c',
-                display: 'A1c'
-              }]
+              coding: [
+                {
+                  system: 'https://samplelabtests.com/tests',
+                  code: 'A1c',
+                  display: 'A1c',
+                },
+              ],
             },
             valueQuantity: {
               value: 5.7,
               unit: 'mg/dL',
               system: 'http://unitsofmeasure.org',
-              code: 'mg/dL'
-            }
-          }
+              code: 'mg/dL',
+            },
+          },
         },
         // Create the second Observation resource.
         {
           fullUrl: observtionUrn2,
           request: {
             method: 'POST',
-            url: 'Observation'
+            url: 'Observation',
           },
           resource: {
             resourceType: 'Observation',
-            basedOn: [{
-              reference: serviceRequestId
-            }],
+            basedOn: [
+              {
+                reference: serviceRequestId,
+              },
+            ],
             subject: {
-              reference: patientId
+              reference: patientId,
             },
             code: {
-              coding: [{
-                system: 'https://samplelabtests.com/tests',
-                code: 'blood_glucose',
-                display: 'Blood Glucose'
-              }]
+              coding: [
+                {
+                  system: 'https://samplelabtests.com/tests',
+                  code: 'blood_glucose',
+                  display: 'Blood Glucose',
+                },
+              ],
             },
             valueQuantity: {
               value: 100,
               unit: 'mg/dL',
               system: 'http://unitsofmeasure.org',
-              code: 'mg/dL'
-            }
-          }
+              code: 'mg/dL',
+            },
+          },
         },
         // Create a DiagnosticReport resource.
         {
           request: {
             method: 'POST',
-            url: 'DiagnosticReport'
+            url: 'DiagnosticReport',
           },
           resource: {
             resourceType: 'DiagnosticReport',
-            basedOn: [{
-              reference: serviceRequestId
-            }],
+            basedOn: [
+              {
+                reference: serviceRequestId,
+              },
+            ],
             subject: {
-              reference: patientId
+              reference: patientId,
             },
             code: {
-              coding: [{
-                system: 'https://samplelab.com/testpanels',
-                code: 'SAMPLE_SKU'
-              }]
+              coding: [
+                {
+                  system: 'https://samplelab.com/testpanels',
+                  code: 'SAMPLE_SKU',
+                },
+              ],
             },
             result: [
               {
-                reference: observtionUrn1
+                reference: observtionUrn1,
               },
               {
-                reference: observtionUrn2
-              }
-            ]
-          }
-        }
-      ]
-    })
+                reference: observtionUrn2,
+              },
+            ],
+          },
+        },
+      ],
+    }),
   });
 
   const data = await response.json();
@@ -304,10 +323,10 @@ async function createReport(patientId, serviceRequestId) {
 }
 ```
 
-This will create a `DiagnosticReport` that is linked to the `ServiceRequest` and to the `Patient`.  If you are using hosted Medplum, you can view all `DiagnosticReports` [here](https://app.medplum.com/DiagnosticReport).
+This will create a `DiagnosticReport` that is linked to the `ServiceRequest` and to the `Patient`. If you are using hosted Medplum, you can view all `DiagnosticReports` [here](https://app.medplum.com/DiagnosticReport).
 
 ## Conclusion
 
-Hopefully this simple lab workflow, "ordering a lab" and "getting a lab report" was a good beginner illustration on getting started with FHIR.  We welcome your feedback.  Please feel free to file issues or submit pull requests.
+Hopefully this simple lab workflow, "ordering a lab" and "getting a lab report" was a good beginner illustration on getting started with FHIR. We welcome your feedback. Please feel free to file issues or submit pull requests.
 
 This sample is based on a service where data is hosted on Medplum, but for those who need the data stored on premise, we do support self-hosting the backend.

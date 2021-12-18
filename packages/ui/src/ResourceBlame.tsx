@@ -19,38 +19,36 @@ export function ResourceBlame(props: ResourceBlameProps) {
 
   useEffect(() => {
     if (!props.history && props.resourceType && props.id) {
-      medplum.readHistory(props.resourceType, props.id).then(result => setValue(result));
+      medplum.readHistory(props.resourceType, props.id).then((result) => setValue(result));
     }
-
   }, [props.history, props.resourceType, props.id]);
 
   if (!value) {
-    return <div>Loading...</div>
+    return <div>Loading...</div>;
   }
 
   const table = blame(value);
   return (
     <table className="medplum-blame">
       <tbody>
-        {
-          table.map((row, index) => (
-            <tr key={'row-' + index} className={row.span > 0 ? "start-row" : 'normal-row'} >
-              {
-                row.span > 0 && (
-                  <td className="details" rowSpan={row.span} >
-                    <Avatar size="xsmall" value={row.meta.author} />
-                    <ResourceName value={row.meta.author} link={true} />
-                    <br />
-                    {formatDateTime(row.meta.lastUpdated as string)}
-                    <br />
-                    <span>{row.meta.versionId}</span>
-                  </td>
-                )
-              }
-              <td className="line-number">{index + 1}</td>
-              <td className="line"><pre className="line-pre">{row.value}</pre></td>
-            </tr>
-          ))}
+        {table.map((row, index) => (
+          <tr key={'row-' + index} className={row.span > 0 ? 'start-row' : 'normal-row'}>
+            {row.span > 0 && (
+              <td className="details" rowSpan={row.span}>
+                <Avatar size="xsmall" value={row.meta.author} />
+                <ResourceName value={row.meta.author} link={true} />
+                <br />
+                {formatDateTime(row.meta.lastUpdated as string)}
+                <br />
+                <span>{row.meta.versionId}</span>
+              </td>
+            )}
+            <td className="line-number">{index + 1}</td>
+            <td className="line">
+              <pre className="line-pre">{row.value}</pre>
+            </td>
+          </tr>
+        ))}
       </tbody>
     </table>
   );

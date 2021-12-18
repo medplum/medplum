@@ -12,6 +12,8 @@ export function QuantityDisplay(props: QuantityDisplayProps) {
   }
 
   return (
-    <span>{value.value} {value.unit}</span>
+    <span>
+      {value.value} {value.unit}
+    </span>
   );
 }

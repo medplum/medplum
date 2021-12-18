@@ -18,46 +18,46 @@ export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
           {
             request: {
               method: 'GET',
-              url: `${getReferenceString(resource)}/_history`
-            }
+              url: `${getReferenceString(resource)}/_history`,
+            },
           },
           {
             request: {
               method: 'GET',
-              url: `Communication?subject=${getReferenceString(resource)}`
-            }
+              url: `Communication?subject=${getReferenceString(resource)}`,
+            },
           },
           {
             request: {
               method: 'GET',
-              url: `Media?subject=${getReferenceString(resource)}`
-            }
+              url: `Media?subject=${getReferenceString(resource)}`,
+            },
           },
           {
             request: {
               method: 'GET',
-              url: `ServiceRequest?subject=${getReferenceString(resource)}`
-            }
+              url: `ServiceRequest?subject=${getReferenceString(resource)}`,
+            },
           },
           {
             request: {
               method: 'GET',
-              url: `DiagnosticReport?subject=${getReferenceString(resource)}`
-            }
-          }
-        ]
+              url: `DiagnosticReport?subject=${getReferenceString(resource)}`,
+            },
+          },
+        ],
       })}
       createCommunication={(resource: Patient, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
         subject: createReference(resource),
         sender: createReference(sender),
-        payload: [{ contentString: text }]
+        payload: [{ contentString: text }],
       })}
       createMedia={(resource: Patient, operator: ProfileResource, content: Attachment) => ({
         resourceType: 'Media',
         subject: createReference(resource),
         operator: createReference(operator),
-        content
+        content,
       })}
     />
   );

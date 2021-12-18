@@ -16,7 +16,6 @@ const app = express();
 let client: ClientApplication;
 
 describe('Auth middleware', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -38,7 +37,7 @@ describe('Auth middleware', () => {
       client: createReference(client),
       profile: createReference(client),
       authTime: new Date().toISOString(),
-      scope
+      scope,
     });
 
     assertOk(loginOutcome);
@@ -49,7 +48,7 @@ describe('Auth middleware', () => {
       username: client.id as string,
       client_id: client.id as string,
       profile: client.resourceType + '/' + client.id,
-      scope
+      scope,
     });
 
     const res = await request(app)
@@ -65,7 +64,7 @@ describe('Auth middleware', () => {
       username: client.id as string,
       client_id: client.id as string,
       profile: client.resourceType + '/' + client.id,
-      scope: 'openid'
+      scope: 'openid',
     });
 
     const res = await request(app)
@@ -83,7 +82,7 @@ describe('Auth middleware', () => {
       profile: createReference(client),
       authTime: new Date().toISOString(),
       revoked: true,
-      scope
+      scope,
     });
 
     assertOk(loginOutcome);
@@ -94,7 +93,7 @@ describe('Auth middleware', () => {
       username: client.id as string,
       client_id: client.id as string,
       profile: client.resourceType + '/' + client.id,
-      scope
+      scope,
     });
 
     const res = await request(app)
@@ -104,43 +103,32 @@ describe('Auth middleware', () => {
   });
 
   test('No auth header', async () => {
-    const res = await request(app)
-      .get('/fhir/R4/Patient');
+    const res = await request(app).get('/fhir/R4/Patient');
     expect(res.status).toBe(401);
   });
 
   test('Unrecognized auth header', async () => {
-    const res = await request(app)
-      .get('/fhir/R4/Patient')
-      .set('Authorization', 'foo');
+    const res = await request(app).get('/fhir/R4/Patient').set('Authorization', 'foo');
     expect(res.status).toBe(401);
   });
 
   test('Unrecognized auth token type', async () => {
-    const res = await request(app)
-      .get('/fhir/R4/Patient')
-      .set('Authorization', 'foo foo');
+    const res = await request(app).get('/fhir/R4/Patient').set('Authorization', 'foo foo');
     expect(res.status).toBe(401);
   });
 
   test('Invalid bearer token', async () => {
-    const res = await request(app)
-      .get('/fhir/R4/Patient')
-      .set('Authorization', 'Bearer foo');
+    const res = await request(app).get('/fhir/R4/Patient').set('Authorization', 'Bearer foo');
     expect(res.status).toBe(401);
   });
 
   test('Basic auth empty string', async () => {
-    const res = await request(app)
-      .get('/fhir/R4/Patient')
-      .set('Authorization', 'Basic ');
+    const res = await request(app).get('/fhir/R4/Patient').set('Authorization', 'Basic ');
     expect(res.status).toBe(401);
   });
 
   test('Basic auth malformed string', async () => {
-    const res = await request(app)
-      .get('/fhir/R4/Patient')
-      .set('Authorization', 'Basic foo');
+    const res = await request(app).get('/fhir/R4/Patient').set('Authorization', 'Basic foo');
     expect(res.status).toBe(401);
   });
 
@@ -186,14 +174,15 @@ describe('Auth middleware', () => {
       .set('Content-Type', 'application/fhir+json')
       .send({
         resourceType: 'Patient',
-        name: [{
-          given: ['Given'],
-          family: 'Family'
-        }]
+        name: [
+          {
+            given: ['Given'],
+            family: 'Family',
+          },
+        ],
       });
     expect(res.status).toBe(201);
     expect(res.body.meta).toBeDefined();
     expect(res.body.meta.project).toBeDefined();
   });
-
 });

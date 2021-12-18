@@ -4,7 +4,6 @@ import React from 'react';
 import { Select, TextField } from './TextField';
 
 describe('TextField', () => {
-
   test('Renders', () => {
     expect(render(<TextField name="test" />)).toBeDefined();
   });
@@ -17,12 +16,14 @@ describe('TextField', () => {
   test('Renders aria invalid', () => {
     const outcome: OperationOutcome = {
       resourceType: 'OperationOutcome',
-      issue: [{
-        details: {
-          text: 'Bad'
+      issue: [
+        {
+          details: {
+            text: 'Bad',
+          },
+          expression: ['test'],
         },
-        expression: ['test']
-      }]
+      ],
     };
 
     render(<TextField name="test" defaultValue="hello" outcome={outcome} />);
@@ -31,13 +32,17 @@ describe('TextField', () => {
     expect(input.getAttribute('aria-invalid')).toEqual('true');
     expect(input.getAttribute('aria-describedby')).toEqual('test-errors');
   });
-
 });
 
 describe('Select', () => {
-
   test('Renders', () => {
-    expect(render(<Select name="test"><option></option></Select>)).toBeDefined();
+    expect(
+      render(
+        <Select name="test">
+          <option></option>
+        </Select>
+      )
+    ).toBeDefined();
   });
 
   test('Renders default value', () => {
@@ -54,12 +59,14 @@ describe('Select', () => {
   test('Renders aria invalid', () => {
     const outcome: OperationOutcome = {
       resourceType: 'OperationOutcome',
-      issue: [{
-        details: {
-          text: 'Bad'
+      issue: [
+        {
+          details: {
+            text: 'Bad',
+          },
+          expression: ['test'],
         },
-        expression: ['test']
-      }]
+      ],
     };
 
     render(
@@ -74,5 +81,4 @@ describe('Select', () => {
     expect(input.getAttribute('aria-invalid')).toEqual('true');
     expect(input.getAttribute('aria-describedby')).toEqual('test-errors');
   });
-
 });

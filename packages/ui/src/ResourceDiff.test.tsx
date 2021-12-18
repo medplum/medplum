@@ -4,18 +4,17 @@ import React from 'react';
 import { ResourceDiff } from './ResourceDiff';
 
 describe('ResourceDiff', () => {
-
   test('Renders', () => {
     const original: Patient = {
       resourceType: 'Patient',
       birthDate: '1990-01-01',
-      active: false
+      active: false,
     };
 
     const revised: Patient = {
       resourceType: 'Patient',
       birthDate: '1990-01-01',
-      active: true
+      active: true,
     };
 
     render(<ResourceDiff original={original} revised={revised} />);
@@ -28,5 +27,4 @@ describe('ResourceDiff', () => {
     expect(added).toBeDefined();
     expect(added.style.color).toEqual('green');
   });
-
 });

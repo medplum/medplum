@@ -28,7 +28,7 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
     email: req.body.email,
     password: req.body.password,
     nonce: randomUUID(),
-    remember: true
+    remember: true,
   });
   assertOk(loginOutcome);
   await sendLoginResult(res, login as Login);

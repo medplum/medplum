@@ -10,11 +10,12 @@ export interface AttachmentArrayDisplayProps {
 export function AttachmentArrayDisplay(props: AttachmentArrayDisplayProps) {
   return (
     <div>
-      {props.values && props.values.map((v, index) => (
-        <div key={'attatchment-' + index}>
-          <AttachmentDisplay value={v} maxWidth={props.maxWidth} />
-        </div>
-      ))}
+      {props.values &&
+        props.values.map((v, index) => (
+          <div key={'attatchment-' + index}>
+            <AttachmentDisplay value={v} maxWidth={props.maxWidth} />
+          </div>
+        ))}
     </div>
   );
 }

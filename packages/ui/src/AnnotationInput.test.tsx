@@ -16,10 +16,9 @@ const setup = (args: AnnotationInputProps) => {
 };
 
 describe('AnnotationInput', () => {
-
   test('Renders undefined value', () => {
     setup({
-      name: 'a'
+      name: 'a',
     });
     expect(screen.queryByDisplayValue('Hello world')).toBeNull();
   });
@@ -28,8 +27,8 @@ describe('AnnotationInput', () => {
     setup({
       name: 'a',
       defaultValue: {
-        text: 'Hello world'
-      }
+        text: 'Hello world',
+      },
     });
     expect(screen.getByDisplayValue('Hello world')).toBeDefined();
   });
@@ -39,29 +38,33 @@ describe('AnnotationInput', () => {
 
     setup({
       name: 'a',
-      onChange
+      onChange,
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Annotation text'), { target: { value: 'TEST' } });
+      fireEvent.change(screen.getByPlaceholderText('Annotation text'), {
+        target: { value: 'TEST' },
+      });
     });
 
     expect(onChange).toHaveBeenCalledWith({
       text: 'TEST',
       authorReference: {
-        reference: 'Practitioner/123'
+        reference: 'Practitioner/123',
       },
-      time: expect.anything()
+      time: expect.anything(),
     });
   });
 
   test('Set value without change listener', async () => {
     setup({
-      name: 'a'
+      name: 'a',
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Annotation text'), { target: { value: 'TEST' } });
+      fireEvent.change(screen.getByPlaceholderText('Annotation text'), {
+        target: { value: 'TEST' },
+      });
     });
 
     expect(screen.getByDisplayValue('TEST')).toBeDefined();
@@ -74,16 +77,17 @@ describe('AnnotationInput', () => {
       name: 'a',
       defaultValue: {
         text: 'Hello world',
-        time: '2020-01-01T00:00:00Z'
+        time: '2020-01-01T00:00:00Z',
       },
-      onChange
+      onChange,
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Annotation text'), { target: { value: '' } });
+      fireEvent.change(screen.getByPlaceholderText('Annotation text'), {
+        target: { value: '' },
+      });
     });
 
     expect(onChange).toHaveBeenCalledWith({});
   });
-
 });

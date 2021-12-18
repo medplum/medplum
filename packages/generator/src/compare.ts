@@ -11,13 +11,13 @@ const resources: Record<string, Resource> = {
   observation: JSON.parse(fs.readFileSync(root + 'tests/r4/input/observation-example.json', 'utf-8')),
   patient: JSON.parse(fs.readFileSync(root + 'tests/r4/input/patient-example.json', 'utf-8')),
   questionnaire: JSON.parse(fs.readFileSync(root + 'tests/r4/input/questionnaire-example.json', 'utf-8')),
-  valueSet: JSON.parse(fs.readFileSync(root + 'tests/r4/input/valueset-example-expansion.json', 'utf-8'))
+  valueSet: JSON.parse(fs.readFileSync(root + 'tests/r4/input/valueset-example-expansion.json', 'utf-8')),
 };
 
 const options = {
-  attributeNamePrefix: "@_",
-  attrNodeName: "attr",
-  textNodeName: "#text",
+  attributeNamePrefix: '@_',
+  attrNodeName: 'attr',
+  textNodeName: '#text',
   ignoreAttributes: false,
   ignoreNameSpace: false,
   allowBooleanAttributes: true,
@@ -29,7 +29,8 @@ const options = {
 const tObj = parser.getTraversalObj(xmlData, options);
 const jsonObj = parser.convertToJson(tObj, options);
 
-const lines = [`
+const lines = [
+  `
 <html>
 <head>
 <title>FHIRPath Comparison</title>
@@ -82,9 +83,13 @@ pre {
 </tr>
 </thead>
 <tbody>
-`];
+`,
+];
 
-const counts = [[0, 0, 0], [0, 0, 0]];
+const counts = [
+  [0, 0, 0],
+  [0, 0, 0],
+];
 
 function getName(obj: any): string {
   return obj.attr['@_description'] || obj.attr['@_name'];
@@ -126,11 +131,9 @@ function processTest(test: any): void {
 
   if (typeof test.expression === 'string') {
     expr = unescapeXml(test.expression);
-
   } else if (typeof test.expression === 'object' && test.expression['#text']) {
     expr = unescapeXml(test.expression['#text']);
     valid = !(test.expression.attr && test.expression.attr['@_invalid']);
-
   } else {
     console.log('unknown test expression');
     console.log(test);
@@ -217,7 +220,8 @@ function escapeXml(str: string): string {
   if (!str) {
     return str;
   }
-  return str.replace(/&/g, '&amp;')
+  return str
+    .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')

@@ -6,7 +6,7 @@ export async function healthcheckHandler(req: Request, res: Response) {
   res.json({
     ok: true,
     postgres: await testPostgres(),
-    redis: await testRedis()
+    redis: await testRedis(),
   });
 }
 

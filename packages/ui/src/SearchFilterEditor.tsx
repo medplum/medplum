@@ -27,10 +27,13 @@ function FilterRow(props: FilterRowProps) {
       <select
         data-testid="filter-field"
         defaultValue={searchParam?.code}
-        onChange={e => setSearchParam(searchParams.find(p => p.code === e.target.value))}>
+        onChange={(e) => setSearchParam(searchParams.find((p) => p.code === e.target.value))}
+      >
         <option value=""></option>
-        {searchParams.map(param => (
-          <option key={param.code} value={param.code}>{param.code}</option>
+        {searchParams.map((param) => (
+          <option key={param.code} value={param.code}>
+            {param.code}
+          </option>
         ))}
       </select>
     );
@@ -45,7 +48,8 @@ function FilterRow(props: FilterRowProps) {
       <select
         data-testid="filter-operation"
         defaultValue={operator}
-        onChange={e => setOperator(e.target.value as Operator)}>
+        onChange={(e) => setOperator(e.target.value as Operator)}
+      >
         {renderOperationOptions(searchParam)}
       </select>
     );
@@ -122,38 +126,40 @@ function FilterRow(props: FilterRowProps) {
       case 'string':
       case 'fulltext':
       case 'token':
-        return (
-          <input data-testid="filter-value" type="text" onChange={e => setValue(e.target.value)} />
-        );
+        return <input data-testid="filter-value" type="text" onChange={(e) => setValue(e.target.value)} />;
 
       case 'numeric':
-        return (
-          <input type="text" onChange={e => setValue(e.target.value)} />
-        );
+        return <input type="text" onChange={(e) => setValue(e.target.value)} />;
 
       case 'date':
         return (
-          <input type="date" step="1" defaultValue="" onChange={e => {
-            setValue(e.target.value);
-          }} />
+          <input
+            type="date"
+            step="1"
+            defaultValue=""
+            onChange={(e) => {
+              setValue(e.target.value);
+            }}
+          />
         );
 
       case 'datetime':
         return (
-          <input type="datetime-local" step="1" defaultValue="" onChange={e => {
-            setValue(e.target.value);
-          }} />
+          <input
+            type="datetime-local"
+            step="1"
+            defaultValue=""
+            onChange={(e) => {
+              setValue(e.target.value);
+            }}
+          />
         );
 
       case 'reference':
-        return (
-          <ReferenceInput name="reference" onChange={e => setValue(e?.reference || '')} />
-        );
+        return <ReferenceInput name="reference" onChange={(e) => setValue(e?.reference || '')} />;
 
       case 'bool':
-        return (
-          <input type="text" onChange={e => setValue(e.target.value)} />
-        );
+        return <input type="text" onChange={(e) => setValue(e.target.value)} />;
 
       default:
         return null;
@@ -168,7 +174,7 @@ function FilterRow(props: FilterRowProps) {
     props.onAdd({
       code: searchParam.code as string,
       operator,
-      value
+      value,
     });
 
     setSearchParam(undefined);
@@ -184,14 +190,12 @@ function FilterRow(props: FilterRowProps) {
         <td>{filter.operator}</td>
         <td>{filter.value}</td>
         <td>
-          <button
-            className="btn btn-small"
-            onClick={() => setEditing(true)}
-          >Edit</button>
-          <button
-            className="btn btn-small"
-            onClick={() => props.onDelete(filter)}
-          >Delete</button>
+          <button className="btn btn-small" onClick={() => setEditing(true)}>
+            Edit
+          </button>
+          <button className="btn btn-small" onClick={() => props.onDelete(filter)}>
+            Delete
+          </button>
         </td>
       </tr>
     );
@@ -204,14 +208,12 @@ function FilterRow(props: FilterRowProps) {
       <td>{renderOperation()}</td>
       <td>{renderValue()}</td>
       <td>
-        <button
-          className="btn btn-small"
-          onClick={() => onAddClick()}
-        >Add</button>
-        <button
-          className="btn btn-small"
-          onClick={() => setEditing(false)}
-        >Cancel</button>
+        <button className="btn btn-small" onClick={() => onAddClick()}>
+          Add
+        </button>
+        <button className="btn btn-small" onClick={() => setEditing(false)}>
+          Cancel
+        </button>
       </td>
     </tr>
   );
@@ -242,7 +244,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
     if (!searchRef.current.filters) {
       return;
     }
-    const index = searchRef.current.filters.findIndex(f => Object.is(f, filter));
+    const index = searchRef.current.filters.findIndex((f) => Object.is(f, filter));
     setSearch(deleteFilter(searchRef.current, index));
   }
 
@@ -253,10 +255,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
   const filters = search.filters || [];
 
   return (
-    <Dialog
-      visible={props.visible}
-      onOk={() => props.onOk(searchRef.current)}
-      onCancel={props.onCancel}>
+    <Dialog visible={props.visible} onOk={() => props.onOk(searchRef.current)} onCancel={props.onCancel}>
       <div className="medplum-filter-editor">
         <table className="medplum-filter-editor-table">
           <thead>
@@ -275,8 +274,8 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
                 key={stringify(filter)}
                 filter={filter}
                 editing={false}
-                onAdd={f => onAddFilter(f)}
-                onDelete={f => onDeleteFilter(f)}
+                onAdd={(f) => onAddFilter(f)}
+                onDelete={(f) => onDeleteFilter(f)}
               />
             ))}
             <FilterRow
@@ -284,8 +283,8 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
               resourceType={props.search.resourceType}
               filter={{ code: '', operator: Operator.EQUALS, value: '' }}
               editing={true}
-              onAdd={f => onAddFilter(f)}
-              onDelete={f => onDeleteFilter(f)}
+              onAdd={(f) => onAddFilter(f)}
+              onDelete={(f) => onDeleteFilter(f)}
             />
           </tbody>
         </table>

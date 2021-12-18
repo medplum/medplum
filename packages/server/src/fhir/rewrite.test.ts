@@ -7,7 +7,6 @@ import { repo } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 
 describe('URL rewrite', () => {
-
   let config: MedplumServerConfig;
   let binary: Binary;
 
@@ -41,9 +40,11 @@ describe('URL rewrite', () => {
     const input = {
       resourceType: 'Binary',
       id: '123',
-      extension: [{
-        url: 'Binary/123',
-      }]
+      extension: [
+        {
+          url: 'Binary/123',
+        },
+      ],
     };
 
     const output = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, input);
@@ -53,10 +54,12 @@ describe('URL rewrite', () => {
   test('Other URL', async () => {
     const practitioner: Practitioner = {
       resourceType: 'Practitioner',
-      photo: [{
-        contentType: 'image/jpeg',
-        url: 'https://example.com/profile/123/picture.jpg',
-      }]
+      photo: [
+        {
+          contentType: 'image/jpeg',
+          url: 'https://example.com/profile/123/picture.jpg',
+        },
+      ],
     };
 
     const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, practitioner);
@@ -66,10 +69,12 @@ describe('URL rewrite', () => {
   test('Reference string', async () => {
     const practitioner: Practitioner = {
       resourceType: 'Practitioner',
-      photo: [{
-        contentType: 'image/jpeg',
-        url: `Binary/${binary.id}`,
-      }]
+      photo: [
+        {
+          contentType: 'image/jpeg',
+          url: `Binary/${binary.id}`,
+        },
+      ],
     };
 
     const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, practitioner);
@@ -85,10 +90,12 @@ describe('URL rewrite', () => {
   test('Reference string with version', async () => {
     const practitioner: Practitioner = {
       resourceType: 'Practitioner',
-      photo: [{
-        contentType: 'image/jpeg',
-        url: `Binary/${binary.id}/_history/${binary.meta?.versionId}`
-      }]
+      photo: [
+        {
+          contentType: 'image/jpeg',
+          url: `Binary/${binary.id}/_history/${binary.meta?.versionId}`,
+        },
+      ],
     };
 
     const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, practitioner);
@@ -104,10 +111,12 @@ describe('URL rewrite', () => {
   test('URL', async () => {
     const practitioner: Practitioner = {
       resourceType: 'Practitioner',
-      photo: [{
-        contentType: 'image/jpeg',
-        url: `${config.baseUrl}fhir/R4/Binary/${binary.id}`
-      }]
+      photo: [
+        {
+          contentType: 'image/jpeg',
+          url: `${config.baseUrl}fhir/R4/Binary/${binary.id}`,
+        },
+      ],
     };
 
     const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, practitioner);
@@ -123,10 +132,12 @@ describe('URL rewrite', () => {
   test('URL with version', async () => {
     const practitioner: Practitioner = {
       resourceType: 'Practitioner',
-      photo: [{
-        contentType: 'image/jpeg',
-        url: `${config.baseUrl}fhir/R4/Binary/${binary.id}/_history/${binary.meta?.versionId}`
-      }]
+      photo: [
+        {
+          contentType: 'image/jpeg',
+          url: `${config.baseUrl}fhir/R4/Binary/${binary.id}/_history/${binary.meta?.versionId}`,
+        },
+      ],
     };
 
     const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, practitioner);
@@ -138,5 +149,4 @@ describe('URL rewrite', () => {
     const url = new URL(result.photo?.[0]?.url as string);
     expect(url.searchParams.has('Expires')).toBe(true);
   });
-
 });

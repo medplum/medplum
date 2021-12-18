@@ -1,5 +1,6 @@
 * {
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji,
+    Segoe UI Emoji;
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -19,7 +20,11 @@ body {
   background: var(--medplum-background);
 }
 
-h1, h2, h3, h4, h5 {
+h1,
+h2,
+h3,
+h4,
+h5 {
   font-weight: normal;
 }
 
@@ -37,11 +42,14 @@ a:focus {
   outline: 0.1px solid var(--medplum-blue-500);
 }
 
-th, strong {
+th,
+strong {
   color: var(--medplum-foreground);
 }
 
-code, pre, textarea {
+code,
+pre,
+textarea {
   font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
   font-size: 12px;
   width: 100%;

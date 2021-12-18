@@ -88,14 +88,20 @@ export async function run(client: PoolClient) {
   await client.query('ALTER TABLE "MedicationStatement" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE');
   await client.query('ALTER TABLE "MedicinalProduct" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE');
   await client.query('ALTER TABLE "MedicinalProductAuthorization" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE');
-  await client.query('ALTER TABLE "MedicinalProductContraindication" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE');
+  await client.query(
+    'ALTER TABLE "MedicinalProductContraindication" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE'
+  );
   await client.query('ALTER TABLE "MedicinalProductIndication" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE');
   await client.query('ALTER TABLE "MedicinalProductIngredient" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE');
   await client.query('ALTER TABLE "MedicinalProductInteraction" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE');
   await client.query('ALTER TABLE "MedicinalProductManufactured" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE');
   await client.query('ALTER TABLE "MedicinalProductPackaged" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE');
-  await client.query('ALTER TABLE "MedicinalProductPharmaceutical" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE');
-  await client.query('ALTER TABLE "MedicinalProductUndesirableEffect" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE');
+  await client.query(
+    'ALTER TABLE "MedicinalProductPharmaceutical" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE'
+  );
+  await client.query(
+    'ALTER TABLE "MedicinalProductUndesirableEffect" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE'
+  );
   await client.query('ALTER TABLE "MessageDefinition" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE');
   await client.query('ALTER TABLE "MessageHeader" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE');
   await client.query('ALTER TABLE "MolecularSequence" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE');

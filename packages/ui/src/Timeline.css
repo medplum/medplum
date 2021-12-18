@@ -12,7 +12,7 @@ article.medplum-timeline-item {
   margin-right: 8px;
 }
 
-.medplum-timeline-item-title>a {
+.medplum-timeline-item-title > a {
   color: var(--medplum-gray-800);
   font-weight: bold;
 }
@@ -21,8 +21,8 @@ article.medplum-timeline-item {
   font-size: 11px;
 }
 
-.medplum-timeline-item-subtitle>a,
-.medplum-timeline-item-subtitle>span {
+.medplum-timeline-item-subtitle > a,
+.medplum-timeline-item-subtitle > span {
   margin-right: 6px;
   color: var(--medplum-gray-500);
 }

@@ -17,7 +17,7 @@ export class HumanNameTable implements LookupTable {
     'Patient-name',
     'Person-name',
     'Practitioner-name',
-    'RelatedPerson-name'
+    'RelatedPerson-name',
   ]);
 
   /**
@@ -44,9 +44,7 @@ export class HumanNameTable implements LookupTable {
   async deleteResource(resource: Resource): Promise<void> {
     const resourceId = resource.id as string;
     const client = getClient();
-    await new DeleteQuery('HumanName')
-      .where('resourceId', Operator.EQUALS, resourceId)
-      .execute(client);
+    await new DeleteQuery('HumanName').where('resourceId', Operator.EQUALS, resourceId).execute(client);
   }
 
   /**
@@ -56,10 +54,12 @@ export class HumanNameTable implements LookupTable {
    * @returns Promise on completion.
    */
   async indexResource(resource: Resource): Promise<void> {
-    if (resource.resourceType !== 'Patient' &&
+    if (
+      resource.resourceType !== 'Patient' &&
       resource.resourceType !== 'Person' &&
       resource.resourceType !== 'Practitioner' &&
-      resource.resourceType !== 'RelatedPerson') {
+      resource.resourceType !== 'RelatedPerson'
+    ) {
       return;
     }
 
@@ -87,7 +87,7 @@ export class HumanNameTable implements LookupTable {
           content: stringify(name),
           name: formatHumanName(name),
           given: formatGivenName(name),
-          family: formatFamilyName(name)
+          family: formatFamilyName(name),
         }).execute(client);
       }
     }
@@ -107,10 +107,7 @@ export class HumanNameTable implements LookupTable {
    * @param filter The search filter details.
    */
   addWhere(selectQuery: SelectQuery, filter: Filter): void {
-    selectQuery.where(
-      { tableName: 'HumanName', columnName: filter.code },
-      Operator.LIKE,
-      '%' + filter.value + '%');
+    selectQuery.where({ tableName: 'HumanName', columnName: filter.code }, Operator.LIKE, '%' + filter.value + '%');
   }
 
   /**
@@ -119,9 +116,7 @@ export class HumanNameTable implements LookupTable {
    * @param sortRule The sort rule details.
    */
   addOrderBy(selectQuery: SelectQuery, sortRule: SortRule): void {
-    selectQuery.orderBy(
-      { tableName: 'HumanName', columnName: sortRule.code },
-      sortRule.descending);
+    selectQuery.orderBy({ tableName: 'HumanName', columnName: sortRule.code }, sortRule.descending);
   }
 
   /**
@@ -135,6 +130,6 @@ export class HumanNameTable implements LookupTable {
       .where('resourceId', Operator.EQUALS, resourceId)
       .orderBy('index')
       .execute(getClient())
-      .then(result => result.map(row => JSON.parse(row.content) as HumanName));
+      .then((result) => result.map((row) => JSON.parse(row.content) as HumanName));
   }
 }

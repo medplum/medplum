@@ -9,7 +9,6 @@ const searchParams = readJson('fhir/r4/search-parameters.json');
 const structureDefinitions = { types: {} } as IndexedStructureDefinition;
 
 describe('SearchParameterDetails', () => {
-
   beforeAll(() => {
     buildStructureDefinitions('profiles-types.json');
     buildStructureDefinitions('profiles-resources.json');
@@ -21,7 +20,7 @@ describe('SearchParameterDetails', () => {
       resourceType: 'SearchParameter',
       code: 'phonetic',
       type: 'string',
-      expression: 'Patient.name | Person.name | Practitioner.name | RelatedPerson.name'
+      expression: 'Patient.name | Person.name | Practitioner.name | RelatedPerson.name',
     };
 
     const details = getSearchParameterDetails(structureDefinitions, 'Patient', individualPhoneticParam);
@@ -35,7 +34,7 @@ describe('SearchParameterDetails', () => {
       resourceType: 'SearchParameter',
       code: 'active',
       type: 'token',
-      expression: 'Patient.active'
+      expression: 'Patient.active',
     };
 
     const details = getSearchParameterDetails(structureDefinitions, 'Patient', activeParam);
@@ -50,7 +49,7 @@ describe('SearchParameterDetails', () => {
       resourceType: 'SearchParameter',
       code: 'birthdate',
       type: 'date',
-      expression: 'Patient.birthDate'
+      expression: 'Patient.birthDate',
     };
 
     const details = getSearchParameterDetails(structureDefinitions, 'Patient', birthDateParam);
@@ -65,7 +64,7 @@ describe('SearchParameterDetails', () => {
       resourceType: 'SearchParameter',
       code: 'link',
       type: 'reference',
-      expression: 'Patient.link.other'
+      expression: 'Patient.link.other',
     };
 
     const details = getSearchParameterDetails(structureDefinitions, 'Patient', missingExpressionParam);
@@ -79,7 +78,7 @@ describe('SearchParameterDetails', () => {
       resourceType: 'SearchParameter',
       code: 'test',
       type: 'string',
-      expression: 'OtherType.test'
+      expression: 'OtherType.test',
     };
 
     const details = getSearchParameterDetails(structureDefinitions, 'Patient', missingExpressionParam);
@@ -92,7 +91,7 @@ describe('SearchParameterDetails', () => {
       resourceType: 'SearchParameter',
       code: 'test',
       type: 'string',
-      expression: 'Patient.unknown'
+      expression: 'Patient.unknown',
     };
 
     const details = getSearchParameterDetails(structureDefinitions, 'Patient', missingExpressionParam);
@@ -105,7 +104,7 @@ describe('SearchParameterDetails', () => {
       resourceType: 'SearchParameter',
       code: 'test',
       type: 'string',
-      expression: 'Patient.unknown'
+      expression: 'Patient.unknown',
     };
 
     const details = getSearchParameterDetails(structureDefinitions, 'Patient', missingExpressionParam);
@@ -125,20 +124,21 @@ describe('SearchParameterDetails', () => {
       }
     }
   });
-
 });
 
 function buildStructureDefinitions(fileName: string): void {
   const resourceDefinitions = readJson(`fhir/r4/${fileName}`) as Bundle;
-  for (const entry of (resourceDefinitions.entry as BundleEntry[])) {
+  for (const entry of resourceDefinitions.entry as BundleEntry[]) {
     const resource = entry.resource as Resource;
-    if (resource.resourceType === 'StructureDefinition' &&
+    if (
+      resource.resourceType === 'StructureDefinition' &&
       resource.name &&
       resource.name !== 'Resource' &&
       resource.name !== 'BackboneElement' &&
       resource.name !== 'DomainResource' &&
       resource.name !== 'MetadataResource' &&
-      !isLowerCase(resource.name[0])) {
+      !isLowerCase(resource.name[0])
+    ) {
       indexStructureDefinition(resource, structureDefinitions);
     }
   }

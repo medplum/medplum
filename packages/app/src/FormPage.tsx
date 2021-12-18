@@ -13,10 +13,11 @@ export function FormPage() {
   const [error, setError] = useState();
 
   useEffect(() => {
-    medplum.read('Questionnaire', id)
-      .then(result => setQuestionnaire(addQuestionnaireInitialValues(result as Questionnaire, queryParams)))
+    medplum
+      .read('Questionnaire', id)
+      .then((result) => setQuestionnaire(addQuestionnaireInitialValues(result as Questionnaire, queryParams)))
       .then(() => setLoading(false))
-      .catch(reason => {
+      .catch((reason) => {
         setError(reason);
         setLoading(false);
       });
@@ -39,7 +40,7 @@ export function FormPage() {
       <h1>{questionnaire.name}</h1>
       <QuestionnaireForm
         questionnaire={questionnaire}
-        onSubmit={formData => {
+        onSubmit={(formData) => {
           console.log('formData', formData);
         }}
       />

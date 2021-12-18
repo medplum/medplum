@@ -52,19 +52,20 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     .offset(offset)
     .limit(count)
     .execute(client)
-    .then(result => result.map(row => ({
-      system: url,
-      code: row.code,
-      display: row.display
-    })));
+    .then((result) =>
+      result.map((row) => ({
+        system: url,
+        code: row.code,
+        display: row.display,
+      }))
+    );
 
-  return res.status(200)
-    .json({
-      resourceType: 'ValueSet',
-      url,
-      expansion: {
-        offset,
-        contains: elements
-      }
-    } as ValueSet);
+  return res.status(200).json({
+    resourceType: 'ValueSet',
+    url,
+    expansion: {
+      offset,
+      contains: elements,
+    },
+  } as ValueSet);
 });

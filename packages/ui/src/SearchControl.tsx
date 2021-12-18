@@ -80,7 +80,7 @@ export function SearchControl(props: SearchControlProps) {
     popupY: 0,
     popupField: '',
     fieldEditorVisible: false,
-    filterEditorVisible: false
+    filterEditorVisible: false,
   });
 
   const stateRef = useRef<SearchControlState>(state);
@@ -88,14 +88,15 @@ export function SearchControl(props: SearchControlProps) {
 
   function requestResources() {
     setOutcome(undefined);
-    medplum.search(props.search)
-      .then(response => {
+    medplum
+      .search(props.search)
+      .then((response) => {
         setState({ ...stateRef.current, searchResponse: response });
         if (props.onLoad) {
           props.onLoad(new SearchLoadEvent(response));
         }
       })
-      .catch(reason => {
+      .catch((reason) => {
         setState({ ...stateRef.current, searchResponse: undefined });
         setOutcome(reason);
       });
@@ -108,12 +109,12 @@ export function SearchControl(props: SearchControlProps) {
    * @return {string} The HTML snippet for a "filters" cell.
    */
   function buildFilterString(key: string) {
-    const filters = (props.search.filters ?? []).filter(f => f.code === key);
+    const filters = (props.search.filters ?? []).filter((f) => f.code === key);
     if (filters.length === 0) {
       return <span className="muted">no filters</span>;
     }
 
-    return filters.map(f => getFilterValueString(f)).join('<br>');
+    return filters.map((f) => getFilterValueString(f)).join('<br>');
   }
 
   function handleSingleCheckboxClick(e: React.ChangeEvent) {
@@ -129,7 +130,7 @@ export function SearchControl(props: SearchControlProps) {
       } else {
         delete newSelected[id];
       }
-      setState({ ...stateRef.current, selected: newSelected })
+      setState({ ...stateRef.current, selected: newSelected });
     }
   }
 
@@ -141,7 +142,7 @@ export function SearchControl(props: SearchControlProps) {
     const newSelected = {} as { [id: string]: boolean };
     const searchResponse = stateRef.current?.searchResponse;
     if (checked && searchResponse?.entry) {
-      searchResponse.entry.forEach(entry => {
+      searchResponse.entry.forEach((entry) => {
         if (entry.resource?.id) {
           newSelected[entry.resource.id] = true;
         }
@@ -178,7 +179,7 @@ export function SearchControl(props: SearchControlProps) {
         popupVisible: true,
         popupX: e.clientX,
         popupY: e.clientY,
-        popupField: key
+        popupField: key,
       });
     }
   }
@@ -210,7 +211,7 @@ export function SearchControl(props: SearchControlProps) {
     const el = e.currentTarget as HTMLElement;
     const id = el.dataset['id'];
     if (id && props.onClick && state.searchResponse?.entry) {
-      const entry = state.searchResponse.entry.find(e => e.resource?.id === id);
+      const entry = state.searchResponse.entry.find((e) => e.resource?.id === id);
       if (entry?.resource) {
         props.onClick(new SearchClickEvent(entry.resource, e));
       }
@@ -218,7 +219,7 @@ export function SearchControl(props: SearchControlProps) {
   }
 
   useEffect(() => {
-    medplum.getTypeDefinition(props.search.resourceType).then(schema => setSchema(schema));
+    medplum.getTypeDefinition(props.search.resourceType).then((schema) => setSchema(schema));
   }, [props.search.resourceType]);
 
   useEffect(() => requestResources(), [props.search]);
@@ -233,123 +234,131 @@ export function SearchControl(props: SearchControlProps) {
   const resourceType = search.resourceType;
   const lastResult = state.searchResponse;
   const entries = lastResult?.entry;
-  const resources = entries?.map(e => e.resource);
+  const resources = entries?.map((e) => e.resource);
 
   return (
-    <div
-      className="medplum-search-control"
-      onContextMenu={e => killEvent(e)}
-      data-testid="search-control"
-    >
+    <div className="medplum-search-control" onContextMenu={(e) => killEvent(e)} data-testid="search-control">
       <TitleBar>
         <div>
           <h1>
-            <a
-              href={`https://www.hl7.org/fhir/${resourceType.toLowerCase()}.html`}
-              target="_blank"
-              rel="noopener"
-            >{resourceType}</a>
+            <a href={`https://www.hl7.org/fhir/${resourceType.toLowerCase()}.html`} target="_blank" rel="noopener">
+              {resourceType}
+            </a>
           </h1>
           <Button
             testid="fields-button"
             size="small"
             onClick={() => setState({ ...stateRef.current, fieldEditorVisible: true })}
-          >Fields</Button>
+          >
+            Fields
+          </Button>
           <Button
             testid="filters-button"
             size="small"
             onClick={() => setState({ ...stateRef.current, filterEditorVisible: true })}
-          >Filters</Button>
+          >
+            Filters
+          </Button>
           {props.onNew && (
-            <Button
-              size="small"
-              onClick={props.onNew}
-            >New...</Button>
+            <Button size="small" onClick={props.onNew}>
+              New...
+            </Button>
           )}
           {props.onDelete && (
             <Button
               size="small"
               onClick={() => (props.onDelete as (ids: string[]) => any)(Object.keys(state.selected))}
-            >Delete...</Button>
+            >
+              Delete...
+            </Button>
           )}
         </div>
         {lastResult && (
           <div>
-            <span style={{ lineHeight: '28px', padding: '2px 6px', fontSize: '12px' }}>
-              {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of {lastResult.total}
+            <span
+              style={{
+                lineHeight: '28px',
+                padding: '2px 6px',
+                fontSize: '12px',
+              }}
+            >
+              {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of{' '}
+              {lastResult.total}
             </span>
-            <Button
-              testid="prev-page-button"
-              size="small"
-              onClick={() => emitSearchChange(movePage(search, -1))}
-            >&lt;&lt;</Button>
-            <Button
-              testid="next-page-button"
-              size="small"
-              onClick={() => emitSearchChange(movePage(search, 1))}
-            >&gt;&gt;</Button>
+            <Button testid="prev-page-button" size="small" onClick={() => emitSearchChange(movePage(search, -1))}>
+              &lt;&lt;
+            </Button>
+            <Button testid="next-page-button" size="small" onClick={() => emitSearchChange(movePage(search, 1))}>
+              &gt;&gt;
+            </Button>
           </div>
         )}
       </TitleBar>
       <table>
         <thead>
           <tr>
-            {checkboxColumn &&
+            {checkboxColumn && (
               <th className="medplum-search-icon-cell">
                 <input
                   type="checkbox"
                   value="checked"
                   data-testid="all-checkbox"
                   checked={isAllSelected()}
-                  onChange={e => handleAllCheckboxClick(e)}
+                  onChange={(e) => handleAllCheckboxClick(e)}
                 />
               </th>
-            }
-            {fields.map(field =>
-              <th
-                key={field}
-                data-key={field}
-                onClick={e => handleSortClick(e)}
-              >{buildFieldNameString(schema, resourceType, field)}</th>
             )}
+            {fields.map((field) => (
+              <th key={field} data-key={field} onClick={(e) => handleSortClick(e)}>
+                {buildFieldNameString(schema, resourceType, field)}
+              </th>
+            ))}
           </tr>
           <tr>
-            {checkboxColumn &&
-              <th className="filters medplum-search-icon-cell" />
-            }
-            {fields.map(field =>
-              <th key={field} data-key={field} className="filters">{buildFilterString(field)}</th>
-            )}
+            {checkboxColumn && <th className="filters medplum-search-icon-cell" />}
+            {fields.map((field) => (
+              <th key={field} data-key={field} className="filters">
+                {buildFilterString(field)}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {resources?.map(resource => (resource &&
-            <tr
-              key={resource.id}
-              data-id={resource.id}
-              data-testid="search-control-row"
-              onClick={e => handleRowClick(e)}>
-              {checkboxColumn &&
-                <td className="medplum-search-icon-cell">
-                  <input
-                    type="checkbox"
-                    value="checked"
-                    data-id={resource.id}
-                    data-testid="row-checkbox"
-                    checked={!!(resource.id && state.selected[resource.id])}
-                    onChange={e => handleSingleCheckboxClick(e)}
-                  />
-                </td>
-              }
-              {fields.map(field =>
-                <td key={field}>{renderValue(schema, props.search.resourceType, field, getValue(resource, field))}</td>
-              )}
-            </tr>
-          ))}
+          {resources?.map(
+            (resource) =>
+              resource && (
+                <tr
+                  key={resource.id}
+                  data-id={resource.id}
+                  data-testid="search-control-row"
+                  onClick={(e) => handleRowClick(e)}
+                >
+                  {checkboxColumn && (
+                    <td className="medplum-search-icon-cell">
+                      <input
+                        type="checkbox"
+                        value="checked"
+                        data-id={resource.id}
+                        data-testid="row-checkbox"
+                        checked={!!(resource.id && state.selected[resource.id])}
+                        onChange={(e) => handleSingleCheckboxClick(e)}
+                      />
+                    </td>
+                  )}
+                  {fields.map((field) => (
+                    <td key={field}>
+                      {renderValue(schema, props.search.resourceType, field, getValue(resource, field))}
+                    </td>
+                  ))}
+                </tr>
+              )
+          )}
         </tbody>
       </table>
       {resources?.length === 0 && (
-        <div data-testid="empty-search" className="medplum-empty-search">No results</div>
+        <div data-testid="empty-search" className="medplum-empty-search">
+          No results
+        </div>
       )}
       {outcome && (
         <div data-testid="search-error" className="medplum-empty-search">
@@ -363,19 +372,19 @@ export function SearchControl(props: SearchControlProps) {
         x={state.popupX}
         y={state.popupY}
         property={state.popupField}
-        onChange={result => {
+        onChange={(result) => {
           emitSearchChange(result);
           setState({
             ...stateRef.current,
             popupVisible: false,
-            popupField: ''
+            popupField: '',
           });
         }}
         onClose={() => {
           setState({
             ...stateRef.current,
             popupVisible: false,
-            popupField: ''
+            popupField: '',
           });
         }}
       />
@@ -383,17 +392,17 @@ export function SearchControl(props: SearchControlProps) {
         schema={schema}
         search={props.search}
         visible={stateRef.current.fieldEditorVisible}
-        onOk={result => {
+        onOk={(result) => {
           emitSearchChange(result);
           setState({
             ...stateRef.current,
-            fieldEditorVisible: false
+            fieldEditorVisible: false,
           });
         }}
         onCancel={() => {
           setState({
             ...stateRef.current,
-            fieldEditorVisible: false
+            fieldEditorVisible: false,
           });
         }}
       />
@@ -401,17 +410,17 @@ export function SearchControl(props: SearchControlProps) {
         schema={schema}
         search={props.search}
         visible={stateRef.current.filterEditorVisible}
-        onOk={result => {
+        onOk={(result) => {
           emitSearchChange(result);
           setState({
             ...stateRef.current,
-            filterEditorVisible: false
+            filterEditorVisible: false,
           });
         }}
         onCancel={() => {
           setState({
             ...stateRef.current,
-            filterEditorVisible: false
+            filterEditorVisible: false,
           });
         }}
       />

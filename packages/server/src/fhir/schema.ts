@@ -13,8 +13,8 @@ export function getSchema(): JSONSchema4 {
   return schema;
 }
 
-export function getSchemaDefinitions(): { [k: string]: JSONSchema4; } {
-  return getSchema().definitions as { [k: string]: JSONSchema4; };
+export function getSchemaDefinitions(): { [k: string]: JSONSchema4 } {
+  return getSchema().definitions as { [k: string]: JSONSchema4 };
 }
 
 export function getSchemaDefinition(resourceType: string): JSONSchema4 {
@@ -65,15 +65,11 @@ export function validateResource(resource: Resource): OperationOutcome {
   return {
     resourceType: 'OperationOutcome',
     id: randomUUID(),
-    issue: issues
+    issue: issues,
   };
 }
 
-function checkProperties(
-  resource: Resource,
-  propertyDefinitions: any,
-  issues: OperationOutcomeIssue[]) {
-
+function checkProperties(resource: Resource, propertyDefinitions: any, issues: OperationOutcomeIssue[]) {
   for (const [key, value] of Object.entries(propertyDefinitions)) {
     if (key in resource) {
       checkProperty(resource, key, value, issues);
@@ -85,8 +81,8 @@ function checkProperty(
   resource: Resource,
   propertyName: string,
   propertyDetails: any,
-  issues: OperationOutcomeIssue[]) {
-
+  issues: OperationOutcomeIssue[]
+) {
   const value = (resource as any)[propertyName];
 
   if (propertyDetails.type === 'array' && !Array.isArray(value)) {
@@ -94,11 +90,7 @@ function checkProperty(
   }
 }
 
-function checkAdditionalProperties(
-  resource: Resource,
-  propertyDefinitions: any,
-  issues: OperationOutcomeIssue[]) {
-
+function checkAdditionalProperties(resource: Resource, propertyDefinitions: any, issues: OperationOutcomeIssue[]) {
   for (const key of Object.keys(resource)) {
     if (key === 'meta' || key === '_baseDefinition') {
       continue;
@@ -109,11 +101,7 @@ function checkAdditionalProperties(
   }
 }
 
-function checkRequiredProperties(
-  resource: Resource,
-  definition: any,
-  issues: OperationOutcomeIssue[]) {
-
+function checkRequiredProperties(resource: Resource, definition: any, issues: OperationOutcomeIssue[]) {
   const requiredProperties = definition.required;
   if (requiredProperties) {
     for (const key of requiredProperties) {
@@ -128,13 +116,15 @@ function validationError(details: string): OperationOutcome {
   return {
     resourceType: 'OperationOutcome',
     id: randomUUID(),
-    issue: [{
-      severity: 'error',
-      code: 'structure',
-      details: {
-        text: details
-      }
-    }]
+    issue: [
+      {
+        severity: 'error',
+        code: 'structure',
+        details: {
+          text: details,
+        },
+      },
+    ],
   };
 }
 
@@ -143,8 +133,8 @@ function createIssue(expression: string, details: string): OperationOutcomeIssue
     severity: 'error',
     code: 'structure',
     details: {
-      text: details
+      text: details,
     },
-    expression: [expression]
+    expression: [expression],
   };
 }

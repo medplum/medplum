@@ -19,7 +19,8 @@ export function Form(props: FormProps): JSX.Element {
         if (props.onSubmit) {
           props.onSubmit(formData);
         }
-      }}>
+      }}
+    >
       {props.children}
     </form>
   );

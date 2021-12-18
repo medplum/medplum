@@ -9,15 +9,15 @@ import { RegisterPage } from './RegisterPage';
 
 const medplum = new MockClient({
   'auth/register': {
-    'POST': (body: string) => {
+    POST: (body: string) => {
       const { email, password } = JSON.parse(body);
       if (email === 'george@example.com' && password === 'password') {
         return allOk;
       } else {
         return undefined;
       }
-    }
-  }
+    },
+  },
 });
 
 const setup = () => {
@@ -31,14 +31,13 @@ const setup = () => {
 };
 
 describe('RegisterPage', () => {
-
   beforeAll(() => {
     Object.defineProperty(global, 'TextEncoder', {
-      value: TextEncoder
+      value: TextEncoder,
     });
 
     Object.defineProperty(global.self, 'crypto', {
-      value: crypto.webcrypto
+      value: crypto.webcrypto,
     });
   });
 
@@ -52,10 +51,18 @@ describe('RegisterPage', () => {
     setup();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('firstName'), { target: { value: 'George' } });
-      fireEvent.change(screen.getByTestId('lastName'), { target: { value: 'Washington' } });
-      fireEvent.change(screen.getByTestId('email'), { target: { value: 'george@example.com' } });
-      fireEvent.change(screen.getByTestId('password'), { target: { value: 'password' } });
+      fireEvent.change(screen.getByTestId('firstName'), {
+        target: { value: 'George' },
+      });
+      fireEvent.change(screen.getByTestId('lastName'), {
+        target: { value: 'Washington' },
+      });
+      fireEvent.change(screen.getByTestId('email'), {
+        target: { value: 'george@example.com' },
+      });
+      fireEvent.change(screen.getByTestId('password'), {
+        target: { value: 'password' },
+      });
     });
 
     await act(async () => {
@@ -66,5 +73,4 @@ describe('RegisterPage', () => {
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
   });
-
 });

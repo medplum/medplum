@@ -32,29 +32,37 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps) {
           <col width="10%" />
         </colgroup>
         <tbody>
-          {values.map((v: any, index: number) => !v.__removed && (
-            <tr key={`${index}-${values.length}`}>
-              <td>
-                <AttachmentDisplay value={v} maxWidth={200} />
-              </td>
-              <td>
-                <button
-                  className="btn"
-                  onClick={e => {
-                    killEvent(e);
-                    const copy = values.slice();
-                    copy.splice(index, 1);
-                    setValuesWrapper(copy);
-                  }}>Remove</button>
-              </td>
-            </tr>
-          ))}
+          {values.map(
+            (v: any, index: number) =>
+              !v.__removed && (
+                <tr key={`${index}-${values.length}`}>
+                  <td>
+                    <AttachmentDisplay value={v} maxWidth={200} />
+                  </td>
+                  <td>
+                    <button
+                      className="btn"
+                      onClick={(e) => {
+                        killEvent(e);
+                        const copy = values.slice();
+                        copy.splice(index, 1);
+                        setValuesWrapper(copy);
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              )
+          )}
           <tr>
             <td></td>
             <td>
-              <UploadButton onUpload={(attachment: Attachment) => {
-                setValuesWrapper([...(valuesRef.current as Attachment[]), attachment]);
-              }} />
+              <UploadButton
+                onUpload={(attachment: Attachment) => {
+                  setValuesWrapper([...(valuesRef.current as Attachment[]), attachment]);
+                }}
+              />
             </td>
           </tr>
         </tbody>

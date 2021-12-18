@@ -23,10 +23,9 @@ export const Basic = () => {
         onCancel={() => {
           alert('Cancel');
           setOpen(false);
-        }}>
-        <div style={{ padding: '20px 50px' }}>
-          Hello world!
-      </div>
+        }}
+      >
+        <div style={{ padding: '20px 50px' }}>Hello world!</div>
       </Dialog>
     </Document>
   );

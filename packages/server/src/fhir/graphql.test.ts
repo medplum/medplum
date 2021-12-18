@@ -12,7 +12,6 @@ const app = express();
 let accessToken: string;
 
 describe('GraphQL', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -25,34 +24,36 @@ describe('GraphQL', () => {
     await repo.updateResource({
       resourceType: 'Patient',
       id: '8a54c7db-654b-4c3d-ba85-e0909f51c12b',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }]
+      name: [
+        {
+          given: ['Alice'],
+          family: 'Smith',
+        },
+      ],
     });
 
     // Create an encounter referring to the patient
     await repo.updateResource({
       resourceType: 'Encounter',
       id: '1ef2b1fc-74d9-491c-8e5e-595a9d460043',
-      'class': {
-        code: 'HH'
+      class: {
+        code: 'HH',
       },
       subject: {
-        reference: 'Patient/8a54c7db-654b-4c3d-ba85-e0909f51c12b'
-      }
+        reference: 'Patient/8a54c7db-654b-4c3d-ba85-e0909f51c12b',
+      },
     });
 
     // Create an encounter referring to missing patient
     await repo.updateResource({
       resourceType: 'Encounter',
       id: '1ef2b1fc-74d9-491c-8e5e-595a9d460044',
-      'class': {
-        code: 'HH'
+      class: {
+        code: 'HH',
       },
       subject: {
-        reference: 'Patient/8a54c7db-654b-4c3d-ba85-e0909f51c12c'
-      }
+        reference: 'Patient/8a54c7db-654b-4c3d-ba85-e0909f51c12c',
+      },
     });
   });
 
@@ -156,7 +157,7 @@ describe('GraphQL', () => {
           }
         }
       }
-    `
+    `,
       });
     expect(res.status).toBe(200);
   });
@@ -174,7 +175,7 @@ describe('GraphQL', () => {
           name { given }
         }
       }
-    `
+    `,
       });
     expect(res.status).toBe(200);
     expect(res.body.data.Patient).toBeDefined();
@@ -193,7 +194,7 @@ describe('GraphQL', () => {
           name { given }
         }
       }
-    `
+    `,
       });
     expect(res.status).toBe(200);
     expect(res.body.data.Patient).toBeNull();
@@ -213,7 +214,7 @@ describe('GraphQL', () => {
           name { given }
         }
       }
-    `
+    `,
       });
     expect(res.status).toBe(200);
     expect(res.body.data.PatientList).toBeDefined();
@@ -247,7 +248,7 @@ describe('GraphQL', () => {
             }
           }
         }
-    `
+    `,
       });
     expect(res.status).toBe(200);
     expect(res.body.data.Encounter).toBeDefined();
@@ -281,11 +282,10 @@ describe('GraphQL', () => {
             }
           }
         }
-    `
+    `,
       });
     expect(res.status).toBe(200);
     expect(res.body.data.Encounter).toBeDefined();
     expect(res.body.data.Encounter.subject.resource).toBeNull();
   });
-
 });

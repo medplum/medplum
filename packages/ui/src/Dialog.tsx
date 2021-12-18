@@ -44,7 +44,7 @@ export function Dialog(props: DialogProps) {
     <>
       <div className="modal-dialog-bg"></div>
       <div className="modal-dialog" data-testid="dialog" tabIndex={0} style={{ left: x + 'px', top: y + 'px' }}>
-        <div className="modal-dialog-title" onMouseDown={e => handleMouseDown(e)}>
+        <div className="modal-dialog-title" onMouseDown={(e) => handleMouseDown(e)}>
           <span className="modal-dialog-title-text">Dialog</span>
           <span className="modal-dialog-title-close" tabIndex={0} onClick={props.onCancel}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -52,12 +52,14 @@ export function Dialog(props: DialogProps) {
             </svg>
           </span>
         </div>
-        <div className="modal-dialog-content">
-          {props.children}
-        </div>
+        <div className="modal-dialog-content">{props.children}</div>
         <div className="modal-dialog-buttons">
-          <Button testid="dialog-ok" onClick={props.onOk}>OK</Button>
-          <Button testid="dialog-cancel" onClick={props.onCancel}>Cancel</Button>
+          <Button testid="dialog-ok" onClick={props.onOk}>
+            OK
+          </Button>
+          <Button testid="dialog-cancel" onClick={props.onCancel}>
+            Cancel
+          </Button>
         </div>
       </div>
     </>

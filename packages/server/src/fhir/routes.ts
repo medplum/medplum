@@ -63,12 +63,13 @@ publicRoutes.get('/metadata', (req: Request, res: Response) => {
 // 2) https://www.hl7.org/fhir/uv/bulkdata/authorization/index.html
 publicRoutes.get('/.well-known/smart-configuration', (req: Request, res: Response) => {
   const config = getConfig();
-  res.status(200)
+  res
+    .status(200)
     .contentType('application/json')
     .json({
-      'authorization_endpoint': config.authorizeUrl,
-      'token_endpoint': config.tokenUrl,
-      'capabilities': [
+      authorization_endpoint: config.authorizeUrl,
+      token_endpoint: config.tokenUrl,
+      capabilities: [
         'client-confidential-symmetric',
         'client-public',
         'context-banner',
@@ -80,14 +81,10 @@ publicRoutes.get('/.well-known/smart-configuration', (req: Request, res: Respons
         'permission-offline',
         'permission-patient',
         'permission-user',
-        'sso-openid-connect'
+        'sso-openid-connect',
       ],
-      'token_endpoint_auth_methods': [
-        'private_key_jwt'
-      ],
-      'token_endpoint_auth_signing_alg_values_supported': [
-        'RS256'
-      ]
+      token_endpoint_auth_methods: ['private_key_jwt'],
+      token_endpoint_auth_signing_alg_values_supported: ['RS256'],
     });
 });
 
@@ -103,137 +100,169 @@ protectedRoutes.use('/Binary/', binaryRouter);
 protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
 
 // GraphQL
-protectedRoutes.use('/([$]|%24)graphql', graphqlHTTP(() => ({
-  schema: getRootSchema()
-})));
+protectedRoutes.use(
+  '/([$]|%24)graphql',
+  graphqlHTTP(() => ({
+    schema: getRootSchema(),
+  }))
+);
 
 // Create batch
-protectedRoutes.post('/', asyncWrap(async (req: Request, res: Response) => {
-  if (!isFhirJsonContentType(req)) {
-    res.status(400).send('Unsupported content type');
-    return;
-  }
-  const bundle = req.body;
-  if (bundle.resourceType !== 'Bundle') {
-    sendOutcome(res, badRequest('Not a bundle'));
-    return;
-  }
-  const repo = res.locals.repo as Repository;
-  const [outcome, result] = await processBatch(repo, bundle);
-  assertOk(outcome);
-  sendResponse(res, outcome, result);
-
-}));
+protectedRoutes.post(
+  '/',
+  asyncWrap(async (req: Request, res: Response) => {
+    if (!isFhirJsonContentType(req)) {
+      res.status(400).send('Unsupported content type');
+      return;
+    }
+    const bundle = req.body;
+    if (bundle.resourceType !== 'Bundle') {
+      sendOutcome(res, badRequest('Not a bundle'));
+      return;
+    }
+    const repo = res.locals.repo as Repository;
+    const [outcome, result] = await processBatch(repo, bundle);
+    assertOk(outcome);
+    sendResponse(res, outcome, result);
+  })
+);
 
 // Search
-protectedRoutes.get('/:resourceType', asyncWrap(async (req: Request, res: Response) => {
-  const { resourceType } = req.params;
-  const repo = res.locals.repo as Repository;
-  const query = req.query as Record<string, string | undefined>;
-  const [outcome, bundle] = await repo.search(parseSearchRequest(resourceType, query));
-  assertOk(outcome);
-  sendResponse(res, outcome, bundle);
-}));
+protectedRoutes.get(
+  '/:resourceType',
+  asyncWrap(async (req: Request, res: Response) => {
+    const { resourceType } = req.params;
+    const repo = res.locals.repo as Repository;
+    const query = req.query as Record<string, string | undefined>;
+    const [outcome, bundle] = await repo.search(parseSearchRequest(resourceType, query));
+    assertOk(outcome);
+    sendResponse(res, outcome, bundle);
+  })
+);
 
 // Create resource
-protectedRoutes.post('/:resourceType', asyncWrap(async (req: Request, res: Response) => {
-  if (!isFhirJsonContentType(req)) {
-    res.status(400).send('Unsupported content type');
-    return;
-  }
-  const { resourceType } = req.params;
-  const resource = req.body;
-  if (resource.resourceType !== resourceType) {
-    sendOutcome(res, badRequest('Incorrect resource type'));
-    return;
-  }
-  const repo = res.locals.repo as Repository;
-  const [outcome, result] = await repo.createResource(resource);
-  assertOk(outcome);
-  sendResponse(res, outcome, result);
-}));
+protectedRoutes.post(
+  '/:resourceType',
+  asyncWrap(async (req: Request, res: Response) => {
+    if (!isFhirJsonContentType(req)) {
+      res.status(400).send('Unsupported content type');
+      return;
+    }
+    const { resourceType } = req.params;
+    const resource = req.body;
+    if (resource.resourceType !== resourceType) {
+      sendOutcome(res, badRequest('Incorrect resource type'));
+      return;
+    }
+    const repo = res.locals.repo as Repository;
+    const [outcome, result] = await repo.createResource(resource);
+    assertOk(outcome);
+    sendResponse(res, outcome, result);
+  })
+);
 
 // Read resource by ID
-protectedRoutes.get('/:resourceType/:id', asyncWrap(async (req: Request, res: Response) => {
-  const { resourceType, id } = req.params;
-  const repo = res.locals.repo as Repository;
-  const [outcome, resource] = await repo.readResource(resourceType, id);
-  assertOk(outcome);
-  sendResponse(res, outcome, resource);
-}));
+protectedRoutes.get(
+  '/:resourceType/:id',
+  asyncWrap(async (req: Request, res: Response) => {
+    const { resourceType, id } = req.params;
+    const repo = res.locals.repo as Repository;
+    const [outcome, resource] = await repo.readResource(resourceType, id);
+    assertOk(outcome);
+    sendResponse(res, outcome, resource);
+  })
+);
 
 // Read resource history
-protectedRoutes.get('/:resourceType/:id/_history', asyncWrap(async (req: Request, res: Response) => {
-  const { resourceType, id } = req.params;
-  const repo = res.locals.repo as Repository;
-  const [outcome, bundle] = await repo.readHistory(resourceType, id);
-  assertOk(outcome);
-  res.status(getStatus(outcome)).json(bundle);
-}));
+protectedRoutes.get(
+  '/:resourceType/:id/_history',
+  asyncWrap(async (req: Request, res: Response) => {
+    const { resourceType, id } = req.params;
+    const repo = res.locals.repo as Repository;
+    const [outcome, bundle] = await repo.readHistory(resourceType, id);
+    assertOk(outcome);
+    res.status(getStatus(outcome)).json(bundle);
+  })
+);
 
 // Read resource version by version ID
-protectedRoutes.get('/:resourceType/:id/_history/:vid', asyncWrap(async (req: Request, res: Response) => {
-  const { resourceType, id, vid } = req.params;
-  const repo = res.locals.repo as Repository;
-  const [outcome, resource] = await repo.readVersion(resourceType, id, vid);
-  assertOk(outcome);
-  res.status(getStatus(outcome)).json(resource);
-}));
+protectedRoutes.get(
+  '/:resourceType/:id/_history/:vid',
+  asyncWrap(async (req: Request, res: Response) => {
+    const { resourceType, id, vid } = req.params;
+    const repo = res.locals.repo as Repository;
+    const [outcome, resource] = await repo.readVersion(resourceType, id, vid);
+    assertOk(outcome);
+    res.status(getStatus(outcome)).json(resource);
+  })
+);
 
 // Update resource
-protectedRoutes.put('/:resourceType/:id', asyncWrap(async (req: Request, res: Response) => {
-  if (!isFhirJsonContentType(req)) {
-    res.status(400).send('Unsupported content type');
-    return;
-  }
-  const { resourceType, id } = req.params;
-  const resource = req.body;
-  if (resource.resourceType !== resourceType) {
-    sendOutcome(res, badRequest('Incorrect resource type'));
-    return;
-  }
-  if (resource.id !== id) {
-    sendOutcome(res, badRequest('Incorrect ID'));
-    return;
-  }
-  const repo = res.locals.repo as Repository;
-  const [outcome, result] = await repo.updateResource(resource);
-  assertOk(outcome);
-  sendResponse(res, outcome, result);
-}));
+protectedRoutes.put(
+  '/:resourceType/:id',
+  asyncWrap(async (req: Request, res: Response) => {
+    if (!isFhirJsonContentType(req)) {
+      res.status(400).send('Unsupported content type');
+      return;
+    }
+    const { resourceType, id } = req.params;
+    const resource = req.body;
+    if (resource.resourceType !== resourceType) {
+      sendOutcome(res, badRequest('Incorrect resource type'));
+      return;
+    }
+    if (resource.id !== id) {
+      sendOutcome(res, badRequest('Incorrect ID'));
+      return;
+    }
+    const repo = res.locals.repo as Repository;
+    const [outcome, result] = await repo.updateResource(resource);
+    assertOk(outcome);
+    sendResponse(res, outcome, result);
+  })
+);
 
 // Delete resource
-protectedRoutes.delete('/:resourceType/:id', asyncWrap(async (req: Request, res: Response) => {
-  const { resourceType, id } = req.params;
-  const repo = res.locals.repo as Repository;
-  const [outcome] = await repo.deleteResource(resourceType, id);
-  assertOk(outcome);
-  sendOutcome(res, outcome);
-}));
+protectedRoutes.delete(
+  '/:resourceType/:id',
+  asyncWrap(async (req: Request, res: Response) => {
+    const { resourceType, id } = req.params;
+    const repo = res.locals.repo as Repository;
+    const [outcome] = await repo.deleteResource(resourceType, id);
+    assertOk(outcome);
+    sendOutcome(res, outcome);
+  })
+);
 
 // Patch resource
-protectedRoutes.patch('/:resourceType/:id', asyncWrap(async (req: Request, res: Response) => {
-  if (!req.is('application/json-patch+json')) {
-    res.status(400).send('Unsupported content type');
-    return;
-  }
-  const { resourceType, id } = req.params;
-  const patch = req.body as Operation[];
-  const repo = res.locals.repo as Repository;
-  const [outcome, resource] = await repo.patchResource(resourceType, id, patch);
-  assertOk(outcome);
-  sendResponse(res, outcome, resource);
-}));
+protectedRoutes.patch(
+  '/:resourceType/:id',
+  asyncWrap(async (req: Request, res: Response) => {
+    if (!req.is('application/json-patch+json')) {
+      res.status(400).send('Unsupported content type');
+      return;
+    }
+    const { resourceType, id } = req.params;
+    const patch = req.body as Operation[];
+    const repo = res.locals.repo as Repository;
+    const [outcome, resource] = await repo.patchResource(resourceType, id, patch);
+    assertOk(outcome);
+    sendResponse(res, outcome, resource);
+  })
+);
 
 // Validate create resource
-protectedRoutes.post('/:resourceType/([$])validate', asyncWrap(async (req: Request, res: Response) => {
-  if (!isFhirJsonContentType(req)) {
-    res.status(400).send('Unsupported content type');
-    return;
-  }
-  const outcome = validateResource(req.body);
-  sendOutcome(res, outcome);
-}));
+protectedRoutes.post(
+  '/:resourceType/([$])validate',
+  asyncWrap(async (req: Request, res: Response) => {
+    if (!isFhirJsonContentType(req)) {
+      res.status(400).send('Unsupported content type');
+      return;
+    }
+    const outcome = validateResource(req.body);
+    sendOutcome(res, outcome);
+  })
+);
 
 function isFhirJsonContentType(req: Request) {
   return req.is('application/json') || req.is('application/fhir+json');

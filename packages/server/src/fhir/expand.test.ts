@@ -12,7 +12,6 @@ const app = express();
 let accessToken: string;
 
 describe('Expand', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -52,11 +51,12 @@ describe('Expand', () => {
 
   test('Success with count and offset', async () => {
     const res = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('https://snomed.info/sct')}&filter=left&offset=1&count=1`)
+      .get(
+        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('https://snomed.info/sct')}&filter=left&offset=1&count=1`
+      )
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
     expect(res.body.expansion.offset).toBe(1);
     expect(res.body.expansion.contains.length).toBe(1);
   });
-
 });

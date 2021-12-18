@@ -39,7 +39,7 @@ function buildPath(orig: string[], rev: string[]): PathNode | undefined {
     i: 0,
     j: -1,
     prev: undefined,
-    snake: true
+    snake: true,
   };
 
   for (let d = 0; d < MAX; d++) {
@@ -52,7 +52,7 @@ function buildPath(orig: string[], rev: string[]): PathNode | undefined {
       let prev: PathNode | undefined = undefined;
       let i = 0;
 
-      if ((k === -d) || (k !== d && kminusNode.i < kplusNode.i)) {
+      if (k === -d || (k !== d && kminusNode.i < kplusNode.i)) {
         i = kplusNode.i;
         prev = kplusNode;
       } else {
@@ -67,7 +67,7 @@ function buildPath(orig: string[], rev: string[]): PathNode | undefined {
         i,
         j,
         prev: previousSnake(prev),
-        snake: false
+        snake: false,
       };
 
       // orig and rev are zero-based
@@ -83,7 +83,7 @@ function buildPath(orig: string[], rev: string[]): PathNode | undefined {
           i,
           j,
           prev: node,
-          snake: true
+          snake: true,
         };
       }
 
@@ -118,12 +118,12 @@ function buildRevisions(startNode: PathNode, orig: string[], rev: string[]): Del
 
     const original = {
       position: ianchor,
-      lines: orig.slice(ianchor, i)
+      lines: orig.slice(ianchor, i),
     };
 
     const revised = {
       position: janchor,
-      lines: rev.slice(janchor, j)
+      lines: rev.slice(janchor, j),
     };
 
     let type: 'insert' | 'delete' | 'change';

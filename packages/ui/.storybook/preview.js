@@ -7,17 +7,17 @@ import '../src/DefaultTheme.css';
 
 export const parameters = {
   layout: 'fullscreen',
-  actions: { argTypesRegex: "^on[A-Z].*" },
+  actions: { argTypesRegex: '^on[A-Z].*' },
   controls: {
     matchers: {
       color: /(background|color)$/i,
       date: /Date$/,
     },
   },
-}
+};
 
 const medplum = new MedplumClient({
-  baseUrl: process.env.MEDPLUM_BASE_URL
+  baseUrl: process.env.MEDPLUM_BASE_URL,
 });
 
 export const decorators = [

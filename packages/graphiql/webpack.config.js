@@ -7,7 +7,7 @@ module.exports = (env, argv) => ({
   devtool: argv.mode === 'production' ? 'source-map' : 'eval-source-map',
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: '[name].[contenthash].js'
+    filename: '[name].[contenthash].js',
   },
   module: {
     rules: [
@@ -24,7 +24,7 @@ module.exports = (env, argv) => ({
       {
         test: /\.(js|jsx|ts|tsx)$/,
         exclude: '/node_modules/',
-        loader: 'babel-loader'
+        loader: 'babel-loader',
       },
       {
         test: /\.css$/,
@@ -46,11 +46,11 @@ module.exports = (env, argv) => ({
   plugins: [
     new DotenvPlugin({
       defaults: true,
-      systemvars: true
+      systemvars: true,
     }),
     new HtmlWebpackPlugin({
-      template: 'src/index.html.ejs'
-    })
+      template: 'src/index.html.ejs',
+    }),
   ],
   devServer: {
     hot: true,
@@ -62,5 +62,5 @@ module.exports = (env, argv) => ({
     usedExports: true,
     innerGraph: true,
     sideEffects: true,
-  }
+  },
 });

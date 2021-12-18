@@ -1,6 +1,6 @@
 export interface Token {
   id: string;
-  value: string
+  value: string;
 }
 
 export function tokenize(str: string): Token[] {
@@ -8,14 +8,22 @@ export function tokenize(str: string): Token[] {
 }
 
 const STANDARD_UNITS = [
-  'year', 'years',
-  'month', 'months',
-  'week', 'weeks',
-  'day', 'days',
-  'hour', 'hours',
-  'minute', 'minutes',
-  'second', 'seconds',
-  'millisecond', 'milliseconds'
+  'year',
+  'years',
+  'month',
+  'months',
+  'week',
+  'weeks',
+  'day',
+  'days',
+  'hour',
+  'hours',
+  'minute',
+  'minutes',
+  'second',
+  'seconds',
+  'millisecond',
+  'milliseconds',
 ];
 
 const TWO_CHAR_OPERATORS = ['!=', '!~', '<=', '>=', '{}'];
@@ -67,7 +75,7 @@ class Tokenizer {
       return this.consumeSingleLineComment();
     }
 
-    if (c === '\'') {
+    if (c === "'") {
       return this.consumeString();
     }
 
@@ -95,7 +103,10 @@ class Tokenizer {
   }
 
   private consumeWhitespace(): Token {
-    return buildToken('Whitespace', this.consumeWhile(() => this.curr().match(/\s/)));
+    return buildToken(
+      'Whitespace',
+      this.consumeWhile(() => this.curr().match(/\s/))
+    );
   }
 
   private consumeMultiLineComment(): Token {
@@ -106,19 +117,28 @@ class Tokenizer {
   }
 
   private consumeSingleLineComment(): Token {
-    return buildToken('Comment', this.consumeWhile(() => this.curr() !== '\n'));
+    return buildToken(
+      'Comment',
+      this.consumeWhile(() => this.curr() !== '\n')
+    );
   }
 
   private consumeString(): Token {
     this.pos++;
-    const result = buildToken('String', this.consumeWhile(() => this.prev() === '\\' || this.curr() !== '\''));
+    const result = buildToken(
+      'String',
+      this.consumeWhile(() => this.prev() === '\\' || this.curr() !== "'")
+    );
     this.pos++;
     return result;
   }
 
   private consumeBacktickSymbol(): Token {
     this.pos++;
-    const result = buildToken('Symbol', this.consumeWhile(() => this.curr() !== '`'));
+    const result = buildToken(
+      'Symbol',
+      this.consumeWhile(() => this.curr() !== '`')
+    );
     this.pos++;
     return result;
   }
@@ -126,22 +146,22 @@ class Tokenizer {
   private consumeDateTime(): Token {
     const start = this.pos;
     this.pos++;
-    this.consumeWhile(() => this.curr().match(/[\d-]/))
+    this.consumeWhile(() => this.curr().match(/[\d-]/));
 
     if (this.curr() === 'T') {
       this.pos++;
-      this.consumeWhile(() => this.curr().match(/[\d:]/))
+      this.consumeWhile(() => this.curr().match(/[\d:]/));
 
       if (this.curr() === '.' && this.peek().match(/\d/)) {
         this.pos++;
-        this.consumeWhile(() => this.curr().match(/[\d]/))
+        this.consumeWhile(() => this.curr().match(/[\d]/));
       }
 
       if (this.curr() === 'Z') {
         this.pos++;
       } else if (this.curr() === '+' || this.curr() === '-') {
         this.pos++;
-        this.consumeWhile(() => this.curr().match(/[\d:]/))
+        this.consumeWhile(() => this.curr().match(/[\d:]/));
       }
     }
 
@@ -174,7 +194,10 @@ class Tokenizer {
   }
 
   private consumeSymbol(): Token {
-    return buildToken('Symbol', this.consumeWhile(() => this.curr().match(/[$\w]/)));
+    return buildToken(
+      'Symbol',
+      this.consumeWhile(() => this.curr().match(/[$\w]/))
+    );
   }
 
   private consumeOperator(): Token {

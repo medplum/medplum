@@ -17,19 +17,21 @@ export async function createPractitioner(request: NewAccountRequest, project: Pr
   const [outcome, result] = await repo.createResource<Practitioner>({
     resourceType: 'Practitioner',
     meta: {
-      project: project.id
+      project: project.id,
     },
-    name: [{
-      given: [request.firstName],
-      family: request.lastName
-    }],
+    name: [
+      {
+        given: [request.firstName],
+        family: request.lastName,
+      },
+    ],
     telecom: [
       {
         system: 'email',
         use: 'work',
-        value: request.email
-      }
-    ]
+        value: request.email,
+      },
+    ],
   });
   assertOk(outcome);
   logger.info('Created: ' + (result as Practitioner).id);
@@ -40,15 +42,15 @@ export async function createProjectMembership(
   user: User,
   project: Project,
   practitioner: Practitioner,
-  admin: boolean): Promise<ProjectMembership> {
-
+  admin: boolean
+): Promise<ProjectMembership> {
   logger.info('Create project membership: ' + project.name);
   const [outcome, result] = await repo.createResource<ProjectMembership>({
     resourceType: 'ProjectMembership',
     project: createReference(project),
     user: createReference(user),
     profile: createReference(practitioner),
-    admin
+    admin,
   });
   assertOk(outcome);
   logger.info('Created: ' + (result as ProjectMembership).id);
@@ -69,21 +71,22 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
     // because we know that these are all resources that the user has access to
     // const profiles = await getUserProfiles(login?.user as Reference<User>);
     const memberships = await getUserMemberships(login?.user as Reference<User>);
-    const redactedMemberships = memberships.map(m => ({
+    const redactedMemberships = memberships.map((m) => ({
       id: m.id,
       project: m.project,
       profile: m.profile,
     }));
-    res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, {
-      login: login?.id,
-      memberships: redactedMemberships
-    }));
-
+    res.status(200).json(
+      await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, {
+        login: login?.id,
+        memberships: redactedMemberships,
+      })
+    );
   } else {
     // User only has one profile, so proceed
     res.status(200).json({
       login: login?.id,
-      code: login?.code
+      code: login?.code,
     });
   }
 }

@@ -14,8 +14,7 @@
     "clean": "rimraf dist cdk.out",
     "build": "npm run clean && tsc",
     "cdk": "cdk",
-    "test": "jest",
-    "lint": "eslint src/ --ext .ts,.tsx"
+    "test": "jest"
   },
   "dependencies": {
     "@aws-cdk/aws-certificatemanager": "1.135.0",

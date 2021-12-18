@@ -21,7 +21,10 @@ export function ContactPointInput(props: ContactPointInputProps) {
   }
 
   function setSystem(system: string) {
-    setContactPointWrapper({ ...ref.current, system: system ? system : undefined });
+    setContactPointWrapper({
+      ...ref.current,
+      system: system ? system : undefined,
+    });
   }
 
   function setUse(use: string) {
@@ -29,7 +32,10 @@ export function ContactPointInput(props: ContactPointInputProps) {
   }
 
   function setValue(value: string) {
-    setContactPointWrapper({ ...ref.current, value: value ? value : undefined });
+    setContactPointWrapper({
+      ...ref.current,
+      value: value ? value : undefined,
+    });
   }
 
   return (
@@ -39,7 +45,7 @@ export function ContactPointInput(props: ContactPointInputProps) {
           <td>
             <select
               defaultValue={contactPoint?.system}
-              onChange={e => setSystem(e.currentTarget.value)}
+              onChange={(e) => setSystem(e.currentTarget.value)}
               data-testid="system"
             >
               <option></option>
@@ -53,11 +59,7 @@ export function ContactPointInput(props: ContactPointInputProps) {
             </select>
           </td>
           <td>
-            <select
-              defaultValue={contactPoint?.use}
-              onChange={e => setUse(e.currentTarget.value)}
-              data-testid="use"
-            >
+            <select defaultValue={contactPoint?.use} onChange={(e) => setUse(e.currentTarget.value)} data-testid="use">
               <option></option>
               <option>home</option>
               <option>mobile</option>
@@ -71,7 +73,8 @@ export function ContactPointInput(props: ContactPointInputProps) {
               type="text"
               placeholder="Value"
               defaultValue={contactPoint?.value}
-              onChange={e => setValue(e.currentTarget.value)} />
+              onChange={(e) => setValue(e.currentTarget.value)}
+            />
           </td>
         </tr>
       </tbody>

@@ -7,23 +7,25 @@ import { SetPasswordPage } from './SetPasswordPage';
 
 const medplum = new MockClient({
   'auth/setpassword': {
-    'POST': (body: string) => {
+    POST: (body: string) => {
       const { password } = JSON.parse(body);
       if (password === 'orange') {
         return allOk;
       } else {
         return {
           resourceType: 'OperationOutcome',
-          issue: [{
-            expression: ['password'],
-            details: {
-              text: 'Incorrect password'
-            }
-          }]
+          issue: [
+            {
+              expression: ['password'],
+              details: {
+                text: 'Incorrect password',
+              },
+            },
+          ],
         };
       }
     },
-  }
+  },
 });
 
 function setup(url: string) {
@@ -39,7 +41,6 @@ function setup(url: string) {
 }
 
 describe('SetPasswordPage', () => {
-
   test('Renders', () => {
     setup('/setpassword/123/456');
     const input = screen.getByTestId('submit') as HTMLButtonElement;
@@ -50,7 +51,9 @@ describe('SetPasswordPage', () => {
     setup('/setpassword/123/456');
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), { target: { value: 'orange' } });
+      fireEvent.change(screen.getByTestId('password'), {
+        target: { value: 'orange' },
+      });
     });
 
     await act(async () => {
@@ -64,7 +67,9 @@ describe('SetPasswordPage', () => {
     setup('/setpassword/123/456');
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), { target: { value: 'watermelon' } });
+      fireEvent.change(screen.getByTestId('password'), {
+        target: { value: 'watermelon' },
+      });
     });
 
     await act(async () => {
@@ -73,5 +78,4 @@ describe('SetPasswordPage', () => {
 
     expect(screen.getByText('Incorrect password')).toBeInTheDocument();
   });
-
 });

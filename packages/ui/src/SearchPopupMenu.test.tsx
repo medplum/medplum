@@ -14,18 +14,22 @@ const schema: IndexedStructureDefinition = {
         name: {
           id: 'Patient.name',
           path: 'Patient.name',
-          type: [{
-            code: 'HumanName'
-          }]
+          type: [
+            {
+              code: 'HumanName',
+            },
+          ],
         },
         birthDate: {
           id: 'Patient.birthDate',
           path: 'Patient.birthDate',
-          type: [{
-            code: 'date'
-          }]
-        }
-      }
+          type: [
+            {
+              code: 'date',
+            },
+          ],
+        },
+      },
     },
     Observation: {
       display: 'Observation',
@@ -33,19 +37,20 @@ const schema: IndexedStructureDefinition = {
         valueInteger: {
           id: 'Observation.value[x]',
           path: 'Observation.value[x]',
-          type: [{
-            code: 'integer'
-          }]
-        }
-      }
-    }
-  }
+          type: [
+            {
+              code: 'integer',
+            },
+          ],
+        },
+      },
+    },
+  },
 };
 
 const medplum = new MockClient({});
 
 describe('SearchPopupMenu', () => {
-
   function setup(props: SearchPopupMenuProps) {
     return render(
       <MemoryRouter>
@@ -64,7 +69,7 @@ describe('SearchPopupMenu', () => {
       x: 0,
       y: 0,
       property: 'name',
-      onClose: jest.fn()
+      onClose: jest.fn(),
     });
   });
 
@@ -76,7 +81,7 @@ describe('SearchPopupMenu', () => {
       x: 0,
       y: 0,
       property: 'xyz',
-      onClose: jest.fn()
+      onClose: jest.fn(),
     });
   });
 
@@ -84,13 +89,13 @@ describe('SearchPopupMenu', () => {
     setup({
       schema,
       search: {
-        resourceType: 'Patient'
+        resourceType: 'Patient',
       },
       visible: true,
       x: 0,
       y: 0,
       property: 'name',
-      onClose: jest.fn()
+      onClose: jest.fn(),
     });
 
     expect(screen.getByText('Equals...')).toBeDefined();
@@ -100,13 +105,13 @@ describe('SearchPopupMenu', () => {
     setup({
       schema,
       search: {
-        resourceType: 'Patient'
+        resourceType: 'Patient',
       },
       visible: true,
       x: 0,
       y: 0,
       property: 'birthDate',
-      onClose: jest.fn()
+      onClose: jest.fn(),
     });
 
     expect(screen.getByText('Before...')).toBeDefined();
@@ -117,13 +122,13 @@ describe('SearchPopupMenu', () => {
     setup({
       schema,
       search: {
-        resourceType: 'Patient'
+        resourceType: 'Patient',
       },
       visible: true,
       x: 0,
       y: 0,
       property: 'birthDate',
-      onClose: jest.fn()
+      onClose: jest.fn(),
     });
 
     expect(screen.getByText('Before...')).toBeDefined();
@@ -144,13 +149,13 @@ describe('SearchPopupMenu', () => {
     setup({
       schema,
       search: {
-        resourceType: 'Observation'
+        resourceType: 'Observation',
       },
       visible: true,
       x: 0,
       y: 0,
       property: 'valueInteger',
-      onClose: jest.fn()
+      onClose: jest.fn(),
     });
 
     expect(screen.getByText('Sort Largest to Smallest')).toBeDefined();
@@ -159,7 +164,7 @@ describe('SearchPopupMenu', () => {
 
   test('Sort', async () => {
     let currSearch: SearchRequest = {
-      resourceType: 'Patient'
+      resourceType: 'Patient',
     };
 
     setup({
@@ -169,8 +174,8 @@ describe('SearchPopupMenu', () => {
       x: 0,
       y: 0,
       property: 'birthDate',
-      onChange: (e) => currSearch = e,
-      onClose: jest.fn()
+      onChange: (e) => (currSearch = e),
+      onClose: jest.fn(),
     });
 
     await act(async () => {
@@ -195,11 +200,13 @@ describe('SearchPopupMenu', () => {
   test('Clear filters', async () => {
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
-      filters: [{
-        code: 'name',
-        operator: Operator.EQUALS,
-        value: 'Alice'
-      }]
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Alice',
+        },
+      ],
     };
 
     setup({
@@ -209,8 +216,8 @@ describe('SearchPopupMenu', () => {
       x: 0,
       y: 0,
       property: 'name',
-      onChange: (e) => currSearch = e,
-      onClose: jest.fn()
+      onChange: (e) => (currSearch = e),
+      onClose: jest.fn(),
     });
 
     await act(async () => {
@@ -224,7 +231,7 @@ describe('SearchPopupMenu', () => {
     window.prompt = jest.fn().mockImplementation(() => 'xyz');
 
     let currSearch: SearchRequest = {
-      resourceType: 'Patient'
+      resourceType: 'Patient',
     };
 
     setup({
@@ -234,8 +241,8 @@ describe('SearchPopupMenu', () => {
       x: 0,
       y: 0,
       property: 'name',
-      onChange: (e) => currSearch = e,
-      onClose: jest.fn()
+      onChange: (e) => (currSearch = e),
+      onClose: jest.fn(),
     });
 
     const options = [
@@ -255,17 +262,16 @@ describe('SearchPopupMenu', () => {
       expect(currSearch.filters?.[0]).toMatchObject({
         code: 'name',
         operator: option.operator,
-        value: 'xyz'
+        value: 'xyz',
       } as Filter);
     }
-
   });
 
   test('Date submenu prompt', async () => {
     window.prompt = jest.fn().mockImplementation(() => 'xyz');
 
     let currSearch: SearchRequest = {
-      resourceType: 'Patient'
+      resourceType: 'Patient',
     };
 
     setup({
@@ -275,8 +281,8 @@ describe('SearchPopupMenu', () => {
       x: 0,
       y: 0,
       property: 'birthDate',
-      onChange: (e) => currSearch = e,
-      onClose: jest.fn()
+      onChange: (e) => (currSearch = e),
+      onClose: jest.fn(),
     });
 
     const options = [
@@ -306,23 +312,22 @@ describe('SearchPopupMenu', () => {
       expect(currSearch.filters?.[0]).toMatchObject({
         code: 'birthDate',
         operator: option.operator,
-        value: 'xyz'
+        value: 'xyz',
       } as Filter);
     }
-
   });
 
   test('Renders meta.versionId', () => {
     setup({
       schema,
       search: {
-        resourceType: 'Patient'
+        resourceType: 'Patient',
       },
       visible: true,
       x: 0,
       y: 0,
       property: 'meta.versionId',
-      onClose: jest.fn()
+      onClose: jest.fn(),
     });
 
     expect(screen.getByText('Equals...')).toBeDefined();
@@ -332,17 +337,16 @@ describe('SearchPopupMenu', () => {
     setup({
       schema,
       search: {
-        resourceType: 'Patient'
+        resourceType: 'Patient',
       },
       visible: true,
       x: 0,
       y: 0,
       property: '_lastUpdated',
-      onClose: jest.fn()
+      onClose: jest.fn(),
     });
 
     expect(screen.getByText('Before...')).toBeDefined();
     expect(screen.getByText('After...')).toBeDefined();
   });
-
 });

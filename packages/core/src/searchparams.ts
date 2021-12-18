@@ -10,7 +10,7 @@ export enum SearchParameterType {
   REFERENCE = 'REFERENCE',
   DATE = 'DATE',
   DATETIME = 'DATETIME',
-  PERIOD = 'PERIOD'
+  PERIOD = 'PERIOD',
 }
 
 export interface SearchParameterDetails {
@@ -37,8 +37,8 @@ export interface SearchParameterDetails {
 export function getSearchParameterDetails(
   structureDefinitions: IndexedStructureDefinition,
   resourceType: string,
-  searchParam: SearchParameter): SearchParameterDetails {
-
+  searchParam: SearchParameter
+): SearchParameterDetails {
   const columnName = convertCodeToColumnName(searchParam.code as string);
   const expression = getExpressionForResourceType(resourceType, searchParam.expression as string)?.split('.');
   if (!expression) {
@@ -90,8 +90,7 @@ export function getSearchParameterDetails(
  * @returns The SQL column name.
  */
 function convertCodeToColumnName(code: string): string {
-  return code.split('-')
-    .reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
+  return code.split('-').reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
 }
 
 function getSearchParameterType(searchParam: SearchParameter, propertyType: string): SearchParameterType {

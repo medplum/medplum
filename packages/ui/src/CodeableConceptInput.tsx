@@ -1,5 +1,11 @@
 import { stringify } from '@medplum/core';
-import { CodeableConcept, ElementDefinition, ValueSet, ValueSetExpansion, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import {
+  CodeableConcept,
+  ElementDefinition,
+  ValueSet,
+  ValueSetExpansion,
+  ValueSetExpansionContains,
+} from '@medplum/fhirtypes';
 import React from 'react';
 import { Autocomplete } from './Autocomplete';
 import { useMedplum } from './MedplumProvider';
@@ -23,10 +29,11 @@ export function CodeableConceptInput(props: CodeableConceptInputProps) {
     <Autocomplete
       loadOptions={(input: string): Promise<CodeableConcept[]> => {
         const system = props.property.binding?.valueSet as string;
-        return medplum.searchValueSet(system, input)
-          .then((valueSet: ValueSet) => {
-            return ((valueSet.expansion as ValueSetExpansion).contains as ValueSetExpansionContains[]).map(valueSetElementToCodeableConcept);
-          });
+        return medplum.searchValueSet(system, input).then((valueSet: ValueSet) => {
+          return ((valueSet.expansion as ValueSetExpansion).contains as ValueSetExpansionContains[]).map(
+            valueSetElementToCodeableConcept
+          );
+        });
       }}
       buildUnstructured={buildUnstructured}
       getId={getId}
@@ -45,11 +52,13 @@ export function CodeableConceptInput(props: CodeableConceptInputProps) {
 function valueSetElementToCodeableConcept(element: ValueSetExpansionContains): CodeableConcept {
   return {
     text: element.display,
-    coding: [{
-      system: element.system,
-      code: element.code,
-      display: element.display
-    }]
+    coding: [
+      {
+        system: element.system,
+        code: element.code,
+        display: element.display,
+      },
+    ],
   };
 }
 

@@ -1,9 +1,8 @@
 import { parseForm } from './FormUtils';
 
 describe('FormUtils', () => {
-
   test('Parse form into key/value pairs', () => {
-    const form = document.createElement('form')
+    const form = document.createElement('form');
     form.innerHTML = `
       <input type="text" name="a" value="b" />
       <input type="text" name="a-disabled" value="b" disabled />
@@ -29,5 +28,4 @@ describe('FormUtils', () => {
     expect(result['k']).toEqual('l');
     expect(result['m']).toEqual('o');
   });
-
 });

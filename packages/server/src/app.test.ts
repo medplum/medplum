@@ -8,7 +8,6 @@ import { closeRedis, initRedis } from './redis';
 const app = express();
 
 describe('App', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -32,5 +31,4 @@ describe('App', () => {
     expect(res.header['access-control-max-age']).toBe('86400');
     expect(res.header['cache-control']).toBe('public, max-age=86400');
   });
-
 });

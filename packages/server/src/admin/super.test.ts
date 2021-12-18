@@ -14,7 +14,6 @@ import { seedDatabase } from '../seed';
 const app = express();
 
 describe('Super Admin routes', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -31,7 +30,7 @@ describe('Super Admin routes', () => {
     const client = await createTestClient();
 
     const [practitionerOutcome, practitioner] = await repo.createResource<Practitioner>({
-      resourceType: 'Practitioner'
+      resourceType: 'Practitioner',
     });
     assertOk(practitionerOutcome);
 
@@ -39,7 +38,7 @@ describe('Super Admin routes', () => {
       resourceType: 'User',
       email: `super${randomUUID()}@example.com`,
       passwordHash: 'abc',
-      admin: true
+      admin: true,
     });
     assertOk(userOutcome);
 
@@ -48,7 +47,7 @@ describe('Super Admin routes', () => {
       client: createReference(client),
       profile: createReference(practitioner as Practitioner),
       authTime: new Date().toISOString(),
-      scope: 'openid'
+      scope: 'openid',
     });
     assertOk(loginOutcome);
 
@@ -58,7 +57,7 @@ describe('Super Admin routes', () => {
       username: user?.id as string,
       client_id: client.id as string,
       profile: getReferenceString(practitioner as Practitioner),
-      scope: 'openid'
+      scope: 'openid',
     });
 
     const res = await request(app)
@@ -79,7 +78,7 @@ describe('Super Admin routes', () => {
         lastName: 'Jones',
         projectName: 'Bob Project',
         email: `bob${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res.status).toBe(200);
@@ -98,7 +97,7 @@ describe('Super Admin routes', () => {
     const client = await createTestClient();
 
     const [practitionerOutcome, practitioner] = await repo.createResource<Practitioner>({
-      resourceType: 'Practitioner'
+      resourceType: 'Practitioner',
     });
     assertOk(practitionerOutcome);
 
@@ -106,7 +105,7 @@ describe('Super Admin routes', () => {
       resourceType: 'User',
       email: `super${randomUUID()}@example.com`,
       passwordHash: 'abc',
-      admin: true
+      admin: true,
     });
     assertOk(userOutcome);
 
@@ -115,7 +114,7 @@ describe('Super Admin routes', () => {
       client: createReference(client),
       profile: createReference(practitioner as Practitioner),
       authTime: new Date().toISOString(),
-      scope: 'openid'
+      scope: 'openid',
     });
     assertOk(loginOutcome);
 
@@ -125,7 +124,7 @@ describe('Super Admin routes', () => {
       username: user?.id as string,
       client_id: client.id as string,
       profile: getReferenceString(practitioner as Practitioner),
-      scope: 'openid'
+      scope: 'openid',
     });
 
     const res = await request(app)
@@ -146,7 +145,7 @@ describe('Super Admin routes', () => {
         lastName: 'Jones',
         projectName: 'Bob Project',
         email: `bob${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res.status).toBe(200);
@@ -160,5 +159,4 @@ describe('Super Admin routes', () => {
 
     expect(res2.status).toBe(400);
   });
-
 });

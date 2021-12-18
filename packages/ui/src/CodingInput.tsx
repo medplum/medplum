@@ -22,14 +22,16 @@ export function CodingInput(props: CodingInputProps) {
     <Autocomplete
       loadOptions={(input: string): Promise<Coding[]> => {
         const system = props.property.binding?.valueSet as string;
-        return medplum.searchValueSet(system, input)
-          .then((valueSet: ValueSet) => {
-            return ((valueSet.expansion as ValueSetExpansion).contains as ValueSetExpansionContains[]).map(e => ({
-              system: e.system,
-              code: e.code,
-              display: e.display
-            } as Coding));
-          });
+        return medplum.searchValueSet(system, input).then((valueSet: ValueSet) => {
+          return ((valueSet.expansion as ValueSetExpansion).contains as ValueSetExpansionContains[]).map(
+            (e) =>
+              ({
+                system: e.system,
+                code: e.code,
+                display: e.display,
+              } as Coding)
+          );
+        });
       }}
       buildUnstructured={(str: string) => ({ code: str })}
       getId={(item: Coding) => item.code as string}

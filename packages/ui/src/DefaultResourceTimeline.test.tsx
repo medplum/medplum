@@ -11,16 +11,18 @@ const subscription: Subscription = {
   resourceType: 'Subscription',
   id: '123',
   meta: {
-    versionId: '456'
-  }
+    versionId: '456',
+  },
 };
 
 const subscriptionHistory: Bundle = {
   resourceType: 'Bundle',
   type: 'history',
-  entry: [{
-    resource: subscription
-  }]
+  entry: [
+    {
+      resource: subscription,
+    },
+  ],
 };
 
 const auditEvents: Bundle = {
@@ -34,37 +36,33 @@ const auditEvents: Bundle = {
           lastUpdated: new Date().toISOString(),
           versionId: randomUUID(),
           author: {
-            reference: 'Practitioner/123'
-          }
-        }
-      }
-    }
-  ]
+            reference: 'Practitioner/123',
+          },
+        },
+      },
+    },
+  ],
 };
 
 const medplum = new MockClient({
   'auth/login': {
-    'POST': {
-      profile: { reference: 'Practitioner/123' }
-    }
+    POST: {
+      profile: { reference: 'Practitioner/123' },
+    },
   },
   'fhir/R4/Subscription/123': {
-    'GET': subscription
+    GET: subscription,
   },
   'fhir/R4': {
-    'POST': {
+    POST: {
       resourceType: 'Bundle',
       type: 'batch-response',
-      entry: [
-        { resource: subscriptionHistory },
-        { resource: auditEvents },
-      ]
-    }
+      entry: [{ resource: subscriptionHistory }, { resource: auditEvents }],
+    },
   },
 });
 
 describe('DefaultResourceTimeline', () => {
-
   const setup = (args: DefaultResourceTimelineProps) => {
     return render(
       <MemoryRouter>
@@ -98,5 +96,4 @@ describe('DefaultResourceTimeline', () => {
     expect(items).toBeDefined();
     expect(items.length).toEqual(2);
   });
-
 });

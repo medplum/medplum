@@ -21,6 +21,8 @@ export function Tab(props: TabProps) {
       tabIndex={0}
       className={className}
       onClick={() => (props.onClick as (name: string) => void)(props.name)}
-    >{props.label}</div>
+    >
+      {props.label}
+    </div>
   );
 }

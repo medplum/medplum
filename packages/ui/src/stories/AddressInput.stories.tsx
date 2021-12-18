@@ -16,13 +16,16 @@ export const Basic = () => (
 
 export const DefaultValue = () => (
   <Document>
-    <AddressInput name="address" defaultValue={{
-      use: 'home',
-      type: 'physical',
-      line: ['123 Happy St'],
-      city: 'Springfield',
-      state: 'IL',
-      postalCode: '44444'
-    }} />
+    <AddressInput
+      name="address"
+      defaultValue={{
+        use: 'home',
+        type: 'physical',
+        line: ['123 Happy St'],
+        city: 'Springfield',
+        state: 'IL',
+        postalCode: '44444',
+      }}
+    />
   </Document>
 );

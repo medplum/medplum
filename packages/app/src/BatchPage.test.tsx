@@ -7,7 +7,6 @@ import { BatchPage } from './BatchPage';
 const medplum = new MockClient({});
 
 describe('BatchPage', () => {
-
   function setup() {
     return render(
       <MemoryRouter>
@@ -27,22 +26,20 @@ describe('BatchPage', () => {
     setup();
 
     await act(async () => {
-      fireEvent.change(
-        screen.getByTestId('batch-input'),
-        {
-          target: {
-            value: JSON.stringify({
-              resourceType: 'Practitioner',
-              id: '123',
-              meta: {
-                lastUpdated: '2020-01-01T00:00:00.000Z',
-                author: {
-                  reference: 'Practitioner/111'
-                }
-              }
-            })
-          }
-        });
+      fireEvent.change(screen.getByTestId('batch-input'), {
+        target: {
+          value: JSON.stringify({
+            resourceType: 'Practitioner',
+            id: '123',
+            meta: {
+              lastUpdated: '2020-01-01T00:00:00.000Z',
+              author: {
+                reference: 'Practitioner/111',
+              },
+            },
+          }),
+        },
+      });
     });
 
     await act(async () => {
@@ -52,5 +49,4 @@ describe('BatchPage', () => {
     await waitFor(async () => expect(screen.getByText('Output')).toBeInTheDocument());
     expect(screen.getByText('Output')).toBeInTheDocument();
   });
-
 });

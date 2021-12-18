@@ -1,14 +1,14 @@
-import { Patient, Reference } from '@medplum/core';
+import { Patient, Reference } from '@medplum/fhirtypes';
 import { Avatar, HumanNameDisplay, MedplumLink, useResource } from '@medplum/ui';
 import React from 'react';
 import './PatientHeader.css';
 
 export interface PatientHeaderProps {
-  patient: Patient | Reference;
+  patient: Patient | Reference<Patient>;
 }
 
 export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
-  const patient = useResource(props.patient) as Patient | undefined;
+  const patient = useResource(props.patient);
   if (!patient) {
     return null;
   }
@@ -41,7 +41,7 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
           <dd>{patient.gender}</dd>
         </dl>
       )}
-      {patient.identifier?.map(identifier => (
+      {patient.identifier?.map((identifier) => (
         <dl key={identifier.system}>
           <dt>{identifier.system}</dt>
           <dd>{identifier.value}</dd>
@@ -80,7 +80,10 @@ function getAgeInYears(birthDate: Date): number {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
   let years = today.getUTCFullYear() - birthDate.getUTCFullYear();
-  if (today.getUTCMonth() < birthDate.getUTCMonth() || (today.getUTCMonth() === birthDate.getUTCMonth() && today.getUTCDate() < birthDate.getUTCDate())) {
+  if (
+    today.getUTCMonth() < birthDate.getUTCMonth() ||
+    (today.getUTCMonth() === birthDate.getUTCMonth() && today.getUTCDate() < birthDate.getUTCDate())
+  ) {
     years--;
   }
   return years;
@@ -89,7 +92,8 @@ function getAgeInYears(birthDate: Date): number {
 function getAgeInMonths(birthDate: Date): number {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
-  let months = (today.getUTCFullYear() * 12 + today.getUTCMonth()) - (birthDate.getUTCFullYear() * 12 + birthDate.getUTCMonth());
+  let months =
+    today.getUTCFullYear() * 12 + today.getUTCMonth() - (birthDate.getUTCFullYear() * 12 + birthDate.getUTCMonth());
   if (today.getUTCDate() < birthDate.getUTCDate()) {
     months--;
   }

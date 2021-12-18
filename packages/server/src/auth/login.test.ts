@@ -17,7 +17,6 @@ const app = express();
 let client: ClientApplication;
 
 describe('Login', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -37,118 +36,94 @@ describe('Login', () => {
   });
 
   test('Invalid client UUID', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        clientId: '123',
-        email: 'admin@example.com',
-        password: 'admin',
-        scope: 'openid'
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: '123',
+      email: 'admin@example.com',
+      password: 'admin',
+      scope: 'openid',
+    });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Invalid UUID');
   });
 
   test('Invalid client ID', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        clientId: 'e99126bb-c748-4c00-8d28-4e88dfb88278',
-        email: 'admin@example.com',
-        password: 'admin',
-        scope: 'openid'
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: 'e99126bb-c748-4c00-8d28-4e88dfb88278',
+      email: 'admin@example.com',
+      password: 'admin',
+      scope: 'openid',
+    });
     expect(res.status).toBe(404);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Not found');
   });
 
   test('Missing email', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        clientId: client.id,
-        email: '',
-        password: 'admin',
-        scope: 'openid'
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email: '',
+      password: 'admin',
+      scope: 'openid',
+    });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Valid email address is required');
   });
 
   test('Invalid email', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        clientId: client.id,
-        email: 'xyz',
-        password: 'admin',
-        scope: 'openid'
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email: 'xyz',
+      password: 'admin',
+      scope: 'openid',
+    });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Valid email address is required');
   });
 
   test('Missing password', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        clientId: client.id,
-        email: 'admin@example.com',
-        password: '',
-        scope: 'openid'
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email: 'admin@example.com',
+      password: '',
+      scope: 'openid',
+    });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Invalid password, must be at least 5 characters');
   });
 
   test('Wrong password', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        clientId: client.id,
-        email: 'admin@example.com',
-        password: 'wrong-password',
-        scope: 'openid'
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email: 'admin@example.com',
+      password: 'wrong-password',
+      scope: 'openid',
+    });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Incorrect password');
   });
 
   test('Success', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        clientId: client.id,
-        email: 'admin@example.com',
-        password: 'admin',
-        scope: 'openid'
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email: 'admin@example.com',
+      password: 'admin',
+      scope: 'openid',
+    });
     expect(res.status).toBe(200);
     expect(res.body.code).toBeDefined();
   });
 
   test('Success default client', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email: 'admin@example.com',
-        password: 'admin',
-        scope: 'openid'
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email: 'admin@example.com',
+      password: 'admin',
+      scope: 'openid',
+    });
     expect(res.status).toBe(200);
     expect(res.body.code).toBeDefined();
   });
@@ -158,16 +133,13 @@ describe('Login', () => {
     const memberEmail = `member${randomUUID()}@example.com`;
 
     // Register and create a project
-    const res = await request(app)
-      .post('/auth/register')
-      .type('json')
-      .send({
-        firstName: 'Admin',
-        lastName: 'Admin',
-        projectName: 'Access Policy Project',
-        email: adminEmail,
-        password: 'password!@#'
-      });
+    const res = await request(app).post('/auth/register').type('json').send({
+      firstName: 'Admin',
+      lastName: 'Admin',
+      projectName: 'Access Policy Project',
+      email: adminEmail,
+      password: 'password!@#',
+    });
 
     expect(res.status).toBe(200);
     expect(res.body.project).toBeDefined();
@@ -181,12 +153,14 @@ describe('Login', () => {
       .send({
         resourceType: 'AccessPolicy',
         name: 'Test Access Policy',
-        resource: [{
-          resourceType: 'Patient',
-          compartment: {
-            reference: `Organization/${randomUUID()}`
-          }
-        }]
+        resource: [
+          {
+            resourceType: 'Patient',
+            compartment: {
+              reference: `Organization/${randomUUID()}`,
+            },
+          },
+        ],
       });
 
     expect(resX.status).toBe(201);
@@ -198,7 +172,7 @@ describe('Login', () => {
       .send({
         firstName: 'Member',
         lastName: 'Member',
-        email: memberEmail
+        email: memberEmail,
       });
 
     expect(res2.status).toBe(200);
@@ -242,7 +216,7 @@ describe('Login', () => {
       .type('json')
       .send({
         ...res4.body,
-        accessPolicy: createReference(resX.body)
+        accessPolicy: createReference(resX.body),
       });
     expect(res5.status).toBe(200);
 
@@ -263,39 +237,30 @@ describe('Login', () => {
 
     // Now try to login as the new member
     // First, set the password
-    const res7 = await request(app)
-      .post('/auth/setpassword')
-      .type('json')
-      .send({
-        id,
-        secret,
-        password: 'my-new-password'
-      });
+    const res7 = await request(app).post('/auth/setpassword').type('json').send({
+      id,
+      secret,
+      password: 'my-new-password',
+    });
     expect(res7.status).toBe(200);
 
     // Then login
-    const res8 = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        clientId: client.id,
-        email: memberEmail,
-        password: 'my-new-password',
-        scope: 'openid'
-      });
+    const res8 = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email: memberEmail,
+      password: 'my-new-password',
+      scope: 'openid',
+    });
     expect(res8.status).toBe(200);
     expect(res8.body.code).toBeDefined();
 
     // Then get access token
-    const res9 = await request(app)
-      .post('/oauth2/token')
-      .type('form')
-      .send({
-        grant_type: 'authorization_code',
-        clientId: client.id,
-        code: res8.body.code,
-        code_verifier: 'xyz'
-      });
+    const res9 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      clientId: client.id,
+      code: res8.body.code,
+      code_verifier: 'xyz',
+    });
     expect(res9.status).toBe(200);
     expect(res9.body.token_type).toBe('Bearer');
     expect(res9.body.scope).toBe('openid');
@@ -312,10 +277,12 @@ describe('Login', () => {
       .type('json')
       .send({
         resourceType: 'Patient',
-        name: [{
-          given: ['Access'],
-          family: 'Test'
-        }]
+        name: [
+          {
+            given: ['Access'],
+            family: 'Test',
+          },
+        ],
       });
     expect(res10.status).toBe(201);
 
@@ -327,14 +294,15 @@ describe('Login', () => {
       .send({
         resourceType: 'Observation',
         code: {
-          coding: [{
-            system: 'http://loinc.org',
-            value: '1'
-          }]
+          coding: [
+            {
+              system: 'http://loinc.org',
+              value: '1',
+            },
+          ],
         },
-        subject: createReference(res10.body)
+        subject: createReference(res10.body),
       });
     expect(res11.status).toBe(403);
   });
-
 });

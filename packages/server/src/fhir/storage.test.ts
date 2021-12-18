@@ -8,7 +8,6 @@ jest.mock('@aws-sdk/client-s3');
 jest.mock('fs');
 
 describe('Storage', () => {
-
   beforeEach(() => {
     (fs.existsSync as any).mockClear();
     (fs.mkdirSync as any).mockClear();
@@ -36,18 +35,18 @@ describe('Storage', () => {
       resourceType: 'Binary',
       id: '123',
       meta: {
-        versionId: '456'
-      }
+        versionId: '456',
+      },
     };
     const req = {
-      body: 'foo'
+      body: 'foo',
     } as Request;
     await storage.writeBinary(binary, req);
     expect(fs.writeFileSync).toHaveBeenCalled();
 
     // Read a file
     const res: Response = {
-      sendFile: jest.fn()
+      sendFile: jest.fn(),
     } as any as Response;
     await storage.readBinary(binary, res);
     expect(res.sendFile).toHaveBeenCalled();
@@ -65,8 +64,8 @@ describe('Storage', () => {
     const client = (S3Client as any).mock.instances[0];
     client.send = async () => ({
       Body: {
-        pipe: jest.fn()
-      }
+        pipe: jest.fn(),
+      },
     });
 
     const storage = getBinaryStorage();
@@ -77,12 +76,12 @@ describe('Storage', () => {
       resourceType: 'Binary',
       id: '123',
       meta: {
-        versionId: '456'
-      }
+        versionId: '456',
+      },
     };
     const req = {
       body: 'foo',
-      is: jest.fn()
+      is: jest.fn(),
     } as any as Request;
     await storage.writeBinary(binary, req);
     expect(PutObjectCommand).toHaveBeenCalled();
@@ -97,5 +96,4 @@ describe('Storage', () => {
     expect(fs.mkdirSync).toHaveBeenCalledTimes(0);
     expect(fs.writeFileSync).toHaveBeenCalledTimes(0);
   });
-
 });

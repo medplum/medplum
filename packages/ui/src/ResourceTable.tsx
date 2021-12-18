@@ -24,19 +24,19 @@ export function ResourceTable(props: ResourceTableProps) {
   }, [value]);
 
   if (!schema || !value) {
-    return <div>Loading...</div>
+    return <div>Loading...</div>;
   }
 
   const typeSchema = schema.types[value.resourceType];
   if (!typeSchema) {
-    return <div>Schema not found</div>
+    return <div>Schema not found</div>;
   }
 
   return (
     <DescriptionList>
       <DescriptionListEntry term="Resource Type">{value.resourceType}</DescriptionListEntry>
       <DescriptionListEntry term="ID">{value.id}</DescriptionListEntry>
-      {Object.entries(typeSchema.properties).map(entry => {
+      {Object.entries(typeSchema.properties).map((entry) => {
         const key = entry[0];
         if (DEFAULT_IGNORED_PROPERTIES.indexOf(key) >= 0) {
           return null;
@@ -48,11 +48,7 @@ export function ResourceTable(props: ResourceTableProps) {
         }
         return (
           <DescriptionListEntry key={key} term={getPropertyDisplayName(property)}>
-            <ResourcePropertyDisplay
-              schema={schema}
-              property={property}
-              value={propertyValue}
-            />
+            <ResourcePropertyDisplay schema={schema} property={property} value={propertyValue} />
           </DescriptionListEntry>
         );
       })}

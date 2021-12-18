@@ -4,7 +4,6 @@ import { act } from 'react-dom/test-utils';
 import { Dialog } from './Dialog';
 
 describe('Dialog', () => {
-
   test('Hidden', () => {
     render(<Dialog visible={false} onOk={jest.fn()} onCancel={jest.fn()} />);
     expect(screen.queryByText('Dialog')).toBeNull();
@@ -70,7 +69,10 @@ describe('Dialog', () => {
     );
 
     await act(async () => {
-      await fireEvent.mouseDown(screen.getByText('Dialog'), { clientX: 120, clientY: 120 });
+      await fireEvent.mouseDown(screen.getByText('Dialog'), {
+        clientX: 120,
+        clientY: 120,
+      });
     });
 
     await act(async () => {
@@ -86,5 +88,4 @@ describe('Dialog', () => {
     expect(style.left).toEqual('130px');
     expect(style.top).toEqual('100px');
   });
-
 });

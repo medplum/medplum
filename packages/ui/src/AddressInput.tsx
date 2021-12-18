@@ -66,7 +66,7 @@ export function AddressInput(props: AddressInputProps) {
       <tbody>
         <tr>
           <td>
-            <select data-testid="address-use" defaultValue={value?.use} onChange={e => setUse(e.currentTarget.value)}>
+            <select data-testid="address-use" defaultValue={value?.use} onChange={(e) => setUse(e.currentTarget.value)}>
               <option></option>
               <option>home</option>
               <option>mobile</option>
@@ -76,7 +76,11 @@ export function AddressInput(props: AddressInputProps) {
             </select>
           </td>
           <td>
-            <select data-testid="address-type" defaultValue={value?.type} onChange={e => setType(e.currentTarget.value)}>
+            <select
+              data-testid="address-type"
+              defaultValue={value?.type}
+              onChange={(e) => setType(e.currentTarget.value)}
+            >
               <option></option>
               <option>postal</option>
               <option>physical</option>
@@ -88,7 +92,7 @@ export function AddressInput(props: AddressInputProps) {
               type="text"
               placeholder="Line 1"
               defaultValue={getLine(value, 0)}
-              onChange={e => setLine1(e.currentTarget.value)}
+              onChange={(e) => setLine1(e.currentTarget.value)}
             />
           </td>
           <td>
@@ -96,7 +100,7 @@ export function AddressInput(props: AddressInputProps) {
               type="text"
               placeholder="Line 2"
               defaultValue={getLine(value, 1)}
-              onChange={e => setLine2(e.currentTarget.value)}
+              onChange={(e) => setLine2(e.currentTarget.value)}
             />
           </td>
           <td>
@@ -104,7 +108,7 @@ export function AddressInput(props: AddressInputProps) {
               type="text"
               placeholder="City"
               defaultValue={value.city}
-              onChange={e => setCity(e.currentTarget.value)}
+              onChange={(e) => setCity(e.currentTarget.value)}
             />
           </td>
           <td>
@@ -112,7 +116,7 @@ export function AddressInput(props: AddressInputProps) {
               type="text"
               placeholder="State"
               defaultValue={value.state}
-              onChange={e => setState(e.currentTarget.value)}
+              onChange={(e) => setState(e.currentTarget.value)}
             />
           </td>
           <td>
@@ -120,7 +124,7 @@ export function AddressInput(props: AddressInputProps) {
               type="text"
               placeholder="Postal Code"
               defaultValue={value.postalCode}
-              onChange={e => setPostalCode(e.currentTarget.value)}
+              onChange={(e) => setPostalCode(e.currentTarget.value)}
             />
           </td>
         </tr>

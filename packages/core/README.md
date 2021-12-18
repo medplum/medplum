@@ -1,6 +1,6 @@
 # Medplum
 
-Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications.  Medplum includes a FHIR server, React component library, and developer app.
+Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications. Medplum includes a FHIR server, React component library, and developer app.
 
 # Medplum JS Client Library
 
@@ -8,11 +8,11 @@ The Medplum JS Client Library is a pure TypeScript library for calling a FHIR se
 
 ## Key Features
 
-* FHIR validation and operations
-* FHIR client to create, read, update, delete, patch, and search
-* WebSockets for realtime communication
-* Evaluation of [FhirPath](https://hl7.org/fhirpath/N1/index.html)
-* No external dependencies
+- FHIR validation and operations
+- FHIR client to create, read, update, delete, patch, and search
+- WebSockets for realtime communication
+- Evaluation of [FhirPath](https://hl7.org/fhirpath/N1/index.html)
+- No external dependencies
 
 ## Installation
 
@@ -26,8 +26,8 @@ npm install medplum
 import { MedplumClient } from '@medplum/core';
 
 const medplum = new MedplumClient({
-    baseUrl: 'https://www.example.com/fhir/R4/',
-    clientId: 'MY_CLIENT_ID'
+  baseUrl: 'https://www.example.com/fhir/R4/',
+  clientId: 'MY_CLIENT_ID',
 });
 ```
 
@@ -36,7 +36,7 @@ const medplum = new MedplumClient({
 Authenticate with a FHIR server via OAuth2 redirect:
 
 ```typescript
-medplum.signInWithRedirect().then(user => console.log(user));
+medplum.signInWithRedirect().then((user) => console.log(user));
 ```
 
 ## Authenticating with Medplum
@@ -51,7 +51,7 @@ Before you begin
 After that, you can use the `signIn()` method:
 
 ```typescript
-medplum.signIn(email, password, role, scope).then(user => console.log(user));
+medplum.signIn(email, password, role, scope).then((user) => console.log(user));
 ```
 
 ## Search
@@ -59,24 +59,28 @@ medplum.signIn(email, password, role, scope).then(user => console.log(user));
 Search for any resource using a [FHIR search](https://www.hl7.org/fhir/search.html) string:
 
 ```typescript
-medplum.search('Patient?given=eve').then(bundle => {
-  bundle.entry.forEach(entry => console.log(entry.resource));
+medplum.search('Patient?given=eve').then((bundle) => {
+  bundle.entry.forEach((entry) => console.log(entry.resource));
 });
 ```
 
 Search using a structured object:
 
 ```typescript
-medplum.search({
-  resourceType: 'Patient',
-  filters: [{
-    code: 'given',
-    operator: Operator.EQUALS,
-    value: 'eve'
-  }]
-}).then(bundle => {
-  bundle.entry.forEach(entry => console.log(entry.resource));
-});
+medplum
+  .search({
+    resourceType: 'Patient',
+    filters: [
+      {
+        code: 'given',
+        operator: Operator.EQUALS,
+        value: 'eve',
+      },
+    ],
+  })
+  .then((bundle) => {
+    bundle.entry.forEach((entry) => console.log(entry.resource));
+  });
 ```
 
 ## Create
@@ -87,11 +91,11 @@ Create a new resource:
 medplum.create({
   resourceType: 'Observation',
   subject: {
-    reference: 'Patient/123'
+    reference: 'Patient/123',
   },
   valueQuantity: {
     // ...
-  }
+  },
   // ...
 });
 ```
@@ -118,4 +122,4 @@ medplum.readVersion('Patient', '123', '456');
 
 ## License
 
-Apache 2.0.  Copyright &copy; Medplum 2021
+Apache 2.0. Copyright &copy; Medplum 2021

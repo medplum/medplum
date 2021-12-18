@@ -11,18 +11,22 @@ const schema: IndexedStructureDefinition = {
         name: {
           id: 'Patient.name',
           path: 'Patient.name',
-          type: [{
-            code: 'HumanName'
-          }]
+          type: [
+            {
+              code: 'HumanName',
+            },
+          ],
         },
         birthDate: {
           id: 'Patient.birthDate',
           path: 'Patient.birthDate',
-          type: [{
-            code: 'date'
-          }]
-        }
-      }
+          type: [
+            {
+              code: 'date',
+            },
+          ],
+        },
+      },
     },
     Observation: {
       display: 'Observation',
@@ -30,31 +34,26 @@ const schema: IndexedStructureDefinition = {
         valueInteger: {
           id: 'Observation.value[x]',
           path: 'Observation.value[x]',
-          type: [{
-            code: 'integer'
-          }]
-        }
-      }
-    }
-  }
+          type: [
+            {
+              code: 'integer',
+            },
+          ],
+        },
+      },
+    },
+  },
 };
 
 describe('SearchFieldEditor', () => {
-
   test('Render not visible', () => {
     const currSearch: SearchRequest = {
       resourceType: 'Patient',
-      fields: ['name']
+      fields: ['name'],
     };
 
     render(
-      <SearchFieldEditor
-        schema={schema}
-        search={currSearch}
-        visible={false}
-        onOk={jest.fn()}
-        onCancel={jest.fn()}
-      />
+      <SearchFieldEditor schema={schema} search={currSearch} visible={false} onOk={jest.fn()} onCancel={jest.fn()} />
     );
 
     expect(screen.queryByText('OK')).toBeNull();
@@ -63,7 +62,7 @@ describe('SearchFieldEditor', () => {
   test('Add field with Add button', async () => {
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
-      fields: ['name']
+      fields: ['name'],
     };
 
     render(
@@ -71,7 +70,7 @@ describe('SearchFieldEditor', () => {
         schema={schema}
         search={currSearch}
         visible={true}
-        onOk={e => currSearch = e}
+        onOk={(e) => (currSearch = e)}
         onCancel={() => console.log('onCancel')}
       />
     );
@@ -94,7 +93,7 @@ describe('SearchFieldEditor', () => {
   test('Add field with Enter key', async () => {
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
-      fields: ['name']
+      fields: ['name'],
     };
 
     render(
@@ -102,7 +101,7 @@ describe('SearchFieldEditor', () => {
         schema={schema}
         search={currSearch}
         visible={true}
-        onOk={e => currSearch = e}
+        onOk={(e) => (currSearch = e)}
         onCancel={() => console.log('onCancel')}
       />
     );
@@ -112,7 +111,10 @@ describe('SearchFieldEditor', () => {
     });
 
     await act(async () => {
-      fireEvent.keyDown(screen.getByTestId('available'), { key: 'Enter', code: 'Enter' });
+      fireEvent.keyDown(screen.getByTestId('available'), {
+        key: 'Enter',
+        code: 'Enter',
+      });
     });
 
     await act(async () => {
@@ -125,7 +127,7 @@ describe('SearchFieldEditor', () => {
   test('Add field with double click', async () => {
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
-      fields: ['name']
+      fields: ['name'],
     };
 
     render(
@@ -133,7 +135,7 @@ describe('SearchFieldEditor', () => {
         schema={schema}
         search={currSearch}
         visible={true}
-        onOk={e => currSearch = e}
+        onOk={(e) => (currSearch = e)}
         onCancel={() => console.log('onCancel')}
       />
     );
@@ -156,7 +158,7 @@ describe('SearchFieldEditor', () => {
   test('Remove field with Remove button', async () => {
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
-      fields: ['name', 'birthDate']
+      fields: ['name', 'birthDate'],
     };
 
     render(
@@ -164,7 +166,7 @@ describe('SearchFieldEditor', () => {
         schema={schema}
         search={currSearch}
         visible={true}
-        onOk={e => currSearch = e}
+        onOk={(e) => (currSearch = e)}
         onCancel={() => console.log('onCancel')}
       />
     );
@@ -187,7 +189,7 @@ describe('SearchFieldEditor', () => {
   test('Remove field with double click', async () => {
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
-      fields: ['name', 'birthDate']
+      fields: ['name', 'birthDate'],
     };
 
     render(
@@ -195,7 +197,7 @@ describe('SearchFieldEditor', () => {
         schema={schema}
         search={currSearch}
         visible={true}
-        onOk={e => currSearch = e}
+        onOk={(e) => (currSearch = e)}
         onCancel={() => console.log('onCancel')}
       />
     );
@@ -218,7 +220,7 @@ describe('SearchFieldEditor', () => {
   test('Remove field with Remove button', async () => {
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
-      fields: ['name', 'birthDate']
+      fields: ['name', 'birthDate'],
     };
 
     render(
@@ -226,7 +228,7 @@ describe('SearchFieldEditor', () => {
         schema={schema}
         search={currSearch}
         visible={true}
-        onOk={e => currSearch = e}
+        onOk={(e) => (currSearch = e)}
         onCancel={() => console.log('onCancel')}
       />
     );
@@ -236,7 +238,10 @@ describe('SearchFieldEditor', () => {
     });
 
     await act(async () => {
-      fireEvent.keyDown(screen.getByTestId('selected'), { key: 'Enter', code: 'Enter' });
+      fireEvent.keyDown(screen.getByTestId('selected'), {
+        key: 'Enter',
+        code: 'Enter',
+      });
     });
 
     await act(async () => {
@@ -249,7 +254,7 @@ describe('SearchFieldEditor', () => {
   test('Move field up with Up button', async () => {
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
-      fields: ['name', 'birthDate']
+      fields: ['name', 'birthDate'],
     };
 
     render(
@@ -257,7 +262,7 @@ describe('SearchFieldEditor', () => {
         schema={schema}
         search={currSearch}
         visible={true}
-        onOk={e => currSearch = e}
+        onOk={(e) => (currSearch = e)}
         onCancel={() => console.log('onCancel')}
       />
     );
@@ -280,7 +285,7 @@ describe('SearchFieldEditor', () => {
   test('Move field down with Down button', async () => {
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
-      fields: ['name', 'birthDate']
+      fields: ['name', 'birthDate'],
     };
 
     render(
@@ -288,7 +293,7 @@ describe('SearchFieldEditor', () => {
         schema={schema}
         search={currSearch}
         visible={true}
-        onOk={e => currSearch = e}
+        onOk={(e) => (currSearch = e)}
         onCancel={() => console.log('onCancel')}
       />
     );
@@ -307,5 +312,4 @@ describe('SearchFieldEditor', () => {
 
     expect(currSearch.fields).toMatchObject(['birthDate', 'name']);
   });
-
 });

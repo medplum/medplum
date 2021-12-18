@@ -13,7 +13,6 @@ jest.mock('@aws-sdk/client-sesv2');
 const app = express();
 
 describe('Project Admin routes', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -41,7 +40,7 @@ describe('Project Admin routes', () => {
         lastName: 'Adams',
         projectName: 'Adams Project',
         email: `john${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res.status).toBe(200);
@@ -56,7 +55,7 @@ describe('Project Admin routes', () => {
       .send({
         firstName: 'Bob',
         lastName: 'Jones',
-        email: `bob${randomUUID()}@example.com`
+        email: `bob${randomUUID()}@example.com`,
       });
 
     expect(res2.status).toBe(200);
@@ -89,7 +88,7 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + res.body.accessToken)
       .type('json')
       .send({
-        resourceType: 'Patient'
+        resourceType: 'Patient',
       });
     expect(res5.status).toBe(400);
 
@@ -100,7 +99,7 @@ describe('Project Admin routes', () => {
       .type('json')
       .send({
         resourceType: 'ProjectMembership',
-        id: randomUUID()
+        id: randomUUID(),
       });
     expect(res6.status).toBe(400);
 
@@ -111,7 +110,7 @@ describe('Project Admin routes', () => {
       .type('json')
       .send({
         ...res4.body,
-        admin: true
+        admin: true,
       });
     expect(res7.status).toBe(200);
 
@@ -139,7 +138,7 @@ describe('Project Admin routes', () => {
         lastName: 'Smith',
         projectName: 'Alice Project',
         email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res.status).toBe(200);
@@ -153,7 +152,7 @@ describe('Project Admin routes', () => {
         lastName: 'Jones',
         projectName: 'Bob Project',
         email: `bob${randomUUID()}@example.com`,
-        password: 'password!@#'
+        password: 'password!@#',
       });
 
     expect(res2.status).toBe(200);
@@ -195,5 +194,4 @@ describe('Project Admin routes', () => {
 
     expect(res6.status).toBe(404);
   });
-
 });

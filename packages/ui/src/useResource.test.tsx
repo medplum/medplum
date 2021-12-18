@@ -13,38 +13,35 @@ interface TestComponentProps {
 
 function TestComponent(props: TestComponentProps) {
   const resource = useResource(props.value);
-  return (
-    <div data-testid="test-component">
-      {JSON.stringify(resource)}
-    </div>
-  );
+  return <div data-testid="test-component">{JSON.stringify(resource)}</div>;
 }
 
 const patient: Patient = {
   resourceType: 'Patient',
   id: '123',
   meta: {
-    versionId: '456'
+    versionId: '456',
   },
-  name: [{
-    given: ['Alice'],
-    family: 'Smith'
-  }]
+  name: [
+    {
+      given: ['Alice'],
+      family: 'Smith',
+    },
+  ],
 };
 
 const medplum = new MockClient({
   'auth/login': {
-    'POST': {
-      profile: { reference: 'Practitioner/123' }
-    }
+    POST: {
+      profile: { reference: 'Practitioner/123' },
+    },
   },
   'fhir/R4/Patient/123': {
-    'GET': patient
+    GET: patient,
   },
 });
 
 describe('useResource', () => {
-
   const setup = (props: TestComponentProps) => {
     return render(
       <MemoryRouter>
@@ -92,5 +89,4 @@ describe('useResource', () => {
     expect(el).toBeInTheDocument();
     expect(el.innerHTML).not.toBe('');
   });
-
 });

@@ -1,4 +1,3 @@
-
 export const REGION = 'us-east-1';
 
 export const ACCOUNT_NUMBER = '647991932601';
@@ -17,7 +16,8 @@ export const API_SSL_CERT_ARN = 'arn:aws:acm:us-east-1:647991932601:certificate/
 
 export const APP_SSL_CERT_ARN = 'arn:aws:acm:us-east-1:647991932601:certificate/fd21b628-b2c0-4a5d-b4f5-b5c9a6d63b1a';
 
-export const STORAGE_SSL_CERT_ARN = 'arn:aws:acm:us-east-1:647991932601:certificate/19d85245-0a1d-4bf5-9789-23082b1a15fc';
+export const STORAGE_SSL_CERT_ARN =
+  'arn:aws:acm:us-east-1:647991932601:certificate/19d85245-0a1d-4bf5-9789-23082b1a15fc';
 
 export const PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvFkmgZybrFDAb+gKU5Y0

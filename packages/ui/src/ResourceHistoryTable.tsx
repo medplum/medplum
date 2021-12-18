@@ -17,13 +17,12 @@ export function ResourceHistoryTable(props: ResourceHistoryTableProps) {
 
   useEffect(() => {
     if (!props.history && props.resourceType && props.id) {
-      medplum.readHistory(props.resourceType, props.id).then(result => setValue(result));
+      medplum.readHistory(props.resourceType, props.id).then((result) => setValue(result));
     }
-
   }, [props.history, props.resourceType, props.id]);
 
   if (!value) {
-    return <div>Loading...</div>
+    return <div>Loading...</div>;
   }
 
   return (
@@ -36,7 +35,7 @@ export function ResourceHistoryTable(props: ResourceHistoryTableProps) {
         </tr>
       </thead>
       <tbody>
-        {value.entry?.map(entry => (
+        {value.entry?.map((entry) => (
           <HistoryRow key={entry.resource?.meta?.versionId} version={entry.resource as Resource} />
         ))}
       </tbody>
@@ -54,13 +53,9 @@ function HistoryRow(props: HistoryRowProps) {
       <td>
         <ResourceBadge value={props.version.meta?.author} link={true} />
       </td>
+      <td>{formatDateTime(props.version.meta?.lastUpdated as string)}</td>
       <td>
-        {formatDateTime(props.version.meta?.lastUpdated as string)}
-      </td>
-      <td>
-        <MedplumLink to={getVersionUrl(props.version)}>
-          {props.version.meta?.versionId}
-        </MedplumLink>
+        <MedplumLink to={getVersionUrl(props.version)}>{props.version.meta?.versionId}</MedplumLink>
       </td>
     </tr>
   );

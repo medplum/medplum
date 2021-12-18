@@ -11,33 +11,39 @@ const schema: IndexedStructureDefinition = {
         name: {
           id: 'Patient.name',
           path: 'Patient.name',
-          type: [{
-            code: 'HumanName'
-          }]
+          type: [
+            {
+              code: 'HumanName',
+            },
+          ],
         },
         birthDate: {
           id: 'Patient.birthDate',
           path: 'Patient.birthDate',
-          type: [{
-            code: 'date'
-          }]
-        }
+          type: [
+            {
+              code: 'date',
+            },
+          ],
+        },
       },
-      searchParams: [{
-        resourceType: 'SearchParameter',
-        code: 'name',
-        type: 'string'
-      },
-      {
-        resourceType: 'SearchParameter',
-        code: 'birthdate',
-        type: 'date'
-      },
-      {
-        resourceType: 'SearchParameter',
-        code: 'unknown',
-        type: 'unknown'
-      }]
+      searchParams: [
+        {
+          resourceType: 'SearchParameter',
+          code: 'name',
+          type: 'string',
+        },
+        {
+          resourceType: 'SearchParameter',
+          code: 'birthdate',
+          type: 'date',
+        },
+        {
+          resourceType: 'SearchParameter',
+          code: 'unknown',
+          type: 'unknown',
+        },
+      ],
     },
     Observation: {
       display: 'Observation',
@@ -45,45 +51,56 @@ const schema: IndexedStructureDefinition = {
         valueInteger: {
           id: 'Observation.value[x]',
           path: 'Observation.value[x]',
-          type: [{
-            code: 'integer'
-          }]
-        }
+          type: [
+            {
+              code: 'integer',
+            },
+          ],
+        },
       },
-      searchParams: [{
-        resourceType: 'SearchParameter',
-        code: 'subject',
-        type: 'reference'
-      }]
-    }
-  }
+      searchParams: [
+        {
+          resourceType: 'SearchParameter',
+          code: 'subject',
+          type: 'reference',
+        },
+      ],
+    },
+  },
 };
 
 describe('SearchFilterEditor', () => {
-
   test('Add filter', async () => {
     let currSearch: SearchRequest = {
-      resourceType: 'Patient'
+      resourceType: 'Patient',
     };
 
-    render(<SearchFilterEditor
-      schema={schema}
-      search={currSearch}
-      visible={true}
-      onOk={e => currSearch = e}
-      onCancel={() => console.log('onCancel')}
-    />);
+    render(
+      <SearchFilterEditor
+        schema={schema}
+        search={currSearch}
+        visible={true}
+        onOk={(e) => (currSearch = e)}
+        onCancel={() => console.log('onCancel')}
+      />
+    );
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('filter-field'), { target: { value: 'name' } });
+      fireEvent.change(screen.getByTestId('filter-field'), {
+        target: { value: 'name' },
+      });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('filter-operation'), { target: { value: 'contains' } });
+      fireEvent.change(screen.getByTestId('filter-operation'), {
+        target: { value: 'contains' },
+      });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('filter-value'), { target: { value: 'Alice' } });
+      fireEvent.change(screen.getByTestId('filter-value'), {
+        target: { value: 'Alice' },
+      });
     });
 
     await act(async () => {
@@ -94,30 +111,36 @@ describe('SearchFilterEditor', () => {
       fireEvent.click(screen.getByText('OK'));
     });
 
-    expect(currSearch.filters).toMatchObject([{
-      code: 'name',
-      operator: Operator.CONTAINS,
-      value: 'Alice'
-    }]);
+    expect(currSearch.filters).toMatchObject([
+      {
+        code: 'name',
+        operator: Operator.CONTAINS,
+        value: 'Alice',
+      },
+    ]);
   });
 
   test('Delete filter', async () => {
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
-      filters: [{
-        code: 'name',
-        operator: Operator.CONTAINS,
-        value: 'Alice'
-      }]
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.CONTAINS,
+          value: 'Alice',
+        },
+      ],
     };
 
-    render(<SearchFilterEditor
-      schema={schema}
-      search={currSearch}
-      visible={true}
-      onOk={e => currSearch = e}
-      onCancel={() => console.log('onCancel')}
-    />);
+    render(
+      <SearchFilterEditor
+        schema={schema}
+        search={currSearch}
+        visible={true}
+        onOk={(e) => (currSearch = e)}
+        onCancel={() => console.log('onCancel')}
+      />
+    );
 
     await act(async () => {
       fireEvent.click(screen.getByText('Delete'));
@@ -132,23 +155,29 @@ describe('SearchFilterEditor', () => {
 
   test('Handle unknown search param type', async () => {
     let currSearch: SearchRequest = {
-      resourceType: 'Patient'
+      resourceType: 'Patient',
     };
 
-    render(<SearchFilterEditor
-      schema={schema}
-      search={currSearch}
-      visible={true}
-      onOk={e => currSearch = e}
-      onCancel={() => console.log('onCancel')}
-    />);
+    render(
+      <SearchFilterEditor
+        schema={schema}
+        search={currSearch}
+        visible={true}
+        onOk={(e) => (currSearch = e)}
+        onCancel={() => console.log('onCancel')}
+      />
+    );
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('filter-field'), { target: { value: 'unknown' } });
+      fireEvent.change(screen.getByTestId('filter-field'), {
+        target: { value: 'unknown' },
+      });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('filter-operation'), { target: { value: 'equals' } });
+      fireEvent.change(screen.getByTestId('filter-operation'), {
+        target: { value: 'equals' },
+      });
     });
 
     expect(screen.queryByText('unknown')).not.toBeNull();

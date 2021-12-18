@@ -18,7 +18,6 @@ let patientId: string;
 let patientVersionId: string;
 
 describe('FHIR Routes', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -29,10 +28,12 @@ describe('FHIR Routes', () => {
 
     const [outcome, patient] = await repo.createResource({
       resourceType: 'Patient',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }]
+      name: [
+        {
+          given: ['Alice'],
+          family: 'Smith',
+        },
+      ],
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -46,8 +47,7 @@ describe('FHIR Routes', () => {
   });
 
   test('Get CapabilityStatement anonymously', async () => {
-    const res = await request(app)
-      .get(`/fhir/R4/metadata`);
+    const res = await request(app).get(`/fhir/R4/metadata`);
     expect(res.status).toBe(200);
     expect(res.body.resourceType).toEqual('CapabilityStatement');
   });
@@ -61,8 +61,7 @@ describe('FHIR Routes', () => {
   });
 
   test('Get SMART-on-FHIR configuration', async () => {
-    const res = await request(app)
-      .get(`/fhir/R4/.well-known/smart-configuration`);
+    const res = await request(app).get(`/fhir/R4/.well-known/smart-configuration`);
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toEqual('application/json; charset=utf-8');
     expect(res.body.authorization_endpoint).toBeDefined();
@@ -115,7 +114,7 @@ describe('FHIR Routes', () => {
     const patient = res.body;
     const res2 = await request(app)
       .get(`/fhir/R4/Patient/` + patient.id)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(200);
   });
 
@@ -265,7 +264,7 @@ describe('FHIR Routes', () => {
     const res2 = await request(app)
       .put(`/fhir/R4/Patient/${patient.id}`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .send(patient)
+      .send(patient);
     expect(res2.status).toBe(304);
   });
 
@@ -340,7 +339,11 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/json-patch+json')
       .send([
-        { op: 'add', path: '/generalPractitioner', value: [{ reference: 'Practitioner/123' }] }
+        {
+          op: 'add',
+          path: '/generalPractitioner',
+          value: [{ reference: 'Practitioner/123' }],
+        },
       ]);
     expect(res.status).toBe(404);
   });
@@ -359,9 +362,7 @@ describe('FHIR Routes', () => {
       .patch(`/fhir/R4/Patient/${patientId}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/json-patch+json')
-      .send([
-        { op: 'remove', path: '/resourceType' }
-      ]);
+      .send([{ op: 'remove', path: '/resourceType' }]);
     expect(res.status).toBe(400);
   });
 
@@ -371,7 +372,11 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/json-patch+json')
       .send([
-        { op: 'add', path: '/generalPractitioner', value: [{ reference: 'Practitioner/123' }] }
+        {
+          op: 'add',
+          path: '/generalPractitioner',
+          value: [{ reference: 'Practitioner/123' }],
+        },
       ]);
     expect(res.status).toBe(200);
   });
@@ -414,5 +419,4 @@ describe('FHIR Routes', () => {
       .send('hello');
     expect(res.status).toBe(400);
   });
-
 });

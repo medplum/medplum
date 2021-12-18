@@ -11,7 +11,6 @@ import { tryLogin, validateLoginRequest } from './utils';
 let client: ClientApplication;
 
 describe('OAuth utils', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -32,7 +31,7 @@ describe('OAuth utils', () => {
       password: 'admin',
       scope: 'openid',
       nonce: 'nonce',
-      remember: false
+      remember: false,
     });
 
     expect(isOk(outcome)).toBe(false);
@@ -47,7 +46,7 @@ describe('OAuth utils', () => {
       password: 'admin',
       scope: 'openid',
       nonce: 'nonce',
-      remember: false
+      remember: false,
     });
 
     expect(isOk(outcome)).toBe(false);
@@ -62,7 +61,7 @@ describe('OAuth utils', () => {
       password: '',
       scope: 'openid',
       nonce: 'nonce',
-      remember: false
+      remember: false,
     });
 
     expect(isOk(outcome)).toBe(false);
@@ -77,7 +76,7 @@ describe('OAuth utils', () => {
       password: 'admin',
       scope: 'openid',
       nonce: 'nonce',
-      remember: false
+      remember: false,
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -92,7 +91,7 @@ describe('OAuth utils', () => {
       password: 'admin',
       scope: 'openid',
       nonce: 'nonce',
-      remember: false
+      remember: false,
     });
 
     expect(isOk(outcome)).toBe(true);
@@ -101,67 +100,76 @@ describe('OAuth utils', () => {
 
   test('Validate code challenge login request', () => {
     // If user submits codeChallenge, then codeChallengeMethod is required
-    expect(validateLoginRequest({
-      clientId: client.id as string,
-      authMethod: 'password',
-      email: 'admin@example.com',
-      password: 'admin',
-      scope: 'openid',
-      nonce: 'nonce',
-      remember: false,
-      codeChallenge: 'xyz'
-    })?.issue?.[0]?.expression).toEqual(['code_challenge_method']);
+    expect(
+      validateLoginRequest({
+        clientId: client.id as string,
+        authMethod: 'password',
+        email: 'admin@example.com',
+        password: 'admin',
+        scope: 'openid',
+        nonce: 'nonce',
+        remember: false,
+        codeChallenge: 'xyz',
+      })?.issue?.[0]?.expression
+    ).toEqual(['code_challenge_method']);
 
     // If user submits codeChallengeMethod, then codeChallenge is required
-    expect(validateLoginRequest({
-      clientId: client.id as string,
-      authMethod: 'password',
-      email: 'admin@example.com',
-      password: 'admin',
-      scope: 'openid',
-      nonce: 'nonce',
-      remember: false,
-      codeChallengeMethod: 'plain'
-    })?.issue?.[0]?.expression).toEqual(['code_challenge']);
+    expect(
+      validateLoginRequest({
+        clientId: client.id as string,
+        authMethod: 'password',
+        email: 'admin@example.com',
+        password: 'admin',
+        scope: 'openid',
+        nonce: 'nonce',
+        remember: false,
+        codeChallengeMethod: 'plain',
+      })?.issue?.[0]?.expression
+    ).toEqual(['code_challenge']);
 
     // Code challenge method
-    expect(validateLoginRequest({
-      clientId: client.id as string,
-      authMethod: 'password',
-      email: 'admin@example.com',
-      password: 'admin',
-      scope: 'openid',
-      nonce: 'nonce',
-      remember: false,
-      codeChallenge: 'xyz',
-      codeChallengeMethod: 'xyz'
-    })?.issue?.[0]?.expression).toEqual(['code_challenge_method']);
+    expect(
+      validateLoginRequest({
+        clientId: client.id as string,
+        authMethod: 'password',
+        email: 'admin@example.com',
+        password: 'admin',
+        scope: 'openid',
+        nonce: 'nonce',
+        remember: false,
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'xyz',
+      })?.issue?.[0]?.expression
+    ).toEqual(['code_challenge_method']);
 
     // Code challenge method 'plain' is ok
-    expect(validateLoginRequest({
-      clientId: client.id as string,
-      authMethod: 'password',
-      email: 'admin@example.com',
-      password: 'admin',
-      scope: 'openid',
-      nonce: 'nonce',
-      remember: false,
-      codeChallenge: 'xyz',
-      codeChallengeMethod: 'plain'
-    })).toBeUndefined();
+    expect(
+      validateLoginRequest({
+        clientId: client.id as string,
+        authMethod: 'password',
+        email: 'admin@example.com',
+        password: 'admin',
+        scope: 'openid',
+        nonce: 'nonce',
+        remember: false,
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      })
+    ).toBeUndefined();
 
     // Code challenge method 'S256' is ok
-    expect(validateLoginRequest({
-      clientId: client.id as string,
-      authMethod: 'password',
-      email: 'admin@example.com',
-      password: 'admin',
-      scope: 'openid',
-      nonce: 'nonce',
-      remember: false,
-      codeChallenge: 'xyz',
-      codeChallengeMethod: 'plain'
-    })).toBeUndefined();
+    expect(
+      validateLoginRequest({
+        clientId: client.id as string,
+        authMethod: 'password',
+        email: 'admin@example.com',
+        password: 'admin',
+        scope: 'openid',
+        nonce: 'nonce',
+        remember: false,
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      })
+    ).toBeUndefined();
   });
-
 });

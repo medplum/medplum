@@ -13,7 +13,7 @@ interface SearchFieldEditorProps {
 
 export function SearchFieldEditor(props: SearchFieldEditorProps) {
   const [state, setState] = useState({
-    search: JSON.parse(stringify(props.search)) as SearchRequest
+    search: JSON.parse(stringify(props.search)) as SearchRequest,
   });
 
   const availableRef = useRef<HTMLSelectElement>(null);
@@ -75,8 +75,8 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
       setState({
         search: {
           ...state.search,
-          fields: newFields
-        }
+          fields: newFields,
+        },
       });
     }
   }
@@ -94,8 +94,8 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
       setState({
         search: {
           ...state.search,
-          fields: newFields
-        }
+          fields: newFields,
+        },
       });
     }
   }
@@ -115,8 +115,8 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
       setState({
         search: {
           ...state.search,
-          fields: newFields
-        }
+          fields: newFields,
+        },
       });
     }
   }
@@ -136,8 +136,8 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
       setState({
         search: {
           ...state.search,
-          fields: newFields
-        }
+          fields: newFields,
+        },
       });
     }
   }
@@ -162,19 +162,22 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
   const typeDef = props.schema.types[resourceType];
 
   const selected = state.search.fields ?? [];
-  const available = Object.keys(typeDef.properties).filter(field => !selected?.includes(field)).sort();
+  const available = Object.keys(typeDef.properties)
+    .filter((field) => !selected?.includes(field))
+    .sort();
 
   return (
-    <Dialog
-      visible={props.visible}
-      onOk={() => props.onOk(state.search)}
-      onCancel={props.onCancel}>
+    <Dialog visible={props.visible} onOk={() => props.onOk(state.search)} onCancel={props.onCancel}>
       <div>
         <table style={{ margin: 'auto' }}>
           <thead>
             <tr>
-              <th colSpan={2} align="center">Available</th>
-              <th colSpan={2} align="center">Selected</th>
+              <th colSpan={2} align="center">
+                Available
+              </th>
+              <th colSpan={2} align="center">
+                Selected
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -185,11 +188,15 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
                   size={15}
                   tabIndex={1}
                   style={{ width: '200px' }}
-                  onKeyDown={e => handleAvailableKeyDown(e)}
+                  onKeyDown={(e) => handleAvailableKeyDown(e)}
                   onDoubleClick={() => handleAvailableDoubleClick()}
                   data-testid="available"
                 >
-                  {available.map(key => <option key={key} value={key}>{buildFieldNameString(props.schema, resourceType, key)}</option>)}
+                  {available.map((key) => (
+                    <option key={key} value={key}>
+                      {buildFieldNameString(props.schema, resourceType, key)}
+                    </option>
+                  ))}
                 </select>
               </td>
               <td colSpan={2} align="center">
@@ -198,11 +205,15 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
                   size={15}
                   tabIndex={4}
                   style={{ width: '200px' }}
-                  onKeyDown={e => handleSelectedKeyDown(e)}
+                  onKeyDown={(e) => handleSelectedKeyDown(e)}
                   onDoubleClick={() => handleSelectedDoubleClick()}
                   data-testid="selected"
                 >
-                  {selected.map(key => <option key={key} value={key}>{buildFieldNameString(props.schema, resourceType, key)}</option>)}
+                  {selected.map((key) => (
+                    <option key={key} value={key}>
+                      {buildFieldNameString(props.schema, resourceType, key)}
+                    </option>
+                  ))}
                 </select>
               </td>
             </tr>
@@ -210,16 +221,24 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
           <tfoot>
             <tr>
               <td align="center">
-                <button className="btn btn-small" tabIndex={2} onClick={() => onAddField()}>Add</button>
+                <button className="btn btn-small" tabIndex={2} onClick={() => onAddField()}>
+                  Add
+                </button>
               </td>
               <td align="center">
-                <button className="btn btn-small" tabIndex={3} onClick={() => onRemoveField()}>Remove</button>
+                <button className="btn btn-small" tabIndex={3} onClick={() => onRemoveField()}>
+                  Remove
+                </button>
               </td>
               <td align="center">
-                <button className="btn btn-small" tabIndex={5} onClick={() => onMoveUp()}>Up</button>
+                <button className="btn btn-small" tabIndex={5} onClick={() => onMoveUp()}>
+                  Up
+                </button>
               </td>
               <td align="center">
-                <button className="btn btn-small" tabIndex={6} onClick={() => onMoveDown()}>Down</button>
+                <button className="btn btn-small" tabIndex={6} onClick={() => onMoveDown()}>
+                  Down
+                </button>
               </td>
             </tr>
           </tfoot>

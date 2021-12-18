@@ -9,10 +9,8 @@ export interface TabSwitchProps {
 export function TabSwitch(props: TabSwitchProps) {
   return (
     <>
-      {React.Children.map(props.children, child => {
-        if (React.isValidElement(child) &&
-          child.type === TabPanel &&
-          child.props.name === props.value) {
+      {React.Children.map(props.children, (child) => {
+        if (React.isValidElement(child) && child.type === TabPanel && child.props.name === props.value) {
           return child;
         } else {
           return null;

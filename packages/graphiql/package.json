@@ -13,8 +13,7 @@
   "scripts": {
     "clean": "rimraf dist",
     "dev": "webpack serve --mode development",
-    "build": "npm run clean && cross-env NODE_ENV=production webpack --mode production",
-    "lint": "eslint src/ --ext .ts,.tsx"
+    "build": "npm run clean && cross-env NODE_ENV=production webpack --mode production"
   },
   "devDependencies": {
     "@medplum/core": "0.2.2",

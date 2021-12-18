@@ -20,10 +20,10 @@
           "--runInBand",
           "--config",
           "${workspaceRoot}/jest.config.json"
-        ],
+        ]
       },
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
-    },
+    }
   ]
 }

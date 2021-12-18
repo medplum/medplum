@@ -8,53 +8,60 @@ import { ResourceTable, ResourceTableProps } from './ResourceTable';
 const practitioner: Practitioner = {
   resourceType: 'Practitioner',
   id: '123',
-  name: [{ given: ['Medplum'], family: 'Admin' }]
+  name: [{ given: ['Medplum'], family: 'Admin' }],
 };
 
 const practitionerStructureBundle: Bundle = {
   resourceType: 'Bundle',
-  entry: [{
-    resource: {
-      resourceType: 'StructureDefinition',
-      name: 'Practitioner',
-      snapshot: {
-        element: [
-          {
-            path: 'Practitioner.id',
-            type: [{
-              code: 'code'
-            }]
-          },
-          {
-            path: 'Practitioner.name',
-            type: [{
-              code: 'HumanName'
-            }],
-            max: '*'
-          },
-          {
-            path: 'Practitioner.gender',
-            type: [{
-              code: 'code'
-            }]
-          }
-        ]
-      }
-    }
-  }]
+  entry: [
+    {
+      resource: {
+        resourceType: 'StructureDefinition',
+        name: 'Practitioner',
+        snapshot: {
+          element: [
+            {
+              path: 'Practitioner.id',
+              type: [
+                {
+                  code: 'code',
+                },
+              ],
+            },
+            {
+              path: 'Practitioner.name',
+              type: [
+                {
+                  code: 'HumanName',
+                },
+              ],
+              max: '*',
+            },
+            {
+              path: 'Practitioner.gender',
+              type: [
+                {
+                  code: 'code',
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
+  ],
 };
 
 const medplum = new MockClient({
   'fhir/R4/StructureDefinition?name:exact=Practitioner': {
-    'GET': practitionerStructureBundle
+    GET: practitionerStructureBundle,
   },
   'fhir/R4/Practitioner/123': {
-    'GET': practitioner
+    GET: practitioner,
   },
 });
 
 describe('ResourceTable', () => {
-
   function setup(props: ResourceTableProps) {
     return render(
       <MedplumProvider medplum={medplum}>
@@ -66,8 +73,8 @@ describe('ResourceTable', () => {
   test('Renders empty Practitioner form', async () => {
     setup({
       value: {
-        resourceType: 'Practitioner'
-      }
+        resourceType: 'Practitioner',
+      },
     });
 
     await act(async () => {
@@ -80,8 +87,8 @@ describe('ResourceTable', () => {
   test('Renders Practitioner resource', async () => {
     setup({
       value: {
-        reference: 'Practitioner/123'
-      }
+        reference: 'Practitioner/123',
+      },
     });
 
     await act(async () => {
@@ -95,9 +102,9 @@ describe('ResourceTable', () => {
   test('Ignore missing values', async () => {
     setup({
       value: {
-        reference: 'Practitioner/123'
+        reference: 'Practitioner/123',
       },
-      ignoreMissingValues: true
+      ignoreMissingValues: true,
     });
 
     await act(async () => {
@@ -107,5 +114,4 @@ describe('ResourceTable', () => {
     expect(screen.getByText('Resource Type')).toBeInTheDocument();
     expect(screen.queryByText('Gender')).toBeNull();
   });
-
 });

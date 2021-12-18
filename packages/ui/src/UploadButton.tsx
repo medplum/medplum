@@ -35,12 +35,13 @@ export function UploadButton(props: UploadButtonProps) {
     }
 
     const contentType = file.type || 'application/octet-stream';
-    medplum.createBinary(file, contentType)
+    medplum
+      .createBinary(file, contentType)
       .then((binary: Binary) => {
         props.onUpload({
           contentType: binary.contentType,
           url: binary.url,
-          title: file.name
+          title: file.name,
         });
       })
       .catch((err: any) => {
@@ -55,14 +56,18 @@ export function UploadButton(props: UploadButtonProps) {
         data-testid="upload-file-input"
         style={{ display: 'none' }}
         ref={fileInputRef}
-        onChange={e => onFileChange(e)} />
+        onChange={(e) => onFileChange(e)}
+      />
       <button
         data-testid="upload-button"
         className="btn"
-        onClick={e => {
+        onClick={(e) => {
           killEvent(e);
           fileInputRef.current?.click();
-        }}>Upload...</button>
+        }}
+      >
+        Upload...
+      </button>
     </>
   );
 }

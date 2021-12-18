@@ -24,7 +24,7 @@ export async function changePasswordHandler(req: Request, res: Response) {
     const outcome = await changePassword({
       user: user as User,
       oldPassword: req.body.oldPassword,
-      newPassword: req.body.newPassword
+      newPassword: req.body.newPassword,
     });
 
     return sendOutcome(res, outcome);
@@ -47,7 +47,7 @@ export async function changePassword(request: ChangePasswordRequest): Promise<Op
   const newPasswordHash = await bcrypt.hash(request.newPassword, 10);
   const [outcome] = await repo.updateResource<User>({
     ...request.user,
-    passwordHash: newPasswordHash
+    passwordHash: newPasswordHash,
   });
 
   return outcome;

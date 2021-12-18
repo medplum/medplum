@@ -13,10 +13,12 @@ export const TargetProfile = () => (
     <ReferenceInput
       name="foo"
       property={{
-        type: [{
-          code: 'reference',
-          targetProfile: ['Practitioner', 'Patient']
-        }]
+        type: [
+          {
+            code: 'reference',
+            targetProfile: ['Practitioner', 'Patient'],
+          },
+        ],
       }}
     />
   </Document>
@@ -27,9 +29,11 @@ export const FreeText = () => (
     <ReferenceInput
       name="foo"
       property={{
-        type: [{
-          code: 'reference'
-        }]
+        type: [
+          {
+            code: 'reference',
+          },
+        ],
       }}
     />
   </Document>

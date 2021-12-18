@@ -3,7 +3,6 @@ import { AuditEvent, Bundle, BundleEntry, Observation, SearchParameter } from '@
 import { parseFhirPath } from './parse';
 
 describe('FHIRPath parser', () => {
-
   test('Parser can build a arithmetic parser with correct order of operations', () => {
     const result = parseFhirPath('3 / 3 + 4 * 9 - 1').eval(0);
     expect(result).toEqual([36]);
@@ -48,129 +47,165 @@ describe('FHIRPath parser', () => {
   test('Evaluate FHIRPath Patient.name.given', () => {
     const result = parseFhirPath('Patient.name.given').eval({
       resourceType: 'Patient',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }]
+      name: [
+        {
+          given: ['Alice'],
+          family: 'Smith',
+        },
+      ],
     });
     expect(result).toEqual(['Alice']);
   });
 
   test('Evaluate FHIRPath string concatenation', () => {
-    const result = parseFhirPath('Patient.name.given + \' \' + Patient.name.family').eval({
+    const result = parseFhirPath("Patient.name.given + ' ' + Patient.name.family").eval({
       resourceType: 'Patient',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }]
+      name: [
+        {
+          given: ['Alice'],
+          family: 'Smith',
+        },
+      ],
     });
     expect(result).toEqual(['Alice Smith']);
   });
 
   test('Evaluate FHIRPath Patient.name.given on array of resources', () => {
-    const result = parseFhirPath('Patient.name.given').eval([{
-      resourceType: 'Patient',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }]
-    },
-    {
-      resourceType: 'Patient',
-      name: [{
-        given: ['Bob'],
-        family: 'Jones'
-      }]
-    }]);
+    const result = parseFhirPath('Patient.name.given').eval([
+      {
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Alice'],
+            family: 'Smith',
+          },
+        ],
+      },
+      {
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Bob'],
+            family: 'Jones',
+          },
+        ],
+      },
+    ]);
     expect(result).toEqual(['Alice', 'Bob']);
   });
 
   test('Evaluate FHIRPath string concatenation on array of resources', () => {
-    const result = parseFhirPath('Patient.name.given + \' \' + Patient.name.family').eval([{
-      resourceType: 'Patient',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }]
-    },
-    {
-      resourceType: 'Patient',
-      name: [{
-        given: ['Bob'],
-        family: 'Jones'
-      }]
-    }]);
+    const result = parseFhirPath("Patient.name.given + ' ' + Patient.name.family").eval([
+      {
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Alice'],
+            family: 'Smith',
+          },
+        ],
+      },
+      {
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Bob'],
+            family: 'Jones',
+          },
+        ],
+      },
+    ]);
     expect(result).toEqual(['Alice Smith', 'Bob Jones']);
   });
 
   test('Evaluate FHIRPath Patient.name.given on array of resources', () => {
-    const result = parseFhirPath('Patient.name.given').eval([{
-      resourceType: 'Practitioner',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }]
-    },
-    {
-      resourceType: 'Patient',
-      name: [{
-        given: ['Bob'],
-        family: 'Jones'
-      }]
-    }]);
+    const result = parseFhirPath('Patient.name.given').eval([
+      {
+        resourceType: 'Practitioner',
+        name: [
+          {
+            given: ['Alice'],
+            family: 'Smith',
+          },
+        ],
+      },
+      {
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Bob'],
+            family: 'Jones',
+          },
+        ],
+      },
+    ]);
     expect(result).toEqual(['Bob']);
   });
 
   test('Evaluate FHIRPath union', () => {
     const result = parseFhirPath('Practitioner.name.given | Patient.name.given').eval({
       resourceType: 'Patient',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }]
+      name: [
+        {
+          given: ['Alice'],
+          family: 'Smith',
+        },
+      ],
     });
     expect(result).toEqual(['Alice']);
   });
 
   test('Evaluate FHIRPath union to combine results', () => {
-    const result = parseFhirPath('Practitioner.name.given | Patient.name.given').eval([{
-      resourceType: 'Patient',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }]
-    },
-    {
-      resourceType: 'Practitioner',
-      name: [{
-        given: ['Bob'],
-        family: 'Jones'
-      }]
-    }]);
+    const result = parseFhirPath('Practitioner.name.given | Patient.name.given').eval([
+      {
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Alice'],
+            family: 'Smith',
+          },
+        ],
+      },
+      {
+        resourceType: 'Practitioner',
+        name: [
+          {
+            given: ['Bob'],
+            family: 'Jones',
+          },
+        ],
+      },
+    ]);
     expect(result).toEqual(['Alice', 'Bob']);
   });
 
   test('Evaluate FHIRPath double union', () => {
-    const result = parseFhirPath('Patient.name.given | Patient.name.given').eval([{
-      resourceType: 'Patient',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }]
-    },
-    {
-      resourceType: 'Patient',
-      name: [{
-        given: ['Bob'],
-        family: 'Jones'
-      }]
-    }]);
+    const result = parseFhirPath('Patient.name.given | Patient.name.given').eval([
+      {
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Alice'],
+            family: 'Smith',
+          },
+        ],
+      },
+      {
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Bob'],
+            family: 'Jones',
+          },
+        ],
+      },
+    ]);
     expect(result).toEqual(['Alice', 'Bob']);
   });
 
   test('Evaluate ignores non-objects', () => {
     const result = parseFhirPath('foo.bar').eval({
-      foo: 1
+      foo: 1,
     });
     expect(result).toEqual([]);
   });
@@ -184,35 +219,39 @@ describe('FHIRPath parser', () => {
   });
 
   test('Evaluate FHIRPath where function', () => {
-    const result = parseFhirPath('Patient.telecom.where(system=\'email\')').eval({
+    const result = parseFhirPath("Patient.telecom.where(system='email')").eval({
       resourceType: 'Patient',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }],
+      name: [
+        {
+          given: ['Alice'],
+          family: 'Smith',
+        },
+      ],
       telecom: [
         {
           system: 'a',
-          value: 'a'
+          value: 'a',
         },
         {
           system: 'b',
-          value: 'b'
+          value: 'b',
         },
         {
           system: 'email',
-          value: 'alice@example.com'
+          value: 'alice@example.com',
         },
         {
           system: 'c',
-          value: 'c'
+          value: 'c',
         },
-      ]
+      ],
     });
-    expect(result).toMatchObject([{
-      system: 'email',
-      value: 'alice@example.com'
-    }]);
+    expect(result).toMatchObject([
+      {
+        system: 'email',
+        value: 'alice@example.com',
+      },
+    ]);
   });
 
   test('Eval all SearchParameter expressions', () => {
@@ -221,7 +260,7 @@ describe('FHIRPath parser', () => {
       const resource = entry.resource as SearchParameter;
       const { expression } = resource;
       if (expression) {
-        expect(() => parseFhirPath((expression))).not.toThrow();
+        expect(() => parseFhirPath(expression)).not.toThrow();
       }
     }
   });
@@ -230,26 +269,30 @@ describe('FHIRPath parser', () => {
     const observation: Observation = {
       resourceType: 'Observation',
       subject: {
-        reference: 'Patient/123'
-      }
+        reference: 'Patient/123',
+      },
     };
 
     const result = parseFhirPath('Observation.subject.resolve()').eval(observation);
 
-    expect(result).toMatchObject([{
-      resourceType: 'Patient',
-      id: '123'
-    }]);
+    expect(result).toMatchObject([
+      {
+        resourceType: 'Patient',
+        id: '123',
+      },
+    ]);
   });
 
   test('Resolve is resourceType', () => {
     const auditEvent: AuditEvent = {
       resourceType: 'AuditEvent',
-      entity: [{
-        what: {
-          reference: 'Patient/123'
-        }
-      }]
+      entity: [
+        {
+          what: {
+            reference: 'Patient/123',
+          },
+        },
+      ],
     };
 
     const result = parseFhirPath('AuditEvent.entity.what.where(resolve() is Patient)').eval(auditEvent);
@@ -259,15 +302,16 @@ describe('FHIRPath parser', () => {
   test('Resolve is not resourceType', () => {
     const auditEvent: AuditEvent = {
       resourceType: 'AuditEvent',
-      entity: [{
-        what: {
-          reference: 'Subscription/123'
-        }
-      }]
+      entity: [
+        {
+          what: {
+            reference: 'Subscription/123',
+          },
+        },
+      ],
     };
 
     const result = parseFhirPath('AuditEvent.entity.what.where(resolve() is Patient)').eval(auditEvent);
     expect(result).toEqual([]);
   });
-
 });

@@ -1,9 +1,5 @@
-import {
-  Bundle,
-  BundleEntry,
-  OperationOutcomeError,
-  Resource
-} from '@medplum/core';
+import { OperationOutcomeError } from '@medplum/core';
+import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
 import {
   Document,
   Loading,
@@ -14,14 +10,19 @@ import {
   TabPanel,
   TabSwitch,
   TitleBar,
-  useMedplum
+  useMedplum,
 } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 export function ResourceVersionPage() {
   const navigate = useNavigate();
-  const { resourceType, id, versionId, tab } = useParams() as { resourceType: string, id: string, versionId: string, tab: string };
+  const { resourceType, id, versionId, tab } = useParams() as {
+    resourceType: string;
+    id: string;
+    versionId: string;
+    tab: string;
+  };
   const medplum = useMedplum();
   const [loading, setLoading] = useState<boolean>(true);
   const [historyBundle, setHistoryBundle] = useState<Bundle | undefined>();
@@ -30,10 +31,11 @@ export function ResourceVersionPage() {
   function loadResource(): Promise<void> {
     setError(undefined);
     setLoading(true);
-    return medplum.readHistory(resourceType, id)
-      .then(result => setHistoryBundle(result))
+    return medplum
+      .readHistory(resourceType, id)
+      .then((result) => setHistoryBundle(result))
       .then(() => setLoading(false))
-      .catch(reason => {
+      .catch((reason) => {
         setError(reason);
         setLoading(false);
       });
@@ -57,7 +59,7 @@ export function ResourceVersionPage() {
   }
 
   const entries = historyBundle.entry as BundleEntry[];
-  const index = entries.findIndex(entry => entry.resource?.meta?.versionId === versionId);
+  const index = entries.findIndex((entry) => entry.resource?.meta?.versionId === versionId);
   if (index === -1) {
     return (
       <Document>
@@ -77,21 +79,25 @@ export function ResourceVersionPage() {
       </TitleBar>
       <TabBar
         value={tab || defaultTab}
-        onChange={(name: string) => navigate(`/${resourceType}/${id}/_history/${versionId}/${name}`)}>
+        onChange={(name: string) => navigate(`/${resourceType}/${id}/_history/${versionId}/${name}`)}
+      >
         <Tab name="diff" label="Diff" />
         <Tab name="raw" label="Raw" />
       </TabBar>
       <Document>
-        {error && (
-          <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>
-        )}
+        {error && <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>}
         <TabSwitch value={tab || defaultTab}>
           <TabPanel name="diff">
             {prev ? (
               <>
                 <ul>
                   <li>Current: {value.meta?.versionId}</li>
-                  <li>Previous: <MedplumLink to={`/${resourceType}/${id}/_history/${prev.meta?.versionId}`}>{prev.meta?.versionId}</MedplumLink></li>
+                  <li>
+                    Previous:{' '}
+                    <MedplumLink to={`/${resourceType}/${id}/_history/${prev.meta?.versionId}`}>
+                      {prev.meta?.versionId}
+                    </MedplumLink>
+                  </li>
                 </ul>
                 <ResourceDiff original={prev} revised={value} />
               </>

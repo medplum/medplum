@@ -8,7 +8,6 @@ import { getPresignedUrl } from './signer';
  * The target type of the attachment rewrite.
  */
 export enum RewriteMode {
-
   /**
    * Rewrite the attachment URL to a presigned URL.
    *
@@ -27,7 +26,7 @@ export enum RewriteMode {
    *
    * Example: Binary/11feac5b-b5b7-4d5d-a416-0d64c194dac0
    */
-  REFERENCE
+  REFERENCE,
 }
 
 /**
@@ -81,7 +80,11 @@ export async function rewriteAttachments<T>(mode: RewriteMode, repo: Repository,
  * @param keyValue The key/value pair to rewrite.
  * @returns The rewritten key/value pair.
  */
-async function rewriteAttachmentProperty(mode: RewriteMode, repo: Repository, [key, value]: [string, any]): Promise<[string, any]> {
+async function rewriteAttachmentProperty(
+  mode: RewriteMode,
+  repo: Repository,
+  [key, value]: [string, any]
+): Promise<[string, any]> {
   const url = await rewriteAttachmentUrl(mode, repo, [key, value]);
   if (url) {
     return [key, url];
@@ -100,7 +103,11 @@ async function rewriteAttachmentProperty(mode: RewriteMode, repo: Repository, [k
  * @param keyValue The key/value pair to rewrite.
  * @returns The rewritten URL or undefined.
  */
-async function rewriteAttachmentUrl(mode: RewriteMode, repo: Repository, [key, value]: [string, any]): Promise<string | boolean | undefined> {
+async function rewriteAttachmentUrl(
+  mode: RewriteMode,
+  repo: Repository,
+  [key, value]: [string, any]
+): Promise<string | boolean | undefined> {
   if (key !== 'url' || typeof value !== 'string') {
     // Not a URL property or not a string value.
     return undefined;
@@ -135,7 +142,11 @@ async function rewriteAttachmentUrl(mode: RewriteMode, repo: Repository, [key, v
  * @param versionId
  * @returns
  */
-async function getAttachmentPresignedUrl(repo: Repository, id: string, versionId?: string): Promise<string | boolean | undefined> {
+async function getAttachmentPresignedUrl(
+  repo: Repository,
+  id: string,
+  versionId?: string
+): Promise<string | boolean | undefined> {
   let outcome: OperationOutcome;
   let binary: Binary | undefined;
 
@@ -166,10 +177,8 @@ function normalizeBinaryUrl(url: string): { id?: string; versionId?: string } {
 
   if (url.startsWith(getConfig().baseUrl + 'fhir/R4/Binary/')) {
     refStr = url.substring(getConfig().baseUrl.length + 'fhir/R4/Binary/'.length);
-
   } else if (url.startsWith(getConfig().storageBaseUrl)) {
     refStr = url.substring(getConfig().storageBaseUrl.length);
-
   } else if (url.startsWith('Binary/')) {
     refStr = url.substring('Binary/'.length);
   }

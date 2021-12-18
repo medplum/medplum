@@ -26,7 +26,7 @@ enum AuditEventOutcome {
   Success = '0',
   MinorFailure = '4',
   SeriousFailure = '8',
-  MajorFailure = '12'
+  MajorFailure = '12',
 }
 
 const queueName = 'SubscriptionQueue';
@@ -42,7 +42,7 @@ let worker: Worker<SubscriptionJobData> | undefined = undefined;
  */
 export function initSubscriptionWorker(config: MedplumRedisConfig): void {
   const defaultOptions: QueueBaseOptions = {
-    connection: config
+    connection: config,
   };
 
   queueScheduler = new QueueScheduler(queueName, defaultOptions);
@@ -53,9 +53,9 @@ export function initSubscriptionWorker(config: MedplumRedisConfig): void {
       attempts: 18, // 1 second * 2^18 = 73 hours
       backoff: {
         type: 'exponential',
-        delay: 1000
-      }
-    }
+        delay: 1000,
+      },
+    },
   });
 
   worker = new Worker<SubscriptionJobData>(queueName, sendSubscription, defaultOptions);
@@ -114,7 +114,7 @@ export async function addSubscriptionJobs(resource: Resource): Promise<void> {
         subscriptionId: subscription.id as string,
         resourceType: resource.resourceType,
         id: resource.id as string,
-        versionId: resource.meta?.versionId as string
+        versionId: resource.meta?.versionId as string,
       });
     }
   }
@@ -145,7 +145,9 @@ function matchesCriteria(resource: Resource, subscription: Subscription): boolea
 
   const searchRequest = parseSearchUrl(new URL(criteria, 'https://api.medplum.com/'));
   if (resource.resourceType !== searchRequest.resourceType) {
-    logger.debug(`Ignore rest hook for different resourceType (wanted "${searchRequest.resourceType}", received "${resource.resourceType}")`);
+    logger.debug(
+      `Ignore rest hook for different resourceType (wanted "${searchRequest.resourceType}", received "${resource.resourceType}")`
+    );
     return false;
   }
 
@@ -235,17 +237,17 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
       {
         code: '_project',
         operator: Operator.EQUALS,
-        value: resource.meta?.project as string
+        value: resource.meta?.project as string,
       },
       {
         code: 'status',
         operator: Operator.EQUALS,
-        value: 'active'
-      }
-    ]
+        value: 'active',
+      },
+    ],
   });
   assertOk(outcome);
-  return (bundle?.entry as BundleEntry<Subscription>[]).map(e => e.resource as Subscription);
+  return (bundle?.entry as BundleEntry<Subscription>[]).map((e) => e.resource as Subscription);
 }
 
 /**
@@ -293,7 +295,11 @@ export async function sendSubscription(job: Job<SubscriptionJobData>): Promise<v
  * @param subscription The subscription.
  * @param resource The resource that triggered the subscription.
  */
-export async function sendRestHook(job: Job<SubscriptionJobData>, subscription: Subscription, resource: Resource): Promise<void> {
+export async function sendRestHook(
+  job: Job<SubscriptionJobData>,
+  subscription: Subscription,
+  resource: Resource
+): Promise<void> {
   const url = subscription?.channel?.endpoint as string;
   if (!url) {
     // This can happen if a user updates the Subscription after the job is created.
@@ -314,19 +320,20 @@ export async function sendRestHook(job: Job<SubscriptionJobData>, subscription: 
       subscription,
       resource,
       response.status === 200 ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
-      `Attempt ${job.attemptsMade} received status ${response.status}`);
+      `Attempt ${job.attemptsMade} received status ${response.status}`
+    );
 
     if (response.status >= 400) {
       error = new Error('Received status ' + response.status);
     }
-
   } catch (ex) {
     logger.info('Subscription exception: ' + ex);
     await createSubscriptionEvent(
       subscription,
       resource,
       AuditEventOutcome.MinorFailure,
-      `Attempt ${job.attemptsMade} received error ${ex}`);
+      `Attempt ${job.attemptsMade} received error ${ex}`
+    );
     error = ex as Error;
   }
 
@@ -343,7 +350,7 @@ export async function sendRestHook(job: Job<SubscriptionJobData>, subscription: 
  */
 function buildRestHookHeaders(subscription: Subscription, resource: Resource): HeadersInit {
   const headers: HeadersInit = {
-    'Content-Type': 'application/fhir+json'
+    'Content-Type': 'application/fhir+json',
   };
 
   if (subscription.channel?.header) {
@@ -368,7 +375,11 @@ function buildRestHookHeaders(subscription: Subscription, resource: Resource): H
  * @param subscription The subscription.
  * @param resource The resource that triggered the subscription.
  */
-export async function execBot(job: Job<SubscriptionJobData>, subscription: Subscription, resource: Resource): Promise<void> {
+export async function execBot(
+  job: Job<SubscriptionJobData>,
+  subscription: Subscription,
+  resource: Resource
+): Promise<void> {
   const url = subscription?.channel?.endpoint as string;
   if (!url) {
     // This can happen if a user updates the Subscription after the job is created.
@@ -390,22 +401,22 @@ export async function execBot(job: Job<SubscriptionJobData>, subscription: Subsc
 
   const botConsole = {
     ...console,
-    log: (...params: any[]) => botLog.push(params)
+    log: (...params: any[]) => botLog.push(params),
   };
 
   const botRepo = new Repository({
     project: bot?.meta?.project as string,
-    author: createReference(bot as Bot)
+    author: createReference(bot as Bot),
   });
 
   const sandbox = {
     resource,
     console: botConsole,
-    repo: botRepo
+    repo: botRepo,
   };
 
   const options: vm.RunningScriptOptions = {
-    timeout: 100
+    timeout: 100,
   };
 
   let outcome: AuditEventOutcome = AuditEventOutcome.Success;
@@ -433,7 +444,7 @@ function getExtensionValue(resource: Resource, ...urls: string[]): string | unde
 
   // For each of the urls, try to find a matching nested extension.
   for (let i = 0; i < urls.length && curr; i++) {
-    curr = (curr?.extension as Extension[] | undefined)?.find(e => e.url === urls[i]);
+    curr = (curr?.extension as Extension[] | undefined)?.find((e) => e.url === urls[i]);
   }
 
   return curr?.valueString as string | undefined;
@@ -450,23 +461,25 @@ async function createSubscriptionEvent(
   subscription: Subscription,
   resource: Resource,
   outcome: AuditEventOutcome,
-  outcomeDesc?: string): Promise<void> {
-
+  outcomeDesc?: string
+): Promise<void> {
   await repo.createResource<AuditEvent>({
     resourceType: 'AuditEvent',
     meta: {
-      project: subscription.meta?.project
+      project: subscription.meta?.project,
     },
     recorded: new Date().toISOString(),
     type: {
-      code: 'transmit'
+      code: 'transmit',
     },
-    agent: [{
-      type: {
-        text: 'subscription'
+    agent: [
+      {
+        type: {
+          text: 'subscription',
+        },
+        requestor: false,
       },
-      requestor: false
-    }],
+    ],
     source: {
       // Observer cannot be a Subscription resource
       // observer: createReference(subscription)
@@ -476,18 +489,18 @@ async function createSubscriptionEvent(
         what: createReference(resource),
         role: {
           code: '4',
-          display: 'Domain'
-        }
+          display: 'Domain',
+        },
       },
       {
         what: createReference(subscription),
         role: {
           code: '9',
-          display: 'Subscriber'
-        }
-      }
+          display: 'Subscriber',
+        },
+      },
     ],
     outcome,
-    outcomeDesc
+    outcomeDesc,
   });
 }

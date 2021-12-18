@@ -25,29 +25,33 @@ function buildCapabilityStatement(): CapabilityStatement {
     url: metadataUrl,
     software: {
       name,
-      version
+      version,
     },
     implementation: {
       description: name,
-      url: fhirBaseUrl
+      url: fhirBaseUrl,
     },
-    rest: [{
-      ...baseStmt.rest?.[0],
-      security: {
-        extension: [{
-          url: 'http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris',
+    rest: [
+      {
+        ...baseStmt.rest?.[0],
+        security: {
           extension: [
             {
-              url: 'authorize',
-              valueUri: config.authorizeUrl
+              url: 'http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris',
+              extension: [
+                {
+                  url: 'authorize',
+                  valueUri: config.authorizeUrl,
+                },
+                {
+                  url: 'token',
+                  valueUri: config.tokenUrl,
+                },
+              ],
             },
-            {
-              url: 'token',
-              valueUri: config.tokenUrl
-            }
-          ]
-        }]
-      }
-    }]
+          ],
+        },
+      },
+    ],
   };
 }

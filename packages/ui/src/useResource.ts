@@ -5,9 +5,11 @@ import { useMedplum } from './MedplumProvider';
 const system: Device = {
   resourceType: 'Device',
   id: 'system',
-  deviceName: [{
-    name: 'System'
-  }]
+  deviceName: [
+    {
+      name: 'System',
+    },
+  ],
 };
 
 /**
@@ -29,14 +31,14 @@ export function useResource<T extends Resource>(value: Reference<T> | T | undefi
         return;
       }
 
-      medplum.readCachedReference(value as Reference<T>).then(r => {
+      medplum.readCachedReference(value as Reference<T>).then((r) => {
         if (subscribed) {
           setResource(r);
         }
       });
     }
 
-    return (() => subscribed = false) as (() => void);
+    return (() => (subscribed = false)) as () => void;
   }, [value]);
 
   return resource;

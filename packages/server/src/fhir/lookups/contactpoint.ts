@@ -17,7 +17,7 @@ export class ContactPointTable implements LookupTable {
     'individual-phone',
     'OrganizationAffiliation-telecom',
     'OrganizationAffiliation-email',
-    'OrganizationAffiliation-phone'
+    'OrganizationAffiliation-phone',
   ]);
 
   /**
@@ -44,9 +44,7 @@ export class ContactPointTable implements LookupTable {
   async deleteResource(resource: Resource): Promise<void> {
     const resourceId = resource.id as string;
     const client = getClient();
-    await new DeleteQuery('ContactPoint')
-      .where('resourceId', Operator.EQUALS, resourceId)
-      .execute(client);
+    await new DeleteQuery('ContactPoint').where('resourceId', Operator.EQUALS, resourceId).execute(client);
   }
 
   /**
@@ -56,10 +54,12 @@ export class ContactPointTable implements LookupTable {
    * @returns Promise on completion.
    */
   async indexResource(resource: Resource): Promise<void> {
-    if (resource.resourceType !== 'Patient' &&
+    if (
+      resource.resourceType !== 'Patient' &&
       resource.resourceType !== 'Person' &&
       resource.resourceType !== 'Practitioner' &&
-      resource.resourceType !== 'RelatedPerson') {
+      resource.resourceType !== 'RelatedPerson'
+    ) {
       return;
     }
 
@@ -86,7 +86,7 @@ export class ContactPointTable implements LookupTable {
           index: i,
           content: stringify(contactPoint),
           system: contactPoint.system,
-          value: contactPoint.value
+          value: contactPoint.value,
         }).execute(client);
       }
     }
@@ -106,16 +106,10 @@ export class ContactPointTable implements LookupTable {
    * @param filter The search filter details.
    */
   addWhere(selectQuery: SelectQuery, filter: Filter): void {
-    selectQuery.where(
-      { tableName: 'ContactPoint', columnName: 'value' },
-      Operator.EQUALS,
-      filter.value);
+    selectQuery.where({ tableName: 'ContactPoint', columnName: 'value' }, Operator.EQUALS, filter.value);
 
     if (filter.code !== 'telecom') {
-      selectQuery.where(
-        { tableName: 'ContactPoint', columnName: 'system' },
-        Operator.EQUALS,
-        filter.code);
+      selectQuery.where({ tableName: 'ContactPoint', columnName: 'system' }, Operator.EQUALS, filter.code);
     }
   }
 
@@ -125,9 +119,7 @@ export class ContactPointTable implements LookupTable {
    * @param sortRule The sort rule details.
    */
   addOrderBy(selectQuery: SelectQuery, sortRule: SortRule): void {
-    selectQuery.orderBy(
-      { tableName: 'ContactPoint', columnName: 'value' },
-      sortRule.descending);
+    selectQuery.orderBy({ tableName: 'ContactPoint', columnName: 'value' }, sortRule.descending);
   }
 
   /**
@@ -141,6 +133,6 @@ export class ContactPointTable implements LookupTable {
       .where('resourceId', Operator.EQUALS, resourceId)
       .orderBy('index')
       .execute(getClient())
-      .then(result => result.map(row => JSON.parse(row.content) as ContactPoint));
+      .then((result) => result.map((row) => JSON.parse(row.content) as ContactPoint));
   }
 }

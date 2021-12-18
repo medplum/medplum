@@ -11,7 +11,7 @@ header {
   color: white;
 }
 
-header>div {
+header > div {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -68,7 +68,7 @@ div.medplum-nav-search-container {
   box-shadow: 0 0 0 2px var(--medplum-blue-200);
 }
 
-.medplum-nav-search-container>ul {
+.medplum-nav-search-container > ul {
   margin: 0;
   list-style-type: none;
   overflow: hidden;
@@ -76,7 +76,7 @@ div.medplum-nav-search-container {
   height: 32px;
 }
 
-.medplum-nav-search-container>ul>li {
+.medplum-nav-search-container > ul > li {
   margin: 0;
   padding: 0;
   display: inline-block;
@@ -85,7 +85,7 @@ div.medplum-nav-search-container {
   user-select: none;
 }
 
-.medplum-nav-search-container>ul>li.choice {
+.medplum-nav-search-container > ul > li.choice {
   margin: 1px 0 1px 4px;
   padding: 0 6px;
   border: 0.1px solid var(--medplum-orange-200);
@@ -96,11 +96,11 @@ div.medplum-nav-search-container {
   color: var(--medplum-gray-800);
 }
 
-.medplum-nav-search-container>ul>li.unstructured {
+.medplum-nav-search-container > ul > li.unstructured {
   border: 0.1px dashed var(--medplum-red-700) !important;
 }
 
-.medplum-nav-search-container>ul>li>input {
+.medplum-nav-search-container > ul > li > input {
   display: inline-block;
   width: 80px;
   line-height: 26px;
@@ -112,19 +112,19 @@ div.medplum-nav-search-container {
   background: transparent;
 }
 
-.medplum-nav-search-container>ul>li>input::placeholder {
+.medplum-nav-search-container > ul > li > input::placeholder {
   color: var(--medplum-navbar-placeholder);
 }
 
-.medplum-nav-search-container.focused>ul>li>input::placeholder {
+.medplum-nav-search-container.focused > ul > li > input::placeholder {
   color: var(--medplum-gray-500);
 }
 
-.medplum-nav-search-container>ul>li>input::-moz-focus-inner {
+.medplum-nav-search-container > ul > li > input::-moz-focus-inner {
   border: 0px;
 }
 
-.medplum-nav-search-container>ul>li>input:focus {
+.medplum-nav-search-container > ul > li > input:focus {
   border: none;
   box-shadow: none;
   outline: none;
@@ -218,23 +218,23 @@ div.medplum-nav-menu-container {
   transform: translateX(0px);
 }
 
-.medplum-sidebar>h5 {
+.medplum-sidebar > h5 {
   margin: 32px 0 4px 6px;
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 2px;
 }
 
-.medplum-sidebar>ul {
+.medplum-sidebar > ul {
   list-style: none;
 }
 
-.medplum-sidebar>ul>li {
+.medplum-sidebar > ul > li {
   list-style: none;
   margin: 8px 0;
 }
 
-.medplum-sidebar>ul>li>a {
+.medplum-sidebar > ul > li > a {
   display: flex;
   border-radius: 4px;
   padding: 6px;
@@ -242,6 +242,6 @@ div.medplum-nav-menu-container {
   color: var(--medplum-gray-700);
 }
 
-.medplum-sidebar>ul>li>a:hover {
+.medplum-sidebar > ul > li > a:hover {
   background: var(--medplum-gray-300);
 }

@@ -11,33 +11,36 @@ tags: [hello, docusaurus]
 
 ## Getting Started with Synthetic FHIR Data
 
-Synthetic FHIR data is increasingly popular for people who are building healthcare apps.  It's useful for testing, prototyping, partnerships, sales and more.  In the implementations we see here at Medplum, more than half use synthetic data in some form or another!
+Synthetic FHIR data is increasingly popular for people who are building healthcare apps. It's useful for testing, prototyping, partnerships, sales and more. In the implementations we see here at Medplum, more than half use synthetic data in some form or another!
 
-Synthetic FHIR data is just what it sounds like.  It's realistic patient data but it's completely synthetic, and can be shared and used for testing.  It's useful to think of synthetic data as a "population" or set of records that correspond to a group of fictional patients.
+Synthetic FHIR data is just what it sounds like. It's realistic patient data but it's completely synthetic, and can be shared and used for testing. It's useful to think of synthetic data as a "population" or set of records that correspond to a group of fictional patients.
 
-At Medplum, some of our customers use a project called [Synthea](https://github.com/synthetichealth/synthea) to generate this data.  Here is some [sample data](https://github.com/synthetichealth/synthea-sample-data/tree/master/downloads), that shows what the tool generates as raw FHIR Objects. Below are instructions on how to generate some sample data and load it into your Medplum account.
+At Medplum, some of our customers use a project called [Synthea](https://github.com/synthetichealth/synthea) to generate this data. Here is some [sample data](https://github.com/synthetichealth/synthea-sample-data/tree/master/downloads), that shows what the tool generates as raw FHIR Objects. Below are instructions on how to generate some sample data and load it into your Medplum account.
 
 1. Setup Java 1.8+
-   1. Try to run java from a Terminal:  `java -version`
+
+   1. Try to run java from a Terminal: `java -version`
    2. Verify that you have Java 1.8+ installed, if not [download and install](https://openjdk.java.net/install/).
 
 2. Download Synthea
+
    1. Go to [Synthea Releases Page](https://github.com/synthetichealth/synthea/releases)
    2. Download the latest `synthea-with-dependencies.jar`
    3. Move the jar file to it's own directory
 
 3. Run Synthea
+
    1. Open a Terminal and navigate to your recently downloaded synthea jar.
-   2. Run:  `java -jar synthea-with-dependencies.jar`
+   2. Run: `java -jar synthea-with-dependencies.jar`
    3. This will create a folder called `output`
    4. In the folder `output/fhir`, there will be 3 new files - one representing a hospital, one representing a practitioner, and the third representing a patient.
 
 4. Import the data
    1. Go to [Medplum Batch Create Page](https://app.medplum.com/batch)
-   2. Copy the contents of the files one at a time, *in the correct order*
+   2. Copy the contents of the files one at a time, _in the correct order_
       1. `hospitalInformation` first
       2. `practitionerInformation` second
       3. `patient` last
    3. Once you have imported the data, you can go to the [Patients](https://app.medplum.com/Patient) page to browse the data you created.
 
-  Let us know if you need assistance with your data sets - we would be happy to help.
+Let us know if you need assistance with your data sets - we would be happy to help.

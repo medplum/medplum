@@ -1,6 +1,35 @@
-import { accessDenied, allOk, assertOk, badRequest, created, deepEquals, Filter, getSearchParameterDetails, gone, isGone, isNotFound, isOk, notFound, notModified, Operator as FhirOperator, SearchParameterDetails, SearchRequest, SortRule, stringify } from '@medplum/core';
+import {
+  accessDenied,
+  allOk,
+  assertOk,
+  badRequest,
+  created,
+  deepEquals,
+  Filter,
+  getSearchParameterDetails,
+  gone,
+  isGone,
+  isNotFound,
+  isOk,
+  notFound,
+  notModified,
+  Operator as FhirOperator,
+  SearchParameterDetails,
+  SearchRequest,
+  SortRule,
+  stringify,
+} from '@medplum/core';
 import { parseFhirPath } from '@medplum/fhirpath';
-import { AccessPolicy, Bundle, Login, Meta, OperationOutcome, Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
+import {
+  AccessPolicy,
+  Bundle,
+  Login,
+  Meta,
+  OperationOutcome,
+  Reference,
+  Resource,
+  SearchParameter,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { applyPatch, Operation } from 'fast-json-patch';
 import validator from 'validator';
@@ -63,7 +92,7 @@ const publicResourceTypes = [
   'ImplementationGuide',
   'OperationDefinition',
   'SearchParameter',
-  'StructureDefinition'
+  'StructureDefinition',
 ];
 
 /**
@@ -87,7 +116,7 @@ const lookupTables: LookupTable[] = [
   new AddressTable(),
   new ContactPointTable(),
   new HumanNameTable(),
-  new IdentifierTable()
+  new IdentifierTable(),
 ];
 
 /**
@@ -111,10 +140,13 @@ export class Repository {
       return [validateOutcome, undefined];
     }
 
-    return this.updateResourceImpl({
-      ...resource,
-      id: randomUUID()
-    }, true);
+    return this.updateResourceImpl(
+      {
+        ...resource,
+        id: randomUUID(),
+      },
+      true
+    );
   }
 
   async readResource<T extends Resource>(resourceType: string, id: string): RepositoryResult<T> {
@@ -132,10 +164,7 @@ export class Repository {
     }
 
     const client = getClient();
-    const builder = new SelectQuery(resourceType)
-      .column('content')
-      .column('deleted')
-      .where('id', Operator.EQUALS, id);
+    const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', Operator.EQUALS, id);
 
     this.addCompartments(builder, resourceType);
 
@@ -184,13 +213,16 @@ export class Repository {
       .limit(100)
       .execute(client);
 
-    return [allOk, {
-      resourceType: 'Bundle',
-      type: 'history',
-      entry: rows.map((row: any) => ({
-        resource: JSON.parse(row.content as string)
-      }))
-    }];
+    return [
+      allOk,
+      {
+        resourceType: 'Bundle',
+        type: 'history',
+        entry: rows.map((row: any) => ({
+          resource: JSON.parse(row.content as string),
+        })),
+      },
+    ];
   }
 
   async readVersion<T extends Resource>(resourceType: string, id: string, vid: string): RepositoryResult<T> {
@@ -250,8 +282,8 @@ export class Repository {
       ...resource,
       meta: {
         ...existing?.meta,
-        ...resource.meta
-      }
+        ...resource.meta,
+      },
     });
 
     if (existing && deepEquals(existing, updated)) {
@@ -264,9 +296,9 @@ export class Repository {
         ...updated?.meta,
         versionId: randomUUID(),
         lastUpdated: this.getLastUpdated(existing, resource),
-        author: this.getAuthor(resource)
-      }
-    }
+        author: this.getAuthor(resource),
+      },
+    };
 
     const project = this.getProjectId(updated);
     if (project) {
@@ -307,7 +339,7 @@ export class Repository {
       lastUpdated,
       deleted: true,
       compartments: [],
-      content
+      content,
     };
 
     await new InsertQuery(resourceType, columns).mergeOnConflict(true).execute(client);
@@ -316,7 +348,7 @@ export class Repository {
       id,
       versionId: randomUUID(),
       lastUpdated,
-      content
+      content,
     }).execute(client);
 
     await this.deleteFromLookupTables(resource as Resource);
@@ -365,14 +397,17 @@ export class Repository {
     const total = await this.getTotalCount(searchRequest);
     const rows = await builder.execute(client);
 
-    return [allOk, {
-      resourceType: 'Bundle',
-      type: 'searchest',
-      total,
-      entry: rows.map(row => ({
-        resource: JSON.parse(row.content as string)
-      }))
-    }];
+    return [
+      allOk,
+      {
+        resourceType: 'Bundle',
+        type: 'searchest',
+        total,
+        entry: rows.map((row) => ({
+          resource: JSON.parse(row.content as string),
+        })),
+      },
+    ];
   }
 
   /**
@@ -383,8 +418,9 @@ export class Repository {
    */
   private async getTotalCount(searchRequest: SearchRequest): Promise<number> {
     const client = getClient();
-    const builder = new SelectQuery(searchRequest.resourceType)
-      .raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id") AS "count"`)
+    const builder = new SelectQuery(searchRequest.resourceType).raw(
+      `COUNT (DISTINCT "${searchRequest.resourceType}"."id") AS "count"`
+    );
 
     this.addDeletedFilter(builder);
     this.addCompartments(builder, searchRequest.resourceType);
@@ -448,11 +484,11 @@ export class Repository {
     const { resourceType } = searchRequest;
 
     const codes = new Set<string>();
-    searchRequest.filters?.forEach(filter => codes.add(filter.code));
-    searchRequest.sortRules?.forEach(sortRule => codes.add(sortRule.code));
+    searchRequest.filters?.forEach((filter) => codes.add(filter.code));
+    searchRequest.sortRules?.forEach((sortRule) => codes.add(sortRule.code));
 
     const joinedTables = new Map<string, LookupTable>();
-    codes.forEach(code => {
+    codes.forEach((code) => {
       const param = getSearchParameter(resourceType, code);
       if (param) {
         const lookupTable = this.getLookupTable(param);
@@ -462,7 +498,7 @@ export class Repository {
       }
     });
 
-    joinedTables.forEach(lookupTable => lookupTable.addJoin(builder, resourceType));
+    joinedTables.forEach((lookupTable) => lookupTable.addJoin(builder, resourceType));
   }
 
   /**
@@ -471,7 +507,7 @@ export class Repository {
    * @param searchRequest The search request.
    */
   private addSearchFilters(builder: SelectQuery, searchRequest: SearchRequest): void {
-    searchRequest.filters?.forEach(filter => this.addSearchFilter(builder, searchRequest, filter));
+    searchRequest.filters?.forEach((filter) => this.addSearchFilter(builder, searchRequest, filter));
   }
 
   /**
@@ -571,7 +607,7 @@ export class Repository {
    * @param searchRequest The search request.
    */
   private addSortRules(builder: SelectQuery, searchRequest: SearchRequest): void {
-    searchRequest.sortRules?.forEach(sortRule => this.addOrderByClause(builder, searchRequest, sortRule));
+    searchRequest.sortRules?.forEach((sortRule) => this.addOrderByClause(builder, searchRequest, sortRule));
   }
 
   /**
@@ -619,7 +655,7 @@ export class Repository {
       lastUpdated: meta.lastUpdated,
       deleted: false,
       compartments: this.getCompartments(resource),
-      content
+      content,
     };
 
     const searchParams = getSearchParameters(resourceType);
@@ -635,7 +671,7 @@ export class Repository {
       id: resource.id,
       versionId: meta.versionId,
       lastUpdated: meta.lastUpdated,
-      content
+      content,
     }).execute(client);
   }
 
@@ -685,7 +721,7 @@ export class Repository {
 
     if (values.length > 0) {
       if (details.array) {
-        columns[details.columnName] = values.map(v => this.buildColumnValue(searchParam, v));
+        columns[details.columnName] = values.map((v) => this.buildColumnValue(searchParam, v));
       } else {
         columns[details.columnName] = this.buildColumnValue(searchParam, values[0]);
       }
@@ -694,7 +730,7 @@ export class Repository {
 
   private buildColumnValue(searchParam: SearchParameter, value: any): any {
     if (searchParam.type === 'boolean') {
-      return (value === 'true');
+      return value === 'true';
     }
 
     if (searchParam.type === 'reference') {
@@ -705,7 +741,7 @@ export class Repository {
       return this.buildDateColumn(value);
     }
 
-    return (typeof value === 'string') ? value : stringify(value);
+    return typeof value === 'string' ? value : stringify(value);
   }
 
   /**
@@ -1032,7 +1068,12 @@ export async function getRepoForLogin(login: Login): Promise<Repository> {
   // Always read with the account as a filter
   if (login.profile) {
     const profileType = login.profile.reference;
-    if (profileType && (profileType.startsWith('Bot') || profileType.startsWith('ClientApplication') || profileType.startsWith('Subscription'))) {
+    if (
+      profileType &&
+      (profileType.startsWith('Bot') ||
+        profileType.startsWith('ClientApplication') ||
+        profileType.startsWith('Subscription'))
+    ) {
       const [profileOutcome, profileResource] = await repo.readReference(login.profile);
       assertOk(profileOutcome);
       if (profileResource?.meta?.account) {
@@ -1045,7 +1086,7 @@ export async function getRepoForLogin(login: Login): Promise<Repository> {
     project: resolveId(login.project) as string,
     author: login.profile as Reference,
     admin: login.admin,
-    accessPolicy
+    accessPolicy,
   });
 }
 
@@ -1063,19 +1104,19 @@ function buildSyntheticAccessPolicy(compartment: Reference): AccessPolicy {
     resourceType: 'AccessPolicy',
     compartment,
     resource: [
-      ...patientResourceTypes.map(t => ({
+      ...patientResourceTypes.map((t) => ({
         resourceType: t,
-        compartment
+        compartment,
       })),
       {
-        resourceType: '*'
-      }
-    ]
+        resourceType: '*',
+      },
+    ],
   };
 }
 
 export const repo = new Repository({
   author: {
-    reference: 'system'
-  }
+    reference: 'system',
+  },
 });

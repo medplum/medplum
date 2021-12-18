@@ -15,7 +15,6 @@ const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
 let accessToken: string;
 
 describe('Binary', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -83,5 +82,4 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
   });
-
 });

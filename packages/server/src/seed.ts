@@ -20,12 +20,12 @@ export async function seedDatabase(): Promise<void> {
     lastName: 'Admin',
     projectName: 'Medplum',
     email: 'admin@example.com',
-    password: 'admin'
+    password: 'admin',
   });
 
   await repo.updateResource({
     ...registerResponse.client,
-    redirectUri: getConfig().appBaseUrl
+    redirectUri: getConfig().appBaseUrl,
   });
 
   await createPublicProject(registerResponse.user);
@@ -41,7 +41,7 @@ export async function seedDatabase(): Promise<void> {
 async function isSeeded(): Promise<boolean> {
   const [outcome, bundle] = await repo.search({
     resourceType: 'User',
-    count: 1
+    count: 1,
   });
   assertOk(outcome);
   return !!bundle?.entry && bundle.entry.length > 0;
@@ -57,7 +57,7 @@ async function createPublicProject(owner: User): Promise<void> {
   const [outcome, result] = await repo.createResource<Project>({
     resourceType: 'Project',
     name: 'Public',
-    owner: createReference(owner)
+    owner: createReference(owner),
   });
   assertOk(outcome);
   logger.info('Created: ' + (result as Project).id);
@@ -69,13 +69,13 @@ async function createPublicProject(owner: User): Promise<void> {
 async function createSearchParameters(): Promise<void> {
   const searchParams = readJson('fhir/r4/search-parameters.json') as Bundle;
 
-  for (const entry of (searchParams.entry as BundleEntry[])) {
+  for (const entry of searchParams.entry as BundleEntry[]) {
     const searchParam = entry.resource as SearchParameter;
 
     logger.debug('SearchParameter: ' + searchParam.name);
     const [outcome, result] = await repo.createResource<SearchParameter>({
       ...searchParam,
-      text: undefined
+      text: undefined,
     });
     assertOk(outcome);
     logger.debug('Created: ' + (result as SearchParameter).id);

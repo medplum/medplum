@@ -1,4 +1,5 @@
-import { Bundle, notFound, Practitioner } from '@medplum/core';
+import { notFound } from '@medplum/core';
+import { Bundle, Practitioner } from '@medplum/fhirtypes';
 import { MedplumProvider, MockClient } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -14,16 +15,16 @@ const practitioner: Practitioner = {
     versionId: '2',
     lastUpdated: '2021-01-02T12:00:00Z',
     author: {
-      reference: 'Practitioner/123'
-    }
-  }
+      reference: 'Practitioner/123',
+    },
+  },
 };
 
 const practitionerHistory: Bundle = {
   resourceType: 'Bundle',
   entry: [
     {
-      resource: practitioner
+      resource: practitioner,
     },
     {
       resource: {
@@ -34,28 +35,27 @@ const practitionerHistory: Bundle = {
           versionId: '1',
           lastUpdated: '2021-01-01T12:00:00Z',
           author: {
-            reference: 'Practitioner/123'
-          }
-        }
-      }
-    }
-  ]
+            reference: 'Practitioner/123',
+          },
+        },
+      },
+    },
+  ],
 };
 
 const medplum = new MockClient({
   'fhir/R4/Practitioner/123': {
-    'GET': practitioner
+    GET: practitioner,
   },
   'fhir/R4/Practitioner/123/_history': {
-    'GET': practitionerHistory
+    GET: practitionerHistory,
   },
   'fhir/R4/Practitioner/not-found/_history': {
-    'GET': notFound
+    GET: notFound,
   },
 });
 
 describe('ResourcePage', () => {
-
   const setup = (url: string) => {
     return render(
       <MedplumProvider medplum={medplum}>
@@ -144,5 +144,4 @@ describe('ResourcePage', () => {
 
     expect(screen.getByText('Raw')).toBeInTheDocument();
   });
-
 });

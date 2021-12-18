@@ -9,36 +9,43 @@ import { MockClient } from './MockClient';
 
 const searchResult: Bundle = {
   resourceType: 'Bundle',
-  entry: [{
-    resource: {
-      resourceType: 'Patient',
-      id: '123',
-      name: [{
-        given: ['Alice'],
-        family: 'Smith'
-      }]
-    }
-  }, {
-    resource: {
-      resourceType: 'Patient',
-      id: '345',
-      name: [{
-        given: ['Bob'],
-        family: 'Jones'
-      }]
-    }
-  }]
+  entry: [
+    {
+      resource: {
+        resourceType: 'Patient',
+        id: '123',
+        name: [
+          {
+            given: ['Alice'],
+            family: 'Smith',
+          },
+        ],
+      },
+    },
+    {
+      resource: {
+        resourceType: 'Patient',
+        id: '345',
+        name: [
+          {
+            given: ['Bob'],
+            family: 'Jones',
+          },
+        ],
+      },
+    },
+  ],
 };
 
 const medplum = new MockClient({
   'auth/login': {
-    'POST': {
-      profile: { reference: 'Practitioner/123' }
-    }
+    POST: {
+      profile: { reference: 'Practitioner/123' },
+    },
   },
   'fhir/R4/Patient?name=Alice': {
-    'GET': searchResult
-  }
+    GET: searchResult,
+  },
 });
 
 function setup(props?: HeaderProps) {
@@ -52,7 +59,6 @@ function setup(props?: HeaderProps) {
 }
 
 describe('Header', () => {
-
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -73,8 +79,8 @@ describe('Header', () => {
     setup({
       sidebarLinks: [
         { title: 'section 1', links: [{ label: 'label 1', href: 'href1' }] },
-        { title: 'section 2', links: [{ label: 'label 2', href: 'href2' }] }
-      ]
+        { title: 'section 2', links: [{ label: 'label 2', href: 'href2' }] },
+      ],
     });
 
     await act(async () => {
@@ -179,5 +185,4 @@ describe('Header', () => {
 
     expect(medplum.getProfile()?.id).toEqual('123');
   });
-
 });

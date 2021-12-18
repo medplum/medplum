@@ -11,7 +11,7 @@ export type ProfileResource = Patient | Practitioner | RelatedPerson;
 export function createReference<T extends Resource>(resource: T): Reference<T> {
   const reference = getReferenceString(resource);
   const display = getDisplayString(resource);
-  return (display === reference) ? { reference } : { reference, display };
+  return display === reference ? { reference } : { reference, display };
 }
 
 /**
@@ -29,9 +29,11 @@ export function getReferenceString(resource: Resource): string {
  * @returns True if the resource is a "ProfileResource".
  */
 export function isProfileResource(resource: Resource): boolean {
-  return resource.resourceType === 'Patient' ||
+  return (
+    resource.resourceType === 'Patient' ||
     resource.resourceType === 'Practitioner' ||
-    resource.resourceType === 'RelatedPerson';
+    resource.resourceType === 'RelatedPerson'
+  );
 }
 
 /**
@@ -144,7 +146,7 @@ export function stringify(value: any, pretty?: boolean): string {
  * @param {*} v Property value.
  */
 function stringifyReplacer(k: string, v: any): any {
-  return (k === '__key' || isEmpty(v)) ? undefined : v;
+  return k === '__key' || isEmpty(v) ? undefined : v;
 }
 
 /**
@@ -172,8 +174,8 @@ export function deepEquals(object1: any, object2: any, path?: string): boolean {
   let keys1 = Object.keys(object1);
   let keys2 = Object.keys(object2);
   if (path === 'meta') {
-    keys1 = keys1.filter(k => k !== 'versionId' && k !== 'lastUpdated' && k !== 'author');
-    keys2 = keys2.filter(k => k !== 'versionId' && k !== 'lastUpdated' && k !== 'author');
+    keys1 = keys1.filter((k) => k !== 'versionId' && k !== 'lastUpdated' && k !== 'author');
+    keys2 = keys2.filter((k) => k !== 'versionId' && k !== 'lastUpdated' && k !== 'author');
   }
   if (keys1.length !== keys2.length) {
     return false;
