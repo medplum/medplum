@@ -1634,6 +1634,110 @@ describe('FHIR Repo', () => {
     expect(resource).toBeDefined();
     expect(resource?.id).toBeDefined();
   });
+
+  test('Filter by CodeableConcept', async () => {
+    // const patient = `Patient/${randomUUID()}`;
+    const x1 = randomUUID();
+    const x2 = randomUUID();
+    const x3 = randomUUID();
+
+    // Create test patient
+    const [outcome0, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['John'], family: 'CodeableConcept' }],
+    });
+    assertOk(outcome0);
+    expect(patient).toBeDefined();
+
+    // Use code.coding[0].code
+    const [outcome1, serviceRequest1] = await repo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      subject: createReference(patient as Patient),
+      code: {
+        coding: [
+          {
+            code: x1,
+          },
+        ],
+      },
+    });
+    assertOk(outcome1);
+    expect(serviceRequest1).toBeDefined();
+
+    // Use code.coding[0].display
+    const [outcome2, serviceRequest2] = await repo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      subject: createReference(patient as Patient),
+      code: {
+        coding: [
+          {
+            display: x2,
+          },
+        ],
+      },
+    });
+    assertOk(outcome2);
+    expect(serviceRequest2).toBeDefined();
+
+    // Use code.text
+    const [outcome3, serviceRequest3] = await repo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      subject: createReference(patient as Patient),
+      code: {
+        text: x3,
+      },
+    });
+    assertOk(outcome3);
+    expect(serviceRequest3).toBeDefined();
+
+    const [outcome4, bundle1] = await repo.search({
+      resourceType: 'ServiceRequest',
+      filters: [
+        {
+          code: 'code',
+          operator: Operator.EQUALS,
+          value: x1,
+        },
+      ],
+    });
+    assertOk(outcome4);
+    expect(bundle1?.entry?.length).toEqual(1);
+    expect(bundleContains(bundle1 as Bundle, serviceRequest1 as ServiceRequest)).toEqual(true);
+    expect(bundleContains(bundle1 as Bundle, serviceRequest2 as ServiceRequest)).toEqual(false);
+    expect(bundleContains(bundle1 as Bundle, serviceRequest3 as ServiceRequest)).toEqual(false);
+
+    const [outcome5, bundle2] = await repo.search({
+      resourceType: 'ServiceRequest',
+      filters: [
+        {
+          code: 'code',
+          operator: Operator.EQUALS,
+          value: x2,
+        },
+      ],
+    });
+    assertOk(outcome5);
+    expect(bundle2?.entry?.length).toEqual(1);
+    expect(bundleContains(bundle2 as Bundle, serviceRequest1 as ServiceRequest)).toEqual(false);
+    expect(bundleContains(bundle2 as Bundle, serviceRequest2 as ServiceRequest)).toEqual(true);
+    expect(bundleContains(bundle2 as Bundle, serviceRequest3 as ServiceRequest)).toEqual(false);
+
+    const [outcome6, bundle3] = await repo.search({
+      resourceType: 'ServiceRequest',
+      filters: [
+        {
+          code: 'code',
+          operator: Operator.EQUALS,
+          value: x3,
+        },
+      ],
+    });
+    assertOk(outcome6);
+    expect(bundle3?.entry?.length).toEqual(1);
+    expect(bundleContains(bundle3 as Bundle, serviceRequest1 as ServiceRequest)).toEqual(false);
+    expect(bundleContains(bundle3 as Bundle, serviceRequest2 as ServiceRequest)).toEqual(false);
+    expect(bundleContains(bundle3 as Bundle, serviceRequest3 as ServiceRequest)).toEqual(true);
+  });
 });
 
 function bundleContains(bundle: Bundle, resource: Resource): boolean {
