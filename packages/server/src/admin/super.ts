@@ -1,8 +1,8 @@
-import { allOk, assertOk, badRequest } from '@medplum/core';
+import { accessDenied, allOk, assertOk, isOk } from '@medplum/core';
 import { User } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
-import { repo, sendOutcome } from '../fhir';
+import { repo, sendOutcome, validateResourceType } from '../fhir';
 import { authenticateToken } from '../oauth';
 import { createStructureDefinitions } from '../seeds/structuredefinitions';
 import { createValueSetElements } from '../seeds/valuesets';
@@ -20,7 +20,7 @@ superAdminRouter.post(
     assertOk(outcome);
 
     if (!user?.admin) {
-      return sendOutcome(res, badRequest('Requires super administrator privileges'));
+      return sendOutcome(res, accessDenied);
     }
 
     await createValueSetElements();
@@ -38,10 +38,34 @@ superAdminRouter.post(
     assertOk(outcome);
 
     if (!user?.admin) {
-      return sendOutcome(res, badRequest('Requires super administrator privileges'));
+      return sendOutcome(res, accessDenied);
     }
 
     await createStructureDefinitions();
     return sendOutcome(res, allOk);
+  })
+);
+
+// POST to /admin/super/reindex
+// to reindex a single resource type.
+// Run this after major changes to how search columns are constructed.
+superAdminRouter.post(
+  '/reindex',
+  asyncWrap(async (req: Request, res: Response) => {
+    const [outcome, user] = await repo.readResource<User>('User', res.locals.user);
+    assertOk(outcome);
+
+    if (!user?.admin) {
+      return sendOutcome(res, accessDenied);
+    }
+
+    const resourceType = req.body.resourceType;
+    const validateOutcome = validateResourceType(resourceType);
+    if (!isOk(validateOutcome)) {
+      return sendOutcome(res, validateOutcome);
+    }
+
+    const [reindexOutcome] = await repo.reindexResourceType(resourceType);
+    return sendOutcome(res, reindexOutcome);
   })
 );

@@ -5,6 +5,7 @@ import { Route, Routes, useNavigate } from 'react-router-dom';
 import { EditMembershipPage } from './admin/EditMembershipPage';
 import { InvitePage } from './admin/InvitePage';
 import { ProjectPage } from './admin/ProjectPage';
+import { SuperAdminPage } from './admin/SuperAdminPage';
 import { BatchPage } from './BatchPage';
 import { ChangePasswordPage } from './ChangePasswordPage';
 import { CreateResourcePage } from './CreateResourcePage';
@@ -98,6 +99,7 @@ export function App() {
         <Route path="/admin/project" element={<ProjectPage />} />
         <Route path="/admin/projects/:id/invite" element={<InvitePage />} />
         <Route path="/admin/projects/:projectId/members/:membershipId" element={<EditMembershipPage />} />
+        <Route path="/admin/super" element={<SuperAdminPage />} />
         <Route path="/:resourceType/:id/_history/:versionId/:tab" element={<ResourceVersionPage />} />
         <Route path="/:resourceType/:id/_history/:versionId" element={<ResourceVersionPage />} />
         <Route path="/:resourceType/new" element={<CreateResourcePage />} />
