@@ -268,17 +268,13 @@ export class Repository {
       return [accessDenied, undefined];
     }
 
-    let existing: T | undefined = undefined;
-    if (!create) {
-      let existingOutcome: OperationOutcome | undefined;
-      [existingOutcome, existing] = await this.readResource<T>(resourceType, id);
-      if (!isOk(existingOutcome) && !isNotFound(existingOutcome) && !isGone(existingOutcome)) {
-        return [existingOutcome, undefined];
-      }
+    const [existingOutcome, existing] = await this.readResource<T>(resourceType, id);
+    if (!isOk(existingOutcome) && !isNotFound(existingOutcome) && !isGone(existingOutcome)) {
+      return [existingOutcome, undefined];
+    }
 
-      if (isNotFound(existingOutcome) && !this.canSetId()) {
-        return [existingOutcome, undefined];
-      }
+    if (!create && isNotFound(existingOutcome) && !this.canSetId()) {
+      return [existingOutcome, undefined];
     }
 
     const updated = await rewriteAttachments<T>(RewriteMode.REFERENCE, this, {
@@ -732,6 +728,14 @@ export class Repository {
     }
   }
 
+  /**
+   * Builds a single value for a given search parameter.
+   * If the search parameter is an array, then this method will be called for each element.
+   * If the search parameter is not an array, then this method will be called for the value.
+   * @param searchParam The search parameter definition.
+   * @param value The FHIR resource value.
+   * @returns The column value.
+   */
   private buildColumnValue(searchParam: SearchParameter, value: any): any {
     if (searchParam.type === 'boolean') {
       return value === 'true';
@@ -790,12 +794,10 @@ export class Repository {
    * Builds the column value to write a "code" search parameter.
    * The common cases are:
    *  1) The property value is a string, so return directly.
-   *  2) The property value is a CodeableConcept
-   *    a) If the CodeableConcept has a code, then return that.
-   *    b) If the CodeableConcept has a display, then return that.
-   *    c) If the CodeableConcept has text, then return that.
+   *  2) The property value is a CodeableConcept.
    *  3) Otherwise fallback to stringify.
    * @param value The property value of the code.
+   * @returns The value to write to the database column.
    */
   private buildTokenColumn(value: any): string | undefined {
     if (!value) {
@@ -808,31 +810,45 @@ export class Repository {
     }
 
     if (typeof value === 'object') {
-      // If the value is a CodeableConcept,
-      // then use the following logic to determine the code:
-      // 1) value.coding[0].code
-      // 2) value.coding[0].display
-      // 3) value.text
-      if ('coding' in value) {
-        const coding = value.coding;
-        if (Array.isArray(coding) && coding.length > 0) {
-          if (coding[0].code) {
-            return coding[0].code;
-          }
-
-          if (coding[0].display) {
-            return coding[0].display;
-          }
-        }
-      }
-
-      if ('text' in value) {
-        return value.text as string;
+      const codeableConceptValue = this.buildCodeableConceptColumn(value);
+      if (codeableConceptValue) {
+        return codeableConceptValue;
       }
     }
 
     // Otherwise, return a stringified version of the value
     return stringify(value);
+  }
+
+  /**
+   * Builds a CodeableConcept column value.
+   * @param value The property value of the code.
+   * @returns The value to write to the database column.
+   */
+  private buildCodeableConceptColumn(value: any): string | undefined {
+    // If the value is a CodeableConcept,
+    // then use the following logic to determine the code:
+    // 1) value.coding[0].code
+    // 2) value.coding[0].display
+    // 3) value.text
+    if ('coding' in value) {
+      const coding = value.coding;
+      if (Array.isArray(coding) && coding.length > 0) {
+        if (coding[0].code) {
+          return coding[0].code;
+        }
+
+        if (coding[0].display) {
+          return coding[0].display;
+        }
+      }
+    }
+
+    if ('text' in value) {
+      return value.text as string;
+    }
+
+    return undefined;
   }
 
   private async writeLookupTables(resource: Resource): Promise<void> {
