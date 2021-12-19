@@ -1,6 +1,6 @@
 {
   "name": "@medplum/fhirpath",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Medplum FHIRPath Library",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -16,8 +16,8 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/definitions": "0.2.2",
-    "@medplum/fhirtypes": "0.2.2"
+    "@medplum/definitions": "0.3.0",
+    "@medplum/fhirtypes": "0.3.0"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
