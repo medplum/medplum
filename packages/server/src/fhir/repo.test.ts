@@ -1738,6 +1738,40 @@ describe('FHIR Repo', () => {
     expect(bundleContains(bundle3 as Bundle, serviceRequest2 as ServiceRequest)).toEqual(false);
     expect(bundleContains(bundle3 as Bundle, serviceRequest3 as ServiceRequest)).toEqual(true);
   });
+
+  test('Reindex resource type as non-admin', async () => {
+    const repo = new Repository({
+      project: randomUUID(),
+      author: {
+        reference: 'Practitioner/' + randomUUID(),
+      },
+    });
+
+    const [reindexOutcome] = await repo.reindexResourceType('Practitioner');
+    expect(isOk(reindexOutcome)).toBe(false);
+  });
+
+  test('Reindex resource as non-admin', async () => {
+    const repo = new Repository({
+      project: randomUUID(),
+      author: {
+        reference: 'Practitioner/' + randomUUID(),
+      },
+    });
+
+    const [reindexOutcome] = await repo.reindexResource('Practitioner', randomUUID());
+    expect(isOk(reindexOutcome)).toBe(false);
+  });
+
+  test('Reindex resource not found', async () => {
+    const [reindexOutcome] = await repo.reindexResource('Practitioner', randomUUID());
+    expect(isOk(reindexOutcome)).toBe(false);
+  });
+
+  test('Reindex success', async () => {
+    const [reindexOutcome] = await repo.reindexResourceType('Practitioner');
+    assertOk(reindexOutcome);
+  });
 });
 
 function bundleContains(bundle: Bundle, resource: Resource): boolean {

@@ -313,12 +313,64 @@ export class Repository {
     }
 
     try {
-      await this.write(result);
+      await this.writeResource(result);
+      await this.writeResourceVersion(result);
+      await this.writeLookupTables(result);
+      await addSubscriptionJobs(result);
     } catch (error) {
       return [badRequest((error as Error).message), undefined];
     }
 
     return [existing ? allOk : created, result];
+  }
+
+  /**
+   * Reindexes all resources of the specified type.
+   * This is only available to the system account.
+   * This should not result in any change to resources or history.
+   * @param resourceType The resource type.
+   */
+  async reindexResourceType(resourceType: string): RepositoryResult<undefined> {
+    if (!this.isSystem()) {
+      return [accessDenied, undefined];
+    }
+
+    const client = getClient();
+    const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'id' });
+    this.addDeletedFilter(builder);
+
+    const rows = await builder.execute(client);
+    for (const { id } of rows) {
+      await this.reindexResource(resourceType, id);
+    }
+    return [allOk, undefined];
+  }
+
+  /**
+   * Reindexes the resource.
+   * This is only available to the system account.
+   * This should not result in any change to the resource or its history.
+   * @param resourceType The resource type.
+   * @param id The resource ID.
+   */
+  async reindexResource<T extends Resource>(resourceType: string, id: string): RepositoryResult<T> {
+    if (!this.isSystem()) {
+      return [accessDenied, undefined];
+    }
+
+    const [readOutcome, resource] = await this.readResource<T>(resourceType, id);
+    if (!isOk(readOutcome)) {
+      return [readOutcome, undefined];
+    }
+
+    try {
+      await this.writeResource(resource as T);
+      await this.writeLookupTables(resource as T);
+    } catch (error) {
+      return [badRequest((error as Error).message), undefined];
+    }
+
+    return [allOk, resource as T];
   }
 
   async deleteResource(resourceType: string, id: string): RepositoryResult<undefined> {
@@ -638,12 +690,12 @@ export class Repository {
     builder.orderBy(details.columnName, !!sortRule.descending);
   }
 
-  private async write(resource: Resource): Promise<void> {
-    await this.writeResource(resource);
-    await this.writeLookupTables(resource);
-    await addSubscriptionJobs(resource);
-  }
-
+  /**
+   * Writes the resource to the resource table.
+   * This builds all search parameter columns.
+   * This does *not* write the version to the history table.
+   * @param resource The resource.
+   */
   private async writeResource(resource: Resource): Promise<void> {
     const client = getClient();
     const resourceType = resource.resourceType;
@@ -666,6 +718,17 @@ export class Repository {
     }
 
     await new InsertQuery(resourceType, columns).mergeOnConflict(true).execute(client);
+  }
+
+  /**
+   * Writes a version of the resource to the resource history table.
+   * @param resource The resource.
+   */
+  private async writeResourceVersion(resource: Resource): Promise<void> {
+    const client = getClient();
+    const resourceType = resource.resourceType;
+    const meta = resource.meta as Meta;
+    const content = stringify(resource);
 
     await new InsertQuery(resourceType + '_History', {
       id: resource.id,
