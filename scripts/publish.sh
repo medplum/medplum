@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
 
-pushd packages/core
-npm publish --access public
-popd
-
-pushd packages/definitions
-npm publish --access public
-popd
-
-pushd packages/ui
-npm publish --access public
-popd
+PACKAGES=("core" "definitions" "fhirpath" "fhirtypes" "ui")
+for package in ${PACKAGES[@]}; do
+  echo "Publish $package"
+  pushd packages/$package
+  npm publish --access public
+  popd
+done
