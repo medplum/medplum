@@ -1,4 +1,4 @@
-import { allOk, assertOk, badRequest, isOk } from '@medplum/core';
+import { accessDenied, allOk, assertOk, isOk } from '@medplum/core';
 import { User } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
@@ -20,7 +20,7 @@ superAdminRouter.post(
     assertOk(outcome);
 
     if (!user?.admin) {
-      return sendOutcome(res, badRequest('Requires super administrator privileges'));
+      return sendOutcome(res, accessDenied);
     }
 
     await createValueSetElements();
@@ -38,7 +38,7 @@ superAdminRouter.post(
     assertOk(outcome);
 
     if (!user?.admin) {
-      return sendOutcome(res, badRequest('Requires super administrator privileges'));
+      return sendOutcome(res, accessDenied);
     }
 
     await createStructureDefinitions();
@@ -56,7 +56,7 @@ superAdminRouter.post(
     assertOk(outcome);
 
     if (!user?.admin) {
-      return sendOutcome(res, badRequest('Requires super administrator privileges'));
+      return sendOutcome(res, accessDenied);
     }
 
     const resourceType = req.body.resourceType;
