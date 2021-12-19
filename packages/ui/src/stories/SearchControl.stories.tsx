@@ -64,3 +64,23 @@ export const ExtraFields = () => {
     />
   );
 };
+
+export const ServiceRequests = () => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'ServiceRequest',
+    fields: ['id', '_lastUpdated', 'subject', 'code', 'status', 'orderDetail'],
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      checkboxesEnabled={true}
+      onLoad={(e) => console.log('onLoad', e)}
+      onClick={(e) => console.log('onClick', e)}
+      onChange={(e) => {
+        console.log('onChange', e);
+        setSearch(e.definition);
+      }}
+    />
+  );
+};

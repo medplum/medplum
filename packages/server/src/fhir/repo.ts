@@ -268,13 +268,17 @@ export class Repository {
       return [accessDenied, undefined];
     }
 
-    const [existingOutcome, existing] = await this.readResource<T>(resourceType, id);
-    if (!isOk(existingOutcome) && !isNotFound(existingOutcome) && !isGone(existingOutcome)) {
-      return [existingOutcome, undefined];
-    }
+    let existing: T | undefined = undefined;
+    if (!create) {
+      let existingOutcome: OperationOutcome | undefined;
+      [existingOutcome, existing] = await this.readResource<T>(resourceType, id);
+      if (!isOk(existingOutcome) && !isNotFound(existingOutcome) && !isGone(existingOutcome)) {
+        return [existingOutcome, undefined];
+      }
 
-    if (!create && isNotFound(existingOutcome) && !this.canSetId()) {
-      return [existingOutcome, undefined];
+      if (isNotFound(existingOutcome) && !this.canSetId()) {
+        return [existingOutcome, undefined];
+      }
     }
 
     const updated = await rewriteAttachments<T>(RewriteMode.REFERENCE, this, {
@@ -733,30 +737,19 @@ export class Repository {
       return value === 'true';
     }
 
-    if (searchParam.type === 'reference') {
-      return this.buildReferenceColumns(searchParam, value);
-    }
-
     if (searchParam.type === 'date') {
       return this.buildDateColumn(value);
     }
 
-    return typeof value === 'string' ? value : stringify(value);
-  }
-
-  /**
-   * Builds the columns to write for a Reference value.
-   * @param searchParam The search parameter definition.
-   * @param value The property value of the reference.
-   */
-  private buildReferenceColumns(searchParam: SearchParameter, value: any): string | undefined {
-    const refStr = (value as Reference).reference;
-    if (!refStr) {
-      return undefined;
+    if (searchParam.type === 'reference') {
+      return this.buildReferenceColumns(searchParam, value);
     }
 
-    // TODO: Consider normalizing reference string when known (searchParam.target.length === 1)
-    return refStr;
+    if (searchParam.type === 'token') {
+      return this.buildTokenColumn(value);
+    }
+
+    return typeof value === 'string' ? value : stringify(value);
   }
 
   /**
@@ -776,6 +769,70 @@ export class Repository {
       }
     }
     return undefined;
+  }
+
+  /**
+   * Builds the columns to write for a Reference value.
+   * @param searchParam The search parameter definition.
+   * @param value The property value of the reference.
+   */
+  private buildReferenceColumns(searchParam: SearchParameter, value: any): string | undefined {
+    const refStr = (value as Reference).reference;
+    if (!refStr) {
+      return undefined;
+    }
+
+    // TODO: Consider normalizing reference string when known (searchParam.target.length === 1)
+    return refStr;
+  }
+
+  /**
+   * Builds the column value to write a "code" search parameter.
+   * The common cases are:
+   *  1) The property value is a string, so return directly.
+   *  2) The property value is a CodeableConcept
+   *    a) If the CodeableConcept has a code, then return that.
+   *    b) If the CodeableConcept has a display, then return that.
+   *    c) If the CodeableConcept has text, then return that.
+   *  3) Otherwise fallback to stringify.
+   * @param value The property value of the code.
+   */
+  private buildTokenColumn(value: any): string | undefined {
+    if (!value) {
+      return undefined;
+    }
+
+    if (typeof value === 'string') {
+      // If the value is a string, return the value directly
+      return value;
+    }
+
+    if (typeof value === 'object') {
+      // If the value is a CodeableConcept,
+      // then use the following logic to determine the code:
+      // 1) value.coding[0].code
+      // 2) value.coding[0].display
+      // 3) value.text
+      if ('coding' in value) {
+        const coding = value.coding;
+        if (Array.isArray(coding) && coding.length > 0) {
+          if (coding[0].code) {
+            return coding[0].code;
+          }
+
+          if (coding[0].display) {
+            return coding[0].display;
+          }
+        }
+      }
+
+      if ('text' in value) {
+        return value.text as string;
+      }
+    }
+
+    // Otherwise, return a stringified version of the value
+    return stringify(value);
   }
 
   private async writeLookupTables(resource: Resource): Promise<void> {
