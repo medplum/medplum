@@ -1,6 +1,6 @@
 {
   "name": "@medplum/app",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Medplum App",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -18,9 +18,9 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/core": "0.2.2",
-    "@medplum/fhirtypes": "0.2.2",
-    "@medplum/ui": "0.2.2",
+    "@medplum/core": "0.3.0",
+    "@medplum/fhirtypes": "0.3.0",
+    "@medplum/ui": "0.3.0",
     "@testing-library/jest-dom": "5.16.1",
     "@testing-library/react": "12.1.2",
     "@types/react": "17.0.37",
