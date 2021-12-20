@@ -19,7 +19,7 @@ import {
   SortRule,
   stringify,
 } from '@medplum/core';
-import { parseFhirPath } from '@medplum/fhirpath';
+import { evalFhirPath } from '@medplum/fhirpath';
 import {
   AccessPolicy,
   Bundle,
@@ -779,8 +779,7 @@ export class Repository {
     }
 
     const details = getSearchParameterDetails(getStructureDefinitions(), resource.resourceType, searchParam);
-    const fhirPath = parseFhirPath(searchParam.expression as string);
-    const values = fhirPath.eval(resource);
+    const values = evalFhirPath(searchParam.expression as string, resource);
 
     if (values.length > 0) {
       if (details.array) {

@@ -1,5 +1,5 @@
 import { assertOk, createReference, Filter, isGone, Operator, SearchRequest, stringify } from '@medplum/core';
-import { parseFhirPath } from '@medplum/fhirpath';
+import { evalFhirPath } from '@medplum/fhirpath';
 import { AuditEvent, Bot, BundleEntry, Extension, Resource, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
@@ -201,8 +201,7 @@ function matchesSearchRequest(resource: Resource, searchRequest: SearchRequest):
 function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, filter: Filter): boolean {
   const searchParam = getSearchParameter(searchRequest.resourceType, filter.code);
   if (searchParam) {
-    const fhirPath = parseFhirPath(searchParam.expression as string);
-    const values = fhirPath.eval(resource);
+    const values = evalFhirPath(searchParam.expression as string, resource);
     const value = values.length > 0 ? values[0] : undefined;
     if (value !== filter.value) {
       logger.debug(`Ignore rest hook for filter value (wanted "${filter.value}", received "${value})"`);

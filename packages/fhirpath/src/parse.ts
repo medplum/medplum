@@ -295,10 +295,28 @@ const parserBuilder = new ParserBuilder()
     }
   });
 
+/**
+ * Parses a FHIRPath expression into an AST.
+ * The result can be used to evaluate the expression against a resource or other object.
+ * This method is useful if you know that you will evaluate the same expression many times
+ * against different resources.
+ * @param input The FHIRPath expression to parse.
+ * @returns The AST representing the expression.
+ */
 export function parseFhirPath(input: string): FhirPathAtom {
   try {
     return new FhirPathAtom(input, parserBuilder.construct(input).parse());
   } catch (error) {
     throw new Error(`FhirPathError on "${input}": ${error}`);
   }
+}
+
+/**
+ * Evaluates a FHIRPath expression against a resource or other object.
+ * @param input The FHIRPath expression to parse.
+ * @param context The resource or object to evaluate the expression against.
+ * @returns The result of the FHIRPath expression against the resource or object.
+ */
+export function evalFhirPath(input: string, context: any): any[] {
+  return parseFhirPath(input).eval(context);
 }

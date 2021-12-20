@@ -1,25 +1,25 @@
 import { readJson } from '@medplum/definitions';
 import { AuditEvent, Bundle, BundleEntry, Observation, SearchParameter } from '@medplum/fhirtypes';
-import { parseFhirPath } from './parse';
+import { evalFhirPath, parseFhirPath } from './parse';
 
 describe('FHIRPath parser', () => {
   test('Parser can build a arithmetic parser with correct order of operations', () => {
-    const result = parseFhirPath('3 / 3 + 4 * 9 - 1').eval(0);
+    const result = evalFhirPath('3 / 3 + 4 * 9 - 1', 0);
     expect(result).toEqual([36]);
   });
 
   test('Parser can build a arithmetic parser with parentheses', () => {
-    const result = parseFhirPath('3 / 3 + 4 * 3)').eval(0);
+    const result = evalFhirPath('3 / 3 + 4 * 3)', 0);
     expect(result).toEqual([13]);
   });
 
   test('Parser can build a arithmetic parser with correct associativity', () => {
-    const result = parseFhirPath('5 - 4 - 3 - 2 - 1 + 512').eval(0);
+    const result = evalFhirPath('5 - 4 - 3 - 2 - 1 + 512', 0);
     expect(result).toEqual([507]);
   });
 
   test('Parser can build an arithmetic parser with prefix operators', () => {
-    const result = parseFhirPath('-4 + -(4 + 5 - -4)').eval(0);
+    const result = evalFhirPath('-4 + -(4 + 5 - -4)', 0);
     expect(result).toEqual([-17]);
   });
 
@@ -36,16 +36,16 @@ describe('FHIRPath parser', () => {
   });
 
   test('Function minus number', () => {
-    expect(parseFhirPath("'Peter'.length()-3").eval(0)).toEqual([2]);
+    expect(evalFhirPath("'Peter'.length()-3", 0)).toEqual([2]);
   });
 
   test('Evaluate FHIRPath Patient.name.given on empty resource', () => {
-    const result = parseFhirPath('Patient.name.given').eval({});
+    const result = evalFhirPath('Patient.name.given', {});
     expect(result).toEqual([]);
   });
 
   test('Evaluate FHIRPath Patient.name.given', () => {
-    const result = parseFhirPath('Patient.name.given').eval({
+    const result = evalFhirPath('Patient.name.given', {
       resourceType: 'Patient',
       name: [
         {
@@ -58,7 +58,7 @@ describe('FHIRPath parser', () => {
   });
 
   test('Evaluate FHIRPath string concatenation', () => {
-    const result = parseFhirPath("Patient.name.given + ' ' + Patient.name.family").eval({
+    const result = evalFhirPath("Patient.name.given + ' ' + Patient.name.family", {
       resourceType: 'Patient',
       name: [
         {
@@ -71,7 +71,7 @@ describe('FHIRPath parser', () => {
   });
 
   test('Evaluate FHIRPath Patient.name.given on array of resources', () => {
-    const result = parseFhirPath('Patient.name.given').eval([
+    const result = evalFhirPath('Patient.name.given', [
       {
         resourceType: 'Patient',
         name: [
@@ -95,7 +95,7 @@ describe('FHIRPath parser', () => {
   });
 
   test('Evaluate FHIRPath string concatenation on array of resources', () => {
-    const result = parseFhirPath("Patient.name.given + ' ' + Patient.name.family").eval([
+    const result = evalFhirPath("Patient.name.given + ' ' + Patient.name.family", [
       {
         resourceType: 'Patient',
         name: [
@@ -119,7 +119,7 @@ describe('FHIRPath parser', () => {
   });
 
   test('Evaluate FHIRPath Patient.name.given on array of resources', () => {
-    const result = parseFhirPath('Patient.name.given').eval([
+    const result = evalFhirPath('Patient.name.given', [
       {
         resourceType: 'Practitioner',
         name: [
@@ -143,7 +143,7 @@ describe('FHIRPath parser', () => {
   });
 
   test('Evaluate FHIRPath union', () => {
-    const result = parseFhirPath('Practitioner.name.given | Patient.name.given').eval({
+    const result = evalFhirPath('Practitioner.name.given | Patient.name.given', {
       resourceType: 'Patient',
       name: [
         {
@@ -156,7 +156,7 @@ describe('FHIRPath parser', () => {
   });
 
   test('Evaluate FHIRPath union to combine results', () => {
-    const result = parseFhirPath('Practitioner.name.given | Patient.name.given').eval([
+    const result = evalFhirPath('Practitioner.name.given | Patient.name.given', [
       {
         resourceType: 'Patient',
         name: [
@@ -180,7 +180,7 @@ describe('FHIRPath parser', () => {
   });
 
   test('Evaluate FHIRPath double union', () => {
-    const result = parseFhirPath('Patient.name.given | Patient.name.given').eval([
+    const result = evalFhirPath('Patient.name.given | Patient.name.given', [
       {
         resourceType: 'Patient',
         name: [
@@ -204,22 +204,22 @@ describe('FHIRPath parser', () => {
   });
 
   test('Evaluate ignores non-objects', () => {
-    const result = parseFhirPath('foo.bar').eval({
+    const result = evalFhirPath('foo.bar', {
       foo: 1,
     });
     expect(result).toEqual([]);
   });
 
   test('Evaluate fails on function parentheses after non-symbol', () => {
-    expect(() => parseFhirPath('1()').eval(0)).toThrowError('Unexpected parentheses');
+    expect(() => evalFhirPath('1()', 0)).toThrowError('Unexpected parentheses');
   });
 
   test('Evaluate fails on unrecognized function', () => {
-    expect(() => parseFhirPath('asdf()').eval(0)).toThrowError('Unrecognized function');
+    expect(() => evalFhirPath('asdf()', 0)).toThrowError('Unrecognized function');
   });
 
   test('Evaluate FHIRPath where function', () => {
-    const result = parseFhirPath("Patient.telecom.where(system='email')").eval({
+    const result = evalFhirPath("Patient.telecom.where(system='email')", {
       resourceType: 'Patient',
       name: [
         {
@@ -273,7 +273,7 @@ describe('FHIRPath parser', () => {
       },
     };
 
-    const result = parseFhirPath('Observation.subject.resolve()').eval(observation);
+    const result = evalFhirPath('Observation.subject.resolve()', observation);
 
     expect(result).toMatchObject([
       {
@@ -295,7 +295,7 @@ describe('FHIRPath parser', () => {
       ],
     };
 
-    const result = parseFhirPath('AuditEvent.entity.what.where(resolve() is Patient)').eval(auditEvent);
+    const result = evalFhirPath('AuditEvent.entity.what.where(resolve() is Patient)', auditEvent);
     expect(result).toEqual([{ reference: 'Patient/123' }]);
   });
 
@@ -311,7 +311,7 @@ describe('FHIRPath parser', () => {
       ],
     };
 
-    const result = parseFhirPath('AuditEvent.entity.what.where(resolve() is Patient)').eval(auditEvent);
+    const result = evalFhirPath('AuditEvent.entity.what.where(resolve() is Patient)', auditEvent);
     expect(result).toEqual([]);
   });
 });
