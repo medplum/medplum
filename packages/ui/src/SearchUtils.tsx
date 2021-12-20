@@ -1,5 +1,4 @@
 import { Filter, getPropertyDisplayName, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
-import { evalFhirPath } from '@medplum/fhirpath';
 import { Resource } from '@medplum/fhirtypes';
 import React from 'react';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
@@ -468,19 +467,14 @@ export function renderValue(
     return new Date(resource.meta?.lastUpdated as string).toLocaleString('en-US');
   }
 
-  const property = schema.types[resource.resourceType]?.properties?.[key];
-  if (!property) {
-    return null;
-  }
-
-  let value = evalFhirPath(key, resource);
-  if (value.length === 0) {
-    return null;
-  }
-
-  if (property.max !== '*') {
-    value = value[0];
-  }
-
-  return <ResourcePropertyDisplay schema={schema} property={property} value={value} maxWidth={200} />;
+  return (
+    <ResourcePropertyDisplay
+      schema={schema}
+      typeName={resource.resourceType}
+      propertyName={key}
+      context={resource}
+      maxWidth={200}
+      ignoreMissingValues={true}
+    />
+  );
 }

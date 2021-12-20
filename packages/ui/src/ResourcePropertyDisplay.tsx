@@ -1,5 +1,5 @@
-import { buildTypeName, IndexedStructureDefinition, PropertyType } from '@medplum/core';
-import { ElementDefinition, ElementDefinitionType } from '@medplum/fhirtypes';
+import { buildTypeName, capitalize, IndexedStructureDefinition, PropertyType } from '@medplum/core';
+import { ElementDefinition } from '@medplum/fhirtypes';
 import React from 'react';
 import { AddressDisplay } from './AddressDisplay';
 import { AttachmentArrayDisplay } from './AttachmentArrayDisplay';
@@ -15,25 +15,26 @@ import { ResourceArrayDisplay } from './ResourceArrayDisplay';
 
 export interface ResourcePropertyDisplayProps {
   schema: IndexedStructureDefinition;
-  property: ElementDefinition;
-  value: any;
+  context: any;
+  typeName: string;
+  propertyName: string;
   arrayElement?: boolean;
   maxWidth?: number;
   ignoreMissingValues?: boolean;
 }
 
 export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
-  const value = props.value;
-  if (!value) {
+  const property = props.schema.types[props.typeName]?.properties?.[props.propertyName];
+  if (!property) {
     return null;
   }
 
-  const property = props.property;
-  if (!property.type || property.type.length === 0) {
+  const [value, propertyType] = getValueAndType(props.context, property);
+
+  if (props.ignoreMissingValues && (!value || (Array.isArray(value) && value.length === 0))) {
     return null;
   }
 
-  const propertyType = guessPropertyType(value, property.type);
   if (property.max === '*' && !props.arrayElement) {
     if (propertyType === 'Attachment') {
       return <AttachmentArrayDisplay values={value} maxWidth={props.maxWidth} />;
@@ -47,6 +48,30 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
       />
     );
   }
+
+  return (
+    <ElementDisplay
+      schema={props.schema}
+      property={property}
+      value={value}
+      propertyType={propertyType}
+      maxWidth={props.maxWidth}
+      ignoreMissingValues={props.ignoreMissingValues}
+    />
+  );
+}
+
+export interface ElementDisplayProps {
+  schema: IndexedStructureDefinition;
+  property: ElementDefinition;
+  propertyType: PropertyType;
+  value: any;
+  maxWidth?: number;
+  ignoreMissingValues?: boolean;
+}
+
+export function ElementDisplay(props: ElementDisplayProps) {
+  const { property, propertyType, value } = props;
   switch (propertyType) {
     case PropertyType.boolean:
       return <div>{value === undefined ? '' : Boolean(value).toString()}</div>;
@@ -96,42 +121,31 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
   }
 }
 
-function guessPropertyType(value: any, types: ElementDefinitionType[]): PropertyType {
+function getValueAndType(context: any, property: ElementDefinition): [any, PropertyType] {
+  if (!context) {
+    return [undefined, PropertyType.string];
+  }
+
+  const path = property.path?.split('.')?.pop();
+  if (!path) {
+    return [undefined, PropertyType.string];
+  }
+
+  const types = property.type;
+  if (!types || types.length === 0) {
+    return [undefined, PropertyType.string];
+  }
+
   if (types.length === 1) {
-    // Common case - only one property type
-    return types[0].code as PropertyType;
+    return [context[path], types[0].code as PropertyType];
   }
 
   for (const type of types) {
-    if (type.code === 'Reference' && value.reference) {
-      return PropertyType.Reference;
-    }
-    if (type.code === 'CodeableConcept' && value.coding) {
-      return PropertyType.CodeableConcept;
-    }
-    if (type.code === 'Quantity' && value.value) {
-      return PropertyType.Quantity;
-    }
-    if (type.code === 'Attachment' && value.contentType) {
-      return PropertyType.Attachment;
-    }
-    if (type.code === 'HumanName' && value.family) {
-      return PropertyType.HumanName;
-    }
-    if (type.code === 'Identifier' && value.system) {
-      return PropertyType.Identifier;
-    }
-    if (type.code === 'ContactPoint' && value.system) {
-      return PropertyType.ContactPoint;
-    }
-    if (type.code === 'Address' && value.city) {
-      return PropertyType.Address;
-    }
-    if (type.code === 'Attachment' && value.url) {
-      return PropertyType.Attachment;
+    const path2 = path.replace('[x]', capitalize(type.code as string)) as string;
+    if (path2 in context) {
+      return [context[path2], type.code as PropertyType];
     }
   }
 
-  // Default case - guess the first value
-  return types[0].code as PropertyType;
+  return [undefined, PropertyType.string];
 }

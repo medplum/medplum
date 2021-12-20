@@ -1,5 +1,4 @@
 import { getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/core';
-import { evalFhirPath } from '@medplum/fhirpath';
 import React from 'react';
 import { DEFAULT_IGNORED_PROPERTIES } from './constants';
 import { DescriptionList, DescriptionListEntry } from './DescriptionList';
@@ -16,6 +15,11 @@ export interface BackboneElementDisplayProps {
 export function BackboneElementDisplay(props: BackboneElementDisplayProps) {
   const value = props.value;
   if (!value) {
+    return null;
+  }
+
+  if (!props.schema) {
+    console.log('no schema?', props);
     return null;
   }
 
@@ -40,24 +44,13 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps) {
           return null;
         }
         const property = entry[1];
-        let propertyValue: any = evalFhirPath(key, value);
-        // FHIRPath will always return an array
-        // If the property is not an array property,
-        // then unrap the value.
-        if (propertyValue.length === 0) {
-          propertyValue = null;
-        } else if (property.max !== '*') {
-          propertyValue = propertyValue[0];
-        }
-        if (props.ignoreMissingValues && !propertyValue) {
-          return null;
-        }
         return (
           <DescriptionListEntry key={key} term={getPropertyDisplayName(property)}>
             <ResourcePropertyDisplay
               schema={props.schema}
-              property={property}
-              value={propertyValue}
+              typeName={typeName}
+              propertyName={key}
+              context={value}
               ignoreMissingValues={props.ignoreMissingValues}
             />
           </DescriptionListEntry>
