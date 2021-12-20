@@ -1,6 +1,5 @@
-import { buildTypeName, getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/core';
+import { getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/core';
 import { evalFhirPath } from '@medplum/fhirpath';
-import { ElementDefinition } from '@medplum/fhirtypes';
 import React from 'react';
 import { DEFAULT_IGNORED_PROPERTIES } from './constants';
 import { DescriptionList, DescriptionListEntry } from './DescriptionList';
@@ -8,8 +7,9 @@ import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 export interface BackboneElementDisplayProps {
   schema: IndexedStructureDefinition;
-  property: ElementDefinition;
+  typeName: string;
   value?: any;
+  compact?: boolean;
   ignoreMissingValues?: boolean;
 }
 
@@ -19,13 +19,13 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps) {
     return null;
   }
 
-  const typeName = buildTypeName(props.property.path?.split('.') as string[]);
+  const typeName = props.typeName;
   const typeSchema = props.schema.types[typeName];
   if (!typeSchema) {
     return <div>Schema not found</div>;
   }
 
-  if (typeof value === 'object' && Object.keys(value).length === 1 && 'name' in value) {
+  if (typeof value === 'object' && 'name' in value && Object.keys(value).length === 1) {
     // Special case for common BackboneElement pattern
     // Where there is an object with a single property 'name'
     // Just display the name value.
@@ -33,7 +33,7 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps) {
   }
 
   return (
-    <DescriptionList compact={true}>
+    <DescriptionList compact={props.compact}>
       {Object.entries(typeSchema.properties).map((entry) => {
         const key = entry[0];
         if (DEFAULT_IGNORED_PROPERTIES.indexOf(key) >= 0) {

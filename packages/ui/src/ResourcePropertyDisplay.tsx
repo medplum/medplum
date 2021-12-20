@@ -1,4 +1,4 @@
-import { IndexedStructureDefinition, PropertyType } from '@medplum/core';
+import { buildTypeName, IndexedStructureDefinition, PropertyType } from '@medplum/core';
 import { ElementDefinition, ElementDefinitionType } from '@medplum/fhirtypes';
 import React from 'react';
 import { AddressDisplay } from './AddressDisplay';
@@ -87,8 +87,9 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
       return (
         <BackboneElementDisplay
           schema={props.schema}
-          property={property}
+          typeName={buildTypeName(property.path?.split('.') as string[])}
           value={value}
+          compact={true}
           ignoreMissingValues={props.ignoreMissingValues}
         />
       );

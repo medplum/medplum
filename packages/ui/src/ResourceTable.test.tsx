@@ -78,10 +78,10 @@ describe('ResourceTable', () => {
     });
 
     await act(async () => {
-      await waitFor(() => screen.getByText('Resource Type'));
+      await waitFor(() => screen.getByText('Name'));
     });
 
-    expect(screen.getByText('Resource Type')).toBeInTheDocument();
+    expect(screen.getByText('Name')).toBeInTheDocument();
   });
 
   test('Renders Practitioner resource', async () => {
@@ -92,10 +92,10 @@ describe('ResourceTable', () => {
     });
 
     await act(async () => {
-      await waitFor(() => screen.getByText('Resource Type'));
+      await waitFor(() => screen.getByText('Name'));
     });
 
-    expect(screen.getByText('Resource Type')).toBeInTheDocument();
+    expect(screen.getByText('Name')).toBeInTheDocument();
     expect(screen.getByText('Gender')).toBeInTheDocument();
   });
 
@@ -108,10 +108,10 @@ describe('ResourceTable', () => {
     });
 
     await act(async () => {
-      await waitFor(() => screen.getByText('Resource Type'));
+      await waitFor(() => screen.getByText('Name'));
     });
 
-    expect(screen.getByText('Resource Type')).toBeInTheDocument();
+    expect(screen.getByText('Name')).toBeInTheDocument();
     expect(screen.queryByText('Gender')).toBeNull();
   });
 });
