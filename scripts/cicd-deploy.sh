@@ -37,21 +37,26 @@ fi
 
 if [[ "$FILES_CHANGED" =~ packages/core ]]; then
   DEPLOY_APP=true
-  DEPLOY_DOCS=true
-  DEPLOY_GRAPHIQL=true
   DEPLOY_SERVER=true
-  DEPLOY_STORYBOOK=true
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/definitions ]]; then
   DEPLOY_APP=true
-  DEPLOY_GRAPHIQL=true
   DEPLOY_SERVER=true
-  DEPLOY_STORYBOOK=true
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/docs ]]; then
   DEPLOY_DOCS=true
+fi
+
+if [[ "$FILES_CHANGED" =~ packages/fhirpath ]]; then
+  DEPLOY_APP=true
+  DEPLOY_SERVER=true
+fi
+
+if [[ "$FILES_CHANGED" =~ packages/fhirtypes ]]; then
+  DEPLOY_APP=true
+  DEPLOY_SERVER=true
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/graphiql ]]; then
