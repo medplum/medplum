@@ -12,7 +12,7 @@ npm install --save-dev @medplum/fhirpath
 
 ```typescript
 import { Patient } from '@medplum/fhirtypes';
-import { parseFhirPath } from '@medplum/fhirpath';
+import { evalFhirPath } from '@medplum/fhirpath';
 
 const patient: Patient = {
   resourceType: 'Patient',
@@ -25,7 +25,7 @@ const patient: Patient = {
   birthDate: '1980-01-01',
 };
 
-console.log(parseFhirPath('birthDate').eval(patient));
+console.log(evalFhirPath('birthDate', patient));
 ```
 
 ## License
