@@ -1,11 +1,5 @@
-import {
-  Filter,
-  getPropertyDisplayName,
-  IndexedStructureDefinition,
-  Operator,
-  SearchRequest,
-  stringify,
-} from '@medplum/core';
+import { Filter, getPropertyDisplayName, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
+import { evalFhirPath } from '@medplum/fhirpath';
 import { Resource } from '@medplum/fhirtypes';
 import React from 'react';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
@@ -451,51 +445,41 @@ export function getFilterValueString(filter: Filter): JSX.Element | string {
 }
 
 /**
- * Returns one of the meta fields.
- * TODO: Replace with FHIRPath evaluation.
- *
- * @param {!string} key The field key.
- * @return {*} The value.
- */
-export function getValue(resource: Resource, key: string): any | undefined {
-  if (key === '_lastUpdated') {
-    return resource.meta?.lastUpdated;
-  }
-  try {
-    return key.split('.').reduce((o, i) => o[i], resource as any);
-  } catch (ex) {
-    return undefined;
-  }
-}
-
-/**
- * Returns a HTML fragment to be displayed in the search table for the value.
- *
- * @param {!string} key The field key name.
- * @param {*} value The filter value
- * @return {string} An HTML fragment that represents the value.
+ * Returns a fragment to be displayed in the search table for the value.
+ * @param schema The currently indexed schema.
+ * @param resource The parent resource.
+ * @param key The search code or FHIRPath expression.
+ * @returns The fragment to display.
  */
 export function renderValue(
   schema: IndexedStructureDefinition,
-  resourceType: string,
-  key: string,
-  value: any
-): string | JSX.Element {
-  if (!value) {
-    return <span className="muted">none</span>;
+  resource: Resource,
+  key: string
+): string | JSX.Element | null | undefined {
+  if (key === 'id') {
+    return resource.id;
   }
 
-  if (key === 'id' || key === 'meta.versionId') {
-    return value;
+  if (key === 'meta.versionId') {
+    return resource.meta?.versionId;
   }
 
   if (key === '_lastUpdated') {
-    return new Date(value).toLocaleString('en-US');
+    return new Date(resource.meta?.lastUpdated as string).toLocaleString('en-US');
   }
 
-  const property = schema.types[resourceType]?.properties?.[key];
+  const property = schema.types[resource.resourceType]?.properties?.[key];
   if (!property) {
-    return stringify(value);
+    return null;
+  }
+
+  let value = evalFhirPath(key, resource);
+  if (value.length === 0) {
+    return null;
+  }
+
+  if (property.max !== '*') {
+    value = value[0];
   }
 
   return <ResourcePropertyDisplay schema={schema} property={property} value={value} maxWidth={200} />;

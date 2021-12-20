@@ -8,6 +8,7 @@ interface ResourceArrayDisplayProps {
   property: ElementDefinition;
   values: any[];
   arrayElement?: boolean;
+  ignoreMissingValues?: boolean;
 }
 
 export function ResourceArrayDisplay(props: ResourceArrayDisplayProps) {
@@ -22,6 +23,7 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps) {
           schema={props.schema}
           property={property}
           value={v}
+          ignoreMissingValues={props.ignoreMissingValues}
         />
       ))}
     </>

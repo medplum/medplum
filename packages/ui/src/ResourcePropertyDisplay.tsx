@@ -1,5 +1,5 @@
 import { IndexedStructureDefinition, PropertyType } from '@medplum/core';
-import { ElementDefinition } from '@medplum/fhirtypes';
+import { ElementDefinition, ElementDefinitionType } from '@medplum/fhirtypes';
 import React from 'react';
 import { AddressDisplay } from './AddressDisplay';
 import { AttachmentArrayDisplay } from './AttachmentArrayDisplay';
@@ -19,18 +19,33 @@ export interface ResourcePropertyDisplayProps {
   value: any;
   arrayElement?: boolean;
   maxWidth?: number;
+  ignoreMissingValues?: boolean;
 }
 
 export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
-  const property = props.property;
-  const propertyType = property.type?.[0]?.code as PropertyType;
   const value = props.value;
+  if (!value) {
+    return null;
+  }
 
+  const property = props.property;
+  if (!property.type || property.type.length === 0) {
+    return null;
+  }
+
+  const propertyType = guessPropertyType(value, property.type);
   if (property.max === '*' && !props.arrayElement) {
     if (propertyType === 'Attachment') {
       return <AttachmentArrayDisplay values={value} maxWidth={props.maxWidth} />;
     }
-    return <ResourceArrayDisplay schema={props.schema} property={property} values={value} />;
+    return (
+      <ResourceArrayDisplay
+        schema={props.schema}
+        property={property}
+        values={value}
+        ignoreMissingValues={props.ignoreMissingValues}
+      />
+    );
   }
   switch (propertyType) {
     case PropertyType.boolean:
@@ -69,6 +84,53 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
     case PropertyType.Reference:
       return <ReferenceDisplay value={value} />;
     default:
-      return <BackboneElementDisplay schema={props.schema} property={property} value={value} />;
+      return (
+        <BackboneElementDisplay
+          schema={props.schema}
+          property={property}
+          value={value}
+          ignoreMissingValues={props.ignoreMissingValues}
+        />
+      );
   }
+}
+
+function guessPropertyType(value: any, types: ElementDefinitionType[]): PropertyType {
+  if (types.length === 1) {
+    // Common case - only one property type
+    return types[0].code as PropertyType;
+  }
+
+  for (const type of types) {
+    if (type.code === 'Reference' && value.reference) {
+      return PropertyType.Reference;
+    }
+    if (type.code === 'CodeableConcept' && value.coding) {
+      return PropertyType.CodeableConcept;
+    }
+    if (type.code === 'Quantity' && value.value) {
+      return PropertyType.Quantity;
+    }
+    if (type.code === 'Attachment' && value.contentType) {
+      return PropertyType.Attachment;
+    }
+    if (type.code === 'HumanName' && value.family) {
+      return PropertyType.HumanName;
+    }
+    if (type.code === 'Identifier' && value.system) {
+      return PropertyType.Identifier;
+    }
+    if (type.code === 'ContactPoint' && value.system) {
+      return PropertyType.ContactPoint;
+    }
+    if (type.code === 'Address' && value.city) {
+      return PropertyType.Address;
+    }
+    if (type.code === 'Attachment' && value.url) {
+      return PropertyType.Attachment;
+    }
+  }
+
+  // Default case - guess the first value
+  return types[0].code as PropertyType;
 }

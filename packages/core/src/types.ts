@@ -206,7 +206,7 @@ export function getPropertyDisplayName(property: ElementDefinition): string {
   // Get the property name, which is the remainder after the last period
   // For example, for path "Patient.birthDate"
   // the property name is "birthDate"
-  const propertyName = (property.path as string).split('.').pop() as string;
+  const propertyName = (property.path as string).replaceAll('[x]', '').split('.').pop() as string;
 
   // Split by capital letters
   // Capitalize the first letter of each word

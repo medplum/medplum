@@ -84,3 +84,23 @@ export const ServiceRequests = () => {
     />
   );
 };
+
+export const DeviceDefinitions = () => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'DeviceDefinition',
+    fields: ['id', '_lastUpdated', 'manufacturer[x]', 'deviceName'],
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      checkboxesEnabled={true}
+      onLoad={(e) => console.log('onLoad', e)}
+      onClick={(e) => console.log('onClick', e)}
+      onChange={(e) => {
+        console.log('onChange', e);
+        setSearch(e.definition);
+      }}
+    />
+  );
+};

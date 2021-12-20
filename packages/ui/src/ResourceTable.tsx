@@ -1,4 +1,5 @@
 import { getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/core';
+import { evalFhirPath } from '@medplum/fhirpath';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { DEFAULT_IGNORED_PROPERTIES } from './constants';
@@ -42,13 +43,26 @@ export function ResourceTable(props: ResourceTableProps) {
           return null;
         }
         const property = entry[1];
-        const propertyValue = (value as any)[key];
+        let propertyValue: any = evalFhirPath(key, value);
+        // FHIRPath will always return an array
+        // If the property is not an array property,
+        // then unrap the value.
+        if (propertyValue.length === 0) {
+          propertyValue = null;
+        } else if (property.max !== '*') {
+          propertyValue = propertyValue[0];
+        }
         if (props.ignoreMissingValues && !propertyValue) {
           return null;
         }
         return (
           <DescriptionListEntry key={key} term={getPropertyDisplayName(property)}>
-            <ResourcePropertyDisplay schema={schema} property={property} value={propertyValue} />
+            <ResourcePropertyDisplay
+              schema={schema}
+              property={property}
+              value={propertyValue}
+              ignoreMissingValues={props.ignoreMissingValues}
+            />
           </DescriptionListEntry>
         );
       })}
