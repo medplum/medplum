@@ -21,11 +21,10 @@ export function SubMenu(props: SubMenuProps): JSX.Element {
 
   function show() {
     const el = menuItemRef.current;
-    if (!el) {
-      return;
+    if (el) {
+      setAnchor(el.getBoundingClientRect());
+      setVisible(true);
     }
-    setAnchor(el.getBoundingClientRect());
-    setVisible(true);
   }
 
   useEffect(() => {
