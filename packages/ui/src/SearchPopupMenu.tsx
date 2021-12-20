@@ -190,7 +190,12 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
   }
 
   return (
-    <Popup visible={props.visible} x={props.x} y={props.y} autoClose={true} onClose={props.onClose}>
+    <Popup
+      visible={props.visible}
+      anchor={{ left: props.x, right: props.x, top: props.y, bottom: props.y } as DOMRectReadOnly}
+      autoClose={true}
+      onClose={props.onClose}
+    >
       <MenuItem onClick={() => sort(false)}>{getAscSortString(propertyType)}</MenuItem>
       <MenuItem onClick={() => sort(true)}>{getDescSortString(propertyType)}</MenuItem>
       <MenuSeparator />

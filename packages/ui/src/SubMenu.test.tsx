@@ -15,7 +15,11 @@ const medplum = new MedplumClient({
 });
 
 const setup = (children: React.ReactNode) => {
-  return render(<MedplumProvider medplum={medplum}>{children}</MedplumProvider>);
+  return render(
+    <MemoryRouter>
+      <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
+    </MemoryRouter>
+  );
 };
 
 describe('SubMenu', () => {
@@ -32,13 +36,11 @@ describe('SubMenu', () => {
 
   test('Renders', async () => {
     setup(
-      <MemoryRouter>
-        <SubMenu title="SubMenu Test">
-          <MenuItem onClick={() => undefined}>MenuItem Test</MenuItem>
-          <MenuSeparator />
-          <MenuItem onClick={() => undefined}>2nd Item Test</MenuItem>
-        </SubMenu>
-      </MemoryRouter>
+      <SubMenu title="SubMenu Test">
+        <MenuItem onClick={() => undefined}>MenuItem Test</MenuItem>
+        <MenuSeparator />
+        <MenuItem onClick={() => undefined}>2nd Item Test</MenuItem>
+      </SubMenu>
     );
 
     expect(screen.getByText('SubMenu Test')).toBeDefined();
@@ -49,13 +51,11 @@ describe('SubMenu', () => {
     const onClick = jest.fn();
 
     setup(
-      <MemoryRouter>
-        <SubMenu title="SubMenu Test">
-          <MenuItem onClick={onClick}>MenuItem Test</MenuItem>
-          <MenuSeparator />
-          <MenuItem onClick={() => undefined}>2nd Item Test</MenuItem>
-        </SubMenu>
-      </MemoryRouter>
+      <SubMenu title="SubMenu Test">
+        <MenuItem onClick={onClick}>MenuItem Test</MenuItem>
+        <MenuSeparator />
+        <MenuItem onClick={() => undefined}>2nd Item Test</MenuItem>
+      </SubMenu>
     );
 
     expect(screen.getByText('SubMenu Test')).toBeDefined();
@@ -76,13 +76,11 @@ describe('SubMenu', () => {
 
   test('Opens on hover', async () => {
     setup(
-      <MemoryRouter>
-        <SubMenu title="SubMenu Test">
-          <MenuItem onClick={jest.fn()}>MenuItem Test</MenuItem>
-          <MenuSeparator />
-          <MenuItem onClick={jest.fn()}>2nd Item Test</MenuItem>
-        </SubMenu>
-      </MemoryRouter>
+      <SubMenu title="SubMenu Test">
+        <MenuItem onClick={jest.fn()}>MenuItem Test</MenuItem>
+        <MenuSeparator />
+        <MenuItem onClick={jest.fn()}>2nd Item Test</MenuItem>
+      </SubMenu>
     );
 
     expect(screen.getByText('SubMenu Test')).toBeDefined();
@@ -112,6 +110,29 @@ describe('SubMenu', () => {
 
     await act(async () => {
       await waitFor(async () => expect(screen.getByTestId('popup').style.display).toEqual('none'));
+    });
+
+    expect(screen.getByTestId('popup').style.display).toEqual('none');
+  });
+
+  test('Close when click outside of popup', async () => {
+    setup(
+      <SubMenu title="Parent">
+        <MenuItem onClick={() => undefined}>Child</MenuItem>
+      </SubMenu>
+    );
+
+    expect(screen.getByText('Parent')).toBeInTheDocument();
+    expect(screen.getByTestId('popup').style.display).toEqual('none');
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Parent'));
+    });
+
+    expect(screen.getByTestId('popup').style.display).toEqual('block');
+
+    await act(async () => {
+      fireEvent.click(document.body);
     });
 
     expect(screen.getByTestId('popup').style.display).toEqual('none');

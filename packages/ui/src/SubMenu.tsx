@@ -10,7 +10,7 @@ export interface SubMenuProps {
 export function SubMenu(props: SubMenuProps): JSX.Element {
   const [hover, setHover] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [x, setX] = useState(0);
+  const [anchor, setAnchor] = useState<DOMRectReadOnly | undefined>(undefined);
   const menuItemRef = useRef<HTMLDivElement>(null);
 
   const hoverRef = useRef<boolean>(false);
@@ -21,19 +21,10 @@ export function SubMenu(props: SubMenuProps): JSX.Element {
 
   function show() {
     const el = menuItemRef.current;
-    if (!el) {
-      return;
+    if (el) {
+      setAnchor(el.getBoundingClientRect());
+      setVisible(true);
     }
-
-    const rect = el.getBoundingClientRect();
-    let x2 = 0;
-
-    if (rect.right + 250 < window.innerWidth) {
-      x2 = rect.width;
-    }
-
-    setVisible(true);
-    setX(x2);
   }
 
   useEffect(() => {
@@ -57,7 +48,7 @@ export function SubMenu(props: SubMenuProps): JSX.Element {
     >
       {props.title}
       <span className="medplum-submenu-arrow">{'\u25BA'}</span>
-      <Popup visible={visible} x={x} y={0} autoClose={true} onClose={() => setVisible(false)}>
+      <Popup visible={visible} anchor={anchor} autoClose={true} onClose={() => setVisible(false)}>
         {props.children}
       </Popup>
     </div>

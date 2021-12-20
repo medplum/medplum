@@ -1,7 +1,3 @@
-.medplum-submenu-item {
-  position: relative;
-}
-
 .medplum-submenu-arrow {
   color: var(--medplum-foreground);
   left: auto;

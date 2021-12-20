@@ -4,8 +4,7 @@ import './Popup.css';
 
 interface PopupProps {
   visible: boolean;
-  x?: number;
-  y?: number;
+  anchor?: DOMRectReadOnly;
   modal?: boolean;
   autoClose?: boolean;
   onClose: () => void;
@@ -17,7 +16,7 @@ interface PopupProps {
 export function Popup(props: PopupProps) {
   const ref = useRef<HTMLDivElement>(null);
 
-  // Track location, and the location when the popup becomes visible
+  // Track browser URL location, and the location when the popup becomes visible
   const location = useLocation();
   const locationRef = useRef<Location>();
   if (props.visible) {
@@ -61,20 +60,17 @@ export function Popup(props: PopupProps) {
     display: props.visible ? 'block' : 'none',
   };
 
-  if (props.x !== undefined && props.y !== undefined) {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-
-    if (props.x > width - 250) {
-      style.right = width - props.x + 'px';
+  if (props.anchor) {
+    if (props.anchor.right + 250 < window.innerWidth) {
+      style.left = props.anchor.right + 'px';
     } else {
-      style.left = props.x + 'px';
+      style.right = window.innerWidth - props.anchor.left + 'px';
     }
 
-    if (props.y > height - 300) {
-      style.bottom = height - props.y + 'px';
+    if (props.anchor.top + 300 < window.innerHeight) {
+      style.top = props.anchor.top + 'px';
     } else {
-      style.top = props.y + 'px';
+      style.bottom = window.innerHeight - props.anchor.top + 'px';
     }
   }
 

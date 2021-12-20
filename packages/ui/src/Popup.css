@@ -1,5 +1,5 @@
 .medplum-popup {
-  position: absolute;
+  position: fixed;
   background: var(--medplum-surface);
   cursor: default;
   margin: 0;
