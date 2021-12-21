@@ -5,6 +5,7 @@ import {
   Attachment,
   CodeableConcept,
   ContactPoint,
+  ElementDefinition,
   HumanName,
   Identifier,
   Quantity,
@@ -14,7 +15,7 @@ import {
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
+import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 const schema: IndexedStructureDefinition = {
   types: {
@@ -893,7 +894,7 @@ describe('ResourcePropertyDisplay', () => {
     );
   });
 
-  test('Renders boolean', () => {
+  test('Renders boolean true', () => {
     render(
       <ResourcePropertyDisplay
         schema={schema}
@@ -903,6 +904,33 @@ describe('ResourcePropertyDisplay', () => {
       />
     );
     expect(screen.getByText('true')).toBeDefined();
+    expect(screen.queryByText('false')).toBeNull();
+  });
+
+  test('Renders boolean false', () => {
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={schema.types.Observation.properties['value[x]']}
+        propertyType={PropertyType.boolean}
+        value={false}
+      />
+    );
+    expect(screen.getByText('false')).toBeDefined();
+    expect(screen.queryByText('true')).toBeNull();
+  });
+
+  test('Renders boolean undefined', () => {
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={schema.types.Observation.properties['value[x]']}
+        propertyType={PropertyType.boolean}
+        value={undefined}
+      />
+    );
+    expect(screen.queryByText('true')).toBeNull();
+    expect(screen.queryByText('false')).toBeNull();
   });
 
   test('Renders string', () => {
@@ -1181,5 +1209,16 @@ describe('ResourcePropertyDisplay', () => {
     );
 
     expect(screen.getByText(value.endpoint as string)).toBeDefined();
+  });
+
+  test('getValueAndType', () => {
+    expect(getValueAndType(null, {} as ElementDefinition)[0]).toBeUndefined();
+    expect(getValueAndType({}, {} as ElementDefinition)[0]).toBeUndefined();
+    expect(getValueAndType({}, { path: '' } as ElementDefinition)[0]).toBeUndefined();
+    expect(getValueAndType({}, { path: 'x' } as ElementDefinition)[0]).toBeUndefined();
+    expect(getValueAndType({}, { path: 'x', type: [] } as ElementDefinition)[0]).toBeUndefined();
+    expect(
+      getValueAndType({}, { path: 'x', type: [{ code: 'foo' }, { code: 'bar' }] } as ElementDefinition)[0]
+    ).toBeUndefined();
   });
 });
