@@ -467,7 +467,7 @@ export function renderValue(
     return new Date(resource.meta?.lastUpdated as string).toLocaleString('en-US');
   }
 
-  const property = schema.types[resource.resourceType].properties[key];
+  const property = schema.types[resource.resourceType]?.properties?.[key];
   if (!property) {
     return null;
   }
