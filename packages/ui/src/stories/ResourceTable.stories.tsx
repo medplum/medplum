@@ -19,3 +19,12 @@ export const Observation = () => (
     <ResourceTable value={{ reference: `Observation/${process.env.SAMPLE_OBSERVATION_ID}` }} />
   </Document>
 );
+
+export const ObservationIgnoreEmpty = () => (
+  <Document>
+    <ResourceTable
+      value={{ reference: `Observation/${process.env.SAMPLE_OBSERVATION_ID}` }}
+      ignoreMissingValues={true}
+    />
+  </Document>
+);

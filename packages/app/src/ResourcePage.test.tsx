@@ -47,6 +47,23 @@ const practitionerStructureBundle: Bundle = {
                 },
               ],
             },
+            {
+              path: 'Practitioner.name',
+              type: [
+                {
+                  code: 'HumanName',
+                },
+              ],
+              max: '*',
+            },
+            {
+              path: 'Practitioner.gender',
+              type: [
+                {
+                  code: 'code',
+                },
+              ],
+            },
           ],
         },
       },
@@ -206,10 +223,10 @@ describe('ResourcePage', () => {
     setup('/Practitioner/123');
 
     await act(async () => {
-      await waitFor(() => screen.getByText('Resource Type'));
+      await waitFor(() => screen.getByText('Name'));
     });
 
-    expect(screen.getByText('Resource Type')).toBeInTheDocument();
+    expect(screen.getByText('Name')).toBeInTheDocument();
   });
 
   test('Edit tab renders', async () => {

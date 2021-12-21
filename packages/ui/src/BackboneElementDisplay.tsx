@@ -1,14 +1,15 @@
-import { buildTypeName, getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/core';
-import { ElementDefinition } from '@medplum/fhirtypes';
+import { getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/core';
 import React from 'react';
 import { DEFAULT_IGNORED_PROPERTIES } from './constants';
 import { DescriptionList, DescriptionListEntry } from './DescriptionList';
-import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
+import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 export interface BackboneElementDisplayProps {
   schema: IndexedStructureDefinition;
-  property: ElementDefinition;
+  typeName: string;
   value?: any;
+  compact?: boolean;
+  ignoreMissingValues?: boolean;
 }
 
 export function BackboneElementDisplay(props: BackboneElementDisplayProps) {
@@ -17,23 +18,43 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps) {
     return null;
   }
 
-  const typeName = buildTypeName(props.property.path?.split('.') as string[]);
+  const typeName = props.typeName;
   const typeSchema = props.schema.types[typeName];
   if (!typeSchema) {
     return <div>Schema not found</div>;
   }
 
+  if (typeof value === 'object' && 'name' in value && Object.keys(value).length === 1) {
+    // Special case for common BackboneElement pattern
+    // Where there is an object with a single property 'name'
+    // Just display the name value.
+    return <div>{value.name}</div>;
+  }
+
   return (
-    <DescriptionList>
+    <DescriptionList compact={props.compact}>
       {Object.entries(typeSchema.properties).map((entry) => {
         const key = entry[0];
         if (DEFAULT_IGNORED_PROPERTIES.indexOf(key) >= 0) {
           return null;
         }
         const property = entry[1];
+        const [propertyValue, propertyType] = getValueAndType(value, property);
+        if (
+          props.ignoreMissingValues &&
+          (!propertyValue || (Array.isArray(propertyValue) && propertyValue.length === 0))
+        ) {
+          return null;
+        }
         return (
           <DescriptionListEntry key={key} term={getPropertyDisplayName(property)}>
-            <ResourcePropertyDisplay schema={props.schema} property={property} value={value[key]} />
+            <ResourcePropertyDisplay
+              schema={props.schema}
+              property={property}
+              propertyType={propertyType}
+              value={propertyValue}
+              ignoreMissingValues={props.ignoreMissingValues}
+            />
           </DescriptionListEntry>
         );
       })}

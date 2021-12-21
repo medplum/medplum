@@ -77,7 +77,7 @@ describe('BackboneElementDisplay', () => {
   test('Renders null', () => {
     setup({
       schema,
-      property: contactProperty,
+      typeName: 'PatientContact',
       value: null,
     });
   });
@@ -85,7 +85,7 @@ describe('BackboneElementDisplay', () => {
   test('Renders value', () => {
     setup({
       schema,
-      property: contactProperty,
+      typeName: 'PatientContact',
       value: {
         id: '123',
         name: {

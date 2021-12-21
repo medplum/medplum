@@ -7,7 +7,7 @@ import { useMedplum } from './MedplumProvider';
 import { SearchFieldEditor } from './SearchFieldEditor';
 import { SearchFilterEditor } from './SearchFilterEditor';
 import { SearchPopupMenu } from './SearchPopupMenu';
-import { buildFieldNameString, getFilterValueString, getValue, movePage, renderValue } from './SearchUtils';
+import { buildFieldNameString, getFilterValueString, movePage, renderValue } from './SearchUtils';
 import { TitleBar } from './TitleBar';
 import { killEvent } from './utils/dom';
 import './SearchControl.css';
@@ -346,9 +346,7 @@ export function SearchControl(props: SearchControlProps) {
                     </td>
                   )}
                   {fields.map((field) => (
-                    <td key={field}>
-                      {renderValue(schema, props.search.resourceType, field, getValue(resource, field))}
-                    </td>
+                    <td key={field}>{renderValue(schema, resource, field)}</td>
                   ))}
                 </tr>
               )

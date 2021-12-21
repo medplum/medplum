@@ -8,3 +8,13 @@ dl.medplum-description-list dd {
   padding: 16px 8px;
   border-top: 0.1px solid var(--medplum-gray-300);
 }
+
+dl.medplum-description-list.compact {
+  grid-template-columns: 20% 80%;
+}
+
+dl.medplum-description-list.compact dt,
+dl.medplum-description-list.compact dd {
+  padding: 0 4px 4px 0;
+  border: 0;
+}

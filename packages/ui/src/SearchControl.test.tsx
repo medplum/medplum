@@ -21,6 +21,7 @@ const patientStructure: StructureDefinition = {
             code: 'HumanName',
           },
         ],
+        max: '*',
       },
     ],
   },
@@ -58,6 +59,9 @@ const aliceSearchBundle: Bundle = {
       resource: {
         resourceType: 'Patient',
         id: '123',
+        meta: {
+          lastUpdated: '2021-12-12T12:12:12',
+        },
         name: [
           {
             given: ['Alice'],
@@ -75,18 +79,114 @@ const emptySearchBundle: Bundle = {
   entry: [],
 };
 
+const observationStructure: StructureDefinition = {
+  resourceType: 'StructureDefinition',
+  id: '888',
+  name: 'Observation',
+  snapshot: {
+    element: [
+      {
+        path: 'Observation.value[x]',
+        min: 0,
+        max: '1',
+        type: [
+          {
+            code: 'Quantity',
+          },
+          {
+            code: 'CodeableConcept',
+          },
+          {
+            code: 'string',
+          },
+          {
+            code: 'boolean',
+          },
+          {
+            code: 'integer',
+          },
+          {
+            code: 'Range',
+          },
+          {
+            code: 'Ratio',
+          },
+          {
+            code: 'SampledData',
+          },
+          {
+            code: 'time',
+          },
+          {
+            code: 'dateTime',
+          },
+          {
+            code: 'Period',
+          },
+        ],
+      },
+    ],
+  },
+};
+
+const observationSearchParams: Bundle = {
+  resourceType: 'Bundle',
+  entry: [],
+};
+
+const observationStructureBundle: Bundle = {
+  resourceType: 'Bundle',
+  entry: [
+    {
+      resource: observationStructure,
+    },
+  ],
+};
+
+const observationSearchBundle: Bundle = {
+  resourceType: 'Bundle',
+  total: 1,
+  entry: [
+    {
+      resource: {
+        resourceType: 'Observation',
+        id: '123',
+        meta: {
+          lastUpdated: '2021-12-12T12:12:12',
+        },
+        valueQuantity: {
+          value: 123,
+          unit: 'kg',
+        },
+      },
+    },
+  ],
+};
+
 const medplum = new MockClient({
   'fhir/R4/StructureDefinition?name:exact=Patient': {
     GET: patientStructureBundle,
   },
+  'fhir/R4/StructureDefinition?name:exact=Observation': {
+    GET: observationStructureBundle,
+  },
   'fhir/R4/SearchParameter?_count=100&base=Patient': {
     GET: patientSearchParams,
+  },
+  'fhir/R4/SearchParameter?_count=100&base=Observation': {
+    GET: observationSearchParams,
   },
   'fhir/R4/Patient?name=Alice': {
     GET: aliceSearchBundle,
   },
+  'fhir/R4/Patient?_fields=id,_lastUpdated,name&name=Alice': {
+    GET: aliceSearchBundle,
+  },
   'fhir/R4/Patient?name=Bob': {
     GET: emptySearchBundle,
+  },
+  'fhir/R4/Observation?_fields=value[x]': {
+    GET: observationSearchBundle,
   },
 });
 
@@ -101,7 +201,7 @@ describe('SearchControl', () => {
     );
   };
 
-  test('Renders', async () => {
+  test('Renders results', async () => {
     const props = {
       search: {
         resourceType: 'Patient',
@@ -112,6 +212,7 @@ describe('SearchControl', () => {
             value: 'Alice',
           },
         ],
+        fields: ['id', '_lastUpdated', 'name'],
       },
       onLoad: jest.fn(),
     };
@@ -125,6 +226,7 @@ describe('SearchControl', () => {
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
     expect(props.onLoad).toBeCalled();
+    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
   });
 
   test('Renders empty results', async () => {
@@ -153,6 +255,27 @@ describe('SearchControl', () => {
     expect(props.onLoad).toBeCalled();
   });
 
+  test('Renders choice of type', async () => {
+    const props = {
+      search: {
+        resourceType: 'Observation',
+        fields: ['value[x]'],
+      },
+      onLoad: jest.fn(),
+    };
+
+    setup(props);
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    const control = screen.getByTestId('search-control');
+    expect(control).toBeDefined();
+    expect(props.onLoad).toBeCalled();
+    expect(screen.getByText('123 kg')).toBeInTheDocument();
+  });
+
   test('Renders with checkboxes', async () => {
     const props = {
       search: {
@@ -164,6 +287,7 @@ describe('SearchControl', () => {
             value: 'Alice',
           },
         ],
+        fields: ['id', '_lastUpdated', 'name'],
       },
       onLoad: jest.fn(),
       checkboxesEnabled: true,

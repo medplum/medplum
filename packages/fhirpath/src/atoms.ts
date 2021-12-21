@@ -59,11 +59,9 @@ export class SymbolAtom implements Atom {
         if (this.name in e) {
           return e[this.name];
         }
-        if (this.name === 'value') {
-          const valuePropertyName = Object.keys(e).find((k) => k.startsWith('value'));
-          if (valuePropertyName) {
-            return e[valuePropertyName];
-          }
+        const propertyName = Object.keys(e).find((k) => k.startsWith(this.name));
+        if (propertyName) {
+          return e[propertyName];
         }
       }
       return undefined;
