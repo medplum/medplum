@@ -1,7 +1,7 @@
 import { IndexedStructureDefinition, PropertyType } from '@medplum/core';
 import { ElementDefinition } from '@medplum/fhirtypes';
 import React from 'react';
-import { ElementDisplay } from './ResourcePropertyDisplay';
+import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 interface ResourceArrayDisplayProps {
   schema: IndexedStructureDefinition;
@@ -18,8 +18,9 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps) {
   return (
     <>
       {values.map((v: any, index: number) => (
-        <ElementDisplay
+        <ResourcePropertyDisplay
           key={`${index}-${values.length}`}
+          arrayElement={true}
           schema={props.schema}
           property={property}
           propertyType={propertyType}

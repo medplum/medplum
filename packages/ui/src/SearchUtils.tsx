@@ -1,7 +1,7 @@
 import { Filter, getPropertyDisplayName, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import React from 'react';
-import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
+import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 /**
  * Sets the array of filters.
@@ -467,12 +467,22 @@ export function renderValue(
     return new Date(resource.meta?.lastUpdated as string).toLocaleString('en-US');
   }
 
+  const property = schema.types[resource.resourceType].properties[key];
+  if (!property) {
+    return null;
+  }
+
+  const [value, propertyType] = getValueAndType(resource, property);
+  if (!value) {
+    return null;
+  }
+
   return (
     <ResourcePropertyDisplay
       schema={schema}
-      typeName={resource.resourceType}
-      propertyName={key}
-      context={resource}
+      property={property}
+      propertyType={propertyType}
+      value={value}
       maxWidth={200}
       ignoreMissingValues={true}
     />

@@ -2,7 +2,7 @@ import { getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/cor
 import React from 'react';
 import { DEFAULT_IGNORED_PROPERTIES } from './constants';
 import { DescriptionList, DescriptionListEntry } from './DescriptionList';
-import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
+import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 export interface BackboneElementDisplayProps {
   schema: IndexedStructureDefinition;
@@ -15,11 +15,6 @@ export interface BackboneElementDisplayProps {
 export function BackboneElementDisplay(props: BackboneElementDisplayProps) {
   const value = props.value;
   if (!value) {
-    return null;
-  }
-
-  if (!props.schema) {
-    console.log('no schema?', props);
     return null;
   }
 
@@ -44,13 +39,20 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps) {
           return null;
         }
         const property = entry[1];
+        const [propertyValue, propertyType] = getValueAndType(value, property);
+        if (
+          props.ignoreMissingValues &&
+          (!propertyValue || (Array.isArray(propertyValue) && propertyValue.length === 0))
+        ) {
+          return null;
+        }
         return (
           <DescriptionListEntry key={key} term={getPropertyDisplayName(property)}>
             <ResourcePropertyDisplay
               schema={props.schema}
-              typeName={typeName}
-              propertyName={key}
-              context={value}
+              property={property}
+              propertyType={propertyType}
+              value={propertyValue}
               ignoreMissingValues={props.ignoreMissingValues}
             />
           </DescriptionListEntry>

@@ -15,25 +15,16 @@ import { ResourceArrayDisplay } from './ResourceArrayDisplay';
 
 export interface ResourcePropertyDisplayProps {
   schema: IndexedStructureDefinition;
-  context: any;
-  typeName: string;
-  propertyName: string;
+  property: ElementDefinition;
+  propertyType: PropertyType;
+  value: any;
   arrayElement?: boolean;
   maxWidth?: number;
   ignoreMissingValues?: boolean;
 }
 
 export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
-  const property = props.schema.types[props.typeName]?.properties?.[props.propertyName];
-  if (!property) {
-    return null;
-  }
-
-  const [value, propertyType] = getValueAndType(props.context, property);
-
-  if (props.ignoreMissingValues && (!value || (Array.isArray(value) && value.length === 0))) {
-    return null;
-  }
+  const { property, propertyType, value } = props;
 
   if (property.max === '*' && !props.arrayElement) {
     if (propertyType === 'Attachment') {
@@ -49,29 +40,6 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
     );
   }
 
-  return (
-    <ElementDisplay
-      schema={props.schema}
-      property={property}
-      value={value}
-      propertyType={propertyType}
-      maxWidth={props.maxWidth}
-      ignoreMissingValues={props.ignoreMissingValues}
-    />
-  );
-}
-
-export interface ElementDisplayProps {
-  schema: IndexedStructureDefinition;
-  property: ElementDefinition;
-  propertyType: PropertyType;
-  value: any;
-  maxWidth?: number;
-  ignoreMissingValues?: boolean;
-}
-
-export function ElementDisplay(props: ElementDisplayProps) {
-  const { property, propertyType, value } = props;
   switch (propertyType) {
     case PropertyType.boolean:
       return <div>{value === undefined ? '' : Boolean(value).toString()}</div>;
@@ -121,7 +89,7 @@ export function ElementDisplay(props: ElementDisplayProps) {
   }
 }
 
-function getValueAndType(context: any, property: ElementDefinition): [any, PropertyType] {
+export function getValueAndType(context: any, property: ElementDefinition): [any, PropertyType] {
   if (!context) {
     return [undefined, PropertyType.string];
   }

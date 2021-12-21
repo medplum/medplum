@@ -21,6 +21,7 @@ const patientStructure: StructureDefinition = {
             code: 'HumanName',
           },
         ],
+        max: '*',
       },
     ],
   },
@@ -58,6 +59,9 @@ const aliceSearchBundle: Bundle = {
       resource: {
         resourceType: 'Patient',
         id: '123',
+        meta: {
+          lastUpdated: '2021-12-12T12:12:12',
+        },
         name: [
           {
             given: ['Alice'],
@@ -85,6 +89,9 @@ const medplum = new MockClient({
   'fhir/R4/Patient?name=Alice': {
     GET: aliceSearchBundle,
   },
+  'fhir/R4/Patient?_fields=id,_lastUpdated,name&name=Alice': {
+    GET: aliceSearchBundle,
+  },
   'fhir/R4/Patient?name=Bob': {
     GET: emptySearchBundle,
   },
@@ -101,7 +108,7 @@ describe('SearchControl', () => {
     );
   };
 
-  test('Renders', async () => {
+  test('Renders results', async () => {
     const props = {
       search: {
         resourceType: 'Patient',
@@ -112,6 +119,7 @@ describe('SearchControl', () => {
             value: 'Alice',
           },
         ],
+        fields: ['id', '_lastUpdated', 'name'],
       },
       onLoad: jest.fn(),
     };
@@ -125,6 +133,7 @@ describe('SearchControl', () => {
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
     expect(props.onLoad).toBeCalled();
+    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
   });
 
   test('Renders empty results', async () => {
@@ -164,6 +173,7 @@ describe('SearchControl', () => {
             value: 'Alice',
           },
         ],
+        fields: ['id', '_lastUpdated', 'name'],
       },
       onLoad: jest.fn(),
       checkboxesEnabled: true,

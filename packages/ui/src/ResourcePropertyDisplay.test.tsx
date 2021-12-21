@@ -7,17 +7,14 @@ import {
   ContactPoint,
   HumanName,
   Identifier,
-  Observation,
-  Patient,
   Quantity,
   Reference,
-  Subscription,
   SubscriptionChannel,
 } from '@medplum/fhirtypes';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { ElementDisplay, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
+import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 const schema: IndexedStructureDefinition = {
   types: {
@@ -889,160 +886,18 @@ describe('ResourcePropertyDisplay', () => {
     render(
       <ResourcePropertyDisplay
         schema={schema}
-        typeName="Observation"
-        propertyName="value[x]"
-        context={{ value: null }}
-      />
-    );
-  });
-
-  test('Renders null context', () => {
-    render(
-      <ResourcePropertyDisplay
-        schema={schema}
-        typeName="Observation"
-        propertyName="value[x]"
-        context={null as any as Observation}
-      />
-    );
-  });
-
-  test('Renders type not found', () => {
-    render(
-      <ResourcePropertyDisplay
-        schema={schema}
-        typeName="ObservationXYZ"
-        propertyName="value[x]"
-        context={{ value: null }}
-      />
-    );
-  });
-
-  test('Renders property not found', () => {
-    render(
-      <ResourcePropertyDisplay
-        schema={schema}
-        typeName="Observation"
-        propertyName="valueXyz"
-        context={{ value: null }}
-      />
-    );
-  });
-
-  test('Ignores missing values', () => {
-    render(
-      <ResourcePropertyDisplay
-        schema={schema}
-        typeName="Observation"
-        propertyName="value[x]"
-        context={{ value: null }}
-        ignoreMissingValues={true}
-      />
-    );
-  });
-
-  test('Renders boolean', () => {
-    render(
-      <ResourcePropertyDisplay
-        schema={schema}
-        typeName="Observation"
-        propertyName="value[x]"
-        context={{ valueBoolean: true }}
-      />
-    );
-    expect(screen.getByText('true')).toBeDefined();
-  });
-
-  test('Renders string', () => {
-    render(
-      <ResourcePropertyDisplay
-        schema={schema}
-        typeName="Observation"
-        propertyName="value[x]"
-        context={{ valueString: 'hello' }}
-      />
-    );
-    expect(screen.getByText('hello')).toBeDefined();
-  });
-
-  test('Renders CodeableConcept', () => {
-    render(
-      <ResourcePropertyDisplay
-        schema={schema}
-        typeName="Observation"
-        propertyName="value[x]"
-        context={{
-          valueCodeableConcept: {
-            text: 'foo',
-          },
-        }}
-      />
-    );
-
-    expect(screen.getByText('foo')).toBeDefined();
-  });
-
-  test('Renders string array', () => {
-    const subscription: Subscription = {
-      resourceType: 'Subscription',
-      channel: {
-        type: 'rest-hook',
-        header: ['hello', 'world'],
-      },
-    };
-
-    render(
-      <ResourcePropertyDisplay
-        schema={schema}
-        typeName="SubscriptionChannel"
-        propertyName="header"
-        context={subscription.channel}
-      />
-    );
-    expect(screen.getByText('hello')).toBeDefined();
-    expect(screen.getByText('world')).toBeDefined();
-  });
-
-  test('Renders Attachment array', () => {
-    const patient: Patient = {
-      resourceType: 'Patient',
-      photo: [
-        {
-          contentType: 'text/plain',
-          url: 'https://example.com/file.txt',
-          title: 'file.txt',
-        },
-        {
-          contentType: 'text/plain',
-          url: 'https://example.com/file2.txt',
-          title: 'file2.txt',
-        },
-      ],
-    };
-
-    render(<ResourcePropertyDisplay schema={schema} typeName="Patient" propertyName="photo" context={patient} />);
-    expect(screen.getByText('file.txt')).toBeDefined();
-    expect(screen.getByText('file2.txt')).toBeDefined();
-  });
-});
-
-describe('ElementDisplay', () => {
-  test('Renders null value', () => {
-    render(
-      <ElementDisplay
-        schema={schema}
-        property={{ type: [{ code: 'string' }] }}
+        property={schema.types.Observation.properties['value[x]']}
         propertyType={PropertyType.string}
-        value=""
+        value={null}
       />
     );
   });
 
   test('Renders boolean', () => {
     render(
-      <ElementDisplay
+      <ResourcePropertyDisplay
         schema={schema}
-        property={{ type: [{ code: 'boolean' }] }}
+        property={schema.types.Observation.properties['value[x]']}
         propertyType={PropertyType.boolean}
         value={true}
       />
@@ -1052,11 +907,11 @@ describe('ElementDisplay', () => {
 
   test('Renders string', () => {
     render(
-      <ElementDisplay
+      <ResourcePropertyDisplay
         schema={schema}
-        property={{ type: [{ code: 'string' }] }}
+        property={schema.types.Observation.properties['value[x]']}
         propertyType={PropertyType.string}
-        value="hello"
+        value={'hello'}
       />
     );
     expect(screen.getByText('hello')).toBeDefined();
@@ -1064,7 +919,7 @@ describe('ElementDisplay', () => {
 
   test('Renders canonical', () => {
     render(
-      <ElementDisplay
+      <ResourcePropertyDisplay
         schema={schema}
         property={{ type: [{ code: 'canonical' }] }}
         propertyType={PropertyType.canonical}
@@ -1076,7 +931,7 @@ describe('ElementDisplay', () => {
 
   test('Renders url', () => {
     render(
-      <ElementDisplay
+      <ResourcePropertyDisplay
         schema={schema}
         property={{ type: [{ code: 'url' }] }}
         propertyType={PropertyType.url}
@@ -1088,7 +943,7 @@ describe('ElementDisplay', () => {
 
   test('Renders uri', () => {
     render(
-      <ElementDisplay
+      <ResourcePropertyDisplay
         schema={schema}
         property={{ type: [{ code: 'uri' }] }}
         propertyType={PropertyType.uri}
@@ -1098,9 +953,22 @@ describe('ElementDisplay', () => {
     expect(screen.getByText('https://example.com')).toBeDefined();
   });
 
+  test('Renders string array', () => {
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={schema.types.SubscriptionChannel.properties.header}
+        propertyType={PropertyType.string}
+        value={['hello', 'world']}
+      />
+    );
+    expect(screen.getByText('hello')).toBeDefined();
+    expect(screen.getByText('world')).toBeDefined();
+  });
+
   test('Renders markdown', () => {
     render(
-      <ElementDisplay
+      <ResourcePropertyDisplay
         schema={schema}
         property={{ type: [{ code: 'markdown' }] }}
         propertyType={PropertyType.markdown}
@@ -1116,7 +984,7 @@ describe('ElementDisplay', () => {
     };
 
     render(
-      <ElementDisplay
+      <ResourcePropertyDisplay
         schema={schema}
         property={{ type: [{ code: 'Address' }] }}
         propertyType={PropertyType.Address}
@@ -1133,7 +1001,7 @@ describe('ElementDisplay', () => {
     };
 
     render(
-      <ElementDisplay
+      <ResourcePropertyDisplay
         schema={schema}
         property={{ type: [{ code: 'Annotation' }] }}
         propertyType={PropertyType.Annotation}
@@ -1152,7 +1020,7 @@ describe('ElementDisplay', () => {
     };
 
     render(
-      <ElementDisplay
+      <ResourcePropertyDisplay
         schema={schema}
         property={{ type: [{ code: 'Attachment' }] }}
         propertyType={PropertyType.Attachment}
@@ -1163,15 +1031,41 @@ describe('ElementDisplay', () => {
     expect(screen.getByText('file.txt')).toBeDefined();
   });
 
+  test('Renders Attachment array', () => {
+    const value: Attachment[] = [
+      {
+        contentType: 'text/plain',
+        url: 'https://example.com/file.txt',
+        title: 'file.txt',
+      },
+      {
+        contentType: 'text/plain',
+        url: 'https://example.com/file2.txt',
+        title: 'file2.txt',
+      },
+    ];
+
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={schema.types.Patient.properties.photo}
+        propertyType={PropertyType.Attachment}
+        value={value}
+      />
+    );
+    expect(screen.getByText('file.txt')).toBeDefined();
+    expect(screen.getByText('file2.txt')).toBeDefined();
+  });
+
   test('Renders CodeableConcept', () => {
     const value: CodeableConcept = {
       text: 'foo',
     };
 
     render(
-      <ElementDisplay
+      <ResourcePropertyDisplay
         schema={schema}
-        property={{ type: [{ code: 'CodeableConcept' }] }}
+        property={schema.types.Observation.properties['value[x]']}
         propertyType={PropertyType.CodeableConcept}
         value={value}
       />
@@ -1187,7 +1081,7 @@ describe('ElementDisplay', () => {
     };
 
     render(
-      <ElementDisplay
+      <ResourcePropertyDisplay
         schema={schema}
         property={{ type: [{ code: 'ContactPoint' }] }}
         propertyType={PropertyType.ContactPoint}
@@ -1204,7 +1098,7 @@ describe('ElementDisplay', () => {
     };
 
     render(
-      <ElementDisplay
+      <ResourcePropertyDisplay
         schema={schema}
         property={{ type: [{ code: 'HumanName' }] }}
         propertyType={PropertyType.HumanName}
@@ -1222,7 +1116,7 @@ describe('ElementDisplay', () => {
     };
 
     render(
-      <ElementDisplay
+      <ResourcePropertyDisplay
         schema={schema}
         property={{ type: [{ code: 'Identifier' }] }}
         propertyType={PropertyType.Identifier}
@@ -1240,7 +1134,7 @@ describe('ElementDisplay', () => {
     };
 
     render(
-      <ElementDisplay
+      <ResourcePropertyDisplay
         schema={schema}
         property={{ type: [{ code: 'Quantity' }] }}
         propertyType={PropertyType.Quantity}
@@ -1259,7 +1153,7 @@ describe('ElementDisplay', () => {
 
     render(
       <MemoryRouter>
-        <ElementDisplay
+        <ResourcePropertyDisplay
           schema={schema}
           property={{ type: [{ code: 'Reference' }] }}
           propertyType={PropertyType.Reference}
@@ -1278,7 +1172,7 @@ describe('ElementDisplay', () => {
     };
 
     render(
-      <ElementDisplay
+      <ResourcePropertyDisplay
         schema={schema}
         property={{ path: 'Subscription.channel', type: [{ code: 'BackboneElement' }] }}
         propertyType={PropertyType.BackboneElement}
