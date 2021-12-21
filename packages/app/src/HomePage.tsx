@@ -105,6 +105,15 @@ export function getDefaultSearchForResourceType(resourceType: string): SearchReq
     case 'Condition':
       fields.push('subject', 'code', 'clinicalStatus');
       break;
+    case 'Device':
+      fields.push('manufacturer', 'deviceName', 'patient');
+      break;
+    case 'DeviceDefinition':
+      fields.push('manufacturer[x]', 'deviceName');
+      break;
+    case 'DeviceRequest':
+      fields.push('code[x]', 'subject');
+      break;
     case 'DiagnosticReport':
     case 'Observation':
       fields.push('subject', 'code', 'status');

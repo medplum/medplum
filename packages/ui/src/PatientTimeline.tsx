@@ -45,6 +45,18 @@ export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
               url: `DiagnosticReport?subject=${getReferenceString(resource)}`,
             },
           },
+          {
+            request: {
+              method: 'GET',
+              url: `Device?subject=${getReferenceString(resource)}`,
+            },
+          },
+          {
+            request: {
+              method: 'GET',
+              url: `DeviceRequest?patient=${getReferenceString(resource)}`,
+            },
+          },
         ],
       })}
       createCommunication={(resource: Patient, sender: ProfileResource, text: string) => ({
