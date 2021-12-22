@@ -1,5 +1,5 @@
 import { Patient } from '@medplum/fhirtypes';
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { Avatar, AvatarProps } from './Avatar';
@@ -40,46 +40,51 @@ describe('Avatar', () => {
     );
   };
 
+  test('Avatar renders image', () => {
+    setup({ src: 'https://example.com/profile.jpg', alt: 'Profile' });
+    expect((screen.getByAltText('Profile') as HTMLImageElement).src).toEqual('https://example.com/profile.jpg');
+  });
+
   test('Avatar renders system', () => {
-    const utils = setup({ value: { reference: 'system' } });
-    expect(utils.getByText('S')).toBeDefined();
+    setup({ value: { reference: 'system' } });
+    expect(screen.getByText('S')).toBeDefined();
   });
 
   test('Avatar renders initials', () => {
-    const utils = setup({ alt: 'Alice Smith' });
-    expect(utils.getByTestId('avatar')).toBeDefined();
+    setup({ alt: 'Alice Smith' });
+    expect(screen.getByTestId('avatar')).toBeDefined();
   });
 
   test('Avatar renders resource directly', async () => {
-    const utils = setup({
+    setup({
       value: patient,
     });
 
-    await waitFor(() => utils.getByTestId('avatar'));
+    await waitFor(() => screen.getByTestId('avatar'));
 
-    expect(utils.getByTestId('avatar')).toBeDefined();
+    expect(screen.getByTestId('avatar')).toBeDefined();
   });
 
   test('Avatar renders resource directly as link', async () => {
-    const utils = setup({
+    setup({
       value: patient,
       link: true,
     });
 
-    await waitFor(() => utils.getByTestId('avatar'));
+    await waitFor(() => screen.getByTestId('avatar'));
 
-    expect(utils.getByTestId('avatar')).toBeDefined();
+    expect(screen.getByTestId('avatar')).toBeDefined();
   });
 
   test('Avatar renders after loading the resource', async () => {
-    const utils = setup({
+    setup({
       value: {
         reference: 'Patient/' + patient.id,
       },
     });
 
-    await waitFor(() => utils.getByTestId('avatar'));
+    await waitFor(() => screen.getByTestId('avatar'));
 
-    expect(utils.getByTestId('avatar')).toBeDefined();
+    expect(screen.getByTestId('avatar')).toBeDefined();
   });
 });

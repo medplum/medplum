@@ -19,7 +19,7 @@ export function Avatar(props: AvatarProps) {
   const className = props.size ? 'medplum-avatar ' + props.size : 'medplum-avatar';
   const text = resource ? getDisplayString(resource) : props.alt ?? '';
   const initials = text && getInitials(text);
-  const imageUrl = resource && getImageSrc(resource);
+  const imageUrl = (resource && getImageSrc(resource)) ?? props.src;
   const innerContent = imageUrl ? <img src={imageUrl} alt={text} /> : initials;
   return (
     <div className={className} style={{ backgroundColor: props.color }} data-testid="avatar">
