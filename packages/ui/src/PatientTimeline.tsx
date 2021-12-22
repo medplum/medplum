@@ -7,6 +7,16 @@ export interface PatientTimelineProps {
   patient: Patient | Reference<Patient>;
 }
 
+const searches = [
+  '$/_history',
+  'Communication?subject=$',
+  'Device?subject=$',
+  'DeviceRequest?patient=$',
+  'DiagnosticReport?subject=$',
+  'Media?subject=$',
+  'ServiceRequest?subject=$',
+];
+
 export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
   return (
     <ResourceTimeline
@@ -14,38 +24,12 @@ export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
       buildSearchRequests={(resource: Resource) => ({
         resourceType: 'Bundle',
         type: 'batch',
-        entry: [
-          {
-            request: {
-              method: 'GET',
-              url: `${getReferenceString(resource)}/_history`,
-            },
+        entry: searches.map((search) => ({
+          request: {
+            method: 'GET',
+            url: search.replace('$', getReferenceString(resource)),
           },
-          {
-            request: {
-              method: 'GET',
-              url: `Communication?subject=${getReferenceString(resource)}`,
-            },
-          },
-          {
-            request: {
-              method: 'GET',
-              url: `Media?subject=${getReferenceString(resource)}`,
-            },
-          },
-          {
-            request: {
-              method: 'GET',
-              url: `ServiceRequest?subject=${getReferenceString(resource)}`,
-            },
-          },
-          {
-            request: {
-              method: 'GET',
-              url: `DiagnosticReport?subject=${getReferenceString(resource)}`,
-            },
-          },
-        ],
+        })),
       })}
       createCommunication={(resource: Patient, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',

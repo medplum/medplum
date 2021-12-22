@@ -203,6 +203,32 @@ describe('HomePage', () => {
       'title',
       'status',
     ]);
+    expect(getDefaultSearchForResourceType('Condition').fields).toEqual([
+      'id',
+      '_lastUpdated',
+      'subject',
+      'code',
+      'clinicalStatus',
+    ]);
+    expect(getDefaultSearchForResourceType('Device').fields).toEqual([
+      'id',
+      '_lastUpdated',
+      'manufacturer',
+      'deviceName',
+      'patient',
+    ]);
+    expect(getDefaultSearchForResourceType('DeviceDefinition').fields).toEqual([
+      'id',
+      '_lastUpdated',
+      'manufacturer[x]',
+      'deviceName',
+    ]);
+    expect(getDefaultSearchForResourceType('DeviceRequest').fields).toEqual([
+      'id',
+      '_lastUpdated',
+      'code[x]',
+      'subject',
+    ]);
     expect(getDefaultSearchForResourceType('DiagnosticReport').fields).toEqual([
       'id',
       '_lastUpdated',
