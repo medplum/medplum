@@ -2,7 +2,7 @@ import { accessDenied, allOk, assertOk, isOk } from '@medplum/core';
 import { User } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
-import { repo, sendOutcome, validateResourceType } from '../fhir';
+import { systemRepo, sendOutcome, validateResourceType } from '../fhir';
 import { authenticateToken } from '../oauth';
 import { createStructureDefinitions } from '../seeds/structuredefinitions';
 import { createValueSetElements } from '../seeds/valuesets';
@@ -16,7 +16,7 @@ superAdminRouter.use(authenticateToken);
 superAdminRouter.post(
   '/valuesets',
   asyncWrap(async (req: Request, res: Response) => {
-    const [outcome, user] = await repo.readResource<User>('User', res.locals.user);
+    const [outcome, user] = await systemRepo.readResource<User>('User', res.locals.user);
     assertOk(outcome);
 
     if (!user?.admin) {
@@ -34,7 +34,7 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/structuredefinitions',
   asyncWrap(async (req: Request, res: Response) => {
-    const [outcome, user] = await repo.readResource<User>('User', res.locals.user);
+    const [outcome, user] = await systemRepo.readResource<User>('User', res.locals.user);
     assertOk(outcome);
 
     if (!user?.admin) {
@@ -52,7 +52,7 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/reindex',
   asyncWrap(async (req: Request, res: Response) => {
-    const [outcome, user] = await repo.readResource<User>('User', res.locals.user);
+    const [outcome, user] = await systemRepo.readResource<User>('User', res.locals.user);
     assertOk(outcome);
 
     if (!user?.admin) {
@@ -65,7 +65,7 @@ superAdminRouter.post(
       return sendOutcome(res, validateOutcome);
     }
 
-    const [reindexOutcome] = await repo.reindexResourceType(resourceType);
+    const [reindexOutcome] = await systemRepo.reindexResourceType(resourceType);
     return sendOutcome(res, reindexOutcome);
   })
 );

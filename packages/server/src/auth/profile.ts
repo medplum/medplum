@@ -2,7 +2,7 @@ import { assertOk, badRequest, createReference, ProfileResource } from '@medplum
 import { Login, Project, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { invalidRequest, repo, sendOutcome } from '../fhir';
+import { invalidRequest, systemRepo, sendOutcome } from '../fhir';
 import { getUserMemberships } from '../oauth';
 
 export const profileValidators = [
@@ -16,7 +16,7 @@ export async function profileHandler(req: Request, res: Response) {
     return sendOutcome(res, invalidRequest(errors));
   }
 
-  const [loginOutcome, login] = await repo.readResource<Login>('Login', req.body.login);
+  const [loginOutcome, login] = await systemRepo.readResource<Login>('Login', req.body.login);
   assertOk(loginOutcome);
 
   if (login?.revoked) {
@@ -39,16 +39,16 @@ export async function profileHandler(req: Request, res: Response) {
   }
 
   // Get up-to-date project and profile
-  const [projectOutcome, project] = await repo.readReference<Project>(membership.project as Reference<Project>);
+  const [projectOutcome, project] = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
   assertOk(projectOutcome);
 
-  const [profileOutcome, profile] = await repo.readReference<ProfileResource>(
+  const [profileOutcome, profile] = await systemRepo.readReference<ProfileResource>(
     membership.profile as Reference<ProfileResource>
   );
   assertOk(profileOutcome);
 
   // Update the login
-  const [updateOutcome] = await repo.updateResource({
+  const [updateOutcome] = await systemRepo.updateResource({
     ...(login as Login),
     project: createReference(project as Project),
     profile: createReference(profile as ProfileResource),

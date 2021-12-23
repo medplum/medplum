@@ -2,7 +2,7 @@ import { getDateProperty, isOk, Operator } from '@medplum/core';
 import { ClientApplication, Login, OperationOutcome } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../async';
-import { repo } from '../fhir';
+import { systemRepo } from '../fhir';
 import { logger } from '../logger';
 import { renderTemplate } from '../templates';
 import { MedplumIdTokenClaims, verifyJwt } from './keys';
@@ -71,7 +71,7 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
 async function validateAuthorizeRequest(req: Request, res: Response): Promise<boolean> {
   // First validate the client and the redirect URI.
   // If these are invalid, then show an error page.
-  const [clientOutcome, client] = await repo.readResource<ClientApplication>(
+  const [clientOutcome, client] = await systemRepo.readResource<ClientApplication>(
     'ClientApplication',
     req.query.client_id as string
   );
@@ -125,7 +125,7 @@ async function validateAuthorizeRequest(req: Request, res: Response): Promise<bo
   }
 
   if (prompt !== 'login' && existingLogin) {
-    await repo.updateResource<Login>({
+    await systemRepo.updateResource<Login>({
       ...existingLogin,
       nonce: req.query.nonce as string,
       granted: false,
@@ -190,7 +190,7 @@ async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | un
     return undefined;
   }
 
-  const [existingOutcome, existing] = await repo.readResource<Login>('Login', existingLoginId);
+  const [existingOutcome, existing] = await systemRepo.readResource<Login>('Login', existingLoginId);
   if (!isOk(existingOutcome) || !existing) {
     return undefined;
   }
@@ -211,7 +211,7 @@ async function getExistingLoginFromCookie(req: Request, client: ClientApplicatio
     return undefined;
   }
 
-  const [outcome, bundle] = await repo.search({
+  const [outcome, bundle] = await systemRepo.search({
     resourceType: 'Login',
     filters: [
       {

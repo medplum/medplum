@@ -10,7 +10,7 @@ import {
 } from '@medplum/core';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
-import { repo } from '../fhir';
+import { systemRepo } from '../fhir';
 
 /**
  * Handles the OAuth/OpenID UserInfo Endpoint.
@@ -21,7 +21,7 @@ export const userInfoHandler: RequestHandler = asyncWrap(async (req: Request, re
     sub: res.locals.user,
   };
 
-  const [outcome, resource] = await repo.readReference({
+  const [outcome, resource] = await systemRepo.readReference({
     reference: res.locals.profile,
   });
   if (!isOk(outcome) || !resource) {

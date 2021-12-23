@@ -3,7 +3,7 @@ import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, Project, SearchParameter, User } from '@medplum/fhirtypes';
 import { registerNew } from './auth/register';
 import { getConfig } from './config';
-import { repo } from './fhir';
+import { systemRepo } from './fhir';
 import { logger } from './logger';
 import { createStructureDefinitions } from './seeds/structuredefinitions';
 import { createValueSetElements } from './seeds/valuesets';
@@ -23,7 +23,7 @@ export async function seedDatabase(): Promise<void> {
     password: 'admin',
   });
 
-  await repo.updateResource({
+  await systemRepo.updateResource({
     ...registerResponse.client,
     redirectUri: getConfig().appBaseUrl,
   });
@@ -39,7 +39,7 @@ export async function seedDatabase(): Promise<void> {
  * @returns True if already seeded.
  */
 async function isSeeded(): Promise<boolean> {
-  const [outcome, bundle] = await repo.search({
+  const [outcome, bundle] = await systemRepo.search({
     resourceType: 'User',
     count: 1,
   });
@@ -54,7 +54,7 @@ async function isSeeded(): Promise<boolean> {
  */
 async function createPublicProject(owner: User): Promise<void> {
   logger.info('Create Public project...');
-  const [outcome, result] = await repo.createResource<Project>({
+  const [outcome, result] = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: 'Public',
     owner: createReference(owner),
@@ -73,7 +73,7 @@ async function createSearchParameters(): Promise<void> {
     const searchParam = entry.resource as SearchParameter;
 
     logger.debug('SearchParameter: ' + searchParam.name);
-    const [outcome, result] = await repo.createResource<SearchParameter>({
+    const [outcome, result] = await systemRepo.createResource<SearchParameter>({
       ...searchParam,
       text: undefined,
     });

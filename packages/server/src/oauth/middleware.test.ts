@@ -6,7 +6,7 @@ import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { repo } from '../fhir';
+import { systemRepo } from '../fhir';
 import { createTestClient } from '../jest.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
@@ -32,7 +32,7 @@ describe('Auth middleware', () => {
   test('Success', async () => {
     const scope = 'openid';
 
-    const [loginOutcome, login] = await repo.createResource<Login>({
+    const [loginOutcome, login] = await systemRepo.createResource<Login>({
       resourceType: 'Login',
       client: createReference(client),
       profile: createReference(client),
@@ -76,7 +76,7 @@ describe('Auth middleware', () => {
   test('Login revoked', async () => {
     const scope = 'openid';
 
-    const [loginOutcome, login] = await repo.createResource<Login>({
+    const [loginOutcome, login] = await systemRepo.createResource<Login>({
       resourceType: 'Login',
       client: createReference(client),
       profile: createReference(client),

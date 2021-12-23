@@ -9,7 +9,7 @@ import { closeDatabase, initDatabase } from '../database';
 import { initTestAuth } from '../jest.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
-import { repo } from './repo';
+import { systemRepo } from './repo';
 
 const app = express();
 let accessToken: string;
@@ -26,7 +26,7 @@ describe('FHIR Routes', () => {
     await initKeys(config);
     accessToken = await initTestAuth();
 
-    const [outcome, patient] = await repo.createResource({
+    const [outcome, patient] = await systemRepo.createResource({
       resourceType: 'Patient',
       name: [
         {

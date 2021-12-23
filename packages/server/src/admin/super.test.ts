@@ -6,7 +6,7 @@ import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { repo } from '../fhir';
+import { systemRepo } from '../fhir';
 import { createTestClient } from '../jest.setup';
 import { generateAccessToken, initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
@@ -26,13 +26,13 @@ describe('Super Admin routes', () => {
 
     client = await createTestClient();
 
-    const [outcome1, practitioner1] = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+    const [outcome1, practitioner1] = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
     assertOk(outcome1);
 
-    const [outcome2, practitioner2] = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+    const [outcome2, practitioner2] = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
     assertOk(outcome2);
 
-    const [outcome3, user1] = await repo.createResource<User>({
+    const [outcome3, user1] = await systemRepo.createResource<User>({
       resourceType: 'User',
       email: `super${randomUUID()}@example.com`,
       passwordHash: 'abc',
@@ -40,7 +40,7 @@ describe('Super Admin routes', () => {
     });
     assertOk(outcome3);
 
-    const [outcome4, user2] = await repo.createResource<User>({
+    const [outcome4, user2] = await systemRepo.createResource<User>({
       resourceType: 'User',
       email: `normie${randomUUID()}@example.com`,
       passwordHash: 'abc',
@@ -48,7 +48,7 @@ describe('Super Admin routes', () => {
     });
     assertOk(outcome4);
 
-    const [outcome5, login1] = await repo.createResource<Login>({
+    const [outcome5, login1] = await systemRepo.createResource<Login>({
       resourceType: 'Login',
       client: createReference(client),
       profile: createReference(practitioner1 as Practitioner),
@@ -57,7 +57,7 @@ describe('Super Admin routes', () => {
     });
     assertOk(outcome5);
 
-    const [outcome6, login2] = await repo.createResource<Login>({
+    const [outcome6, login2] = await systemRepo.createResource<Login>({
       resourceType: 'Login',
       client: createReference(client),
       profile: createReference(practitioner2 as Practitioner),

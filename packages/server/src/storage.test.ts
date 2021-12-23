@@ -7,7 +7,7 @@ import request from 'supertest';
 import { initApp } from './app';
 import { loadTestConfig } from './config';
 import { closeDatabase, initDatabase } from './database';
-import { getBinaryStorage, initBinaryStorage, repo } from './fhir';
+import { getBinaryStorage, initBinaryStorage, systemRepo } from './fhir';
 import { seedDatabase } from './seed';
 
 const app = express();
@@ -22,7 +22,7 @@ describe('Storage Routes', () => {
     await initApp(app);
     await initBinaryStorage('file:' + binaryDir);
 
-    const [outcome, resource] = await repo.createResource<Binary>({
+    const [outcome, resource] = await systemRepo.createResource<Binary>({
       resourceType: 'Binary',
       contentType: 'text/plain',
     });

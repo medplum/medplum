@@ -2,7 +2,7 @@ import { isOk, OperationOutcomeError } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, Resource, StructureDefinition } from '@medplum/fhirtypes';
 import { getClient } from '../database';
-import { repo } from '../fhir';
+import { systemRepo } from '../fhir';
 import { logger } from '../logger';
 
 /**
@@ -21,7 +21,7 @@ async function createStructureDefinitionsForBundle(structureDefinitions: Bundle)
 
     if (resource.resourceType === 'StructureDefinition' && resource.name) {
       logger.debug('StructureDefinition: ' + resource.name);
-      const [outcome, result] = await repo.createResource<StructureDefinition>({
+      const [outcome, result] = await systemRepo.createResource<StructureDefinition>({
         ...resource,
         text: undefined,
       });

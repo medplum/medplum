@@ -1,11 +1,11 @@
 import { assertOk, createReference, isOk } from '@medplum/core';
 import { ClientApplication, Login, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { repo } from './fhir';
+import { systemRepo } from './fhir';
 import { generateAccessToken } from './oauth';
 
 export async function createTestClient(): Promise<ClientApplication> {
-  const [projectOutcome, project] = await repo.createResource<Project>({
+  const [projectOutcome, project] = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: 'Test Project',
     owner: {
@@ -14,7 +14,7 @@ export async function createTestClient(): Promise<ClientApplication> {
   });
   assertOk(projectOutcome);
 
-  const [clientOutcome, client] = await repo.createResource<ClientApplication>({
+  const [clientOutcome, client] = await systemRepo.createResource<ClientApplication>({
     resourceType: 'ClientApplication',
     secret: randomUUID(),
     redirectUri: 'https://example.com/',
@@ -30,7 +30,7 @@ export async function initTestAuth() {
   const client = await createTestClient();
   const scope = 'openid';
 
-  const [loginOutcome, login] = await repo.createResource<Login>({
+  const [loginOutcome, login] = await systemRepo.createResource<Login>({
     resourceType: 'Login',
     client: createReference(client),
     profile: createReference(client),

@@ -6,7 +6,7 @@ import { closeDatabase, initDatabase } from '../database';
 import { initTestAuth } from '../jest.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
-import { repo } from './repo';
+import { systemRepo } from './repo';
 
 const app = express();
 let accessToken: string;
@@ -21,7 +21,7 @@ describe('GraphQL', () => {
     accessToken = await initTestAuth();
 
     // Creat a simple patient
-    await repo.updateResource({
+    await systemRepo.updateResource({
       resourceType: 'Patient',
       id: '8a54c7db-654b-4c3d-ba85-e0909f51c12b',
       name: [
@@ -33,7 +33,7 @@ describe('GraphQL', () => {
     });
 
     // Create an encounter referring to the patient
-    await repo.updateResource({
+    await systemRepo.updateResource({
       resourceType: 'Encounter',
       id: '1ef2b1fc-74d9-491c-8e5e-595a9d460043',
       class: {
@@ -45,7 +45,7 @@ describe('GraphQL', () => {
     });
 
     // Create an encounter referring to missing patient
-    await repo.updateResource({
+    await systemRepo.updateResource({
       resourceType: 'Encounter',
       id: '1ef2b1fc-74d9-491c-8e5e-595a9d460044',
       class: {

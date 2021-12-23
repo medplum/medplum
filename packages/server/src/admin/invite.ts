@@ -7,7 +7,7 @@ import { resetPassword } from '../auth/resetpassword';
 import { createPractitioner, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config';
 import { sendEmail } from '../email';
-import { invalidRequest, repo, sendOutcome } from '../fhir';
+import { invalidRequest, systemRepo, sendOutcome } from '../fhir';
 import { logger } from '../logger';
 import { generateSecret } from '../oauth';
 import { verifyProjectAdmin } from './utils';
@@ -94,7 +94,7 @@ export async function inviteUser(request: InviteRequest): Promise<Practitioner> 
 }
 
 async function searchForExisting(email: string): Promise<User | undefined> {
-  const [outcome, bundle] = await repo.search<User>({
+  const [outcome, bundle] = await systemRepo.search<User>({
     resourceType: 'User',
     filters: [
       {
@@ -116,7 +116,7 @@ async function createUser(request: InviteRequest): Promise<User> {
   const password = generateSecret(16);
   logger.info('Create user ' + email);
   const passwordHash = await bcrypt.hash(password, 10);
-  const [outcome, result] = await repo.createResource<User>({
+  const [outcome, result] = await systemRepo.createResource<User>({
     resourceType: 'User',
     email,
     passwordHash,

@@ -3,7 +3,7 @@ import { Binary, Practitioner } from '@medplum/fhirtypes';
 import { loadTestConfig, MedplumServerConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { seedDatabase } from '../seed';
-import { repo } from './repo';
+import { systemRepo } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 
 describe('URL rewrite', () => {
@@ -15,7 +15,7 @@ describe('URL rewrite', () => {
     await initDatabase(config.database);
     await seedDatabase();
 
-    const [outcome, resource] = await repo.createResource({
+    const [outcome, resource] = await systemRepo.createResource({
       resourceType: 'Binary',
     });
     assertOk(outcome);
@@ -27,12 +27,12 @@ describe('URL rewrite', () => {
   });
 
   test('Null', async () => {
-    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, null);
+    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, null);
     expect(result).toBeNull();
   });
 
   test('Undefined', async () => {
-    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, undefined);
+    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, undefined);
     expect(result).toBeUndefined();
   });
 
@@ -47,7 +47,7 @@ describe('URL rewrite', () => {
       ],
     };
 
-    const output = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, input);
+    const output = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, input);
     expect(output).toMatchObject(input);
   });
 
@@ -62,7 +62,7 @@ describe('URL rewrite', () => {
       ],
     };
 
-    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, practitioner);
+    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, practitioner);
     expect(result).toMatchObject(practitioner);
   });
 
@@ -77,7 +77,7 @@ describe('URL rewrite', () => {
       ],
     };
 
-    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, practitioner);
+    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, practitioner);
     expect(result).toBeDefined();
     expect(result.resourceType).toBe('Practitioner');
     expect(result.photo).toBeDefined();
@@ -98,7 +98,7 @@ describe('URL rewrite', () => {
       ],
     };
 
-    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, practitioner);
+    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, practitioner);
     expect(result).toBeDefined();
     expect(result.resourceType).toBe('Practitioner');
     expect(result.photo).toBeDefined();
@@ -119,7 +119,7 @@ describe('URL rewrite', () => {
       ],
     };
 
-    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, practitioner);
+    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, practitioner);
     expect(result).toBeDefined();
     expect(result.resourceType).toBe('Practitioner');
     expect(result.photo).toBeDefined();
@@ -140,7 +140,7 @@ describe('URL rewrite', () => {
       ],
     };
 
-    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, practitioner);
+    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, practitioner);
     expect(result).toBeDefined();
     expect(result.resourceType).toBe('Practitioner');
     expect(result.photo).toBeDefined();
