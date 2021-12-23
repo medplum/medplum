@@ -7,7 +7,7 @@ import fetch, { HeadersInit } from 'node-fetch';
 import { URL } from 'url';
 import vm from 'vm';
 import { MedplumRedisConfig } from '../config';
-import { repo, Repository } from '../fhir';
+import { systemRepo, Repository } from '../fhir';
 import { getSearchParameter, parseSearchUrl } from '../fhir/search';
 import { logger } from '../logger';
 
@@ -230,7 +230,7 @@ function addSubscriptionJobData(job: SubscriptionJobData): void {
  * @returns The list of all subscriptions in this repository.
  */
 async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
-  const [outcome, bundle] = await repo.search<Subscription>({
+  const [outcome, bundle] = await systemRepo.search<Subscription>({
     resourceType: 'Subscription',
     filters: [
       {
@@ -256,7 +256,10 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
 export async function sendSubscription(job: Job<SubscriptionJobData>): Promise<void> {
   const { subscriptionId, resourceType, id, versionId } = job.data;
 
-  const [subscriptionOutcome, subscription] = await repo.readResource<Subscription>('Subscription', subscriptionId);
+  const [subscriptionOutcome, subscription] = await systemRepo.readResource<Subscription>(
+    'Subscription',
+    subscriptionId
+  );
   if (isGone(subscriptionOutcome)) {
     // If the subscription was deleted, then stop processing it.
     return;
@@ -268,14 +271,14 @@ export async function sendSubscription(job: Job<SubscriptionJobData>): Promise<v
     return;
   }
 
-  const [readOutcome] = await repo.readResource(resourceType, id);
+  const [readOutcome] = await systemRepo.readResource(resourceType, id);
   if (isGone(readOutcome)) {
     // If the resource was deleted, then stop processing it.
     return;
   }
   assertOk(readOutcome);
 
-  const [versionOutcome, resourceVersion] = await repo.readVersion(resourceType, id, versionId);
+  const [versionOutcome, resourceVersion] = await systemRepo.readVersion(resourceType, id, versionId);
   assertOk(versionOutcome);
 
   const channelType = subscription?.channel?.type;
@@ -387,7 +390,7 @@ export async function execBot(
   }
 
   // URL should be a Bot reference string
-  const [botOutcome, bot] = await repo.readReference<Bot>({ reference: url });
+  const [botOutcome, bot] = await systemRepo.readReference<Bot>({ reference: url });
   assertOk(botOutcome);
 
   const code = bot?.code;
@@ -462,7 +465,7 @@ async function createSubscriptionEvent(
   outcome: AuditEventOutcome,
   outcomeDesc?: string
 ): Promise<void> {
-  await repo.createResource<AuditEvent>({
+  await systemRepo.createResource<AuditEvent>({
     resourceType: 'AuditEvent',
     meta: {
       project: subscription.meta?.project,

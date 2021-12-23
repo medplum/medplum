@@ -3,7 +3,7 @@ import { ClientApplication, Login } from '@medplum/fhirtypes';
 import { createHash } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
-import { repo } from '../fhir';
+import { systemRepo } from '../fhir';
 import { generateAccessToken, MedplumRefreshTokenClaims, verifyJwt } from './keys';
 import { getAuthTokens, getReferenceIdPart, revokeLogin } from './utils';
 
@@ -57,7 +57,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
     return sendTokenError(res, 'invalid_request', 'Missing client_secret');
   }
 
-  const [readOutcome, client] = await repo.readResource<ClientApplication>('ClientApplication', clientId);
+  const [readOutcome, client] = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
   if (!isOk(readOutcome) || !client) {
     return sendTokenError(res, 'invalid_request', 'Invalid client');
   }
@@ -72,7 +72,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
 
   const scope = req.body.scope as string;
 
-  const [loginOutcome, login] = await repo.createResource<Login>({
+  const [loginOutcome, login] = await systemRepo.createResource<Login>({
     resourceType: 'Login',
     client: createReference(client),
     profile: createReference(client),
@@ -115,7 +115,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
     return sendTokenError(res, 'invalid_request', 'Missing code');
   }
 
-  const [searchOutcome, searchResult] = await repo.search({
+  const [searchOutcome, searchResult] = await systemRepo.search({
     resourceType: 'Login',
     filters: [
       {
@@ -201,7 +201,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
     return sendTokenError(res, 'invalid_request', 'Invalid refresh token');
   }
 
-  const [loginOutcome, login] = await repo.readResource<Login>('Login', claims.login_id);
+  const [loginOutcome, login] = await systemRepo.readResource<Login>('Login', claims.login_id);
   if (!isOk(loginOutcome) || !login) {
     return sendTokenError(res, 'invalid_request', 'Invalid token');
   }

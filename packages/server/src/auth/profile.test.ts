@@ -7,7 +7,7 @@ import { inviteUser } from '../admin/invite';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { repo } from '../fhir';
+import { systemRepo } from '../fhir';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 import { registerNew } from './register';
@@ -93,9 +93,9 @@ describe('Profile', () => {
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
 
-    const [readOutcome, login] = await repo.readResource<Login>('Login', res1.body.login);
+    const [readOutcome, login] = await systemRepo.readResource<Login>('Login', res1.body.login);
     assertOk(readOutcome);
-    await repo.updateResource({
+    await systemRepo.updateResource({
       ...(login as Login),
       revoked: true,
     });
@@ -121,9 +121,9 @@ describe('Profile', () => {
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
 
-    const [readOutcome, login] = await repo.readResource<Login>('Login', res1.body.login);
+    const [readOutcome, login] = await systemRepo.readResource<Login>('Login', res1.body.login);
     assertOk(readOutcome);
-    await repo.updateResource({
+    await systemRepo.updateResource({
       ...(login as Login),
       granted: true,
     });
@@ -149,9 +149,9 @@ describe('Profile', () => {
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
 
-    const [readOutcome, login] = await repo.readResource<Login>('Login', res1.body.login);
+    const [readOutcome, login] = await systemRepo.readResource<Login>('Login', res1.body.login);
     assertOk(readOutcome);
-    await repo.updateResource({
+    await systemRepo.updateResource({
       ...(login as Login),
       project: {
         reference: `Project/${randomUUID()}`,

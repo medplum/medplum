@@ -1,7 +1,7 @@
 import { assertOk, createReference } from '@medplum/core';
 import { Login, Practitioner, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Response } from 'express';
-import { repo } from '../fhir';
+import { systemRepo } from '../fhir';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { logger } from '../logger';
 import { getUserMemberships } from '../oauth';
@@ -14,7 +14,7 @@ export interface NewAccountRequest {
 
 export async function createPractitioner(request: NewAccountRequest, project: Project): Promise<Practitioner> {
   logger.info(`Create practitioner: ${request.firstName} ${request.lastName}`);
-  const [outcome, result] = await repo.createResource<Practitioner>({
+  const [outcome, result] = await systemRepo.createResource<Practitioner>({
     resourceType: 'Practitioner',
     meta: {
       project: project.id,
@@ -45,7 +45,7 @@ export async function createProjectMembership(
   admin: boolean
 ): Promise<ProjectMembership> {
   logger.info('Create project membership: ' + project.name);
-  const [outcome, result] = await repo.createResource<ProjectMembership>({
+  const [outcome, result] = await systemRepo.createResource<ProjectMembership>({
     resourceType: 'ProjectMembership',
     project: createReference(project),
     user: createReference(user),
@@ -77,7 +77,7 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
       profile: m.profile,
     }));
     res.status(200).json(
-      await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, {
+      await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, {
         login: login?.id,
         memberships: redactedMemberships,
       })

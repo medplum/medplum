@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { getConfig } from '../config';
 import { sendEmail } from '../email';
-import { invalidRequest, repo, sendOutcome } from '../fhir';
+import { invalidRequest, systemRepo, sendOutcome } from '../fhir';
 import { generateSecret } from '../oauth';
 
 export const resetPasswordValidators = [body('email').isEmail().withMessage('Valid email address is required')];
@@ -15,7 +15,7 @@ export async function resetPasswordHandler(req: Request, res: Response) {
     return sendOutcome(res, invalidRequest(errors));
   }
 
-  const [existingOutcome, existingBundle] = await repo.search<User>({
+  const [existingOutcome, existingBundle] = await systemRepo.search<User>({
     resourceType: 'User',
     filters: [
       {
@@ -64,7 +64,7 @@ export async function resetPasswordHandler(req: Request, res: Response) {
  */
 export async function resetPassword(user: User): Promise<string> {
   // Create the password change request
-  const [createOutcome, pcr] = await repo.createResource<PasswordChangeRequest>({
+  const [createOutcome, pcr] = await systemRepo.createResource<PasswordChangeRequest>({
     resourceType: 'PasswordChangeRequest',
     user: createReference(user),
     secret: generateSecret(16),

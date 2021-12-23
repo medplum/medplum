@@ -2,7 +2,7 @@ import { assertOk, getStatus } from '@medplum/core';
 import { Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
-import { repo } from '../fhir';
+import { systemRepo } from '../fhir';
 import { authenticateToken } from '../oauth';
 import { inviteHandler, inviteValidators } from './invite';
 import { verifyProjectAdmin } from './utils';
@@ -56,7 +56,7 @@ projectAdminRouter.get(
     }
 
     const { membershipId } = req.params;
-    const [outcome, membership] = await repo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+    const [outcome, membership] = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
     assertOk(outcome);
     res.status(getStatus(outcome)).json(membership);
   })
@@ -77,7 +77,7 @@ projectAdminRouter.post(
       return;
     }
 
-    const [outcome, result] = await repo.updateResource(resource);
+    const [outcome, result] = await systemRepo.updateResource(resource);
     assertOk(outcome);
     res.status(getStatus(outcome)).json(result);
   })

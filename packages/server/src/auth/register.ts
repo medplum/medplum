@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { invalidRequest, repo, sendOutcome } from '../fhir';
+import { invalidRequest, systemRepo, sendOutcome } from '../fhir';
 import { logger } from '../logger';
 import { generateSecret, getAuthTokens, tryLogin } from '../oauth';
 import { createPractitioner, createProjectMembership } from './utils';
@@ -84,7 +84,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
 }
 
 async function searchForExisting(email: string): Promise<boolean> {
-  const [outcome, bundle] = await repo.search<User>({
+  const [outcome, bundle] = await systemRepo.search<User>({
     resourceType: 'User',
     filters: [
       {
@@ -103,7 +103,7 @@ async function createUser(request: RegisterRequest): Promise<User> {
   const { email, password, admin } = request;
   logger.info('Create user ' + email);
   const passwordHash = await bcrypt.hash(password, 10);
-  const [outcome, result] = await repo.createResource<User>({
+  const [outcome, result] = await systemRepo.createResource<User>({
     resourceType: 'User',
     email,
     passwordHash,
@@ -116,7 +116,7 @@ async function createUser(request: RegisterRequest): Promise<User> {
 
 async function createProject(request: RegisterRequest, user: User): Promise<Project> {
   logger.info('Create project ' + request.projectName);
-  const [outcome, result] = await repo.createResource<Project>({
+  const [outcome, result] = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: request.projectName,
     owner: createReference(user),
@@ -128,7 +128,7 @@ async function createProject(request: RegisterRequest, user: User): Promise<Proj
 
 async function createClientApplication(project: Project): Promise<ClientApplication> {
   logger.info('Create default client ' + project.name);
-  const [outcome, result] = await repo.createResource<ClientApplication>({
+  const [outcome, result] = await systemRepo.createResource<ClientApplication>({
     resourceType: 'ClientApplication',
     name: project.name + ' Default Client',
     description: 'Default client for ' + project.name,

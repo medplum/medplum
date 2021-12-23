@@ -3,7 +3,7 @@ import { PasswordChangeRequest, Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { invalidRequest, repo, sendOutcome } from '../fhir';
+import { invalidRequest, systemRepo, sendOutcome } from '../fhir';
 
 export const setPasswordValidators = [
   body('id').isUUID().withMessage('Invalid request ID'),
@@ -17,7 +17,7 @@ export async function setPasswordHandler(req: Request, res: Response) {
     return sendOutcome(res, invalidRequest(errors));
   }
 
-  const [pcrOutcome, pcr] = await repo.readResource<PasswordChangeRequest>('PasswordChangeRequest', req.body.id);
+  const [pcrOutcome, pcr] = await systemRepo.readResource<PasswordChangeRequest>('PasswordChangeRequest', req.body.id);
   assertOk(pcrOutcome);
 
   if (pcr?.used) {
@@ -28,17 +28,17 @@ export async function setPasswordHandler(req: Request, res: Response) {
     return sendOutcome(res, badRequest('Incorrect secret'));
   }
 
-  const [userOutcome, user] = await repo.readReference(pcr?.user as Reference<User>);
+  const [userOutcome, user] = await systemRepo.readReference(pcr?.user as Reference<User>);
   assertOk(userOutcome);
 
   const passwordHash = await bcrypt.hash(req.body.password, 10);
-  const [updateUserOutcome] = await repo.updateResource<User>({
+  const [updateUserOutcome] = await systemRepo.updateResource<User>({
     ...(user as User),
     passwordHash,
   });
   assertOk(updateUserOutcome);
 
-  const [updatePcrOutcome] = await repo.updateResource<PasswordChangeRequest>({
+  const [updatePcrOutcome] = await systemRepo.updateResource<PasswordChangeRequest>({
     ...(pcr as PasswordChangeRequest),
     used: true,
   });

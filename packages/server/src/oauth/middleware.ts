@@ -1,7 +1,7 @@
 import { createReference, getReferenceString, isOk } from '@medplum/core';
 import { ClientApplication, Login } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
-import { getRepoForLogin, repo } from '../fhir';
+import { getRepoForLogin, systemRepo } from '../fhir';
 import { logger } from '../logger';
 import { MedplumAccessTokenClaims, verifyJwt } from './keys';
 
@@ -26,7 +26,7 @@ async function authenticateBearerToken(req: Request, res: Response, next: NextFu
   try {
     const verifyResult = await verifyJwt(token);
     const claims = verifyResult.payload as MedplumAccessTokenClaims;
-    const [loginOutcome, login] = await repo.readResource<Login>('Login', claims.login_id);
+    const [loginOutcome, login] = await systemRepo.readResource<Login>('Login', claims.login_id);
     if (!isOk(loginOutcome) || !login || login.revoked) {
       res.sendStatus(401);
       return;
@@ -52,7 +52,7 @@ async function authenticateBasicAuth(req: Request, res: Response, next: NextFunc
     return;
   }
 
-  const [outcome, client] = await repo.readResource<ClientApplication>('ClientApplication', username);
+  const [outcome, client] = await systemRepo.readResource<ClientApplication>('ClientApplication', username);
   if (!isOk(outcome) || !client) {
     res.sendStatus(401);
     return;

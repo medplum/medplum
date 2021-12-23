@@ -23,7 +23,7 @@ import {
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import { JWTPayload } from 'jose';
-import { repo, RepositoryResult } from '../fhir';
+import { systemRepo, RepositoryResult } from '../fhir';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
 
 export interface LoginRequest {
@@ -86,7 +86,7 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
   let clientOutcome: OperationOutcome | undefined;
   let client: ClientApplication | undefined;
   if (request.clientId) {
-    [clientOutcome, client] = await repo.readResource<ClientApplication>('ClientApplication', request.clientId);
+    [clientOutcome, client] = await systemRepo.readResource<ClientApplication>('ClientApplication', request.clientId);
     if (!isOk(clientOutcome)) {
       return [clientOutcome, undefined];
     }
@@ -121,7 +121,7 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     accessPolicy = memberships[0].accessPolicy;
   }
 
-  return repo.createResource<Login>({
+  return systemRepo.createResource<Login>({
     resourceType: 'Login',
     client: client && createReference(client),
     user: createReference(user),
@@ -216,7 +216,7 @@ export async function getUserMemberships(user: Reference<User>): Promise<Project
     throw new Error('User reference is missing');
   }
 
-  const [membershipsOutcome, memberships] = await repo.search<ProjectMembership>({
+  const [membershipsOutcome, memberships] = await systemRepo.search<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [
       {
@@ -238,7 +238,7 @@ export async function getAuthTokens(login: Login): Promise<[OperationOutcome, To
   }
 
   if (!login.granted) {
-    await repo.updateResource<Login>({
+    await systemRepo.updateResource<Login>({
       ...login,
       granted: true,
     });
@@ -281,7 +281,7 @@ export async function getAuthTokens(login: Login): Promise<[OperationOutcome, To
 }
 
 export async function revokeLogin(login: Login): Promise<void> {
-  repo.updateResource<Login>({
+  systemRepo.updateResource<Login>({
     ...login,
     revoked: true,
   });
@@ -306,7 +306,7 @@ export function getReferenceIdPart(reference: Reference | undefined): string | u
  * @return
  */
 async function getUserByEmail(email: string): RepositoryResult<User | undefined> {
-  const [outcome, bundle] = await repo.search({
+  const [outcome, bundle] = await systemRepo.search({
     resourceType: 'User',
     filters: [
       {

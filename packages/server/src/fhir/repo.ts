@@ -1033,7 +1033,7 @@ export class Repository {
       const patientId = getPatientId(updated);
       if (patientId) {
         // If the resource is in a patient compartment, then lookup the patient.
-        const [patientOutcome, patient] = await repo.readResource('Patient', patientId);
+        const [patientOutcome, patient] = await systemRepo.readResource('Patient', patientId);
         if (isOk(patientOutcome) && patient?.meta?.account) {
           // If the patient has an account, then use it as the resource account.
           return patient.meta.account;
@@ -1189,7 +1189,7 @@ export async function getRepoForLogin(login: Login): Promise<Repository> {
   }
 
   if (login.accessPolicy) {
-    const [accessPolicyOutcome, accessPolicyResource] = await repo.readReference(login.accessPolicy);
+    const [accessPolicyOutcome, accessPolicyResource] = await systemRepo.readReference(login.accessPolicy);
     assertOk(accessPolicyOutcome);
     accessPolicy = accessPolicyResource as AccessPolicy;
   }
@@ -1209,7 +1209,7 @@ export async function getRepoForLogin(login: Login): Promise<Repository> {
         profileType.startsWith('ClientApplication') ||
         profileType.startsWith('Subscription'))
     ) {
-      const [profileOutcome, profileResource] = await repo.readReference(login.profile);
+      const [profileOutcome, profileResource] = await systemRepo.readReference(login.profile);
       assertOk(profileOutcome);
       if (profileResource?.meta?.account) {
         accessPolicy = buildSyntheticAccessPolicy(profileResource.meta.account);
@@ -1250,7 +1250,7 @@ function buildSyntheticAccessPolicy(compartment: Reference): AccessPolicy {
   };
 }
 
-export const repo = new Repository({
+export const systemRepo = new Repository({
   author: {
     reference: 'system',
   },

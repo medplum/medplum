@@ -5,13 +5,22 @@ import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { seedDatabase } from '../seed';
 import { processBatch } from './batch';
-import { repo, Repository } from './repo';
+import { Repository } from './repo';
+
+let repo: Repository;
 
 describe('Batch', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
     await seedDatabase();
+
+    repo = new Repository({
+      project: randomUUID(),
+      author: {
+        reference: 'ClientApplication/' + randomUUID(),
+      },
+    });
   });
 
   afterAll(async () => {

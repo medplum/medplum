@@ -1,7 +1,7 @@
 import { assertOk, Operator } from '@medplum/core';
 import { Bundle, BundleEntry, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { repo } from '../fhir';
+import { systemRepo } from '../fhir';
 
 export interface ProjectDetails {
   project: Project;
@@ -19,10 +19,10 @@ export interface ProjectDetails {
 export async function verifyProjectAdmin(req: Request, res: Response): Promise<ProjectDetails | undefined> {
   const { projectId } = req.params;
 
-  const [projectOutcome, project] = await repo.readResource<Project>('Project', projectId);
+  const [projectOutcome, project] = await systemRepo.readResource<Project>('Project', projectId);
   assertOk(projectOutcome);
 
-  const [membershipOutcome, bundle] = await repo.search<ProjectMembership>({
+  const [membershipOutcome, bundle] = await systemRepo.search<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [
       {

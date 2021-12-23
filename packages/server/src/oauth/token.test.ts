@@ -6,7 +6,7 @@ import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { repo } from '../fhir';
+import { systemRepo } from '../fhir';
 import { seedDatabase } from '../seed';
 import { initKeys } from './keys';
 import { hashCode } from './token';
@@ -23,7 +23,7 @@ describe('OAuth2 Token', () => {
     await initApp(app);
     await initKeys(config);
 
-    const [outcome, resource] = await repo.createResource<ClientApplication>({
+    const [outcome, resource] = await systemRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
       secret: randomUUID(),
       redirectUri: 'https://example.com/',
@@ -121,7 +121,7 @@ describe('OAuth2 Token', () => {
 
   test('Token for client empty secret', async () => {
     // Create a client without an secret
-    const [outcome, badClient] = await repo.createResource<ClientApplication>({
+    const [outcome, badClient] = await systemRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
       name: 'Bad Client',
       description: 'Bad Client',
