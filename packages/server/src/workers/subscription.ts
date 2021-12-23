@@ -469,6 +469,7 @@ async function createSubscriptionEvent(
     resourceType: 'AuditEvent',
     meta: {
       project: subscription.meta?.project,
+      account: subscription.meta?.account,
     },
     recorded: new Date().toISOString(),
     type: {
