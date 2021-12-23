@@ -824,5 +824,9 @@ describe('Subscription Worker', () => {
     assertOk(searchOutcome);
     expect(bundle).toBeDefined();
     expect(bundle?.entry?.length).toEqual(1);
+
+    const auditEvent = bundle?.entry?.[0].resource as AuditEvent;
+    expect(auditEvent.meta?.account).toBeDefined();
+    expect(auditEvent.meta?.account?.reference).toEqual(account.reference);
   });
 });
