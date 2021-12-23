@@ -1,4 +1,5 @@
 import { PropertyType } from '@medplum/core';
+import { Bundle, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import each from 'jest-each';
 import React from 'react';
@@ -7,19 +8,95 @@ import { MockClient } from './MockClient';
 import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 import { QuestionnaireItemType } from './QuestionnaireUtils';
 
-const medplum = new MockClient({});
-
-const setup = (args: QuestionnaireFormProps) => {
-  return render(
-    <MedplumProvider medplum={medplum}>
-      <QuestionnaireForm {...args} />
-    </MedplumProvider>
-  );
+const structureDefinitionBundle: Bundle<StructureDefinition> = {
+  resourceType: 'Bundle',
+  type: 'searchset',
+  entry: [
+    {
+      resource: {
+        resourceType: 'StructureDefinition',
+        name: 'Questionnaire',
+        snapshot: {
+          element: [
+            {
+              id: 'Questionnaire.item',
+              path: 'Questionnaire.item',
+              type: [
+                {
+                  code: 'BackboneElement',
+                },
+              ],
+            },
+            {
+              id: 'Questionnaire.item.answerOption',
+              path: 'Questionnaire.item.answerOption',
+              type: [
+                {
+                  code: 'BackboneElement',
+                },
+              ],
+            },
+            {
+              id: 'Questionnaire.item.answerOption.value[x]',
+              path: 'Questionnaire.item.answerOption.value[x]',
+              min: 1,
+              max: '1',
+              type: [
+                {
+                  code: 'integer',
+                },
+                {
+                  code: 'date',
+                },
+                {
+                  code: 'time',
+                },
+                {
+                  code: 'string',
+                },
+                {
+                  code: 'Coding',
+                },
+                {
+                  code: 'Reference',
+                  targetProfile: ['http://hl7.org/fhir/StructureDefinition/Resource'],
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
+  ],
 };
 
+const searchParamBundle: Bundle<SearchParameter> = {
+  resourceType: 'Bundle',
+  type: 'searchset',
+};
+
+const medplum = new MockClient({
+  'fhir/R4/StructureDefinition?name:exact=Questionnaire': {
+    GET: structureDefinitionBundle,
+  },
+  'fhir/R4/SearchParameter?_count=100&base=Questionnaire': {
+    GET: searchParamBundle,
+  },
+});
+
+async function setup(args: QuestionnaireFormProps) {
+  await act(async () => {
+    render(
+      <MedplumProvider medplum={medplum}>
+        <QuestionnaireForm {...args} />
+      </MedplumProvider>
+    );
+  });
+}
+
 describe('QuestionnaireForm', () => {
-  test('Renders empty', () => {
-    setup({
+  test('Renders empty', async () => {
+    await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
       },
@@ -29,7 +106,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Render groups', async () => {
-    setup({
+    await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
         item: [
@@ -80,7 +157,7 @@ describe('QuestionnaireForm', () => {
   test('Handles submit', async () => {
     const onSubmit = jest.fn();
 
-    setup({
+    await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
         item: [
@@ -148,7 +225,7 @@ describe('QuestionnaireForm', () => {
     [QuestionnaireItemType.url, 'url', 'https://example.com/'],
     [QuestionnaireItemType.quantity, 'number', '123'],
   ]).test('%s question', async (propertyType: PropertyType, inputType: string, value: string) => {
-    setup({
+    await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
         item: [
@@ -174,7 +251,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Boolean input', async () => {
-    setup({
+    await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
         item: [
@@ -199,7 +276,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Choice input', async () => {
-    setup({
+    await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
         item: [
@@ -207,18 +284,27 @@ describe('QuestionnaireForm', () => {
             linkId: 'q1',
             type: QuestionnaireItemType.choice,
             text: 'q1',
+            answerOption: [
+              {
+                valueString: 'a1',
+              },
+              {
+                valueString: 'a2',
+              },
+            ],
           },
         ],
       },
       onSubmit: jest.fn(),
     });
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
-    expect(input).toBeInTheDocument();
+    expect(screen.getByText('q1')).toBeInTheDocument();
+    expect(screen.getByText('a1')).toBeInTheDocument();
+    expect(screen.getByText('a2')).toBeInTheDocument();
   });
 
   test('Open choice input', async () => {
-    setup({
+    await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
         item: [
@@ -226,18 +312,27 @@ describe('QuestionnaireForm', () => {
             linkId: 'q1',
             type: QuestionnaireItemType.openChoice,
             text: 'q1',
+            answerOption: [
+              {
+                valueString: 'a1',
+              },
+              {
+                valueString: 'a2',
+              },
+            ],
           },
         ],
       },
       onSubmit: jest.fn(),
     });
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
-    expect(input).toBeInTheDocument();
+    expect(screen.getByText('q1')).toBeInTheDocument();
+    expect(screen.getByText('a1')).toBeInTheDocument();
+    expect(screen.getByText('a2')).toBeInTheDocument();
   });
 
   test('Attachment input', async () => {
-    setup({
+    await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
         item: [
@@ -256,7 +351,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Reference input', async () => {
-    setup({
+    await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
         item: [

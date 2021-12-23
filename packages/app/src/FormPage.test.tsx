@@ -1,10 +1,77 @@
 import { notFound } from '@medplum/core';
-import { Practitioner, Questionnaire } from '@medplum/fhirtypes';
+import { Bundle, Practitioner, Questionnaire, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import { MedplumProvider, MockClient } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { FormPage } from './FormPage';
+
+const structureDefinitionBundle: Bundle<StructureDefinition> = {
+  resourceType: 'Bundle',
+  type: 'searchset',
+  entry: [
+    {
+      resource: {
+        resourceType: 'StructureDefinition',
+        name: 'Questionnaire',
+        snapshot: {
+          element: [
+            {
+              id: 'Questionnaire.item',
+              path: 'Questionnaire.item',
+              type: [
+                {
+                  code: 'BackboneElement',
+                },
+              ],
+            },
+            {
+              id: 'Questionnaire.item.answerOption',
+              path: 'Questionnaire.item.answerOption',
+              type: [
+                {
+                  code: 'BackboneElement',
+                },
+              ],
+            },
+            {
+              id: 'Questionnaire.item.answerOption.value[x]',
+              path: 'Questionnaire.item.answerOption.value[x]',
+              min: 1,
+              max: '1',
+              type: [
+                {
+                  code: 'integer',
+                },
+                {
+                  code: 'date',
+                },
+                {
+                  code: 'time',
+                },
+                {
+                  code: 'string',
+                },
+                {
+                  code: 'Coding',
+                },
+                {
+                  code: 'Reference',
+                  targetProfile: ['http://hl7.org/fhir/StructureDefinition/Resource'],
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
+  ],
+};
+
+const searchParamBundle: Bundle<SearchParameter> = {
+  resourceType: 'Bundle',
+  type: 'searchset',
+};
 
 const practitioner: Practitioner = {
   resourceType: 'Practitioner',
@@ -32,6 +99,12 @@ const questionnaire: Questionnaire = {
 };
 
 const medplum = new MockClient({
+  'fhir/R4/StructureDefinition?name:exact=Questionnaire': {
+    GET: structureDefinitionBundle,
+  },
+  'fhir/R4/SearchParameter?_count=100&base=Questionnaire': {
+    GET: searchParamBundle,
+  },
   'fhir/R4/Practitioner/123': {
     GET: practitioner,
   },

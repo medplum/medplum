@@ -13,6 +13,7 @@ export const Basic = () => (
     <QuestionnaireBuilder
       questionnaire={{
         resourceType: 'Questionnaire',
+        title: 'Basic Example',
         item: [
           {
             linkId: 'titleDisplay',
@@ -21,7 +22,7 @@ export const Basic = () => (
           },
           {
             linkId: 'abc',
-            text: 'Question',
+            text: 'Example Question',
             type: 'string',
           },
         ],
@@ -71,6 +72,38 @@ export const Groups = () => (
                 linkId: 'q4',
                 text: 'Question 4',
                 type: 'string',
+              },
+            ],
+          },
+        ],
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
+export const MultipleChoice = () => (
+  <Document>
+    <QuestionnaireBuilder
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        title: 'Multiple Choice Example',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Question 1',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Red',
+              },
+              {
+                valueString: 'Blue',
+              },
+              {
+                valueString: 'Yellow',
               },
             ],
           },

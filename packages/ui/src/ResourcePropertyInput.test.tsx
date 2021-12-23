@@ -1,4 +1,4 @@
-import { IndexedStructureDefinition } from '@medplum/core';
+import { IndexedStructureDefinition, PropertyType } from '@medplum/core';
 import {
   Address,
   Annotation,
@@ -372,6 +372,18 @@ describe('ResourcePropertyInput', () => {
 
     expect(onChange).toHaveBeenCalledWith(123, 'valueInteger');
     onChange.mockClear();
+  });
+
+  test('Type selector default value', async () => {
+    setup({
+      schema,
+      property: observationValueProperty,
+      name: 'value[x]',
+      defaultPropertyType: PropertyType.integer,
+    });
+
+    expect(screen.getByDisplayValue('integer')).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('Quantity')).toBeNull();
   });
 
   test('Renders Annotation property', () => {

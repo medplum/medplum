@@ -4,7 +4,7 @@ import { getIssuesForExpression } from './utils/outcomes';
 import './FormSection.css';
 
 export interface FormSectionProps {
-  title: string;
+  title?: string;
   htmlFor?: string;
   description?: string;
   outcome?: OperationOutcome;
@@ -16,7 +16,7 @@ export function FormSection(props: FormSectionProps) {
   const invalid = issues && issues.length > 0;
   return (
     <fieldset>
-      <label htmlFor={props.htmlFor}>{props.title}</label>
+      {props.title && <label htmlFor={props.htmlFor}>{props.title}</label>}
       {props.description && <small>{props.description}</small>}
       {props.children}
       {invalid && (

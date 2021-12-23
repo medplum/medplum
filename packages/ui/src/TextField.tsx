@@ -7,6 +7,7 @@ export interface TextFieldProps {
   name?: string;
   type?: string;
   size?: 'small' | 'medium' | 'large';
+  step?: number;
   defaultValue?: string;
   required?: boolean;
   autoFocus?: boolean;
@@ -26,6 +27,7 @@ export function TextField(props: TextFieldProps) {
       id={props.name}
       name={props.name}
       type={props.type || 'text'}
+      step={props.step}
       className={className}
       defaultValue={props.defaultValue || ''}
       required={props.required}

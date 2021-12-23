@@ -22,6 +22,7 @@ export interface ResourcePropertyInputProps {
   schema: IndexedStructureDefinition;
   property: ElementDefinition;
   name: string;
+  defaultPropertyType?: PropertyType;
   defaultValue?: any;
   arrayElement?: boolean;
   onChange?: (value: any, propName?: string) => void;
@@ -30,7 +31,7 @@ export interface ResourcePropertyInputProps {
 
 export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
   const property = props.property;
-  const propertyType = property.type?.[0]?.code as PropertyType;
+  const propertyType = props.defaultPropertyType ?? (property.type?.[0]?.code as PropertyType);
   const name = props.name;
   const value = props.defaultValue;
 
@@ -63,13 +64,20 @@ export interface ElementDefinitionSelectorProps extends ResourcePropertyInputPro
 
 export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorProps): JSX.Element {
   const propertyTypes = props.elementDefinitionTypes;
-  const [selectedType, setSelectedType] = useState(propertyTypes[0]);
+  let initialPropertyType: ElementDefinitionType;
+  if (props.defaultPropertyType) {
+    initialPropertyType = propertyTypes.find((t) => t.code === props.defaultPropertyType) as ElementDefinitionType;
+  } else {
+    initialPropertyType = propertyTypes[0];
+  }
+  const [selectedType, setSelectedType] = useState(initialPropertyType);
   return (
     <table>
       <tbody>
         <tr>
           <td style={{ width: '20%' }}>
             <select
+              defaultValue={selectedType.code}
               onChange={(e: React.ChangeEvent) => {
                 setSelectedType(
                   propertyTypes.find(
@@ -131,12 +139,14 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           outcome={props.outcome}
         />
       );
+    case PropertyType.decimal:
     case PropertyType.integer:
     case PropertyType.positiveInt:
     case PropertyType.unsignedInt:
       return (
         <TextField
           type="number"
+          step={propertyType === PropertyType.decimal ? 0.01 : 1}
           name={name}
           testid={name}
           defaultValue={value}
