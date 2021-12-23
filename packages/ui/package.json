@@ -12,7 +12,7 @@
   },
   "scripts": {
     "clean": "rimraf dist storybook-static",
-    "dev": "start-storybook -s ./public -p 6006",
+    "dev": "start-storybook -p 6006",
     "build": "npm run clean && tsc && npm run copyfiles",
     "test": "jest",
     "copyfiles": "copyfiles -u 1 \"./src/**/*.css\" dist",
