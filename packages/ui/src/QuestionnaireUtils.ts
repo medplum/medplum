@@ -118,3 +118,7 @@ function addInitialValueToItem(item: QuestionnaireItem, values: Record<string, s
     initial: [initialValue],
   };
 }
+
+export function isChoiceQuestion(item: QuestionnaireItem): boolean {
+  return item.type === 'choice' || item.type === 'open-choice';
+}

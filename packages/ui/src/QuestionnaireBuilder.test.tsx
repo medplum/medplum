@@ -1,3 +1,4 @@
+import { Bundle, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { act } from 'react-dom/test-utils';
@@ -6,19 +7,95 @@ import { MockClient } from './MockClient';
 import { QuestionnaireBuilder, QuestionnaireBuilderProps } from './QuestionnaireBuilder';
 import { QuestionnaireItemType } from './QuestionnaireUtils';
 
-const medplum = new MockClient({});
-
-const setup = (args: QuestionnaireBuilderProps) => {
-  return render(
-    <MedplumProvider medplum={medplum}>
-      <QuestionnaireBuilder {...args} />
-    </MedplumProvider>
-  );
+const structureDefinitionBundle: Bundle<StructureDefinition> = {
+  resourceType: 'Bundle',
+  type: 'searchset',
+  entry: [
+    {
+      resource: {
+        resourceType: 'StructureDefinition',
+        name: 'Questionnaire',
+        snapshot: {
+          element: [
+            {
+              id: 'Questionnaire.item',
+              path: 'Questionnaire.item',
+              type: [
+                {
+                  code: 'BackboneElement',
+                },
+              ],
+            },
+            {
+              id: 'Questionnaire.item.answerOption',
+              path: 'Questionnaire.item.answerOption',
+              type: [
+                {
+                  code: 'BackboneElement',
+                },
+              ],
+            },
+            {
+              id: 'Questionnaire.item.answerOption.value[x]',
+              path: 'Questionnaire.item.answerOption.value[x]',
+              min: 1,
+              max: '1',
+              type: [
+                {
+                  code: 'integer',
+                },
+                {
+                  code: 'date',
+                },
+                {
+                  code: 'time',
+                },
+                {
+                  code: 'string',
+                },
+                {
+                  code: 'Coding',
+                },
+                {
+                  code: 'Reference',
+                  targetProfile: ['http://hl7.org/fhir/StructureDefinition/Resource'],
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
+  ],
 };
 
+const searchParamBundle: Bundle<SearchParameter> = {
+  resourceType: 'Bundle',
+  type: 'searchset',
+};
+
+const medplum = new MockClient({
+  'fhir/R4/StructureDefinition?name:exact=Questionnaire': {
+    GET: structureDefinitionBundle,
+  },
+  'fhir/R4/SearchParameter?_count=100&base=Questionnaire': {
+    GET: searchParamBundle,
+  },
+});
+
+async function setup(args: QuestionnaireBuilderProps) {
+  await act(async () => {
+    render(
+      <MedplumProvider medplum={medplum}>
+        <QuestionnaireBuilder {...args} />
+      </MedplumProvider>
+    );
+  });
+}
+
 describe('QuestionnaireBuilder', () => {
-  test('Renders empty', () => {
-    setup({
+  test('Renders empty', async () => {
+    await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
       },
@@ -28,7 +105,7 @@ describe('QuestionnaireBuilder', () => {
   });
 
   test('Render groups', async () => {
-    setup({
+    await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
         item: [
@@ -79,7 +156,7 @@ describe('QuestionnaireBuilder', () => {
   test('Handles submit', async () => {
     const onSubmit = jest.fn();
 
-    setup({
+    await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
         item: [
@@ -125,7 +202,7 @@ describe('QuestionnaireBuilder', () => {
   test('Edit a question text', async () => {
     const onSubmit = jest.fn();
 
-    setup({
+    await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
         item: [
@@ -171,7 +248,7 @@ describe('QuestionnaireBuilder', () => {
   test('Add item', async () => {
     const onSubmit = jest.fn();
 
-    setup({
+    await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
         title: 'My questionnaire',
@@ -218,7 +295,7 @@ describe('QuestionnaireBuilder', () => {
   test('Remove item', async () => {
     const onSubmit = jest.fn();
 
-    setup({
+    await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
         title: 'My questionnaire',
@@ -266,7 +343,7 @@ describe('QuestionnaireBuilder', () => {
   test('Add group', async () => {
     const onSubmit = jest.fn();
 
-    setup({
+    await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
         title: 'My questionnaire',
@@ -312,7 +389,7 @@ describe('QuestionnaireBuilder', () => {
   test('Change title', async () => {
     const onSubmit = jest.fn();
 
-    setup({
+    await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
         title: 'My questionnaire',
@@ -345,13 +422,6 @@ describe('QuestionnaireBuilder', () => {
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       resourceType: 'Questionnaire',
       title: 'Renamed',
-      item: [
-        {
-          linkId: 'question1',
-          text: 'Question 1',
-          type: 'string',
-        },
-      ],
     });
   });
 });

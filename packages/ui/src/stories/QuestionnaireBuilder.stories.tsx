@@ -83,3 +83,35 @@ export const Groups = () => (
     />
   </Document>
 );
+
+export const MultipleChoice = () => (
+  <Document>
+    <QuestionnaireBuilder
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        title: 'Multiple Choice Example',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Question 1',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Red',
+              },
+              {
+                valueString: 'Blue',
+              },
+              {
+                valueString: 'Yellow',
+              },
+            ],
+          },
+        ],
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);

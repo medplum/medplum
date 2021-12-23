@@ -1,10 +1,14 @@
-import { Questionnaire, QuestionnaireItem, Reference } from '@medplum/fhirtypes';
+import { IndexedStructureDefinition } from '@medplum/core';
+import { Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption, Reference } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Form } from './Form';
 import { FormSection } from './FormSection';
+import { useMedplum } from './MedplumProvider';
 import { QuestionnaireFormItem } from './QuestionnaireForm';
-import { QuestionnaireItemType } from './QuestionnaireUtils';
+import { isChoiceQuestion, QuestionnaireItemType } from './QuestionnaireUtils';
+import { getValueAndType } from './ResourcePropertyDisplay';
+import { ResourcePropertyInput } from './ResourcePropertyInput';
 import { TextField } from './TextField';
 import { useResource } from './useResource';
 import { killEvent } from './utils/dom';
@@ -16,7 +20,9 @@ export interface QuestionnaireBuilderProps {
 }
 
 export function QuestionnaireBuilder(props: QuestionnaireBuilderProps) {
+  const medplum = useMedplum();
   const defaultValue = useResource(props.questionnaire);
+  const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
   const [value, setValue] = useState<Questionnaire>();
   const [selectedKey, setSelectedKey] = useState<string>();
   const [hoverKey, setHoverKey] = useState<string>();
@@ -30,7 +36,14 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps) {
   }
 
   useEffect(() => {
-    setValue(ensureQuestionnaireKeys(defaultValue ?? { resourceType: 'Questionnaire' }));
+    medplum
+      .getTypeDefinition('Questionnaire')
+      .then((schema) => setSchema(schema))
+      .catch((reason) => console.log('schema error', reason));
+  }, []);
+
+  useEffect(() => {
+    setValue(ensureKeys(defaultValue ?? { resourceType: 'Questionnaire' }));
     document.addEventListener('mouseover', handleDocumentMouseOver);
     document.addEventListener('click', handleDocumentClick);
     return () => {
@@ -39,7 +52,7 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps) {
     };
   }, [defaultValue]);
 
-  if (!value) {
+  if (!schema || !value) {
     return null;
   }
 
@@ -47,6 +60,7 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps) {
     <div className="medplum-questionnaire-builder">
       <Form testid="questionnaire-form" onSubmit={() => props.onSubmit(value)}>
         <ItemBuilder
+          schema={schema}
           item={value}
           selectedKey={selectedKey}
           setSelectedKey={setSelectedKey}
@@ -63,6 +77,7 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps) {
 }
 
 interface ItemBuilderProps<T extends Questionnaire | QuestionnaireItem> {
+  schema: IndexedStructureDefinition;
   item: T;
   selectedKey: string | undefined;
   setSelectedKey: (key: string | undefined) => void;
@@ -169,18 +184,39 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
               )}
             </FormSection>
           )}
+          {isChoiceQuestion(item) && (
+            <div>
+              {item.answerOption &&
+                item.answerOption.map((option: QuestionnaireItemAnswerOption) => {
+                  const property = props.schema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
+                  const [propertyValue, propertyType] = getValueAndType(option, property);
+                  return (
+                    <ResourcePropertyInput
+                      key={(option as any).__key}
+                      schema={props.schema}
+                      name="option"
+                      property={property}
+                      defaultPropertyType={propertyType}
+                      defaultValue={propertyValue}
+                    />
+                  );
+                })}
+              <a href="#">Add choice</a>
+            </div>
+          )}
         </>
       ) : (
         <>
           {resource.title && <h1>{resource.title}</h1>}
           {item.text && <p>{item.text}</p>}
-          {!isContainer && <QuestionnaireFormItem item={item} />}
+          {!isContainer && <QuestionnaireFormItem schema={props.schema} item={item} />}
         </>
       )}
       {item.item &&
         item.item.map((i) => (
           <div key={(i as any).__key}>
             <ItemBuilder
+              schema={props.schema}
               item={i}
               selectedKey={props.selectedKey}
               setSelectedKey={props.setSelectedKey}
@@ -264,21 +300,25 @@ function generateKey(): string {
   return 'key' + nextKeyId++;
 }
 
-function ensureQuestionnaireKeys(questionnaire: Questionnaire): Questionnaire {
-  return {
-    ...questionnaire,
-    item: ensureQuestionnaireItemKeys(questionnaire.item),
-    __key: generateKey(),
-  } as Questionnaire;
-}
+/**
+ * Ensures that all objects in the object hava a unique __key property.
+ * Applied recursively to all children.
+ * @param obj The object to ensure keys for.
+ * @return Updated array where all items have a __key property.
+ */
+function ensureKeys<T>(obj: T): T {
+  if (obj) {
+    if (Array.isArray(obj)) {
+      obj.forEach((element) => ensureKeys(element));
+    }
 
-function ensureQuestionnaireItemKeys(items: QuestionnaireItem[] | undefined): QuestionnaireItem[] | undefined {
-  if (!items) {
-    return undefined;
+    if (typeof obj === 'object') {
+      if (!('__key' in obj)) {
+        (obj as any).__key = generateKey();
+      }
+      Object.values(obj).forEach((element) => ensureKeys(element));
+    }
   }
-  return items.map((item) => ({
-    ...item,
-    item: ensureQuestionnaireItemKeys(item.item),
-    __key: generateKey(),
-  }));
+
+  return obj;
 }

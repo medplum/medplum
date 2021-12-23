@@ -13,6 +13,7 @@ export const Basic = () => (
     <QuestionnaireForm
       questionnaire={{
         resourceType: 'Questionnaire',
+        id: 'basic-example',
         title: 'Basic Exmple',
         item: [
           {
@@ -39,6 +40,7 @@ export const Groups = () => (
     <QuestionnaireForm
       questionnaire={{
         resourceType: 'Questionnaire',
+        id: 'groups-example',
         title: 'Groups Exmple',
         item: [
           {
@@ -84,11 +86,45 @@ export const Groups = () => (
   </Document>
 );
 
+export const MultipleChoice = () => (
+  <Document>
+    <QuestionnaireForm
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        id: 'multiple-choice',
+        title: 'Multiple Choice Example',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Question 1',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Red',
+              },
+              {
+                valueString: 'Blue',
+              },
+              {
+                valueString: 'Yellow',
+              },
+            ],
+          },
+        ],
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
 export const KitchenSink = () => (
   <Document>
     <QuestionnaireForm
       questionnaire={{
         resourceType: 'Questionnaire',
+        id: 'kitchen-sink',
         title: 'Kitchen Sink Exmple',
         item: [
           {

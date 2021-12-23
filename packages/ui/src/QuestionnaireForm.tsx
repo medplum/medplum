@@ -1,22 +1,23 @@
-import { createReference, getReferenceString, ProfileResource } from '@medplum/core';
+import { createReference, getReferenceString, IndexedStructureDefinition, ProfileResource } from '@medplum/core';
 import {
   ElementDefinition,
   Questionnaire,
   QuestionnaireItem,
+  QuestionnaireItemAnswerOption,
   QuestionnaireResponse,
   QuestionnaireResponseItem,
   Reference,
 } from '@medplum/fhirtypes';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { AttachmentInput } from './AttachmentInput';
 import { Button } from './Button';
-import { CodingInput } from './CodingInput';
 import { Form } from './Form';
 import { FormSection } from './FormSection';
 import { useMedplum } from './MedplumProvider';
 import { QuantityInput } from './QuantityInput';
 import { QuestionnaireItemType } from './QuestionnaireUtils';
 import { ReferenceInput } from './ReferenceInput';
+import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 import { useResource } from './useResource';
 
 export interface QuestionnaireFormProps {
@@ -27,9 +28,14 @@ export interface QuestionnaireFormProps {
 export function QuestionnaireForm(props: QuestionnaireFormProps) {
   const medplum = useMedplum();
   const source = medplum.getProfile();
+  const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
   const questionnaire = useResource(props.questionnaire);
 
-  if (!questionnaire) {
+  useEffect(() => {
+    medplum.getTypeDefinition('Questionnaire').then((schema) => setSchema(schema));
+  }, []);
+
+  if (!schema || !questionnaire) {
     return null;
   }
 
@@ -60,7 +66,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps) {
       }}
     >
       {questionnaire.title && <h1>{questionnaire.title}</h1>}
-      {questionnaire.item && <QuestionnaireFormItemArray items={questionnaire.item} />}
+      {questionnaire.item && <QuestionnaireFormItemArray schema={schema} items={questionnaire.item} />}
       <Button type="submit" size="large">
         OK
       </Button>
@@ -69,6 +75,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps) {
 }
 
 interface QuestionnaireFormItemArrayProps {
+  schema: IndexedStructureDefinition;
   items: QuestionnaireItem[];
 }
 
@@ -77,10 +84,10 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
     <>
       {props.items.map((item) =>
         item.type === QuestionnaireItemType.group ? (
-          <QuestionnaireFormItem key={item.linkId} item={item} />
+          <QuestionnaireFormItem key={item.linkId} schema={props.schema} item={item} />
         ) : (
           <FormSection key={item.linkId} htmlFor={item.linkId} title={item.text || ''}>
-            <QuestionnaireFormItem item={item} />
+            <QuestionnaireFormItem schema={props.schema} item={item} />
           </FormSection>
         )
       )}
@@ -89,6 +96,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
 }
 
 export interface QuestionnaireFormItemProps {
+  schema: IndexedStructureDefinition;
   item: QuestionnaireItem;
 }
 
@@ -114,7 +122,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <div>
           <h3>{item.text}</h3>
-          {item.item && <QuestionnaireFormItemArray items={item.item} />}
+          {item.item && <QuestionnaireFormItemArray schema={props.schema} items={item.item} />}
         </div>
       );
     case QuestionnaireItemType.boolean:
@@ -137,7 +145,32 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return <input type="url" id={name} name={name} defaultValue={initial?.valueUri} />;
     case QuestionnaireItemType.choice:
     case QuestionnaireItemType.openChoice:
-      return <CodingInput property={property} name={name} defaultValue={initial?.valueCoding} />;
+      return (
+        <table style={{ width: '100%' }}>
+          <tbody>
+            {item.answerOption &&
+              item.answerOption.map((option: QuestionnaireItemAnswerOption) => {
+                const property = props.schema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
+                const [propertyValue, propertyType] = getValueAndType(option, property);
+                return (
+                  <tr key={JSON.stringify(option)}>
+                    <td style={{ width: '50px' }}>
+                      <input type="radio" id={name} name={name} value={propertyValue} />
+                    </td>
+                    <td>
+                      <ResourcePropertyDisplay
+                        schema={props.schema}
+                        property={property}
+                        propertyType={propertyType}
+                        value={propertyValue}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+          </tbody>
+        </table>
+      );
     case QuestionnaireItemType.attachment:
       return <AttachmentInput name={name} defaultValue={initial?.valueAttachment} />;
     case QuestionnaireItemType.reference:
