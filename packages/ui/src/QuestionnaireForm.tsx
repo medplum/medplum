@@ -32,7 +32,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps) {
   const questionnaire = useResource(props.questionnaire);
 
   useEffect(() => {
-    medplum.getTypeDefinition('Questionnaire').then((schema) => setSchema(schema));
+    medplum.getTypeDefinition('Questionnaire').then(setSchema);
   }, []);
 
   if (!schema || !questionnaire) {
@@ -150,8 +150,8 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           <tbody>
             {item.answerOption &&
               item.answerOption.map((option: QuestionnaireItemAnswerOption) => {
-                const property = props.schema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
-                const [propertyValue, propertyType] = getValueAndType(option, property);
+                const valueProperty = props.schema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
+                const [propertyValue, propertyType] = getValueAndType(option, valueProperty);
                 return (
                   <tr key={JSON.stringify(option)}>
                     <td style={{ width: '50px' }}>
@@ -160,7 +160,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
                     <td>
                       <ResourcePropertyDisplay
                         schema={props.schema}
-                        property={property}
+                        property={valueProperty}
                         propertyType={propertyType}
                         value={propertyValue}
                       />

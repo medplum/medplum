@@ -34,14 +34,11 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps) {
   }
 
   useEffect(() => {
-    medplum
-      .getTypeDefinition('Questionnaire')
-      .then((schema) => setSchema(schema))
-      .catch((reason) => console.log('schema error', reason));
+    medplum.getTypeDefinition('Questionnaire').then(setSchema);
   }, []);
 
   useEffect(() => {
-    setValue(ensureKeys(defaultValue ?? { resourceType: 'Questionnaire' }));
+    setValue(ensureQuestionnaireKeys(defaultValue ?? { resourceType: 'Questionnaire' }));
     document.addEventListener('mouseover', handleDocumentMouseOver);
     document.addEventListener('click', handleDocumentClick);
     return () => {
@@ -91,27 +88,27 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   const isResource = 'resourceType' in props.item;
   const isContainer = isResource || item.type === QuestionnaireItemType.group;
   const linkId = item.linkId ?? '[untitled]';
-  const editing = props.selectedKey === (props.item as any).__key;
-  const hovering = props.hoverKey === (props.item as any).__key;
+  const editing = props.selectedKey === props.item.id;
+  const hovering = props.hoverKey === props.item.id;
 
   const itemRef = useRef<T>();
   itemRef.current = props.item;
 
   function onClick(e: React.SyntheticEvent): void {
     killEvent(e);
-    props.setSelectedKey((props.item as any).__key);
+    props.setSelectedKey(props.item.id);
   }
 
   function onHover(e: React.SyntheticEvent): void {
     killEvent(e);
-    props.setHoverKey((props.item as any).__key);
+    props.setHoverKey(props.item.id);
   }
 
   function changeItem(changedItem: QuestionnaireItem) {
     const curr = itemRef.current as T;
     props.onChange({
       ...curr,
-      item: curr.item?.map((i) => ((i as any).__key === (changedItem as any).__key ? changedItem : i)),
+      item: curr.item?.map((i) => (i.id === changedItem.id ? changedItem : i)),
     } as T);
   }
 
@@ -174,20 +171,19 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             </div>
           )}
           {!isResource && (
-            // <FormSection>
-            //   {item.type === 'display' ? (
-            //     <textarea defaultValue={item.text} onChange={(e) => changeProperty('text', e.target.value)} />
-            //   ) : (
-            //     <TextField defaultValue={item.text} onChange={(e) => changeProperty('text', e.target.value)} />
-            //   )}
-            // </FormSection>
             <textarea
-              style={{ width: '100%', height: '100px' }}
+              style={{ width: '95%', height: '100px', minHeight: '100px', margin: '8px 4px 4px 4px' }}
               defaultValue={item.text}
               onChange={(e) => changeProperty('text', e.target.value)}
             />
           )}
-          {isChoiceQuestion(item) && <AnswerBuilder schema={props.schema} item={item} />}
+          {isChoiceQuestion(item) && (
+            <AnswerBuilder
+              schema={props.schema}
+              options={item.answerOption}
+              onChange={(newOptions) => changeProperty('answerOption', newOptions)}
+            />
+          )}
         </>
       ) : (
         <>
@@ -198,7 +194,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
       )}
       {item.item &&
         item.item.map((i) => (
-          <div key={(i as any).__key}>
+          <div key={i.id}>
             <ItemBuilder
               schema={props.schema}
               item={i}
@@ -233,8 +229,8 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
               onClick={(e) => {
                 e.preventDefault();
                 addItem({
-                  __key: generateKey(),
-                  linkId: generateKey(),
+                  id: generateId(),
+                  linkId: generateLinkId('q'),
                   type: 'string',
                   text: 'Question',
                 } as QuestionnaireItem);
@@ -247,8 +243,8 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
               onClick={(e) => {
                 e.preventDefault();
                 addItem({
-                  __key: generateKey(),
-                  linkId: generateKey(),
+                  id: generateId(),
+                  linkId: generateLinkId('g'),
                   type: 'group',
                   text: 'Group',
                 } as QuestionnaireItem);
@@ -276,62 +272,127 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
 
 interface AnswerBuilderProps {
   schema: IndexedStructureDefinition;
-  item: QuestionnaireItem;
+  options?: QuestionnaireItemAnswerOption[];
+  onChange: (newOptions: QuestionnaireItemAnswerOption[]) => void;
 }
 
 function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
-  const { schema, item } = props;
+  const property = props.schema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
+  const options = props.options ?? [];
   return (
     <div>
-      {item.answerOption &&
-        item.answerOption.map((option: QuestionnaireItemAnswerOption) => {
-          const property = schema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
-          const [propertyValue, propertyType] = getValueAndType(option, property);
-          return (
-            <ResourcePropertyInput
-              key={(option as any).__key}
-              schema={props.schema}
-              name="option"
-              property={property}
-              defaultPropertyType={propertyType}
-              defaultValue={propertyValue}
-            />
-          );
-        })}
-      <a href="#">Add choice</a>
+      {options.map((option: QuestionnaireItemAnswerOption) => {
+        const [propertyValue, propertyType] = getValueAndType(option, property);
+        return (
+          <div
+            key={option.id}
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              width: '80%',
+            }}
+          >
+            <div>
+              <ResourcePropertyInput
+                key={option.id}
+                schema={props.schema}
+                name="value[x]"
+                property={property}
+                defaultPropertyType={propertyType}
+                defaultValue={propertyValue}
+                onChange={(newValue: any, propName?: string) => {
+                  const newOptions = [...options];
+                  const index = newOptions.findIndex((o) => o.id === option.id);
+                  newOptions[index] = { id: option.id, [propName as string]: newValue };
+                  props.onChange(newOptions);
+                }}
+              />
+            </div>
+            <div>
+              <a
+                href="#"
+                onClick={(e: React.SyntheticEvent) => {
+                  killEvent(e);
+                  props.onChange(options.filter((o) => o.id !== option.id));
+                }}
+              >
+                Remove
+              </a>
+            </div>
+          </div>
+        );
+      })}
+      <a
+        href="#"
+        onClick={(e: React.SyntheticEvent) => {
+          killEvent(e);
+          props.onChange([
+            ...options,
+            {
+              id: generateId(),
+            },
+          ]);
+        }}
+      >
+        Add choice
+      </a>
     </div>
   );
 }
 
-let nextKeyId = 1;
+let nextLinkId = 1;
+let nextId = 1;
 
 /**
- * Generates a short unique key that can be used for local identifiers.
- * @return A unique key.
+ * Generates a link ID for an item.
+ * Link IDs are required properties on QuestionnaireItem objects.
+ * @return A unique link ID.
  */
-function generateKey(): string {
-  return 'key' + nextKeyId++;
+function generateLinkId(prefix: string): string {
+  return prefix + nextLinkId++;
 }
 
 /**
- * Ensures that all objects in the object hava a unique __key property.
- * Applied recursively to all children.
- * @param obj The object to ensure keys for.
- * @return Updated array where all items have a __key property.
+ * Generates a unique ID.
+ * React needs unique IDs for components for rendering performance.
+ * All of the important components in the questionnaire builder have id properties for this:
+ * Questionnaire, QuestionnaireItem, and QuestionnaireItemAnswerOption.
+ * @return A unique key.
  */
-function ensureKeys<T>(obj: T): T {
-  if (obj) {
-    if (Array.isArray(obj)) {
-      obj.forEach((element) => ensureKeys(element));
-    }
+function generateId(): string {
+  return 'id-' + nextId++;
+}
 
-    if (typeof obj === 'object') {
-      if (!('__key' in obj)) {
-        (obj as any).__key = generateKey();
-      }
-      Object.values(obj).forEach((element) => ensureKeys(element));
-    }
+function ensureQuestionnaireKeys(questionnaire: Questionnaire): Questionnaire {
+  return {
+    ...questionnaire,
+    id: questionnaire.id || generateId(),
+    item: ensureQuestionnaireItemKeys(questionnaire.item),
+  } as Questionnaire;
+}
+
+function ensureQuestionnaireItemKeys(items: QuestionnaireItem[] | undefined): QuestionnaireItem[] | undefined {
+  if (!items) {
+    return undefined;
   }
+  return items.map((item) => ({
+    ...item,
+    id: item.id || generateId(),
+    item: ensureQuestionnaireItemKeys(item.item),
+    answerOption: ensureQuestionnaireOptionKeys(item.answerOption),
+  }));
+}
 
-  return obj;
+function ensureQuestionnaireOptionKeys(
+  options: QuestionnaireItemAnswerOption[] | undefined
+): QuestionnaireItemAnswerOption[] | undefined {
+  if (!options) {
+    return undefined;
+  }
+  return options.map((option) => ({
+    ...option,
+    id: option.id || generateId(),
+  }));
 }
