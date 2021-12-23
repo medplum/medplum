@@ -135,7 +135,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
 
   const className = editing ? 'section editing' : hovering ? 'section hovering' : 'section';
   return (
-    <div className={className} onClick={onClick} onMouseOver={onHover}>
+    <div data-testid={item.linkId} className={className} onClick={onClick} onMouseOver={onHover}>
       {editing ? (
         <>
           {isResource && (
@@ -254,17 +254,19 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             </a>
           </>
         )}
-        <a
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            if (props.onRemove) {
-              props.onRemove();
-            }
-          }}
-        >
-          Remove
-        </a>
+        {!isResource && (
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              if (props.onRemove) {
+                props.onRemove();
+              }
+            }}
+          >
+            Remove
+          </a>
+        )}
       </div>
     </div>
   );
