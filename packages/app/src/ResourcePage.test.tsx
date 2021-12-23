@@ -1,5 +1,14 @@
 import { notFound } from '@medplum/core';
-import { Bot, Bundle, DiagnosticReport, Patient, Practitioner, Questionnaire } from '@medplum/fhirtypes';
+import {
+  Bot,
+  Bundle,
+  DiagnosticReport,
+  Patient,
+  Practitioner,
+  Questionnaire,
+  SearchParameter,
+  StructureDefinition,
+} from '@medplum/fhirtypes';
 import { MedplumProvider, MockClient } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -20,7 +29,7 @@ const practitioner: Practitioner = {
   },
 };
 
-const practitionerHistory: Bundle = {
+const practitionerHistory: Bundle<Practitioner> = {
   resourceType: 'Bundle',
   type: 'history',
   entry: [
@@ -30,7 +39,7 @@ const practitionerHistory: Bundle = {
   ],
 };
 
-const practitionerStructureBundle: Bundle = {
+const practitionerStructureBundle: Bundle<StructureDefinition> = {
   resourceType: 'Bundle',
   entry: [
     {
@@ -71,7 +80,7 @@ const practitionerStructureBundle: Bundle = {
   ],
 };
 
-const practitionerSearchParameter: Bundle = {
+const practitionerSearchParameter: Bundle<SearchParameter> = {
   resourceType: 'Bundle',
   entry: [
     {
@@ -104,7 +113,7 @@ const patient: Patient = {
   },
 };
 
-const patientHistory: Bundle = {
+const patientHistory: Bundle<Patient> = {
   resourceType: 'Bundle',
   type: 'history',
   entry: [
@@ -114,7 +123,7 @@ const patientHistory: Bundle = {
   ],
 };
 
-const patientSearchBundle: Bundle = {
+const patientSearchBundle: Bundle<Patient> = {
   resourceType: 'Bundle',
   total: 100,
   entry: [
@@ -150,12 +159,85 @@ const diagnosticReport: DiagnosticReport = {
   result: [{ reference: 'Observation/123' }],
 };
 
+const questionnaireStructureDefinitionBundle: Bundle<StructureDefinition> = {
+  resourceType: 'Bundle',
+  type: 'searchset',
+  entry: [
+    {
+      resource: {
+        resourceType: 'StructureDefinition',
+        name: 'Questionnaire',
+        snapshot: {
+          element: [
+            {
+              id: 'Questionnaire.item',
+              path: 'Questionnaire.item',
+              type: [
+                {
+                  code: 'BackboneElement',
+                },
+              ],
+            },
+            {
+              id: 'Questionnaire.item.answerOption',
+              path: 'Questionnaire.item.answerOption',
+              type: [
+                {
+                  code: 'BackboneElement',
+                },
+              ],
+            },
+            {
+              id: 'Questionnaire.item.answerOption.value[x]',
+              path: 'Questionnaire.item.answerOption.value[x]',
+              min: 1,
+              max: '1',
+              type: [
+                {
+                  code: 'integer',
+                },
+                {
+                  code: 'date',
+                },
+                {
+                  code: 'time',
+                },
+                {
+                  code: 'string',
+                },
+                {
+                  code: 'Coding',
+                },
+                {
+                  code: 'Reference',
+                  targetProfile: ['http://hl7.org/fhir/StructureDefinition/Resource'],
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
+  ],
+};
+
+const questionnaireSearchParamBundle: Bundle<SearchParameter> = {
+  resourceType: 'Bundle',
+  type: 'searchset',
+};
+
 const medplum = new MockClient({
   'fhir/R4/StructureDefinition?name:exact=Practitioner': {
     GET: practitionerStructureBundle,
   },
   'fhir/R4/SearchParameter?name=Practitioner': {
     GET: practitionerSearchParameter,
+  },
+  'fhir/R4/StructureDefinition?name:exact=Questionnaire': {
+    GET: questionnaireStructureDefinitionBundle,
+  },
+  'fhir/R4/SearchParameter?_count=100&base=Questionnaire': {
+    GET: questionnaireSearchParamBundle,
   },
   'fhir/R4/Patient?': {
     GET: patientSearchBundle,

@@ -139,29 +139,14 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           outcome={props.outcome}
         />
       );
+    case PropertyType.decimal:
     case PropertyType.integer:
     case PropertyType.positiveInt:
     case PropertyType.unsignedInt:
       return (
         <TextField
           type="number"
-          step={1}
-          name={name}
-          testid={name}
-          defaultValue={value}
-          onChange={(e: React.ChangeEvent) => {
-            if (props.onChange) {
-              props.onChange(parseFloat((e.target as HTMLInputElement).value));
-            }
-          }}
-          outcome={props.outcome}
-        />
-      );
-    case PropertyType.decimal:
-      return (
-        <TextField
-          type="number"
-          step={0.01}
+          step={propertyType === PropertyType.decimal ? 0.01 : 1}
           name={name}
           testid={name}
           defaultValue={value}

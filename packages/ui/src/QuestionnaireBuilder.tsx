@@ -3,16 +3,14 @@ import { Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption, Refere
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Form } from './Form';
-import { FormSection } from './FormSection';
 import { useMedplum } from './MedplumProvider';
+import './QuestionnaireBuilder.css';
 import { QuestionnaireFormItem } from './QuestionnaireForm';
 import { isChoiceQuestion, QuestionnaireItemType } from './QuestionnaireUtils';
 import { getValueAndType } from './ResourcePropertyDisplay';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
-import { TextField } from './TextField';
 import { useResource } from './useResource';
 import { killEvent } from './utils/dom';
-import './QuestionnaireBuilder.css';
 
 export interface QuestionnaireBuilderProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;
@@ -176,34 +174,20 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             </div>
           )}
           {!isResource && (
-            <FormSection>
-              {item.type === 'display' ? (
-                <textarea defaultValue={item.text} onChange={(e) => changeProperty('text', e.target.value)} />
-              ) : (
-                <TextField defaultValue={item.text} onChange={(e) => changeProperty('text', e.target.value)} />
-              )}
-            </FormSection>
+            // <FormSection>
+            //   {item.type === 'display' ? (
+            //     <textarea defaultValue={item.text} onChange={(e) => changeProperty('text', e.target.value)} />
+            //   ) : (
+            //     <TextField defaultValue={item.text} onChange={(e) => changeProperty('text', e.target.value)} />
+            //   )}
+            // </FormSection>
+            <textarea
+              style={{ width: '100%', height: '100px' }}
+              defaultValue={item.text}
+              onChange={(e) => changeProperty('text', e.target.value)}
+            />
           )}
-          {isChoiceQuestion(item) && (
-            <div>
-              {item.answerOption &&
-                item.answerOption.map((option: QuestionnaireItemAnswerOption) => {
-                  const property = props.schema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
-                  const [propertyValue, propertyType] = getValueAndType(option, property);
-                  return (
-                    <ResourcePropertyInput
-                      key={(option as any).__key}
-                      schema={props.schema}
-                      name="option"
-                      property={property}
-                      defaultPropertyType={propertyType}
-                      defaultValue={propertyValue}
-                    />
-                  );
-                })}
-              <a href="#">Add choice</a>
-            </div>
-          )}
+          {isChoiceQuestion(item) && <AnswerBuilder schema={props.schema} item={item} />}
         </>
       ) : (
         <>
@@ -286,6 +270,35 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           Remove
         </a>
       </div>
+    </div>
+  );
+}
+
+interface AnswerBuilderProps {
+  schema: IndexedStructureDefinition;
+  item: QuestionnaireItem;
+}
+
+function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
+  const { schema, item } = props;
+  return (
+    <div>
+      {item.answerOption &&
+        item.answerOption.map((option: QuestionnaireItemAnswerOption) => {
+          const property = schema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
+          const [propertyValue, propertyType] = getValueAndType(option, property);
+          return (
+            <ResourcePropertyInput
+              key={(option as any).__key}
+              schema={props.schema}
+              name="option"
+              property={property}
+              defaultPropertyType={propertyType}
+              defaultValue={propertyValue}
+            />
+          );
+        })}
+      <a href="#">Add choice</a>
     </div>
   );
 }
