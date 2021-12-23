@@ -24,6 +24,9 @@ export function QuantityInput(props: QuantityInputProps) {
         <tr>
           <td>
             <TextField
+              name={props.name}
+              type="number"
+              step={0.01}
               placeholder="Value"
               defaultValue={value?.value?.toString()}
               onChange={(e) =>

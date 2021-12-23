@@ -13,6 +13,7 @@ export const Basic = () => (
     <QuestionnaireBuilder
       questionnaire={{
         resourceType: 'Questionnaire',
+        title: 'Basic Example',
         item: [
           {
             linkId: 'titleDisplay',
@@ -21,7 +22,7 @@ export const Basic = () => (
           },
           {
             linkId: 'abc',
-            text: 'Question',
+            text: 'Example Question',
             type: 'string',
           },
         ],

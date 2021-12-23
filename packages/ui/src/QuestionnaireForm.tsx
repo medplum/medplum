@@ -14,6 +14,7 @@ import { CodingInput } from './CodingInput';
 import { Form } from './Form';
 import { FormSection } from './FormSection';
 import { useMedplum } from './MedplumProvider';
+import { QuantityInput } from './QuantityInput';
 import { QuestionnaireItemType } from './QuestionnaireUtils';
 import { ReferenceInput } from './ReferenceInput';
 import { useResource } from './useResource';
@@ -87,11 +88,11 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
   );
 }
 
-interface QuestionnaireFormItemProps {
+export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
 }
 
-function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element | null {
+export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element | null {
   const item = props.item;
 
   const type = item.type as QuestionnaireItemType;
@@ -142,7 +143,7 @@ function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element |
     case QuestionnaireItemType.reference:
       return <ReferenceInput property={property} name={name} defaultValue={initial?.valueReference} />;
     case QuestionnaireItemType.quantity:
-      return <input type="number" id={name} name={name} defaultValue={initial?.valueQuantity?.value} />;
+      return <QuantityInput name={name} defaultValue={initial?.valueQuantity} />;
   }
 
   return null;

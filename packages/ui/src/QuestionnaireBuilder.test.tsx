@@ -243,7 +243,7 @@ describe('QuestionnaireBuilder', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Remove'));
+      fireEvent.click(screen.getAllByText('Remove')[0]);
     });
 
     await act(async () => {
