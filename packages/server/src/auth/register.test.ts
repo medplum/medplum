@@ -1,12 +1,16 @@
 import { ClientApplication, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
+import { setupRecaptchaMock } from '../jest.setup';
 import { generateSecret, initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
+
+jest.mock('node-fetch');
 
 const app = express();
 
@@ -23,6 +27,11 @@ describe('Register', () => {
     await closeDatabase();
   });
 
+  beforeEach(async () => {
+    (fetch as any).mockClear();
+    setupRecaptchaMock(fetch, true);
+  });
+
   test('Success', async () => {
     const res = await request(app)
       .post('/auth/register')
@@ -33,6 +42,7 @@ describe('Register', () => {
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
+        recaptchaResponse: 'recaptcha-response',
       });
 
     expect(res.status).toBe(200);
@@ -49,6 +59,7 @@ describe('Register', () => {
       projectName: 'Washington Project',
       email: `george${randomUUID()}@example.com`,
       password: 'password!@#',
+      recaptchaResponse: 'recaptcha-response',
     };
 
     const res = await request(app).post('/auth/register').type('json').send(registerRequest);
@@ -73,6 +84,7 @@ describe('Register', () => {
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
+        recaptchaResponse: 'recaptcha-response',
       });
 
     expect(res.status).toBe(200);
@@ -107,6 +119,7 @@ describe('Register', () => {
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
+        recaptchaResponse: 'recaptcha-response',
       });
 
     expect(res.status).toBe(200);
@@ -142,6 +155,7 @@ describe('Register', () => {
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
+        recaptchaResponse: 'recaptcha-response',
       });
 
     expect(res.status).toBe(200);
@@ -164,6 +178,7 @@ describe('Register', () => {
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
+        recaptchaResponse: 'recaptcha-response',
       });
 
     expect(res.status).toBe(200);
@@ -189,6 +204,7 @@ describe('Register', () => {
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
+        recaptchaResponse: 'recaptcha-response',
       });
 
     expect(res.status).toBe(200);
@@ -226,6 +242,7 @@ describe('Register', () => {
         projectName: 'User1 Project',
         email: `user1-${randomUUID()}@example.com`,
         password: 'password!@#',
+        recaptchaResponse: 'recaptcha-response',
       });
 
     expect(res.status).toBe(200);
@@ -258,6 +275,7 @@ describe('Register', () => {
         projectName: 'User2 Project',
         email: `user2-${randomUUID()}@example.com`,
         password: 'password!@#',
+        recaptchaResponse: 'recaptcha-response',
       });
 
     expect(res3.status).toBe(200);
@@ -327,6 +345,7 @@ describe('Register', () => {
         projectName: 'User1 Project',
         email: `user1-${randomUUID()}@example.com`,
         password: 'password!@#',
+        recaptchaResponse: 'recaptcha-response',
       });
 
     expect(res.status).toBe(200);
@@ -359,6 +378,7 @@ describe('Register', () => {
         projectName: 'User2 Project',
         email: `user2-${randomUUID()}@example.com`,
         password: 'password!@#',
+        recaptchaResponse: 'recaptcha-response',
       });
 
     expect(res3.status).toBe(200);

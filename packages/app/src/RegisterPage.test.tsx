@@ -36,8 +36,19 @@ describe('RegisterPage', () => {
       value: TextEncoder,
     });
 
-    Object.defineProperty(global.self, 'crypto', {
+    Object.defineProperty(global, 'crypto', {
       value: crypto.webcrypto,
+    });
+
+    Object.defineProperty(global, 'grecaptcha', {
+      value: {
+        ready(callback: () => void): void {
+          callback();
+        },
+        execute(): Promise<string> {
+          return Promise.resolve('token');
+        },
+      },
     });
   });
 

@@ -12,20 +12,20 @@ import { generateSecret, getAuthTokens, tryLogin } from '../oauth';
 import { createPractitioner, createProjectMembership } from './utils';
 
 export interface RegisterRequest {
-  firstName: string;
-  lastName: string;
-  projectName: string;
-  email: string;
-  password: string;
-  recaptchaResponse: string;
-  admin?: boolean;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly projectName: string;
+  readonly email: string;
+  readonly password: string;
+  readonly recaptchaResponse?: string;
+  readonly admin?: boolean;
 }
 
 export interface RegisterResponse {
-  user: User;
-  project: Project;
-  profile: ProfileResource;
-  client: ClientApplication;
+  readonly user: User;
+  readonly project: Project;
+  readonly profile: ProfileResource;
+  readonly client: ClientApplication;
 }
 
 export const registerValidators = [

@@ -51,3 +51,15 @@ export async function initTestAuth() {
     scope,
   });
 }
+
+/**
+ * Sets up the fetch mock to handle Recaptcha requests.
+ * @param fetch The fetch mock.
+ * @param success Whether the mock should return a successful response.
+ */
+export function setupRecaptchaMock(fetch: any, success: boolean): void {
+  fetch.mockImplementation(() => ({
+    status: 200,
+    json: () => ({ success }),
+  }));
+}

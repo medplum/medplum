@@ -1,4 +1,4 @@
-import { assertOk, createReference, getReferenceString, isOk, Operator, RegisterRequest } from '@medplum/core';
+import { assertOk, createReference, getReferenceString, isOk, Operator } from '@medplum/core';
 import {
   AccessPolicy,
   Bundle,
@@ -14,13 +14,13 @@ import {
   StructureDefinition,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { registerNew } from '../auth/register';
+import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { tryLogin } from '../oauth';
 import { seedDatabase } from '../seed';
 import { processBatch } from './batch';
-import { getRepoForLogin, systemRepo, Repository } from './repo';
+import { getRepoForLogin, Repository, systemRepo } from './repo';
 
 describe('FHIR Repo', () => {
   beforeAll(async () => {
