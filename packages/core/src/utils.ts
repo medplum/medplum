@@ -139,14 +139,11 @@ export function stringify(value: any, pretty?: boolean): string {
  * Evaluates JSON key/value pairs for FHIR JSON stringify.
  * Removes properties with empty string values.
  * Removes objects with zero properties.
- * Replaces any key/value pair of key "__key" with value undefined.
- * This function can be used as the 2nd argument to stringify to remove __key properties.
- * We add __key properties to array elements to improve React render performance.
  * @param {string} k Property key.
  * @param {*} v Property value.
  */
 function stringifyReplacer(k: string, v: any): any {
-  return k === '__key' || isEmpty(v) ? undefined : v;
+  return isEmpty(v) ? undefined : v;
 }
 
 /**
