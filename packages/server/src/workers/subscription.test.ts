@@ -5,7 +5,7 @@ import { createHmac, randomUUID } from 'crypto';
 import fetch from 'node-fetch';
 import { loadTestConfig } from '../config';
 import { closeDatabase, getClient, initDatabase } from '../database';
-import { Repository } from '../fhir/repo';
+import { Repository, systemRepo } from '../fhir/repo';
 import { seedDatabase } from '../seed';
 import { closeSubscriptionWorker, initSubscriptionWorker, sendSubscription } from './subscription';
 
@@ -766,5 +766,67 @@ describe('Subscription Worker', () => {
     assertOk(searchOutcome);
     expect(bundle).toBeDefined();
     expect(bundle?.entry?.length).toEqual(0);
+  });
+
+  test('AuditEvent has Subscription account details', async () => {
+    const project = randomUUID();
+    const account = {
+      reference: 'Organization/' + randomUUID(),
+    };
+
+    const [subscriptionOutcome, subscription] = await systemRepo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      meta: {
+        project,
+        account,
+      },
+      status: 'active',
+      criteria: 'Patient',
+      channel: {
+        type: 'rest-hook',
+        endpoint: 'https://example.com/subscription',
+      },
+    });
+    expect(subscriptionOutcome.id).toEqual('created');
+    expect(subscription).toBeDefined();
+
+    const queue = (Queue as any).mock.instances[0];
+    queue.add.mockClear();
+
+    const [patientOutcome, patient] = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      meta: {
+        project,
+        account,
+      },
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+
+    expect(patientOutcome.id).toEqual('created');
+    expect(patient).toBeDefined();
+    expect(queue.add).toHaveBeenCalled();
+
+    (fetch as any).mockImplementation(() => ({ status: 200 }));
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    await sendSubscription(job);
+
+    const [searchOutcome, bundle] = await systemRepo.search<AuditEvent>({
+      resourceType: 'AuditEvent',
+      filters: [
+        {
+          code: 'entity',
+          operator: Operator.EQUALS,
+          value: getReferenceString(subscription as Subscription),
+        },
+      ],
+    });
+    assertOk(searchOutcome);
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry?.length).toEqual(1);
+
+    const auditEvent = bundle?.entry?.[0].resource as AuditEvent;
+    expect(auditEvent.meta?.account).toBeDefined();
+    expect(auditEvent.meta?.account?.reference).toEqual(account.reference);
   });
 });
