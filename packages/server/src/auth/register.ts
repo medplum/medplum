@@ -4,7 +4,9 @@ import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { invalidRequest, systemRepo, sendOutcome } from '../fhir';
+import fetch from 'node-fetch';
+import { getConfig } from '../config';
+import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { logger } from '../logger';
 import { generateSecret, getAuthTokens, tryLogin } from '../oauth';
 import { createPractitioner, createProjectMembership } from './utils';
@@ -15,8 +17,7 @@ export interface RegisterRequest {
   projectName: string;
   email: string;
   password: string;
-  scope?: string;
-  role?: string;
+  recaptchaResponse: string;
   admin?: boolean;
 }
 
@@ -33,6 +34,7 @@ export const registerValidators = [
   body('projectName').notEmpty().withMessage('Project name is required'),
   body('email').isEmail().withMessage('Valid email address is required'),
   body('password').isLength({ min: 5 }).withMessage('Invalid password, must be at least 5 characters'),
+  body('recaptchaResponse').notEmpty().withMessage('Recaptcha response is required'),
 ];
 
 export async function registerHandler(req: Request, res: Response) {
@@ -42,9 +44,12 @@ export async function registerHandler(req: Request, res: Response) {
   }
 
   const { email, password } = req.body;
-
   if (await searchForExisting(email)) {
     return sendOutcome(res, badRequest('Email already registered', 'email'));
+  }
+
+  if (!(await verifyRecaptcha(req.body.recaptchaResponse))) {
+    return sendOutcome(res, badRequest('Recaptcha failed'));
   }
 
   const result = await registerNew(req.body as RegisterRequest);
@@ -141,4 +146,24 @@ async function createClientApplication(project: Project): Promise<ClientApplicat
   assertOk(outcome);
   logger.info('Created: ' + (result as ClientApplication).id);
   return result as ClientApplication;
+}
+
+/**
+ * Verifies the recaptcha response from the client.
+ * @param recaptchaResponse The Recaptcha response from the client.
+ * @returns True on success, false on failure.
+ */
+async function verifyRecaptcha(recaptchaResponse: string): Promise<boolean> {
+  const secretKey = getConfig().recaptchaSecretKey as string;
+
+  const url =
+    'https://www.google.com/recaptcha/api/siteverify' +
+    '?secret=' +
+    encodeURIComponent(secretKey) +
+    '&response=' +
+    encodeURIComponent(recaptchaResponse);
+
+  const response = await fetch(url, { method: 'POST' });
+  const json = await response.json();
+  return json.success;
 }

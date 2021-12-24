@@ -1,6 +1,6 @@
 import { RegisterRequest } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Logo, MedplumLink, TextField, useMedplum } from '@medplum/ui';
+import { Button, Document, Form, FormSection, Logo, TextField, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
 
 export function RegisterPage() {
@@ -13,14 +13,21 @@ export function RegisterPage() {
       <Form
         style={{ maxWidth: 400 }}
         onSubmit={(formData: Record<string, string>) => {
-          medplum
-            .register(formData as any as RegisterRequest)
-            .then(() => setSuccess(true))
-            .catch((err) => {
-              if (err.outcome) {
-                setOutcome(err.outcome);
-              }
+          grecaptcha.ready(() => {
+            grecaptcha.execute(process.env.RECAPTCHA_SITE_KEY as string, { action: 'submit' }).then((token: string) => {
+              medplum
+                .register({
+                  ...formData,
+                  recaptchaResponse: token,
+                } as any as RegisterRequest)
+                .then(() => setSuccess(true))
+                .catch((err) => {
+                  if (err.outcome) {
+                    setOutcome(err.outcome);
+                  }
+                });
             });
+          });
         }}
       >
         <div className="center">
@@ -51,12 +58,22 @@ export function RegisterPage() {
             <FormSection title="Password">
               <TextField name="password" type="password" testid="password" required={true} outcome={outcome} />
             </FormSection>
+            <p style={{ fontSize: '12px', color: '#888' }}>
+              By clicking submit you agree to the Medplum
+              <br />
+              <a href="https://www.medplum.com/privacy">Privacy Policy</a>
+              &nbsp;and&nbsp;
+              <a href="https://www.medplum.com/terms">Terms of Service</a>.
+            </p>
+            <p style={{ fontSize: '12px', color: '#888' }}>
+              This site is protected by reCAPTCHA and the Google
+              <br />
+              <a href="https://policies.google.com/privacy">Privacy Policy</a>
+              &nbsp;and&nbsp;
+              <a href="https://policies.google.com/terms">Terms of Service</a> apply.
+            </p>
             <div className="medplum-signin-buttons">
-              <div>
-                <MedplumLink testid="signin" to="/signin">
-                  Sign in
-                </MedplumLink>
-              </div>
+              <div />
               <div>
                 <Button type="submit" testid="submit">
                   Create account

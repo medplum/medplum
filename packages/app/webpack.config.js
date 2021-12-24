@@ -3,6 +3,9 @@ const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPl
 const DotenvPlugin = require('dotenv-webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const dotenv = require('dotenv');
+
+dotenv.config();
 
 module.exports = (env, argv) => ({
   entry: './src/index.tsx',
@@ -25,8 +28,11 @@ module.exports = (env, argv) => ({
       systemvars: true,
     }),
     new HtmlWebpackPlugin({
-      template: 'index.html',
+      template: 'index.html.ejs',
       favicon: 'favicon.ico',
+      templateParameters: {
+        RECAPTCHA_SITE_KEY: process.env.RECAPTCHA_SITE_KEY,
+      },
     }),
     new MiniCssExtractPlugin({
       filename: 'css/[name].[contenthash].css',
