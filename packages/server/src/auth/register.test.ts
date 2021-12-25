@@ -52,6 +52,41 @@ describe('Register', () => {
     expect(res.body.refreshToken).toBeDefined();
   });
 
+  test('Missing recaptcha', async () => {
+    const res = await request(app)
+      .post('/auth/register')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'Hamilton Project',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Recaptcha response is required');
+  });
+
+  test('Incorrect recaptcha', async () => {
+    setupRecaptchaMock(fetch, false);
+
+    const res = await request(app)
+      .post('/auth/register')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'Hamilton Project',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaResponse: 'wrong',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Recaptcha failed');
+  });
+
   test('Email already registered', async () => {
     const registerRequest = {
       firstName: 'George',
