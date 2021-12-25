@@ -46,7 +46,7 @@ describe('Admin Invite', () => {
         projectName: 'Alice Project',
         email: `alice${randomUUID()}@example.com`,
         password: 'password!@#',
-        recaptchaResponse: 'recaptcha-response',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(200);
@@ -93,7 +93,7 @@ describe('Admin Invite', () => {
         projectName: 'Alice Project',
         email: `alice${randomUUID()}@example.com`,
         password: 'password!@#',
-        recaptchaResponse: 'recaptcha-response',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(200);
@@ -107,7 +107,7 @@ describe('Admin Invite', () => {
       projectName: 'Bob Project',
       email: bobEmail,
       password: 'password!@#',
-      recaptchaResponse: 'recaptcha-response',
+      recaptchaToken: 'xyz',
     });
 
     expect(res2.status).toBe(200);
@@ -154,7 +154,7 @@ describe('Admin Invite', () => {
         projectName: 'Alice Project',
         email: `alice${randomUUID()}@example.com`,
         password: 'password!@#',
-        recaptchaResponse: 'recaptcha-response',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(200);
@@ -170,7 +170,7 @@ describe('Admin Invite', () => {
         projectName: 'Bob Project',
         email: `bob${randomUUID()}@example.com`,
         password: 'password!@#',
-        recaptchaResponse: 'recaptcha-response',
+        recaptchaToken: 'xyz',
       });
 
     expect(res2.status).toBe(200);
@@ -204,7 +204,7 @@ describe('Admin Invite', () => {
         projectName: 'Alice Project',
         email: `alice${randomUUID()}@example.com`,
         password: 'password!@#',
-        recaptchaResponse: 'recaptcha-response',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(200);

@@ -45,7 +45,7 @@ describe('Change Password', () => {
         projectName: 'Adams Project',
         email: `john${randomUUID()}@example.com`,
         password: 'password!@#',
-        recaptchaResponse: 'recaptcha-response',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(200);
@@ -72,7 +72,7 @@ describe('Change Password', () => {
         projectName: 'Jefferson Project',
         email: `thomas${randomUUID()}@example.com`,
         password: 'password!@#',
-        recaptchaResponse: 'recaptcha-response',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(200);
@@ -99,7 +99,7 @@ describe('Change Password', () => {
         projectName: 'Jefferson Project',
         email: `thomas${randomUUID()}@example.com`,
         password: 'password!@#',
-        recaptchaResponse: 'recaptcha-response',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(200);

@@ -42,7 +42,7 @@ describe('Register', () => {
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
-        recaptchaResponse: 'recaptcha-response',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(200);
@@ -65,7 +65,7 @@ describe('Register', () => {
       });
 
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toBe('Recaptcha response is required');
+    expect(res.body.issue[0].details.text).toBe('Recaptcha token is required');
   });
 
   test('Incorrect recaptcha', async () => {
@@ -80,7 +80,7 @@ describe('Register', () => {
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
-        recaptchaResponse: 'wrong',
+        recaptchaToken: 'wrong',
       });
 
     expect(res.status).toBe(400);
@@ -94,7 +94,7 @@ describe('Register', () => {
       projectName: 'Washington Project',
       email: `george${randomUUID()}@example.com`,
       password: 'password!@#',
-      recaptchaResponse: 'recaptcha-response',
+      recaptchaToken: 'xyz',
     };
 
     const res = await request(app).post('/auth/register').type('json').send(registerRequest);
@@ -119,7 +119,7 @@ describe('Register', () => {
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
-        recaptchaResponse: 'recaptcha-response',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(200);
@@ -154,7 +154,7 @@ describe('Register', () => {
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
-        recaptchaResponse: 'recaptcha-response',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(200);
@@ -190,7 +190,7 @@ describe('Register', () => {
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
-        recaptchaResponse: 'recaptcha-response',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(200);
@@ -213,7 +213,7 @@ describe('Register', () => {
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
-        recaptchaResponse: 'recaptcha-response',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(200);
@@ -239,7 +239,7 @@ describe('Register', () => {
         projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
-        recaptchaResponse: 'recaptcha-response',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(200);
@@ -277,7 +277,7 @@ describe('Register', () => {
         projectName: 'User1 Project',
         email: `user1-${randomUUID()}@example.com`,
         password: 'password!@#',
-        recaptchaResponse: 'recaptcha-response',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(200);
@@ -310,7 +310,7 @@ describe('Register', () => {
         projectName: 'User2 Project',
         email: `user2-${randomUUID()}@example.com`,
         password: 'password!@#',
-        recaptchaResponse: 'recaptcha-response',
+        recaptchaToken: 'xyz',
       });
 
     expect(res3.status).toBe(200);
@@ -380,7 +380,7 @@ describe('Register', () => {
         projectName: 'User1 Project',
         email: `user1-${randomUUID()}@example.com`,
         password: 'password!@#',
-        recaptchaResponse: 'recaptcha-response',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(200);
@@ -413,7 +413,7 @@ describe('Register', () => {
         projectName: 'User2 Project',
         email: `user2-${randomUUID()}@example.com`,
         password: 'password!@#',
-        recaptchaResponse: 'recaptcha-response',
+        recaptchaToken: 'xyz',
       });
 
     expect(res3.status).toBe(200);

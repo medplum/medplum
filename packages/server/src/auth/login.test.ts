@@ -143,7 +143,7 @@ describe('Login', () => {
       projectName: 'Access Policy Project',
       email: adminEmail,
       password: 'password!@#',
-      recaptchaResponse: 'xyz',
+      recaptchaToken: 'xyz',
     });
 
     expect(res.status).toBe(200);

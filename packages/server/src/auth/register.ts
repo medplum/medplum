@@ -17,7 +17,7 @@ export interface RegisterRequest {
   readonly projectName: string;
   readonly email: string;
   readonly password: string;
-  readonly recaptchaResponse?: string;
+  readonly recaptchaToken?: string;
   readonly admin?: boolean;
 }
 
@@ -34,7 +34,7 @@ export const registerValidators = [
   body('projectName').notEmpty().withMessage('Project name is required'),
   body('email').isEmail().withMessage('Valid email address is required'),
   body('password').isLength({ min: 5 }).withMessage('Invalid password, must be at least 5 characters'),
-  body('recaptchaResponse').notEmpty().withMessage('Recaptcha response is required'),
+  body('recaptchaToken').notEmpty().withMessage('Recaptcha token is required'),
 ];
 
 export async function registerHandler(req: Request, res: Response) {
@@ -48,7 +48,7 @@ export async function registerHandler(req: Request, res: Response) {
     return sendOutcome(res, badRequest('Email already registered', 'email'));
   }
 
-  if (!(await verifyRecaptcha(req.body.recaptchaResponse))) {
+  if (!(await verifyRecaptcha(req.body.recaptchaToken))) {
     return sendOutcome(res, badRequest('Recaptcha failed'));
   }
 
@@ -150,10 +150,10 @@ async function createClientApplication(project: Project): Promise<ClientApplicat
 
 /**
  * Verifies the recaptcha response from the client.
- * @param recaptchaResponse The Recaptcha response from the client.
+ * @param recaptchaToken The Recaptcha response from the client.
  * @returns True on success, false on failure.
  */
-async function verifyRecaptcha(recaptchaResponse: string): Promise<boolean> {
+async function verifyRecaptcha(recaptchaToken: string): Promise<boolean> {
   const secretKey = getConfig().recaptchaSecretKey as string;
 
   const url =
@@ -161,7 +161,7 @@ async function verifyRecaptcha(recaptchaResponse: string): Promise<boolean> {
     '?secret=' +
     encodeURIComponent(secretKey) +
     '&response=' +
-    encodeURIComponent(recaptchaResponse);
+    encodeURIComponent(recaptchaToken);
 
   const response = await fetch(url, { method: 'POST' });
   const json = await response.json();

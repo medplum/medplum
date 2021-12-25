@@ -56,7 +56,7 @@ describe('Reset Password', () => {
       projectName: 'Washington Project',
       email,
       password: 'password!@#',
-      recaptchaResponse: 'recaptcha-response',
+      recaptchaToken: 'xyz',
     });
     expect(res.status).toBe(200);
     expect(res.body.profile).toBeDefined();
