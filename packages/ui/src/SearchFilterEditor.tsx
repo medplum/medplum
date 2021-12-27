@@ -3,6 +3,7 @@ import { Reference, SearchParameter } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Dialog } from './Dialog';
 import { ReferenceInput } from './ReferenceInput';
+import { ResourceBadge } from './ResourceBadge';
 import { addFilter, deleteFilter, getOpString, getSearchOperators, setFilters } from './SearchUtils';
 
 export interface SearchFilterEditorProps {
@@ -71,6 +72,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
                 return (
                   <FilterRowDisplay
                     key={`filter-${index}-${filters.length}-display`}
+                    searchParams={searchParams}
                     filter={filter}
                     onEdit={() => setEditingIndex(index)}
                     onDelete={() => setSearch(deleteFilter(searchRef.current, index))}
@@ -92,6 +94,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
 }
 
 interface FilterRowDisplayProps {
+  searchParams: SearchParameter[];
   filter: Filter;
   onEdit: () => void;
   onDelete: () => void;
@@ -99,11 +102,14 @@ interface FilterRowDisplayProps {
 
 function FilterRowDisplay(props: FilterRowDisplayProps): JSX.Element {
   const filter = props.filter;
+  const searchParam = props.searchParams.find((p) => p.code === filter.code);
   return (
     <tr>
       <td>{filter.code}</td>
       <td>{getOpString(filter.operator)}</td>
-      <td>{filter.value}</td>
+      <td>
+        {searchParam?.type === 'reference' ? <ResourceBadge value={{ reference: filter.value }} /> : filter.value}
+      </td>
       <td>
         <button className="btn btn-small" onClick={props.onEdit}>
           Edit

@@ -218,6 +218,11 @@ describe('SearchFilterEditor', () => {
       />
     );
 
+    // Wait for the resource to load
+    await act(async () => {
+      await waitFor(() => screen.getByText('Test Organization'));
+    });
+
     await act(async () => {
       fireEvent.click(screen.getByText('Edit'));
     });
@@ -240,6 +245,11 @@ describe('SearchFilterEditor', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
+    });
+
+    // Wait for the resource to load
+    await act(async () => {
+      await waitFor(() => screen.getByText('Different'));
     });
 
     await act(async () => {
