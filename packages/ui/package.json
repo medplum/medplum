@@ -16,7 +16,7 @@
     "build": "npm run clean && tsc && npm run copyfiles",
     "test": "jest",
     "copyfiles": "copyfiles -u 1 \"./src/**/*.css\" dist",
-    "storybook": "build-storybook -s public"
+    "storybook": "build-storybook"
   },
   "devDependencies": {
     "@medplum/core": "0.3.0",
