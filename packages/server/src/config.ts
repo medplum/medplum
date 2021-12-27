@@ -23,6 +23,7 @@ export interface MedplumServerConfig {
   redis: MedplumRedisConfig;
   googleClientId?: string;
   googleClientSecret?: string;
+  recaptchaSecretKey?: string;
   adminClientId?: string;
   maxJsonSize: string;
   maxUploadSize: string;

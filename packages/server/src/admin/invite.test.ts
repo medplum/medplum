@@ -1,14 +1,17 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
+import { setupRecaptchaMock } from '../jest.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 
 jest.mock('@aws-sdk/client-sesv2');
+jest.mock('node-fetch');
 
 const app = express();
 
@@ -28,6 +31,8 @@ describe('Admin Invite', () => {
   beforeEach(() => {
     (SESv2Client as any).mockClear();
     (SendEmailCommand as any).mockClear();
+    (fetch as any).mockClear();
+    setupRecaptchaMock(fetch, true);
   });
 
   test('New user to project', async () => {
@@ -41,6 +46,7 @@ describe('Admin Invite', () => {
         projectName: 'Alice Project',
         email: `alice${randomUUID()}@example.com`,
         password: 'password!@#',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(200);
@@ -87,6 +93,7 @@ describe('Admin Invite', () => {
         projectName: 'Alice Project',
         email: `alice${randomUUID()}@example.com`,
         password: 'password!@#',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(200);
@@ -100,6 +107,7 @@ describe('Admin Invite', () => {
       projectName: 'Bob Project',
       email: bobEmail,
       password: 'password!@#',
+      recaptchaToken: 'xyz',
     });
 
     expect(res2.status).toBe(200);
@@ -146,6 +154,7 @@ describe('Admin Invite', () => {
         projectName: 'Alice Project',
         email: `alice${randomUUID()}@example.com`,
         password: 'password!@#',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(200);
@@ -161,6 +170,7 @@ describe('Admin Invite', () => {
         projectName: 'Bob Project',
         email: `bob${randomUUID()}@example.com`,
         password: 'password!@#',
+        recaptchaToken: 'xyz',
       });
 
     expect(res2.status).toBe(200);
@@ -194,6 +204,7 @@ describe('Admin Invite', () => {
         projectName: 'Alice Project',
         email: `alice${randomUUID()}@example.com`,
         password: 'password!@#',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(200);

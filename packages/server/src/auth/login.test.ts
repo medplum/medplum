@@ -3,15 +3,17 @@ import { createReference } from '@medplum/core';
 import { ClientApplication } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { createTestClient } from '../jest.setup';
+import { createTestClient, setupRecaptchaMock } from '../jest.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 
 jest.mock('@aws-sdk/client-sesv2');
+jest.mock('node-fetch');
 
 const app = express();
 let client: ClientApplication;
@@ -33,6 +35,8 @@ describe('Login', () => {
   beforeEach(() => {
     (SESv2Client as any).mockClear();
     (SendEmailCommand as any).mockClear();
+    (fetch as any).mockClear();
+    setupRecaptchaMock(fetch, true);
   });
 
   test('Invalid client UUID', async () => {
@@ -139,6 +143,7 @@ describe('Login', () => {
       projectName: 'Access Policy Project',
       email: adminEmail,
       password: 'password!@#',
+      recaptchaToken: 'xyz',
     });
 
     expect(res.status).toBe(200);
