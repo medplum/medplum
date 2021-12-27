@@ -59,9 +59,9 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
                     searchParams={searchParams}
                     defaultValue={filter}
                     okText="Save"
-                    onOk={(filter: Filter) => {
+                    onOk={(newFilter: Filter) => {
                       const newFilters = [...filters];
-                      newFilters[index] = filter;
+                      newFilters[index] = newFilter;
                       setSearch(setFilters(searchRef.current, newFilters));
                       setEditingIndex(-1);
                     }}
@@ -80,12 +80,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
                 );
               }
             })}
-            <FilterRowInput
-              searchParams={searchParams}
-              defaultValue={{ code: '', operator: Operator.EQUALS, value: '' }}
-              okText="Add"
-              onOk={onAddFilter}
-            />
+            <FilterRowInput searchParams={searchParams} okText="Add" onOk={onAddFilter} />
           </tbody>
         </table>
       </div>
@@ -220,7 +215,7 @@ function FilterValueInput(props: FilterValueInputProps): JSX.Element | null {
     return (
       <ReferenceInput
         name="reference"
-        defaultValue={props.defaultValue ? { reference: props.defaultValue } : undefined}
+        defaultValue={{ reference: props.defaultValue }}
         onChange={(newReference: Reference | undefined) => {
           if (newReference) {
             props.onChange(newReference.reference as string);
