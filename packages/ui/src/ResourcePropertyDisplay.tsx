@@ -6,6 +6,7 @@ import { AttachmentArrayDisplay } from './AttachmentArrayDisplay';
 import { AttachmentDisplay } from './AttachmentDisplay';
 import { BackboneElementDisplay } from './BackboneElementDisplay';
 import { CodeableConceptDisplay } from './CodeableConceptDisplay';
+import { CodingDisplay } from './CodingDisplay';
 import { ContactPointDisplay } from './ContactPointDisplay';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { IdentifierDisplay } from './IdentifierDisplay';
@@ -66,6 +67,8 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
       return <AttachmentDisplay value={value} maxWidth={props.maxWidth} />;
     case PropertyType.CodeableConcept:
       return <CodeableConceptDisplay value={value} />;
+    case PropertyType.Coding:
+      return <CodingDisplay value={value} />;
     case PropertyType.ContactPoint:
       return <ContactPointDisplay value={value} />;
     case PropertyType.HumanName:

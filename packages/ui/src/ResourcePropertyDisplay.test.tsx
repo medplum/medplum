@@ -4,6 +4,7 @@ import {
   Annotation,
   Attachment,
   CodeableConcept,
+  Coding,
   ContactPoint,
   ElementDefinition,
   HumanName,
@@ -1100,6 +1101,24 @@ describe('ResourcePropertyDisplay', () => {
     );
 
     expect(screen.getByText('foo')).toBeDefined();
+  });
+
+  test('Renders Coding', () => {
+    const value: Coding = {
+      display: 'Test Coding',
+      code: 'test-coding',
+    };
+
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'Coding' }] }}
+        propertyType={PropertyType.Coding}
+        value={value}
+      />
+    );
+
+    expect(screen.getByText('Test Coding')).toBeDefined();
   });
 
   test('Renders ContactPoint', () => {

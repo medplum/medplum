@@ -1,6 +1,7 @@
 import { Coding, ElementDefinition, ValueSet, ValueSetExpansion, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import React from 'react';
 import { Autocomplete } from './Autocomplete';
+import { CodingDisplay } from './CodingDisplay';
 import { useMedplum } from './MedplumProvider';
 
 export interface CodingInputProps {
@@ -35,7 +36,7 @@ export function CodingInput(props: CodingInputProps) {
       }}
       buildUnstructured={(str: string) => ({ code: str })}
       getId={(item: Coding) => item.code as string}
-      getDisplay={(item: Coding) => <>{item.display || item.code}</>}
+      getDisplay={(item: Coding) => <CodingDisplay value={item} />}
       name={props.name}
       defaultValue={defaultValue}
       onChange={(values: Coding[]) => {
