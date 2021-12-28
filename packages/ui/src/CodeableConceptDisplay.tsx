@@ -1,5 +1,6 @@
 import { CodeableConcept } from '@medplum/fhirtypes';
 import React from 'react';
+import { CodingDisplay } from './CodingDisplay';
 
 export interface CodeableConceptInputProps {
   value?: CodeableConcept;
@@ -11,6 +12,13 @@ export function CodeableConceptDisplay(props: CodeableConceptInputProps) {
     return null;
   }
 
-  const text = value.text ?? value.coding?.[0]?.display ?? value.coding?.[0]?.code;
-  return <>{text}</>;
+  if (value.text) {
+    return <>{value.text}</>;
+  }
+
+  if (value.coding && value.coding.length > 0) {
+    return <CodingDisplay value={value.coding[0]} />;
+  }
+
+  return null;
 }
