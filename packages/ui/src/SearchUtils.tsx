@@ -1,7 +1,64 @@
 import { Filter, getPropertyDisplayName, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
-import { Resource } from '@medplum/fhirtypes';
+import { Resource, SearchParameter } from '@medplum/fhirtypes';
 import React from 'react';
 import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
+
+const searchParamToOperators: Record<string, Operator[]> = {
+  string: [Operator.EQUALS, Operator.NOT_EQUALS, Operator.CONTAINS, Operator.EXACT],
+  fulltext: [Operator.EQUALS, Operator.NOT_EQUALS, Operator.CONTAINS, Operator.EXACT],
+  token: [Operator.EQUALS, Operator.NOT_EQUALS],
+  reference: [Operator.EQUALS, Operator.NOT_EQUALS],
+  numeric: [
+    Operator.EQUALS,
+    Operator.NOT_EQUALS,
+    Operator.GREATER_THAN,
+    Operator.LESS_THAN,
+    Operator.GREATER_THAN_OR_EQUALS,
+    Operator.LESS_THAN_OR_EQUALS,
+  ],
+  date: [
+    Operator.EQUALS,
+    Operator.NOT_EQUALS,
+    Operator.GREATER_THAN,
+    Operator.LESS_THAN,
+    Operator.GREATER_THAN_OR_EQUALS,
+    Operator.LESS_THAN_OR_EQUALS,
+    Operator.STARTS_AFTER,
+    Operator.ENDS_BEFORE,
+    Operator.APPROXIMATELY,
+  ],
+  datetime: [
+    Operator.EQUALS,
+    Operator.NOT_EQUALS,
+    Operator.GREATER_THAN,
+    Operator.LESS_THAN,
+    Operator.GREATER_THAN_OR_EQUALS,
+    Operator.LESS_THAN_OR_EQUALS,
+    Operator.STARTS_AFTER,
+    Operator.ENDS_BEFORE,
+    Operator.APPROXIMATELY,
+  ],
+};
+
+const operatorNames: Record<Operator, string> = {
+  eq: 'equals',
+  ne: 'not equals',
+  gt: 'greater than',
+  lt: 'less than',
+  ge: 'greater than or equals',
+  le: 'less than or equals',
+  sa: 'starts after',
+  eb: 'ends before',
+  ap: 'approximately',
+  contains: 'contains',
+  exact: 'exact',
+  text: 'text',
+  above: 'above',
+  below: 'below',
+  in: 'in',
+  'not-in': 'not in',
+  'of-type': 'of type',
+};
 
 /**
  * Sets the array of filters.
@@ -384,18 +441,22 @@ export function isSortDescending(definition: SearchRequest): boolean {
 }
 
 /**
+ * Returns a list of operators for a search parameter.
+ * @param searchParam The search parameter.
+ * @returns The list of operators that can be used for the search parameter.
+ */
+export function getSearchOperators(searchParam: SearchParameter): Operator[] | undefined {
+  return searchParamToOperators[searchParam.type as string];
+}
+
+/**
  * Returns a string representing the operation.
  *
  * @param {string} op The operation code.
  * @return {string} A display string for the operation.
  */
 export function getOpString(op: Operator): string {
-  if (!op) {
-    return '';
-  }
-
-  // TODO
-  return op;
+  return operatorNames[op] ?? '';
 }
 
 export function buildFieldNameString(schema: IndexedStructureDefinition, resourceType: string, key: string): string {

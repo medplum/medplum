@@ -1,223 +1,10 @@
 import { Filter, IndexedStructureDefinition, Operator, SearchRequest, stringify } from '@medplum/core';
-import { SearchParameter } from '@medplum/fhirtypes';
+import { Reference, SearchParameter } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Dialog } from './Dialog';
 import { ReferenceInput } from './ReferenceInput';
-import { addFilter, deleteFilter } from './SearchUtils';
-
-interface FilterRowProps {
-  schema: IndexedStructureDefinition;
-  resourceType: string;
-  filter: Filter;
-  editing: boolean;
-  onAdd: (filter: Filter) => void;
-  onDelete: (filter: Filter) => void;
-}
-
-function FilterRow(props: FilterRowProps) {
-  const [editing, setEditing] = useState<boolean>(props.editing);
-  const [searchParam, setSearchParam] = useState<SearchParameter>();
-  const [operator, setOperator] = useState<Operator>(Operator.EQUALS);
-  const [value, setValue] = useState<string>('');
-
-  function renderField() {
-    const resourceType = props.resourceType;
-    const searchParams = props.schema.types[resourceType].searchParams as SearchParameter[];
-    return (
-      <select
-        data-testid="filter-field"
-        defaultValue={searchParam?.code}
-        onChange={(e) => setSearchParam(searchParams.find((p) => p.code === e.target.value))}
-      >
-        <option value=""></option>
-        {searchParams.map((param) => (
-          <option key={param.code} value={param.code}>
-            {param.code}
-          </option>
-        ))}
-      </select>
-    );
-  }
-
-  function renderOperation() {
-    if (!searchParam) {
-      return null;
-    }
-
-    return (
-      <select
-        data-testid="filter-operation"
-        defaultValue={operator}
-        onChange={(e) => setOperator(e.target.value as Operator)}
-      >
-        {renderOperationOptions(searchParam)}
-      </select>
-    );
-  }
-
-  function renderOperationOptions(param: SearchParameter) {
-    switch (param.type) {
-      case 'string':
-      case 'fulltext':
-      case 'token':
-        return (
-          <>
-            <option value=""></option>
-            <option value="equals">Is</option>
-            <option value="not_equals">Is not</option>
-            <option value="contains">Contains</option>
-            <option value="not_contains">Does not contain</option>
-          </>
-        );
-
-      case 'numeric':
-        return (
-          <>
-            <option value=""></option>
-            <option value="equals">Equalsa</option>
-            <option value="not_equals">Not equals</option>
-          </>
-        );
-
-      case 'date':
-      case 'datetime':
-        return (
-          <>
-            <option value=""></option>
-            <option value="equals">Is</option>
-            <option value="before_datetime">Before date/time</option>
-            <option value="after_datetime">After date/time</option>
-            <option value="newer_than_interval">Newer than</option>
-            <option value="older_than_interval">Older than</option>
-            <option value="is_set">Is set</option>
-            <option value="is_not_set">Is not set</option>
-          </>
-        );
-
-      case 'reference':
-        return (
-          <>
-            <option value=""></option>
-            <option value="equals">Is</option>
-            <option value="not_equals">Is not</option>
-          </>
-        );
-
-      case 'bool':
-        return (
-          <>
-            <option value=""></option>
-            <option value="is_set">Is set</option>
-            <option value="is_not_set">Is not set</option>
-          </>
-        );
-
-      default:
-        return null;
-    }
-  }
-
-  function renderValue() {
-    if (!searchParam || !operator) {
-      return null;
-    }
-
-    switch (searchParam.type) {
-      case 'string':
-      case 'fulltext':
-      case 'token':
-        return <input data-testid="filter-value" type="text" onChange={(e) => setValue(e.target.value)} />;
-
-      case 'numeric':
-        return <input type="text" onChange={(e) => setValue(e.target.value)} />;
-
-      case 'date':
-        return (
-          <input
-            type="date"
-            step="1"
-            defaultValue=""
-            onChange={(e) => {
-              setValue(e.target.value);
-            }}
-          />
-        );
-
-      case 'datetime':
-        return (
-          <input
-            type="datetime-local"
-            step="1"
-            defaultValue=""
-            onChange={(e) => {
-              setValue(e.target.value);
-            }}
-          />
-        );
-
-      case 'reference':
-        return <ReferenceInput name="reference" onChange={(e) => setValue(e?.reference || '')} />;
-
-      case 'bool':
-        return <input type="text" onChange={(e) => setValue(e.target.value)} />;
-
-      default:
-        return null;
-    }
-  }
-
-  function onAddClick(): void {
-    if (!searchParam || !operator) {
-      return;
-    }
-
-    props.onAdd({
-      code: searchParam.code as string,
-      operator,
-      value,
-    });
-
-    setSearchParam(undefined);
-    setOperator(Operator.EQUALS);
-    setValue('');
-  }
-
-  if (!editing) {
-    const filter = props.filter;
-    return (
-      <tr>
-        <td>{filter.code}</td>
-        <td>{filter.operator}</td>
-        <td>{filter.value}</td>
-        <td>
-          <button className="btn btn-small" onClick={() => setEditing(true)}>
-            Edit
-          </button>
-          <button className="btn btn-small" onClick={() => props.onDelete(filter)}>
-            Delete
-          </button>
-        </td>
-      </tr>
-    );
-  }
-
-  // Otherwise, we're editing:
-  return (
-    <tr>
-      <td>{renderField()}</td>
-      <td>{renderOperation()}</td>
-      <td>{renderValue()}</td>
-      <td>
-        <button className="btn btn-small" onClick={() => onAddClick()}>
-          Add
-        </button>
-        <button className="btn btn-small" onClick={() => setEditing(false)}>
-          Cancel
-        </button>
-      </td>
-    </tr>
-  );
-}
+import { ResourceBadge } from './ResourceBadge';
+import { addFilter, deleteFilter, getOpString, getSearchOperators, setFilters } from './SearchUtils';
 
 export interface SearchFilterEditorProps {
   schema: IndexedStructureDefinition;
@@ -229,6 +16,8 @@ export interface SearchFilterEditorProps {
 
 export function SearchFilterEditor(props: SearchFilterEditorProps) {
   const [search, setSearch] = useState<SearchRequest>(JSON.parse(stringify(props.search)) as SearchRequest);
+  const [editingIndex, setEditingIndex] = useState<number>(-1);
+
   const searchRef = useRef<SearchRequest>(search);
   searchRef.current = search;
 
@@ -240,18 +29,13 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
     setSearch(addFilter(searchRef.current, filter.code, filter.operator, filter.value));
   }
 
-  function onDeleteFilter(filter: Filter) {
-    if (!searchRef.current.filters) {
-      return;
-    }
-    const index = searchRef.current.filters.findIndex((f) => Object.is(f, filter));
-    setSearch(deleteFilter(searchRef.current, index));
-  }
-
   if (!props.visible) {
     return null;
   }
 
+  const schema = props.schema;
+  const resourceType = props.search.resourceType;
+  const searchParams = schema.types[resourceType].searchParams as SearchParameter[];
   const filters = search.filters || [];
 
   return (
@@ -267,28 +51,195 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
             </tr>
           </thead>
           <tbody>
-            {filters.map((filter: Filter) => (
-              <FilterRow
-                schema={props.schema}
-                resourceType={props.search.resourceType}
-                key={stringify(filter)}
-                filter={filter}
-                editing={false}
-                onAdd={(f) => onAddFilter(f)}
-                onDelete={(f) => onDeleteFilter(f)}
-              />
-            ))}
-            <FilterRow
-              schema={props.schema}
-              resourceType={props.search.resourceType}
-              filter={{ code: '', operator: Operator.EQUALS, value: '' }}
-              editing={true}
-              onAdd={(f) => onAddFilter(f)}
-              onDelete={(f) => onDeleteFilter(f)}
-            />
+            {filters.map((filter: Filter, index: number) => {
+              if (index === editingIndex) {
+                return (
+                  <FilterRowInput
+                    key={`filter-${index}-${filters.length}-input`}
+                    searchParams={searchParams}
+                    defaultValue={filter}
+                    okText="Save"
+                    onOk={(newFilter: Filter) => {
+                      const newFilters = [...filters];
+                      newFilters[index] = newFilter;
+                      setSearch(setFilters(searchRef.current, newFilters));
+                      setEditingIndex(-1);
+                    }}
+                    onCancel={() => setEditingIndex(-1)}
+                  />
+                );
+              } else {
+                return (
+                  <FilterRowDisplay
+                    key={`filter-${index}-${filters.length}-display`}
+                    searchParams={searchParams}
+                    filter={filter}
+                    onEdit={() => setEditingIndex(index)}
+                    onDelete={() => setSearch(deleteFilter(searchRef.current, index))}
+                  />
+                );
+              }
+            })}
+            <FilterRowInput searchParams={searchParams} okText="Add" onOk={onAddFilter} />
           </tbody>
         </table>
       </div>
     </Dialog>
+  );
+}
+
+interface FilterRowDisplayProps {
+  searchParams: SearchParameter[];
+  filter: Filter;
+  onEdit: () => void;
+  onDelete: () => void;
+}
+
+function FilterRowDisplay(props: FilterRowDisplayProps): JSX.Element {
+  const filter = props.filter;
+  const searchParam = props.searchParams.find((p) => p.code === filter.code);
+  return (
+    <tr>
+      <td>{filter.code}</td>
+      <td>{getOpString(filter.operator)}</td>
+      <td>
+        {searchParam?.type === 'reference' ? <ResourceBadge value={{ reference: filter.value }} /> : filter.value}
+      </td>
+      <td>
+        <button className="btn btn-small" onClick={props.onEdit}>
+          Edit
+        </button>
+        <button className="btn btn-small" onClick={props.onDelete}>
+          Delete
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+interface FilterRowInputProps {
+  searchParams: SearchParameter[];
+  defaultValue?: Filter;
+  okText: string;
+  onOk: (value: Filter) => void;
+  onCancel?: () => void;
+}
+
+function FilterRowInput(props: FilterRowInputProps): JSX.Element {
+  const [value, setValue] = useState<Filter>(props.defaultValue ?? ({} as Filter));
+  const valueRef = useRef<Filter>(value);
+  valueRef.current = value;
+
+  function setFilterCode(newCode: string): void {
+    setValue({ ...valueRef.current, code: newCode });
+  }
+
+  function setFilterOperator(newOperator: Operator): void {
+    setValue({ ...valueRef.current, operator: newOperator });
+  }
+
+  function setFilterValue(newFilterValue: string): void {
+    setValue({ ...valueRef.current, value: newFilterValue });
+  }
+
+  const searchParam = props.searchParams.find((p) => p.code === value.code);
+  const operators = searchParam && getSearchOperators(searchParam);
+
+  return (
+    <tr>
+      <td>
+        <select
+          data-testid="filter-field"
+          value={valueRef.current.code}
+          onChange={(e) => setFilterCode(e.target.value)}
+        >
+          <option value=""></option>
+          {props.searchParams.map((param) => (
+            <option key={param.code} value={param.code}>
+              {param.code}
+            </option>
+          ))}
+        </select>
+      </td>
+      <td>
+        {operators && (
+          <select
+            data-testid="filter-operation"
+            defaultValue={value.operator}
+            onChange={(e) => setFilterOperator(e.target.value as Operator)}
+          >
+            <option value=""></option>
+            {operators.map((operator) => (
+              <option key={operator} value={operator}>
+                {getOpString(operator)}
+              </option>
+            ))}
+          </select>
+        )}
+      </td>
+      <td>
+        {searchParam && value.operator && (
+          <FilterValueInput searchParam={searchParam} defaultValue={value.value} onChange={setFilterValue} />
+        )}
+      </td>
+      <td>
+        {value.code && value.operator && value.value && (
+          <button
+            className="btn btn-small"
+            onClick={() => {
+              props.onOk(valueRef.current);
+              setValue({} as Filter);
+            }}
+          >
+            {props.okText}
+          </button>
+        )}
+        {props.onCancel && (
+          <button className="btn btn-small" onClick={props.onCancel}>
+            Cancel
+          </button>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+interface FilterValueInputProps {
+  searchParam: SearchParameter;
+  defaultValue: string;
+  onChange: (value: string) => void;
+}
+
+function FilterValueInput(props: FilterValueInputProps): JSX.Element | null {
+  if (props.searchParam.type === 'reference') {
+    return (
+      <ReferenceInput
+        name="reference"
+        defaultValue={{ reference: props.defaultValue }}
+        onChange={(newReference: Reference | undefined) => {
+          if (newReference) {
+            props.onChange(newReference.reference as string);
+          } else {
+            props.onChange('');
+          }
+        }}
+      />
+    );
+  }
+
+  const inputTypes: Record<string, React.HTMLInputTypeAttribute> = {
+    numeric: 'number',
+    date: 'date',
+    datetime: 'datetime-local',
+  };
+
+  const inputType = inputTypes[props.searchParam.type as string] ?? 'text';
+  return (
+    <input
+      data-testid="filter-value"
+      type={inputType}
+      defaultValue={props.defaultValue}
+      onChange={(e) => props.onChange(e.target.value)}
+    />
   );
 }
