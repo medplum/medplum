@@ -1,16 +1,12 @@
 import {
-  Bundle,
-  BundleEntry,
-  ElementDefinition,
   getExpressionForResourceType,
   IndexedStructureDefinition,
   indexStructureDefinition,
   isLowerCase,
-  Resource,
-  SearchParameter,
   TypeSchema,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
+import { Bundle, BundleEntry, ElementDefinition, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path/posix';
 import { FileBuilder } from './filebuilder';

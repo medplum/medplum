@@ -1,15 +1,6 @@
-import {
-  Bundle,
-  BundleEntry,
-  capitalize,
-  ElementDefinition,
-  ElementDefinitionType,
-  IndexedStructureDefinition,
-  indexStructureDefinition,
-  Resource,
-  TypeSchema,
-} from '@medplum/core';
+import { capitalize, IndexedStructureDefinition, indexStructureDefinition, TypeSchema } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
+import { Bundle, BundleEntry, ElementDefinition, ElementDefinitionType, Resource } from '@medplum/fhirtypes';
 import { mkdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { FileBuilder, wordWrap } from './filebuilder';
