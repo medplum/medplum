@@ -54,6 +54,28 @@ export enum Operator {
   OF_TYPE = 'of-type',
 }
 
+const MODIFIER_OPERATORS: Operator[] = [
+  Operator.CONTAINS,
+  Operator.EXACT,
+  Operator.TEXT,
+  Operator.ABOVE,
+  Operator.BELOW,
+  Operator.IN,
+  Operator.NOT_IN,
+  Operator.OF_TYPE,
+];
+
+const PREFIX_OPERATORS: Operator[] = [
+  Operator.NOT_EQUALS,
+  Operator.GREATER_THAN,
+  Operator.LESS_THAN,
+  Operator.GREATER_THAN_OR_EQUALS,
+  Operator.LESS_THAN_OR_EQUALS,
+  Operator.STARTS_AFTER,
+  Operator.ENDS_BEFORE,
+  Operator.APPROXIMATELY,
+];
+
 /**
  * Parses a URL into a SearchRequest.
  * @param location The URL to parse.
@@ -115,7 +137,9 @@ export function formatSearchQuery(definition: SearchRequest): string {
 
   if (definition.filters) {
     definition.filters.forEach((filter) => {
-      params.push(filter.code + '=' + filter.value);
+      const modifier = MODIFIER_OPERATORS.includes(filter.operator) ? ':' + filter.operator : '';
+      const prefix = PREFIX_OPERATORS.includes(filter.operator) ? filter.operator : '';
+      params.push(`${filter.code}${modifier}=${prefix}${encodeURIComponent(filter.value)}`);
     });
   }
 

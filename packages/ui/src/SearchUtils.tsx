@@ -268,9 +268,9 @@ export function addYearToDateFilter(definition: SearchRequest, field: string): S
   startTime.setDate(1);
   startTime.setHours(0, 0, 0, 0);
 
-  definition = clearFiltersOnField(definition, field);
+  const endTime = new Date();
 
-  return addFilter(definition, field, Operator.STARTS_AFTER, startTime.toISOString());
+  return addDateFilterBetween(definition, field, startTime, endTime);
 }
 
 /**
@@ -317,8 +317,8 @@ export function addDateFilterBetween(
   }
 
   definition = clearFiltersOnField(definition, field);
-  definition = addDateFilter(definition, field, Operator.STARTS_AFTER, d1);
-  definition = addDateFilter(definition, field, Operator.ENDS_BEFORE, d2);
+  definition = addDateFilterImpl(definition, field, Operator.GREATER_THAN_OR_EQUALS, d1);
+  definition = addDateFilterImpl(definition, field, Operator.LESS_THAN_OR_EQUALS, d2);
   return definition;
 }
 

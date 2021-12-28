@@ -158,6 +158,11 @@ describe('SearchUtils', () => {
       filters: [
         {
           code: '_lastUpdated',
+          operator: Operator.GREATER_THAN_OR_EQUALS,
+        },
+        {
+          code: '_lastUpdated',
+          operator: Operator.LESS_THAN_OR_EQUALS,
         },
       ],
     });
@@ -169,6 +174,11 @@ describe('SearchUtils', () => {
       filters: [
         {
           code: '_lastUpdated',
+          operator: Operator.GREATER_THAN_OR_EQUALS,
+        },
+        {
+          code: '_lastUpdated',
+          operator: Operator.LESS_THAN_OR_EQUALS,
         },
       ],
     });
@@ -180,6 +190,11 @@ describe('SearchUtils', () => {
       filters: [
         {
           code: '_lastUpdated',
+          operator: Operator.GREATER_THAN_OR_EQUALS,
+        },
+        {
+          code: '_lastUpdated',
+          operator: Operator.LESS_THAN_OR_EQUALS,
         },
       ],
     });
@@ -191,6 +206,11 @@ describe('SearchUtils', () => {
       filters: [
         {
           code: '_lastUpdated',
+          operator: Operator.GREATER_THAN_OR_EQUALS,
+        },
+        {
+          code: '_lastUpdated',
+          operator: Operator.LESS_THAN_OR_EQUALS,
         },
       ],
     });
@@ -202,6 +222,11 @@ describe('SearchUtils', () => {
       filters: [
         {
           code: '_lastUpdated',
+          operator: Operator.GREATER_THAN_OR_EQUALS,
+        },
+        {
+          code: '_lastUpdated',
+          operator: Operator.LESS_THAN_OR_EQUALS,
         },
       ],
     });
@@ -213,6 +238,11 @@ describe('SearchUtils', () => {
       filters: [
         {
           code: '_lastUpdated',
+          operator: Operator.GREATER_THAN_OR_EQUALS,
+        },
+        {
+          code: '_lastUpdated',
+          operator: Operator.LESS_THAN_OR_EQUALS,
         },
       ],
     });
@@ -224,6 +254,11 @@ describe('SearchUtils', () => {
       filters: [
         {
           code: '_lastUpdated',
+          operator: Operator.GREATER_THAN_OR_EQUALS,
+        },
+        {
+          code: '_lastUpdated',
+          operator: Operator.LESS_THAN_OR_EQUALS,
         },
       ],
     });
