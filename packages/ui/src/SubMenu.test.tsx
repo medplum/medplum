@@ -1,18 +1,13 @@
-import { MedplumClient } from '@medplum/core';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MockClient } from '@medplum/mock';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { act } from 'react-dom/test-utils';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
 import { MenuItem } from './MenuItem';
 import { MenuSeparator } from './MenuSeparator';
 import { SubMenu } from './SubMenu';
 
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: async () => undefined,
-});
+const medplum = new MockClient();
 
 const setup = (children: React.ReactNode) => {
   return render(

@@ -1,122 +1,22 @@
 import { IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
-import { Bundle, Organization } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from './MockClient';
 import { SearchFilterEditor } from './SearchFilterEditor';
 
-const schema: IndexedStructureDefinition = {
-  types: {
-    Patient: {
-      display: 'Patient',
-      properties: {
-        name: {
-          id: 'Patient.name',
-          path: 'Patient.name',
-          type: [
-            {
-              code: 'HumanName',
-            },
-          ],
-        },
-        birthDate: {
-          id: 'Patient.birthDate',
-          path: 'Patient.birthDate',
-          type: [
-            {
-              code: 'date',
-            },
-          ],
-        },
-      },
-      searchParams: [
-        {
-          resourceType: 'SearchParameter',
-          code: 'name',
-          type: 'string',
-        },
-        {
-          resourceType: 'SearchParameter',
-          code: 'birthdate',
-          type: 'date',
-        },
-        {
-          resourceType: 'SearchParameter',
-          code: 'organization',
-          type: 'reference',
-        },
-      ],
-    },
-    Observation: {
-      display: 'Observation',
-      properties: {
-        valueInteger: {
-          id: 'Observation.value[x]',
-          path: 'Observation.value[x]',
-          type: [
-            {
-              code: 'integer',
-            },
-          ],
-        },
-      },
-      searchParams: [
-        {
-          resourceType: 'SearchParameter',
-          code: 'subject',
-          type: 'reference',
-        },
-      ],
-    },
-  },
-};
-
-const organization: Organization = {
-  resourceType: 'Organization',
-  id: '123',
-  meta: {
-    versionId: '1',
-  },
-  name: 'Test Organization',
-};
-
-const differentOrganization: Organization = {
-  resourceType: 'Organization',
-  id: '456',
-  meta: {
-    versionId: '1',
-  },
-  name: 'Different',
-};
-
-const searchBundle: Bundle<Organization> = {
-  resourceType: 'Bundle',
-  type: 'searchset',
-  entry: [
-    {
-      resource: differentOrganization,
-    },
-  ],
-};
-
-const medplum = new MockClient({
-  'fhir/R4/Organization/123': {
-    GET: organization,
-  },
-  'fhir/R4/Organization/456': {
-    GET: differentOrganization,
-  },
-  'fhir/R4/Organization?name=Different': {
-    GET: searchBundle,
-  },
-});
+const medplum = new MockClient();
+let schema: IndexedStructureDefinition;
 
 const setup = (child: React.ReactNode) => {
   return render(<MedplumProvider medplum={medplum}>{child}</MedplumProvider>);
 };
 
 describe('SearchFilterEditor', () => {
+  beforeAll(async () => {
+    schema = await medplum.requestSchema('Patient');
+  });
+
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -128,7 +28,7 @@ describe('SearchFilterEditor', () => {
     jest.useRealTimers();
   });
 
-  test('Not visible', () => {
+  test('Not visible', async () => {
     setup(
       <SearchFilterEditor
         schema={schema}

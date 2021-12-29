@@ -5,7 +5,7 @@ import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { BackboneElementDisplay, BackboneElementDisplayProps } from './BackboneElementDisplay';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from './MockClient';
+import { MockClient } from '@medplum/mock';
 
 const contactProperty: ElementDefinition = {
   id: 'Patient.contact',
@@ -61,7 +61,7 @@ const schema: IndexedStructureDefinition = {
   },
 };
 
-const medplum = new MockClient({});
+const medplum = new MockClient();
 
 describe('BackboneElementDisplay', () => {
   const setup = (args: BackboneElementDisplayProps) => {

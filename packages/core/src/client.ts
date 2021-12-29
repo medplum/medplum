@@ -13,6 +13,7 @@ import {
   Subscription,
   ValueSet,
 } from '@medplum/fhirtypes';
+import { createSchema, indexSearchParameters } from '.';
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
@@ -351,49 +352,61 @@ export class MedplumClient extends EventTarget {
     return this.readCached(resourceType, id);
   }
 
-  getTypeDefinition(resourceType: string): Promise<IndexedStructureDefinition> {
-    if (!resourceType) {
-      return Promise.reject('Missing resourceType');
-    }
+  /**
+   * Returns a cached schema for a resource type.
+   * If the schema is not cached, returns undefined.
+   * It is assumed that a client will call requestSchema before using this method.
+   * @param resourceType The FHIR resource type.
+   * @returns The schema if immediately available, undefined otherwise.
+   */
+  getSchema(resourceType: string): IndexedStructureDefinition | undefined {
+    return this.schema.get(resourceType);
+  }
+
+  /**
+   * Requests the schema for a resource type.
+   * If the schema is already cached, the promise is resolved immediately.
+   * @param resourceType The FHIR resource type.
+   * @returns Promise to a schema with the requested resource type.
+   */
+  async requestSchema(resourceType: string): Promise<IndexedStructureDefinition> {
     const cached = this.schema.get(resourceType);
     if (cached) {
       return Promise.resolve(cached);
     }
-    let typeDef: IndexedStructureDefinition;
-    return this.search<StructureDefinition>('StructureDefinition?name:exact=' + encodeURIComponent(resourceType))
-      .then((result: Bundle<StructureDefinition>) => {
-        if (!result.entry?.length) {
-          throw new Error('StructureDefinition not found');
-        }
-        const resource = result.entry[0].resource;
-        if (!resource) {
-          throw new Error('StructureDefinition not found');
-        }
-        typeDef = indexStructureDefinition(resource);
-      })
-      .then(() =>
-        this.search<SearchParameter>({
-          resourceType: 'SearchParameter',
-          count: 100,
-          filters: [
-            {
-              code: 'base',
-              operator: Operator.EQUALS,
-              value: resourceType,
-            },
-          ],
-        })
-      )
-      .then((result: Bundle<SearchParameter>) => {
-        const entries = result.entry;
-        if (entries) {
-          typeDef.types[resourceType].searchParams = entries
-            .map((e) => e.resource as SearchParameter)
-            .sort((a, b) => a.name?.localeCompare(b.name as string) ?? 0);
-        }
-        this.schema.set(resourceType, typeDef);
-        return typeDef;
-      });
+
+    const schema: IndexedStructureDefinition = createSchema();
+    const structureDefinitionBundle = await this.search<StructureDefinition>({
+      resourceType: 'StructureDefinition',
+      count: 1,
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EXACT,
+          value: resourceType,
+        },
+      ],
+    });
+    const structureDefinition = structureDefinitionBundle?.entry?.[0]?.resource;
+    if (!structureDefinition) {
+      return Promise.reject('StructureDefinition not found');
+    }
+    indexStructureDefinition(schema, structureDefinition);
+
+    const searchParamBundle = await this.search<SearchParameter>({
+      resourceType: 'SearchParameter',
+      count: 100,
+      filters: [
+        {
+          code: 'base',
+          operator: Operator.EQUALS,
+          value: resourceType,
+        },
+      ],
+    });
+    indexSearchParameters(schema, searchParamBundle);
+    this.schema.set(resourceType, schema);
+    return schema;
   }
 
   readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>> {

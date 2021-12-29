@@ -19,6 +19,7 @@ npm --version
 npm run build --workspace=packages/definitions
 npm run build --workspace=packages/fhirpath
 npm run build --workspace=packages/core
+npm run build --workspace=packages/mock
 npm run build --workspace=packages/ui
 npm run build --workspace=packages/app
 npm run build --workspace=packages/graphiql

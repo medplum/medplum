@@ -32,7 +32,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps) {
   const questionnaire = useResource(props.questionnaire);
 
   useEffect(() => {
-    medplum.getTypeDefinition('Questionnaire').then(setSchema);
+    medplum.requestSchema('Questionnaire').then(setSchema);
   }, []);
 
   if (!schema || !questionnaire) {

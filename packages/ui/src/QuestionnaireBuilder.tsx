@@ -34,7 +34,7 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps) {
   }
 
   useEffect(() => {
-    medplum.getTypeDefinition('Questionnaire').then(setSchema);
+    medplum.requestSchema('Questionnaire').then(setSchema);
   }, []);
 
   useEffect(() => {

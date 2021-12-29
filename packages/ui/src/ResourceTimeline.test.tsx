@@ -1,118 +1,13 @@
 import { createReference, getReferenceString, ProfileResource } from '@medplum/core';
-import { Attachment, Bundle, Communication, Encounter, Media, Resource } from '@medplum/fhirtypes';
+import { Attachment, Bundle, Encounter, Resource } from '@medplum/fhirtypes';
+import { HomerEncounter, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { randomUUID } from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from './MockClient';
 import { ResourceTimeline, ResourceTimelineProps } from './ResourceTimeline';
 
-const encounter: Encounter = {
-  resourceType: 'Encounter',
-  id: '123',
-  meta: {
-    versionId: '456',
-  },
-};
-
-const encounterHistory: Bundle = {
-  resourceType: 'Bundle',
-  type: 'history',
-  entry: [
-    {
-      resource: encounter,
-    },
-  ],
-};
-
-const communications: Bundle = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: {
-        resourceType: 'Communication',
-        id: randomUUID(),
-        meta: {
-          lastUpdated: new Date().toISOString(),
-          author: {
-            reference: 'Practitioner/123',
-          },
-        },
-        payload: [
-          {
-            contentString: 'Hello world',
-          },
-        ],
-      },
-    },
-  ],
-};
-
-const media: Bundle = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: {
-        resourceType: 'Media',
-        id: randomUUID(),
-        meta: {
-          lastUpdated: new Date().toISOString(),
-          author: {
-            reference: 'Practitioner/123',
-          },
-        },
-        content: {
-          contentType: 'text/plain',
-          url: 'https://example.com/test.txt',
-        },
-      },
-    },
-  ],
-};
-
-const newComment: Communication = {
-  resourceType: 'Communication',
-  id: randomUUID(),
-  payload: [
-    {
-      contentString: 'Test comment',
-    },
-  ],
-};
-
-const newMedia: Media = {
-  resourceType: 'Media',
-  id: randomUUID(),
-  content: {
-    contentType: 'text/plain',
-    url: 'https://example.com/test2.txt',
-  },
-};
-
-const medplum = new MockClient({
-  'auth/login': {
-    POST: {
-      profile: { reference: 'Practitioner/123' },
-    },
-  },
-  'fhir/R4/Encounter/123': {
-    GET: encounter,
-  },
-  'fhir/R4': {
-    POST: {
-      resourceType: 'Bundle',
-      type: 'batch-response',
-      entry: [{ resource: encounterHistory }, { resource: communications }, { resource: media }],
-    },
-  },
-  'fhir/R4/Communication': {
-    POST: newComment,
-  },
-  'fhir/R4/Media': {
-    POST: newMedia,
-  },
-});
+const medplum = new MockClient();
 
 function buildEncounterSearch(encounter: Resource): Bundle {
   return {
@@ -154,7 +49,7 @@ describe('ResourceTimeline', () => {
 
   test('Renders reference', async () => {
     setup({
-      value: { reference: 'Encounter/' + encounter.id },
+      value: createReference(HomerEncounter),
       buildSearchRequests: buildEncounterSearch,
     });
 
@@ -169,7 +64,7 @@ describe('ResourceTimeline', () => {
 
   test('Renders resource', async () => {
     setup({
-      value: encounter,
+      value: HomerEncounter,
       buildSearchRequests: buildEncounterSearch,
     });
 
@@ -184,7 +79,7 @@ describe('ResourceTimeline', () => {
 
   test('Create comment', async () => {
     setup({
-      value: encounter,
+      value: HomerEncounter,
       buildSearchRequests: buildEncounterSearch,
       createCommunication: (resource: Encounter, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
@@ -226,7 +121,7 @@ describe('ResourceTimeline', () => {
 
   test('Upload media', async () => {
     setup({
-      value: encounter,
+      value: HomerEncounter,
       buildSearchRequests: buildEncounterSearch,
       createCommunication: jest.fn(),
       createMedia: (resource: Encounter, operator: ProfileResource, content: Attachment) => ({

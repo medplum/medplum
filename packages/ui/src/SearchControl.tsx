@@ -1,16 +1,17 @@
-import { IndexedStructureDefinition, SearchRequest } from '@medplum/core';
+import { Filter, IndexedStructureDefinition, SearchRequest } from '@medplum/core';
 import { Bundle, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
+import './SearchControl.css';
 import { SearchFieldEditor } from './SearchFieldEditor';
 import { SearchFilterEditor } from './SearchFilterEditor';
+import { SearchFilterValueDisplay } from './SearchFilterValueDisplay';
 import { SearchPopupMenu } from './SearchPopupMenu';
-import { buildFieldNameString, getFilterValueString, movePage, renderValue } from './SearchUtils';
+import { buildFieldNameString, movePage, renderValue } from './SearchUtils';
 import { TitleBar } from './TitleBar';
 import { killEvent } from './utils/dom';
-import './SearchControl.css';
 
 export class SearchChangeEvent extends Event {
   readonly definition: SearchRequest;
@@ -100,21 +101,6 @@ export function SearchControl(props: SearchControlProps) {
         setState({ ...stateRef.current, searchResponse: undefined });
         setOutcome(reason);
       });
-  }
-
-  /**
-   * Builds a string for a filter that can be used in the "filters" row.
-   *
-   * @param {string} key The key for the current field/column.
-   * @return {string} The HTML snippet for a "filters" cell.
-   */
-  function buildFilterString(key: string) {
-    const filters = (props.search.filters ?? []).filter((f) => f.code === key);
-    if (filters.length === 0) {
-      return <span className="muted">no filters</span>;
-    }
-
-    return filters.map((f) => getFilterValueString(f)).join('<br>');
   }
 
   function handleSingleCheckboxClick(e: React.ChangeEvent) {
@@ -219,7 +205,7 @@ export function SearchControl(props: SearchControlProps) {
   }
 
   useEffect(() => {
-    medplum.getTypeDefinition(props.search.resourceType).then((schema) => setSchema(schema));
+    medplum.requestSchema(props.search.resourceType).then(setSchema);
   }, [props.search.resourceType]);
 
   useEffect(() => requestResources(), [props.search]);
@@ -318,7 +304,7 @@ export function SearchControl(props: SearchControlProps) {
             {checkboxColumn && <th className="filters medplum-search-icon-cell" />}
             {fields.map((field) => (
               <th key={field} data-key={field} className="filters">
-                {buildFilterString(field)}
+                <FilterDescription resourceType={resourceType} field={field} filters={props.search.filters} />
               </th>
             ))}
           </tr>
@@ -423,6 +409,29 @@ export function SearchControl(props: SearchControlProps) {
         }}
       />
     </div>
+  );
+}
+
+interface FilterDescriptionProps {
+  readonly resourceType: string;
+  readonly field: string;
+  readonly filters?: Filter[];
+}
+
+function FilterDescription(props: FilterDescriptionProps): JSX.Element {
+  const filters = (props.filters ?? []).filter((f) => f.code === props.field);
+  if (filters.length === 0) {
+    return <span className="muted">no filters</span>;
+  }
+
+  return (
+    <>
+      {filters.map((filter: Filter, index: number) => (
+        <div key={`filter-${index}-${filters.length}`}>
+          <SearchFilterValueDisplay resourceType={props.resourceType} filter={filter} />
+        </div>
+      ))}
+    </>
   );
 }
 

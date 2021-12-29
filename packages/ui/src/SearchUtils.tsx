@@ -268,9 +268,9 @@ export function addYearToDateFilter(definition: SearchRequest, field: string): S
   startTime.setDate(1);
   startTime.setHours(0, 0, 0, 0);
 
-  definition = clearFiltersOnField(definition, field);
+  const endTime = new Date();
 
-  return addFilter(definition, field, Operator.STARTS_AFTER, startTime.toISOString());
+  return addDateFilterBetween(definition, field, startTime, endTime);
 }
 
 /**
@@ -317,8 +317,8 @@ export function addDateFilterBetween(
   }
 
   definition = clearFiltersOnField(definition, field);
-  definition = addDateFilter(definition, field, Operator.STARTS_AFTER, d1);
-  definition = addDateFilter(definition, field, Operator.ENDS_BEFORE, d2);
+  definition = addDateFilterImpl(definition, field, Operator.GREATER_THAN_OR_EQUALS, d1);
+  definition = addDateFilterImpl(definition, field, Operator.LESS_THAN_OR_EQUALS, d2);
   return definition;
 }
 
@@ -483,25 +483,6 @@ export function buildFieldNameString(schema: IndexedStructureDefinition, resourc
   }
 
   return getPropertyDisplayName(property);
-}
-
-/**
- * Returns a HTML fragment to be displayed in the filter table for the value.
- *
- * @param {!Object|!string} field The field object or key.
- * @param {?string} op The filter operation (e.g., "equals").
- * @param {*} value The filter value
- * @param {boolean=} opt_quotes Optional flag to put quotes around strings.
- * @return {string} An HTML fragment that represents the value.
- */
-export function getFilterValueString(filter: Filter): JSX.Element | string {
-  const value = filter.value;
-  if (!value) {
-    return <span className="muted">none</span>;
-  }
-
-  const chunks = value.split(';');
-  return chunks.map((c: string) => '"' + c + '"').join(' or ');
 }
 
 /**

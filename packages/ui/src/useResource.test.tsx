@@ -1,10 +1,10 @@
 import { createReference } from '@medplum/core';
-import { Patient, Reference, Resource } from '@medplum/fhirtypes';
+import { Reference, Resource } from '@medplum/fhirtypes';
+import { HomerSimpson, MockClient } from '@medplum/mock';
 import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from './MockClient';
 import { useResource } from './useResource';
 
 interface TestComponentProps {
@@ -16,30 +16,7 @@ function TestComponent(props: TestComponentProps) {
   return <div data-testid="test-component">{JSON.stringify(resource)}</div>;
 }
 
-const patient: Patient = {
-  resourceType: 'Patient',
-  id: '123',
-  meta: {
-    versionId: '456',
-  },
-  name: [
-    {
-      given: ['Alice'],
-      family: 'Smith',
-    },
-  ],
-};
-
-const medplum = new MockClient({
-  'auth/login': {
-    POST: {
-      profile: { reference: 'Practitioner/123' },
-    },
-  },
-  'fhir/R4/Patient/123': {
-    GET: patient,
-  },
-});
+const medplum = new MockClient();
 
 describe('useResource', () => {
   const setup = (props: TestComponentProps) => {
@@ -67,14 +44,14 @@ describe('useResource', () => {
   });
 
   test('Renders resource', () => {
-    setup({ value: patient });
+    setup({ value: HomerSimpson });
     const el = screen.getByTestId('test-component');
     expect(el).toBeInTheDocument();
     expect(el.innerHTML).not.toBe('');
   });
 
   test('Renders reference', async () => {
-    setup({ value: createReference(patient) });
+    setup({ value: createReference(HomerSimpson) });
     const el = screen.getByTestId('test-component');
     expect(el).toBeInTheDocument();
     expect(el.innerHTML).toBe('');

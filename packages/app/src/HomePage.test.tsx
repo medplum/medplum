@@ -1,79 +1,12 @@
-import { Bundle } from '@medplum/fhirtypes';
-import { MedplumProvider, MockClient } from '@medplum/ui';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { CreateResourcePage } from './CreateResourcePage';
 import { getDefaultSearchForResourceType, HomePage } from './HomePage';
 
-const patientStructureBundle: Bundle = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: {
-        resourceType: 'StructureDefinition',
-        name: 'Patient',
-        snapshot: {
-          element: [
-            {
-              path: 'Patient.id',
-              type: [
-                {
-                  code: 'code',
-                },
-              ],
-            },
-          ],
-        },
-      },
-    },
-  ],
-};
-
-const patientSearchParameter: Bundle = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: {
-        resourceType: 'SearchParameter',
-        id: 'Patient-name',
-        code: 'name',
-        name: 'name',
-      },
-    },
-  ],
-};
-
-const patientSearchBundle: Bundle = {
-  resourceType: 'Bundle',
-  total: 100,
-  entry: [
-    {
-      resource: {
-        resourceType: 'Patient',
-        id: '123',
-        name: [
-          {
-            given: ['Alice'],
-            family: 'Smith',
-          },
-        ],
-      },
-    },
-  ],
-};
-
-const medplum = new MockClient({
-  'fhir/R4/StructureDefinition?name:exact=Patient': {
-    GET: patientStructureBundle,
-  },
-  'fhir/R4/SearchParameter?name=Patient': {
-    GET: patientSearchParameter,
-  },
-  'fhir/R4/Patient?_count=20&_fields=id,_lastUpdated,name,birthDate,gender&_sort=-_lastUpdated': {
-    GET: patientSearchBundle,
-  },
-});
+const medplum = new MockClient();
 
 const setup = (url = '/Patient') => {
   return render(

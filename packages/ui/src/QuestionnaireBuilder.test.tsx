@@ -1,87 +1,11 @@
-import { Bundle, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { MockClient } from '@medplum/mock';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
-import { act } from 'react-dom/test-utils';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from './MockClient';
 import { QuestionnaireBuilder, QuestionnaireBuilderProps } from './QuestionnaireBuilder';
 import { QuestionnaireItemType } from './QuestionnaireUtils';
 
-const structureDefinitionBundle: Bundle<StructureDefinition> = {
-  resourceType: 'Bundle',
-  type: 'searchset',
-  entry: [
-    {
-      resource: {
-        resourceType: 'StructureDefinition',
-        name: 'Questionnaire',
-        snapshot: {
-          element: [
-            {
-              id: 'Questionnaire.item',
-              path: 'Questionnaire.item',
-              type: [
-                {
-                  code: 'BackboneElement',
-                },
-              ],
-            },
-            {
-              id: 'Questionnaire.item.answerOption',
-              path: 'Questionnaire.item.answerOption',
-              type: [
-                {
-                  code: 'BackboneElement',
-                },
-              ],
-            },
-            {
-              id: 'Questionnaire.item.answerOption.value[x]',
-              path: 'Questionnaire.item.answerOption.value[x]',
-              min: 1,
-              max: '1',
-              type: [
-                {
-                  code: 'integer',
-                },
-                {
-                  code: 'date',
-                },
-                {
-                  code: 'time',
-                },
-                {
-                  code: 'string',
-                },
-                {
-                  code: 'Coding',
-                },
-                {
-                  code: 'Reference',
-                  targetProfile: ['http://hl7.org/fhir/StructureDefinition/Resource'],
-                },
-              ],
-            },
-          ],
-        },
-      },
-    },
-  ],
-};
-
-const searchParamBundle: Bundle<SearchParameter> = {
-  resourceType: 'Bundle',
-  type: 'searchset',
-};
-
-const medplum = new MockClient({
-  'fhir/R4/StructureDefinition?name:exact=Questionnaire': {
-    GET: structureDefinitionBundle,
-  },
-  'fhir/R4/SearchParameter?_count=100&base=Questionnaire': {
-    GET: searchParamBundle,
-  },
-});
+const medplum = new MockClient();
 
 async function setup(args: QuestionnaireBuilderProps) {
   await act(async () => {

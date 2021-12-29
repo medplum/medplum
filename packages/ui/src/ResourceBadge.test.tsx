@@ -1,35 +1,12 @@
-import { Patient } from '@medplum/fhirtypes';
+import { createReference } from '@medplum/core';
+import { HomerSimpson, MockClient } from '@medplum/mock';
 import { render, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from './MockClient';
 import { ResourceBadge, ResourceBadgeProps } from './ResourceBadge';
 
-const patient: Patient = {
-  resourceType: 'Patient',
-  id: '123',
-  meta: {
-    versionId: '456',
-  },
-  name: [
-    {
-      given: ['Alice'],
-      family: 'Smith',
-    },
-  ],
-};
-
-const medplum = new MockClient({
-  'auth/login': {
-    POST: {
-      profile: { reference: 'Practitioner/123' },
-    },
-  },
-  'fhir/R4/Patient/123': {
-    GET: patient,
-  },
-});
+const medplum = new MockClient();
 
 const setup = (args: ResourceBadgeProps) => {
   return render(
@@ -49,34 +26,32 @@ describe('ResourceBadge', () => {
 
   test('Renders resource directly', async () => {
     const utils = setup({
-      value: patient,
+      value: HomerSimpson,
     });
 
-    await waitFor(() => utils.getByText('Alice Smith'));
+    await waitFor(() => utils.getByText('Homer Simpson'));
 
-    expect(utils.getByText('Alice Smith')).toBeDefined();
+    expect(utils.getByText('Homer Simpson')).toBeDefined();
   });
 
   test('Renders resource directly as link', async () => {
     const utils = setup({
-      value: patient,
+      value: HomerSimpson,
       link: true,
     });
 
-    await waitFor(() => utils.getByText('Alice Smith'));
+    await waitFor(() => utils.getByText('Homer Simpson'));
 
-    expect(utils.getByText('Alice Smith')).toBeDefined();
+    expect(utils.getByText('Homer Simpson')).toBeDefined();
   });
 
   test('Renders after loading the resource', async () => {
     const utils = setup({
-      value: {
-        reference: 'Patient/' + patient.id,
-      },
+      value: createReference(HomerSimpson),
     });
 
-    await waitFor(() => utils.getByText('Alice Smith'));
+    await waitFor(() => utils.getByText('Homer Simpson'));
 
-    expect(utils.getByText('Alice Smith')).toBeDefined();
+    expect(utils.getByText('Homer Simpson')).toBeDefined();
   });
 });

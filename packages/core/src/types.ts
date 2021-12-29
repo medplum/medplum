@@ -1,4 +1,4 @@
-import { ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
+import { Bundle, ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import { capitalize } from './utils';
 
 /**
@@ -109,33 +109,35 @@ export interface IndexedStructureDefinition {
 export interface TypeSchema {
   display: string;
   properties: { [name: string]: ElementDefinition };
-  searchParams?: SearchParameter[];
+  searchParams?: { [code: string]: SearchParameter };
   description?: string;
   parentType?: string;
 }
 
 /**
+ * Creates a new empty IndexedStructureDefinition.
+ * @returns The empty IndexedStructureDefinition.
+ */
+export function createSchema(): IndexedStructureDefinition {
+  return { types: {} };
+}
+
+/**
  * Indexes a StructureDefinition for fast lookup.
  * See comments on IndexedStructureDefinition for more details.
+ * @param schema The output IndexedStructureDefinition.
  * @param structureDefinition The original StructureDefinition.
- * @return An indexed IndexedStructureDefinition.
  */
 export function indexStructureDefinition(
-  structureDefinition: StructureDefinition,
-  output?: IndexedStructureDefinition
-): IndexedStructureDefinition {
+  schema: IndexedStructureDefinition,
+  structureDefinition: StructureDefinition
+): void {
   const typeName = structureDefinition.name;
   if (!typeName) {
     throw new Error('Invalid StructureDefinition');
   }
 
-  if (!output) {
-    output = {
-      types: {},
-    } as IndexedStructureDefinition;
-  }
-
-  output.types[typeName] = {
+  schema.types[typeName] = {
     display: typeName,
     description: structureDefinition.description,
     properties: {},
@@ -144,26 +146,24 @@ export function indexStructureDefinition(
   const elements = structureDefinition.snapshot?.element;
   if (elements) {
     // Filter out any elements missing path or type
-    const filtered = elements.filter((e) => e.path !== typeName && e.path); // && e.type && e.type.length > 0);
+    const filtered = elements.filter((e) => e.path !== typeName && e.path);
 
     // First pass, build types
-    filtered.forEach((element) => indexType(output as IndexedStructureDefinition, element));
+    filtered.forEach((element) => indexType(schema, element));
 
     // Second pass, build properties
-    filtered.forEach((element) => indexProperty(output as IndexedStructureDefinition, element));
+    filtered.forEach((element) => indexProperty(schema, element));
   }
-
-  return output;
 }
 
 /**
  * Indexes TypeSchema from an ElementDefinition.
  * In the common case, there will be many ElementDefinition instances per TypeSchema.
  * Only the first occurrence is saved.
- * @param output The work-in-progress IndexedStructureDefinition.
+ * @param schema The output IndexedStructureDefinition.
  * @param element The input ElementDefinition.
  */
-function indexType(output: IndexedStructureDefinition, element: ElementDefinition): void {
+function indexType(schema: IndexedStructureDefinition, element: ElementDefinition): void {
   const path = element.path as string;
   const typeCode = element.type?.[0]?.code;
   if (typeCode !== 'Element' && typeCode !== 'BackboneElement') {
@@ -171,8 +171,8 @@ function indexType(output: IndexedStructureDefinition, element: ElementDefinitio
   }
   const parts = path.split('.');
   const typeName = buildTypeName(parts);
-  if (!(typeName in output.types)) {
-    output.types[typeName] = {
+  if (!(typeName in schema.types)) {
+    schema.types[typeName] = {
       display: typeName,
       description: element.definition,
       parentType: buildTypeName(parts.slice(0, parts.length - 1)),
@@ -183,19 +183,62 @@ function indexType(output: IndexedStructureDefinition, element: ElementDefinitio
 
 /**
  * Indexes PropertySchema from an ElementDefinition.
- * @param output The work-in-progress IndexedStructureDefinition.
+ * @param schema The output IndexedStructureDefinition.
  * @param element The input ElementDefinition.
  */
-function indexProperty(output: IndexedStructureDefinition, element: ElementDefinition): void {
+function indexProperty(schema: IndexedStructureDefinition, element: ElementDefinition): void {
   const path = element.path as string;
   const parts = path.split('.');
   if (parts.length === 1) {
     return;
   }
   const typeName = buildTypeName(parts.slice(0, parts.length - 1));
-  const typeSchema = output.types[typeName];
+  const typeSchema = schema.types[typeName];
   const key = parts[parts.length - 1];
   typeSchema.properties[key] = element;
+}
+
+/**
+ * Indexes a bundle of SearchParameter resources.
+ * See indexSearchParameter for more details.
+ * @param schema The output IndexedStructureDefinition.
+ * @param searchParamBundle The Bundle of SearchParameter resources.
+ */
+export function indexSearchParameters(
+  schema: IndexedStructureDefinition,
+  searchParamBundle: Bundle<SearchParameter>
+): void {
+  if (searchParamBundle.entry) {
+    for (const entry of searchParamBundle.entry) {
+      indexSearchParameter(schema, entry.resource as SearchParameter);
+    }
+  }
+}
+
+/**
+ * Indexes a SearchParameter resource for fast lookup.
+ * Indexes by SearchParameter.code, which is the query string parameter name.
+ * @param schema The output IndexedStructureDefinition.
+ * @param searchParam The SearchParameter resource.
+ */
+function indexSearchParameter(schema: IndexedStructureDefinition, searchParam: SearchParameter): void {
+  if (!searchParam.base) {
+    return;
+  }
+
+  for (const resourceType of searchParam.base) {
+    let typeSchema = schema.types[resourceType];
+
+    if (!typeSchema) {
+      schema.types[resourceType] = typeSchema = {} as TypeSchema;
+    }
+
+    if (!typeSchema.searchParams) {
+      typeSchema.searchParams = {};
+    }
+
+    typeSchema.searchParams[searchParam.code as string] = searchParam;
+  }
 }
 
 export function buildTypeName(components: string[]): string {

@@ -1,17 +1,11 @@
-import { MedplumProvider, MockClient } from '@medplum/ui';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { InvitePage } from './InvitePage';
 
-const medplum = new MockClient({
-  'admin/projects/123': {
-    GET: {
-      project: { id: '123', name: 'Project 123' },
-      members: [{ profile: 'Practitioner/456', name: 'Alice Smith' }],
-    },
-  },
-});
+const medplum = new MockClient();
 
 const setup = (url: string) => {
   render(

@@ -1,117 +1,12 @@
-import { Bundle, Communication, Encounter, Media } from '@medplum/fhirtypes';
+import { createReference } from '@medplum/core';
+import { HomerEncounter, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { randomUUID } from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { EncounterTimeline, EncounterTimelineProps } from './EncounterTimeline';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from './MockClient';
 
-const encounter: Encounter = {
-  resourceType: 'Encounter',
-  id: '123',
-  meta: {
-    versionId: '456',
-  },
-};
-
-const encounterHistory: Bundle = {
-  resourceType: 'Bundle',
-  type: 'history',
-  entry: [
-    {
-      resource: encounter,
-    },
-  ],
-};
-
-const communications: Bundle = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: {
-        resourceType: 'Communication',
-        id: randomUUID(),
-        meta: {
-          lastUpdated: new Date().toISOString(),
-          author: {
-            reference: 'Practitioner/123',
-          },
-        },
-        payload: [
-          {
-            contentString: 'Hello world',
-          },
-        ],
-      },
-    },
-  ],
-};
-
-const media: Bundle = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: {
-        resourceType: 'Media',
-        id: randomUUID(),
-        meta: {
-          lastUpdated: new Date().toISOString(),
-          author: {
-            reference: 'Practitioner/123',
-          },
-        },
-        content: {
-          contentType: 'text/plain',
-          url: 'https://example.com/test.txt',
-        },
-      },
-    },
-  ],
-};
-
-const newComment: Communication = {
-  resourceType: 'Communication',
-  id: randomUUID(),
-  payload: [
-    {
-      contentString: 'Test comment',
-    },
-  ],
-};
-
-const newMedia: Media = {
-  resourceType: 'Media',
-  id: randomUUID(),
-  content: {
-    contentType: 'text/plain',
-    url: 'https://example.com/test2.txt',
-  },
-};
-
-const medplum = new MockClient({
-  'auth/login': {
-    POST: {
-      profile: { reference: 'Practitioner/123' },
-    },
-  },
-  'fhir/R4/Encounter/123': {
-    GET: encounter,
-  },
-  'fhir/R4': {
-    POST: {
-      resourceType: 'Bundle',
-      type: 'batch-response',
-      entry: [{ resource: encounterHistory }, { resource: communications }, { resource: media }],
-    },
-  },
-  'fhir/R4/Communication': {
-    POST: newComment,
-  },
-  'fhir/R4/Media': {
-    POST: newMedia,
-  },
-});
+const medplum = new MockClient();
 
 describe('EncounterTimeline', () => {
   const setup = (args: EncounterTimelineProps) => {
@@ -125,7 +20,7 @@ describe('EncounterTimeline', () => {
   };
 
   test('Renders reference', async () => {
-    setup({ encounter: { reference: 'Encounter/' + encounter.id } });
+    setup({ encounter: createReference(HomerEncounter) });
 
     await act(async () => {
       await waitFor(() => screen.getAllByTestId('timeline-item'));
@@ -137,7 +32,7 @@ describe('EncounterTimeline', () => {
   });
 
   test('Renders resource', async () => {
-    setup({ encounter });
+    setup({ encounter: HomerEncounter });
 
     await act(async () => {
       await waitFor(() => screen.getAllByTestId('timeline-item'));
@@ -149,7 +44,7 @@ describe('EncounterTimeline', () => {
   });
 
   test('Create comment', async () => {
-    setup({ encounter });
+    setup({ encounter: HomerEncounter });
 
     // Wait for initial load
     await act(async () => {
@@ -181,7 +76,7 @@ describe('EncounterTimeline', () => {
   });
 
   test('Upload media', async () => {
-    setup({ encounter });
+    setup({ encounter: HomerEncounter });
 
     // Wait for initial load
     await act(async () => {

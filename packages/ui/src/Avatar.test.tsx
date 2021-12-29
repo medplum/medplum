@@ -1,33 +1,12 @@
-import { Patient } from '@medplum/fhirtypes';
+import { createReference } from '@medplum/core';
+import { HomerSimpson, MockClient } from '@medplum/mock';
 import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { Avatar, AvatarProps } from './Avatar';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from './MockClient';
 
-const patient: Patient = {
-  resourceType: 'Patient',
-  id: '123',
-  name: [
-    {
-      given: ['Alice'],
-      family: 'Smith',
-    },
-  ],
-  photo: [
-    {
-      contentType: 'image/jpeg',
-      url: 'https://example.com/picture.jpg',
-    },
-  ],
-};
-
-const medplum = new MockClient({
-  'fhir/R4/Patient/123': {
-    GET: patient,
-  },
-});
+const medplum = new MockClient();
 
 describe('Avatar', () => {
   const setup = (args: AvatarProps) => {
@@ -51,13 +30,13 @@ describe('Avatar', () => {
   });
 
   test('Avatar renders initials', () => {
-    setup({ alt: 'Alice Smith' });
+    setup({ alt: 'Homer Simpson' });
     expect(screen.getByTestId('avatar')).toBeDefined();
   });
 
   test('Avatar renders resource directly', async () => {
     setup({
-      value: patient,
+      value: HomerSimpson,
     });
 
     await waitFor(() => screen.getByTestId('avatar'));
@@ -67,7 +46,7 @@ describe('Avatar', () => {
 
   test('Avatar renders resource directly as link', async () => {
     setup({
-      value: patient,
+      value: HomerSimpson,
       link: true,
     });
 
@@ -78,9 +57,7 @@ describe('Avatar', () => {
 
   test('Avatar renders after loading the resource', async () => {
     setup({
-      value: {
-        reference: 'Patient/' + patient.id,
-      },
+      value: createReference(HomerSimpson),
     });
 
     await waitFor(() => screen.getByTestId('avatar'));

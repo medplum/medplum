@@ -17,7 +17,7 @@ export function ResourceTable(props: ResourceTableProps) {
 
   useEffect(() => {
     if (value) {
-      medplum.getTypeDefinition(value.resourceType).then(setSchema);
+      medplum.requestSchema(value.resourceType).then(setSchema);
     }
   }, [value]);
 

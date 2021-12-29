@@ -1,27 +1,11 @@
-import { MedplumProvider, MockClient } from '@medplum/ui';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/ui';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
-import { act } from 'react-dom/test-utils';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { SuperAdminPage } from './SuperAdminPage';
 
-const medplum = new MockClient({
-  'admin/super/structuredefinitions': {
-    POST: {
-      ok: true,
-    },
-  },
-  'admin/super/valuesets': {
-    POST: {
-      ok: true,
-    },
-  },
-  'admin/super/reindex': {
-    POST: {
-      ok: true,
-    },
-  },
-});
+const medplum = new MockClient();
 
 function setup() {
   render(

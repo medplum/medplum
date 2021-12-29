@@ -1,109 +1,11 @@
-import { Bundle, Observation, Practitioner } from '@medplum/fhirtypes';
+import { createReference } from '@medplum/core';
+import { HomerObservation1, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from './MockClient';
 import { ResourceForm, ResourceFormProps } from './ResourceForm';
 
-const practitioner: Practitioner = {
-  resourceType: 'Practitioner',
-  id: '123',
-  name: [{ given: ['Medplum'], family: 'Admin' }],
-};
-
-const observation: Observation = {
-  resourceType: 'Observation',
-  id: '123',
-  code: {
-    coding: [
-      {
-        system: 'http://loinc.org',
-        code: '123',
-        display: 'Test Observation',
-      },
-    ],
-  },
-  valueQuantity: {
-    value: 1,
-    unit: 'kg',
-  },
-};
-
-const practitionerStructureBundle: Bundle = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: {
-        resourceType: 'StructureDefinition',
-        name: 'Practitioner',
-        snapshot: {
-          element: [
-            {
-              path: 'Practitioner.id',
-              type: [
-                {
-                  code: 'code',
-                },
-              ],
-            },
-            {
-              path: 'Practitioner.name',
-              type: [
-                {
-                  code: 'HumanName',
-                },
-              ],
-              max: '*',
-            },
-          ],
-        },
-      },
-    },
-  ],
-};
-
-const observationStructureBundle: Bundle = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: {
-        resourceType: 'StructureDefinition',
-        name: 'Observation',
-        snapshot: {
-          element: [
-            {
-              path: 'Observation.id',
-              type: [
-                {
-                  code: 'code',
-                },
-              ],
-            },
-            {
-              path: 'Observation.value[x]',
-              type: [{ code: 'Quantity' }, { code: 'string' }, { code: 'integer' }],
-            },
-          ],
-        },
-      },
-    },
-  ],
-};
-
-const medplum = new MockClient({
-  'fhir/R4/StructureDefinition?name:exact=Practitioner': {
-    GET: practitionerStructureBundle,
-  },
-  'fhir/R4/StructureDefinition?name:exact=Observation': {
-    GET: observationStructureBundle,
-  },
-  'fhir/R4/Practitioner/123': {
-    GET: practitioner,
-  },
-  'fhir/R4/Observation/123': {
-    GET: observation,
-  },
-});
+const medplum = new MockClient();
 
 describe('ResourceForm', () => {
   function setup(props: ResourceFormProps) {
@@ -202,9 +104,7 @@ describe('ResourceForm', () => {
     const onSubmit = jest.fn();
 
     setup({
-      defaultValue: {
-        reference: 'Observation/123',
-      },
+      defaultValue: createReference(HomerObservation1),
       onSubmit,
     });
 

@@ -153,18 +153,19 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
         if (item.resourceType === resource.resourceType && item.id === resource.id) {
           return <HistoryTimelineItem key={item.meta?.versionId} history={history} version={item} />;
         }
+        const key = `${item.resourceType}/${item.id}`;
         switch (item.resourceType) {
           case 'AuditEvent':
-            return <AuditEventTimelineItem key={item.id} auditEvent={item} />;
+            return <AuditEventTimelineItem key={key} auditEvent={item} />;
           case 'Communication':
-            return <CommunicationTimelineItem key={item.id} communication={item} />;
+            return <CommunicationTimelineItem key={key} communication={item} />;
           case 'DiagnosticReport':
-            return <DiagnosticReportTimelineItem key={item.id} diagnosticReport={item} />;
+            return <DiagnosticReportTimelineItem key={key} diagnosticReport={item} />;
           case 'Media':
-            return <MediaTimelineItem key={item.id} media={item} />;
+            return <MediaTimelineItem key={key} media={item} />;
           default:
             return (
-              <TimelineItem key={item.id} resource={item} padding={true}>
+              <TimelineItem key={key} resource={item} padding={true}>
                 <ResourceTable value={item} ignoreMissingValues={true} />
               </TimelineItem>
             );

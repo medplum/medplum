@@ -1,7 +1,6 @@
 import { Quantity } from '@medplum/fhirtypes';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
-import { act } from 'react-dom/test-utils';
 import { QuantityInput } from './QuantityInput';
 
 describe('QuantityInput', () => {

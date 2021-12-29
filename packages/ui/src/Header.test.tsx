@@ -1,52 +1,11 @@
-import { Bundle } from '@medplum/fhirtypes';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MockClient } from '@medplum/mock';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { act } from 'react-dom/test-utils';
 import { MemoryRouter } from 'react-router-dom';
 import { Header, HeaderProps } from './Header';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from './MockClient';
 
-const searchResult: Bundle = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: {
-        resourceType: 'Patient',
-        id: '123',
-        name: [
-          {
-            given: ['Alice'],
-            family: 'Smith',
-          },
-        ],
-      },
-    },
-    {
-      resource: {
-        resourceType: 'Patient',
-        id: '345',
-        name: [
-          {
-            given: ['Bob'],
-            family: 'Jones',
-          },
-        ],
-      },
-    },
-  ],
-};
-
-const medplum = new MockClient({
-  'auth/login': {
-    POST: {
-      profile: { reference: 'Practitioner/123' },
-    },
-  },
-  'fhir/R4/Patient?name=Alice': {
-    GET: searchResult,
-  },
-});
+const medplum = new MockClient();
 
 function setup(props?: HeaderProps) {
   render(
@@ -96,9 +55,9 @@ describe('Header', () => {
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
 
-    // Enter "Alice"
+    // Enter "Simpson"
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Alice' } });
+      fireEvent.change(input, { target: { value: 'Simpson' } });
     });
 
     // Wait for the drop down
@@ -112,7 +71,7 @@ describe('Header', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Alice Smith')).toBeDefined();
+    expect(screen.getByText('Homer Simpson')).toBeDefined();
   });
 
   test('Profile menu', async () => {

@@ -1,6 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import React, { useState } from 'react';
-import { act } from 'react-dom/test-utils';
 import { Document } from './Document';
 import { Tab } from './Tab';
 import { TabBar } from './TabBar';

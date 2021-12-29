@@ -1,28 +1,11 @@
-import { Practitioner } from '@medplum/fhirtypes';
-import { MedplumProvider, MockClient } from '@medplum/ui';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/ui';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { SignInPage } from './SignInPage';
 
-const practitioner: Practitioner = {
-  resourceType: 'Practitioner',
-  id: '123',
-  name: [{ given: ['Medplum'], family: 'Admin' }],
-  meta: {
-    versionId: '456',
-    lastUpdated: '2021-01-01T12:00:00Z',
-    author: {
-      reference: 'Practitioner/123',
-    },
-  },
-};
-
-const medplum = new MockClient({
-  'fhir/R4/Practitioner/123': {
-    GET: practitioner,
-  },
-});
+const medplum = new MockClient();
 
 describe('SignInPage', () => {
   const setup = () => {

@@ -24,7 +24,7 @@ export function ResourceForm(props: ResourceFormProps) {
   useEffect(() => {
     if (defaultValue) {
       setValue(JSON.parse(JSON.stringify(defaultValue)));
-      medplum.getTypeDefinition(defaultValue.resourceType).then(setSchema);
+      medplum.requestSchema(defaultValue.resourceType).then(setSchema);
     }
   }, [defaultValue]);
 

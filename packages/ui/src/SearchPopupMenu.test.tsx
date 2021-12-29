@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from './MockClient';
+import { MockClient } from '@medplum/mock';
 import { SearchPopupMenu, SearchPopupMenuProps } from './SearchPopupMenu';
 
 const schema: IndexedStructureDefinition = {
@@ -48,7 +48,7 @@ const schema: IndexedStructureDefinition = {
   },
 };
 
-const medplum = new MockClient({});
+const medplum = new MockClient();
 
 describe('SearchPopupMenu', () => {
   function setup(props: SearchPopupMenuProps) {
@@ -291,13 +291,6 @@ describe('SearchPopupMenu', () => {
       { text: 'Before...', operator: Operator.ENDS_BEFORE },
       { text: 'After...', operator: Operator.STARTS_AFTER },
       { text: 'Between...', operator: Operator.EQUALS },
-      { text: 'Tomorrow', operator: Operator.EQUALS },
-      { text: 'Today', operator: Operator.EQUALS },
-      { text: 'Yesterday', operator: Operator.EQUALS },
-      { text: 'Next Month', operator: Operator.EQUALS },
-      { text: 'This Month', operator: Operator.EQUALS },
-      { text: 'Last Month', operator: Operator.EQUALS },
-      { text: 'Year to date', operator: Operator.EQUALS },
       { text: 'Is set', operator: Operator.EQUALS },
       { text: 'Is not set', operator: Operator.EQUALS },
     ];
@@ -314,6 +307,45 @@ describe('SearchPopupMenu', () => {
         operator: option.operator,
         value: 'xyz',
       } as Filter);
+    }
+  });
+
+  test('Date shortcuts', async () => {
+    window.prompt = jest.fn().mockImplementation(() => 'xyz');
+
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+    };
+
+    setup({
+      schema,
+      search: currSearch,
+      visible: true,
+      x: 0,
+      y: 0,
+      property: 'birthDate',
+      onChange: (e) => (currSearch = e),
+      onClose: jest.fn(),
+    });
+
+    const options = ['Tomorrow', 'Today', 'Yesterday', 'Next Month', 'This Month', 'Last Month', 'Year to date'];
+    for (const option of options) {
+      await act(async () => {
+        fireEvent.click(screen.getByText(option));
+      });
+
+      expect(currSearch.filters).toBeDefined();
+      expect(currSearch.filters?.length).toEqual(2);
+      expect(currSearch.filters).toMatchObject([
+        {
+          code: 'birthDate',
+          operator: Operator.GREATER_THAN_OR_EQUALS,
+        },
+        {
+          code: 'birthDate',
+          operator: Operator.LESS_THAN_OR_EQUALS,
+        },
+      ]);
     }
   });
 

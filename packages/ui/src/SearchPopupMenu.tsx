@@ -4,7 +4,20 @@ import React from 'react';
 import { MenuItem } from './MenuItem';
 import { MenuSeparator } from './MenuSeparator';
 import { Popup } from './Popup';
-import { addFilter, buildFieldNameString, clearFiltersOnField, getOpString, setSort } from './SearchUtils';
+import {
+  addFilter,
+  addLastMonthFilter,
+  addNextMonthFilter,
+  addThisMonthFilter,
+  addTodayFilter,
+  addTomorrowFilter,
+  addYearToDateFilter,
+  addYesterdayFilter,
+  buildFieldNameString,
+  clearFiltersOnField,
+  getOpString,
+  setSort,
+} from './SearchUtils';
 import { SubMenu } from './SubMenu';
 
 export interface SearchPopupMenuProps {
@@ -127,15 +140,15 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
         <MenuItem onClick={() => prompt(Operator.STARTS_AFTER)}>After...</MenuItem>
         <MenuItem onClick={() => prompt(Operator.EQUALS)}>Between...</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => prompt(Operator.EQUALS)}>Tomorrow</MenuItem>
-        <MenuItem onClick={() => prompt(Operator.EQUALS)}>Today</MenuItem>
-        <MenuItem onClick={() => prompt(Operator.EQUALS)}>Yesterday</MenuItem>
+        <MenuItem onClick={() => onChange(addTomorrowFilter(props.search, props.property))}>Tomorrow</MenuItem>
+        <MenuItem onClick={() => onChange(addTodayFilter(props.search, props.property))}>Today</MenuItem>
+        <MenuItem onClick={() => onChange(addYesterdayFilter(props.search, props.property))}>Yesterday</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => prompt(Operator.EQUALS)}>Next Month</MenuItem>
-        <MenuItem onClick={() => prompt(Operator.EQUALS)}>This Month</MenuItem>
-        <MenuItem onClick={() => prompt(Operator.EQUALS)}>Last Month</MenuItem>
+        <MenuItem onClick={() => onChange(addNextMonthFilter(props.search, props.property))}>Next Month</MenuItem>
+        <MenuItem onClick={() => onChange(addThisMonthFilter(props.search, props.property))}>This Month</MenuItem>
+        <MenuItem onClick={() => onChange(addLastMonthFilter(props.search, props.property))}>Last Month</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={() => prompt(Operator.EQUALS)}>Year to date</MenuItem>
+        <MenuItem onClick={() => onChange(addYearToDateFilter(props.search, props.property))}>Year to date</MenuItem>
         <MenuSeparator />
         <MenuItem onClick={() => prompt(Operator.EQUALS)}>Is set</MenuItem>
         <MenuItem onClick={() => prompt(Operator.EQUALS)}>Is not set</MenuItem>

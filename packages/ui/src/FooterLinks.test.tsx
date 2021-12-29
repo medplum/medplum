@@ -1,17 +1,12 @@
-import { MedplumClient } from '@medplum/core';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { MockClient } from '@medplum/mock';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
-import { act } from 'react-dom/test-utils';
 import { MemoryRouter } from 'react-router-dom';
 import { FooterLinks } from './FooterLinks';
 import { MedplumLink } from './MedplumLink';
 import { MedplumProvider } from './MedplumProvider';
 
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: (() => undefined) as any,
-});
+const medplum = new MockClient();
 
 describe('FooterLinks', () => {
   test('Renders', async () => {
