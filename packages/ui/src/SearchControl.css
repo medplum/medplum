@@ -152,6 +152,12 @@ a.paginate_button_disabled:hover {
 
 .medplum-filter-editor {
   text-align: left;
+  min-width: 800px;
+}
+
+.medplum-filter-editor-table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
 .goog-date-picker {

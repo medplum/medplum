@@ -121,7 +121,10 @@ export function getSearchParameter(resourceType: string, code: string): SearchPa
  * @param query The collection of query string parameters.
  * @returns A parsed SearchRequest.
  */
-export function parseSearchRequest(resourceType: string, query: Record<string, string | undefined>): SearchRequest {
+export function parseSearchRequest(
+  resourceType: string,
+  query: Record<string, string[] | string | undefined>
+): SearchRequest {
   return new SearchParser(resourceType, query);
 }
 
@@ -145,7 +148,7 @@ class SearchParser {
   page: number;
   count: number;
 
-  constructor(resourceType: string, query: Record<string, string | undefined>) {
+  constructor(resourceType: string, query: Record<string, string[] | string | undefined>) {
     this.resourceType = resourceType;
     this.filters = [];
     this.sortRules = [];
@@ -153,7 +156,11 @@ class SearchParser {
     this.count = 0;
 
     for (const [key, value] of Object.entries(query)) {
-      this.parseKeyValue(key, value ?? '');
+      if (Array.isArray(value)) {
+        value.forEach((element) => this.parseKeyValue(key, element));
+      } else {
+        this.parseKeyValue(key, value ?? '');
+      }
     }
   }
 
@@ -178,6 +185,17 @@ class SearchParser {
           operator: Operator.EQUALS,
           value,
         });
+        break;
+
+      case '_lastUpdated':
+      case 'meta.lastUpdated':
+        {
+          const parsed = parsePrefix(value);
+          this.filters.push({
+            code: '_lastUpdated',
+            ...parsed,
+          });
+        }
         break;
 
       case '_sort':

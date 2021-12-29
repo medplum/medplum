@@ -133,7 +133,7 @@ protectedRoutes.get(
   asyncWrap(async (req: Request, res: Response) => {
     const { resourceType } = req.params;
     const repo = res.locals.repo as Repository;
-    const query = req.query as Record<string, string | undefined>;
+    const query = req.query as Record<string, string[] | string | undefined>;
     const [outcome, bundle] = await repo.search(parseSearchRequest(resourceType, query));
     assertOk(outcome);
     sendResponse(res, outcome, bundle);

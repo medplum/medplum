@@ -9,7 +9,7 @@ import { SearchFieldEditor } from './SearchFieldEditor';
 import { SearchFilterEditor } from './SearchFilterEditor';
 import { SearchFilterValueDisplay } from './SearchFilterValueDisplay';
 import { SearchPopupMenu } from './SearchPopupMenu';
-import { buildFieldNameString, movePage, renderValue } from './SearchUtils';
+import { buildFieldNameString, getOpString, movePage, renderValue } from './SearchUtils';
 import { TitleBar } from './TitleBar';
 import { killEvent } from './utils/dom';
 
@@ -428,6 +428,8 @@ function FilterDescription(props: FilterDescriptionProps): JSX.Element {
     <>
       {filters.map((filter: Filter, index: number) => (
         <div key={`filter-${index}-${filters.length}`}>
+          {getOpString(filter.operator)}
+          &nbsp;
           <SearchFilterValueDisplay resourceType={props.resourceType} filter={filter} />
         </div>
       ))}
