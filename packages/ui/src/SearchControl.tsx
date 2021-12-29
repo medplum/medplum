@@ -304,7 +304,6 @@ export function SearchControl(props: SearchControlProps) {
             {checkboxColumn && <th className="filters medplum-search-icon-cell" />}
             {fields.map((field) => (
               <th key={field} data-key={field} className="filters">
-                {/* {buildFilterString(field)} */}
                 <FilterDescription resourceType={resourceType} field={field} filters={props.search.filters} />
               </th>
             ))}

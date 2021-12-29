@@ -135,7 +135,16 @@ const routes: Record<string, Record<string, any>> = {
       if (email === 'george@example.com' && password === 'password') {
         return allOk;
       } else {
-        return undefined;
+        return {
+          resourceType: 'OperationOutcome',
+          issue: [
+            {
+              details: {
+                text: 'Invalid',
+              },
+            },
+          ],
+        };
       }
     },
   },
@@ -145,7 +154,17 @@ const routes: Record<string, Record<string, any>> = {
       if (email === 'admin@example.com') {
         return allOk;
       } else {
-        return undefined;
+        return {
+          resourceType: 'OperationOutcome',
+          issue: [
+            {
+              expression: ['email'],
+              details: {
+                text: 'Email not found',
+              },
+            },
+          ],
+        };
       }
     },
   },

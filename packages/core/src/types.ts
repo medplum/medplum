@@ -226,7 +226,7 @@ function indexSearchParameter(schema: IndexedStructureDefinition, searchParam: S
     return;
   }
 
-  for (const resourceType of searchParam.base as string[]) {
+  for (const resourceType of searchParam.base) {
     let typeSchema = schema.types[resourceType];
 
     if (!typeSchema) {
