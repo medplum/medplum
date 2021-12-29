@@ -1,10 +1,10 @@
-import { ElementDefinition, ValueSet } from '@medplum/fhirtypes';
+import { ElementDefinition } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { act } from 'react-dom/test-utils';
+import { act } from '@testing-library/react';
 import { CodingInput } from './CodingInput';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from './MockClient';
 
 const statusProperty: ElementDefinition = {
   binding: {
@@ -12,24 +12,7 @@ const statusProperty: ElementDefinition = {
   },
 };
 
-const valueSet: ValueSet = {
-  resourceType: 'ValueSet',
-  expansion: {
-    contains: [
-      {
-        system: 'x',
-        code: 'test-code',
-        display: 'Test Display',
-      },
-    ],
-  },
-};
-
-const medplum = new MockClient({
-  'fhir/R4/ValueSet/%24expand?url=https%3A%2F%2Fexample.com%2Ftest&filter=xyz': {
-    GET: valueSet,
-  },
-});
+const medplum = new MockClient();
 
 describe('CodingInput', () => {
   beforeEach(() => {

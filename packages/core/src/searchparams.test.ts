@@ -139,7 +139,7 @@ function buildStructureDefinitions(fileName: string): void {
       resource.name !== 'MetadataResource' &&
       !isLowerCase(resource.name[0])
     ) {
-      indexStructureDefinition(resource, structureDefinitions);
+      indexStructureDefinition(structureDefinitions, resource);
     }
   }
 }

@@ -139,12 +139,12 @@ describe('Autocomplete', () => {
     const input = screen.getByTestId('input-element') as HTMLInputElement;
 
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Alice' } });
+      fireEvent.change(input, { target: { value: 'Simpson' } });
       jest.advanceTimersByTime(1000);
       await waitFor(() => screen.getByTestId('dropdown'));
     });
 
-    expect(input.value).toBe('Alice');
+    expect(input.value).toBe('Simpson');
 
     const dropdown = screen.getByTestId('dropdown');
     expect(dropdown).toBeDefined();
@@ -154,7 +154,7 @@ describe('Autocomplete', () => {
     render(
       <Autocomplete
         name="foo"
-        loadOptions={async () => ['Alice Smith', 'Bob Jones']}
+        loadOptions={async () => ['Homer Simpson', 'Bob Jones']}
         getId={(item: string) => item}
         getDisplay={(item: string) => <span>{item}</span>}
       />
@@ -162,9 +162,9 @@ describe('Autocomplete', () => {
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
 
-    // Enter "Alice"
+    // Enter "Simpson"
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Alice' } });
+      fireEvent.change(input, { target: { value: 'Simpson' } });
     });
 
     // Wait for the drop down
@@ -183,7 +183,7 @@ describe('Autocomplete', () => {
       fireEvent.keyDown(input, { key: 'ArrowUp', code: 'ArrowUp' });
     });
 
-    const el = screen.getByText('Alice Smith');
+    const el = screen.getByText('Homer Simpson');
     expect(el).toBeDefined();
   });
 
@@ -191,7 +191,7 @@ describe('Autocomplete', () => {
     render(
       <Autocomplete
         name="foo"
-        loadOptions={async () => ['Alice Smith', 'Bob Jones']}
+        loadOptions={async () => ['Homer Simpson', 'Bob Jones']}
         getId={(item: string) => item}
         getDisplay={(item: string) => <span>{item}</span>}
       />
@@ -199,9 +199,9 @@ describe('Autocomplete', () => {
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
 
-    // Enter "Alice"
+    // Enter "Simpson"
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Alice' } });
+      fireEvent.change(input, { target: { value: 'Simpson' } });
     });
 
     // Wait for the drop down
@@ -215,7 +215,7 @@ describe('Autocomplete', () => {
       fireEvent.keyDown(input, { key: 'Backspace', code: 'Backspace' });
     });
 
-    const el = screen.getByText('Alice Smith');
+    const el = screen.getByText('Homer Simpson');
     expect(el).toBeDefined();
   });
 
@@ -223,7 +223,7 @@ describe('Autocomplete', () => {
     render(
       <Autocomplete
         name="foo"
-        loadOptions={async () => ['Alice Smith', 'Bob Jones']}
+        loadOptions={async () => ['Homer Simpson', 'Bob Jones']}
         getId={(item: string) => item}
         getDisplay={(item: string) => <span>{item}</span>}
       />
@@ -231,9 +231,9 @@ describe('Autocomplete', () => {
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
 
-    // Enter "Alice"
+    // Enter "Simpson"
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Alice' } });
+      fireEvent.change(input, { target: { value: 'Simpson' } });
     });
 
     // Wait for the drop down
@@ -247,7 +247,7 @@ describe('Autocomplete', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    const el = screen.getByText('Alice Smith');
+    const el = screen.getByText('Homer Simpson');
     expect(el).toBeDefined();
   });
 
@@ -255,7 +255,7 @@ describe('Autocomplete', () => {
     render(
       <Autocomplete
         name="foo"
-        loadOptions={async () => ['Alice Smith', 'Bob Jones']}
+        loadOptions={async () => ['Homer Simpson', 'Bob Jones']}
         getId={(item: string) => item}
         getDisplay={(item: string) => <span>{item}</span>}
       />
@@ -263,9 +263,9 @@ describe('Autocomplete', () => {
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
 
-    // Enter "Alice"
+    // Enter "Simpson"
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Alice' } });
+      fireEvent.change(input, { target: { value: 'Simpson' } });
     });
 
     // Wait for the drop down
@@ -279,7 +279,7 @@ describe('Autocomplete', () => {
       fireEvent.keyDown(input, { key: 'Tab', code: 'Tab' });
     });
 
-    const el = screen.getByText('Alice Smith');
+    const el = screen.getByText('Homer Simpson');
     expect(el).toBeDefined();
   });
 
@@ -287,7 +287,7 @@ describe('Autocomplete', () => {
     render(
       <Autocomplete
         name="foo"
-        loadOptions={async () => ['Alice Smith', 'Bob Jones']}
+        loadOptions={async () => ['Homer Simpson', 'Bob Jones']}
         getId={(item: string) => item}
         getDisplay={(item: string) => <span>{item}</span>}
       />
@@ -295,9 +295,9 @@ describe('Autocomplete', () => {
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
 
-    // Enter "Alice"
+    // Enter "Simpson"
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Alice' } });
+      fireEvent.change(input, { target: { value: 'Simpson' } });
     });
 
     // Wait for the drop down
@@ -311,7 +311,7 @@ describe('Autocomplete', () => {
       fireEvent.keyDown(input, { key: ';', code: ';' });
     });
 
-    const el = screen.getByText('Alice Smith');
+    const el = screen.getByText('Homer Simpson');
     expect(el).toBeDefined();
   });
 
@@ -321,7 +321,7 @@ describe('Autocomplete', () => {
     render(
       <Autocomplete
         name="foo"
-        loadOptions={async () => ['Alice Smith', 'Bob Jones', 'Carol Brown']}
+        loadOptions={async () => ['Homer Simpson', 'Bob Jones', 'Carol Brown']}
         getId={(item: string) => item}
         getDisplay={(item: string) => <span>{item}</span>}
         onChange={onChange}
@@ -330,9 +330,9 @@ describe('Autocomplete', () => {
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
 
-    // Enter "Alice"
+    // Enter "Simpson"
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Alice' } });
+      fireEvent.change(input, { target: { value: 'Simpson' } });
     });
 
     // Wait for the drop down
@@ -355,7 +355,7 @@ describe('Autocomplete', () => {
     render(
       <Autocomplete
         name="foo"
-        loadOptions={async () => ['Alice Smith', 'Bob Jones']}
+        loadOptions={async () => ['Homer Simpson', 'Bob Jones']}
         getId={(item: string) => item}
         getDisplay={(item: string) => <span>{item}</span>}
         onCreateNew={createNew}
@@ -364,9 +364,9 @@ describe('Autocomplete', () => {
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
 
-    // Enter "Alice"
+    // Enter "Simpson"
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Alice' } });
+      fireEvent.change(input, { target: { value: 'Simpson' } });
     });
 
     // Wait for the drop down
@@ -450,7 +450,7 @@ describe('Autocomplete', () => {
     render(
       <Autocomplete
         name="foo"
-        loadOptions={async () => ['Alice Smith', 'Bob Jones', 'Carol Brown']}
+        loadOptions={async () => ['Homer Simpson', 'Bob Jones', 'Carol Brown']}
         getId={(item: string) => item}
         getDisplay={(item: string) => <span>{item}</span>}
         onChange={onChange}
@@ -459,9 +459,9 @@ describe('Autocomplete', () => {
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
 
-    // Enter "Alice"
+    // Enter "Simpson"
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Alice' } });
+      fireEvent.change(input, { target: { value: 'Simpson' } });
     });
 
     // Wait for the drop down
@@ -492,7 +492,7 @@ describe('Autocomplete', () => {
     render(
       <Autocomplete
         name="foo"
-        loadOptions={async () => ['Alice Smith', 'Bob Jones']}
+        loadOptions={async () => ['Homer Simpson', 'Bob Jones']}
         getId={(item: string) => item}
         getDisplay={(item: string) => <span>{item}</span>}
       />
@@ -500,9 +500,9 @@ describe('Autocomplete', () => {
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
 
-    // Enter "Alice"
+    // Enter "Simpson"
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Alice' } });
+      fireEvent.change(input, { target: { value: 'Simpson' } });
     });
 
     // Wait for the drop down
@@ -528,7 +528,7 @@ describe('Autocomplete', () => {
     render(
       <Autocomplete
         name="foo"
-        loadOptions={async () => ['Alice Smith', 'Bob Jones', 'Carol Brown']}
+        loadOptions={async () => ['Homer Simpson', 'Bob Jones', 'Carol Brown']}
         getId={(item: string) => item}
         getDisplay={(item: string) => <span>{item}</span>}
       />
@@ -536,9 +536,9 @@ describe('Autocomplete', () => {
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
 
-    // Enter "Alice"
+    // Enter "Simpson"
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Alice' } });
+      fireEvent.change(input, { target: { value: 'Simpson' } });
     });
 
     // Wait for the drop down

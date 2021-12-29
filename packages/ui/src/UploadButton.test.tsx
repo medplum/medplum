@@ -2,10 +2,10 @@ import { Attachment } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from './MockClient';
+import { MockClient } from '@medplum/mock';
 import { UploadButton, UploadButtonProps } from './UploadButton';
 
-const medplum = new MockClient({});
+const medplum = new MockClient();
 
 describe('UploadButton', () => {
   const setup = (args?: UploadButtonProps) => {

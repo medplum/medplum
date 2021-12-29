@@ -1,5 +1,5 @@
-import { allOk } from '@medplum/core';
-import { MedplumProvider, MockClient } from '@medplum/ui';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import crypto from 'crypto';
 import React from 'react';
@@ -7,18 +7,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';
 import { RegisterPage } from './RegisterPage';
 
-const medplum = new MockClient({
-  'auth/register': {
-    POST: (body: string) => {
-      const { email, password } = JSON.parse(body);
-      if (email === 'george@example.com' && password === 'password') {
-        return allOk;
-      } else {
-        return undefined;
-      }
-    },
-  },
-});
+const medplum = new MockClient();
 
 const setup = () => {
   return render(

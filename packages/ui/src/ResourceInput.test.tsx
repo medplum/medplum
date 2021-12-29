@@ -1,57 +1,10 @@
-import { Bundle, Patient } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from './MockClient';
 import { ResourceInput, ResourceInputProps } from './ResourceInput';
 
-const alice: Patient = {
-  resourceType: 'Patient',
-  id: '123',
-  name: [
-    {
-      given: ['Alice'],
-      family: 'Smith',
-    },
-  ],
-};
-
-const bob: Patient = {
-  resourceType: 'Patient',
-  id: '345',
-  name: [
-    {
-      given: ['Bob'],
-      family: 'Jones',
-    },
-  ],
-};
-
-const searchResult: Bundle = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: alice,
-    },
-    {
-      resource: bob,
-    },
-  ],
-};
-
-const medplum = new MockClient({
-  'auth/login': {
-    POST: {
-      profile: { reference: 'Practitioner/123' },
-    },
-  },
-  'fhir/R4/Patient?name=Alice': {
-    GET: searchResult,
-  },
-  'fhir/R4/Patient/123': {
-    GET: alice,
-  },
-});
+const medplum = new MockClient();
 
 const setup = (args: ResourceInputProps) => {
   return render(
@@ -102,9 +55,9 @@ describe('ResourceInput', () => {
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
 
-    // Enter "Alice"
+    // Enter "Simpson"
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Alice' } });
+      fireEvent.change(input, { target: { value: 'Simpson' } });
     });
 
     // Wait for the drop down
@@ -118,7 +71,7 @@ describe('ResourceInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Alice Smith')).toBeDefined();
+    expect(screen.getByText('Homer Simpson')).toBeDefined();
   });
 
   test('Call onChange', async () => {
@@ -132,9 +85,9 @@ describe('ResourceInput', () => {
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
 
-    // Enter "Alice"
+    // Enter "Simpson"
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Alice' } });
+      fireEvent.change(input, { target: { value: 'Simpson' } });
     });
 
     // Wait for the drop down
@@ -148,7 +101,7 @@ describe('ResourceInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Alice Smith')).toBeDefined();
+    expect(screen.getByText('Homer Simpson')).toBeDefined();
     expect(onChange).toHaveBeenCalled();
   });
 });

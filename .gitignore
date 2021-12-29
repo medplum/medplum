@@ -19,6 +19,7 @@ packages/fhirpath/dist/
 packages/generator/dist/
 packages/graphiql/dist/
 packages/infra/dist/
+packages/mock/dist/
 packages/seeder/dist/
 packages/server/dist/
 packages/ui/dist/

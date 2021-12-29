@@ -1,7 +1,7 @@
 import { MedplumClient } from '@medplum/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { act } from 'react-dom/test-utils';
+import { act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
 import { MenuItem } from './MenuItem';

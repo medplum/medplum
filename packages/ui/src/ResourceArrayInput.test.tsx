@@ -2,7 +2,7 @@ import { IndexedStructureDefinition } from '@medplum/core';
 import { ElementDefinition } from '@medplum/fhirtypes';
 import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
-import { act } from 'react-dom/test-utils';
+import { act } from '@testing-library/react';
 import { ResourceArrayInput } from './ResourceArrayInput';
 
 const schema: IndexedStructureDefinition = {

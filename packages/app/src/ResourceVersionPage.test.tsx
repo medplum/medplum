@@ -1,61 +1,13 @@
-import { notFound } from '@medplum/core';
-import { Bundle, Practitioner } from '@medplum/fhirtypes';
-import { MedplumProvider, MockClient } from '@medplum/ui';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ResourceVersionPage } from './ResourceVersionPage';
 
-const practitioner: Practitioner = {
-  resourceType: 'Practitioner',
-  id: '123',
-  name: [{ given: ['Medplum'], family: 'Admin' }],
-  active: true,
-  meta: {
-    versionId: '2',
-    lastUpdated: '2021-01-02T12:00:00Z',
-    author: {
-      reference: 'Practitioner/123',
-    },
-  },
-};
+const medplum = new MockClient();
 
-const practitionerHistory: Bundle = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: practitioner,
-    },
-    {
-      resource: {
-        resourceType: 'Practitioner',
-        id: '123',
-        name: [{ given: ['Medplum'], family: 'Admin' }],
-        meta: {
-          versionId: '1',
-          lastUpdated: '2021-01-01T12:00:00Z',
-          author: {
-            reference: 'Practitioner/123',
-          },
-        },
-      },
-    },
-  ],
-};
-
-const medplum = new MockClient({
-  'fhir/R4/Practitioner/123': {
-    GET: practitioner,
-  },
-  'fhir/R4/Practitioner/123/_history': {
-    GET: practitionerHistory,
-  },
-  'fhir/R4/Practitioner/not-found/_history': {
-    GET: notFound,
-  },
-});
-
-describe('ResourcePage', () => {
+describe('ResourceVersionPage', () => {
   const setup = (url: string) => {
     return render(
       <MedplumProvider medplum={medplum}>

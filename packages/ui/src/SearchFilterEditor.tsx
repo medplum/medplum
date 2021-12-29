@@ -3,7 +3,7 @@ import { Reference, SearchParameter } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Dialog } from './Dialog';
 import { ReferenceInput } from './ReferenceInput';
-import { ResourceBadge } from './ResourceBadge';
+import { SearchFilterValueDisplay } from './SearchFilterValueDisplay';
 import { addFilter, deleteFilter, getOpString, getSearchOperators, setFilters } from './SearchUtils';
 
 export interface SearchFilterEditorProps {
@@ -35,7 +35,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
 
   const schema = props.schema;
   const resourceType = props.search.resourceType;
-  const searchParams = schema.types[resourceType].searchParams as SearchParameter[];
+  const searchParams = schema.types[resourceType].searchParams as Record<string, SearchParameter>;
   const filters = search.filters || [];
 
   return (
@@ -72,6 +72,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
                 return (
                   <FilterRowDisplay
                     key={`filter-${index}-${filters.length}-display`}
+                    resourceType={resourceType}
                     searchParams={searchParams}
                     filter={filter}
                     onEdit={() => setEditingIndex(index)}
@@ -89,21 +90,21 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
 }
 
 interface FilterRowDisplayProps {
-  searchParams: SearchParameter[];
-  filter: Filter;
-  onEdit: () => void;
-  onDelete: () => void;
+  readonly searchParams: Record<string, SearchParameter>;
+  readonly resourceType: string;
+  readonly filter: Filter;
+  readonly onEdit: () => void;
+  readonly onDelete: () => void;
 }
 
 function FilterRowDisplay(props: FilterRowDisplayProps): JSX.Element {
   const filter = props.filter;
-  const searchParam = props.searchParams.find((p) => p.code === filter.code);
   return (
     <tr>
       <td>{filter.code}</td>
       <td>{getOpString(filter.operator)}</td>
       <td>
-        {searchParam?.type === 'reference' ? <ResourceBadge value={{ reference: filter.value }} /> : filter.value}
+        <SearchFilterValueDisplay resourceType={props.resourceType} filter={filter} />
       </td>
       <td>
         <button className="btn btn-small" onClick={props.onEdit}>
@@ -118,7 +119,7 @@ function FilterRowDisplay(props: FilterRowDisplayProps): JSX.Element {
 }
 
 interface FilterRowInputProps {
-  searchParams: SearchParameter[];
+  searchParams: Record<string, SearchParameter>;
   defaultValue?: Filter;
   okText: string;
   onOk: (value: Filter) => void;
@@ -142,7 +143,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
     setValue({ ...valueRef.current, value: newFilterValue });
   }
 
-  const searchParam = props.searchParams.find((p) => p.code === value.code);
+  const searchParam = props.searchParams[value.code];
   const operators = searchParam && getSearchOperators(searchParam);
 
   return (
@@ -154,9 +155,9 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
           onChange={(e) => setFilterCode(e.target.value)}
         >
           <option value=""></option>
-          {props.searchParams.map((param) => (
-            <option key={param.code} value={param.code}>
-              {param.code}
+          {Object.keys(props.searchParams).map((param) => (
+            <option key={param} value={param}>
+              {param}
             </option>
           ))}
         </select>

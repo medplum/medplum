@@ -1,31 +1,10 @@
-import { allOk } from '@medplum/core';
-import { MedplumProvider, MockClient } from '@medplum/ui';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/ui';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { ChangePasswordPage } from './ChangePasswordPage';
 
-const medplum = new MockClient({
-  'auth/changepassword': {
-    POST: (body: string) => {
-      const { oldPassword } = JSON.parse(body);
-      if (oldPassword === 'orange') {
-        return allOk;
-      } else {
-        return {
-          resourceType: 'OperationOutcome',
-          issue: [
-            {
-              expression: ['oldPassword'],
-              details: {
-                text: 'Incorrect password',
-              },
-            },
-          ],
-        };
-      }
-    },
-  },
-});
+const medplum = new MockClient();
 
 const setup = () => {
   return render(

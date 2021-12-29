@@ -1,22 +1,11 @@
-import { allOk } from '@medplum/core';
-import { MedplumProvider, MockClient } from '@medplum/ui';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/ui';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { ResetPasswordPage } from './ResetPasswordPage';
 
-const medplum = new MockClient({
-  'auth/resetpassword': {
-    POST: (body: string) => {
-      const { email } = JSON.parse(body);
-      if (email === 'admin@example.com') {
-        return allOk;
-      } else {
-        return undefined;
-      }
-    },
-  },
-});
+const medplum = new MockClient();
 
 const setup = () => {
   return render(

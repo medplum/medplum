@@ -12,7 +12,7 @@ import {
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from './MockClient';
+import { MockClient } from '@medplum/mock';
 import { ResourcePropertyInput, ResourcePropertyInputProps } from './ResourcePropertyInput';
 
 const patientNameProperty: ElementDefinition = {
@@ -159,7 +159,7 @@ const schema: IndexedStructureDefinition = {
   },
 };
 
-const medplum = new MockClient({});
+const medplum = new MockClient();
 
 describe('ResourcePropertyInput', () => {
   function setup(props: ResourcePropertyInputProps) {

@@ -1,35 +1,11 @@
-import { Patient } from '@medplum/fhirtypes';
-import { render, waitFor } from '@testing-library/react';
+import { HomerSimpson, MockClient } from '@medplum/mock';
+import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from './MockClient';
 import { ResourceName, ResourceNameProps } from './ResourceName';
 
-const patient: Patient = {
-  resourceType: 'Patient',
-  id: '123',
-  meta: {
-    versionId: '456',
-  },
-  name: [
-    {
-      given: ['Alice'],
-      family: 'Smith',
-    },
-  ],
-};
-
-const medplum = new MockClient({
-  'auth/login': {
-    POST: {
-      profile: { reference: 'Practitioner/123' },
-    },
-  },
-  'fhir/R4/Patient/123': {
-    GET: patient,
-  },
-});
+const medplum = new MockClient();
 
 describe('ResourceName', () => {
   const setup = (args: ResourceNameProps) => {
@@ -43,40 +19,40 @@ describe('ResourceName', () => {
   };
 
   test('Renders system', () => {
-    const utils = setup({ value: { reference: 'system' } });
-    expect(utils.getByText('System')).toBeDefined();
+    setup({ value: { reference: 'system' } });
+    expect(screen.getByText('System')).toBeDefined();
   });
 
   test('Renders resource directly', async () => {
-    const utils = setup({
-      value: patient,
+    setup({
+      value: HomerSimpson,
     });
 
-    await waitFor(() => utils.getByText('Alice Smith'));
+    await waitFor(() => screen.getByText('Homer Simpson'));
 
-    expect(utils.getByText('Alice Smith')).toBeDefined();
+    expect(screen.getByText('Homer Simpson')).toBeDefined();
   });
 
   test('Renders resource directly as link', async () => {
-    const utils = setup({
-      value: patient,
+    setup({
+      value: HomerSimpson,
       link: true,
     });
 
-    await waitFor(() => utils.getByText('Alice Smith'));
+    await waitFor(() => screen.getByText('Homer Simpson'));
 
-    expect(utils.getByText('Alice Smith')).toBeDefined();
+    expect(screen.getByText('Homer Simpson')).toBeDefined();
   });
 
   test('Renders after loading the resource', async () => {
-    const utils = setup({
+    setup({
       value: {
-        reference: 'Patient/' + patient.id,
+        reference: 'Patient/' + HomerSimpson.id,
       },
     });
 
-    await waitFor(() => utils.getByText('Alice Smith'));
+    await waitFor(() => screen.getByText('Homer Simpson'));
 
-    expect(utils.getByText('Alice Smith')).toBeDefined();
+    expect(screen.getByText('Homer Simpson')).toBeDefined();
   });
 });

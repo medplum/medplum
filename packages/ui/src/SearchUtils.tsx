@@ -486,25 +486,6 @@ export function buildFieldNameString(schema: IndexedStructureDefinition, resourc
 }
 
 /**
- * Returns a HTML fragment to be displayed in the filter table for the value.
- *
- * @param {!Object|!string} field The field object or key.
- * @param {?string} op The filter operation (e.g., "equals").
- * @param {*} value The filter value
- * @param {boolean=} opt_quotes Optional flag to put quotes around strings.
- * @return {string} An HTML fragment that represents the value.
- */
-export function getFilterValueString(filter: Filter): JSX.Element | string {
-  const value = filter.value;
-  if (!value) {
-    return <span className="muted">none</span>;
-  }
-
-  const chunks = value.split(';');
-  return chunks.map((c: string) => '"' + c + '"').join(' or ');
-}
-
-/**
  * Returns a fragment to be displayed in the search table for the value.
  * @param schema The currently indexed schema.
  * @param resource The parent resource.

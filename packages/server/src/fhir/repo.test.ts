@@ -1636,7 +1636,6 @@ describe('FHIR Repo', () => {
   });
 
   test('Filter by CodeableConcept', async () => {
-    // const patient = `Patient/${randomUUID()}`;
     const x1 = randomUUID();
     const x2 = randomUUID();
     const x3 = randomUUID();
