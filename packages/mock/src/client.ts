@@ -258,6 +258,9 @@ const routes: Record<string, Record<string, any>> = {
   'fhir/R4/Patient?_count=20&_fields=id,_lastUpdated,name,birthDate,gender&_sort=-_lastUpdated': {
     GET: SimpsonSearchBundle,
   },
+  'fhir/R4/Patient?_fields=id,_lastUpdated,name&_lastUpdated=ge2021-12-01T00%3A00%3A00.000Z': {
+    GET: SimpsonSearchBundle,
+  },
   'fhir/R4/Patient?name=Bob': {
     GET: EmptySearchBundle,
   },

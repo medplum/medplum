@@ -464,4 +464,24 @@ describe('FHIR Search Utils', () => {
       filters: [],
     });
   });
+
+  // Other
+
+  test('Multiple filters on same field', () => {
+    expect(parseSearchRequest('Patient', { _lastUpdated: ['gt2019-01-01', 'lt2019-01-02'] })).toMatchObject({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: '_lastUpdated',
+          operator: Operator.GREATER_THAN,
+          value: '2019-01-01',
+        },
+        {
+          code: '_lastUpdated',
+          operator: Operator.LESS_THAN,
+          value: '2019-01-02',
+        },
+      ],
+    });
+  });
 });
