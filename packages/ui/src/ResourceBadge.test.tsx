@@ -1,3 +1,4 @@
+import { createReference } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { render, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -46,9 +47,7 @@ describe('ResourceBadge', () => {
 
   test('Renders after loading the resource', async () => {
     const utils = setup({
-      value: {
-        reference: 'Patient/' + HomerSimpson.id,
-      },
+      value: createReference(HomerSimpson),
     });
 
     await waitFor(() => utils.getByText('Homer Simpson'));

@@ -1,8 +1,7 @@
 import { ElementDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { act } from '@testing-library/react';
 import { CodeInput } from './CodeInput';
 import { MedplumProvider } from './MedplumProvider';
 

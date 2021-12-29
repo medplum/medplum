@@ -1,3 +1,4 @@
+import { createReference } from '@medplum/core';
 import { HomerEncounter, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -19,7 +20,7 @@ describe('EncounterTimeline', () => {
   };
 
   test('Renders reference', async () => {
-    setup({ encounter: { reference: 'Encounter/' + HomerEncounter.id } });
+    setup({ encounter: createReference(HomerEncounter) });
 
     await act(async () => {
       await waitFor(() => screen.getAllByTestId('timeline-item'));

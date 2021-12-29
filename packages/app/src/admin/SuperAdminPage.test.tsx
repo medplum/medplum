@@ -1,8 +1,7 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/ui';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
-import { act } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { SuperAdminPage } from './SuperAdminPage';
 

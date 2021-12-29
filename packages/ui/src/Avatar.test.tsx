@@ -1,3 +1,4 @@
+import { createReference } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -56,9 +57,7 @@ describe('Avatar', () => {
 
   test('Avatar renders after loading the resource', async () => {
     setup({
-      value: {
-        reference: 'Patient/' + HomerSimpson.id,
-      },
+      value: createReference(HomerSimpson),
     });
 
     await waitFor(() => screen.getByTestId('avatar'));

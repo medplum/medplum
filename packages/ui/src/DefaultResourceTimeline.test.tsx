@@ -1,3 +1,4 @@
+import { createReference } from '@medplum/core';
 import { ExampleSubscription, MockClient } from '@medplum/mock';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -19,7 +20,7 @@ describe('DefaultResourceTimeline', () => {
   };
 
   test('Renders reference', async () => {
-    setup({ resource: { reference: 'Subscription/' + ExampleSubscription.id } });
+    setup({ resource: createReference(ExampleSubscription) });
 
     await act(async () => {
       await waitFor(() => screen.getAllByTestId('timeline-item'));

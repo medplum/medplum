@@ -1,8 +1,7 @@
 import { DiagnosticReport } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport, MockClient } from '@medplum/mock';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import React from 'react';
-import { act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { DiagnosticReportDisplay, DiagnosticReportDisplayProps } from './DiagnosticReportDisplay';
 import { MedplumProvider } from './MedplumProvider';

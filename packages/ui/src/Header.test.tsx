@@ -1,7 +1,6 @@
 import { MockClient } from '@medplum/mock';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { Header, HeaderProps } from './Header';
 import { MedplumProvider } from './MedplumProvider';
