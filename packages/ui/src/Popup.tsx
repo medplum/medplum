@@ -61,16 +61,16 @@ export function Popup(props: PopupProps) {
   };
 
   if (props.anchor) {
-    if (props.anchor.right + 250 < window.innerWidth) {
+    if (props.anchor.right + 250 < document.body.clientWidth) {
       style.left = props.anchor.right + 'px';
     } else {
-      style.right = window.innerWidth - props.anchor.left + 'px';
+      style.right = document.body.clientWidth - props.anchor.left + 'px';
     }
 
-    if (props.anchor.top + 300 < window.innerHeight) {
+    if (props.anchor.top + 300 < document.body.clientHeight) {
       style.top = props.anchor.top + 'px';
     } else {
-      style.bottom = window.innerHeight - props.anchor.top + 'px';
+      style.bottom = document.body.clientHeight - props.anchor.top + 'px';
     }
   }
 
