@@ -47,6 +47,31 @@ describe('SearchControl', () => {
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
 
+  test('Renders _lastUpdated filter', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: '_lastUpdated',
+            operator: Operator.GREATER_THAN_OR_EQUALS,
+            value: '2021-12-01T00:00:00.000Z',
+          },
+        ],
+        fields: ['id', '_lastUpdated', 'name'],
+      },
+      onLoad: jest.fn(),
+    };
+
+    setup(props);
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    expect(screen.getByText('greater than or equals', { exact: false })).toBeInTheDocument();
+  });
+
   test('Renders empty results', async () => {
     const props = {
       search: {

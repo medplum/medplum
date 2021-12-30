@@ -203,6 +203,7 @@ function addDayFilter(definition: SearchRequest, field: string, delta: number): 
 
   const endTime = new Date(startTime.getTime());
   endTime.setDate(endTime.getDate() + 1);
+  endTime.setTime(endTime.getTime() - 1);
 
   return addDateFilterBetween(definition, field, startTime, endTime);
 }
@@ -251,8 +252,10 @@ function addMonthFilter(definition: SearchRequest, field: string, delta: number)
   startTime.setHours(0, 0, 0, 0);
 
   const endTime = new Date(startTime.getTime());
-  endTime.setTime(startTime.getTime());
   endTime.setMonth(endTime.getMonth() + 1);
+  endTime.setDate(1);
+  endTime.setHours(0, 0, 0, 0);
+  endTime.setTime(endTime.getTime() - 1);
 
   return addDateFilterBetween(definition, field, startTime, endTime);
 }
@@ -301,21 +304,8 @@ export function addDateFilter(definition: SearchRequest, field: string, op: Oper
  * @param {string} field The field key name.
  * @param {Date} d1 The start date.
  * @param {Date} d2 The end date.
- * @param {boolean=} opt_exclusive Optional flag for exclusive end date.
  */
-export function addDateFilterBetween(
-  definition: SearchRequest,
-  field: string,
-  d1: Date,
-  d2: Date,
-  opt_exclusive?: boolean
-): SearchRequest {
-  if (!opt_exclusive) {
-    // Between is inclusive.  Therefore, we need to push out the end date.
-    d2 = new Date(d2.getTime());
-    d2.setDate(d2.getDate() + 1);
-  }
-
+export function addDateFilterBetween(definition: SearchRequest, field: string, d1: Date, d2: Date): SearchRequest {
   definition = clearFiltersOnField(definition, field);
   definition = addDateFilterImpl(definition, field, Operator.GREATER_THAN_OR_EQUALS, d1);
   definition = addDateFilterImpl(definition, field, Operator.LESS_THAN_OR_EQUALS, d2);
@@ -330,10 +320,7 @@ export function addDateFilterBetween(
  * @param {Date} value The date.
  */
 function addDateFilterImpl(definition: SearchRequest, field: string, op: Operator, value: Date): SearchRequest {
-  const dateTime = new Date(value.getFullYear(), value.getMonth(), value.getDate());
-  dateTime.setHours(0, 0, 0, 0);
-
-  return addFilter(definition, field, op, dateTime.toISOString());
+  return addFilter(definition, field, op, value.toISOString());
 }
 
 /**

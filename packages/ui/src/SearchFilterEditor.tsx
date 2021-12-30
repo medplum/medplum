@@ -2,9 +2,17 @@ import { Filter, IndexedStructureDefinition, Operator, SearchRequest, stringify 
 import { Reference, SearchParameter } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Dialog } from './Dialog';
+import { useMedplum } from './MedplumProvider';
 import { ReferenceInput } from './ReferenceInput';
 import { SearchFilterValueDisplay } from './SearchFilterValueDisplay';
-import { addFilter, deleteFilter, getOpString, getSearchOperators, setFilters } from './SearchUtils';
+import {
+  addFilter,
+  buildFieldNameString,
+  deleteFilter,
+  getOpString,
+  getSearchOperators,
+  setFilters,
+} from './SearchUtils';
 
 export interface SearchFilterEditorProps {
   schema: IndexedStructureDefinition;
@@ -44,10 +52,10 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
         <table className="medplum-filter-editor-table">
           <thead>
             <tr>
-              <th style={{ width: '235px' }}>Field</th>
-              <th style={{ width: '120px' }}>Operation</th>
-              <th style={{ width: '400px' }}>Value</th>
-              <th style={{ width: '120px' }}>Actions</th>
+              <th style={{ width: '30%' }}>Field</th>
+              <th style={{ width: '30%' }}>Operation</th>
+              <th style={{ width: '30%' }}>Value</th>
+              <th style={{ width: '10%' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -97,11 +105,16 @@ interface FilterRowDisplayProps {
   readonly onDelete: () => void;
 }
 
-function FilterRowDisplay(props: FilterRowDisplayProps): JSX.Element {
-  const filter = props.filter;
+function FilterRowDisplay(props: FilterRowDisplayProps): JSX.Element | null {
+  const { resourceType, filter } = props;
+  const medplum = useMedplum();
+  const schema = medplum.getSchema(resourceType);
+  if (!schema) {
+    return null;
+  }
   return (
     <tr>
-      <td>{filter.code}</td>
+      <td>{buildFieldNameString(schema, resourceType, filter.code)}</td>
       <td>{getOpString(filter.operator)}</td>
       <td>
         <SearchFilterValueDisplay resourceType={props.resourceType} filter={filter} />

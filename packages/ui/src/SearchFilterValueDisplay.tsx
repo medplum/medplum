@@ -16,13 +16,14 @@ export function SearchFilterValueDisplay(props: SearchFilterValueDisplayProps): 
   }
 
   const searchParam = schema.types[props.resourceType].searchParams?.[props.filter.code];
-  if (!searchParam) {
-    return null;
-  }
 
   const filter = props.filter;
   if (searchParam?.type === 'reference') {
     return <ResourceBadge value={{ reference: filter.value }} />;
+  }
+
+  if (props.filter.code === '_lastUpdated' || searchParam?.type === 'datetime') {
+    return <>{new Date(filter.value).toLocaleString()}</>;
   }
 
   return <>{filter.value}</>;
