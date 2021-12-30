@@ -1,4 +1,4 @@
-import { allOk, LoginState } from '@medplum/core';
+import { allOk, LoginState, notFound } from '@medplum/core';
 import { MockClient } from './client';
 import { HomerSimpson } from './mocks';
 
@@ -67,6 +67,18 @@ describe('MockClient', () => {
                 url: 'Patient/123',
               },
             },
+            {
+              request: {
+                method: 'GET',
+                url: 'fhir/R4/Questionnaire/not-found',
+              },
+            },
+            {
+              request: {
+                method: 'GET',
+                url: 'this-url-does-not-exist',
+              },
+            },
           ],
         })
       )
@@ -76,6 +88,21 @@ describe('MockClient', () => {
       entry: [
         {
           resource: HomerSimpson,
+          response: {
+            status: '200',
+          },
+        },
+        {
+          resource: notFound,
+          response: {
+            status: '404',
+          },
+        },
+        {
+          resource: notFound,
+          response: {
+            status: '404',
+          },
         },
       ],
     });
@@ -85,6 +112,6 @@ describe('MockClient', () => {
     console.log = jest.fn();
     const client = new MockClient({ debug: true });
     await client.get('not-found');
-    expect(console.log).toHaveBeenCalledTimes(2);
+    expect(console.log).toHaveBeenCalledTimes(3);
   });
 });

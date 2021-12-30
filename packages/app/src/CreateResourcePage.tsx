@@ -1,5 +1,4 @@
-import { OperationOutcomeError } from '@medplum/core';
-import { Resource } from '@medplum/fhirtypes';
+import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, TitleBar, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -8,7 +7,7 @@ export function CreateResourcePage() {
   const navigate = useNavigate();
   const { resourceType } = useParams();
   const medplum = useMedplum();
-  const [error, setError] = useState<OperationOutcomeError | undefined>();
+  const [error, setError] = useState<OperationOutcome | undefined>();
 
   return (
     <>
@@ -25,7 +24,7 @@ export function CreateResourcePage() {
               .then((result) => navigate('/' + result.resourceType + '/' + result.id))
               .catch(setError);
           }}
-          outcome={error?.outcome}
+          outcome={error}
         />
       </Document>
     </>

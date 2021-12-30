@@ -187,7 +187,7 @@ export const PractitionerStructureBundle: Bundle<StructureDefinition> = {
   ],
 };
 
-export const QuestionnairStructureDefinitionBundle: Bundle<StructureDefinition> = {
+export const QuestionnaireStructureDefinitionBundle: Bundle<StructureDefinition> = {
   resourceType: 'Bundle',
   type: 'searchset',
   entry: [
@@ -253,6 +253,19 @@ export const QuestionnaireSearchParameterBundle: Bundle<SearchParameter> = {
   resourceType: 'Bundle',
   type: 'searchset',
   entry: [],
+};
+
+export const QuestionnaireResponseStructureDefinitionBundle: Bundle<StructureDefinition> = {
+  resourceType: 'Bundle',
+  type: 'searchset',
+  entry: [
+    {
+      resource: {
+        resourceType: 'StructureDefinition',
+        name: 'QuestionnaireResponse',
+      },
+    },
+  ],
 };
 
 export const ServiceRequestStructureDefinitionBundle: Bundle<StructureDefinition> = {

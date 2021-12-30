@@ -14,6 +14,7 @@ describe('FormPage', () => {
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
           <Routes>
             <Route path="/forms/:id" element={<FormPage />} />
+            <Route path="/:resourceType/:id" element={<div />} />
           </Routes>
         </MemoryRouter>
       </MedplumProvider>
@@ -51,6 +52,28 @@ describe('FormPage', () => {
       fireEvent.click(screen.getByText('OK'));
     });
 
+    expect(screen.queryByText('First question')).not.toBeInTheDocument();
+  });
+
+  test('Patient subject', async () => {
+    setup('/forms/123?subject=Patient/123');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('First question'));
+    });
+
     expect(screen.getByText('First question')).toBeInTheDocument();
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+  });
+
+  test('ServiceRequest subject', async () => {
+    setup('/forms/123?subject=ServiceRequest/123');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('First question'));
+    });
+
+    expect(screen.getByText('First question')).toBeInTheDocument();
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
 });

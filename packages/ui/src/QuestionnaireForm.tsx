@@ -22,6 +22,7 @@ import { useResource } from './useResource';
 
 export interface QuestionnaireFormProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;
+  subject?: Reference;
   onSubmit: (response: QuestionnaireResponse) => void;
 }
 
@@ -55,6 +56,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps) {
         const response: QuestionnaireResponse = {
           resourceType: 'QuestionnaireResponse',
           questionnaire: getReferenceString(questionnaire),
+          subject: props.subject,
           source: createReference(source as ProfileResource),
           authored: new Date().toISOString(),
           item: items,

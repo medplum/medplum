@@ -9,8 +9,8 @@ import { FormSection } from './FormSection';
 import { Logo } from './Logo';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
-import { TextField } from './TextField';
 import './SignInForm.css';
+import { TextField } from './TextField';
 
 export interface SignInFormProps {
   scopes?: string;
@@ -80,17 +80,11 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome>();
 
-  function handleError(err: any): void {
-    if (err.outcome) {
-      setOutcome(err.outcome);
-    }
-  }
-
   return (
     <Form
       style={{ maxWidth: 400 }}
       onSubmit={(formData: Record<string, string>) => {
-        medplum.startLogin(formData.email, formData.password).then(props.handleAuthResponse).catch(handleError);
+        medplum.startLogin(formData.email, formData.password).then(props.handleAuthResponse).catch(setOutcome);
       }}
     >
       <div className="center">
@@ -133,7 +127,7 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
               google.accounts.id.initialize({
                 client_id: props.googleClientId,
                 callback: (response: GoogleCredentialResponse) => {
-                  medplum.startGoogleLogin(response).then(props.handleAuthResponse).catch(handleError);
+                  medplum.startGoogleLogin(response).then(props.handleAuthResponse).catch(setOutcome);
                 },
               });
               google.accounts.id.prompt();

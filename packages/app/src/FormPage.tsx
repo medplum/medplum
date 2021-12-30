@@ -1,22 +1,63 @@
-import { Questionnaire } from '@medplum/fhirtypes';
-import { addQuestionnaireInitialValues, Document, Loading, QuestionnaireForm, useMedplum } from '@medplum/ui';
+import { getDisplayString, getReferenceString } from '@medplum/core';
+import {
+  Bundle,
+  BundleEntry,
+  OperationOutcome,
+  Questionnaire,
+  QuestionnaireResponse,
+  Resource,
+} from '@medplum/fhirtypes';
+import { Document, Loading, QuestionnaireForm, TitleBar, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { PatientHeader } from './PatientHeader';
+import { getPatient } from './utils';
 
 export function FormPage() {
+  const navigate = useNavigate();
   const { id } = useParams() as { id: string };
   const location = useLocation();
   const queryParams = Object.fromEntries(new URLSearchParams(location.search).entries()) as Record<string, string>;
   const medplum = useMedplum();
   const [loading, setLoading] = useState<boolean>(true);
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | undefined>();
-  const [error, setError] = useState();
+  const [subject, setSubject] = useState<Resource | undefined>();
+  const [error, setError] = useState<OperationOutcome>();
 
   useEffect(() => {
+    const requestBundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'GET',
+            url: `Questionnaire/${id}`,
+          },
+        },
+      ],
+    };
+
+    if ('subject' in queryParams) {
+      (requestBundle.entry as BundleEntry[]).push({
+        request: {
+          method: 'GET',
+          url: queryParams['subject'],
+        },
+      });
+    }
+
     medplum
-      .read('Questionnaire', id)
-      .then((result) => setQuestionnaire(addQuestionnaireInitialValues(result as Questionnaire, queryParams)))
-      .then(() => setLoading(false))
+      .post('fhir/R4', requestBundle)
+      .then((bundle: Bundle) => {
+        if (bundle.entry?.[0]?.response?.status !== '200') {
+          setError(bundle.entry?.[0]?.response as OperationOutcome);
+        } else {
+          setQuestionnaire(bundle.entry?.[0]?.resource as Questionnaire);
+          setSubject(bundle.entry?.[1]?.resource as Resource);
+        }
+        setLoading(false);
+      })
       .catch((reason) => {
         setError(reason);
         setLoading(false);
@@ -35,15 +76,29 @@ export function FormPage() {
     return <Loading />;
   }
 
+  const patient = subject && getPatient(subject);
+
   return (
-    <Document>
-      <h1>{questionnaire.name}</h1>
-      <QuestionnaireForm
-        questionnaire={questionnaire}
-        onSubmit={(formData) => {
-          console.log('formData', formData);
-        }}
-      />
-    </Document>
+    <>
+      {patient && <PatientHeader patient={patient} />}
+      {subject && subject.resourceType !== 'Patient' && (
+        <TitleBar>
+          <h1>{getDisplayString(subject)}</h1>
+        </TitleBar>
+      )}
+      <TitleBar>
+        <h1>{getDisplayString(questionnaire)}</h1>
+      </TitleBar>
+      <Document>
+        <QuestionnaireForm
+          questionnaire={questionnaire}
+          onSubmit={(questionnaireResponse: QuestionnaireResponse) => {
+            medplum.create(questionnaireResponse).then((result) => {
+              navigate(`/${getReferenceString(result)}`);
+            });
+          }}
+        />
+      </Document>
+    </>
   );
 }

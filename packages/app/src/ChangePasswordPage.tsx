@@ -15,11 +15,7 @@ export function ChangePasswordPage() {
           medplum
             .post('auth/changepassword', formData)
             .then(() => setSuccess(true))
-            .catch((err) => {
-              if (err.outcome) {
-                setOutcome(err.outcome);
-              }
-            });
+            .catch(setOutcome);
         }}
       >
         <div className="center">

@@ -1,4 +1,4 @@
-import { allOk, LoginState, MedplumClient, notFound, ProfileResource } from '@medplum/core';
+import { allOk, getStatus, LoginState, MedplumClient, notFound, ProfileResource } from '@medplum/core';
 import { Bundle, BundleEntry, Communication, Media, Practitioner } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import {
@@ -9,6 +9,8 @@ import {
   ExampleAuditEventBundle,
   ExampleBot,
   ExampleQuestionnaire,
+  ExampleQuestionnaireBundle,
+  ExampleQuestionnaireResponse,
   ExampleSubscription,
   ExampleSubscriptionHistory,
   exampleValueSet,
@@ -36,8 +38,9 @@ import {
   PatientSearchParameterBundle,
   PatientStructureBundle,
   PractitionerStructureBundle,
+  QuestionnaireResponseStructureDefinitionBundle,
   QuestionnaireSearchParameterBundle,
-  QuestionnairStructureDefinitionBundle,
+  QuestionnaireStructureDefinitionBundle,
   ServiceRequestStructureDefinitionBundle,
   SimpsonSearchBundle,
   TestOrganization,
@@ -195,6 +198,9 @@ const routes: Record<string, Record<string, any>> = {
   'fhir/R4/DiagnosticReport/123': {
     GET: HomerDiagnosticReport,
   },
+  'fhir/R4/DiagnosticReport/123/_history': {
+    GET: HomerDiagnosticReportBundle,
+  },
   'fhir/R4/DiagnosticReport?based-on=ServiceRequest/123': {
     GET: HomerDiagnosticReportBundle,
   },
@@ -270,6 +276,9 @@ const routes: Record<string, Record<string, any>> = {
   'fhir/R4/Patient/123/_history': {
     GET: HomerSimpsonHistory,
   },
+  'fhir/R4/Practitioner': {
+    POST: HomerSimpson,
+  },
   'fhir/R4/Practitioner/123': {
     GET: DrAliceSmith,
   },
@@ -282,11 +291,20 @@ const routes: Record<string, Record<string, any>> = {
   'fhir/R4/Practitioner/not-found/_history': {
     GET: notFound,
   },
+  'fhir/R4/Questionnaire?subject-type=Patient': {
+    GET: ExampleQuestionnaireBundle,
+  },
   'fhir/R4/Questionnaire/not-found': {
     GET: notFound,
   },
   'fhir/R4/Questionnaire/123': {
     GET: ExampleQuestionnaire,
+  },
+  'fhir/R4/QuestionnaireResponse': {
+    POST: ExampleQuestionnaireResponse,
+  },
+  'fhir/R4/QuestionnaireResponse/123': {
+    GET: ExampleQuestionnaireResponse,
   },
   'fhir/R4/SearchParameter?_count=100&base=Observation': {
     GET: ObservationSearchParameterBundle,
@@ -315,11 +333,14 @@ const routes: Record<string, Record<string, any>> = {
   'fhir/R4/StructureDefinition?_count=1&name:exact=Practitioner': {
     GET: PractitionerStructureBundle,
   },
+  'fhir/R4/StructureDefinition?_count=1&name:exact=Questionnaire': {
+    GET: QuestionnaireStructureDefinitionBundle,
+  },
+  'fhir/R4/StructureDefinition?_count=1&name:exact=QuestionnaireResponse': {
+    GET: QuestionnaireResponseStructureDefinitionBundle,
+  },
   'fhir/R4/StructureDefinition?_count=1&name:exact=ServiceRequest': {
     GET: ServiceRequestStructureDefinitionBundle,
-  },
-  'fhir/R4/StructureDefinition?_count=1&name:exact=Questionnaire': {
-    GET: QuestionnairStructureDefinitionBundle,
   },
   'fhir/R4/Subscription/123': {
     GET: ExampleSubscription,
@@ -339,7 +360,14 @@ const routes: Record<string, Record<string, any>> = {
         entry: request.entry?.map((e: BundleEntry) => {
           const url = 'fhir/R4/' + e?.request?.url;
           const method = e?.request?.method as string;
-          return { resource: routes[url]?.[method] };
+          const resource = routes[url]?.[method];
+          if (resource?.resourceType === 'OperationOutcome') {
+            return { resource, response: { status: getStatus(resource).toString() } };
+          } else if (resource) {
+            return { resource, response: { status: '200' } };
+          } else {
+            return { resource: notFound, response: { status: '404' } };
+          }
         }),
       };
     },
@@ -381,6 +409,10 @@ export class MockClient extends MedplumClient {
           },
           ...result,
         };
+
+        if (clientOptions?.debug) {
+          console.log('MockClient', JSON.stringify(response, null, 2));
+        }
 
         return Promise.resolve({
           json: () => Promise.resolve(response),

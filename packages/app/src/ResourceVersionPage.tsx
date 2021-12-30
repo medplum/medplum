@@ -1,5 +1,4 @@
-import { OperationOutcomeError } from '@medplum/core';
-import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import {
   Document,
   Loading,
@@ -26,7 +25,7 @@ export function ResourceVersionPage() {
   const medplum = useMedplum();
   const [loading, setLoading] = useState<boolean>(true);
   const [historyBundle, setHistoryBundle] = useState<Bundle | undefined>();
-  const [error, setError] = useState<OperationOutcomeError | undefined>();
+  const [error, setError] = useState<OperationOutcome | undefined>();
 
   function loadResource(): Promise<void> {
     setError(undefined);

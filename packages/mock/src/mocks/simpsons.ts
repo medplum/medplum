@@ -289,6 +289,10 @@ export const HomerServiceRequest: ServiceRequest = {
       },
     ],
   },
+  subject: {
+    reference: 'Patient/123',
+    display: 'Homer Simpson',
+  },
 };
 
 export const HomerServiceRequestHistoryBundle: Bundle<ServiceRequest> = {
