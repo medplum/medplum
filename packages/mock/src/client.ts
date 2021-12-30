@@ -9,6 +9,7 @@ import {
   ExampleAuditEventBundle,
   ExampleBot,
   ExampleQuestionnaire,
+  ExampleQuestionnaireBundle,
   ExampleQuestionnaireResponse,
   ExampleSubscription,
   ExampleSubscriptionHistory,
@@ -286,6 +287,9 @@ const routes: Record<string, Record<string, any>> = {
   },
   'fhir/R4/Practitioner/not-found/_history': {
     GET: notFound,
+  },
+  'fhir/R4/Questionnaire?subject-type=Patient': {
+    GET: ExampleQuestionnaireBundle,
   },
   'fhir/R4/Questionnaire/not-found': {
     GET: notFound,

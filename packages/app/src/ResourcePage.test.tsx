@@ -186,6 +186,17 @@ describe('ResourcePage', () => {
     expect(screen.getByText('456')).toBeInTheDocument();
   });
 
+  test('Patient apps', async () => {
+    setup('/Patient/123/apps');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Apps'));
+    });
+
+    expect(screen.getByText('Apps')).toBeInTheDocument();
+    expect(screen.getByText('Vitals')).toBeInTheDocument();
+  });
+
   test('Encounter timeline', async () => {
     setup('/Encounter/123/timeline');
 
