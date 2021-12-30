@@ -85,6 +85,6 @@ describe('MockClient', () => {
     console.log = jest.fn();
     const client = new MockClient({ debug: true });
     await client.get('not-found');
-    expect(console.log).toHaveBeenCalledTimes(2);
+    expect(console.log).toHaveBeenCalledTimes(3);
   });
 });

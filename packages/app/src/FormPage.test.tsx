@@ -14,6 +14,7 @@ describe('FormPage', () => {
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
           <Routes>
             <Route path="/forms/:id" element={<FormPage />} />
+            <Route path="/:resourceType/:id" element={<div />} />
           </Routes>
         </MemoryRouter>
       </MedplumProvider>
@@ -51,6 +52,6 @@ describe('FormPage', () => {
       fireEvent.click(screen.getByText('OK'));
     });
 
-    expect(screen.getByText('First question')).toBeInTheDocument();
+    expect(screen.queryByText('First question')).not.toBeInTheDocument();
   });
 });

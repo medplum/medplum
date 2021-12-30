@@ -18,7 +18,7 @@ import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { parseJWTPayload } from './jwt';
-import { isOk, OperationOutcomeError } from './outcomes';
+import { isOk } from './outcomes';
 import { formatSearchQuery, Operator, SearchRequest } from './search';
 import { ClientStorage } from './storage';
 import { IndexedStructureDefinition, indexStructureDefinition } from './types';
@@ -567,7 +567,7 @@ export class MedplumClient extends EventTarget {
 
     const obj = await response.json();
     if (obj.resourceType === 'OperationOutcome' && !isOk(obj)) {
-      return Promise.reject(new OperationOutcomeError(obj));
+      return Promise.reject(obj);
     }
     return obj;
   }

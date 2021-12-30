@@ -22,11 +22,7 @@ export function SetPasswordPage() {
           medplum
             .post('auth/setpassword', body)
             .then(() => setSuccess(true))
-            .catch((err) => {
-              if (err.outcome) {
-                setOutcome(err.outcome);
-              }
-            });
+            .catch(setOutcome);
         }}
       >
         <div className="center">

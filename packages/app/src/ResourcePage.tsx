@@ -1,14 +1,5 @@
-import { getDisplayString, OperationOutcomeError, stringify } from '@medplum/core';
-import {
-  Bot,
-  Bundle,
-  DiagnosticReport,
-  OperationOutcome,
-  Patient,
-  Questionnaire,
-  Reference,
-  Resource,
-} from '@medplum/fhirtypes';
+import { getDisplayString, getReferenceString, stringify } from '@medplum/core';
+import { Bot, Bundle, DiagnosticReport, OperationOutcome, Questionnaire, Resource } from '@medplum/fhirtypes';
 import {
   Button,
   DefaultResourceTimeline,
@@ -36,8 +27,9 @@ import {
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PatientHeader } from './PatientHeader';
+import { getPatient } from './utils';
 
-function getTabs(resourceType: string): string[] {
+function getTabs(resourceType: string, questionnaires?: Bundle): string[] {
   const result = [];
 
   if (
@@ -62,22 +54,12 @@ function getTabs(resourceType: string): string[] {
   }
 
   result.push('Details', 'Edit', 'History', 'Blame', 'JSON');
-  return result;
-}
 
-function getPatient(resource: Resource): Patient | Reference<Patient> | undefined {
-  if (resource.resourceType === 'Patient') {
-    return resource;
+  if (questionnaires?.entry && questionnaires.entry.length > 0) {
+    result.push('Apps');
   }
-  if (
-    resource.resourceType === 'DiagnosticReport' ||
-    resource.resourceType === 'Encounter' ||
-    resource.resourceType === 'Observation' ||
-    resource.resourceType === 'ServiceRequest'
-  ) {
-    return resource.subject as Reference<Patient>;
-  }
-  return undefined;
+
+  return result;
 }
 
 export function ResourcePage() {
@@ -91,17 +73,54 @@ export function ResourcePage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [value, setValue] = useState<Resource | undefined>();
   const [historyBundle, setHistoryBundle] = useState<Bundle | undefined>();
-  const [error, setError] = useState<OperationOutcomeError | undefined>();
+  const [questionnaires, setQuestionnaires] = useState<Bundle<Questionnaire>>();
+  const [error, setError] = useState<OperationOutcome | undefined>();
 
   function loadResource(): Promise<void> {
     setError(undefined);
     setLoading(true);
+
+    // Build a batch request
+    // 1) Read the resource
+    // 2) Read the history
+    // 3) Read any Questionnaires for the resource typ
+    const requestBundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'GET',
+            url: `${resourceType}/${id}`,
+          },
+        },
+        {
+          request: {
+            method: 'GET',
+            url: `${resourceType}/${id}/_history`,
+          },
+        },
+        {
+          request: {
+            method: 'GET',
+            url: `Questionnaire?subject-type=${encodeURIComponent(resourceType)}`,
+          },
+        },
+      ],
+    };
+
     return medplum
-      .read(resourceType, id)
-      .then((result) => setValue(result))
-      .then(() => medplum.readHistory(resourceType, id))
-      .then((result) => setHistoryBundle(result))
-      .then(() => setLoading(false))
+      .post('fhir/R4', requestBundle)
+      .then((responseBundle: Bundle) => {
+        if (responseBundle.entry?.[0]?.response?.status !== '200') {
+          setError(responseBundle.entry?.[0]?.response as OperationOutcome);
+        } else {
+          setValue(responseBundle.entry?.[0]?.resource);
+          setHistoryBundle(responseBundle.entry?.[1]?.resource as Bundle);
+          setQuestionnaires(responseBundle.entry?.[2]?.resource as Bundle<Questionnaire>);
+        }
+        setLoading(false);
+      })
       .catch((reason) => {
         setError(reason);
         setLoading(false);
@@ -125,7 +144,7 @@ export function ResourcePage() {
     );
   }
 
-  const tabs = getTabs(resourceType);
+  const tabs = getTabs(resourceType, questionnaires);
   const defaultTab = tabs[0].toLowerCase();
   const patient = getPatient(value);
 
@@ -151,6 +170,7 @@ export function ResourcePage() {
                 name={t.toLowerCase()}
                 resource={value}
                 resourceHistory={historyBundle}
+                questionnaires={questionnaires as Bundle<Questionnaire>}
                 onSubmit={(resource: Resource) => {
                   medplum.update(cleanResource(resource)).then(loadResource).catch(setError);
                 }}
@@ -162,7 +182,7 @@ export function ResourcePage() {
                       .catch(setError);
                   }
                 }}
-                outcome={error?.outcome}
+                outcome={error}
               />
             </TabPanel>
           ))}
@@ -176,6 +196,7 @@ interface ResourceTabProps {
   name: string;
   resource: Resource;
   resourceHistory: Bundle;
+  questionnaires: Bundle<Questionnaire>;
   onSubmit: (resource: Resource) => void;
   onDelete: (resource: Resource) => void;
   outcome?: OperationOutcome;
@@ -213,6 +234,25 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
           />
           <Button type="submit">OK</Button>
         </Form>
+      );
+    case 'apps':
+      return (
+        <div>
+          {props.questionnaires.entry
+            ?.map((entry) => entry.resource as Questionnaire)
+            .map((questionnaire) => (
+              <div key={questionnaire.id}>
+                <h3>
+                  <MedplumLink
+                    to={`/forms/${questionnaire?.id}?subject=${encodeURIComponent(getReferenceString(props.resource))}`}
+                  >
+                    {questionnaire.name}
+                  </MedplumLink>
+                </h3>
+                <p>{questionnaire?.description}</p>
+              </div>
+            ))}
+        </div>
       );
     case 'editor':
       return (

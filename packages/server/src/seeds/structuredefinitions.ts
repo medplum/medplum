@@ -1,4 +1,4 @@
-import { isOk, OperationOutcomeError } from '@medplum/core';
+import { assertOk } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, Resource, StructureDefinition } from '@medplum/fhirtypes';
 import { getClient } from '../database';
@@ -25,11 +25,7 @@ async function createStructureDefinitionsForBundle(structureDefinitions: Bundle)
         ...resource,
         text: undefined,
       });
-
-      if (!isOk(outcome)) {
-        throw new OperationOutcomeError(outcome);
-      }
-
+      assertOk(outcome);
       logger.debug('Created: ' + (result as StructureDefinition).id);
     }
   }
