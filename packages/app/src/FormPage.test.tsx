@@ -54,4 +54,26 @@ describe('FormPage', () => {
 
     expect(screen.queryByText('First question')).not.toBeInTheDocument();
   });
+
+  test('Patient subject', async () => {
+    setup('/forms/123?subject=Patient/123');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('First question'));
+    });
+
+    expect(screen.getByText('First question')).toBeInTheDocument();
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+  });
+
+  test('ServiceRequest subject', async () => {
+    setup('/forms/123?subject=ServiceRequest/123');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('First question'));
+    });
+
+    expect(screen.getByText('First question')).toBeInTheDocument();
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+  });
 });

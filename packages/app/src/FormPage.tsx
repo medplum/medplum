@@ -38,12 +38,11 @@ export function FormPage() {
       ],
     };
 
-    const subject = queryParams['subject'];
-    if (subject) {
+    if ('subject' in queryParams) {
       (requestBundle.entry as BundleEntry[]).push({
         request: {
           method: 'GET',
-          url: subject,
+          url: queryParams['subject'],
         },
       });
     }
@@ -94,7 +93,6 @@ export function FormPage() {
         <QuestionnaireForm
           questionnaire={questionnaire}
           onSubmit={(questionnaireResponse: QuestionnaireResponse) => {
-            // console.log('formData', formData);
             medplum.create(questionnaireResponse).then((result) => {
               navigate(`/${getReferenceString(result)}`);
             });

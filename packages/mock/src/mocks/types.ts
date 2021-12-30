@@ -263,55 +263,6 @@ export const QuestionnaireResponseStructureDefinitionBundle: Bundle<StructureDef
       resource: {
         resourceType: 'StructureDefinition',
         name: 'QuestionnaireResponse',
-        snapshot: {
-          element: [
-            {
-              id: 'QuestionnaireResponse.item',
-              path: 'QuestionnaireResponse.item',
-              type: [
-                {
-                  code: 'BackboneElement',
-                },
-              ],
-            },
-            {
-              id: 'QuestionnaireResponse.item.answer',
-              path: 'QuestionnaireResponse.item.answer',
-              type: [
-                {
-                  code: 'BackboneElement',
-                },
-              ],
-            },
-            {
-              id: 'Questionnaire.item.answer.value[x]',
-              path: 'Questionnaire.item.answer.value[x]',
-              min: 1,
-              max: '1',
-              type: [
-                {
-                  code: 'integer',
-                },
-                {
-                  code: 'date',
-                },
-                {
-                  code: 'time',
-                },
-                {
-                  code: 'string',
-                },
-                {
-                  code: 'Coding',
-                },
-                {
-                  code: 'Reference',
-                  targetProfile: ['http://hl7.org/fhir/StructureDefinition/Resource'],
-                },
-              ],
-            },
-          ],
-        },
       },
     },
   ],
