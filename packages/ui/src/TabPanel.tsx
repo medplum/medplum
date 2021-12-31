@@ -6,5 +6,5 @@ export interface TabPanelProps {
 }
 
 export function TabPanel(props: TabPanelProps) {
-  return <>{props.children}</>;
+  return <div role="tabpanel">{props.children}</div>;
 }

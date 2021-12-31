@@ -5,7 +5,7 @@ import {
   MedplumLink,
   ResourceDiff,
   Tab,
-  TabBar,
+  TabList,
   TabPanel,
   TabSwitch,
   TitleBar,
@@ -76,13 +76,13 @@ export function ResourceVersionPage() {
       <TitleBar>
         <h1>{`${resourceType} ${id}`}</h1>
       </TitleBar>
-      <TabBar
+      <TabList
         value={tab || defaultTab}
         onChange={(name: string) => navigate(`/${resourceType}/${id}/_history/${versionId}/${name}`)}
       >
         <Tab name="diff" label="Diff" />
         <Tab name="raw" label="Raw" />
-      </TabBar>
+      </TabList>
       <Document>
         {error && <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>}
         <TabSwitch value={tab || defaultTab}>

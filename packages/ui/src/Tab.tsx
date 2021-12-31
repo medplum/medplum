@@ -1,11 +1,16 @@
 import React from 'react';
 import './Tab.css';
+import { killEvent } from './utils/dom';
+
+export interface TabClickHandler {
+  (name: string, button: number): void;
+}
 
 export interface TabProps {
   name: string;
   label: string;
   selected?: boolean;
-  onClick?: (name: string) => void;
+  onClick?: TabClickHandler;
 }
 
 export function Tab(props: TabProps) {
@@ -13,16 +18,25 @@ export function Tab(props: TabProps) {
   if (props.selected) {
     className += ' selected';
   }
-  // The onClick prop is set by TabBar as parent component.
-  // Using Tab outside of a TabBar is unsupported.
+
+  function clickHandler(e: React.MouseEvent): void {
+    killEvent(e);
+
+    // The onClick prop is set by TabBar as parent component.
+    // Using Tab outside of a TabBar is unsupported.
+    (props.onClick as TabClickHandler)(props.name, e.button);
+  }
+
   return (
-    <div
-      role="button"
-      tabIndex={0}
+    <a
+      href={`#${props.name}`}
+      role="tab"
+      aria-selected={props.selected}
       className={className}
-      onClick={() => (props.onClick as (name: string) => void)(props.name)}
+      onClick={clickHandler}
+      onAuxClick={clickHandler}
     >
       {props.label}
-    </div>
+    </a>
   );
 }

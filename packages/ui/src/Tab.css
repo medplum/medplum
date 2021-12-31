@@ -1,4 +1,4 @@
-.medplum-tab {
+a.medplum-tab {
   display: inline-block;
   line-height: 50px;
   margin: 0;
@@ -8,22 +8,18 @@
   text-align: center;
   cursor: pointer;
   user-select: none;
-}
-
-.medplum-tab a {
   color: var(--medplum-gray-600);
   text-decoration: none;
+  outline: 0;
 }
 
-.medplum-tab:hover {
-  border-bottom: 2px solid var(--medplum-gray-300);
+a.medplum-tab:focus,
+a.medplum-tab:hover {
+  border-bottom: 2px solid var(--medplum-blue-100);
 }
 
-.medplum-tab.selected {
+a.medplum-tab.selected {
   border-bottom: 2px solid var(--medplum-orange-300);
-}
-
-.medplum-tab.selected a {
   color: var(--medplum-gray-800);
   font-weight: bold;
 }

@@ -246,4 +246,45 @@ describe('ResourcePage', () => {
 
     expect(screen.getByText('Report')).toBeInTheDocument();
   });
+
+  test('Left click on tab', async () => {
+    window.open = jest.fn();
+
+    setup('/Practitioner/123');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Name'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('History'));
+    });
+
+    // Change the tab
+    expect(screen.getByText('History')).toHaveClass('selected');
+
+    // Do not open a new browser tab
+    expect(window.open).not.toHaveBeenCalled();
+  });
+
+  test('Middle click on tab', async () => {
+    window.open = jest.fn();
+
+    setup('/Practitioner/123');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Name'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('History'), { button: 1 });
+    });
+
+    // Should not change the tab
+    expect(screen.getByText('Details')).toHaveClass('selected');
+    expect(screen.getByText('History')).not.toHaveClass('selected');
+
+    // Should open a new browser tab
+    expect(window.open).toHaveBeenCalledWith('/Practitioner/123/history', '_blank');
+  });
 });
