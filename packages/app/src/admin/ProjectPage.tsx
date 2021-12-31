@@ -57,7 +57,7 @@ export function ProjectPage() {
         </tbody>
       </table>
       <hr />
-      <a href={`/admin/projects/${result.project.id}/invite`}>Invite</a>
+      <MedplumLink to={`/admin/projects/${result.project.id}/invite`}>Invite</MedplumLink>
     </Document>
   );
 }
