@@ -1,0 +1,13 @@
+.medplum-questionnaire-option-row {
+  display: flex;
+  align-items: center;
+  line-height: 24px;
+}
+
+.medplum-questionnaire-option-row label {
+  margin: 0;
+}
+
+.medplum-questionnaire-option-checkbox {
+  padding: 4px 8px 0 4px;
+}
