@@ -48,6 +48,7 @@ export interface SearchControlProps {
   onLoad?: (e: SearchLoadEvent) => void;
   onChange?: (e: SearchChangeEvent) => void;
   onClick?: (e: SearchClickEvent) => void;
+  onAuxClick?: (e: SearchClickEvent) => void;
   onNew?: () => void;
   onDelete?: (ids: string[]) => void;
   onPatch?: (ids: string[]) => void;
@@ -196,11 +197,29 @@ export function SearchControl(props: SearchControlProps) {
 
     const el = e.currentTarget as HTMLElement;
     const id = el.dataset['id'];
-    if (id && props.onClick && state.searchResponse?.entry) {
-      const entry = state.searchResponse.entry.find((e) => e.resource?.id === id);
-      if (entry?.resource) {
-        props.onClick(new SearchClickEvent(entry.resource, e));
-      }
+    if (!id) {
+      // Ignore clicks on rows without resource IDs
+      return;
+    }
+
+    const entries = state.searchResponse?.entry;
+    if (!entries) {
+      // Ignore clicks when search results not loaded
+      return;
+    }
+
+    const entry = entries.find((e) => e.resource?.id === id);
+    if (!entry?.resource) {
+      // Ignore clicks if resource not found (?)
+      return;
+    }
+
+    if (e.button !== 1 && props.onClick) {
+      props.onClick(new SearchClickEvent(entry.resource, e));
+    }
+
+    if (e.button === 1 && props.onAuxClick) {
+      props.onAuxClick(new SearchClickEvent(entry.resource, e));
     }
   }
 
@@ -317,7 +336,8 @@ export function SearchControl(props: SearchControlProps) {
                   key={resource.id}
                   data-id={resource.id}
                   data-testid="search-control-row"
-                  onClick={(e) => handleRowClick(e)}
+                  onClick={handleRowClick}
+                  onAuxClick={handleRowClick}
                 >
                   {checkboxColumn && (
                     <td className="medplum-search-icon-cell">

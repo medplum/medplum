@@ -337,6 +337,7 @@ describe('SearchControl', () => {
         ],
       },
       onClick: jest.fn(),
+      onAuxClick: jest.fn(),
     };
 
     setup(props);
@@ -355,6 +356,42 @@ describe('SearchControl', () => {
     });
 
     expect(props.onClick).toBeCalled();
+    expect(props.onAuxClick).not.toBeCalled();
+  });
+
+  test('Aux click on row', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Simpson',
+          },
+        ],
+      },
+      onClick: jest.fn(),
+      onAuxClick: jest.fn(),
+    };
+
+    setup(props);
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    await act(async () => {
+      await waitFor(() => screen.getAllByTestId('search-control-row'));
+    });
+
+    await act(async () => {
+      const rows = screen.getAllByTestId('search-control-row');
+      fireEvent.click(rows[0], { button: 1 });
+    });
+
+    expect(props.onClick).not.toBeCalled();
+    expect(props.onAuxClick).toBeCalled();
   });
 
   test('Open field editor', async () => {

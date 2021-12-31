@@ -38,6 +38,7 @@ export function HomePage() {
       checkboxesEnabled={true}
       search={search}
       onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+      onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
       onChange={(e) => {
         if (e.definition.resourceType && e.definition.fields && e.definition.fields.length > 0) {
           navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
