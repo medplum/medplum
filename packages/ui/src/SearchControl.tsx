@@ -48,6 +48,7 @@ export interface SearchControlProps {
   onLoad?: (e: SearchLoadEvent) => void;
   onChange?: (e: SearchChangeEvent) => void;
   onClick?: (e: SearchClickEvent) => void;
+  onAuxClick?: (e: SearchClickEvent) => void;
   onNew?: () => void;
   onDelete?: (ids: string[]) => void;
   onPatch?: (ids: string[]) => void;
@@ -103,24 +104,21 @@ export function SearchControl(props: SearchControlProps) {
       });
   }
 
-  function handleSingleCheckboxClick(e: React.ChangeEvent) {
+  function handleSingleCheckboxClick(e: React.ChangeEvent, id: string): void {
     e.stopPropagation();
 
     const el = e.target as HTMLInputElement;
     const checked = el.checked;
-    const id = el.dataset['id'];
-    if (id) {
-      const newSelected = { ...stateRef.current.selected };
-      if (checked) {
-        newSelected[id] = true;
-      } else {
-        delete newSelected[id];
-      }
-      setState({ ...stateRef.current, selected: newSelected });
+    const newSelected = { ...stateRef.current.selected };
+    if (checked) {
+      newSelected[id] = true;
+    } else {
+      delete newSelected[id];
     }
+    setState({ ...stateRef.current, selected: newSelected });
   }
 
-  function handleAllCheckboxClick(e: React.ChangeEvent) {
+  function handleAllCheckboxClick(e: React.ChangeEvent): void {
     e.stopPropagation();
 
     const el = e.target as HTMLInputElement;
@@ -135,10 +133,9 @@ export function SearchControl(props: SearchControlProps) {
       });
     }
     setState({ ...stateRef.current, selected: newSelected });
-    return true;
   }
 
-  function isAllSelected() {
+  function isAllSelected(): boolean {
     const state = stateRef.current;
     if (!state.searchResponse?.entry || state.searchResponse.entry.length === 0) {
       return false;
@@ -153,21 +150,17 @@ export function SearchControl(props: SearchControlProps) {
 
   /**
    * Handles a click on a column header cell.
-   *
-   * @param {MouseEvent} e The click event.
+   * @param e The click event.
+   * @param key The field key.
    */
-  function handleSortClick(e: React.MouseEvent) {
-    const el = e.currentTarget as HTMLElement;
-    const key = el.dataset['key'];
-    if (key) {
-      setState({
-        ...stateRef.current,
-        popupVisible: true,
-        popupX: e.clientX,
-        popupY: e.clientY,
-        popupField: key,
-      });
-    }
+  function handleSortClick(e: React.MouseEvent, key: string): void {
+    setState({
+      ...stateRef.current,
+      popupVisible: true,
+      popupX: e.clientX,
+      popupY: e.clientY,
+      popupField: key,
+    });
   }
 
   /**
@@ -183,10 +176,10 @@ export function SearchControl(props: SearchControlProps) {
   /**
    * Handles a click on a order row.
    *
-   * @param {MouseEvent} e The click event.
-   * @param {Element} el The click target element.
+   * @param e The click event.
+   * @param resource The FHIR resource.
    */
-  function handleRowClick(e: React.MouseEvent) {
+  function handleRowClick(e: React.MouseEvent, resource: Resource): void {
     if (e.target instanceof HTMLInputElement && e.target.type === 'checkbox') {
       // Ignore clicks on checkboxes
       return;
@@ -194,13 +187,12 @@ export function SearchControl(props: SearchControlProps) {
 
     killEvent(e);
 
-    const el = e.currentTarget as HTMLElement;
-    const id = el.dataset['id'];
-    if (id && props.onClick && state.searchResponse?.entry) {
-      const entry = state.searchResponse.entry.find((e) => e.resource?.id === id);
-      if (entry?.resource) {
-        props.onClick(new SearchClickEvent(entry.resource, e));
-      }
+    if (e.button !== 1 && props.onClick) {
+      props.onClick(new SearchClickEvent(resource, e));
+    }
+
+    if (e.button === 1 && props.onAuxClick) {
+      props.onAuxClick(new SearchClickEvent(resource, e));
     }
   }
 
@@ -295,7 +287,7 @@ export function SearchControl(props: SearchControlProps) {
               </th>
             )}
             {fields.map((field) => (
-              <th key={field} data-key={field} onClick={(e) => handleSortClick(e)}>
+              <th key={field} onClick={(e) => handleSortClick(e, field)}>
                 {buildFieldNameString(schema, resourceType, field)}
               </th>
             ))}
@@ -303,7 +295,7 @@ export function SearchControl(props: SearchControlProps) {
           <tr>
             {checkboxColumn && <th className="filters medplum-search-icon-cell" />}
             {fields.map((field) => (
-              <th key={field} data-key={field} className="filters">
+              <th key={field} className="filters">
                 <FilterDescription resourceType={resourceType} field={field} filters={props.search.filters} />
               </th>
             ))}
@@ -315,19 +307,18 @@ export function SearchControl(props: SearchControlProps) {
               resource && (
                 <tr
                   key={resource.id}
-                  data-id={resource.id}
                   data-testid="search-control-row"
-                  onClick={(e) => handleRowClick(e)}
+                  onClick={(e) => handleRowClick(e, resource)}
+                  onAuxClick={(e) => handleRowClick(e, resource)}
                 >
                   {checkboxColumn && (
                     <td className="medplum-search-icon-cell">
                       <input
                         type="checkbox"
                         value="checked"
-                        data-id={resource.id}
                         data-testid="row-checkbox"
-                        checked={!!(resource.id && state.selected[resource.id])}
-                        onChange={(e) => handleSingleCheckboxClick(e)}
+                        checked={!!state.selected[resource.id as string]}
+                        onChange={(e) => handleSingleCheckboxClick(e, resource.id as string)}
                       />
                     </td>
                   )}

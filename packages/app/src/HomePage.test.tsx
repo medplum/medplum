@@ -3,17 +3,16 @@ import { MedplumProvider } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { CreateResourcePage } from './CreateResourcePage';
 import { getDefaultSearchForResourceType, HomePage } from './HomePage';
 
-const medplum = new MockClient();
-
 const setup = (url = '/Patient') => {
+  const medplum = new MockClient();
   return render(
     <MedplumProvider medplum={medplum}>
       <MemoryRouter initialEntries={[url]} initialIndex={0}>
         <Routes>
-          <Route path="/:resourceType/new" element={<CreateResourcePage />} />
+          <Route path="/:resourceType/new" element={<div>Create Resource Page</div>} />
+          <Route path="/:resourceType/:id" element={<div>Resource Page</div>} />
           <Route path="/:resourceType" element={<HomePage />} />
           <Route path="/" element={<HomePage />} />
         </Routes>
@@ -205,5 +204,45 @@ describe('HomePage', () => {
       'title',
       'status',
     ]);
+  });
+
+  test('Left click on row', async () => {
+    window.open = jest.fn();
+
+    setup('/Patient');
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Homer Simpson'));
+    });
+
+    // Change the tab
+    expect(screen.getByText('Resource Page')).toBeInTheDocument();
+
+    // Do not open a new browser tab
+    expect(window.open).not.toHaveBeenCalled();
+  });
+
+  test('Middle click on row', async () => {
+    window.open = jest.fn();
+
+    setup('/Patient');
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Homer Simpson'), { button: 1 });
+    });
+
+    // Should open a new browser tab
+    expect(window.open).toHaveBeenCalledWith('/Patient/123', '_blank');
+
+    // Should still be on the home page
+    expect(screen.getByTestId('search-control')).toBeInTheDocument();
   });
 });
