@@ -13,7 +13,7 @@ interface PopupProps {
   children?: React.ReactNode;
 }
 
-export function Popup(props: PopupProps) {
+export function Popup(props: PopupProps): JSX.Element {
   const ref = useRef<HTMLDivElement>(null);
 
   // Track browser URL location, and the location when the popup becomes visible
@@ -33,7 +33,7 @@ export function Popup(props: PopupProps) {
   // Listen for clicks outside of the popup
   // If the user clicks outside of the popup, close it
   useEffect(() => {
-    function handleClick(e: Event) {
+    function handleClick(e: Event): void {
       if (
         propsRef.current?.visible &&
         propsRef.current?.autoClose &&

@@ -6,7 +6,7 @@ export interface CodeableConceptInputProps {
   value?: CodeableConcept;
 }
 
-export function CodeableConceptDisplay(props: CodeableConceptInputProps) {
+export function CodeableConceptDisplay(props: CodeableConceptInputProps): JSX.Element | null {
   const value = props.value;
   if (!value) {
     return null;

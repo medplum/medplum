@@ -7,4 +7,6 @@ export default {
   component: PatientTimeline,
 } as Meta;
 
-export const Patient = () => <PatientTimeline patient={{ reference: 'Patient/' + process.env.SAMPLE_PATIENT_ID }} />;
+export const Patient = (): JSX.Element => (
+  <PatientTimeline patient={{ reference: 'Patient/' + process.env.SAMPLE_PATIENT_ID }} />
+);

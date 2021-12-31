@@ -9,8 +9,8 @@ import { ResourcePage } from './ResourcePage';
 const medplum = new MockClient();
 
 describe('ResourcePage', () => {
-  const setup = (url: string) => {
-    return render(
+  function setup(url: string): void {
+    render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
           <Routes>
@@ -21,7 +21,7 @@ describe('ResourcePage', () => {
         </MemoryRouter>
       </MedplumProvider>
     );
-  };
+  }
 
   test('Not found', async () => {
     setup('/Practitioner/not-found');

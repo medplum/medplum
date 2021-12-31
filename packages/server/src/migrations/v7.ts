@@ -1,6 +1,6 @@
 import { PoolClient } from 'pg';
 
-export async function run(client: PoolClient) {
+export async function run(client: PoolClient): Promise<void> {
   // Add the "owner" column
   await client.query('ALTER TABLE "Project" ADD COLUMN "owner" TEXT');
 

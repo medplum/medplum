@@ -21,7 +21,7 @@ const DEFAULT_VALUE = `{
   ]
 }`;
 
-export function BatchPage() {
+export function BatchPage(): JSX.Element {
   const medplum = useMedplum();
   const [output, setOutput] = useState();
   return (

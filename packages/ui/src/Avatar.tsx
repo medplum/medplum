@@ -14,7 +14,7 @@ export interface AvatarProps {
   link?: boolean;
 }
 
-export function Avatar(props: AvatarProps) {
+export function Avatar(props: AvatarProps): JSX.Element {
   const resource = useResource(props.value);
   const className = props.size ? 'medplum-avatar ' + props.size : 'medplum-avatar';
   const text = resource ? getDisplayString(resource) : props.alt ?? '';

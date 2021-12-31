@@ -614,7 +614,7 @@ export class MedplumClient extends EventTarget {
    * Clears all auth state including local storage and session storage.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
    */
-  private async requestAuthorization() {
+  private async requestAuthorization(): Promise<void> {
     if (!this.authorizeUrl) {
       throw new Error('Missing authorize URL');
     }
@@ -753,6 +753,6 @@ export class MedplumClient extends EventTarget {
 /**
  * Returns the base URL for the current page.
  */
-function getBaseUrl() {
+function getBaseUrl(): string {
   return window.location.protocol + '//' + window.location.host + '/';
 }

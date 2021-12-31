@@ -6,7 +6,7 @@ export interface AttachmentDisplayProps {
   maxWidth?: number;
 }
 
-export function AttachmentDisplay(props: AttachmentDisplayProps) {
+export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element {
   const value = props.value;
   const { contentType, url } = value ?? {};
 

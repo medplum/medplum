@@ -8,7 +8,7 @@ export default {
   component: ResourceForm,
 } as Meta;
 
-export const Patient = () => (
+export const Patient = (): JSX.Element => (
   <Document>
     <ResourceForm
       defaultValue={{
@@ -21,7 +21,7 @@ export const Patient = () => (
   </Document>
 );
 
-export const Organization = () => (
+export const Organization = (): JSX.Element => (
   <Document>
     <ResourceForm
       defaultValue={{
@@ -34,7 +34,7 @@ export const Organization = () => (
   </Document>
 );
 
-export const Practitioner = () => (
+export const Practitioner = (): JSX.Element => (
   <Document>
     <ResourceForm
       defaultValue={{
@@ -47,7 +47,7 @@ export const Practitioner = () => (
   </Document>
 );
 
-export const DiagnosticReport = () => (
+export const DiagnosticReport = (): JSX.Element => (
   <Document>
     <ResourceForm
       defaultValue={{
@@ -60,7 +60,7 @@ export const DiagnosticReport = () => (
   </Document>
 );
 
-export const DiagnosticReportIssues = () => (
+export const DiagnosticReportIssues = (): JSX.Element => (
   <Document>
     <ResourceForm
       defaultValue={{
@@ -87,7 +87,7 @@ export const DiagnosticReportIssues = () => (
   </Document>
 );
 
-export const Observation = () => (
+export const Observation = (): JSX.Element => (
   <Document>
     <ResourceForm
       defaultValue={{
@@ -100,7 +100,7 @@ export const Observation = () => (
   </Document>
 );
 
-export const Questionnaire = () => (
+export const Questionnaire = (): JSX.Element => (
   <Document>
     <ResourceForm
       defaultValue={{
@@ -113,7 +113,7 @@ export const Questionnaire = () => (
   </Document>
 );
 
-export const Subscription = () => (
+export const Subscription = (): JSX.Element => (
   <Document>
     <ResourceForm
       defaultValue={{
@@ -126,7 +126,7 @@ export const Subscription = () => (
   </Document>
 );
 
-export const ValueSet = () => (
+export const ValueSet = (): JSX.Element => (
   <Document>
     <ResourceForm
       defaultValue={{
@@ -139,7 +139,7 @@ export const ValueSet = () => (
   </Document>
 );
 
-export const DeviceRequest = () => (
+export const DeviceRequest = (): JSX.Element => (
   <Document>
     <ResourceForm
       defaultValue={{
@@ -152,7 +152,7 @@ export const DeviceRequest = () => (
   </Document>
 );
 
-export const Specimen = () => (
+export const Specimen = (): JSX.Element => (
   <Document>
     <ResourceForm
       defaultValue={{

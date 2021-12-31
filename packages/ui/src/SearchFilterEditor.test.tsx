@@ -8,9 +8,9 @@ import { SearchFilterEditor } from './SearchFilterEditor';
 const medplum = new MockClient();
 let schema: IndexedStructureDefinition;
 
-const setup = (child: React.ReactNode) => {
-  return render(<MedplumProvider medplum={medplum}>{child}</MedplumProvider>);
-};
+function setup(child: React.ReactNode): void {
+  render(<MedplumProvider medplum={medplum}>{child}</MedplumProvider>);
+}
 
 describe('SearchFilterEditor', () => {
   beforeAll(async () => {

@@ -12,7 +12,7 @@ const author: Reference = {
   reference: 'Patient/' + process.env.SAMPLE_PATIENT_ID,
 };
 
-export const Basic = () => (
+export const Basic = (): JSX.Element => (
   <Timeline>
     <TimelineItem
       profile={author}

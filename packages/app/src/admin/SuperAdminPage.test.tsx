@@ -7,7 +7,7 @@ import { SuperAdminPage } from './SuperAdminPage';
 
 const medplum = new MockClient();
 
-function setup() {
+function setup(): void {
   render(
     <MedplumProvider medplum={medplum}>
       <MemoryRouter initialEntries={['/admin/super']} initialIndex={0}>

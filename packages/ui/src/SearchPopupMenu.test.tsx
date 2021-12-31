@@ -1,9 +1,9 @@
 import { Filter, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
+import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from '@medplum/mock';
 import { SearchPopupMenu, SearchPopupMenuProps } from './SearchPopupMenu';
 
 const schema: IndexedStructureDefinition = {
@@ -51,8 +51,8 @@ const schema: IndexedStructureDefinition = {
 const medplum = new MockClient();
 
 describe('SearchPopupMenu', () => {
-  function setup(props: SearchPopupMenuProps) {
-    return render(
+  function setup(props: SearchPopupMenuProps): void {
+    render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <SearchPopupMenu {...props} />

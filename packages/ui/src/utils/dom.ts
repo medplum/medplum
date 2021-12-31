@@ -4,7 +4,7 @@
  * Stops event propagation.
  * @param e The event.
  */
-export function killEvent(e: Event | React.SyntheticEvent) {
+export function killEvent(e: Event | React.SyntheticEvent): void {
   e.preventDefault();
   e.stopPropagation();
 }
@@ -35,7 +35,7 @@ export function getRangeBounds(): DOMRect | undefined {
  * @param node The node to search for.
  * @returns The index of the node if found; -1 otherwise.
  */
-export function indexOfNode(nodeList: NodeList, node: Node) {
+export function indexOfNode(nodeList: NodeList, node: Node): number {
   for (let i = 0; i < nodeList.length; i++) {
     if (nodeList[i] === node) {
       return i;

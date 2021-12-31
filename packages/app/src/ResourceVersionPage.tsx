@@ -14,7 +14,7 @@ import {
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-export function ResourceVersionPage() {
+export function ResourceVersionPage(): JSX.Element {
   const navigate = useNavigate();
   const { resourceType, id, versionId, tab } = useParams() as {
     resourceType: string;

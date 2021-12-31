@@ -264,8 +264,8 @@ protectedRoutes.post(
   })
 );
 
-function isFhirJsonContentType(req: Request) {
-  return req.is('application/json') || req.is('application/fhir+json');
+function isFhirJsonContentType(req: Request): boolean {
+  return !!(req.is('application/json') || req.is('application/fhir+json'));
 }
 
 async function sendResponse(res: Response, outcome: OperationOutcome, body: any): Promise<void> {

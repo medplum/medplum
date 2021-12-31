@@ -5,7 +5,7 @@ export interface LogoProps {
   fill?: string;
 }
 
-export function Logo(props: LogoProps) {
+export function Logo(props: LogoProps): JSX.Element {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 491 491" style={{ width: props.size, height: props.size }}>
       <title>Medplum Logo</title>

@@ -11,7 +11,7 @@ interface TestComponentProps {
   value?: Reference | Resource;
 }
 
-function TestComponent(props: TestComponentProps) {
+function TestComponent(props: TestComponentProps): JSX.Element {
   const resource = useResource(props.value);
   return <div data-testid="test-component">{JSON.stringify(resource)}</div>;
 }
@@ -19,15 +19,15 @@ function TestComponent(props: TestComponentProps) {
 const medplum = new MockClient();
 
 describe('useResource', () => {
-  const setup = (props: TestComponentProps) => {
-    return render(
+  function setup(props: TestComponentProps): void {
+    render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <TestComponent {...props} />
         </MedplumProvider>
       </MemoryRouter>
     );
-  };
+  }
 
   test('Renders null', () => {
     setup({ value: null as any as Reference });

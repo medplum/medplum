@@ -9,15 +9,15 @@ import { MedplumProvider } from './MedplumProvider';
 const medplum = new MockClient();
 
 describe('EncounterTimeline', () => {
-  const setup = (args: EncounterTimelineProps) => {
-    return render(
+  function setup(args: EncounterTimelineProps): void {
+    render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <EncounterTimeline {...args} />
         </MedplumProvider>
       </MemoryRouter>
     );
-  };
+  }
 
   test('Renders reference', async () => {
     setup({ encounter: createReference(HomerEncounter) });

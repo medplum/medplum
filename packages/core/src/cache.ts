@@ -11,7 +11,7 @@ export class LRUCache<T> {
     this.cache = new Map();
   }
 
-  clear() {
+  clear(): void {
     this.cache.clear();
   }
 
@@ -24,7 +24,7 @@ export class LRUCache<T> {
     return item;
   }
 
-  set(key: string, val: T) {
+  set(key: string, val: T): void {
     if (this.cache.has(key)) {
       this.cache.delete(key);
     } else if (this.cache.size >= this.max) {
@@ -33,7 +33,7 @@ export class LRUCache<T> {
     this.cache.set(key, val);
   }
 
-  private first() {
+  private first(): string {
     // This works because the Map class maintains ordered keys.
     return this.cache.keys().next().value;
   }

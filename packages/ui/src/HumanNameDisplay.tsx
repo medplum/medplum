@@ -7,7 +7,7 @@ export interface HumanNameDisplayProps {
   options?: HumanNameFormatOptions;
 }
 
-export function HumanNameDisplay(props: HumanNameDisplayProps) {
+export function HumanNameDisplay(props: HumanNameDisplayProps): JSX.Element | null {
   const name = props.value;
   if (!name) {
     return null;

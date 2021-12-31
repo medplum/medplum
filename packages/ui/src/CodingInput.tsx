@@ -11,7 +11,7 @@ export interface CodingInputProps {
   onChange?: (value: Coding) => void;
 }
 
-export function CodingInput(props: CodingInputProps) {
+export function CodingInput(props: CodingInputProps): JSX.Element {
   const medplum = useMedplum();
 
   let defaultValue = undefined;

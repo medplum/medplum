@@ -7,7 +7,7 @@ import { SetPasswordPage } from './SetPasswordPage';
 
 const medplum = new MockClient();
 
-function setup(url: string) {
+function setup(url: string): void {
   render(
     <MedplumProvider medplum={medplum}>
       <MemoryRouter initialEntries={[url]} initialIndex={0}>

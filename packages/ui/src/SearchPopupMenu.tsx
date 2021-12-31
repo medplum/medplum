@@ -31,7 +31,7 @@ export interface SearchPopupMenuProps {
   onClose: () => void;
 }
 
-export function SearchPopupMenu(props: SearchPopupMenuProps) {
+export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null {
   const resourceType = props.search.resourceType;
   const property = getProperty();
   if (!property) {
@@ -78,7 +78,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
    * @param {string} fieldType The property type.
    * @return {string} The string that represents "sort ascending".
    */
-  function getAscSortString(fieldType: string) {
+  function getAscSortString(fieldType: string): string {
     switch (fieldType) {
       case 'date':
       case 'datetime':
@@ -96,7 +96,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
    * @param {string} fieldType The property type.
    * @return {string} The string that represents "sort descending".
    */
-  function getDescSortString(fieldType: string) {
+  function getDescSortString(fieldType: string): string {
     switch (fieldType) {
       case 'date':
       case 'datetime':
@@ -114,7 +114,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
    * @param {string} fieldType The property type.
    * @return {SubMenu} The new submenu.
    */
-  function renderSubMenu(fieldType: string) {
+  function renderSubMenu(fieldType: string): JSX.Element {
     switch (fieldType) {
       case 'date':
       case 'datetime':
@@ -130,7 +130,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
    *
    * @return {SubMenu} The date/time submenu.
    */
-  function renderDateTimeSubMenu() {
+  function renderDateTimeSubMenu(): JSX.Element {
     return (
       <SubMenu title="Date filters">
         <MenuItem onClick={() => prompt(Operator.EQUALS)}>Equals...</MenuItem>
@@ -161,7 +161,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
    *
    * @return {SubMenu} The text property submenu.
    */
-  function renderTextSubMenu() {
+  function renderTextSubMenu(): JSX.Element {
     return (
       <SubMenu title="Text filters">
         <MenuItem onClick={() => prompt(Operator.EQUALS)}>Equals...</MenuItem>
@@ -173,11 +173,11 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
     );
   }
 
-  function sort(desc: boolean) {
+  function sort(desc: boolean): void {
     onChange(setSort(props.search, props.property, desc));
   }
 
-  function clearFilters() {
+  function clearFilters(): void {
     onChange(clearFiltersOnField(props.search, props.property));
   }
 
@@ -186,7 +186,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps) {
    *
    * @param {Operator} op The filter operation.
    */
-  function prompt(op: Operator) {
+  function prompt(op: Operator): void {
     const caption =
       buildFieldNameString(props.schema, props.search.resourceType, props.property) + ' ' + getOpString(op) + '...';
 

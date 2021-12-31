@@ -3,7 +3,7 @@ import { Button, Document, Form, FormSection, Loading, MedplumLink, TextField, u
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-export function InvitePage() {
+export function InvitePage(): JSX.Element {
   const { id } = useParams() as { id: string };
   const medplum = useMedplum();
   const [loading, setLoading] = useState<boolean>(true);

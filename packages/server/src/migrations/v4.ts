@@ -5,7 +5,7 @@
 
 import { PoolClient } from 'pg';
 
-export async function run(client: PoolClient) {
+export async function run(client: PoolClient): Promise<void> {
   await client.query('ALTER TABLE "Appointment" ALTER COLUMN "basedOn" TYPE TEXT[] USING array["basedOn"]::TEXT[]');
   await client.query(
     'ALTER TABLE "Appointment" ALTER COLUMN "reasonCode" TYPE TEXT[] USING array["reasonCode"]::TEXT[]'

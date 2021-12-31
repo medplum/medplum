@@ -22,7 +22,7 @@ export interface SearchFilterEditorProps {
   onCancel: () => void;
 }
 
-export function SearchFilterEditor(props: SearchFilterEditorProps) {
+export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element | null {
   const [search, setSearch] = useState<SearchRequest>(JSON.parse(stringify(props.search)) as SearchRequest);
   const [editingIndex, setEditingIndex] = useState<number>(-1);
 
@@ -33,7 +33,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps) {
     setSearch(JSON.parse(stringify(props.search)) as SearchRequest);
   }, [props.search]);
 
-  function onAddFilter(filter: Filter) {
+  function onAddFilter(filter: Filter): void {
     setSearch(addFilter(searchRef.current, filter.code, filter.operator, filter.value));
   }
 

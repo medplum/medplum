@@ -8,7 +8,7 @@ export interface IdentifierInputProps {
   onChange?: (value: Identifier) => void;
 }
 
-export function IdentifierInput(props: IdentifierInputProps) {
+export function IdentifierInput(props: IdentifierInputProps): JSX.Element {
   const [value, setValue] = useState(props.defaultValue);
 
   function setValueWrapper(newValue: Identifier): void {

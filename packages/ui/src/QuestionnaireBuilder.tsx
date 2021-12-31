@@ -17,7 +17,7 @@ export interface QuestionnaireBuilderProps {
   onSubmit: (result: Questionnaire) => void;
 }
 
-export function QuestionnaireBuilder(props: QuestionnaireBuilderProps) {
+export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Element | null {
   const medplum = useMedplum();
   const defaultValue = useResource(props.questionnaire);
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
@@ -82,7 +82,7 @@ interface ItemBuilderProps<T extends Questionnaire | QuestionnaireItem> {
   onRemove?: () => void;
 }
 
-function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBuilderProps<T>) {
+function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBuilderProps<T>): JSX.Element {
   const resource = props.item as Questionnaire;
   const item = props.item as QuestionnaireItem;
   const isResource = 'resourceType' in props.item;
@@ -104,7 +104,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     props.setHoverKey(props.item.id);
   }
 
-  function changeItem(changedItem: QuestionnaireItem) {
+  function changeItem(changedItem: QuestionnaireItem): void {
     const curr = itemRef.current as T;
     props.onChange({
       ...curr,
@@ -112,14 +112,14 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     } as T);
   }
 
-  function addItem(addedItem: QuestionnaireItem) {
+  function addItem(addedItem: QuestionnaireItem): void {
     props.onChange({
       ...props.item,
       item: [...(props.item?.item ?? []), addedItem],
     });
   }
 
-  function removeItem(removedItem: QuestionnaireItem) {
+  function removeItem(removedItem: QuestionnaireItem): void {
     props.onChange({
       ...props.item,
       item: props.item?.item?.filter((i) => i !== removedItem),

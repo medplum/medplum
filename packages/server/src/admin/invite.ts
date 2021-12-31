@@ -7,7 +7,7 @@ import { resetPassword } from '../auth/resetpassword';
 import { createPractitioner, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config';
 import { sendEmail } from '../email';
-import { invalidRequest, systemRepo, sendOutcome } from '../fhir';
+import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { logger } from '../logger';
 import { generateSecret } from '../oauth';
 import { verifyProjectAdmin } from './utils';
@@ -18,16 +18,18 @@ export const inviteValidators = [
   body('email').isEmail().withMessage('Valid email address is required'),
 ];
 
-export async function inviteHandler(req: Request, res: Response): Promise<Response> {
+export async function inviteHandler(req: Request, res: Response): Promise<void> {
   const projectDetails = await verifyProjectAdmin(req, res);
   if (!projectDetails) {
-    return res.sendStatus(404);
+    res.sendStatus(404);
+    return;
   }
 
   const { project } = projectDetails;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return sendOutcome(res, invalidRequest(errors));
+    sendOutcome(res, invalidRequest(errors));
+    return;
   }
 
   const profile = await inviteUser({
@@ -37,7 +39,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<Respon
     email: req.body.email,
   });
 
-  return res.status(200).json({ profile });
+  res.status(200).json({ profile });
 }
 
 export interface InviteRequest {

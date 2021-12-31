@@ -8,7 +8,7 @@ export default {
   component: QuestionnaireForm,
 } as Meta;
 
-export const Basic = () => (
+export const Basic = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
       questionnaire={{
@@ -35,7 +35,7 @@ export const Basic = () => (
   </Document>
 );
 
-export const Groups = () => (
+export const Groups = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
       questionnaire={{
@@ -86,7 +86,7 @@ export const Groups = () => (
   </Document>
 );
 
-export const MultipleChoice = () => (
+export const MultipleChoice = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
       questionnaire={{
@@ -119,7 +119,7 @@ export const MultipleChoice = () => (
   </Document>
 );
 
-export const KitchenSink = () => (
+export const KitchenSink = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
       questionnaire={{

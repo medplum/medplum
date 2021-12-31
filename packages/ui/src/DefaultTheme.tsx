@@ -1,5 +1,5 @@
 import './DefaultTheme.css';
 
-export function DefaultTheme() {
+export function DefaultTheme(): null {
   return null;
 }

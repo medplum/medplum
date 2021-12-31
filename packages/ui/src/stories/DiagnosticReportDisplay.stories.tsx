@@ -8,7 +8,7 @@ export default {
   component: DiagnosticReportDisplay,
 } as Meta;
 
-export const Simple = () => (
+export const Simple = (): JSX.Element => (
   <Document>
     <DiagnosticReportDisplay
       value={{

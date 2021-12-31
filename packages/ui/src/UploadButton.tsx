@@ -7,11 +7,11 @@ export interface UploadButtonProps {
   onUpload: (attachment: Attachment) => void;
 }
 
-export function UploadButton(props: UploadButtonProps) {
+export function UploadButton(props: UploadButtonProps): JSX.Element {
   const medplum = useMedplum();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  function onFileChange(e: React.ChangeEvent) {
+  function onFileChange(e: React.ChangeEvent): void {
     killEvent(e);
     const files = (e.target as HTMLInputElement).files;
     if (files) {
@@ -24,7 +24,7 @@ export function UploadButton(props: UploadButtonProps) {
    *
    * @param {File} file The file descriptor.
    */
-  function processFile(file: File) {
+  function processFile(file: File): void {
     if (!file) {
       return;
     }

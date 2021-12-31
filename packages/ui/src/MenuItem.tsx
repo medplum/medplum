@@ -6,7 +6,7 @@ interface MenuItemProps {
   children: React.ReactNode;
 }
 
-export function MenuItem(props: MenuItemProps) {
+export function MenuItem(props: MenuItemProps): JSX.Element {
   return (
     <div className="medplum-menu-item" onClick={() => props.onClick()}>
       {props.children}

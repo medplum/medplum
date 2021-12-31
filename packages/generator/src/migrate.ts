@@ -17,7 +17,7 @@ const structureDefinitions = { types: {} } as IndexedStructureDefinition;
 const searchParams = readJson('fhir/r4/search-parameters.json');
 const v6Builder = new FileBuilder();
 
-export function main() {
+export function main(): void {
   buildStructureDefinitions('profiles-types.json');
   buildStructureDefinitions('profiles-resources.json');
   buildStructureDefinitions('profiles-medplum.json');
@@ -37,7 +37,7 @@ function buildStructureDefinitions(fileName: string): void {
       resource.name !== 'MetadataResource' &&
       !isLowerCase(resource.name[0])
     ) {
-      indexStructureDefinition(resource, structureDefinitions);
+      indexStructureDefinition(structureDefinitions, resource);
     }
   }
 }
@@ -52,12 +52,12 @@ function writeMigrations(): void {
 function buildMigrationUp(b: FileBuilder): void {
   b.append("import { PoolClient } from 'pg';");
   b.newLine();
-  b.append('export async function run(client: PoolClient) {');
+  b.append('export async function run(client: PoolClient): Promise<void> {');
   b.indentCount++;
 
   v6Builder.append("import { PoolClient } from 'pg';");
   v6Builder.newLine();
-  v6Builder.append('export async function run(client: PoolClient) {');
+  v6Builder.append('export async function run(client: PoolClient): Promise<void> {');
   v6Builder.indentCount++;
 
   for (const [resourceType, typeSchema] of Object.entries(structureDefinitions.types)) {
@@ -155,7 +155,7 @@ function buildSearchColumns(resourceType: string): string[] {
   return result;
 }
 
-function isLookupTableParam(searchParam: any) {
+function isLookupTableParam(searchParam: any): boolean {
   // Identifier
   if (searchParam.code === 'identifier' && searchParam.type === 'token') {
     return true;

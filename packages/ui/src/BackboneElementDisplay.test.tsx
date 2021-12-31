@@ -64,15 +64,15 @@ const schema: IndexedStructureDefinition = {
 const medplum = new MockClient();
 
 describe('BackboneElementDisplay', () => {
-  const setup = (args: BackboneElementDisplayProps) => {
-    return render(
+  function setup(args: BackboneElementDisplayProps): void {
+    render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <BackboneElementDisplay {...args} />
         </MedplumProvider>
       </MemoryRouter>
     );
-  };
+  }
 
   test('Renders null', () => {
     setup({

@@ -25,13 +25,13 @@ const medplum = new MedplumClient({
   fetch: mockFetch,
 });
 
-const setup = (ui: React.ReactElement) => {
-  return render(
+function setup(ui: React.ReactElement): void {
+  render(
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>{ui}</MedplumProvider>
     </MemoryRouter>
   );
-};
+}
 
 describe('MedplumLink', () => {
   test('Renders', () => {

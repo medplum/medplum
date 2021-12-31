@@ -121,21 +121,21 @@ const medplum = new MedplumClient({
   fetch: mockFetch,
 });
 
-const setup = (args?: SignInFormProps) => {
+function setup(args?: SignInFormProps): void {
   medplum.signOut();
 
   const props = {
     onSuccess: jest.fn(),
     ...args,
   };
-  return render(
+  render(
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>
         <SignInForm {...props} />
       </MedplumProvider>
     </MemoryRouter>
   );
-};
+}
 
 describe('SignInForm', () => {
   beforeAll(() => {
@@ -149,8 +149,8 @@ describe('SignInForm', () => {
   });
 
   test('Renders', () => {
-    const utils = setup();
-    const input = utils.getByTestId('submit') as HTMLButtonElement;
+    setup();
+    const input = screen.getByTestId('submit') as HTMLButtonElement;
     expect(input.innerHTML).toBe('Sign in');
   });
 

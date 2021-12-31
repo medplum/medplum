@@ -9,7 +9,7 @@ export interface ResourceBadgeProps {
   link?: boolean;
 }
 
-export function ResourceBadge(props: ResourceBadgeProps) {
+export function ResourceBadge(props: ResourceBadgeProps): JSX.Element {
   return (
     <div className="medplum-resource-badge">
       <Avatar size="small" value={props.value} link={props.link} />

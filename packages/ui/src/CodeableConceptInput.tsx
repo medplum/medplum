@@ -17,7 +17,7 @@ export interface CodeableConceptInputProps {
   onChange?: (value: CodeableConcept) => void;
 }
 
-export function CodeableConceptInput(props: CodeableConceptInputProps) {
+export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Element {
   const medplum = useMedplum();
 
   let defaultValue = undefined;

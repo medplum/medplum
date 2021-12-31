@@ -6,13 +6,13 @@ import { ReferenceInput, ReferenceInputProps } from './ReferenceInput';
 
 const medplum = new MockClient();
 
-const setup = (args: ReferenceInputProps) => {
-  return render(
+function setup(args: ReferenceInputProps): void {
+  render(
     <MedplumProvider medplum={medplum}>
       <ReferenceInput {...args} />
     </MedplumProvider>
   );
-};
+}
 
 describe('ReferenceInput', () => {
   beforeEach(() => {

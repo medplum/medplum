@@ -11,13 +11,13 @@ const medplum = new MedplumClient({
   fetch: async () => undefined,
 });
 
-const setup = (children: React.ReactNode) => {
-  return render(
+function setup(children: React.ReactNode): void {
+  render(
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
     </MemoryRouter>
   );
-};
+}
 
 describe('Popup', () => {
   test('Hidden', () => {

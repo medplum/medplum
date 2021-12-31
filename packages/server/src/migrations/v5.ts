@@ -5,7 +5,7 @@
 
 import { PoolClient } from 'pg';
 
-export async function run(client: PoolClient) {
+export async function run(client: PoolClient): Promise<void> {
   await client.query('ALTER TABLE "Account" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE');
   await client.query('ALTER TABLE "ActivityDefinition" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE');
   await client.query('ALTER TABLE "AdverseEvent" ADD COLUMN "deleted" BOOLEAN NOT NULL DEFAULT FALSE');

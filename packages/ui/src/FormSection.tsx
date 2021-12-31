@@ -11,7 +11,7 @@ export interface FormSectionProps {
   children?: React.ReactNode;
 }
 
-export function FormSection(props: FormSectionProps) {
+export function FormSection(props: FormSectionProps): JSX.Element {
   const issues = getIssuesForExpression(props.outcome, props.htmlFor);
   const invalid = issues && issues.length > 0;
   return (

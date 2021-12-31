@@ -8,7 +8,7 @@ export interface QuantityInputProps {
   onChange?: (value: Quantity) => void;
 }
 
-export function QuantityInput(props: QuantityInputProps) {
+export function QuantityInput(props: QuantityInputProps): JSX.Element {
   const [value, setValue] = useState(props.defaultValue);
 
   function setValueWrapper(newValue: Quantity): void {

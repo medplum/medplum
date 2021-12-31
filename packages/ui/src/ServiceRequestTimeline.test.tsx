@@ -9,15 +9,15 @@ import { ServiceRequestTimeline, ServiceRequestTimelineProps } from './ServiceRe
 const medplum = new MockClient();
 
 describe('ServiceRequestTimeline', () => {
-  const setup = (args: ServiceRequestTimelineProps) => {
-    return render(
+  function setup(args: ServiceRequestTimelineProps): void {
+    render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <ServiceRequestTimeline {...args} />
         </MedplumProvider>
       </MemoryRouter>
     );
-  };
+  }
 
   test('Renders reference', async () => {
     setup({

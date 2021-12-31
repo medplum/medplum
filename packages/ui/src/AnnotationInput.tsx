@@ -10,7 +10,7 @@ export interface AnnotationInputProps {
   onChange?: (value: Annotation) => void;
 }
 
-export function AnnotationInput(props: AnnotationInputProps) {
+export function AnnotationInput(props: AnnotationInputProps): JSX.Element {
   const author = useMedplumProfile();
   const [value, setValue] = useState<Annotation>(props.defaultValue || {});
 

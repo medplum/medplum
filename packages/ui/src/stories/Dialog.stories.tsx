@@ -9,7 +9,7 @@ export default {
   component: Dialog,
 } as Meta;
 
-export const Basic = () => {
+export const Basic = (): JSX.Element => {
   const [open, setOpen] = useState(false);
   return (
     <Document>

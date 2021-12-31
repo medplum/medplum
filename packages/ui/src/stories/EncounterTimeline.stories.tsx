@@ -7,6 +7,6 @@ export default {
   component: EncounterTimeline,
 } as Meta;
 
-export const Encounter = () => (
+export const Encounter = (): JSX.Element => (
   <EncounterTimeline encounter={{ reference: 'Encounter/' + process.env.SAMPLE_ENCOUNTER_ID }} />
 );

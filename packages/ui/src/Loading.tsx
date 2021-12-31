@@ -1,7 +1,7 @@
 import React from 'react';
 import './Loading.css';
 
-export function Loading() {
+export function Loading(): JSX.Element {
   return (
     <div role="progressbar" aria-busy="true" className="medplum-loading">
       <div className="medplum-loading-container">

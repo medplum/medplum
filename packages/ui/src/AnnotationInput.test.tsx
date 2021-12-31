@@ -6,13 +6,13 @@ import { MedplumProvider } from './MedplumProvider';
 
 const medplum = new MockClient();
 
-const setup = (args: AnnotationInputProps) => {
-  return render(
+function setup(args: AnnotationInputProps): void {
+  render(
     <MedplumProvider medplum={medplum}>
       <AnnotationInput {...args} />
     </MedplumProvider>
   );
-};
+}
 
 describe('AnnotationInput', () => {
   test('Renders undefined value', () => {

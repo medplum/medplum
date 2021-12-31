@@ -8,7 +8,7 @@ export default {
   component: Select,
 } as Meta;
 
-export const Basic = () => (
+export const Basic = (): JSX.Element => (
   <Document>
     <Select>
       <option></option>
@@ -19,7 +19,7 @@ export const Basic = () => (
   </Document>
 );
 
-export const DefaultValue = () => (
+export const DefaultValue = (): JSX.Element => (
   <Document>
     <Select defaultValue="Foo">
       <option></option>
@@ -30,7 +30,7 @@ export const DefaultValue = () => (
   </Document>
 );
 
-export const Small = () => (
+export const Small = (): JSX.Element => (
   <Document>
     <Select size="small" defaultValue="Foo">
       <option></option>
@@ -41,7 +41,7 @@ export const Small = () => (
   </Document>
 );
 
-export const Large = () => (
+export const Large = (): JSX.Element => (
   <Document>
     <Select size="large" defaultValue="Foo">
       <option></option>

@@ -162,8 +162,8 @@ const schema: IndexedStructureDefinition = {
 const medplum = new MockClient();
 
 describe('ResourcePropertyInput', () => {
-  function setup(props: ResourcePropertyInputProps) {
-    return render(
+  function setup(props: ResourcePropertyInputProps): void {
+    render(
       <MedplumProvider medplum={medplum}>
         <ResourcePropertyInput {...props} />
       </MedplumProvider>

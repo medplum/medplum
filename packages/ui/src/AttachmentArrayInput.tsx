@@ -11,13 +11,13 @@ export interface AttachmentArrayInputProps {
   onChange?: (value: Attachment[]) => void;
 }
 
-export function AttachmentArrayInput(props: AttachmentArrayInputProps) {
+export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Element {
   const [values, setValues] = useState(props.defaultValue ?? []);
 
   const valuesRef = useRef<Attachment[]>();
   valuesRef.current = values;
 
-  function setValuesWrapper(newValues: Attachment[]) {
+  function setValuesWrapper(newValues: Attachment[]): void {
     setValues(newValues);
     if (props.onChange) {
       props.onChange(newValues);

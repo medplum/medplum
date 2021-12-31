@@ -19,7 +19,7 @@ export function SubMenu(props: SubMenuProps): JSX.Element {
   const visibleRef = useRef<boolean>(false);
   visibleRef.current = visible;
 
-  function show() {
+  function show(): void {
     const el = menuItemRef.current;
     if (el) {
       setAnchor(el.getBoundingClientRect());

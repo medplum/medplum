@@ -9,15 +9,15 @@ import { MedplumProvider } from './MedplumProvider';
 const medplum = new MockClient();
 
 describe('Avatar', () => {
-  const setup = (args: AvatarProps) => {
-    return render(
+  function setup(args: AvatarProps): void {
+    render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <Avatar {...args} />
         </MedplumProvider>
       </MemoryRouter>
     );
-  };
+  }
 
   test('Avatar renders image', () => {
     setup({ src: 'https://example.com/profile.jpg', alt: 'Profile' });

@@ -35,7 +35,7 @@ export class ClientStorage {
     return str ? (JSON.parse(str) as T) : undefined;
   }
 
-  setObject<T>(key: string, value: T) {
+  setObject<T>(key: string, value: T): void {
     this.setString(key, value ? stringify(value) : undefined);
   }
 }

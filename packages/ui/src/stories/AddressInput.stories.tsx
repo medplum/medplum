@@ -8,13 +8,13 @@ export default {
   component: AddressInput,
 } as Meta;
 
-export const Basic = () => (
+export const Basic = (): JSX.Element => (
   <Document>
     <AddressInput name="address" />
   </Document>
 );
 
-export const DefaultValue = () => (
+export const DefaultValue = (): JSX.Element => (
   <Document>
     <AddressInput
       name="address"

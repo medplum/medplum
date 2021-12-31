@@ -21,7 +21,8 @@ import { Operator, SelectQuery } from './sql';
 export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
   let url = req.query.url as string | undefined;
   if (!url) {
-    return sendOutcome(res, badRequest('Missing url'));
+    sendOutcome(res, badRequest('Missing url'));
+    return;
   }
   const pipeIndex = url.indexOf('|');
   if (pipeIndex >= 0) {
@@ -30,7 +31,8 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
 
   const filter = req.query.filter as string | undefined;
   if (!filter) {
-    return sendOutcome(res, badRequest('Missing filter'));
+    sendOutcome(res, badRequest('Missing filter'));
+    return;
   }
 
   let offset = 0;

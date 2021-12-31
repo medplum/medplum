@@ -7,8 +7,8 @@ import { ResourceTable, ResourceTableProps } from './ResourceTable';
 const medplum = new MockClient();
 
 describe('ResourceTable', () => {
-  function setup(props: ResourceTableProps) {
-    return render(
+  function setup(props: ResourceTableProps): void {
+    render(
       <MedplumProvider medplum={medplum}>
         <ResourceTable {...props} />
       </MedplumProvider>

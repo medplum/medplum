@@ -20,11 +20,13 @@ superAdminRouter.post(
     assertOk(outcome);
 
     if (!user?.admin) {
-      return sendOutcome(res, accessDenied);
+      sendOutcome(res, accessDenied);
+      return;
     }
 
     await createValueSetElements();
-    return sendOutcome(res, allOk);
+    sendOutcome(res, allOk);
+    return;
   })
 );
 
@@ -38,11 +40,13 @@ superAdminRouter.post(
     assertOk(outcome);
 
     if (!user?.admin) {
-      return sendOutcome(res, accessDenied);
+      sendOutcome(res, accessDenied);
+      return;
     }
 
     await createStructureDefinitions();
-    return sendOutcome(res, allOk);
+    sendOutcome(res, allOk);
+    return;
   })
 );
 
@@ -56,16 +60,19 @@ superAdminRouter.post(
     assertOk(outcome);
 
     if (!user?.admin) {
-      return sendOutcome(res, accessDenied);
+      sendOutcome(res, accessDenied);
+      return;
     }
 
     const resourceType = req.body.resourceType;
     const validateOutcome = validateResourceType(resourceType);
     if (!isOk(validateOutcome)) {
-      return sendOutcome(res, validateOutcome);
+      sendOutcome(res, validateOutcome);
+      return;
     }
 
     const [reindexOutcome] = await systemRepo.reindexResourceType(resourceType);
-    return sendOutcome(res, reindexOutcome);
+    sendOutcome(res, reindexOutcome);
+    return;
   })
 );

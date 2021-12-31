@@ -28,7 +28,7 @@ export interface SidebarLink {
   href: string;
 }
 
-export function Header(props: HeaderProps) {
+export function Header(props: HeaderProps): JSX.Element {
   const navigate = useNavigate();
   const context = useMedplumContext();
   const medplum = context.medplum;

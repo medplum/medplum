@@ -8,8 +8,8 @@ import { ResourceVersionPage } from './ResourceVersionPage';
 const medplum = new MockClient();
 
 describe('ResourceVersionPage', () => {
-  const setup = (url: string) => {
-    return render(
+  function setup(url: string): void {
+    render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
           <Routes>
@@ -19,7 +19,7 @@ describe('ResourceVersionPage', () => {
         </MemoryRouter>
       </MedplumProvider>
     );
-  };
+  }
 
   test('Resource not found', async () => {
     await act(async () => {

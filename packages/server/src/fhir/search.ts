@@ -164,7 +164,7 @@ class SearchParser {
     }
   }
 
-  private parseKeyValue(key: string, value: string) {
+  private parseKeyValue(key: string, value: string): void {
     let code;
     let modifier;
 
@@ -219,7 +219,7 @@ class SearchParser {
     }
   }
 
-  private parseSortRule(value: string) {
+  private parseSortRule(value: string): void {
     for (const field of value.split(',')) {
       let code;
       let descending = false;
@@ -233,7 +233,7 @@ class SearchParser {
     }
   }
 
-  private parseParameter(searchParam: SearchParameter, modifier: string, value: string) {
+  private parseParameter(searchParam: SearchParameter, modifier: string, value: string): void {
     switch (searchParam.type) {
       case 'number':
       case 'date':
@@ -253,7 +253,7 @@ class SearchParser {
     }
   }
 
-  private parsePrefixType(param: SearchParameter, input: string) {
+  private parsePrefixType(param: SearchParameter, input: string): void {
     const { operator, value } = parsePrefix(input);
     this.filters.push({
       code: param.code as string,
@@ -262,7 +262,7 @@ class SearchParser {
     });
   }
 
-  private parseModifierType(param: SearchParameter, modifier: string, value: string) {
+  private parseModifierType(param: SearchParameter, modifier: string, value: string): void {
     this.filters.push({
       code: param.code as string,
       operator: parseModifier(modifier),
@@ -270,7 +270,7 @@ class SearchParser {
     });
   }
 
-  private parseReference(param: SearchParameter, value: string) {
+  private parseReference(param: SearchParameter, value: string): void {
     this.filters.push({
       code: param.code as string,
       operator: Operator.EQUALS,
@@ -278,7 +278,7 @@ class SearchParser {
     });
   }
 
-  private parseQuantity(param: SearchParameter, input: string) {
+  private parseQuantity(param: SearchParameter, input: string): void {
     const [prefixNumber, unitSystem, unitCode] = input.split('|');
     const { operator, value } = parsePrefix(prefixNumber);
     this.filters.push({

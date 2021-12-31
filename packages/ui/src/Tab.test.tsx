@@ -6,7 +6,7 @@ import { TabList } from './TabList';
 import { TabPanel } from './TabPanel';
 import { TabSwitch } from './TabSwitch';
 
-function TabTest() {
+function TabTest(): JSX.Element {
   const [value, setValue] = useState('first');
   return (
     <>

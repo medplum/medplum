@@ -5,7 +5,7 @@ import { getRepoForLogin, systemRepo } from '../fhir';
 import { logger } from '../logger';
 import { MedplumAccessTokenClaims, verifyJwt } from './keys';
 
-export async function authenticateToken(req: Request, res: Response, next: NextFunction) {
+export async function authenticateToken(req: Request, res: Response, next: NextFunction): Promise<void> {
   const [tokenType, token] = req.headers.authorization?.split(' ') ?? [];
   if (!tokenType || !token) {
     res.sendStatus(401);

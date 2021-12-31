@@ -8,7 +8,7 @@ export default {
   component: Avatar,
 } as Meta;
 
-export const Image = () => (
+export const Image = (): JSX.Element => (
   <Document>
     <div style={{ display: 'flex', width: 168, justifyContent: 'space-between' }}>
       <Avatar alt="George Washington" src="/avatars/1.jpg" />
@@ -18,7 +18,7 @@ export const Image = () => (
   </Document>
 );
 
-export const Letter = () => (
+export const Letter = (): JSX.Element => (
   <Document>
     <div style={{ display: 'flex', width: 168, justifyContent: 'space-between' }}>
       <Avatar alt="George Wasington" />
@@ -28,7 +28,7 @@ export const Letter = () => (
   </Document>
 );
 
-export const Sizes = () => (
+export const Sizes = (): JSX.Element => (
   <Document>
     <div style={{ display: 'flex', width: 168, justifyContent: 'space-between' }}>
       <Avatar alt="Mona Lisa" src="/avatars/2.jpg" size="small" />
@@ -38,7 +38,7 @@ export const Sizes = () => (
   </Document>
 );
 
-export const LetterSizes = () => (
+export const LetterSizes = (): JSX.Element => (
   <Document>
     <div style={{ display: 'flex', width: 168, justifyContent: 'space-between' }}>
       <Avatar alt="George Wasington" size="small" />
@@ -48,13 +48,13 @@ export const LetterSizes = () => (
   </Document>
 );
 
-export const Resource = () => (
+export const Resource = (): JSX.Element => (
   <Document>
     <Avatar value={{ reference: 'Patient/' + process.env.SAMPLE_PATIENT_ID }} />
   </Document>
 );
 
-export const WithText = () => (
+export const WithText = (): JSX.Element => (
   <Document>
     <a href="#">
       <div style={{ display: 'flex', width: 180, justifyContent: 'space-between' }}>

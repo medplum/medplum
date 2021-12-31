@@ -2,7 +2,7 @@ import { SignInForm } from '@medplum/ui';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export function SignInPage() {
+export function SignInPage(): JSX.Element {
   const navigate = useNavigate();
   return (
     <SignInForm

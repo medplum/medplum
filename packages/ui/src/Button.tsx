@@ -12,7 +12,7 @@ export interface ButtonProps {
   testid?: string;
 }
 
-export function Button(props: ButtonProps) {
+export function Button(props: ButtonProps): JSX.Element {
   const className =
     'btn' +
     (props.primary || props.type === 'submit' ? ' btn-primary' : '') +

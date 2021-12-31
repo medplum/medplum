@@ -8,7 +8,7 @@ export default {
   component: SearchControl,
 } as Meta;
 
-export const Checkboxes = () => {
+export const Checkboxes = (): JSX.Element => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Patient',
     fields: ['id', '_lastUpdated', 'name'],
@@ -28,7 +28,7 @@ export const Checkboxes = () => {
   );
 };
 
-export const NoCheckboxes = () => {
+export const NoCheckboxes = (): JSX.Element => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Patient',
   });
@@ -46,7 +46,7 @@ export const NoCheckboxes = () => {
   );
 };
 
-export const ExtraFields = () => {
+export const ExtraFields = (): JSX.Element => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Patient',
     fields: ['id', '_lastUpdated', 'name', 'birthDate'],
@@ -65,7 +65,7 @@ export const ExtraFields = () => {
   );
 };
 
-export const ServiceRequests = () => {
+export const ServiceRequests = (): JSX.Element => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'ServiceRequest',
     fields: ['id', '_lastUpdated', 'subject', 'code', 'status', 'orderDetail'],
@@ -85,7 +85,7 @@ export const ServiceRequests = () => {
   );
 };
 
-export const DeviceDefinitions = () => {
+export const DeviceDefinitions = (): JSX.Element => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'DeviceDefinition',
     fields: ['id', '_lastUpdated', 'manufacturer[x]', 'deviceName'],

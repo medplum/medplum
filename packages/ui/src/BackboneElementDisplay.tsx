@@ -12,7 +12,7 @@ export interface BackboneElementDisplayProps {
   ignoreMissingValues?: boolean;
 }
 
-export function BackboneElementDisplay(props: BackboneElementDisplayProps) {
+export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.Element | null {
   const value = props.value;
   if (!value) {
     return null;

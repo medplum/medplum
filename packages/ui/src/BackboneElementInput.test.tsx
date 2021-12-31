@@ -121,15 +121,15 @@ const schema: IndexedStructureDefinition = {
 const medplum = new MockClient();
 
 describe('BackboneElementInput', () => {
-  const setup = (args: BackboneElementInputProps) => {
-    return render(
+  function setup(args: BackboneElementInputProps): void {
+    render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <BackboneElementInput {...args} />
         </MedplumProvider>
       </MemoryRouter>
     );
-  };
+  }
 
   test('Renders', () => {
     setup({

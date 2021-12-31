@@ -18,7 +18,7 @@ export interface DiagnosticReportDisplayProps {
   value?: DiagnosticReport | Reference<DiagnosticReport>;
 }
 
-export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps) {
+export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JSX.Element | null {
   const diagnosticReport = useResource(props.value);
   if (!diagnosticReport) {
     return null;

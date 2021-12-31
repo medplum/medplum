@@ -21,7 +21,7 @@ export interface MedplumContext {
  *   1) medplum - Medplum client library
  *   2) profile - The current user profile (if signed in)
  */
-export function MedplumProvider(props: MedplumProviderProps) {
+export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
   const medplumContext = createMedplumContext(props.medplum);
   return <reactContext.Provider value={medplumContext}>{props.children}</reactContext.Provider>;
 }
@@ -60,11 +60,12 @@ function createMedplumContext(medplum: MedplumClient): MedplumContext {
   });
 
   useEffect(() => {
-    const eventListener = () =>
+    function eventListener(): void {
       setState({
         ...state,
         profile: medplum.getProfile(),
       });
+    }
 
     medplum.addEventListener('change', eventListener);
     return () => medplum.removeEventListeneer('change', eventListener);

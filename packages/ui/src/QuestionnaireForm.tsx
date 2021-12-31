@@ -27,7 +27,7 @@ export interface QuestionnaireFormProps {
   onSubmit: (response: QuestionnaireResponse) => void;
 }
 
-export function QuestionnaireForm(props: QuestionnaireFormProps) {
+export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | null {
   const medplum = useMedplum();
   const source = medplum.getProfile();
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();

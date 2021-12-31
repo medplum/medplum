@@ -13,7 +13,7 @@ export interface TabProps {
   onClick?: TabClickHandler;
 }
 
-export function Tab(props: TabProps) {
+export function Tab(props: TabProps): JSX.Element {
   let className = 'medplum-tab';
   if (props.selected) {
     className += ' selected';

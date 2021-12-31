@@ -21,7 +21,7 @@ export interface SignInFormProps {
   onRegister?: () => void;
 }
 
-export function SignInForm(props: SignInFormProps) {
+export function SignInForm(props: SignInFormProps): JSX.Element {
   const medplum = useMedplum();
   const [login, setLogin] = useState<string | undefined>(undefined);
   const [memberships, setMemberships] = useState<ProjectMembership[] | undefined>(undefined);

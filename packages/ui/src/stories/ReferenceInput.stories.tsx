@@ -8,7 +8,7 @@ export default {
   component: ReferenceInput,
 } as Meta;
 
-export const TargetProfile = () => (
+export const TargetProfile = (): JSX.Element => (
   <Document>
     <ReferenceInput
       name="foo"
@@ -24,7 +24,7 @@ export const TargetProfile = () => (
   </Document>
 );
 
-export const FreeText = () => (
+export const FreeText = (): JSX.Element => (
   <Document>
     <ReferenceInput
       name="foo"

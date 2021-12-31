@@ -10,7 +10,7 @@ export interface ReferenceInputProps {
   onChange?: (value: Reference | undefined) => void;
 }
 
-export function ReferenceInput(props: ReferenceInputProps) {
+export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
   const targetTypes = getTargetTypes(props.property);
   const initialResourceType = getInitialResourceType(props.defaultValue, targetTypes);
   const [value, setValue] = useState<Reference | undefined>(props.defaultValue);

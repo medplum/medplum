@@ -11,7 +11,7 @@ import { ensureArray, fhirPathIs, isQuantity, removeDuplicates, toJsBoolean } fr
 /**
  * Temporary placholder for unimplemented methods.
  */
-const stub = () => [];
+const stub = (): [] => [];
 
 /*
  * 5.1 Existence

@@ -3,7 +3,7 @@ import { Loading, SearchControl, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-export function HomePage() {
+export function HomePage(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
   const location = useLocation();

@@ -69,7 +69,7 @@ export function validateResource(resource: Resource): OperationOutcome {
   };
 }
 
-function checkProperties(resource: Resource, propertyDefinitions: any, issues: OperationOutcomeIssue[]) {
+function checkProperties(resource: Resource, propertyDefinitions: any, issues: OperationOutcomeIssue[]): void {
   for (const [key, value] of Object.entries(propertyDefinitions)) {
     if (key in resource) {
       checkProperty(resource, key, value, issues);
@@ -82,7 +82,7 @@ function checkProperty(
   propertyName: string,
   propertyDetails: any,
   issues: OperationOutcomeIssue[]
-) {
+): void {
   const value = (resource as any)[propertyName];
 
   if (propertyDetails.type === 'array' && !Array.isArray(value)) {
@@ -90,7 +90,11 @@ function checkProperty(
   }
 }
 
-function checkAdditionalProperties(resource: Resource, propertyDefinitions: any, issues: OperationOutcomeIssue[]) {
+function checkAdditionalProperties(
+  resource: Resource,
+  propertyDefinitions: any,
+  issues: OperationOutcomeIssue[]
+): void {
   for (const key of Object.keys(resource)) {
     if (key === 'meta' || key === '_baseDefinition') {
       continue;
@@ -101,7 +105,7 @@ function checkAdditionalProperties(resource: Resource, propertyDefinitions: any,
   }
 }
 
-function checkRequiredProperties(resource: Resource, definition: any, issues: OperationOutcomeIssue[]) {
+function checkRequiredProperties(resource: Resource, definition: any, issues: OperationOutcomeIssue[]): void {
   const requiredProperties = definition.required;
   if (requiredProperties) {
     for (const key of requiredProperties) {

@@ -14,7 +14,7 @@ import { FileBuilder } from './filebuilder';
 const structureDefinitions = { types: {} } as IndexedStructureDefinition;
 const searchParams = readJson('fhir/r4/search-parameters.json') as Bundle;
 
-export function main() {
+export function main(): void {
   buildStructureDefinitions('profiles-types.json');
   buildStructureDefinitions('profiles-resources.json');
   writeDocs();
@@ -33,7 +33,7 @@ function buildStructureDefinitions(fileName: string): void {
       resource.name !== 'MetadataResource' &&
       !isLowerCase(resource.name[0])
     ) {
-      indexStructureDefinition(resource, structureDefinitions);
+      indexStructureDefinition(structureDefinitions, resource);
     }
   }
 }

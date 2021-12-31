@@ -9,15 +9,15 @@ import { PatientHeader } from './PatientHeader';
 const medplum = new MockClient();
 
 describe('PatientHeader', () => {
-  const setup = (patient: Patient) => {
-    return render(
+  function setup(patient: Patient): void {
+    render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <PatientHeader patient={patient} />
         </MedplumProvider>
       </MemoryRouter>
     );
-  };
+  }
 
   test('Renders', async () => {
     setup({

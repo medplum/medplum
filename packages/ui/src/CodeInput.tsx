@@ -12,7 +12,7 @@ export interface CodeInputProps {
 
 const cachedDisplayValues: Record<string, string> = {};
 
-export function CodeInput(props: CodeInputProps) {
+export function CodeInput(props: CodeInputProps): JSX.Element {
   const medplum = useMedplum();
 
   let defaultValue = undefined;

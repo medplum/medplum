@@ -6,13 +6,13 @@ import { ResourceInput, ResourceInputProps } from './ResourceInput';
 
 const medplum = new MockClient();
 
-const setup = (args: ResourceInputProps) => {
-  return render(
+function setup(args: ResourceInputProps): void {
+  render(
     <MedplumProvider medplum={medplum}>
       <ResourceInput {...args} />
     </MedplumProvider>
   );
-};
+}
 
 describe('ResourceInput', () => {
   beforeEach(() => {

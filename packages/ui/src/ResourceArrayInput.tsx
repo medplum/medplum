@@ -14,7 +14,7 @@ interface ResourceArrayInputProps {
   onChange?: (value: any[]) => void;
 }
 
-export function ResourceArrayInput(props: ResourceArrayInputProps) {
+export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element {
   const [values, setValues] = useState(props.defaultValue ?? []);
 
   const valuesRef = useRef<any[]>();
