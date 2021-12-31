@@ -1,0 +1,15 @@
+version: "2"
+exclude_patterns:
+- "**/node_modules/"
+- "**/coverage/"
+- "**/dist/"
+- "**/stories/"
+- "**/babel.config.js"
+- "**/webpack.config.js"
+- "**/jest.sequencer.js"
+- "**/*.test.ts"
+- "**/*.test.tsx"
+- "packages/docs/**/*"
+- "packages/fhirtypes/**/*"
+- "packages/generator/**/*.ts"
+- "packages/server/src/migrations/**/*.ts
