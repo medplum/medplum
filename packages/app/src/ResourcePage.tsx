@@ -18,7 +18,7 @@ import {
   ResourceTable,
   ServiceRequestTimeline,
   Tab,
-  TabBar,
+  TabList,
   TabPanel,
   TabSwitch,
   TitleBar,
@@ -127,6 +127,23 @@ export function ResourcePage() {
       });
   }
 
+  /**
+   * Handles a tab change event.
+   * @param newTabName The new tab name.
+   * @param button Which mouse button was used to change the tab.
+   */
+  function onTabChange(newTabName: string, button: number): void {
+    const url = `/${resourceType}/${id}/${newTabName}`;
+    if (button === 1) {
+      // "Aux Click" / middle click
+      // Open in new tab or new window
+      window.open(url, '_blank');
+    } else {
+      // Otherwise, by default, navigate to the new tab
+      navigate(url);
+    }
+  }
+
   useEffect(() => {
     loadResource();
   }, [resourceType, id]);
@@ -156,11 +173,11 @@ export function ResourcePage() {
           <h1>{value ? getDisplayString(value) : `${resourceType} ${id}`}</h1>
         </TitleBar>
       )}
-      <TabBar value={tab || defaultTab} onChange={(name: string) => navigate(`/${resourceType}/${id}/${name}`)}>
+      <TabList value={tab || defaultTab} onChange={onTabChange}>
         {tabs.map((t) => (
           <Tab key={t} name={t.toLowerCase()} label={t} />
         ))}
-      </TabBar>
+      </TabList>
       <Document>
         {error && <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>}
         <TabSwitch value={tab || defaultTab}>

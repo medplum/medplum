@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import React, { useState } from 'react';
 import { Document } from './Document';
 import { Tab } from './Tab';
-import { TabBar } from './TabBar';
+import { TabList } from './TabList';
 import { TabPanel } from './TabPanel';
 import { TabSwitch } from './TabSwitch';
 
@@ -10,12 +10,12 @@ function TabTest() {
   const [value, setValue] = useState('first');
   return (
     <>
-      <TabBar value={value} onChange={setValue}>
+      <TabList value={value} onChange={setValue}>
         <Tab name="first" label="First" />
         <Tab name="second" label="Second" />
         <Tab name="third" label="Third" />
         <div>only render tabs</div>
-      </TabBar>
+      </TabList>
       <Document>
         <TabSwitch value={value}>
           <TabPanel name="first">First content</TabPanel>

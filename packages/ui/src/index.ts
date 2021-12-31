@@ -55,7 +55,7 @@ export * from './SearchUtils';
 export * from './ServiceRequestTimeline';
 export * from './SignInForm';
 export * from './Tab';
-export * from './TabBar';
+export * from './TabList';
 export * from './TabPanel';
 export * from './TabSwitch';
 export * from './TextField';

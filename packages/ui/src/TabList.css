@@ -1,4 +1,4 @@
-.medplum-tabbar {
+.medplum-tablist {
   background-color: var(--medplum-surface);
   position: relative;
   min-height: 50px;
@@ -6,8 +6,8 @@
   white-space: nowrap;
 }
 
-.medplum-tabbar-background,
-.medplum-tabbar-foreground {
+.medplum-tablist-background,
+.medplum-tablist-foreground {
   position: absolute;
   top: 0;
   left: 0;
@@ -17,12 +17,12 @@
   white-space: nowrap;
 }
 
-.medplum-tabbar-background {
+.medplum-tablist-background {
   border-bottom: 2px solid var(--medplum-gray-200);
   z-index: 2;
 }
 
-.medplum-tabbar-foreground {
+.medplum-tablist-foreground {
   padding: 0 20px;
   z-index: 3;
 }
