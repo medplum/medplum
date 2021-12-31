@@ -181,6 +181,28 @@ export const KitchenSink = () => (
             linkId: 'choice',
             type: 'choice',
             text: 'choice',
+            answerOption: [
+              {
+                valueCoding: {
+                  code: 'code1',
+                },
+              },
+              {
+                valueDate: '2020-01-01',
+              },
+              {
+                valueInteger: 123,
+              },
+              {
+                valueString: 'string',
+              },
+              {
+                valueReference: {
+                  reference: 'Organization/123',
+                  display: 'Test Organization',
+                },
+              },
+            ],
           },
           {
             linkId: 'open-choice',

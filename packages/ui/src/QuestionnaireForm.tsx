@@ -19,6 +19,7 @@ import { QuestionnaireItemType } from './QuestionnaireUtils';
 import { ReferenceInput } from './ReferenceInput';
 import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 import { useResource } from './useResource';
+import './QuestionnaireForm.css';
 
 export interface QuestionnaireFormProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;
@@ -148,30 +149,31 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     case QuestionnaireItemType.choice:
     case QuestionnaireItemType.openChoice:
       return (
-        <table style={{ width: '100%' }}>
-          <tbody>
-            {item.answerOption &&
-              item.answerOption.map((option: QuestionnaireItemAnswerOption) => {
-                const valueProperty = props.schema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
-                const [propertyValue, propertyType] = getValueAndType(option, valueProperty);
-                return (
-                  <tr key={JSON.stringify(option)}>
-                    <td style={{ width: '50px' }}>
-                      <input type="radio" id={name} name={name} value={propertyValue} />
-                    </td>
-                    <td>
+        <div>
+          {item.answerOption &&
+            item.answerOption.map((option: QuestionnaireItemAnswerOption, index: number) => {
+              const valueProperty = props.schema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
+              const [propertyValue, propertyType] = getValueAndType(option, valueProperty);
+              const optionName = `${name}-option-${index}`;
+              return (
+                <div key={optionName} className="medplum-questionnaire-option-row">
+                  <div className="medplum-questionnaire-option-checkbox">
+                    <input type="radio" id={optionName} name={name} value={propertyValue} />
+                  </div>
+                  <div>
+                    <label htmlFor={optionName}>
                       <ResourcePropertyDisplay
                         schema={props.schema}
                         property={valueProperty}
                         propertyType={propertyType}
                         value={propertyValue}
                       />
-                    </td>
-                  </tr>
-                );
-              })}
-          </tbody>
-        </table>
+                    </label>
+                  </div>
+                </div>
+              );
+            })}
+        </div>
       );
     case QuestionnaireItemType.attachment:
       return <AttachmentInput name={name} defaultValue={initial?.valueAttachment} />;
