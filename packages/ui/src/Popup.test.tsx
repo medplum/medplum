@@ -69,8 +69,13 @@ describe('Popup', () => {
   });
 
   test('Anchor happy path', () => {
-    window.innerWidth = 1600;
-    window.innerHeight = 900;
+    // window.innerWidth and window.innerHeight include scrollbars
+    window.innerWidth = 1650;
+    window.innerHeight = 950;
+
+    // document.body.clientWidth and document.body.clientHeight do not include scrollbars
+    Object.defineProperty(document.body, 'clientWidth', { value: 1600 });
+    Object.defineProperty(document.body, 'clientHeight', { value: 900 });
 
     const anchor = { left: 10, right: 20, top: 10, bottom: 20 } as DOMRectReadOnly;
 
@@ -87,8 +92,13 @@ describe('Popup', () => {
   });
 
   test('Anchor flip horizontal', () => {
-    window.innerWidth = 1600;
-    window.innerHeight = 900;
+    // window.innerWidth and window.innerHeight include scrollbars
+    window.innerWidth = 1650;
+    window.innerHeight = 950;
+
+    // document.body.clientWidth and document.body.clientHeight do not include scrollbars
+    Object.defineProperty(document.body, 'clientWidth', { value: 1600 });
+    Object.defineProperty(document.body, 'clientHeight', { value: 900 });
 
     const anchor = { left: 1400, right: 1500, top: 10, bottom: 20 } as DOMRectReadOnly;
 
