@@ -1,5 +1,5 @@
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Loading, TextField, useMedplum } from '@medplum/ui';
+import { Button, Document, Form, FormSection, Loading, MedplumLink, TextField, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -83,7 +83,7 @@ export function InvitePage() {
             <p>User created</p>
             <p>Email sent</p>
             <p>
-              Click <a href={'/admin/project'}>here</a> to return to the project admin page
+              Click <MedplumLink to="/admin/project">here</MedplumLink> to return to the project admin page.
             </p>
           </div>
         )}

@@ -1,5 +1,15 @@
 import { AccessPolicy, ElementDefinition, OperationOutcome, ProjectMembership, Reference } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Loading, ReferenceInput, ResourceBadge, useMedplum } from '@medplum/ui';
+import {
+  Button,
+  Document,
+  Form,
+  FormSection,
+  Loading,
+  MedplumLink,
+  ReferenceInput,
+  ResourceBadge,
+  useMedplum,
+} from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -102,7 +112,7 @@ export function EditMembershipPage() {
             <p>User updated</p>
             <pre>{JSON.stringify(outcome, undefined, 2)}</pre>
             <p>
-              Click <a href={'/admin/project'}>here</a> to return to the project admin page
+              Click <MedplumLink to="/admin/project">here</MedplumLink> to return to the project admin page.
             </p>
           </div>
         )}

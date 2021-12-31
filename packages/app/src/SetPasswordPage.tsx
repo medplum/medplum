@@ -1,5 +1,5 @@
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Logo, TextField, useMedplum } from '@medplum/ui';
+import { Button, Document, Form, FormSection, Logo, MedplumLink, TextField, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -55,7 +55,7 @@ export function SetPasswordPage() {
         )}
         {success && (
           <div data-testid="success">
-            Password set. You can now <a href="/signin">sign in</a>.
+            Password set. You can now&nbsp;<MedplumLink to="/signin">sign in</MedplumLink>.
           </div>
         )}
       </Form>
