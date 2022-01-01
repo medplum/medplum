@@ -1,31 +1,27 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
 import { Binary } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import fs from 'fs';
+import { Readable } from 'stream';
 import { getBinaryStorage, initBinaryStorage } from './storage';
 
 jest.mock('@aws-sdk/client-s3');
-jest.mock('fs');
+jest.mock('@aws-sdk/lib-storage');
 
 describe('Storage', () => {
   beforeEach(() => {
-    (fs.existsSync as any).mockClear();
-    (fs.mkdirSync as any).mockClear();
-    (fs.writeFileSync as any).mockClear();
     (S3Client as any).mockClear();
-    (PutObjectCommand as any).mockClear();
+    (Upload as any).mockClear();
     (GetObjectCommand as any).mockClear();
   });
 
   test('Undefined binary storage', () => {
-    initBinaryStorage('foo');
+    initBinaryStorage('binary');
     expect(() => getBinaryStorage()).toThrow();
   });
 
   test('File system storage', async () => {
     initBinaryStorage('file:foo');
-    expect(fs.existsSync).toHaveBeenCalled();
-    expect(fs.mkdirSync).toHaveBeenCalled();
 
     const storage = getBinaryStorage();
     expect(storage).toBeDefined();
@@ -38,11 +34,13 @@ describe('Storage', () => {
         versionId: '456',
       },
     };
-    const req = {
-      body: 'foo',
-    } as Request;
-    await storage.writeBinary(binary, req);
-    expect(fs.writeFileSync).toHaveBeenCalled();
+
+    // Create a request
+    const req = new Readable();
+    req.push('foo');
+    req.push(null);
+    (req as any).headers = {};
+    await storage.writeBinary(binary, req as Request);
 
     // Read a file
     const res: Response = {
@@ -53,7 +51,7 @@ describe('Storage', () => {
 
     // Make sure we didn't touch S3 at all
     expect(S3Client).toHaveBeenCalledTimes(0);
-    expect(PutObjectCommand).toHaveBeenCalledTimes(0);
+    expect(Upload).toHaveBeenCalledTimes(0);
     expect(GetObjectCommand).toHaveBeenCalledTimes(0);
   });
 
@@ -79,21 +77,16 @@ describe('Storage', () => {
         versionId: '456',
       },
     };
-    const req = {
-      body: 'foo',
-      is: jest.fn(),
-    } as any as Request;
-    await storage.writeBinary(binary, req);
-    expect(PutObjectCommand).toHaveBeenCalled();
+    const req = new Readable();
+    req.push('foo');
+    req.push(null);
+    (req as any).headers = {};
+    await storage.writeBinary(binary, req as Request);
+    expect(Upload).toHaveBeenCalled();
 
     // Read a file
     const res = {} as Response;
     await storage.readBinary(binary, res);
     expect(GetObjectCommand).toHaveBeenCalled();
-
-    // Make sure we didn't touch the file system at all
-    expect(fs.existsSync).toHaveBeenCalledTimes(0);
-    expect(fs.mkdirSync).toHaveBeenCalledTimes(0);
-    expect(fs.writeFileSync).toHaveBeenCalledTimes(0);
   });
 });

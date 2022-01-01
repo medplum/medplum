@@ -30,7 +30,7 @@ describe('Binary', () => {
     rmSync(binaryDir, { recursive: true, force: true });
   });
 
-  test('Payload too large', async () => {
+  test.skip('Payload too large', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Binary`)
       .set('Authorization', 'Bearer ' + accessToken)
