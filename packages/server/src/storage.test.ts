@@ -3,6 +3,7 @@ import { Binary } from '@medplum/fhirtypes';
 import express, { Request } from 'express';
 import { mkdtempSync, rmSync } from 'fs';
 import { sep } from 'path';
+import { Readable } from 'stream';
 import request from 'supertest';
 import { initApp } from './app';
 import { loadTestConfig } from './config';
@@ -29,7 +30,11 @@ describe('Storage Routes', () => {
     assertOk(outcome);
     binary = resource;
 
-    await getBinaryStorage().writeBinary(binary as Binary, { body: 'hello world' } as Request);
+    const req = new Readable();
+    req.push('hello world');
+    req.push(null);
+    (req as any).headers = {};
+    await getBinaryStorage().writeBinary(binary as Binary, req as Request);
   });
 
   afterAll(async () => {

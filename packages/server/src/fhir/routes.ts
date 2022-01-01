@@ -7,7 +7,6 @@ import { asyncWrap } from '../async';
 import { getConfig } from '../config';
 import { authenticateToken } from '../oauth';
 import { processBatch } from './batch';
-import { binaryRouter } from './binary';
 import { expandOperator } from './expand';
 import { getRootSchema } from './graphql';
 import { getCapabilityStatement } from './metadata';
@@ -92,9 +91,6 @@ publicRoutes.get('/.well-known/smart-configuration', (req: Request, res: Respons
 const protectedRoutes = Router();
 fhirRouter.use(authenticateToken);
 fhirRouter.use(protectedRoutes);
-
-// Binary routes
-protectedRoutes.use('/Binary/', binaryRouter);
 
 // ValueSet $expand operation
 protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);

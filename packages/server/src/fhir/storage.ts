@@ -1,10 +1,12 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { stringify } from '@medplum/core';
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
 import { Binary } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { createWriteStream, existsSync, mkdirSync } from 'fs';
 import { IncomingMessage } from 'http';
 import path from 'path';
+import internal from 'stream';
+import zlib from 'zlib';
 
 let binaryStorage: BinaryStorage | undefined = undefined;
 
@@ -53,7 +55,13 @@ class FileSystemStorage implements BinaryStorage {
     if (!existsSync(dir)) {
       mkdirSync(dir);
     }
-    writeFileSync(this.getPath(binary), req.body, { encoding: 'binary' });
+    const body = getContentStream(req);
+    const writeStream = createWriteStream(this.getPath(binary), { flags: 'w' });
+    body.pipe(writeStream);
+    return new Promise((resolve, reject) => {
+      writeStream.on('close', resolve);
+      writeStream.on('error', reject);
+    });
   }
 
   async readBinary(binary: Binary, res: Response): Promise<void> {
@@ -82,24 +90,35 @@ class S3Storage implements BinaryStorage {
     this.bucket = bucket;
   }
 
+  /**
+   * Writes a binary blob to S3.
+   *
+   * Early implementations used the simple "PutObjectCommand" to write the blob to S3.
+   * However, PutObjectCommand does not support streaming.
+   *
+   * We now use the @aws-sdk/lib-storage package.
+   *
+   * Learn more:
+   * https://github.com/aws/aws-sdk-js-v3/blob/main/UPGRADING.md#s3-multipart-upload
+   * https://github.com/aws/aws-sdk-js-v3/tree/main/lib/lib-storage
+   *
+   * @param binary The binary resource destination.
+   * @param req The HTTP request with the binary content.
+   */
   async writeBinary(binary: Binary, req: Request): Promise<void> {
-    let body: Buffer | string | undefined;
-    if (req.body instanceof Buffer) {
-      body = req.body;
-    } else if (req.is('application/json') || req.is('application/fhir+json')) {
-      body = stringify(req.body);
-    } else if (req.body) {
-      body = req.body.toString();
-    }
+    const body = getContentStream(req);
 
-    await this.client.send(
-      new PutObjectCommand({
+    const upload = new Upload({
+      params: {
         Bucket: this.bucket,
         Key: this.getKey(binary),
-        ContentType: binary.contentType,
         Body: body,
-      })
-    );
+      },
+      client: this.client,
+      queueSize: 3,
+    });
+
+    await upload.done();
   }
 
   async readBinary(binary: Binary, res: Response): Promise<void> {
@@ -115,4 +134,40 @@ class S3Storage implements BinaryStorage {
   private getKey(binary: Binary): string {
     return 'binary/' + binary.id + '/' + binary.meta?.versionId;
   }
+}
+
+/**
+ * Get the content stream of the request.
+ *
+ * Based on body-parser implementation:
+ * https://github.com/expressjs/body-parser/blob/master/lib/read.js
+ *
+ * Unfortunately body-parser will always write the content to a temporary file on local disk.
+ * That is not acceptable for multi gigabyte files, which could easily fill up the disk.
+ *
+ * @param req The HTTP request.
+ * @returns The content stream.
+ */
+
+function getContentStream(req: Request): internal.Readable {
+  const encoding = (req.headers['content-encoding'] || 'identity').toLowerCase();
+  let stream;
+
+  switch (encoding) {
+    case 'deflate':
+      stream = zlib.createInflate();
+      req.pipe(stream);
+      break;
+    case 'gzip':
+      stream = zlib.createGunzip();
+      req.pipe(stream);
+      break;
+    case 'identity':
+      stream = req;
+      break;
+    default:
+      throw new Error('encoding.unsupoorted');
+  }
+
+  return stream;
 }

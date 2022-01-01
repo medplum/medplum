@@ -1,17 +1,16 @@
 import { badRequest } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { json, raw, urlencoded } from 'body-parser';
 import cors from 'cors';
-import { Express, NextFunction, Request, Response } from 'express';
+import { Express, json, NextFunction, Request, Response, urlencoded } from 'express';
 import { adminRouter } from './admin';
 import { asyncWrap } from './async';
 import { authRouter } from './auth';
 import { getConfig } from './config';
 import { dicomRouter } from './dicom/routes';
-import { fhirRouter, sendOutcome } from './fhir';
+import { binaryRouter, fhirRouter, sendOutcome } from './fhir';
 import { healthcheckHandler } from './healthcheck';
 import { logger } from './logger';
-import { oauthRouter } from './oauth';
+import { authenticateToken, oauthRouter } from './oauth';
 import { openApiHandler } from './openapi';
 import { scimRouter } from './scim';
 import { storageRouter } from './storage';
@@ -70,9 +69,9 @@ export async function initApp(app: Express): Promise<Express> {
   const config = getConfig();
   app.set('trust proxy', true);
   app.set('x-powered-by', false);
-  app.set('json spaces', 2);
   app.use(cacheHandler);
   app.use(cors(corsOptions));
+  app.use('/fhir/R4/Binary', [authenticateToken], binaryRouter);
   app.use(
     urlencoded({
       extended: false,
@@ -82,12 +81,6 @@ export async function initApp(app: Express): Promise<Express> {
     json({
       type: ['application/json', 'application/fhir+json', 'application/json-patch+json'],
       limit: config.maxJsonSize,
-    })
-  );
-  app.use(
-    raw({
-      type: '*/*',
-      limit: config.maxUploadSize,
     })
   );
   app.get('/', (req: Request, res: Response) => res.sendStatus(200));
