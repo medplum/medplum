@@ -69,10 +69,9 @@ export async function initApp(app: Express): Promise<Express> {
   const config = getConfig();
   app.set('trust proxy', true);
   app.set('x-powered-by', false);
-  app.use('/fhir/R4/Binary', [authenticateToken], binaryRouter);
-  app.set('json spaces', 2);
   app.use(cacheHandler);
   app.use(cors(corsOptions));
+  app.use('/fhir/R4/Binary', [authenticateToken], binaryRouter);
   app.use(
     urlencoded({
       extended: false,

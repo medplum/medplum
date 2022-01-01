@@ -82,4 +82,15 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
   });
+
+  test('Binary CORS', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'text/plain')
+      .set('Origin', 'https://www.example.com')
+      .send('Hello world');
+    expect(res.status).toBe(201);
+    expect(res.headers['access-control-allow-origin']).toBe('https://www.example.com');
+  });
 });
