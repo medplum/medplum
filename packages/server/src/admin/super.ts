@@ -26,7 +26,6 @@ superAdminRouter.post(
 
     await createValueSetElements();
     sendOutcome(res, allOk);
-    return;
   })
 );
 
@@ -46,7 +45,6 @@ superAdminRouter.post(
 
     await createStructureDefinitions();
     sendOutcome(res, allOk);
-    return;
   })
 );
 
@@ -73,6 +71,5 @@ superAdminRouter.post(
 
     const [reindexOutcome] = await systemRepo.reindexResourceType(resourceType);
     sendOutcome(res, reindexOutcome);
-    return;
   })
 );

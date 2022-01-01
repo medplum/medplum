@@ -56,7 +56,6 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
   );
 
   sendOutcome(res, allOk);
-  return;
 }
 
 /**
