@@ -13,7 +13,7 @@ const manyLinks: SidebarLink[] = new Array(50).fill(0).map((el, index) => ({
   href: '/link/' + index,
 }));
 
-export const Basic = (args: HeaderProps) => {
+export const Basic = (args: HeaderProps): JSX.Element => {
   const ctx = useMedplumContext();
   return (
     <Header

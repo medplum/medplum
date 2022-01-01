@@ -10,7 +10,7 @@ export interface DialogProps {
   onCancel: () => void;
 }
 
-export function Dialog(props: DialogProps) {
+export function Dialog(props: DialogProps): JSX.Element | null {
   const [x, setX] = useState(100);
   const [y, setY] = useState(100);
 
@@ -18,23 +18,23 @@ export function Dialog(props: DialogProps) {
     return null;
   }
 
-  function handleMouseDown(downEvent: React.MouseEvent) {
+  function handleMouseDown(downEvent: React.MouseEvent): void {
     killEvent(downEvent);
 
     const dragX = downEvent.clientX - x;
     const dragY = downEvent.clientY - y;
 
-    const handleMouseMove = (moveEvent: MouseEvent) => {
+    function handleMouseMove(moveEvent: MouseEvent): void {
       killEvent(moveEvent);
       setX(moveEvent.clientX - dragX);
       setY(moveEvent.clientY - dragY);
-    };
+    }
 
-    const handleMouseUp = (upEvent: MouseEvent) => {
+    function handleMouseUp(upEvent: MouseEvent): void {
       killEvent(upEvent);
       document.removeEventListener('mouseup', handleMouseUp, true);
       document.removeEventListener('mousemove', handleMouseMove, true);
-    };
+    }
 
     document.addEventListener('mouseup', handleMouseUp, true);
     document.addEventListener('mousemove', handleMouseMove, true);

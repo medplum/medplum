@@ -8,8 +8,8 @@ import { FormPage } from './FormPage';
 const medplum = new MockClient();
 
 describe('FormPage', () => {
-  const setup = (url: string) => {
-    return render(
+  function setup(url: string): void {
+    render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
           <Routes>
@@ -19,7 +19,7 @@ describe('FormPage', () => {
         </MemoryRouter>
       </MedplumProvider>
     );
-  };
+  }
 
   test('Not found', async () => {
     setup('/forms/not-found');

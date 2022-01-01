@@ -6,7 +6,7 @@ export interface TabSwitchProps {
   children: React.ReactNode;
 }
 
-export function TabSwitch(props: TabSwitchProps) {
+export function TabSwitch(props: TabSwitchProps): JSX.Element {
   return (
     <>
       {React.Children.map(props.children, (child) => {

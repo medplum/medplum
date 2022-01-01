@@ -11,7 +11,7 @@ export default {
   component: Tab,
 } as Meta;
 
-export const Basic = () => {
+export const Basic = (): JSX.Element => {
   const [value, setValue] = useState('item1');
   return (
     <>

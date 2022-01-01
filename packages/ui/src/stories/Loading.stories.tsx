@@ -8,7 +8,7 @@ export default {
   component: Loading,
 } as Meta;
 
-export const Example = () => (
+export const Example = (): JSX.Element => (
   <Document>
     <Loading />
   </Document>

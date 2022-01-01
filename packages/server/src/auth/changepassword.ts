@@ -11,11 +11,12 @@ export const changePasswordValidators = [
   body('newPassword').isLength({ min: 5 }).withMessage('Invalid password, must be at least 5 characters'),
 ];
 
-export async function changePasswordHandler(req: Request, res: Response) {
+export async function changePasswordHandler(req: Request, res: Response): Promise<void> {
   return authenticateToken(req, res, async () => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return sendOutcome(res, invalidRequest(errors));
+      sendOutcome(res, invalidRequest(errors));
+      return;
     }
 
     const [userOutcome, user] = await systemRepo.readResource<User>('User', res.locals.user);
@@ -27,7 +28,7 @@ export async function changePasswordHandler(req: Request, res: Response) {
       newPassword: req.body.newPassword,
     });
 
-    return sendOutcome(res, outcome);
+    sendOutcome(res, outcome);
   });
 }
 

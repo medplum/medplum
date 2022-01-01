@@ -1,19 +1,19 @@
 import { Button, Document, Form, FormSection, TextField, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
 
-export function SuperAdminPage() {
+export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();
   const [resourceType, setResourceType] = useState('');
 
-  function rebuildStructureDefinitions() {
+  function rebuildStructureDefinitions(): void {
     medplum.post('admin/super/structuredefinitions', {}).then(() => alert('Done'));
   }
 
-  function rebuildValueSets() {
+  function rebuildValueSets(): void {
     medplum.post('admin/super/valuesets', {}).then(() => alert('Done'));
   }
 
-  function reindexResourceType() {
+  function reindexResourceType(): void {
     medplum.post('admin/super/reindex', { resourceType }).then(() => alert('Done'));
   }
 

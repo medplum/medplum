@@ -7,7 +7,7 @@ import { MedplumProvider } from './MedplumProvider';
 
 const medplum = new MockClient();
 
-function setup(props?: HeaderProps) {
+function setup(props?: HeaderProps): void {
   render(
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>

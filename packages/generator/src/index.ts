@@ -28,7 +28,7 @@ const structureDefinitions = { types: {} } as IndexedStructureDefinition;
 const fhirTypes: FhirType[] = [];
 const fhirTypesMap: Record<string, FhirType> = {};
 
-export function main() {
+export function main(): void {
   buildStructureDefinitions('profiles-types.json');
   buildStructureDefinitions('profiles-resources.json');
   buildStructureDefinitions('profiles-medplum.json');
@@ -78,7 +78,7 @@ function buildStructureDefinitions(fileName: string): void {
       resource.name !== 'MetadataResource' &&
       !isLowerCase(resource.name[0])
     ) {
-      indexStructureDefinition(resource, structureDefinitions);
+      indexStructureDefinition(structureDefinitions, resource);
     }
   }
 }

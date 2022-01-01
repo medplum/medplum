@@ -13,7 +13,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { PatientHeader } from './PatientHeader';
 import { getPatient } from './utils';
 
-export function FormPage() {
+export function FormPage(): JSX.Element {
   const navigate = useNavigate();
   const { id } = useParams() as { id: string };
   const location = useLocation();

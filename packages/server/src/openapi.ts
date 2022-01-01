@@ -15,9 +15,9 @@ type SchemaMap = { [schema: string]: SchemaObject | ReferenceObject };
 
 let cachedSpec: any;
 
-export const openApiHandler = (req: Request, res: Response) => {
+export function openApiHandler(req: Request, res: Response): void {
   res.status(200).json(getSpec());
-};
+}
 
 function getSpec(): any {
   if (!cachedSpec) {

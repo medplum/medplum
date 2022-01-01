@@ -37,19 +37,22 @@ export const registerValidators = [
   body('recaptchaToken').notEmpty().withMessage('Recaptcha token is required'),
 ];
 
-export async function registerHandler(req: Request, res: Response) {
+export async function registerHandler(req: Request, res: Response): Promise<void> {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return sendOutcome(res, invalidRequest(errors));
+    sendOutcome(res, invalidRequest(errors));
+    return;
   }
 
   const { email, password } = req.body;
   if (await searchForExisting(email)) {
-    return sendOutcome(res, badRequest('Email already registered', 'email'));
+    sendOutcome(res, badRequest('Email already registered', 'email'));
+    return;
   }
 
   if (!(await verifyRecaptcha(req.body.recaptchaToken))) {
-    return sendOutcome(res, badRequest('Recaptcha failed'));
+    sendOutcome(res, badRequest('Recaptcha failed'));
+    return;
   }
 
   const result = await registerNew(req.body as RegisterRequest);
@@ -67,7 +70,7 @@ export async function registerHandler(req: Request, res: Response) {
   const [tokenOutcome, token] = await getAuthTokens(login as Login);
   assertOk(tokenOutcome);
 
-  return res.status(200).json({
+  res.status(200).json({
     ...token,
     project: result.project && createReference(result.project),
     profile: result.profile && createReference(result.profile),

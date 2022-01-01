@@ -7,7 +7,7 @@ export interface HumanNameInputProps {
   onChange?: (value: HumanName) => void;
 }
 
-export function HumanNameInput(props: HumanNameInputProps) {
+export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
   const [value, setValue] = useState<HumanName | undefined>(props.defaultValue);
 
   const valueRef = useRef<HumanName>();
@@ -20,32 +20,32 @@ export function HumanNameInput(props: HumanNameInputProps) {
     }
   }
 
-  function setUse(use: string) {
+  function setUse(use: string): void {
     setValueWrapper({ ...valueRef.current, use: use ? use : undefined });
   }
 
-  function setPrefix(prefix: string) {
+  function setPrefix(prefix: string): void {
     setValueWrapper({
       ...valueRef.current,
       prefix: prefix ? prefix.split(' ') : undefined,
     });
   }
 
-  function setGiven(given: string) {
+  function setGiven(given: string): void {
     setValueWrapper({
       ...valueRef.current,
       given: given ? given.split(' ') : undefined,
     });
   }
 
-  function setFamily(family: string) {
+  function setFamily(family: string): void {
     setValueWrapper({
       ...valueRef.current,
       family: family ? family : undefined,
     });
   }
 
-  function setSuffix(suffix: string) {
+  function setSuffix(suffix: string): void {
     setValueWrapper({
       ...valueRef.current,
       suffix: suffix ? suffix.split(' ') : undefined,

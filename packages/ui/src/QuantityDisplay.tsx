@@ -5,7 +5,7 @@ export interface QuantityDisplayProps {
   value?: Quantity;
 }
 
-export function QuantityDisplay(props: QuantityDisplayProps) {
+export function QuantityDisplay(props: QuantityDisplayProps): JSX.Element | null {
   const value = props.value;
   if (!value) {
     return null;

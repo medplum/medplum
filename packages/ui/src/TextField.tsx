@@ -18,7 +18,7 @@ export interface TextFieldProps {
   testid?: string;
 }
 
-export function TextField(props: TextFieldProps) {
+export function TextField(props: TextFieldProps): JSX.Element {
   const className = props.size || '';
   const issues = getIssuesForExpression(props.outcome, props.name);
   const invalid = issues && issues.length > 0;
@@ -54,7 +54,7 @@ export interface SelectProps {
   outcome?: OperationOutcome;
 }
 
-export function Select(props: SelectProps) {
+export function Select(props: SelectProps): JSX.Element {
   const className = props.size || '';
   const issues = getIssuesForExpression(props.outcome, props.name);
   const invalid = issues && issues.length > 0;

@@ -3,7 +3,7 @@ import { OperationOutcome } from '@medplum/fhirtypes';
 import { Button, Document, Form, FormSection, Logo, TextField, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
 
-export function RegisterPage() {
+export function RegisterPage(): JSX.Element {
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [success, setSuccess] = useState(false);

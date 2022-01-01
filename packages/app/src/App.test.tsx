@@ -7,15 +7,15 @@ import { App } from './App';
 
 const medplum = new MockClient();
 
-const setup = () => {
-  return render(
+function setup(): void {
+  render(
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>
         <App />
       </MedplumProvider>
     </MemoryRouter>
   );
-};
+}
 
 describe('App', () => {
   test('Renders', async () => {

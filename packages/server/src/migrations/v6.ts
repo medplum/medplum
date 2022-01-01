@@ -5,7 +5,7 @@
 
 import { PoolClient } from 'pg';
 
-export async function run(client: PoolClient) {
+export async function run(client: PoolClient): Promise<void> {
   await client.query(`CREATE TABLE IF NOT EXISTS "AccessPolicy" (
     "id" UUID NOT NULL PRIMARY KEY,
     "content" TEXT NOT NULL,

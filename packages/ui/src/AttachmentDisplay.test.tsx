@@ -27,13 +27,13 @@ const medplum = new MedplumClient({
   fetch: mockFetch,
 });
 
-const setup = (args?: AttachmentDisplayProps) => {
-  return render(
+function setup(args?: AttachmentDisplayProps): void {
+  render(
     <MedplumProvider medplum={medplum}>
       <AttachmentDisplay {...args} />
     </MedplumProvider>
   );
-};
+}
 
 describe('AttachmentDisplay', () => {
   beforeAll(async () => {

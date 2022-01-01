@@ -20,7 +20,7 @@ export interface AddressInputProps {
   onChange?: (value: Address) => void;
 }
 
-export function AddressInput(props: AddressInputProps) {
+export function AddressInput(props: AddressInputProps): JSX.Element {
   const [value, setValue] = useState<Address>(props.defaultValue || {});
 
   const valueRef = useRef<Address>();
@@ -33,31 +33,31 @@ export function AddressInput(props: AddressInputProps) {
     }
   }
 
-  function setUse(use: string) {
+  function setUse(use: string): void {
     setValueWrapper({ ...valueRef.current, use });
   }
 
-  function setType(type: string) {
+  function setType(type: string): void {
     setValueWrapper({ ...valueRef.current, type });
   }
 
-  function setLine1(line1: string) {
+  function setLine1(line1: string): void {
     setValueWrapper(setLine(valueRef.current || {}, 0, line1));
   }
 
-  function setLine2(line2: string) {
+  function setLine2(line2: string): void {
     setValueWrapper(setLine(valueRef.current || {}, 1, line2));
   }
 
-  function setCity(city: string) {
+  function setCity(city: string): void {
     setValueWrapper({ ...valueRef.current, city });
   }
 
-  function setState(state: string) {
+  function setState(state: string): void {
     setValueWrapper({ ...valueRef.current, state });
   }
 
-  function setPostalCode(postalCode: string) {
+  function setPostalCode(postalCode: string): void {
     setValueWrapper({ ...valueRef.current, postalCode });
   }
 

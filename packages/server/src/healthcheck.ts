@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { getClient } from './database';
 import { getRedis } from './redis';
 
-export async function healthcheckHandler(req: Request, res: Response) {
+export async function healthcheckHandler(req: Request, res: Response): Promise<void> {
   res.json({
     ok: true,
     postgres: await testPostgres(),

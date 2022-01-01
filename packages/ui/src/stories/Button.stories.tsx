@@ -8,31 +8,31 @@ export default {
   component: Button,
 } as Meta;
 
-export const Primary = () => (
+export const Primary = (): JSX.Element => (
   <Document>
     <Button primary={true}>Button</Button>
   </Document>
 );
 
-export const Secondary = () => (
+export const Secondary = (): JSX.Element => (
   <Document>
     <Button>Button</Button>
   </Document>
 );
 
-export const Danger = () => (
+export const Danger = (): JSX.Element => (
   <Document>
     <Button danger={true}>Button</Button>
   </Document>
 );
 
-export const Large = () => (
+export const Large = (): JSX.Element => (
   <Document>
     <Button size="large">Button</Button>
   </Document>
 );
 
-export const Small = () => (
+export const Small = (): JSX.Element => (
   <Document>
     <Button size="small">Button</Button>
   </Document>

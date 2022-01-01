@@ -8,25 +8,25 @@ export default {
   component: TextField,
 } as Meta;
 
-export const Basic = () => (
+export const Basic = (): JSX.Element => (
   <Document>
     <TextField />
   </Document>
 );
 
-export const DefaultValue = () => (
+export const DefaultValue = (): JSX.Element => (
   <Document>
     <TextField defaultValue="Hello world" />
   </Document>
 );
 
-export const Small = () => (
+export const Small = (): JSX.Element => (
   <Document>
     <TextField size="small" defaultValue="Small" />
   </Document>
 );
 
-export const Large = () => (
+export const Large = (): JSX.Element => (
   <Document>
     <TextField size="large" defaultValue="Large" />
   </Document>

@@ -10,7 +10,7 @@ export interface MedplumLinkProps {
   children: React.ReactNode;
 }
 
-export function MedplumLink(props: MedplumLinkProps) {
+export function MedplumLink(props: MedplumLinkProps): JSX.Element {
   const navigate = useNavigate();
 
   let href = '#';

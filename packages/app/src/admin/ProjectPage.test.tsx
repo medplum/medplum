@@ -7,7 +7,7 @@ import { ProjectPage } from './ProjectPage';
 
 const medplum = new MockClient();
 
-const setup = (url: string) => {
+function setup(url: string): void {
   render(
     <MedplumProvider medplum={medplum}>
       <MemoryRouter initialEntries={[url]} initialIndex={0}>
@@ -17,7 +17,7 @@ const setup = (url: string) => {
       </MemoryRouter>
     </MedplumProvider>
   );
-};
+}
 
 describe('ProjectPage', () => {
   test('Renders', async () => {

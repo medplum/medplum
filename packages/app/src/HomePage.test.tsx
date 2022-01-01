@@ -5,9 +5,9 @@ import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { getDefaultSearchForResourceType, HomePage } from './HomePage';
 
-const setup = (url = '/Patient') => {
+function setup(url = '/Patient'): void {
   const medplum = new MockClient();
-  return render(
+  render(
     <MedplumProvider medplum={medplum}>
       <MemoryRouter initialEntries={[url]} initialIndex={0}>
         <Routes>
@@ -19,7 +19,7 @@ const setup = (url = '/Patient') => {
       </MemoryRouter>
     </MedplumProvider>
   );
-};
+}
 
 describe('HomePage', () => {
   test('Renders default page', async () => {

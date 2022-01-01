@@ -146,7 +146,7 @@ export class ConcatAtom implements Atom {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
     const result: any[] = [];
-    const add = (value: any) => {
+    function add(value: any): void {
       if (value) {
         if (Array.isArray(value)) {
           result.push(...value);
@@ -154,7 +154,7 @@ export class ConcatAtom implements Atom {
           result.push(value);
         }
       }
-    };
+    }
     add(leftValue);
     add(rightValue);
     if (result.every((e) => typeof e === 'string')) {
@@ -201,7 +201,7 @@ export class DotAtom implements Atom {
   eval(context: any): Atom {
     return this.right.eval(this.left.eval(context));
   }
-  toString() {
+  toString(): string {
     return this.left.toString() + '.' + this.right.toString();
   }
 }

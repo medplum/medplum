@@ -16,7 +16,7 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly onChange?: (value: T | undefined) => void;
 }
 
-export function ResourceInput<T extends Resource = Resource>(props: ResourceInputProps<T>) {
+export function ResourceInput<T extends Resource = Resource>(props: ResourceInputProps<T>): JSX.Element {
   const medplum = useMedplum();
   const defaultResource = useResource(props.defaultValue);
   const [value, setValue] = useState<T>();

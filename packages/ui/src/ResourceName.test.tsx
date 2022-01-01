@@ -9,15 +9,15 @@ import { ResourceName, ResourceNameProps } from './ResourceName';
 const medplum = new MockClient();
 
 describe('ResourceName', () => {
-  const setup = (args: ResourceNameProps) => {
-    return render(
+  function setup(args: ResourceNameProps): void {
+    render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <ResourceName {...args} />
         </MedplumProvider>
       </MemoryRouter>
     );
-  };
+  }
 
   test('Renders system', () => {
     setup({ value: { reference: 'system' } });

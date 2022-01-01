@@ -5,6 +5,6 @@ export interface TabPanelProps {
   children: React.ReactNode;
 }
 
-export function TabPanel(props: TabPanelProps) {
+export function TabPanel(props: TabPanelProps): JSX.Element {
   return <div role="tabpanel">{props.children}</div>;
 }

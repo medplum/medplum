@@ -7,31 +7,31 @@ export interface ContactPointInputProps {
   onChange?: (value: ContactPoint) => void;
 }
 
-export function ContactPointInput(props: ContactPointInputProps) {
+export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
   const [contactPoint, setContactPoint] = useState(props.defaultValue);
 
   const ref = useRef<ContactPoint>();
   ref.current = contactPoint;
 
-  function setContactPointWrapper(newValue: ContactPoint) {
+  function setContactPointWrapper(newValue: ContactPoint): void {
     setContactPoint(newValue);
     if (props.onChange) {
       props.onChange(newValue);
     }
   }
 
-  function setSystem(system: string) {
+  function setSystem(system: string): void {
     setContactPointWrapper({
       ...ref.current,
       system: system ? system : undefined,
     });
   }
 
-  function setUse(use: string) {
+  function setUse(use: string): void {
     setContactPointWrapper({ ...ref.current, use: use ? use : undefined });
   }
 
-  function setValue(value: string) {
+  function setValue(value: string): void {
     setContactPointWrapper({
       ...ref.current,
       value: value ? value : undefined,

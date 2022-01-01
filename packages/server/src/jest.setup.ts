@@ -26,7 +26,7 @@ export async function createTestClient(): Promise<ClientApplication> {
   return client as ClientApplication;
 }
 
-export async function initTestAuth() {
+export async function initTestAuth(): Promise<string> {
   const client = await createTestClient();
   const scope = 'openid';
 

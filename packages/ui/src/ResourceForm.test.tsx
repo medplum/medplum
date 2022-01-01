@@ -8,8 +8,8 @@ import { ResourceForm, ResourceFormProps } from './ResourceForm';
 const medplum = new MockClient();
 
 describe('ResourceForm', () => {
-  function setup(props: ResourceFormProps) {
-    return render(
+  function setup(props: ResourceFormProps): void {
+    render(
       <MedplumProvider medplum={medplum}>
         <ResourceForm {...props} />
       </MedplumProvider>

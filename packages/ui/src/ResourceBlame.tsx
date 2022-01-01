@@ -13,7 +13,7 @@ export interface ResourceBlameProps {
   id?: string;
 }
 
-export function ResourceBlame(props: ResourceBlameProps) {
+export function ResourceBlame(props: ResourceBlameProps): JSX.Element {
   const medplum = useMedplum();
   const [value, setValue] = useState<Bundle | undefined>(props.history);
 

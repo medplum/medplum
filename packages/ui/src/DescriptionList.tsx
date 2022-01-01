@@ -6,7 +6,7 @@ export interface DescriptionListProps {
   compact?: boolean;
 }
 
-export function DescriptionList(props: DescriptionListProps) {
+export function DescriptionList(props: DescriptionListProps): JSX.Element {
   return <dl className={'medplum-description-list' + (props.compact ? ' compact' : '')}>{props.children}</dl>;
 }
 
@@ -15,7 +15,7 @@ export interface DescriptionListEntryProps {
   children: React.ReactNode;
 }
 
-export function DescriptionListEntry(props: DescriptionListEntryProps) {
+export function DescriptionListEntry(props: DescriptionListEntryProps): JSX.Element {
   return (
     <>
       <dt>{props.term}</dt>

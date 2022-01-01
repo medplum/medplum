@@ -2,7 +2,7 @@ import { assertOk, badRequest, createReference, ProfileResource } from '@medplum
 import { Login, Project, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { invalidRequest, systemRepo, sendOutcome } from '../fhir';
+import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { getUserMemberships } from '../oauth';
 
 export const profileValidators = [
@@ -10,32 +10,37 @@ export const profileValidators = [
   body('profile').exists().withMessage('Missing profile'),
 ];
 
-export async function profileHandler(req: Request, res: Response) {
+export async function profileHandler(req: Request, res: Response): Promise<void> {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return sendOutcome(res, invalidRequest(errors));
+    sendOutcome(res, invalidRequest(errors));
+    return;
   }
 
   const [loginOutcome, login] = await systemRepo.readResource<Login>('Login', req.body.login);
   assertOk(loginOutcome);
 
   if (login?.revoked) {
-    return sendOutcome(res, badRequest('Login revoked'));
+    sendOutcome(res, badRequest('Login revoked'));
+    return;
   }
 
   if (login?.granted) {
-    return sendOutcome(res, badRequest('Login granted'));
+    sendOutcome(res, badRequest('Login granted'));
+    return;
   }
 
   if (login?.project || login?.profile) {
-    return sendOutcome(res, badRequest('Login profile set'));
+    sendOutcome(res, badRequest('Login profile set'));
+    return;
   }
 
   // Find the membership for the user
   const memberships = await getUserMemberships(login?.user as Reference<User>);
   const membership = memberships.find((m) => m.id === req.body.profile);
   if (!membership) {
-    return sendOutcome(res, badRequest('Profile not found'));
+    sendOutcome(res, badRequest('Profile not found'));
+    return;
   }
 
   // Get up-to-date project and profile
@@ -56,7 +61,7 @@ export async function profileHandler(req: Request, res: Response) {
   });
   assertOk(updateOutcome);
 
-  return res.status(200).json({
+  res.status(200).json({
     login: login?.id,
     code: login?.code,
   });

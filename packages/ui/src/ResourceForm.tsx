@@ -15,7 +15,7 @@ export interface ResourceFormProps {
   onDelete?: (resource: Resource) => void;
 }
 
-export function ResourceForm(props: ResourceFormProps) {
+export function ResourceForm(props: ResourceFormProps): JSX.Element {
   const medplum = useMedplum();
   const defaultValue = useResource(props.defaultValue);
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();

@@ -313,7 +313,7 @@ class BatchProcessor {
     return Object.fromEntries(Object.entries(input).map(([k, v]) => [k, this.rewriteIds(v)]));
   }
 
-  private rewriteIdsInString(input: string) {
+  private rewriteIdsInString(input: string): string {
     const resource = this.ids[input];
     return resource ? getReferenceString(resource) : input;
   }

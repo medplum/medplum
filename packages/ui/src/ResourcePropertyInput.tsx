@@ -29,7 +29,7 @@ export interface ResourcePropertyInputProps {
   outcome?: OperationOutcome;
 }
 
-export function ResourcePropertyInput(props: ResourcePropertyInputProps) {
+export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.Element {
   const property = props.property;
   const propertyType = props.defaultPropertyType ?? (property.type?.[0]?.code as PropertyType);
   const name = props.name;

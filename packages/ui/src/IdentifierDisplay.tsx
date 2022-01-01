@@ -5,7 +5,7 @@ export interface IdentifierDisplayProps {
   value?: Identifier;
 }
 
-export function IdentifierDisplay(props: IdentifierDisplayProps) {
+export function IdentifierDisplay(props: IdentifierDisplayProps): JSX.Element {
   return (
     <div>
       {props.value?.system}: {props.value?.value}

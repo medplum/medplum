@@ -12,10 +12,10 @@ export interface AttachmentInputProps {
   onChange?: (value: Attachment | undefined) => void;
 }
 
-export function AttachmentInput(props: AttachmentInputProps) {
+export function AttachmentInput(props: AttachmentInputProps): JSX.Element {
   const [value, setValue] = useState(props.defaultValue);
 
-  function setValueWrapper(newValue: Attachment | undefined) {
+  function setValueWrapper(newValue: Attachment | undefined): void {
     setValue(newValue);
     if (props.onChange) {
       props.onChange(newValue);

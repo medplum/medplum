@@ -6,7 +6,7 @@ export interface DocumentProps {
   children?: React.ReactNode;
 }
 
-export function Document(props: DocumentProps) {
+export function Document(props: DocumentProps): JSX.Element {
   return (
     <main>
       <article style={{ maxWidth: props.width }}>{props.children}</article>

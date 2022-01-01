@@ -10,7 +10,7 @@ export default {
   component: SearchFieldEditor,
 } as Meta;
 
-export const Example = () => {
+export const Example = (): JSX.Element => {
   const [visible, setVisible] = useState<boolean>(false);
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Patient',

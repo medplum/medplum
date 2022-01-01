@@ -37,7 +37,7 @@ const medplum = new MedplumClient({
   clientId: process.env.MEDPLUM_CLIENT_ID,
 });
 
-function App() {
+function App(): JSX.Element {
   const profile = useMedplumProfile();
   return profile ? (
     <GraphiQL fetcher={async (graphQLParams) => medplum.graphql(graphQLParams)} defaultQuery={HELP_TEXT} />

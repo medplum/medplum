@@ -7,7 +7,7 @@ export interface ReferenceDisplayProps {
   value?: Reference;
 }
 
-export function ReferenceDisplay(props: ReferenceDisplayProps) {
+export function ReferenceDisplay(props: ReferenceDisplayProps): JSX.Element | null {
   if (!props.value) {
     return null;
   }

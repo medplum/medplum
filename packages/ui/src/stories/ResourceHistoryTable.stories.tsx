@@ -8,7 +8,7 @@ export default {
   component: ResourceHistoryTable,
 } as Meta;
 
-export const Basic = () => (
+export const Basic = (): JSX.Element => (
   <Document>
     <ResourceHistoryTable resourceType="Patient" id={process.env.SAMPLE_PATIENT_ID} />
   </Document>

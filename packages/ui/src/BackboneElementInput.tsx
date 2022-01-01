@@ -15,7 +15,7 @@ export interface BackboneElementInputProps {
   onChange?: (value: any) => void;
 }
 
-export function BackboneElementInput(props: BackboneElementInputProps) {
+export function BackboneElementInput(props: BackboneElementInputProps): JSX.Element {
   const [value, setValue] = useState<any>(props.defaultValue ?? {});
 
   function setValueWrapper(newValue: any): void {

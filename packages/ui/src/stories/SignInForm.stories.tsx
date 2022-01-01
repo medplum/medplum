@@ -10,7 +10,7 @@ export default {
   component: SignInForm,
 } as Meta;
 
-export function Basic() {
+export function Basic(): JSX.Element {
   const ctx = useMedplumContext();
   return (
     <>
@@ -26,7 +26,7 @@ export function Basic() {
   );
 }
 
-export function WithLinks() {
+export function WithLinks(): JSX.Element {
   const ctx = useMedplumContext();
   return (
     <>
@@ -46,7 +46,7 @@ export function WithLinks() {
   );
 }
 
-export function WithFooter() {
+export function WithFooter(): JSX.Element {
   const ctx = useMedplumContext();
   return (
     <>
@@ -73,7 +73,7 @@ export function WithFooter() {
   );
 }
 
-export function WithGoogle() {
+export function WithGoogle(): JSX.Element {
   const ctx = useMedplumContext();
   return (
     <>

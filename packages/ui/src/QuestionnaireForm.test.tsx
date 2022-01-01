@@ -1,15 +1,15 @@
 import { PropertyType } from '@medplum/core';
+import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import each from 'jest-each';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from '@medplum/mock';
 import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 import { QuestionnaireItemType } from './QuestionnaireUtils';
 
 const medplum = new MockClient();
 
-async function setup(args: QuestionnaireFormProps) {
+async function setup(args: QuestionnaireFormProps): Promise<void> {
   await act(async () => {
     render(
       <MedplumProvider medplum={medplum}>

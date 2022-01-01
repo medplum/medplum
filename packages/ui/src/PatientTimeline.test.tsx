@@ -9,15 +9,15 @@ import { PatientTimeline, PatientTimelineProps } from './PatientTimeline';
 const medplum = new MockClient();
 
 describe('PatientTimeline', () => {
-  const setup = (args: PatientTimelineProps) => {
-    return render(
+  function setup(args: PatientTimelineProps): void {
+    render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <PatientTimeline {...args} />
         </MedplumProvider>
       </MemoryRouter>
     );
-  };
+  }
 
   test('Renders reference', async () => {
     setup({ patient: createReference(HomerSimpson) });

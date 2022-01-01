@@ -18,7 +18,7 @@ class MedplumStack extends cdk.Stack {
   }
 }
 
-export function main() {
+export function main(): void {
   const app = new cdk.App();
 
   const stack = new MedplumStack(app, 'MedplumStack', {
@@ -33,7 +33,7 @@ export function main() {
   console.log('FrontEnd', stack.frontEnd.id);
   console.log('Storage', stack.storage.id);
 
-  return app.synth();
+  app.synth();
 }
 
 main();

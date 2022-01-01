@@ -8,7 +8,7 @@ import { SignInPage } from './SignInPage';
 const medplum = new MockClient();
 
 describe('SignInPage', () => {
-  const setup = () => {
+  function setup(): void {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
@@ -16,7 +16,7 @@ describe('SignInPage', () => {
         </MedplumProvider>
       </MemoryRouter>
     );
-  };
+  }
 
   test('Renders', async () => {
     setup();

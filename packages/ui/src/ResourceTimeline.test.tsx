@@ -37,8 +37,8 @@ function buildEncounterSearch(encounter: Resource): Bundle {
 }
 
 describe('ResourceTimeline', () => {
-  function setup<T extends Resource>(args: ResourceTimelineProps<T>) {
-    return render(
+  function setup<T extends Resource>(args: ResourceTimelineProps<T>): void {
+    render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <ResourceTimeline {...args} />

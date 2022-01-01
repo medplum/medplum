@@ -11,7 +11,7 @@ export interface ResourceHistoryTableProps {
   id?: string;
 }
 
-export function ResourceHistoryTable(props: ResourceHistoryTableProps) {
+export function ResourceHistoryTable(props: ResourceHistoryTableProps): JSX.Element {
   const medplum = useMedplum();
   const [value, setValue] = useState<Bundle | undefined>(props.history);
 
@@ -47,7 +47,7 @@ interface HistoryRowProps {
   version: Resource;
 }
 
-function HistoryRow(props: HistoryRowProps) {
+function HistoryRow(props: HistoryRowProps): JSX.Element {
   return (
     <tr>
       <td>
@@ -61,6 +61,6 @@ function HistoryRow(props: HistoryRowProps) {
   );
 }
 
-function getVersionUrl(resource: Resource) {
+function getVersionUrl(resource: Resource): string {
   return `/${resource.resourceType}/${resource.id}/_history/${resource.meta?.versionId}`;
 }

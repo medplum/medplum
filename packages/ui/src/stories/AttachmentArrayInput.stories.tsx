@@ -8,13 +8,13 @@ export default {
   component: AttachmentArrayInput,
 } as Meta;
 
-export const Basic = () => (
+export const Basic = (): JSX.Element => (
   <Document>
     <AttachmentArrayInput name="photo" />
   </Document>
 );
 
-export const DefaultValue = () => (
+export const DefaultValue = (): JSX.Element => (
   <Document>
     <AttachmentArrayInput name="photo" defaultValue={[{}]} />
   </Document>

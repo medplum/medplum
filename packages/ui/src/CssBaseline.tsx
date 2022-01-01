@@ -1,5 +1,5 @@
 import './CssBaseline.css';
 
-export function CssBaseline() {
+export function CssBaseline(): null {
   return null;
 }

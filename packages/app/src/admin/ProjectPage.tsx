@@ -1,7 +1,7 @@
 import { Document, Loading, MedplumLink, ResourceBadge, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 
-export function ProjectPage() {
+export function ProjectPage(): JSX.Element {
   const medplum = useMedplum();
   const id = medplum.getActiveLogin()?.project?.reference?.split('/')?.[1] as string;
   const [loading, setLoading] = useState<boolean>(true);

@@ -5,7 +5,7 @@ export interface ContactPointDisplayProps {
   value?: ContactPoint;
 }
 
-export function ContactPointDisplay(props: ContactPointDisplayProps) {
+export function ContactPointDisplay(props: ContactPointDisplayProps): JSX.Element | null {
   const contactPoint = props.value;
   if (!contactPoint) {
     return null;

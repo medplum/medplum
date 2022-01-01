@@ -24,7 +24,7 @@ export interface ResourcePropertyDisplayProps {
   ignoreMissingValues?: boolean;
 }
 
-export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps) {
+export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JSX.Element {
   const { property, propertyType, value } = props;
 
   if (property.max === '*' && !props.arrayElement) {

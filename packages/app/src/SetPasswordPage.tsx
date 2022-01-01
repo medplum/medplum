@@ -3,7 +3,7 @@ import { Button, Document, Form, FormSection, Logo, MedplumLink, TextField, useM
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
-export function SetPasswordPage() {
+export function SetPasswordPage(): JSX.Element {
   const { id, secret } = useParams() as { id: string; secret: string };
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome>();

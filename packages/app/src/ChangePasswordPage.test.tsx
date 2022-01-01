@@ -6,18 +6,18 @@ import { ChangePasswordPage } from './ChangePasswordPage';
 
 const medplum = new MockClient();
 
-const setup = () => {
-  return render(
+function setup(): void {
+  render(
     <MedplumProvider medplum={medplum}>
       <ChangePasswordPage />
     </MedplumProvider>
   );
-};
+}
 
 describe('ChangePasswordPage', () => {
   test('Renders', () => {
-    const utils = setup();
-    const input = utils.getByTestId('submit') as HTMLButtonElement;
+    setup();
+    const input = screen.getByTestId('submit') as HTMLButtonElement;
     expect(input.innerHTML).toBe('Change password');
   });
 

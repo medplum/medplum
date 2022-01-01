@@ -8,7 +8,7 @@ export interface TabListProps {
   children: React.ReactNode;
 }
 
-export function TabList(props: TabListProps) {
+export function TabList(props: TabListProps): JSX.Element {
   return (
     <div role="tablist" className="medplum-tablist">
       <div className="medplum-tablist-background"></div>

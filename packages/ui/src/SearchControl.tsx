@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
-import './SearchControl.css';
 import { SearchFieldEditor } from './SearchFieldEditor';
 import { SearchFilterEditor } from './SearchFilterEditor';
 import { SearchFilterValueDisplay } from './SearchFilterValueDisplay';
@@ -12,6 +11,7 @@ import { SearchPopupMenu } from './SearchPopupMenu';
 import { buildFieldNameString, getOpString, movePage, renderValue } from './SearchUtils';
 import { TitleBar } from './TitleBar';
 import { killEvent } from './utils/dom';
+import './SearchControl.css';
 
 export class SearchChangeEvent extends Event {
   readonly definition: SearchRequest;
@@ -70,7 +70,7 @@ interface SearchControlState {
  * It includes the table, rows, headers, sorting, etc.
  * It does not include the field editor, filter editor, pagination buttons.
  */
-export function SearchControl(props: SearchControlProps) {
+export function SearchControl(props: SearchControlProps): JSX.Element {
   const medplum = useMedplum();
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
@@ -88,7 +88,7 @@ export function SearchControl(props: SearchControlProps) {
   const stateRef = useRef<SearchControlState>(state);
   stateRef.current = state;
 
-  function requestResources() {
+  function requestResources(): void {
     setOutcome(undefined);
     medplum
       .search(props.search)

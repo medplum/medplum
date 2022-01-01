@@ -7,7 +7,7 @@ export interface AttachmentArrayDisplayProps {
   maxWidth?: number;
 }
 
-export function AttachmentArrayDisplay(props: AttachmentArrayDisplayProps) {
+export function AttachmentArrayDisplay(props: AttachmentArrayDisplayProps): JSX.Element {
   return (
     <div>
       {props.values &&

@@ -24,7 +24,7 @@ const accessPolicyProperty: ElementDefinition = {
   ],
 };
 
-export function EditMembershipPage() {
+export function EditMembershipPage(): JSX.Element {
   const { projectId, membershipId } = useParams();
   const medplum = useMedplum();
   const [loading, setLoading] = useState<boolean>(true);

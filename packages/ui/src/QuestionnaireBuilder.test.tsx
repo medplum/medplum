@@ -7,7 +7,7 @@ import { QuestionnaireItemType } from './QuestionnaireUtils';
 
 const medplum = new MockClient();
 
-async function setup(args: QuestionnaireBuilderProps) {
+async function setup(args: QuestionnaireBuilderProps): Promise<void> {
   await act(async () => {
     render(
       <MedplumProvider medplum={medplum}>

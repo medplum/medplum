@@ -9,15 +9,15 @@ import { MedplumProvider } from './MedplumProvider';
 const medplum = new MockClient();
 
 describe('DefaultResourceTimeline', () => {
-  const setup = (args: DefaultResourceTimelineProps) => {
-    return render(
+  function setup(args: DefaultResourceTimelineProps): void {
+    render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <DefaultResourceTimeline {...args} />
         </MedplumProvider>
       </MemoryRouter>
     );
-  };
+  }
 
   test('Renders reference', async () => {
     setup({ resource: createReference(ExampleSubscription) });

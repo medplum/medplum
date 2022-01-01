@@ -9,7 +9,7 @@ export default {
   component: FormSection,
 } as Meta;
 
-export const Basic = () => (
+export const Basic = (): JSX.Element => (
   <Document>
     <FormSection title="Name" description="Friendly name description">
       <TextField name="name" defaultValue="John Smith" />
@@ -17,7 +17,7 @@ export const Basic = () => (
   </Document>
 );
 
-export const DefaultValue = () => (
+export const DefaultValue = (): JSX.Element => (
   <Document>
     <FormSection title="Name" description="Friendly name description">
       <TextField name="name" defaultValue="John Smith" />

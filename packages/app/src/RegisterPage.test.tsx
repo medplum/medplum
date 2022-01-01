@@ -9,15 +9,15 @@ import { RegisterPage } from './RegisterPage';
 
 const medplum = new MockClient();
 
-const setup = () => {
-  return render(
+function setup(): void {
+  render(
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>
         <RegisterPage />
       </MedplumProvider>
     </MemoryRouter>
   );
-};
+}
 
 describe('RegisterPage', () => {
   beforeAll(() => {
@@ -42,8 +42,8 @@ describe('RegisterPage', () => {
   });
 
   test('Renders', () => {
-    const utils = setup();
-    const input = utils.getByTestId('submit') as HTMLButtonElement;
+    setup();
+    const input = screen.getByTestId('submit') as HTMLButtonElement;
     expect(input.innerHTML).toBe('Create account');
   });
 

@@ -9,13 +9,13 @@ import { SubMenu } from './SubMenu';
 
 const medplum = new MockClient();
 
-const setup = (children: React.ReactNode) => {
-  return render(
+function setup(children: React.ReactNode): void {
+  render(
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
     </MemoryRouter>
   );
-};
+}
 
 describe('SubMenu', () => {
   beforeEach(() => {

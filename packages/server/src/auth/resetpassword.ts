@@ -4,15 +4,16 @@ import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { getConfig } from '../config';
 import { sendEmail } from '../email';
-import { invalidRequest, systemRepo, sendOutcome } from '../fhir';
+import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { generateSecret } from '../oauth';
 
 export const resetPasswordValidators = [body('email').isEmail().withMessage('Valid email address is required')];
 
-export async function resetPasswordHandler(req: Request, res: Response) {
+export async function resetPasswordHandler(req: Request, res: Response): Promise<void> {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return sendOutcome(res, invalidRequest(errors));
+    sendOutcome(res, invalidRequest(errors));
+    return;
   }
 
   const [existingOutcome, existingBundle] = await systemRepo.search<User>({
@@ -28,7 +29,8 @@ export async function resetPasswordHandler(req: Request, res: Response) {
   assertOk(existingOutcome);
 
   if (((existingBundle as Bundle).entry as BundleEntry[]).length === 0) {
-    return sendOutcome(res, badRequest('User not found', 'email'));
+    sendOutcome(res, badRequest('User not found', 'email'));
+    return;
   }
 
   const user = existingBundle?.entry?.[0]?.resource as User;
@@ -53,7 +55,7 @@ export async function resetPasswordHandler(req: Request, res: Response) {
     ].join('\n')
   );
 
-  return sendOutcome(res, allOk);
+  sendOutcome(res, allOk);
 }
 
 /**

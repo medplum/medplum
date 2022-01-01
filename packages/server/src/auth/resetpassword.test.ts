@@ -35,6 +35,13 @@ describe('Reset Password', () => {
     setupRecaptchaMock(fetch, true);
   });
 
+  test('Blank email address', async () => {
+    const res = await request(app).post('/auth/resetpassword').type('json').send({ email: '' });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Valid email address is required');
+    expect(res.body.issue[0].expression[0]).toBe('email');
+  });
+
   test('User not found', async () => {
     const res = await request(app)
       .post('/auth/resetpassword')

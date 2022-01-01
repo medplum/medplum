@@ -1,5 +1,5 @@
 import { HomerSimpsonHistory, MockClient } from '@medplum/mock';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
@@ -8,42 +8,42 @@ import { ResourceHistoryTable, ResourceHistoryTableProps } from './ResourceHisto
 const medplum = new MockClient();
 
 describe('ResourceHistoryTable', () => {
-  const setup = (args: ResourceHistoryTableProps) => {
-    return render(
+  function setup(args: ResourceHistoryTableProps): void {
+    render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <ResourceHistoryTable {...args} />
         </MedplumProvider>
       </MemoryRouter>
     );
-  };
+  }
 
   test('Renders', async () => {
-    const utils = setup({
+    setup({
       resourceType: 'Patient',
       id: '123',
     });
 
-    const el = await utils.findByText('Loading...');
+    const el = await screen.findByText('Loading...');
     expect(el).toBeDefined();
   });
 
   test('Renders preloaded history', async () => {
-    const utils = setup({
+    setup({
       history: HomerSimpsonHistory,
     });
 
-    const el = await utils.findByText('1');
+    const el = await screen.findByText('1');
     expect(el).toBeDefined();
   });
 
   test('Renders after loading the resource', async () => {
-    const utils = setup({
+    setup({
       resourceType: 'Patient',
       id: '123',
     });
 
-    const el = await utils.findByText('1');
+    const el = await screen.findByText('1');
     expect(el).toBeDefined();
   });
 });

@@ -11,7 +11,7 @@ interface ResourceArrayDisplayProps {
   ignoreMissingValues?: boolean;
 }
 
-export function ResourceArrayDisplay(props: ResourceArrayDisplayProps) {
+export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Element {
   const property = props.property;
   const values = props.values ?? [];
   const propertyType = property.type?.[0]?.code as PropertyType;

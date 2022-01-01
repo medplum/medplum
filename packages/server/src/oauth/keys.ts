@@ -86,7 +86,7 @@ const jwks: { keys: JWK[] } = { keys: [] };
 let signingKey: KeyLike | undefined;
 let signingKeyId: string | undefined;
 
-export async function initKeys(config: MedplumServerConfig) {
+export async function initKeys(config: MedplumServerConfig): Promise<void> {
   serverConfig = config;
 
   const issuer = serverConfig?.issuer;

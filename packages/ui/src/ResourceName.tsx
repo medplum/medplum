@@ -9,7 +9,7 @@ export interface ResourceNameProps {
   link?: boolean;
 }
 
-export function ResourceName(props: ResourceNameProps) {
+export function ResourceName(props: ResourceNameProps): JSX.Element | null {
   const resource = useResource(props.value);
   if (!resource) {
     return null;

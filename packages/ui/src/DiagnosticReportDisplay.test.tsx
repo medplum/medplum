@@ -65,15 +65,15 @@ const syntheaReport: DiagnosticReport = {
 const medplum = new MockClient();
 
 describe('DiagnosticReportDisplay', () => {
-  const setup = (args: DiagnosticReportDisplayProps) => {
-    return render(
+  function setup(args: DiagnosticReportDisplayProps): void {
+    render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <DiagnosticReportDisplay {...args} />
         </MedplumProvider>
       </MemoryRouter>
     );
-  };
+  }
 
   test('Renders by value', async () => {
     await act(async () => {

@@ -7,20 +7,20 @@ import { ResetPasswordPage } from './ResetPasswordPage';
 
 const medplum = new MockClient();
 
-const setup = () => {
-  return render(
+function setup(): void {
+  render(
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>
         <ResetPasswordPage />
       </MedplumProvider>
     </MemoryRouter>
   );
-};
+}
 
 describe('ResetPasswordPage', () => {
   test('Renders', () => {
-    const utils = setup();
-    const input = utils.getByTestId('submit') as HTMLButtonElement;
+    setup();
+    const input = screen.getByTestId('submit') as HTMLButtonElement;
     expect(input.innerHTML).toBe('Reset password');
   });
 

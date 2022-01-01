@@ -8,7 +8,7 @@ export interface ExtensionInputProps {
   onChange?: (value: Extension) => void;
 }
 
-export function ExtensionInput(props: ExtensionInputProps) {
+export function ExtensionInput(props: ExtensionInputProps): JSX.Element {
   return (
     <textarea
       data-testid="extension-input"

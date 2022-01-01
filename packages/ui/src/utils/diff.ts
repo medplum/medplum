@@ -146,7 +146,7 @@ function buildRevisions(startNode: PathNode, orig: string[], rev: string[]): Del
   return deltas;
 }
 
-function previousSnake(node: PathNode) {
+function previousSnake(node: PathNode): PathNode {
   if (node && !node.snake && node.prev) {
     return node.prev;
   }

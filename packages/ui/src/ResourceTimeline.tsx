@@ -33,7 +33,7 @@ export interface ResourceTimelineProps<T extends Resource> {
   createMedia?: (resource: T, operator: ProfileResource, attachment: Attachment) => Media;
 }
 
-export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProps<T>) {
+export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProps<T>): JSX.Element {
   const medplum = useMedplum();
   const sender = medplum.getProfile() as ProfileResource;
   const inputRef = useRef<HTMLInputElement>(null);
@@ -180,7 +180,7 @@ interface HistoryTimelineItemProps {
   version: Resource;
 }
 
-function HistoryTimelineItem(props: HistoryTimelineItemProps) {
+function HistoryTimelineItem(props: HistoryTimelineItemProps): JSX.Element {
   const previous = getPrevious(props.history, props.version);
   if (previous) {
     return (
@@ -210,7 +210,7 @@ interface CommunicationTimelineItemProps {
   communication: Communication;
 }
 
-function CommunicationTimelineItem(props: CommunicationTimelineItemProps) {
+function CommunicationTimelineItem(props: CommunicationTimelineItemProps): JSX.Element {
   return (
     <TimelineItem resource={props.communication} padding={true}>
       <p>{props.communication.payload?.[0]?.contentString}</p>
@@ -222,7 +222,7 @@ interface MediaTimelineItemProps {
   media: Media;
 }
 
-function MediaTimelineItem(props: MediaTimelineItemProps) {
+function MediaTimelineItem(props: MediaTimelineItemProps): JSX.Element {
   const contentType = props.media.content?.contentType;
   const padding = contentType && !contentType.startsWith('image/') && !contentType.startsWith('video/');
   return (
@@ -236,7 +236,7 @@ interface AuditEventTimelineItemProps {
   auditEvent: AuditEvent;
 }
 
-function AuditEventTimelineItem(props: AuditEventTimelineItemProps) {
+function AuditEventTimelineItem(props: AuditEventTimelineItemProps): JSX.Element {
   return (
     <TimelineItem resource={props.auditEvent} padding={true}>
       <pre>{stringify(props.auditEvent, true)}</pre>
@@ -248,7 +248,7 @@ interface DiagnosticReportTimelineItemProps {
   diagnosticReport: DiagnosticReport;
 }
 
-function DiagnosticReportTimelineItem(props: DiagnosticReportTimelineItemProps) {
+function DiagnosticReportTimelineItem(props: DiagnosticReportTimelineItemProps): JSX.Element {
   return (
     <TimelineItem resource={props.diagnosticReport} padding={true}>
       <DiagnosticReportDisplay value={props.diagnosticReport} />

@@ -11,7 +11,7 @@ interface SearchFieldEditorProps {
   onCancel: () => void;
 }
 
-export function SearchFieldEditor(props: SearchFieldEditorProps) {
+export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | null {
   const [state, setState] = useState({
     search: JSON.parse(stringify(props.search)) as SearchRequest,
   });
@@ -29,7 +29,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    *
    * @param {KeyboardEvent} e The keyboard event.
    */
-  function handleAvailableKeyDown(e: React.KeyboardEvent) {
+  function handleAvailableKeyDown(e: React.KeyboardEvent): void {
     if (e.key === 'Enter') {
       onAddField();
     }
@@ -39,7 +39,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    * Handles a double click on the "available" field.
    * If the user double clicks an entry, it is a shortcut for the "Add" button.
    */
-  function handleAvailableDoubleClick() {
+  function handleAvailableDoubleClick(): void {
     onAddField();
   }
 
@@ -49,7 +49,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    *
    * @param {KeyboardEvent} e The keyboard event.
    */
-  function handleSelectedKeyDown(e: React.KeyboardEvent) {
+  function handleSelectedKeyDown(e: React.KeyboardEvent): void {
     if (e.key === 'Enter') {
       onRemoveField();
     }
@@ -59,7 +59,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    * Handles a double click on the "available" field.
    * If the user double clicks an entry, it is a shortcut for the "Add" button.
    */
-  function handleSelectedDoubleClick() {
+  function handleSelectedDoubleClick(): void {
     onRemoveField();
   }
 
@@ -67,7 +67,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    * Handles a click on the "Add" button.
    * Moves the "available" selection into the "selected" list.
    */
-  function onAddField() {
+  function onAddField(): void {
     const currentField = state.search.fields ?? [];
     const key = availableRef.current?.value;
     if (key) {
@@ -85,7 +85,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    * Handles a click on the "Remove" button.
    * Moves the "selected" selection into the "available" list.
    */
-  function onRemoveField() {
+  function onRemoveField(): void {
     const currentField = state.search.fields ?? [];
     const key = selectedRef.current?.value;
     if (key) {
@@ -104,7 +104,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    * Handles a click on the "Up" button.
    * Moves the selection up one position in the list.
    */
-  function onMoveUp() {
+  function onMoveUp(): void {
     const currentField = state.search.fields ?? [];
     const field = selectedRef.current?.value;
     if (field) {
@@ -125,7 +125,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    * Handles a click on the "Down" button.
    * Moves the selection down one position in the list.
    */
-  function onMoveDown() {
+  function onMoveDown(): void {
     const currentField = state.search.fields ?? [];
     const field = selectedRef.current?.value;
     if (field) {
@@ -148,7 +148,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps) {
    * @param {number} i The index of the first field.
    * @param {number} j The index of the second field.
    */
-  function swapFields(fields: string[], i: number, j: number) {
+  function swapFields(fields: string[], i: number, j: number): void {
     const temp = fields[i];
     fields[i] = fields[j];
     fields[j] = temp;

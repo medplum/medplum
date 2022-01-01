@@ -62,7 +62,7 @@ function getTabs(resourceType: string, questionnaires?: Bundle): string[] {
   return result;
 }
 
-export function ResourcePage() {
+export function ResourcePage(): JSX.Element {
   const navigate = useNavigate();
   const { resourceType, id, tab } = useParams() as {
     resourceType: string;

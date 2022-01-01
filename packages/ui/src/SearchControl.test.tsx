@@ -9,15 +9,15 @@ import { SearchControl, SearchControlProps } from './SearchControl';
 const medplum = new MockClient();
 
 describe('SearchControl', () => {
-  const setup = (args: SearchControlProps) => {
-    return render(
+  function setup(args: SearchControlProps): void {
+    render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <SearchControl {...args} />
         </MedplumProvider>
       </MemoryRouter>
     );
-  };
+  }
 
   test('Renders results', async () => {
     const props = {

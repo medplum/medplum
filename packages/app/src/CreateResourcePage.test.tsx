@@ -9,8 +9,8 @@ import { ResourcePage } from './ResourcePage';
 const medplum = new MockClient();
 
 describe('CreateResourcePage', () => {
-  const setup = (url: string) => {
-    return render(
+  function setup(url: string): void {
+    render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
           <Routes>
@@ -20,7 +20,7 @@ describe('CreateResourcePage', () => {
         </MemoryRouter>
       </MedplumProvider>
     );
-  };
+  }
 
   test('Renders new Practitioner page', async () => {
     setup('/Practitioner/new');

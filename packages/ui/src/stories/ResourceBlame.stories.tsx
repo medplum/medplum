@@ -8,7 +8,7 @@ export default {
   component: ResourceBlame,
 } as Meta;
 
-export const Basic = () => (
+export const Basic = (): JSX.Element => (
   <Document>
     <ResourceBlame resourceType="Patient" id={process.env.SAMPLE_PATIENT_ID} />
   </Document>

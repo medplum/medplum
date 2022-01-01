@@ -10,7 +10,7 @@ export interface ResourceTableProps {
   ignoreMissingValues?: boolean;
 }
 
-export function ResourceTable(props: ResourceTableProps) {
+export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
   const medplum = useMedplum();
   const value = useResource(props.value);
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();

@@ -19,7 +19,7 @@ export interface AutocompleteProps<T> {
   onCreateNew?: () => void;
 }
 
-export function Autocomplete<T>(props: AutocompleteProps<T>) {
+export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
   const inputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
   const [lastValue, setLastValue] = useState('');
@@ -186,7 +186,7 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
    * If the contents of the input have changed, sends xhr to the server
    * for updated contents.
    */
-  function handleTimer() {
+  function handleTimer(): void {
     const value = inputRef.current?.value?.trim() || '';
     if (value === lastValueRef.current) {
       // Nothing has changed, move on
@@ -216,7 +216,7 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
    * Moves the selected row.
    * @param delta The amount to move the selection, up is negative.
    */
-  function moveSelection(delta: number) {
+  function moveSelection(delta: number): void {
     let index = selectedIndex + delta;
 
     if (index < 0) {
@@ -250,7 +250,7 @@ export function Autocomplete<T>(props: AutocompleteProps<T>) {
   /**
    * Dismisses the drop down menu after a slight delay.
    */
-  function dismissOnDelay() {
+  function dismissOnDelay(): void {
     window.setTimeout(() => {
       setDropDownVisible(false);
     }, 200);

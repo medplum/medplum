@@ -38,13 +38,13 @@ const medplum = new MedplumClient({
   fetch: mockFetch,
 });
 
-const setup = (args?: AttachmentInputProps) => {
-  return render(
+function setup(args?: AttachmentInputProps): void {
+  render(
     <MedplumProvider medplum={medplum}>
       <AttachmentInput name="test" {...args} />
     </MedplumProvider>
   );
-};
+}
 
 describe('AttachmentInput', () => {
   beforeAll(async () => {

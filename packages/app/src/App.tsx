@@ -19,7 +19,7 @@ import { SetPasswordPage } from './SetPasswordPage';
 import { SignInPage } from './SignInPage';
 import './App.css';
 
-export function App() {
+export function App(): JSX.Element {
   const navigate = useNavigate();
   const medplum = useMedplum();
   const profile = useMedplumProfile();

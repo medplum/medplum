@@ -3,7 +3,7 @@ import { Document, ResourceForm, TitleBar, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-export function CreateResourcePage() {
+export function CreateResourcePage(): JSX.Element {
   const navigate = useNavigate();
   const { resourceType } = useParams();
   const medplum = useMedplum();

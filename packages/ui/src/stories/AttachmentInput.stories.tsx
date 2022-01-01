@@ -8,13 +8,13 @@ export default {
   component: AttachmentInput,
 } as Meta;
 
-export const Basic = () => (
+export const Basic = (): JSX.Element => (
   <Document>
     <AttachmentInput name="attachment" />
   </Document>
 );
 
-export const DefaultValue = () => (
+export const DefaultValue = (): JSX.Element => (
   <Document>
     <AttachmentInput name="attachment" defaultValue={{}} />
   </Document>

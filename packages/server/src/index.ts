@@ -9,7 +9,7 @@ import { initRedis } from './redis';
 import { seedDatabase } from './seed';
 import { initSubscriptionWorker } from './workers/subscription';
 
-async function main() {
+async function main(): Promise<void> {
   logger.info('Starting Medplum Server...');
 
   const configName = process.argv.length === 3 ? process.argv[2] : 'file:medplum.config.json';

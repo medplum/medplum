@@ -58,7 +58,7 @@ async function search(input: string): Promise<string[]> {
   return presidents.filter((s) => s.toLowerCase().includes(input.toLowerCase())).slice(0, 10);
 }
 
-export const Single = () => (
+export const Single = (): JSX.Element => (
   <Document>
     <Autocomplete
       name="foo"
@@ -69,7 +69,7 @@ export const Single = () => (
   </Document>
 );
 
-export const Multiple = () => (
+export const Multiple = (): JSX.Element => (
   <Document>
     <Autocomplete
       name="foo"
@@ -81,7 +81,7 @@ export const Multiple = () => (
   </Document>
 );
 
-export const Prefilled = () => (
+export const Prefilled = (): JSX.Element => (
   <Document>
     <Autocomplete
       name="foo"
@@ -93,7 +93,7 @@ export const Prefilled = () => (
   </Document>
 );
 
-export const HelpText = () => (
+export const HelpText = (): JSX.Element => (
   <Document>
     <Autocomplete
       name="foo"

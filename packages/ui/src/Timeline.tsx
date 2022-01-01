@@ -11,7 +11,7 @@ export interface TimelineProps {
   children?: React.ReactNode;
 }
 
-export function Timeline(props: TimelineProps) {
+export function Timeline(props: TimelineProps): JSX.Element {
   return <main className="medplum-timeline">{props.children}</main>;
 }
 
@@ -23,7 +23,7 @@ export interface TimelineItemProps {
   padding?: boolean;
 }
 
-export function TimelineItem(props: TimelineItemProps) {
+export function TimelineItem(props: TimelineItemProps): JSX.Element {
   const author = props.profile ?? props.resource.meta?.author;
   return (
     <article className="medplum-timeline-item" data-testid="timeline-item">

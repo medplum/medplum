@@ -8,8 +8,8 @@ import { BatchPage } from './BatchPage';
 const medplum = new MockClient();
 
 describe('BatchPage', () => {
-  function setup() {
-    return render(
+  function setup(): void {
+    render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <BatchPage />
