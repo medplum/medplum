@@ -23,6 +23,8 @@ storageRouter.get(
 
     const binary = resource as Binary;
     res.status(200).contentType(binary.contentType as string);
-    await getBinaryStorage().readBinary(binary, res);
+
+    const stream = await getBinaryStorage().readBinary(binary);
+    stream.pipe(res);
   })
 );

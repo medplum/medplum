@@ -186,7 +186,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.Annotation:
       return <AnnotationInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Attachment:
-      return <AttachmentInput name={name} defaultValue={value} />;
+      return <AttachmentInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.CodeableConcept:
       return <CodeableConceptInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Coding:

@@ -1,6 +1,8 @@
 import { assertOk } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
+import internal from 'stream';
+import zlib from 'zlib';
 import { asyncWrap } from '../async';
 import { Repository } from './repo';
 import { getPresignedUrl } from './signer';
@@ -21,7 +23,7 @@ binaryRouter.post(
       },
     });
     assertOk(outcome);
-    await getBinaryStorage().writeBinary(resource as Binary, req);
+    await getBinaryStorage().writeBinary(resource as Binary, getContentStream(req));
     res.status(201).json({
       ...resource,
       url: getPresignedUrl(resource as Binary),
@@ -44,7 +46,7 @@ binaryRouter.put(
       },
     });
     assertOk(outcome);
-    await getBinaryStorage().writeBinary(resource as Binary, req);
+    await getBinaryStorage().writeBinary(resource as Binary, getContentStream(req));
     res.status(200).json(resource);
   })
 );
@@ -60,6 +62,43 @@ binaryRouter.get(
 
     const binary = resource as Binary;
     res.status(200).contentType(binary.contentType as string);
-    await getBinaryStorage().readBinary(binary, res);
+
+    const stream = await getBinaryStorage().readBinary(binary);
+    stream.pipe(res);
   })
 );
+
+/**
+ * Get the content stream of the request.
+ *
+ * Based on body-parser implementation:
+ * https://github.com/expressjs/body-parser/blob/master/lib/read.js
+ *
+ * Unfortunately body-parser will always write the content to a temporary file on local disk.
+ * That is not acceptable for multi gigabyte files, which could easily fill up the disk.
+ *
+ * @param req The HTTP request.
+ * @returns The content stream.
+ */
+function getContentStream(req: Request): internal.Readable {
+  const encoding = (req.headers['content-encoding'] || 'identity').toLowerCase();
+  let stream;
+
+  switch (encoding) {
+    case 'deflate':
+      stream = zlib.createInflate();
+      req.pipe(stream);
+      break;
+    case 'gzip':
+      stream = zlib.createGunzip();
+      req.pipe(stream);
+      break;
+    case 'identity':
+      stream = req;
+      break;
+    default:
+      throw new Error('encoding.unsupoorted');
+  }
+
+  return stream;
+}

@@ -14,7 +14,7 @@ export enum LogLevel {
 }
 
 export const logger = {
-  level: process.env.NODE_ENV === 'test' ? LogLevel.NONE : LogLevel.INFO,
+  level: process.env.NODE_ENV === 'test' ? LogLevel.NONE : LogLevel.DEBUG,
 
   error(...args: any[]): void {
     if (logger.level >= LogLevel.ERROR) {

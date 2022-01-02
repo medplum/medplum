@@ -7,9 +7,17 @@ import fetch, { HeadersInit } from 'node-fetch';
 import { URL } from 'url';
 import vm from 'vm';
 import { MedplumRedisConfig } from '../config';
-import { systemRepo, Repository } from '../fhir';
+import { Repository, systemRepo } from '../fhir';
 import { getSearchParameter, parseSearchUrl } from '../fhir/search';
 import { logger } from '../logger';
+
+/*
+ * The subscription worker inspects every resource change,
+ * and executes FHIR Subscription resources for those changes.
+ *
+ * The common case is to perform an outbound HTTP request to a webhook.
+ * But Subscriptions can include email and SMS notifications.
+ */
 
 export interface SubscriptionJobData {
   readonly subscriptionId: string;
@@ -58,7 +66,7 @@ export function initSubscriptionWorker(config: MedplumRedisConfig): void {
     },
   });
 
-  worker = new Worker<SubscriptionJobData>(queueName, sendSubscription, defaultOptions);
+  worker = new Worker<SubscriptionJobData>(queueName, execSubscriptionJob, defaultOptions);
   worker.on('completed', (job) => logger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => logger.info(`Failed job ${job.id} with ${err}`));
 }
@@ -250,10 +258,10 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
 }
 
 /**
- * Sends a subscription.
+ * Executes a subscription job.
  * @param job The subscription job details.
  */
-export async function sendSubscription(job: Job<SubscriptionJobData>): Promise<void> {
+export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
   const { subscriptionId, resourceType, id, versionId } = job.data;
 
   const [subscriptionOutcome, subscription] = await systemRepo.readResource<Subscription>(

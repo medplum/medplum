@@ -7,7 +7,7 @@ import { logger } from './logger';
 import { initKeys } from './oauth';
 import { initRedis } from './redis';
 import { seedDatabase } from './seed';
-import { initSubscriptionWorker } from './workers/subscription';
+import { initWorkers } from './workers';
 
 async function main(): Promise<void> {
   logger.info('Starting Medplum Server...');
@@ -23,10 +23,7 @@ async function main(): Promise<void> {
   await initKeys(config);
   await seedDatabase();
   initBinaryStorage(config.binaryStorage);
-
-  logger.debug('Initializing workers...');
-  initSubscriptionWorker(config.redis);
-  logger.debug('Workers initialized');
+  initWorkers(config.redis);
 
   const app = await initApp(express());
   app.listen(5000);
