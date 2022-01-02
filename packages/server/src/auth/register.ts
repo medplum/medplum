@@ -81,7 +81,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
   const user = await createUser(request);
   const project = await createProject(request, user);
   const profile = await createPractitioner(request, project);
-  await createProjectMembership(user, project, profile, true);
+  await createProjectMembership(user, project, profile, undefined, true);
   const client = await createClientApplication(project);
   return {
     user,
