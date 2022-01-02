@@ -1,5 +1,6 @@
 import { Binary } from '@medplum/fhirtypes';
 import crypto from 'crypto';
+import { URL } from 'url';
 import { getConfig } from '../config';
 
 /**

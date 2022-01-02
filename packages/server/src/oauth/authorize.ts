@@ -1,6 +1,7 @@
 import { getDateProperty, isOk, Operator } from '@medplum/core';
 import { ClientApplication, Login, OperationOutcome } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
+import { URL } from 'url';
 import { asyncWrap } from '../async';
 import { systemRepo } from '../fhir';
 import { logger } from '../logger';

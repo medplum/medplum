@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
+import { URL } from 'url';
 import { getConfig } from '../config';
 import { invalidRequest, sendOutcome } from '../fhir';
 import { GoogleCredentialClaims, tryLogin } from '../oauth';
