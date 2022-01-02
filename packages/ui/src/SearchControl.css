@@ -98,35 +98,6 @@
   font-size: var(--medplum-font-big);
 }
 
-/*
- * Pagination
- */
-
-a.paginate_button,
-a.paginate_active {
-  display: inline-block;
-  padding: 8px 12px;
-  margin-left: 2px;
-  cursor: pointer;
-  border: 0.1px solid var(--medplum-gray-300);
-}
-
-a.paginate_button:hover {
-  background: var(--medplum-purple-50);
-}
-
-a.paginate_active {
-  background: var(--medplum-purple-50);
-}
-
-a.paginate_button_disabled {
-  color: var(--medplum-gray-500);
-}
-
-a.paginate_button_disabled:hover {
-  background: transparent;
-}
-
 .medplum-search-control > table thead th:hover {
   background-color: var(--medplum-blue-200);
 }
@@ -158,8 +129,4 @@ a.paginate_button_disabled:hover {
 .medplum-filter-editor-table {
   width: 100%;
   border-collapse: collapse;
-}
-
-.goog-date-picker {
-  z-index: 1000 !important;
 }
