@@ -1,5 +1,5 @@
 import { assertOk, Operator } from '@medplum/core';
-import { Practitioner, Project, User } from '@medplum/fhirtypes';
+import { AccessPolicy, Practitioner, Project, Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -33,20 +33,19 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
   }
 
   const profile = await inviteUser({
+    ...req.body,
     project: project,
-    firstName: req.body.firstName,
-    lastName: req.body.lastName,
-    email: req.body.email,
   });
 
   res.status(200).json({ profile });
 }
 
 export interface InviteRequest {
-  project: Project;
-  firstName: string;
-  lastName: string;
-  email: string;
+  readonly project: Project;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly email: string;
+  readonly accessPolicy?: Reference<AccessPolicy>;
 }
 
 export async function inviteUser(request: InviteRequest): Promise<Practitioner> {
@@ -91,7 +90,7 @@ export async function inviteUser(request: InviteRequest): Promise<Practitioner> 
     );
   }
   const practitioner = await createPractitioner(request, project);
-  await createProjectMembership(user, project, practitioner, false);
+  await createProjectMembership(user, project, practitioner, request.accessPolicy);
   return practitioner;
 }
 

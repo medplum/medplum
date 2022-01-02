@@ -1,28 +1,8 @@
-import { AccessPolicy, ElementDefinition, OperationOutcome, ProjectMembership, Reference } from '@medplum/fhirtypes';
-import {
-  Button,
-  Document,
-  Form,
-  FormSection,
-  Loading,
-  MedplumLink,
-  ReferenceInput,
-  ResourceBadge,
-  useMedplum,
-} from '@medplum/ui';
+import { AccessPolicy, OperationOutcome, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import { Button, Document, Form, FormSection, Loading, MedplumLink, ResourceBadge, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-
-const accessPolicyProperty: ElementDefinition = {
-  min: 0,
-  max: '1',
-  type: [
-    {
-      code: 'Reference',
-      targetProfile: ['https://medplum.com/fhir/StructureDefinition/AccessPolicy'],
-    },
-  ],
-};
+import { AccessPolicyInput } from './AccessPolicyInput';
 
 export function EditMembershipPage(): JSX.Element {
   const { projectId, membershipId } = useParams();
@@ -86,7 +66,7 @@ export function EditMembershipPage(): JSX.Element {
         {!success && (
           <>
             <FormSection title="Access Policy">
-              <ReferenceInput name="accessPolicy" property={accessPolicyProperty} defaultValue={result.accessPolicy} />
+              <AccessPolicyInput name="accessPolicy" defaultValue={result.accessPolicy} />
             </FormSection>
             <FormSection title="Admin">
               <input type="checkbox" name="admin" defaultChecked={!!result.admin} value="true" />

@@ -1,7 +1,8 @@
-import { OperationOutcome } from '@medplum/fhirtypes';
+import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { Button, Document, Form, FormSection, Loading, MedplumLink, TextField, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { AccessPolicyInput } from './AccessPolicyInput';
 
 export function InvitePage(): JSX.Element {
   const { id } = useParams() as { id: string };
@@ -40,14 +41,17 @@ export function InvitePage(): JSX.Element {
       <h3>Invite new member</h3>
       <Form
         onSubmit={(formData: Record<string, string>) => {
+          const accessPolicy = formData.accessPolicy
+            ? (JSON.parse(formData.accessPolicy) as Reference<AccessPolicy>)
+            : undefined;
+          const body = {
+            ...formData,
+            accessPolicy,
+          };
           medplum
-            .post('admin/projects/' + id + '/invite', formData)
+            .post('admin/projects/' + id + '/invite', body)
             .then(() => setSuccess(true))
-            .catch((err) => {
-              if (err.outcome) {
-                setOutcome(err.outcome);
-              }
-            });
+            .catch(setOutcome);
         }}
       >
         {!success && (
@@ -67,6 +71,9 @@ export function InvitePage(): JSX.Element {
             </FormSection>
             <FormSection title="Email">
               <TextField name="email" type="email" testid="email" required={true} outcome={outcome} />
+            </FormSection>
+            <FormSection title="Access Policy">
+              <AccessPolicyInput name="accessPolicy" />
             </FormSection>
             <div className="medplum-signin-buttons">
               <div></div>
