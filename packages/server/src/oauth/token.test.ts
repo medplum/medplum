@@ -3,6 +3,7 @@ import { ClientApplication } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
+import { URL, URLSearchParams } from 'url';
 import { initApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';

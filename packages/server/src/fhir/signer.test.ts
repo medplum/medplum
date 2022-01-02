@@ -1,4 +1,5 @@
 import { generateKeyPairSync } from 'crypto';
+import { URL } from 'url';
 import { Signer } from './signer';
 
 describe('Signer', () => {
