@@ -1,5 +1,5 @@
 import { assertOk, createReference } from '@medplum/core';
-import { Login, Practitioner, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { AccessPolicy, Login, Practitioner, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Response } from 'express';
 import { systemRepo } from '../fhir';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
@@ -42,7 +42,8 @@ export async function createProjectMembership(
   user: User,
   project: Project,
   practitioner: Practitioner,
-  admin: boolean
+  accessPolicy?: Reference<AccessPolicy>,
+  admin?: boolean
 ): Promise<ProjectMembership> {
   logger.info('Create project membership: ' + project.name);
   const [outcome, result] = await systemRepo.createResource<ProjectMembership>({
@@ -50,6 +51,7 @@ export async function createProjectMembership(
     project: createReference(project),
     user: createReference(user),
     profile: createReference(practitioner),
+    accessPolicy,
     admin,
   });
   assertOk(outcome);
