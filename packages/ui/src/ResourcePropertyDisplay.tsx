@@ -10,6 +10,7 @@ import { CodingDisplay } from './CodingDisplay';
 import { ContactPointDisplay } from './ContactPointDisplay';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { IdentifierDisplay } from './IdentifierDisplay';
+import { PeriodDisplay } from './PeriodDisplay';
 import { QuantityDisplay } from './QuantityDisplay';
 import { ReferenceDisplay } from './ReferenceDisplay';
 import { ResourceArrayDisplay } from './ResourceArrayDisplay';
@@ -75,6 +76,8 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       return <HumanNameDisplay value={value} />;
     case PropertyType.Identifier:
       return <IdentifierDisplay value={value} />;
+    case PropertyType.Period:
+      return <PeriodDisplay value={value} />;
     case PropertyType.Quantity:
       return <QuantityDisplay value={value} />;
     case PropertyType.Reference:

@@ -1,6 +1,7 @@
 import { Filter, getPropertyDisplayName, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
 import { Resource, SearchParameter } from '@medplum/fhirtypes';
 import React from 'react';
+import { DateTimeDisplay } from './DateTimeDisplay';
 import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 const searchParamToOperators: Record<string, Operator[]> = {
@@ -493,7 +494,7 @@ export function renderValue(
   }
 
   if (key === '_lastUpdated') {
-    return new Date(resource.meta?.lastUpdated as string).toLocaleString('en-US');
+    return <DateTimeDisplay value={resource.meta?.lastUpdated} />;
   }
 
   const property = schema.types[resource.resourceType]?.properties?.[key];

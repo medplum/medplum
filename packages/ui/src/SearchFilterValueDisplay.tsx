@@ -1,5 +1,6 @@
 import { Filter } from '@medplum/core';
 import React from 'react';
+import { DateTimeDisplay } from './DateTimeDisplay';
 import { useMedplum } from './MedplumProvider';
 import { ResourceBadge } from './ResourceBadge';
 
@@ -23,7 +24,7 @@ export function SearchFilterValueDisplay(props: SearchFilterValueDisplayProps): 
   }
 
   if (props.filter.code === '_lastUpdated' || searchParam?.type === 'datetime') {
-    return <>{new Date(filter.value).toLocaleString()}</>;
+    return <DateTimeDisplay value={filter.value} />;
   }
 
   return <>{filter.value}</>;

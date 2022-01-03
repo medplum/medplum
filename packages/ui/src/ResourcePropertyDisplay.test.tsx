@@ -9,6 +9,7 @@ import {
   ElementDefinition,
   HumanName,
   Identifier,
+  Period,
   Quantity,
   Reference,
   SubscriptionChannel,
@@ -1172,6 +1173,24 @@ describe('ResourcePropertyDisplay', () => {
     );
 
     expect(screen.getByText('xyz: xyz123')).toBeDefined();
+  });
+
+  test('Renders Period', () => {
+    const value: Period = {
+      start: '2021-06-01T12:00:00Z',
+      end: '2021-06-30T12:00:00Z',
+    };
+
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'Period' }] }}
+        propertyType={PropertyType.Period}
+        value={value}
+      />
+    );
+
+    expect(screen.getByText('2021', { exact: false })).toBeInTheDocument();
   });
 
   test('Renders Quantity', () => {
