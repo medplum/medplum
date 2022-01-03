@@ -47,7 +47,12 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
   const filters = search.filters || [];
 
   return (
-    <Dialog visible={props.visible} onOk={() => props.onOk(searchRef.current)} onCancel={props.onCancel}>
+    <Dialog
+      title="Filters"
+      visible={props.visible}
+      onOk={() => props.onOk(searchRef.current)}
+      onCancel={props.onCancel}
+    >
       <div className="medplum-filter-editor">
         <table className="medplum-filter-editor-table">
           <thead>

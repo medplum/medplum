@@ -1,7 +1,7 @@
 import { Meta } from '@storybook/react';
 import React, { useState } from 'react';
-import { Dialog } from '../Dialog';
 import { Button } from '../Button';
+import { Dialog } from '../Dialog';
 import { Document } from '../Document';
 
 export default {
@@ -15,6 +15,7 @@ export const Basic = (): JSX.Element => {
     <Document>
       <Button onClick={() => setOpen(true)}>Open Dialog</Button>
       <Dialog
+        title="Dialog Title"
         visible={open}
         onOk={() => {
           alert('OK');
