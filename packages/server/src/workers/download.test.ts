@@ -6,13 +6,12 @@ import { mkdtempSync } from 'fs';
 import fetch from 'node-fetch';
 import { sep } from 'path';
 import { Readable } from 'stream';
-import { closeWorkers, initWorkers } from '.';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { initBinaryStorage } from '../fhir';
 import { Repository } from '../fhir/repo';
 import { seedDatabase } from '../seed';
-import { closeDownloadWorker, execDownloadJob } from './download';
+import { closeDownloadWorker, execDownloadJob, initDownloadWorker } from './download';
 
 jest.mock('bullmq');
 jest.mock('node-fetch');
@@ -26,7 +25,7 @@ describe('Download Worker', () => {
     await initDatabase(config.database);
     await seedDatabase();
     await initBinaryStorage('file:' + binaryDir);
-    await initWorkers(config.redis);
+    await initDownloadWorker(config.redis);
 
     repo = new Repository({
       project: randomUUID(),
@@ -38,7 +37,6 @@ describe('Download Worker', () => {
 
   afterAll(async () => {
     await closeDatabase();
-    await closeWorkers();
     await closeDownloadWorker();
     await closeDownloadWorker(); // Double close to ensure quite ignore
   });
