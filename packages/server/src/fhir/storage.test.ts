@@ -1,10 +1,8 @@
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { Binary } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
-import { readFileSync } from 'fs';
-import { Readable } from 'stream';
-import zlib from 'zlib';
+import { Request } from 'express';
+import internal, { Readable } from 'stream';
 import { getBinaryStorage, initBinaryStorage } from './storage';
 
 jest.mock('@aws-sdk/client-s3');
@@ -20,31 +18,6 @@ describe('Storage', () => {
   test('Undefined binary storage', () => {
     initBinaryStorage('binary');
     expect(() => getBinaryStorage()).toThrow();
-  });
-
-  test('Unrecognized content encoding', async () => {
-    initBinaryStorage('file:binary');
-
-    const storage = getBinaryStorage();
-    expect(storage).toBeDefined();
-
-    // Write a file
-    const binary: Binary = {
-      resourceType: 'Binary',
-      id: '123',
-      meta: {
-        versionId: '456',
-      },
-    };
-
-    // Create a request
-    const req = {
-      headers: {
-        'content-encoding': 'fake',
-      },
-    } as unknown as Request;
-
-    expect(storage.writeBinary(binary, req)).rejects.toThrow();
   });
 
   test('File system storage', async () => {
@@ -70,15 +43,11 @@ describe('Storage', () => {
     await storage.writeBinary(binary, req as Request);
 
     // Request the binary
-    const res: Response = {
-      sendFile: jest.fn(),
-    } as any as Response;
-    await storage.readBinary(binary, res);
-    expect(res.sendFile).toHaveBeenCalled();
+    const stream = await storage.readBinary(binary);
+    expect(stream).toBeDefined();
 
     // Verify that the file matches the expected contents
-    const filename = (res.sendFile as any).mock.calls[0][0];
-    const content = readFileSync(filename, { encoding: 'utf8' });
+    const content = await streamToString(stream);
     expect(content).toEqual('foo');
 
     // Make sure we didn't touch S3 at all
@@ -117,100 +86,23 @@ describe('Storage', () => {
     expect(Upload).toHaveBeenCalled();
 
     // Read a file
-    const res = {} as Response;
-    await storage.readBinary(binary, res);
+    const stream = await storage.readBinary(binary);
+    expect(stream).toBeDefined();
     expect(GetObjectCommand).toHaveBeenCalled();
   });
-
-  test('Deflate encoding', async () => {
-    initBinaryStorage('file:binary');
-
-    const storage = getBinaryStorage();
-    expect(storage).toBeDefined();
-
-    // Write a file
-    const binary: Binary = {
-      resourceType: 'Binary',
-      id: '123',
-      meta: {
-        versionId: '456',
-      },
-    };
-
-    // Create the input stream
-    const stream = new Readable();
-    stream.push('foo');
-    stream.push(null);
-
-    // Create a request
-    const req = zlib.createDeflate();
-    stream.pipe(req);
-    (req as any).headers = {
-      'content-encoding': 'deflate',
-    };
-    await storage.writeBinary(binary, req as unknown as Request);
-
-    // Request the binary
-    const res: Response = {
-      sendFile: jest.fn(),
-    } as any as Response;
-    await storage.readBinary(binary, res);
-    expect(res.sendFile).toHaveBeenCalled();
-
-    // Verify that the file matches the expected contents
-    const filename = (res.sendFile as any).mock.calls[0][0];
-    const content = readFileSync(filename, { encoding: 'utf8' });
-    expect(content).toEqual('foo');
-
-    // Make sure we didn't touch S3 at all
-    expect(S3Client).toHaveBeenCalledTimes(0);
-    expect(Upload).toHaveBeenCalledTimes(0);
-    expect(GetObjectCommand).toHaveBeenCalledTimes(0);
-  });
-
-  test('GZIP encoding', async () => {
-    initBinaryStorage('file:binary');
-
-    const storage = getBinaryStorage();
-    expect(storage).toBeDefined();
-
-    // Write a file
-    const binary: Binary = {
-      resourceType: 'Binary',
-      id: '123',
-      meta: {
-        versionId: '456',
-      },
-    };
-
-    // Create the input stream
-    const stream = new Readable();
-    stream.push('foo');
-    stream.push(null);
-
-    // Create a request
-    const req = zlib.createGzip();
-    stream.pipe(req);
-    (req as any).headers = {
-      'content-encoding': 'gzip',
-    };
-    await storage.writeBinary(binary, req as unknown as Request);
-
-    // Request the binary
-    const res: Response = {
-      sendFile: jest.fn(),
-    } as any as Response;
-    await storage.readBinary(binary, res);
-    expect(res.sendFile).toHaveBeenCalled();
-
-    // Verify that the file matches the expected contents
-    const filename = (res.sendFile as any).mock.calls[0][0];
-    const content = readFileSync(filename, { encoding: 'utf8' });
-    expect(content).toEqual('foo');
-
-    // Make sure we didn't touch S3 at all
-    expect(S3Client).toHaveBeenCalledTimes(0);
-    expect(Upload).toHaveBeenCalledTimes(0);
-    expect(GetObjectCommand).toHaveBeenCalledTimes(0);
-  });
 });
+
+/**
+ * Reads a stream into a string.
+ * See: https://stackoverflow.com/a/49428486/2051724
+ * @param stream The readable stream.
+ * @returns The string contents.
+ */
+function streamToString(stream: internal.Readable): Promise<string> {
+  const chunks: Buffer[] = [];
+  return new Promise((resolve, reject) => {
+    stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+    stream.on('error', (err) => reject(err));
+    stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+  });
+}

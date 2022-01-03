@@ -1,12 +1,9 @@
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { Binary } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
-import { createWriteStream, existsSync, mkdirSync } from 'fs';
-import { IncomingMessage } from 'http';
+import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
 import path from 'path';
 import internal from 'stream';
-import zlib from 'zlib';
 
 let binaryStorage: BinaryStorage | undefined = undefined;
 
@@ -31,9 +28,9 @@ export function getBinaryStorage(): BinaryStorage {
  * The BinaryStorage interface represents a method of reading and writing binary blobs.
  */
 interface BinaryStorage {
-  writeBinary(binary: Binary, req: Request): Promise<void>;
+  writeBinary(binary: Binary, stream: internal.Readable | NodeJS.ReadableStream): Promise<void>;
 
-  readBinary(binary: Binary, res: Response): Promise<void>;
+  readBinary(binary: Binary): Promise<internal.Readable>;
 }
 
 /**
@@ -50,22 +47,21 @@ class FileSystemStorage implements BinaryStorage {
     }
   }
 
-  async writeBinary(binary: Binary, req: Request): Promise<void> {
+  async writeBinary(binary: Binary, stream: internal.Readable | NodeJS.ReadableStream): Promise<void> {
     const dir = this.getDir(binary);
     if (!existsSync(dir)) {
       mkdirSync(dir);
     }
-    const body = getContentStream(req);
     const writeStream = createWriteStream(this.getPath(binary), { flags: 'w' });
-    body.pipe(writeStream);
+    stream.pipe(writeStream);
     return new Promise((resolve, reject) => {
       writeStream.on('close', resolve);
       writeStream.on('error', reject);
     });
   }
 
-  async readBinary(binary: Binary, res: Response): Promise<void> {
-    res.sendFile(this.getPath(binary));
+  async readBinary(binary: Binary): Promise<internal.Readable> {
+    return createReadStream(this.getPath(binary));
   }
 
   private getDir(binary: Binary): string {
@@ -105,14 +101,12 @@ class S3Storage implements BinaryStorage {
    * @param binary The binary resource destination.
    * @param req The HTTP request with the binary content.
    */
-  async writeBinary(binary: Binary, req: Request): Promise<void> {
-    const body = getContentStream(req);
-
+  async writeBinary(binary: Binary, stream: internal.Readable | NodeJS.ReadableStream): Promise<void> {
     const upload = new Upload({
       params: {
         Bucket: this.bucket,
         Key: this.getKey(binary),
-        Body: body,
+        Body: stream,
       },
       client: this.client,
       queueSize: 3,
@@ -121,53 +115,17 @@ class S3Storage implements BinaryStorage {
     await upload.done();
   }
 
-  async readBinary(binary: Binary, res: Response): Promise<void> {
+  async readBinary(binary: Binary): Promise<internal.Readable> {
     const output = await this.client.send(
       new GetObjectCommand({
         Bucket: this.bucket,
         Key: this.getKey(binary),
       })
     );
-    (output.Body as IncomingMessage).pipe(res);
+    return output.Body as internal.Readable;
   }
 
   private getKey(binary: Binary): string {
     return 'binary/' + binary.id + '/' + binary.meta?.versionId;
   }
-}
-
-/**
- * Get the content stream of the request.
- *
- * Based on body-parser implementation:
- * https://github.com/expressjs/body-parser/blob/master/lib/read.js
- *
- * Unfortunately body-parser will always write the content to a temporary file on local disk.
- * That is not acceptable for multi gigabyte files, which could easily fill up the disk.
- *
- * @param req The HTTP request.
- * @returns The content stream.
- */
-
-function getContentStream(req: Request): internal.Readable {
-  const encoding = (req.headers['content-encoding'] || 'identity').toLowerCase();
-  let stream;
-
-  switch (encoding) {
-    case 'deflate':
-      stream = zlib.createInflate();
-      req.pipe(stream);
-      break;
-    case 'gzip':
-      stream = zlib.createGunzip();
-      req.pipe(stream);
-      break;
-    case 'identity':
-      stream = req;
-      break;
-    default:
-      throw new Error('encoding.unsupoorted');
-  }
-
-  return stream;
 }

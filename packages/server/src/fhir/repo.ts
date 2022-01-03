@@ -35,7 +35,7 @@ import { applyPatch, Operation } from 'fast-json-patch';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getClient } from '../database';
-import { addSubscriptionJobs } from '../workers/subscription';
+import { addBackgroundJobs } from '../workers';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
 import { getPatientCompartmentResourceTypes, getPatientId } from './patient';
 import { rewriteAttachments, RewriteMode } from './rewrite';
@@ -316,7 +316,7 @@ export class Repository {
       await this.writeResource(result);
       await this.writeResourceVersion(result);
       await this.writeLookupTables(result);
-      await addSubscriptionJobs(result);
+      await addBackgroundJobs(result);
     } catch (error) {
       return [badRequest((error as Error).message), undefined];
     }

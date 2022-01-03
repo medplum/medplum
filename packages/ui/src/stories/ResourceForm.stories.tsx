@@ -164,3 +164,16 @@ export const Specimen = (): JSX.Element => (
     />
   </Document>
 );
+
+export const Media = (): JSX.Element => (
+  <Document>
+    <ResourceForm
+      defaultValue={{
+        resourceType: 'Media',
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);

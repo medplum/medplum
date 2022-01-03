@@ -7,7 +7,7 @@ import { loadTestConfig } from '../config';
 import { closeDatabase, getClient, initDatabase } from '../database';
 import { Repository, systemRepo } from '../fhir/repo';
 import { seedDatabase } from '../seed';
-import { closeSubscriptionWorker, initSubscriptionWorker, sendSubscription } from './subscription';
+import { closeSubscriptionWorker, initSubscriptionWorker, execSubscriptionJob } from './subscription';
 
 jest.mock('bullmq');
 jest.mock('node-fetch');
@@ -70,7 +70,7 @@ describe('Subscription Worker', () => {
     (fetch as any).mockImplementation(() => ({ status: 200 }));
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
-    await sendSubscription(job);
+    await execSubscriptionJob(job);
 
     expect(fetch).toHaveBeenCalledWith(
       url,
@@ -112,7 +112,7 @@ describe('Subscription Worker', () => {
     (fetch as any).mockImplementation(() => ({ status: 200 }));
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
-    await sendSubscription(job);
+    await execSubscriptionJob(job);
 
     expect(fetch).toHaveBeenCalledWith(
       url,
@@ -167,7 +167,7 @@ describe('Subscription Worker', () => {
     const signature = createHmac('sha256', secret).update(body).digest('hex');
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
-    await sendSubscription(job);
+    await execSubscriptionJob(job);
 
     expect(fetch).toHaveBeenCalledWith(
       url,
@@ -448,7 +448,7 @@ describe('Subscription Worker', () => {
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
 
     // If the job throws, then the QueueScheduler will retry
-    await expect(sendSubscription(job)).rejects.toThrow();
+    await expect(execSubscriptionJob(job)).rejects.toThrow();
   });
 
   test('Retry on exception', async () => {
@@ -478,7 +478,6 @@ describe('Subscription Worker', () => {
     expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
-    // (fetch as any).mockImplementation(() => ({ status: 400 }));
     (fetch as any).mockImplementation(() => {
       throw new Error();
     });
@@ -486,7 +485,7 @@ describe('Subscription Worker', () => {
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
 
     // If the job throws, then the QueueScheduler will retry
-    await expect(sendSubscription(job)).rejects.toThrow();
+    await expect(execSubscriptionJob(job)).rejects.toThrow();
   });
 
   test('Execute bot subscriptions', async () => {
@@ -528,7 +527,7 @@ describe('Subscription Worker', () => {
     (fetch as any).mockImplementation(() => ({ status: 200 }));
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
-    await sendSubscription(job);
+    await execSubscriptionJob(job);
     expect(fetch).not.toHaveBeenCalled();
 
     const [searchOutcome, bundle] = await repo.search<AuditEvent>({
@@ -588,7 +587,7 @@ describe('Subscription Worker', () => {
     (fetch as any).mockImplementation(() => ({ status: 200 }));
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
-    await sendSubscription(job);
+    await execSubscriptionJob(job);
     expect(fetch).not.toHaveBeenCalled();
 
     const [searchOutcome, bundle] = await repo.search<AuditEvent>({
@@ -643,7 +642,7 @@ describe('Subscription Worker', () => {
     expect(updateOutcome.id).toEqual('ok');
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
-    await sendSubscription(job);
+    await execSubscriptionJob(job);
 
     // Fetch should not have been called
     expect(fetch).not.toHaveBeenCalled();
@@ -695,7 +694,7 @@ describe('Subscription Worker', () => {
     assertOk(deleteOutcome);
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
-    await sendSubscription(job);
+    await execSubscriptionJob(job);
 
     // Fetch should not have been called
     expect(fetch).not.toHaveBeenCalled();
@@ -747,7 +746,7 @@ describe('Subscription Worker', () => {
     assertOk(deleteOutcome);
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
-    await sendSubscription(job);
+    await execSubscriptionJob(job);
 
     // Fetch should not have been called
     expect(fetch).not.toHaveBeenCalled();
@@ -809,7 +808,7 @@ describe('Subscription Worker', () => {
     (fetch as any).mockImplementation(() => ({ status: 200 }));
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
-    await sendSubscription(job);
+    await execSubscriptionJob(job);
 
     const [searchOutcome, bundle] = await systemRepo.search<AuditEvent>({
       resourceType: 'AuditEvent',
