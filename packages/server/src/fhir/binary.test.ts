@@ -1,7 +1,9 @@
 import express from 'express';
 import { mkdtempSync, rmSync } from 'fs';
 import { sep } from 'path';
+import { Duplex, Readable } from 'stream';
 import request from 'supertest';
+import zlib from 'zlib';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
@@ -28,15 +30,6 @@ describe('Binary', () => {
   afterAll(async () => {
     await closeDatabase();
     rmSync(binaryDir, { recursive: true, force: true });
-  });
-
-  test.skip('Payload too large', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/Binary`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/octet-stream')
-      .send('a'.repeat(11 * 1024 * 1024));
-    expect(res.status).toBe(400);
   });
 
   test('Create and read binary', async () => {
@@ -93,4 +86,63 @@ describe('Binary', () => {
     expect(res.status).toBe(201);
     expect(res.headers['access-control-allow-origin']).toBe('https://www.example.com');
   });
+
+  test('Unsupported content encoding', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'text/plain')
+      .set('Content-Encoding', 'fake')
+      .send('Hello world');
+    expect(res.status).toBe(400);
+  });
+
+  test('Deflate', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'text/plain')
+      .set('Content-Encoding', 'deflate')
+      .send(await createBufferForStream('Hello world', zlib.createDeflate()));
+    expect(res.status).toBe(201);
+
+    const binary = res.body;
+    const res2 = await request(app)
+      .get('/fhir/R4/Binary/' + binary.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toBe(200);
+    expect(res2.text).toEqual('Hello world');
+  });
+
+  test('GZIP', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'text/plain')
+      .set('Content-Encoding', 'gzip')
+      .send(await createBufferForStream('Hello world', zlib.createGzip()));
+    expect(res.status).toBe(201);
+
+    const binary = res.body;
+    const res2 = await request(app)
+      .get('/fhir/R4/Binary/' + binary.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toBe(200);
+    expect(res2.text).toEqual('Hello world');
+  });
 });
+
+async function createBufferForStream(message: string, stream: Duplex): Promise<Buffer> {
+  const input = new Readable();
+  input.push('Hello world');
+  input.push(null);
+
+  input.pipe(stream);
+
+  return new Promise<Buffer>((resolve, reject) => {
+    const _buf = Array<any>();
+    stream.on('data', (chunk) => _buf.push(chunk));
+    stream.on('end', () => resolve(Buffer.concat(_buf)));
+    stream.on('error', (err) => reject(`error converting stream - ${err}`));
+  });
+}

@@ -1,8 +1,9 @@
-import { assertOk } from '@medplum/core';
+import { assertOk, badRequest } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import internal from 'stream';
 import zlib from 'zlib';
+import { sendOutcome } from '.';
 import { asyncWrap } from '../async';
 import { Repository } from './repo';
 import { getPresignedUrl } from './signer';
@@ -23,7 +24,14 @@ binaryRouter.post(
       },
     });
     assertOk(outcome);
-    await getBinaryStorage().writeBinary(resource as Binary, getContentStream(req));
+
+    const stream = getContentStream(req);
+    if (!stream) {
+      sendOutcome(res, badRequest('Unsupported content encoding'));
+      return;
+    }
+
+    await getBinaryStorage().writeBinary(resource as Binary, stream);
     res.status(201).json({
       ...resource,
       url: getPresignedUrl(resource as Binary),
@@ -46,7 +54,14 @@ binaryRouter.put(
       },
     });
     assertOk(outcome);
-    await getBinaryStorage().writeBinary(resource as Binary, getContentStream(req));
+
+    const stream = getContentStream(req);
+    if (!stream) {
+      sendOutcome(res, badRequest('Unsupported content encoding'));
+      return;
+    }
+
+    await getBinaryStorage().writeBinary(resource as Binary, stream);
     res.status(200).json(resource);
   })
 );
@@ -80,25 +95,23 @@ binaryRouter.get(
  * @param req The HTTP request.
  * @returns The content stream.
  */
-function getContentStream(req: Request): internal.Readable {
-  const encoding = (req.headers['content-encoding'] || 'identity').toLowerCase();
-  let stream;
-
-  switch (encoding) {
-    case 'deflate':
-      stream = zlib.createInflate();
-      req.pipe(stream);
-      break;
-    case 'gzip':
-      stream = zlib.createGunzip();
-      req.pipe(stream);
-      break;
-    case 'identity':
-      stream = req;
-      break;
-    default:
-      throw new Error('encoding.unsupoorted');
+function getContentStream(req: Request): internal.Readable | undefined {
+  const encoding = req.headers['content-encoding'];
+  if (!encoding) {
+    return req;
   }
 
-  return stream;
+  if (encoding.toLowerCase() === 'deflate') {
+    const stream = zlib.createInflate();
+    req.pipe(stream);
+    return stream;
+  }
+
+  if (encoding.toLowerCase() === 'gzip') {
+    const stream = zlib.createGunzip();
+    req.pipe(stream);
+    return stream;
+  }
+
+  return undefined;
 }
