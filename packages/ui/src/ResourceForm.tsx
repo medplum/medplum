@@ -33,10 +33,6 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
   }
 
   const typeSchema = schema.types[value.resourceType];
-  if (!typeSchema) {
-    return <div>{value.resourceType}&nbsp;not found</div>;
-  }
-
   return (
     <form
       noValidate
