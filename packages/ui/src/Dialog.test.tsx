@@ -4,7 +4,7 @@ import { Dialog } from './Dialog';
 
 describe('Dialog', () => {
   test('Hidden', () => {
-    render(<Dialog visible={false} onOk={jest.fn()} onCancel={jest.fn()} />);
+    render(<Dialog visible={false} title="x" onOk={jest.fn()} onCancel={jest.fn()} />);
     expect(screen.queryByText('Dialog')).toBeNull();
   });
 
@@ -13,11 +13,12 @@ describe('Dialog', () => {
     const onCancel = jest.fn();
 
     render(
-      <Dialog visible={true} onOk={onOk} onCancel={onCancel}>
+      <Dialog visible={true} title="title" onOk={onOk} onCancel={onCancel}>
         test
       </Dialog>
     );
 
+    expect(screen.getByText('title')).toBeDefined();
     expect(screen.getByText('test')).toBeDefined();
   });
 
@@ -26,7 +27,7 @@ describe('Dialog', () => {
     const onCancel = jest.fn();
 
     render(
-      <Dialog visible={true} onOk={onOk} onCancel={onCancel}>
+      <Dialog visible={true} title="title" onOk={onOk} onCancel={onCancel}>
         test
       </Dialog>
     );
@@ -44,7 +45,7 @@ describe('Dialog', () => {
     const onCancel = jest.fn();
 
     render(
-      <Dialog visible={true} onOk={onOk} onCancel={onCancel}>
+      <Dialog visible={true} title="title" onOk={onOk} onCancel={onCancel}>
         test
       </Dialog>
     );
@@ -62,13 +63,13 @@ describe('Dialog', () => {
     const onCancel = jest.fn();
 
     render(
-      <Dialog visible={true} onOk={onOk} onCancel={onCancel}>
+      <Dialog visible={true} title="title" onOk={onOk} onCancel={onCancel}>
         test
       </Dialog>
     );
 
     await act(async () => {
-      await fireEvent.mouseDown(screen.getByText('Dialog'), {
+      await fireEvent.mouseDown(screen.getByText('title'), {
         clientX: 120,
         clientY: 120,
       });

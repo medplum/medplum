@@ -167,7 +167,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
     .sort();
 
   return (
-    <Dialog visible={props.visible} onOk={() => props.onOk(state.search)} onCancel={props.onCancel}>
+    <Dialog title="Fields" visible={props.visible} onOk={() => props.onOk(state.search)} onCancel={props.onCancel}>
       <div>
         <table style={{ margin: 'auto' }}>
           <thead>

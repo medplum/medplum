@@ -5,6 +5,7 @@ import './Dialog.css';
 
 export interface DialogProps {
   visible: boolean;
+  title: string;
   children?: React.ReactNode;
   onOk: () => void;
   onCancel: () => void;
@@ -45,7 +46,7 @@ export function Dialog(props: DialogProps): JSX.Element | null {
       <div className="modal-dialog-bg"></div>
       <div className="modal-dialog" data-testid="dialog" tabIndex={0} style={{ left: x + 'px', top: y + 'px' }}>
         <div className="modal-dialog-title" onMouseDown={(e) => handleMouseDown(e)}>
-          <span className="modal-dialog-title-text">Dialog</span>
+          <span className="modal-dialog-title-text">{props.title}</span>
           <span className="modal-dialog-title-close" tabIndex={0} onClick={props.onCancel}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
