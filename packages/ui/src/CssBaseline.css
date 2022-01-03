@@ -94,9 +94,12 @@ hr {
   text-align: center;
 }
 
+table {
+  width: 100%;
+}
+
 table.table {
   border-collapse: collapse;
-  width: 100%;
 }
 
 table.table th,

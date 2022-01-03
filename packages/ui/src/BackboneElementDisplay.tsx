@@ -21,7 +21,7 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
   const typeName = props.typeName;
   const typeSchema = props.schema.types[typeName];
   if (!typeSchema) {
-    return <div>Schema not found</div>;
+    return <div>{typeName}&nbsp;not implemented</div>;
   }
 
   if (typeof value === 'object' && 'name' in value && Object.keys(value).length === 1) {

@@ -12,7 +12,7 @@ export interface AttachmentArrayInputProps {
 }
 
 export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Element {
-  const [values, setValues] = useState(props.defaultValue ?? []);
+  const [values, setValues] = useState<Attachment[]>(props.defaultValue ?? []);
 
   const valuesRef = useRef<Attachment[]>();
   valuesRef.current = values;
@@ -25,48 +25,43 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Elem
   }
 
   return (
-    <div>
-      <table>
-        <colgroup>
-          <col width="90%" />
-          <col width="10%" />
-        </colgroup>
-        <tbody>
-          {values.map(
-            (v: any, index: number) =>
-              !v.__removed && (
-                <tr key={`${index}-${values.length}`}>
-                  <td>
-                    <AttachmentDisplay value={v} maxWidth={200} />
-                  </td>
-                  <td>
-                    <button
-                      className="btn"
-                      onClick={(e) => {
-                        killEvent(e);
-                        const copy = values.slice();
-                        copy.splice(index, 1);
-                        setValuesWrapper(copy);
-                      }}
-                    >
-                      Remove
-                    </button>
-                  </td>
-                </tr>
-              )
-          )}
-          <tr>
-            <td></td>
+    <table>
+      <colgroup>
+        <col width="90%" />
+        <col width="10%" />
+      </colgroup>
+      <tbody>
+        {values.map((v: Attachment, index: number) => (
+          <tr key={`${index}-${values.length}`}>
             <td>
-              <UploadButton
-                onUpload={(attachment: Attachment) => {
-                  setValuesWrapper([...(valuesRef.current as Attachment[]), attachment]);
+              <AttachmentDisplay value={v} maxWidth={200} />
+            </td>
+            <td className="right">
+              <button
+                className="btn"
+                onClick={(e) => {
+                  killEvent(e);
+                  const copy = values.slice();
+                  copy.splice(index, 1);
+                  setValuesWrapper(copy);
                 }}
-              />
+              >
+                Remove
+              </button>
             </td>
           </tr>
-        </tbody>
-      </table>
-    </div>
+        ))}
+        <tr>
+          <td></td>
+          <td className="right">
+            <UploadButton
+              onUpload={(attachment: Attachment) => {
+                setValuesWrapper([...(valuesRef.current as Attachment[]), attachment]);
+              }}
+            />
+          </td>
+        </tr>
+      </tbody>
+    </table>
   );
 }

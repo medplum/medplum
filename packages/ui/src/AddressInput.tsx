@@ -1,5 +1,6 @@
 import { Address } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
+import { InputRow } from './InputRow';
 
 function getLine(address: Address, index: number): string {
   return address && address.line && address.line.length > index ? address.line[index] : '';
@@ -62,73 +63,51 @@ export function AddressInput(props: AddressInputProps): JSX.Element {
   }
 
   return (
-    <table>
-      <tbody>
-        <tr>
-          <td>
-            <select data-testid="address-use" defaultValue={value?.use} onChange={(e) => setUse(e.currentTarget.value)}>
-              <option></option>
-              <option>home</option>
-              <option>mobile</option>
-              <option>old</option>
-              <option>temp</option>
-              <option>work</option>
-            </select>
-          </td>
-          <td>
-            <select
-              data-testid="address-type"
-              defaultValue={value?.type}
-              onChange={(e) => setType(e.currentTarget.value)}
-            >
-              <option></option>
-              <option>postal</option>
-              <option>physical</option>
-              <option>both</option>
-            </select>
-          </td>
-          <td>
-            <input
-              type="text"
-              placeholder="Line 1"
-              defaultValue={getLine(value, 0)}
-              onChange={(e) => setLine1(e.currentTarget.value)}
-            />
-          </td>
-          <td>
-            <input
-              type="text"
-              placeholder="Line 2"
-              defaultValue={getLine(value, 1)}
-              onChange={(e) => setLine2(e.currentTarget.value)}
-            />
-          </td>
-          <td>
-            <input
-              type="text"
-              placeholder="City"
-              defaultValue={value.city}
-              onChange={(e) => setCity(e.currentTarget.value)}
-            />
-          </td>
-          <td>
-            <input
-              type="text"
-              placeholder="State"
-              defaultValue={value.state}
-              onChange={(e) => setState(e.currentTarget.value)}
-            />
-          </td>
-          <td>
-            <input
-              type="text"
-              placeholder="Postal Code"
-              defaultValue={value.postalCode}
-              onChange={(e) => setPostalCode(e.currentTarget.value)}
-            />
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <InputRow>
+      <select data-testid="address-use" defaultValue={value?.use} onChange={(e) => setUse(e.currentTarget.value)}>
+        <option></option>
+        <option>home</option>
+        <option>mobile</option>
+        <option>old</option>
+        <option>temp</option>
+        <option>work</option>
+      </select>
+      <select data-testid="address-type" defaultValue={value?.type} onChange={(e) => setType(e.currentTarget.value)}>
+        <option></option>
+        <option>postal</option>
+        <option>physical</option>
+        <option>both</option>
+      </select>
+      <input
+        type="text"
+        placeholder="Line 1"
+        defaultValue={getLine(value, 0)}
+        onChange={(e) => setLine1(e.currentTarget.value)}
+      />
+      <input
+        type="text"
+        placeholder="Line 2"
+        defaultValue={getLine(value, 1)}
+        onChange={(e) => setLine2(e.currentTarget.value)}
+      />
+      <input
+        type="text"
+        placeholder="City"
+        defaultValue={value.city}
+        onChange={(e) => setCity(e.currentTarget.value)}
+      />
+      <input
+        type="text"
+        placeholder="State"
+        defaultValue={value.state}
+        onChange={(e) => setState(e.currentTarget.value)}
+      />
+      <input
+        type="text"
+        placeholder="Postal Code"
+        defaultValue={value.postalCode}
+        onChange={(e) => setPostalCode(e.currentTarget.value)}
+      />
+    </InputRow>
   );
 }

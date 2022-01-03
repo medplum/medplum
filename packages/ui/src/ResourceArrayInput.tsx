@@ -29,7 +29,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
 
   return (
     <div>
-      <table>
+      <table style={{ width: '100%' }}>
         <colgroup>
           <col width="90%" />
           <col width="10%" />
@@ -51,7 +51,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
                   }}
                 />
               </td>
-              <td>
+              <td style={{ textAlign: 'right' }}>
                 <Button
                   onClick={(e) => {
                     killEvent(e);
@@ -67,7 +67,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
           ))}
           <tr>
             <td></td>
-            <td>
+            <td style={{ textAlign: 'right' }}>
               <Button
                 onClick={(e) => {
                   killEvent(e);
