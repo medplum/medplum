@@ -45,6 +45,7 @@ describe('Binary', () => {
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(200);
+    expect(res2.text).toEqual('Hello world');
   });
 
   test('Read binary not found', async () => {
@@ -74,6 +75,7 @@ describe('Binary', () => {
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
+    expect(res3.text).toEqual('Hello world 2');
   });
 
   test('Binary CORS', async () => {
@@ -130,11 +132,35 @@ describe('Binary', () => {
     expect(res2.status).toBe(200);
     expect(res2.text).toEqual('Hello world');
   });
+
+  test('Update with GZIP', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'text/plain')
+      .send('Hello world');
+    expect(res.status).toBe(201);
+
+    const binary = res.body;
+    const res2 = await request(app)
+      .put('/fhir/R4/Binary/' + binary.id)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'text/plain')
+      .set('Content-Encoding', 'gzip')
+      .send(await createBufferForStream('Hello world 2', zlib.createGzip()));
+    expect(res2.status).toBe(200);
+
+    const res3 = await request(app)
+      .get('/fhir/R4/Binary/' + binary.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3.status).toBe(200);
+    expect(res3.text).toEqual('Hello world 2');
+  });
 });
 
 async function createBufferForStream(message: string, stream: Duplex): Promise<Buffer> {
   const input = new Readable();
-  input.push('Hello world');
+  input.push(message);
   input.push(null);
 
   input.pipe(stream);

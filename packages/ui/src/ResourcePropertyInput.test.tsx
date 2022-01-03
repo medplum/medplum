@@ -9,10 +9,10 @@ import {
   HumanName,
   Identifier,
 } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from '@medplum/mock';
 import { ResourcePropertyInput, ResourcePropertyInputProps } from './ResourcePropertyInput';
 
 const patientNameProperty: ElementDefinition = {
@@ -205,7 +205,51 @@ describe('ResourcePropertyInput', () => {
     expect(screen.getByDisplayValue('San Francisco')).toBeDefined();
   });
 
-  test('Renders Attachment property', () => {
+  test('Renders Attachment property', async () => {
+    const mediaContentProperty: ElementDefinition = {
+      id: 'Media.content',
+      path: 'Media.content',
+      type: [
+        {
+          code: 'Attachment',
+        },
+      ],
+    };
+
+    const content: Attachment = {
+      contentType: 'text/plain',
+      url: 'https://example.com/hello.txt',
+      title: 'hello.txt',
+    };
+
+    const onChange = jest.fn();
+
+    setup({
+      schema,
+      property: mediaContentProperty,
+      name: 'content',
+      defaultValue: content,
+      onChange,
+    });
+    expect(screen.getByText('hello.txt')).toBeDefined();
+
+    // Remove the original file
+    await act(async () => {
+      fireEvent.click(screen.getByText('Remove'));
+    });
+
+    // Add a new file
+    await act(async () => {
+      const files = [new File(['hello'], 'world.txt', { type: 'text/plain' })];
+      fireEvent.change(screen.getByTestId('upload-file-input'), {
+        target: { files },
+      });
+    });
+
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ title: 'world.txt' }));
+  });
+
+  test('Renders Attachment array property', async () => {
     const photo: Attachment[] = [
       {
         contentType: 'text/plain',
@@ -214,13 +258,30 @@ describe('ResourcePropertyInput', () => {
       },
     ];
 
+    const onChange = jest.fn();
+
     setup({
       schema,
       property: patientPhotoProperty,
       name: 'photo',
       defaultValue: photo,
+      onChange,
     });
     expect(screen.getByText('hello.txt')).toBeDefined();
+
+    await act(async () => {
+      const files = [new File(['hello'], 'world.txt', { type: 'text/plain' })];
+      fireEvent.change(screen.getByTestId('upload-file-input'), {
+        target: { files },
+      });
+    });
+
+    expect(onChange).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ title: 'hello.txt' }),
+        expect.objectContaining({ title: 'world.txt' }),
+      ])
+    );
   });
 
   test('Renders CodeableConcept property', () => {

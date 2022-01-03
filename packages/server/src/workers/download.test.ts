@@ -179,4 +179,38 @@ describe('Download Worker', () => {
     // Fetch should not have been called
     expect(fetch).not.toHaveBeenCalled();
   });
+
+  test('Stop if URL changed', async () => {
+    const queue = (Queue as any).mock.instances[0];
+    queue.add.mockClear();
+
+    const [mediaOutcome, media] = await repo.createResource<Media>({
+      resourceType: 'Media',
+      content: {
+        contentType: 'text/plain',
+        url: 'https://example.com/download',
+      },
+    });
+
+    expect(mediaOutcome.id).toEqual('created');
+    expect(media).toBeDefined();
+    expect(queue.add).toHaveBeenCalled();
+
+    // At this point the job should be in the queue
+    // But let's change the URL to an internal Binary resource
+    const [updateOutcome] = await repo.updateResource({
+      ...(media as Media),
+      content: {
+        contentType: 'text/plain',
+        url: 'Binary/' + randomUUID(),
+      },
+    });
+    assertOk(updateOutcome);
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    await execDownloadJob(job);
+
+    // Fetch should not have been called
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });
