@@ -23,7 +23,7 @@ import { TextField } from './TextField';
 import { Timeline, TimelineItem } from './Timeline';
 import { UploadButton } from './UploadButton';
 import { useResource } from './useResource';
-import { sortByDate } from './utils/format';
+import { sortByDate } from './utils/date';
 import './ResourceTimeline.css';
 
 export interface ResourceTimelineProps<T extends Resource> {

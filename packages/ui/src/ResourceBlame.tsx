@@ -1,10 +1,10 @@
 import { Bundle } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { Avatar } from './Avatar';
+import { DateTimeDisplay } from './DateTimeDisplay';
 import { useMedplum } from './MedplumProvider';
 import { ResourceName } from './ResourceName';
 import { blame } from './utils/blame';
-import { formatDateTime } from './utils/format';
 import './ResourceBlame.css';
 
 export interface ResourceBlameProps {
@@ -38,7 +38,7 @@ export function ResourceBlame(props: ResourceBlameProps): JSX.Element {
                 <Avatar size="xsmall" value={row.meta.author} />
                 <ResourceName value={row.meta.author} link={true} />
                 <br />
-                {formatDateTime(row.meta.lastUpdated as string)}
+                <DateTimeDisplay value={row.meta.lastUpdated} />
                 <br />
                 <span>{row.meta.versionId}</span>
               </td>
