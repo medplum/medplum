@@ -23,7 +23,7 @@ import {
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import { JWTPayload } from 'jose';
-import { systemRepo, RepositoryResult } from '../fhir';
+import { RepositoryResult, systemRepo } from '../fhir';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
 
 export interface LoginRequest {
@@ -154,7 +154,7 @@ export function validateLoginRequest(request: LoginRequest): OperationOutcome | 
   }
 
   if (request.authMethod === 'google' && !request.googleCredentials) {
-    return badRequest('Invalid password', 'password');
+    return badRequest('Invalid google credentials', 'googleCredentials');
   }
 
   if (!request.scope) {
@@ -316,10 +316,7 @@ async function getUserByEmail(email: string): RepositoryResult<User | undefined>
       },
     ],
   });
-
-  if (!isOk(outcome)) {
-    return [outcome, undefined];
-  }
+  assertOk(outcome);
 
   if (!bundle?.entry || bundle.entry.length === 0) {
     return [notFound, undefined];

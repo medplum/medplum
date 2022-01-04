@@ -68,10 +68,25 @@ describe('OAuth utils', () => {
     expect(login).toBeUndefined();
   });
 
-  test('Login with missing ', async () => {
+  test('User not found', async () => {
     const [outcome, login] = await tryLogin({
       clientId: client.id as string,
       authMethod: 'password',
+      email: 'user-not-found@example.com',
+      password: 'admin',
+      scope: 'openid',
+      nonce: 'nonce',
+      remember: false,
+    });
+
+    expect(isOk(outcome)).toBe(false);
+    expect(login).toBeUndefined();
+  });
+
+  test('Blank authentication method', async () => {
+    const [outcome, login] = await tryLogin({
+      clientId: client.id as string,
+      authMethod: '' as unknown as 'password',
       email: 'admin@example.com',
       password: 'admin',
       scope: 'openid',
@@ -79,8 +94,55 @@ describe('OAuth utils', () => {
       remember: false,
     });
 
-    expect(isOk(outcome)).toBe(true);
-    expect(login).toBeDefined();
+    expect(isOk(outcome)).toBe(false);
+    expect(outcome.issue?.[0]?.details?.text).toBe('Invalid authentication method');
+    expect(login).toBeUndefined();
+  });
+
+  test('Invalid authentication method', async () => {
+    const [outcome, login] = await tryLogin({
+      clientId: client.id as string,
+      authMethod: 'xyz' as unknown as 'password',
+      email: 'admin@example.com',
+      scope: 'openid',
+      nonce: 'nonce',
+      remember: false,
+    });
+
+    expect(isOk(outcome)).toBe(false);
+    expect(outcome.issue?.[0]?.details?.text).toBe('Invalid authentication method');
+    expect(login).toBeUndefined();
+  });
+
+  test('Invalid google credentials', async () => {
+    const [outcome, login] = await tryLogin({
+      clientId: client.id as string,
+      authMethod: 'google',
+      email: 'admin@example.com',
+      scope: 'openid',
+      nonce: 'nonce',
+      remember: false,
+    });
+
+    expect(isOk(outcome)).toBe(false);
+    expect(outcome.issue?.[0]?.details?.text).toBe('Invalid google credentials');
+    expect(login).toBeUndefined();
+  });
+
+  test('Invalid scope', async () => {
+    const [outcome, login] = await tryLogin({
+      clientId: client.id as string,
+      authMethod: 'password',
+      email: 'admin@example.com',
+      password: 'admin',
+      scope: '',
+      nonce: 'nonce',
+      remember: false,
+    });
+
+    expect(isOk(outcome)).toBe(false);
+    expect(outcome.issue?.[0]?.details?.text).toBe('Invalid scope');
+    expect(login).toBeUndefined();
   });
 
   test('Login successfully', async () => {
