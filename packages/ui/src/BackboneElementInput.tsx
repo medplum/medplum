@@ -28,7 +28,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
   const typeName = buildTypeName(props.property.path?.split('.') as string[]);
   const typeSchema = props.schema.types[typeName];
   if (!typeSchema) {
-    return <div>Schema not found</div>;
+    return <div>{typeName}&nbsp;not implemented</div>;
   }
 
   return (

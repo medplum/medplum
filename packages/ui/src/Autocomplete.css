@@ -5,10 +5,11 @@
   box-shadow: 0 1px 1px 0 var(--medplum-gray-200);
   outline: 2px var(--medplum-surface);
   position: relative;
-  margin: 0;
   cursor: text;
-  height: 32px;
+  height: 34px;
   line-height: 28px;
+  width: 100%;
+  max-width: 400px;
 }
 
 .medplum-autocomplete-container.focused {
@@ -23,7 +24,7 @@
   list-style-type: none;
   overflow: hidden;
   cursor: text;
-  height: 32px;
+  height: 34px;
 }
 
 .medplum-autocomplete-container > ul > li {
@@ -52,9 +53,10 @@
 .medplum-autocomplete-container > ul > li > input {
   display: inline-block;
   width: 80px;
+  height: 28px;
   line-height: 26px;
   padding: 0 0 0 6px;
-  margin: 2px 0 0 2px;
+  margin: 3px 0 0 2px;
   outline: none;
   border: none;
   box-shadow: none;

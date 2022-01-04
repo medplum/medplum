@@ -1,11 +1,11 @@
 import { IndexedStructureDefinition } from '@medplum/core';
 import { ElementDefinition } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { BackboneElementDisplay, BackboneElementDisplayProps } from './BackboneElementDisplay';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from '@medplum/mock';
 
 const contactProperty: ElementDefinition = {
   id: 'Patient.contact',
@@ -43,6 +43,18 @@ const nameProperty: ElementDefinition = {
   max: '1',
 };
 
+const deviceNameNameProperty: ElementDefinition = {
+  id: 'Device.deviceName.name',
+  path: 'Device.deviceName.name',
+  type: [
+    {
+      code: 'string',
+    },
+  ],
+  min: 0,
+  max: '1',
+};
+
 const schema: IndexedStructureDefinition = {
   types: {
     Patient: {
@@ -56,6 +68,12 @@ const schema: IndexedStructureDefinition = {
       properties: {
         id: idProperty,
         name: nameProperty,
+      },
+    },
+    DeviceDeviceName: {
+      display: 'Device Device Name',
+      properties: {
+        name: deviceNameNameProperty,
       },
     },
   },
@@ -94,6 +112,40 @@ describe('BackboneElementDisplay', () => {
         },
       },
     });
-    expect(screen.getByText('Name')).toBeDefined();
+    expect(screen.getByText('Name')).toBeInTheDocument();
+  });
+
+  test('Ignore missing properties', () => {
+    setup({
+      schema,
+      typeName: 'PatientContact',
+      value: {
+        id: '123',
+      },
+      ignoreMissingValues: true,
+    });
+    expect(screen.queryByText('Name')).not.toBeInTheDocument();
+  });
+
+  test('Renders simple name', () => {
+    setup({
+      schema,
+      typeName: 'DeviceDeviceName',
+      value: {
+        name: 'Simple Name',
+      },
+    });
+    expect(screen.getByText('Simple Name')).toBeInTheDocument();
+  });
+
+  test('Not implemented', () => {
+    setup({
+      schema,
+      typeName: 'Foo',
+      value: {
+        foo: 'bar',
+      },
+    });
+    expect(screen.getByText('Foo not implemented')).toBeInTheDocument();
   });
 });

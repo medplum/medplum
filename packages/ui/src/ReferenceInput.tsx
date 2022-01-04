@@ -1,6 +1,7 @@
 import { createReference } from '@medplum/core';
 import { ElementDefinition, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
+import { InputRow } from './InputRow';
 import { ResourceInput } from './ResourceInput';
 
 export interface ReferenceInputProps {
@@ -30,49 +31,40 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
   }
 
   return (
-    <table style={{ tableLayout: 'fixed' }}>
-      <tbody>
-        <tr>
-          <td>
-            <input name={props.name} type="hidden" value={JSON.stringify(value) || ''} readOnly={true} />
-            {targetTypes ? (
-              <select
-                data-testid="reference-input-resource-type-select"
-                defaultValue={resourceType}
-                onChange={(e) => setResourceType(e.currentTarget.value)}
-              >
-                {targetTypes.map((targetType) => (
-                  <option key={targetType} value={targetType}>
-                    {targetType}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                type="text"
-                data-testid="reference-input-resource-type-input"
-                defaultValue={resourceType}
-                onChange={(e) => {
-                  setResourceType(e.currentTarget.value);
-                }}
-              />
-            )}
-          </td>
-          <td>
-            {resourceType && (
-              <ResourceInput
-                resourceType={resourceType}
-                name={props.name + '-id'}
-                defaultValue={value}
-                onChange={(item: Resource | undefined) => {
-                  setValueHelper(item ? createReference(item) : undefined);
-                }}
-              />
-            )}
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <InputRow>
+      {targetTypes ? (
+        <select
+          data-testid="reference-input-resource-type-select"
+          defaultValue={resourceType}
+          onChange={(e) => setResourceType(e.currentTarget.value)}
+        >
+          {targetTypes.map((targetType) => (
+            <option key={targetType} value={targetType}>
+              {targetType}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <input
+          type="text"
+          data-testid="reference-input-resource-type-input"
+          defaultValue={resourceType}
+          onChange={(e) => {
+            setResourceType(e.currentTarget.value);
+          }}
+        />
+      )}
+      {resourceType && (
+        <ResourceInput
+          resourceType={resourceType}
+          name={props.name + '-id'}
+          defaultValue={value}
+          onChange={(item: Resource | undefined) => {
+            setValueHelper(item ? createReference(item) : undefined);
+          }}
+        />
+      )}
+    </InputRow>
   );
 }
 

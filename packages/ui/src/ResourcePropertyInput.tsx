@@ -13,6 +13,8 @@ import { ContactPointInput } from './ContactPointInput';
 import { ExtensionInput } from './ExtensionInput';
 import { HumanNameInput } from './HumanNameInput';
 import { IdentifierInput } from './IdentifierInput';
+import { InputRow } from './InputRow';
+import { PeriodInput } from './PeriodInput';
 import { QuantityInput } from './QuantityInput';
 import { ReferenceInput } from './ReferenceInput';
 import { ResourceArrayInput } from './ResourceArrayInput';
@@ -72,41 +74,34 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
   }
   const [selectedType, setSelectedType] = useState(initialPropertyType);
   return (
-    <table>
-      <tbody>
-        <tr>
-          <td style={{ width: '20%' }}>
-            <select
-              defaultValue={selectedType.code}
-              onChange={(e: React.ChangeEvent) => {
-                setSelectedType(
-                  propertyTypes.find(
-                    (type: ElementDefinitionType) => type.code === (e.target as HTMLSelectElement).value
-                  ) as ElementDefinitionType
-                );
-              }}
-            >
-              {propertyTypes.map((type: ElementDefinitionType) => (
-                <option key={type.code} value={type.code}>
-                  {type.code}
-                </option>
-              ))}
-            </select>
-          </td>
-          <td style={{ width: '80%' }}>
-            <ElementDefinitionTypeInput
-              {...props}
-              elementDefinitionType={selectedType}
-              onChange={(newValue: any) => {
-                if (props.onChange) {
-                  props.onChange(newValue, props.name.replace('[x]', capitalize(selectedType.code as string)));
-                }
-              }}
-            />
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <InputRow>
+      <select
+        style={{ width: '200px' }}
+        defaultValue={selectedType.code}
+        onChange={(e: React.ChangeEvent) => {
+          setSelectedType(
+            propertyTypes.find(
+              (type: ElementDefinitionType) => type.code === (e.target as HTMLSelectElement).value
+            ) as ElementDefinitionType
+          );
+        }}
+      >
+        {propertyTypes.map((type: ElementDefinitionType) => (
+          <option key={type.code} value={type.code}>
+            {type.code}
+          </option>
+        ))}
+      </select>
+      <ElementDefinitionTypeInput
+        {...props}
+        elementDefinitionType={selectedType}
+        onChange={(newValue: any) => {
+          if (props.onChange) {
+            props.onChange(newValue, props.name.replace('[x]', capitalize(selectedType.code as string)));
+          }
+        }}
+      />
+    </InputRow>
   );
 }
 
@@ -123,15 +118,36 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
   switch (propertyType) {
     case PropertyType.SystemString:
     case PropertyType.canonical:
-    case PropertyType.date:
-    case PropertyType.dateTime:
-    case PropertyType.instant:
     case PropertyType.string:
+    case PropertyType.time:
     case PropertyType.uri:
     case PropertyType.url:
       return (
         <TextField
           type="text"
+          name={name}
+          testid={name}
+          defaultValue={value}
+          onChange={(e: React.ChangeEvent) => props.onChange && props.onChange((e.target as HTMLInputElement).value)}
+          outcome={props.outcome}
+        />
+      );
+    case PropertyType.date:
+      return (
+        <TextField
+          type="date"
+          name={name}
+          testid={name}
+          defaultValue={value}
+          onChange={(e: React.ChangeEvent) => props.onChange && props.onChange((e.target as HTMLInputElement).value)}
+          outcome={props.outcome}
+        />
+      );
+    case PropertyType.dateTime:
+    case PropertyType.instant:
+      return (
+        <TextField
+          type="datetime-local"
           name={name}
           testid={name}
           defaultValue={value}
@@ -197,6 +213,8 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       return <HumanNameInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Identifier:
       return <IdentifierInput name={name} defaultValue={value} onChange={props.onChange} />;
+    case PropertyType.Period:
+      return <PeriodInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Quantity:
       return <QuantityInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Reference:

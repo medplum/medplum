@@ -26,7 +26,7 @@ export function TextField(props: TextFieldProps): JSX.Element {
     <input
       id={props.name}
       name={props.name}
-      type={props.type || 'text'}
+      type={getInputType(props.type)}
       step={props.step}
       className={className}
       defaultValue={props.defaultValue || ''}
@@ -74,4 +74,15 @@ export function Select(props: SelectProps): JSX.Element {
       {props.children}
     </select>
   );
+}
+
+/**
+ * Returns the input type for the requested type.
+ * JSDOM does not support many of the valid <input> type attributes.
+ * For example, it won't fire change events for <input type="datetime-local">.
+ * @param requestedType The optional type as requested by the parent component.
+ */
+function getInputType(requestedType: string | undefined): string {
+  const result = requestedType || 'text';
+  return process.env.NODE_ENV === 'test' ? result.replace(/date|datetime-local/, 'text') : result;
 }

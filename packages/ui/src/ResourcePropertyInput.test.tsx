@@ -8,6 +8,7 @@ import {
   ElementDefinition,
   HumanName,
   Identifier,
+  Period,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
@@ -189,6 +190,54 @@ describe('ResourcePropertyInput', () => {
     expect(onChange).toHaveBeenCalledWith(true);
   });
 
+  test('Date property', async () => {
+    const onChange = jest.fn();
+
+    setup({
+      schema,
+      property: {
+        type: [
+          {
+            code: 'date',
+          },
+        ],
+      },
+      name: 'date',
+      onChange,
+    });
+    expect(screen.getByTestId('date')).toBeDefined();
+
+    act(() => {
+      fireEvent.change(screen.getByTestId('date'), { target: { value: '2021-01-01' } });
+    });
+
+    expect(onChange).toHaveBeenCalledWith('2021-01-01');
+  });
+
+  test('Date/Time property', async () => {
+    const onChange = jest.fn();
+
+    setup({
+      schema,
+      property: {
+        type: [
+          {
+            code: 'dateTime',
+          },
+        ],
+      },
+      name: 'dateTime',
+      onChange,
+    });
+    expect(screen.getByTestId('dateTime')).toBeDefined();
+
+    act(() => {
+      fireEvent.change(screen.getByTestId('dateTime'), { target: { value: '2021-01-01T12:00:00Z' } });
+    });
+
+    expect(onChange).toHaveBeenCalledWith('2021-01-01T12:00:00Z');
+  });
+
   test('Renders Address property', () => {
     const address: Address[] = [
       {
@@ -353,6 +402,40 @@ describe('ResourcePropertyInput', () => {
     });
     expect(screen.getByDisplayValue('https://example.com')).toBeDefined();
     expect(screen.getByDisplayValue('123')).toBeDefined();
+  });
+
+  test('Renders Period property', async () => {
+    const period: Period = {
+      start: '2020-01-01T12:00:00Z',
+      end: '2021-01-02T12:00:00Z',
+    };
+
+    const onChange = jest.fn();
+
+    setup({
+      schema,
+      property: {
+        type: [
+          {
+            code: 'Period',
+          },
+        ],
+      },
+      name: 'period',
+      defaultValue: period,
+      onChange,
+    });
+
+    expect(screen.getByPlaceholderText('Start')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('End')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('End'), {
+        target: { value: '2021-01-03T12:00:00Z' },
+      });
+    });
+
+    expect(onChange).toHaveBeenCalledWith({ start: '2020-01-01T12:00:00Z', end: '2021-01-03T12:00:00Z' });
   });
 
   test('Renders Reference property', () => {

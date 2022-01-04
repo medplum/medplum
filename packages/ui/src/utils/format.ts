@@ -4,6 +4,7 @@ import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
  * Returns a formatted date string.
  * @param dateTime A date that can be either a ISO 8601 string or a Date object.
  * @returns A user-friendly formatted date string.
+ * @deprecated Use <DateTimeDisplay> component instead.
  */
 export function formatDateTime(dateTime: string | undefined): string {
   if (!dateTime) {

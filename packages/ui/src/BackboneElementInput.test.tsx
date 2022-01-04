@@ -1,11 +1,11 @@
 import { IndexedStructureDefinition } from '@medplum/core';
 import { ElementDefinition } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { BackboneElementInput, BackboneElementInputProps } from './BackboneElementInput';
 import { MedplumProvider } from './MedplumProvider';
-import { MockClient } from '@medplum/mock';
 
 const contactProperty: ElementDefinition = {
   id: 'Patient.contact',
@@ -148,5 +148,16 @@ describe('BackboneElementInput', () => {
     });
     expect(screen.getByText('Locked Date')).toBeInTheDocument();
     expect(screen.queryByText('Exclude')).toBeNull();
+  });
+
+  test('Not implemented', () => {
+    setup({
+      schema,
+      property: {
+        path: 'foo',
+      },
+      name: 'foo',
+    });
+    expect(screen.getByText('Foo not implemented')).toBeInTheDocument();
   });
 });

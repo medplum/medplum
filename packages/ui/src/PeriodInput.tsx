@@ -1,18 +1,18 @@
-import { Identifier } from '@medplum/fhirtypes';
+import { Period } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { InputRow } from './InputRow';
 import { TextField } from './TextField';
 
-export interface IdentifierInputProps {
+export interface PeriodInputProps {
   name: string;
-  defaultValue?: Identifier;
-  onChange?: (value: Identifier) => void;
+  defaultValue?: Period;
+  onChange?: (value: Period) => void;
 }
 
-export function IdentifierInput(props: IdentifierInputProps): JSX.Element {
+export function PeriodInput(props: PeriodInputProps): JSX.Element {
   const [value, setValue] = useState(props.defaultValue);
 
-  function setValueWrapper(newValue: Identifier): void {
+  function setValueWrapper(newValue: Period): void {
     setValue(newValue);
     if (props.onChange) {
       props.onChange(newValue);
@@ -22,22 +22,24 @@ export function IdentifierInput(props: IdentifierInputProps): JSX.Element {
   return (
     <InputRow>
       <TextField
-        placeholder="System"
-        defaultValue={value?.system}
+        type="datetime-local"
+        placeholder="Start"
+        defaultValue={value?.start}
         onChange={(e) =>
           setValueWrapper({
             ...value,
-            system: (e.currentTarget as HTMLInputElement).value,
+            start: (e.currentTarget as HTMLInputElement).value,
           })
         }
       />
       <TextField
-        placeholder="Value"
-        defaultValue={value?.value}
+        type="datetime-local"
+        placeholder="End"
+        defaultValue={value?.end}
         onChange={(e) =>
           setValueWrapper({
             ...value,
-            value: (e.currentTarget as HTMLInputElement).value,
+            end: (e.currentTarget as HTMLInputElement).value,
           })
         }
       />
