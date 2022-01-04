@@ -33,7 +33,7 @@ export function BatchPage(): JSX.Element {
       </p>
       <h3>Input</h3>
       <Form
-        onSubmit={(formData: any) => {
+        onSubmit={(formData: Record<string, string>) => {
           setOutput(undefined);
           medplum.post('fhir/R4', JSON.parse(formData.input)).then((response) => {
             setOutput(response);

@@ -947,8 +947,11 @@ export function toTime(input: unknown[]): string[] {
     return [];
   }
   const [value] = validateInput(input, 1);
-  if (typeof value === 'string' && value.match(/^\d{2}(:\d{2}(:\d{2})?)?/)) {
-    return [parseDateString('T' + value)];
+  if (typeof value === 'string') {
+    const match = value.match(/^T?(\d{2}(:\d{2}(:\d{2})?)?)/);
+    if (match) {
+      return [parseDateString('T' + match[1])];
+    }
   }
   return [];
 }

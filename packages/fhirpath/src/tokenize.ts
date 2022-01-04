@@ -172,10 +172,6 @@ class Tokenizer {
     const start = this.pos;
     let id = 'Number';
 
-    if (this.curr() === '-') {
-      this.pos++;
-    }
-
     this.consumeWhile(() => this.curr().match(/\d/));
 
     if (this.curr() === '.' && this.peek().match(/\d/)) {

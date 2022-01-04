@@ -3,7 +3,7 @@
  * See: https://tools.ietf.org/html/rfc7519
  * @param payload
  */
-function decodePayload(payload: string): any {
+function decodePayload(payload: string): Record<string, number | string> {
   const cleanedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
   const decodedPayload = window.atob(cleanedPayload);
   const uriEncodedPayload = Array.from(decodedPayload).reduce((acc, char) => {
@@ -18,7 +18,7 @@ function decodePayload(payload: string): any {
  * Parses the JWT payload.
  * @param token JWT token
  */
-export function parseJWTPayload(token: string): any {
+export function parseJWTPayload(token: string): Record<string, number | string> {
   const [_header, payload, _signature] = token.split('.');
   return decodePayload(payload);
 }

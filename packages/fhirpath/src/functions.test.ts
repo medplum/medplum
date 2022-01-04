@@ -228,6 +228,13 @@ describe('FHIRPath functions', () => {
 
   // 5.5. Conversion
 
+  test('iif', () => {
+    expect(functions.iif([], new LiteralAtom(true), new LiteralAtom('x'))).toEqual(['x']);
+    expect(functions.iif([], new LiteralAtom(false), new LiteralAtom('x'))).toEqual([]);
+    expect(functions.iif([], new LiteralAtom(true), new LiteralAtom('x'), new LiteralAtom('y'))).toEqual(['x']);
+    expect(functions.iif([], new LiteralAtom(false), new LiteralAtom('x'), new LiteralAtom('y'))).toEqual(['y']);
+  });
+
   test('toBoolean', () => {
     expect(functions.toBoolean([])).toEqual([]);
     expect(functions.toBoolean([true])).toEqual([true]);
@@ -278,6 +285,40 @@ describe('FHIRPath functions', () => {
     expect(functions.convertsToInteger(['false'])).toEqual([false]);
     expect(functions.convertsToInteger(['xyz'])).toEqual([false]);
     expect(functions.convertsToInteger([{}])).toEqual([false]);
+  });
+
+  test('toDate', () => {
+    expect(functions.toDate([])).toEqual([]);
+    expect(() => functions.toDate([1, 2])).toThrow();
+    expect(functions.toDate(['2020-01-01'])).toEqual(['2020-01-01']);
+    expect(functions.toDate([1])).toEqual([]);
+    expect(functions.toDate([true])).toEqual([]);
+  });
+
+  test('convertsToDate', () => {
+    expect(functions.convertsToDate([])).toEqual([]);
+    expect(() => functions.convertsToDate([1, 2])).toThrow();
+    expect(functions.convertsToDate(['2020-01-01'])).toEqual([true]);
+    expect(functions.convertsToDate([1])).toEqual([false]);
+    expect(functions.convertsToDate([true])).toEqual([false]);
+  });
+
+  test('toDateTime', () => {
+    expect(functions.toDateTime([])).toEqual([]);
+    expect(() => functions.toDateTime([1, 2])).toThrow();
+    expect(functions.toDateTime(['2020-01-01'])).toEqual(['2020-01-01']);
+    expect(functions.toDateTime(['2020-01-01T12:00:00Z'])).toEqual(['2020-01-01T12:00:00.000Z']);
+    expect(functions.toDateTime([1])).toEqual([]);
+    expect(functions.toDateTime([true])).toEqual([]);
+  });
+
+  test('convertsToDateTime', () => {
+    expect(functions.convertsToDateTime([])).toEqual([]);
+    expect(() => functions.convertsToDateTime([1, 2])).toThrow();
+    expect(functions.convertsToDateTime(['2020-01-01'])).toEqual([true]);
+    expect(functions.convertsToDateTime(['2020-01-01T12:00:00Z'])).toEqual([true]);
+    expect(functions.convertsToDateTime([1])).toEqual([false]);
+    expect(functions.convertsToDateTime([true])).toEqual([false]);
   });
 
   test('toDecimal', () => {
@@ -340,6 +381,8 @@ describe('FHIRPath functions', () => {
   test('toString', () => {
     const toString = functions.toString as unknown as (input: unknown[]) => string[];
     expect(toString([])).toEqual([]);
+    expect(toString([null])).toEqual([]);
+    expect(toString([undefined])).toEqual([]);
     expect(() => toString([1, 2])).toThrow();
     expect(toString([true])).toEqual(['true']);
     expect(toString([false])).toEqual(['false']);
@@ -363,6 +406,26 @@ describe('FHIRPath functions', () => {
     expect(functions.convertsToString(['false'])).toEqual([true]);
     expect(functions.convertsToString(['xyz'])).toEqual([true]);
     expect(functions.convertsToString([{}])).toEqual([true]);
+  });
+
+  test('toTime', () => {
+    expect(functions.toTime([])).toEqual([]);
+    expect(() => functions.toTime([1, 2])).toThrow();
+    expect(functions.toTime(['12:00:00'])).toEqual(['T12:00:00.000Z']);
+    expect(functions.toTime(['T12:00:00'])).toEqual(['T12:00:00.000Z']);
+    expect(functions.toTime(['foo'])).toEqual([]);
+    expect(functions.toTime([1])).toEqual([]);
+    expect(functions.toTime([true])).toEqual([]);
+  });
+
+  test('convertsToTime', () => {
+    expect(functions.convertsToTime([])).toEqual([]);
+    expect(() => functions.convertsToTime([1, 2])).toThrow();
+    expect(functions.convertsToTime(['12:00:00'])).toEqual([true]);
+    expect(functions.convertsToTime(['T12:00:00'])).toEqual([true]);
+    expect(functions.convertsToTime(['foo'])).toEqual([false]);
+    expect(functions.convertsToTime([1])).toEqual([false]);
+    expect(functions.convertsToTime([true])).toEqual([false]);
   });
 
   // 5.6. String Manipulation.
