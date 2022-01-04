@@ -154,7 +154,7 @@ function buildGraphQLType(resourceType: string): GraphQLOutputType | undefined {
 
     const fieldConfig: GraphQLFieldConfig<any, any> = {
       type: propertyType,
-      description: (property as any).description,
+      description: property.description,
     };
 
     if (resourceType === 'Reference' && propertyName === 'resource') {

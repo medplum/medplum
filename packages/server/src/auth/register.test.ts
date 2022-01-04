@@ -28,7 +28,7 @@ describe('Register', () => {
   });
 
   beforeEach(async () => {
-    (fetch as any).mockClear();
+    (fetch as unknown as jest.Mock).mockClear();
     setupRecaptchaMock(fetch, true);
   });
 

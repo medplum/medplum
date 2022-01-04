@@ -172,10 +172,6 @@ class Tokenizer {
     const start = this.pos;
     let id = 'Number';
 
-    if (this.curr() === '-') {
-      this.pos++;
-    }
-
     this.consumeWhile(() => this.curr().match(/\d/));
 
     if (this.curr() === '.' && this.peek().match(/\d/)) {
@@ -214,7 +210,7 @@ class Tokenizer {
     return buildToken(c, c);
   }
 
-  private consumeWhile(condition: () => any): string {
+  private consumeWhile(condition: () => unknown): string {
     const start = this.pos;
 
     while (this.pos < this.str.length && condition()) {

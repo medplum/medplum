@@ -730,7 +730,7 @@ export class MedplumClient extends EventTarget {
 
     // Verify token has not expired
     const tokenPayload = parseJWTPayload(token);
-    if (Date.now() >= tokenPayload.exp * 1000) {
+    if (Date.now() >= (tokenPayload.exp as number) * 1000) {
       this.clear();
       return Promise.reject('Token expired');
     }

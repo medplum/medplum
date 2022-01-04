@@ -33,9 +33,9 @@ describe('Login', () => {
   });
 
   beforeEach(() => {
-    (SESv2Client as any).mockClear();
-    (SendEmailCommand as any).mockClear();
-    (fetch as any).mockClear();
+    (SESv2Client as unknown as jest.Mock).mockClear();
+    (SendEmailCommand as unknown as jest.Mock).mockClear();
+    (fetch as unknown as jest.Mock).mockClear();
     setupRecaptchaMock(fetch, true);
   });
 
@@ -185,7 +185,7 @@ describe('Login', () => {
     expect(SendEmailCommand).toHaveBeenCalledTimes(1);
 
     // Parse the email for the "set password" link
-    const args = (SendEmailCommand as any).mock.calls[0][0];
+    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
     const content = args.Content.Simple.Body.Text.Data;
     const url = /(https?:\/\/[^\s]+)/g.exec(content)?.[0] as string;
     const paths = url.split('/');

@@ -1,3 +1,4 @@
+import { Quantity, Resource } from '@medplum/fhirtypes';
 import {
   applyMaybeArray,
   ensureArray,
@@ -10,13 +11,13 @@ import {
 } from './utils';
 
 export interface Atom {
-  eval(context: any): any;
+  eval(context: unknown): unknown;
 }
 
 export class FhirPathAtom implements Atom {
   constructor(public readonly original: string, public readonly child: Atom) {}
 
-  eval(context: any): any[] {
+  eval(context: unknown): unknown[] {
     try {
       const result = applyMaybeArray(context, (e) => this.child.eval(e));
       if (Array.isArray(result)) {
@@ -30,123 +31,108 @@ export class FhirPathAtom implements Atom {
       throw new Error(`FhirPathError on "${this.original}": ${error}`);
     }
   }
-  toString(): string {
-    return this.child.toString();
-  }
 }
 
 export class LiteralAtom implements Atom {
-  constructor(public readonly value: any) {}
-  eval(): any {
+  constructor(public readonly value: Quantity | boolean | number | string) {}
+  eval(): unknown {
     return this.value;
-  }
-  toString(): string {
-    return this.value.toString();
   }
 }
 
 export class SymbolAtom implements Atom {
   constructor(public readonly name: string) {}
-  eval(context: any): any {
+  eval(context: unknown): unknown {
     if (this.name === '$this') {
       return context;
     }
     return applyMaybeArray(context, (e) => {
       if (e && typeof e === 'object') {
-        if (e.resourceType === this.name) {
+        if ('resourceType' in e && (e as Resource).resourceType === this.name) {
           return e;
         }
         if (this.name in e) {
-          return e[this.name];
+          return (e as { [key: string]: unknown })[this.name];
         }
         const propertyName = Object.keys(e).find((k) => k.startsWith(this.name));
         if (propertyName) {
-          return e[propertyName];
+          return (e as { [key: string]: unknown })[propertyName];
         }
       }
       return undefined;
     });
   }
-  toString(): string {
-    return this.name;
-  }
 }
 
 export class EmptySetAtom implements Atom {
-  eval(): any {
+  eval(): [] {
     return [];
   }
 }
 
 export class UnaryOperatorAtom implements Atom {
-  constructor(public readonly child: Atom, public readonly impl: (x: any) => any) {}
+  constructor(public readonly child: Atom, public readonly impl: (x: unknown) => unknown) {}
 
-  eval(context: any): any {
+  eval(context: unknown): unknown {
     return this.impl(this.child.eval(context));
   }
 }
 
-export class BinaryOperatorAtom implements Atom {
-  constructor(public readonly left: Atom, public readonly right: Atom, public readonly impl: (x: any, y: any) => any) {}
+export class AsAtom implements Atom {
+  constructor(public readonly left: Atom, public readonly right: Atom) {}
 
-  eval(context: any): any {
-    const leftValue = this.left.eval(context);
-    const rightValue = this.right.eval(context);
-    return applyMaybeArray(leftValue, (value) => this.impl(value, rightValue));
-  }
-
-  toString(): string {
-    return '(' + this.left.toString() + ' ' + this.impl.toString() + ' ' + this.right.toString() + ')';
+  eval(context: unknown): unknown {
+    return this.left.eval(context);
   }
 }
 
 export class ArithemticOperatorAtom implements Atom {
-  constructor(public readonly left: Atom, public readonly right: Atom, public readonly impl: (x: any, y: any) => any) {}
+  constructor(
+    public readonly left: Atom,
+    public readonly right: Atom,
+    public readonly impl: (x: number, y: number) => number
+  ) {}
 
-  eval(context: any): any {
+  eval(context: unknown): unknown {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
     if (isQuantity(leftValue) && isQuantity(rightValue)) {
       return {
         ...leftValue,
-        value: this.impl(leftValue.value, rightValue.value),
+        value: this.impl(leftValue.value as number, rightValue.value as number),
       };
     } else {
-      return this.impl(leftValue, rightValue);
+      return this.impl(leftValue as number, rightValue as number);
     }
-  }
-
-  toString(): string {
-    return '(' + this.left.toString() + ' ' + this.impl.toString() + ' ' + this.right.toString() + ')';
   }
 }
 
 export class ComparisonOperatorAtom implements Atom {
-  constructor(public readonly left: Atom, public readonly right: Atom, public readonly impl: (x: any, y: any) => any) {}
+  constructor(
+    public readonly left: Atom,
+    public readonly right: Atom,
+    public readonly impl: (x: number, y: number) => boolean
+  ) {}
 
-  eval(context: any): any {
+  eval(context: unknown): unknown {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
     if (isQuantity(leftValue) && isQuantity(rightValue)) {
-      return this.impl(leftValue.value, rightValue.value);
+      return this.impl(leftValue.value as number, rightValue.value as number);
     } else {
-      return this.impl(leftValue, rightValue);
+      return this.impl(leftValue as number, rightValue as number);
     }
-  }
-
-  toString(): string {
-    return '(' + this.left.toString() + ' ' + this.impl.toString() + ' ' + this.right.toString() + ')';
   }
 }
 
 export class ConcatAtom implements Atom {
   constructor(public readonly left: Atom, public readonly right: Atom) {}
 
-  eval(context: any): any {
+  eval(context: unknown): unknown {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
-    const result: any[] = [];
-    function add(value: any): void {
+    const result: unknown[] = [];
+    function add(value: unknown): void {
       if (value) {
         if (Array.isArray(value)) {
           result.push(...value);
@@ -157,61 +143,46 @@ export class ConcatAtom implements Atom {
     }
     add(leftValue);
     add(rightValue);
-    if (result.every((e) => typeof e === 'string')) {
+    if (result.length > 0 && result.every((e) => typeof e === 'string')) {
       return result.join('');
     }
     return result;
-  }
-
-  toString(): string {
-    return '(' + this.left.toString() + ' & ' + this.right.toString() + ')';
   }
 }
 
 export class ContainsAtom implements Atom {
   constructor(public readonly left: Atom, public readonly right: Atom) {}
 
-  eval(context: any): any {
+  eval(context: unknown): unknown {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
     return ensureArray(leftValue).includes(rightValue);
-  }
-
-  toString(): string {
-    return '(' + this.left.toString() + ' contains ' + this.right.toString() + ')';
   }
 }
 
 export class InAtom implements Atom {
   constructor(public readonly left: Atom, public readonly right: Atom) {}
 
-  eval(context: any): any {
+  eval(context: unknown): unknown {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
     return ensureArray(rightValue).includes(leftValue);
-  }
-
-  toString(): string {
-    return '(' + this.left.toString() + ' in ' + this.right.toString() + ')';
   }
 }
 
 export class DotAtom implements Atom {
   constructor(public readonly left: Atom, public readonly right: Atom) {}
-  eval(context: any): Atom {
+  eval(context: unknown): unknown {
     return this.right.eval(this.left.eval(context));
-  }
-  toString(): string {
-    return this.left.toString() + '.' + this.right.toString();
   }
 }
 
 export class UnionAtom implements Atom {
   constructor(public readonly left: Atom, public readonly right: Atom) {}
-  eval(context: any): any {
+  eval(context: unknown): unknown {
     const leftResult = this.left.eval(context);
     const rightResult = this.right.eval(context);
-    let resultArray: any[];
+    let resultArray: unknown[];
     if (leftResult !== undefined && rightResult !== undefined) {
       resultArray = [leftResult, rightResult].flat();
     } else if (leftResult !== undefined) {
@@ -228,7 +199,7 @@ export class UnionAtom implements Atom {
 export class EqualsAtom implements Atom {
   constructor(public readonly left: Atom, public readonly right: Atom) {}
 
-  eval(context: any): any {
+  eval(context: unknown): unknown {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
     if (Array.isArray(leftValue) && Array.isArray(rightValue)) {
@@ -241,7 +212,7 @@ export class EqualsAtom implements Atom {
 export class NotEqualsAtom implements Atom {
   constructor(public readonly left: Atom, public readonly right: Atom) {}
 
-  eval(context: any): any {
+  eval(context: unknown): unknown {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
     let result;
@@ -257,7 +228,7 @@ export class NotEqualsAtom implements Atom {
 export class EquivalentAtom implements Atom {
   constructor(public readonly left: Atom, public readonly right: Atom) {}
 
-  eval(context: any): any {
+  eval(context: unknown): unknown {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
     if (Array.isArray(rightValue)) {
@@ -270,7 +241,7 @@ export class EquivalentAtom implements Atom {
 export class NotEquivalentAtom implements Atom {
   constructor(public readonly left: Atom, public readonly right: Atom) {}
 
-  eval(context: any): any {
+  eval(context: unknown): unknown {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
     let result;
@@ -286,7 +257,7 @@ export class NotEquivalentAtom implements Atom {
 export class IsAtom implements Atom {
   constructor(public readonly left: Atom, public readonly right: Atom) {}
 
-  eval(context: any): any {
+  eval(context: unknown): unknown {
     const typeName = (this.right as SymbolAtom).name;
     return applyMaybeArray(this.left.eval(context), (e) => fhirPathIs(e, typeName));
   }
@@ -299,7 +270,7 @@ export class IsAtom implements Atom {
 export class AndAtom implements Atom {
   constructor(public readonly left: Atom, public readonly right: Atom) {}
 
-  eval(context: any): any {
+  eval(context: unknown): unknown {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
     if (leftValue === true && rightValue === true) {
@@ -315,7 +286,7 @@ export class AndAtom implements Atom {
 export class OrAtom implements Atom {
   constructor(public readonly left: Atom, public readonly right: Atom) {}
 
-  eval(context: any): any {
+  eval(context: unknown): unknown {
     const leftValue = this.left.eval(context);
     if (toJsBoolean(leftValue)) {
       return leftValue;
@@ -339,7 +310,7 @@ export class OrAtom implements Atom {
 export class XorAtom implements Atom {
   constructor(public readonly left: Atom, public readonly right: Atom) {}
 
-  eval(context: any): any {
+  eval(context: unknown): unknown {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
     if ((leftValue === true && rightValue !== true) || (leftValue !== true && rightValue === true)) {
@@ -356,9 +327,9 @@ export class FunctionAtom implements Atom {
   constructor(
     public readonly name: string,
     public readonly args: Atom[],
-    public readonly impl: (context: any[], ...a: Atom[]) => any[]
+    public readonly impl: (context: unknown[], ...a: Atom[]) => unknown[]
   ) {}
-  eval(context: any): any {
+  eval(context: unknown): unknown {
     return this.impl(ensureArray(context), ...this.args);
   }
 }

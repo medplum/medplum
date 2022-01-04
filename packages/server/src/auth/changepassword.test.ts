@@ -29,9 +29,9 @@ describe('Change Password', () => {
   });
 
   beforeEach(() => {
-    (SESv2Client as any).mockClear();
-    (SendEmailCommand as any).mockClear();
-    (fetch as any).mockClear();
+    (SESv2Client as unknown as jest.Mock).mockClear();
+    (SendEmailCommand as unknown as jest.Mock).mockClear();
+    (fetch as unknown as jest.Mock).mockClear();
     setupRecaptchaMock(fetch, true);
   });
 

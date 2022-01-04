@@ -2,75 +2,75 @@ import { Atom, LiteralAtom } from './atoms';
 import * as functions from './functions';
 
 const isEven: Atom = {
-  eval: (num) => [num % 2 === 0],
+  eval: (num) => [(num as number) % 2 === 0],
 };
 
 describe('FHIRPath functions', () => {
   // 5.1 Existence
 
   test('empty', () => {
-    expect(functions.empty([])).toEqual(true);
-    expect(functions.empty([1])).toEqual(false);
-    expect(functions.empty([1, 2])).toEqual(false);
+    expect(functions.empty([])).toEqual([true]);
+    expect(functions.empty([1])).toEqual([false]);
+    expect(functions.empty([1, 2])).toEqual([false]);
   });
 
   test('exists', () => {
-    expect(functions.exists([])).toEqual(false);
-    expect(functions.exists([1])).toEqual(true);
-    expect(functions.exists([1, 2])).toEqual(true);
-    expect(functions.exists([], isEven)).toEqual(false);
-    expect(functions.exists([1], isEven)).toEqual(false);
-    expect(functions.exists([1, 2], isEven)).toEqual(true);
+    expect(functions.exists([])).toEqual([false]);
+    expect(functions.exists([1])).toEqual([true]);
+    expect(functions.exists([1, 2])).toEqual([true]);
+    expect(functions.exists([], isEven)).toEqual([false]);
+    expect(functions.exists([1], isEven)).toEqual([false]);
+    expect(functions.exists([1, 2], isEven)).toEqual([true]);
   });
 
   test('all', () => {
-    expect(functions.all([], isEven)).toEqual(true);
-    expect(functions.all([1], isEven)).toEqual(false);
-    expect(functions.all([2], isEven)).toEqual(true);
-    expect(functions.all([1, 2], isEven)).toEqual(false);
-    expect(functions.all([2, 4], isEven)).toEqual(true);
+    expect(functions.all([], isEven)).toEqual([true]);
+    expect(functions.all([1], isEven)).toEqual([false]);
+    expect(functions.all([2], isEven)).toEqual([true]);
+    expect(functions.all([1, 2], isEven)).toEqual([false]);
+    expect(functions.all([2, 4], isEven)).toEqual([true]);
   });
 
   test('allTrue', () => {
-    expect(functions.allTrue([])).toEqual(true);
-    expect(functions.allTrue([true])).toEqual(true);
-    expect(functions.allTrue([false])).toEqual(false);
-    expect(functions.allTrue([true, false])).toEqual(false);
-    expect(functions.allTrue([true, true])).toEqual(true);
-    expect(functions.allTrue([false, false])).toEqual(false);
+    expect(functions.allTrue([])).toEqual([true]);
+    expect(functions.allTrue([true])).toEqual([true]);
+    expect(functions.allTrue([false])).toEqual([false]);
+    expect(functions.allTrue([true, false])).toEqual([false]);
+    expect(functions.allTrue([true, true])).toEqual([true]);
+    expect(functions.allTrue([false, false])).toEqual([false]);
   });
 
   test('anyTrue', () => {
-    expect(functions.anyTrue([])).toEqual(false);
-    expect(functions.anyTrue([true])).toEqual(true);
-    expect(functions.anyTrue([false])).toEqual(false);
-    expect(functions.anyTrue([true, false])).toEqual(true);
-    expect(functions.anyTrue([true, true])).toEqual(true);
-    expect(functions.anyTrue([false, false])).toEqual(false);
+    expect(functions.anyTrue([])).toEqual([false]);
+    expect(functions.anyTrue([true])).toEqual([true]);
+    expect(functions.anyTrue([false])).toEqual([false]);
+    expect(functions.anyTrue([true, false])).toEqual([true]);
+    expect(functions.anyTrue([true, true])).toEqual([true]);
+    expect(functions.anyTrue([false, false])).toEqual([false]);
   });
 
   test('allFalse', () => {
-    expect(functions.allFalse([])).toEqual(true);
-    expect(functions.allFalse([true])).toEqual(false);
-    expect(functions.allFalse([false])).toEqual(true);
-    expect(functions.allFalse([true, false])).toEqual(false);
-    expect(functions.allFalse([true, true])).toEqual(false);
-    expect(functions.allFalse([false, false])).toEqual(true);
+    expect(functions.allFalse([])).toEqual([true]);
+    expect(functions.allFalse([true])).toEqual([false]);
+    expect(functions.allFalse([false])).toEqual([true]);
+    expect(functions.allFalse([true, false])).toEqual([false]);
+    expect(functions.allFalse([true, true])).toEqual([false]);
+    expect(functions.allFalse([false, false])).toEqual([true]);
   });
 
   test('anyFalse', () => {
-    expect(functions.anyFalse([])).toEqual(false);
-    expect(functions.anyFalse([true])).toEqual(false);
-    expect(functions.anyFalse([false])).toEqual(true);
-    expect(functions.anyFalse([true, false])).toEqual(true);
-    expect(functions.anyFalse([true, true])).toEqual(false);
-    expect(functions.anyFalse([false, false])).toEqual(true);
+    expect(functions.anyFalse([])).toEqual([false]);
+    expect(functions.anyFalse([true])).toEqual([false]);
+    expect(functions.anyFalse([false])).toEqual([true]);
+    expect(functions.anyFalse([true, false])).toEqual([true]);
+    expect(functions.anyFalse([true, true])).toEqual([false]);
+    expect(functions.anyFalse([false, false])).toEqual([true]);
   });
 
   test('count', () => {
-    expect(functions.count([])).toEqual(0);
-    expect(functions.count([1])).toEqual(1);
-    expect(functions.count([1, 2])).toEqual(2);
+    expect(functions.count([])).toEqual([0]);
+    expect(functions.count([1])).toEqual([1]);
+    expect(functions.count([1, 2])).toEqual([2]);
   });
 
   test('distinct', () => {
@@ -84,13 +84,13 @@ describe('FHIRPath functions', () => {
   });
 
   test('isDistinct', () => {
-    expect(functions.isDistinct([])).toEqual(true);
-    expect(functions.isDistinct([1])).toEqual(true);
-    expect(functions.isDistinct([1, 2])).toEqual(true);
-    expect(functions.isDistinct([1, 1])).toEqual(false);
-    expect(functions.isDistinct(['a'])).toEqual(true);
-    expect(functions.isDistinct(['a', 'b'])).toEqual(true);
-    expect(functions.isDistinct(['a', 'a'])).toEqual(false);
+    expect(functions.isDistinct([])).toEqual([true]);
+    expect(functions.isDistinct([1])).toEqual([true]);
+    expect(functions.isDistinct([1, 2])).toEqual([true]);
+    expect(functions.isDistinct([1, 1])).toEqual([false]);
+    expect(functions.isDistinct(['a'])).toEqual([true]);
+    expect(functions.isDistinct(['a', 'b'])).toEqual([true]);
+    expect(functions.isDistinct(['a', 'a'])).toEqual([false]);
   });
 
   // 5.2. Filtering and projection
@@ -181,8 +181,8 @@ describe('FHIRPath functions', () => {
   });
 
   test('intersect', () => {
-    expect(functions.intersect([], undefined as any as Atom)).toEqual([]);
-    expect(functions.intersect([], null as any as Atom)).toEqual([]);
+    expect(functions.intersect([], undefined as unknown as Atom)).toEqual([]);
+    expect(functions.intersect([], null as unknown as Atom)).toEqual([]);
 
     const num1: Atom = { eval: () => 1 };
     expect(functions.intersect([], num1)).toEqual([]);
@@ -192,8 +192,8 @@ describe('FHIRPath functions', () => {
   });
 
   test('exclude', () => {
-    expect(functions.exclude([], undefined as any as Atom)).toEqual([]);
-    expect(functions.exclude([], null as any as Atom)).toEqual([]);
+    expect(functions.exclude([], undefined as unknown as Atom)).toEqual([]);
+    expect(functions.exclude([], null as unknown as Atom)).toEqual([]);
 
     const num1: Atom = { eval: () => 1 };
     expect(functions.exclude([], num1)).toEqual([]);
@@ -205,8 +205,8 @@ describe('FHIRPath functions', () => {
   // 5.4. Combining
 
   test('union', () => {
-    expect(functions.union([], undefined as any as Atom)).toEqual([]);
-    expect(functions.union([], null as any as Atom)).toEqual([]);
+    expect(functions.union([], undefined as unknown as Atom)).toEqual([]);
+    expect(functions.union([], null as unknown as Atom)).toEqual([]);
 
     const num1: Atom = { eval: () => 1 };
     expect(functions.union([], num1)).toEqual([1]);
@@ -216,8 +216,8 @@ describe('FHIRPath functions', () => {
   });
 
   test('combine', () => {
-    expect(functions.combine([], undefined as any as Atom)).toEqual([]);
-    expect(functions.combine([], null as any as Atom)).toEqual([]);
+    expect(functions.combine([], undefined as unknown as Atom)).toEqual([]);
+    expect(functions.combine([], null as unknown as Atom)).toEqual([]);
 
     const num1: Atom = { eval: () => 1 };
     expect(functions.combine([], num1)).toEqual([1]);
@@ -227,6 +227,13 @@ describe('FHIRPath functions', () => {
   });
 
   // 5.5. Conversion
+
+  test('iif', () => {
+    expect(functions.iif([], new LiteralAtom(true), new LiteralAtom('x'))).toEqual(['x']);
+    expect(functions.iif([], new LiteralAtom(false), new LiteralAtom('x'))).toEqual([]);
+    expect(functions.iif([], new LiteralAtom(true), new LiteralAtom('x'), new LiteralAtom('y'))).toEqual(['x']);
+    expect(functions.iif([], new LiteralAtom(false), new LiteralAtom('x'), new LiteralAtom('y'))).toEqual(['y']);
+  });
 
   test('toBoolean', () => {
     expect(functions.toBoolean([])).toEqual([]);
@@ -278,6 +285,40 @@ describe('FHIRPath functions', () => {
     expect(functions.convertsToInteger(['false'])).toEqual([false]);
     expect(functions.convertsToInteger(['xyz'])).toEqual([false]);
     expect(functions.convertsToInteger([{}])).toEqual([false]);
+  });
+
+  test('toDate', () => {
+    expect(functions.toDate([])).toEqual([]);
+    expect(() => functions.toDate([1, 2])).toThrow();
+    expect(functions.toDate(['2020-01-01'])).toEqual(['2020-01-01']);
+    expect(functions.toDate([1])).toEqual([]);
+    expect(functions.toDate([true])).toEqual([]);
+  });
+
+  test('convertsToDate', () => {
+    expect(functions.convertsToDate([])).toEqual([]);
+    expect(() => functions.convertsToDate([1, 2])).toThrow();
+    expect(functions.convertsToDate(['2020-01-01'])).toEqual([true]);
+    expect(functions.convertsToDate([1])).toEqual([false]);
+    expect(functions.convertsToDate([true])).toEqual([false]);
+  });
+
+  test('toDateTime', () => {
+    expect(functions.toDateTime([])).toEqual([]);
+    expect(() => functions.toDateTime([1, 2])).toThrow();
+    expect(functions.toDateTime(['2020-01-01'])).toEqual(['2020-01-01']);
+    expect(functions.toDateTime(['2020-01-01T12:00:00Z'])).toEqual(['2020-01-01T12:00:00.000Z']);
+    expect(functions.toDateTime([1])).toEqual([]);
+    expect(functions.toDateTime([true])).toEqual([]);
+  });
+
+  test('convertsToDateTime', () => {
+    expect(functions.convertsToDateTime([])).toEqual([]);
+    expect(() => functions.convertsToDateTime([1, 2])).toThrow();
+    expect(functions.convertsToDateTime(['2020-01-01'])).toEqual([true]);
+    expect(functions.convertsToDateTime(['2020-01-01T12:00:00Z'])).toEqual([true]);
+    expect(functions.convertsToDateTime([1])).toEqual([false]);
+    expect(functions.convertsToDateTime([true])).toEqual([false]);
   });
 
   test('toDecimal', () => {
@@ -338,8 +379,10 @@ describe('FHIRPath functions', () => {
   });
 
   test('toString', () => {
-    const toString = functions.toString as any as (input: any[]) => string[];
+    const toString = functions.toString as unknown as (input: unknown[]) => string[];
     expect(toString([])).toEqual([]);
+    expect(toString([null])).toEqual([]);
+    expect(toString([undefined])).toEqual([]);
     expect(() => toString([1, 2])).toThrow();
     expect(toString([true])).toEqual(['true']);
     expect(toString([false])).toEqual(['false']);
@@ -363,6 +406,26 @@ describe('FHIRPath functions', () => {
     expect(functions.convertsToString(['false'])).toEqual([true]);
     expect(functions.convertsToString(['xyz'])).toEqual([true]);
     expect(functions.convertsToString([{}])).toEqual([true]);
+  });
+
+  test('toTime', () => {
+    expect(functions.toTime([])).toEqual([]);
+    expect(() => functions.toTime([1, 2])).toThrow();
+    expect(functions.toTime(['12:00:00'])).toEqual(['T12:00:00.000Z']);
+    expect(functions.toTime(['T12:00:00'])).toEqual(['T12:00:00.000Z']);
+    expect(functions.toTime(['foo'])).toEqual([]);
+    expect(functions.toTime([1])).toEqual([]);
+    expect(functions.toTime([true])).toEqual([]);
+  });
+
+  test('convertsToTime', () => {
+    expect(functions.convertsToTime([])).toEqual([]);
+    expect(() => functions.convertsToTime([1, 2])).toThrow();
+    expect(functions.convertsToTime(['12:00:00'])).toEqual([true]);
+    expect(functions.convertsToTime(['T12:00:00'])).toEqual([true]);
+    expect(functions.convertsToTime(['foo'])).toEqual([false]);
+    expect(functions.convertsToTime([1])).toEqual([false]);
+    expect(functions.convertsToTime([true])).toEqual([false]);
   });
 
   // 5.6. String Manipulation.

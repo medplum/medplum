@@ -1,5 +1,5 @@
-import { Quantity } from '@medplum/fhirtypes';
-import { Atom } from './atoms';
+import { Quantity, Reference, Resource } from '@medplum/fhirtypes';
+import { Atom, SymbolAtom } from './atoms';
 import { parseDateString } from './date';
 import { ensureArray, fhirPathIs, isQuantity, removeDuplicates, toJsBoolean } from './utils';
 
@@ -26,12 +26,12 @@ const stub = (): [] => [];
  * @param input The input collection.
  * @returns True if the input collection is empty ({ }) and false otherwise.
  */
-export function empty(input: any[]): boolean {
-  return input.length === 0;
+export function empty(input: unknown[]): [boolean] {
+  return [input.length === 0];
 }
 
 /**
- * Returns true if the collection has any elements, and false otherwise.
+ * Returns true if the collection has unknown elements, and false otherwise.
  * This is the opposite of empty(), and as such is a shorthand for empty().not().
  * If the input collection is empty ({ }), the result is false.
  *
@@ -43,13 +43,13 @@ export function empty(input: any[]): boolean {
  *
  * @param input
  * @param criteria
- * @returns True if the collection has any elements, and false otherwise.
+ * @returns True if the collection has unknown elements, and false otherwise.
  */
-export function exists(input: any[], criteria?: Atom): boolean {
+export function exists(input: unknown[], criteria?: Atom): [boolean] {
   if (criteria) {
-    return input.filter((e) => toJsBoolean(criteria.eval(e))).length > 0;
+    return [input.filter((e) => toJsBoolean(criteria.eval(e))).length > 0];
   } else {
-    return input.length > 0;
+    return [input.length > 0];
   }
 }
 
@@ -65,13 +65,13 @@ export function exists(input: any[], criteria?: Atom): boolean {
  * @param criteria The evaluation criteria.
  * @returns True if for every element in the input collection, criteria evaluates to true.
  */
-export function all(input: any[], criteria: Atom): boolean {
-  return input.every((e) => toJsBoolean(criteria.eval(e)));
+export function all(input: unknown[], criteria: Atom): [boolean] {
+  return [input.every((e) => toJsBoolean(criteria.eval(e)))];
 }
 
 /**
  * Takes a collection of Boolean values and returns true if all the items are true.
- * If any items are false, the result is false.
+ * If unknown items are false, the result is false.
  * If the input is empty ({ }), the result is true.
  *
  * See: https://hl7.org/fhirpath/#alltrue-boolean
@@ -80,37 +80,37 @@ export function all(input: any[], criteria: Atom): boolean {
  * @param criteria The evaluation criteria.
  * @returns True if all the items are true.
  */
-export function allTrue(input: any[]): boolean {
+export function allTrue(input: unknown[]): [boolean] {
   for (const value of input) {
     if (!value) {
-      return false;
+      return [false];
     }
   }
-  return true;
+  return [true];
 }
 
 /**
- * Takes a collection of Boolean values and returns true if any of the items are true.
+ * Takes a collection of Boolean values and returns true if unknown of the items are true.
  * If all the items are false, or if the input is empty ({ }), the result is false.
  *
  * See: https://hl7.org/fhirpath/#anytrue-boolean
  *
  * @param input The input collection.
  * @param criteria The evaluation criteria.
- * @returns True if any of the items are true.
+ * @returns True if unknown of the items are true.
  */
-export function anyTrue(input: any[]): boolean {
+export function anyTrue(input: unknown[]): [boolean] {
   for (const value of input) {
     if (value) {
-      return true;
+      return [true];
     }
   }
-  return false;
+  return [false];
 }
 
 /**
  * Takes a collection of Boolean values and returns true if all the items are false.
- * If any items are true, the result is false.
+ * If unknown items are true, the result is false.
  * If the input is empty ({ }), the result is true.
  *
  * See: https://hl7.org/fhirpath/#allfalse-boolean
@@ -119,17 +119,17 @@ export function anyTrue(input: any[]): boolean {
  * @param criteria The evaluation criteria.
  * @returns True if all the items are false.
  */
-export function allFalse(input: any[]): boolean {
+export function allFalse(input: unknown[]): [boolean] {
   for (const value of input) {
     if (value) {
-      return false;
+      return [false];
     }
   }
-  return true;
+  return [true];
 }
 
 /**
- * Takes a collection of Boolean values and returns true if any of the items are false.
+ * Takes a collection of Boolean values and returns true if unknown of the items are false.
  * If all the items are true, or if the input is empty ({ }), the result is false.
  *
  * See: https://hl7.org/fhirpath/#anyfalse-boolean
@@ -138,13 +138,13 @@ export function allFalse(input: any[]): boolean {
  * @param criteria The evaluation criteria.
  * @returns True if for every element in the input collection, criteria evaluates to true.
  */
-export function anyFalse(input: any[]): boolean {
+export function anyFalse(input: unknown[]): [boolean] {
   for (const value of input) {
     if (!value) {
-      return true;
+      return [true];
     }
   }
-  return false;
+  return [false];
 }
 
 /**
@@ -182,8 +182,8 @@ export const supersetOf = stub;
  * @param input The input collection.
  * @returns The integer count of the number of items in the input collection.
  */
-export function count(input: any[]): number {
-  return input.length;
+export function count(input: unknown[]): [number] {
+  return [input.length];
 }
 
 /**
@@ -201,7 +201,7 @@ export function count(input: any[]): number {
  * @param input The input collection.
  * @returns The integer count of the number of items in the input collection.
  */
-export function distinct(input: any[]): any[] {
+export function distinct(input: unknown[]): unknown[] {
   return Array.from(new Set(input));
 }
 
@@ -215,8 +215,8 @@ export function distinct(input: any[]): any[] {
  * @param input The input collection.
  * @returns The integer count of the number of items in the input collection.
  */
-export function isDistinct(input: any[]): boolean {
-  return input.length === new Set(input).size;
+export function isDistinct(input: unknown[]): [boolean] {
+  return [input.length === new Set(input).size];
 }
 
 /*
@@ -241,7 +241,7 @@ export function isDistinct(input: any[]): boolean {
  * @param condition The condition atom.
  * @returns A collection containing only those elements in the input collection for which the stated criteria expression evaluates to true.
  */
-export function where(input: any[], criteria: Atom): any[] {
+export function where(input: unknown[], criteria: Atom): unknown[] {
   return input.filter((e) => toJsBoolean(criteria.eval(e)));
 }
 
@@ -256,8 +256,8 @@ export function where(input: any[], criteria: Atom): any[] {
  *
  * See: http://hl7.org/fhirpath/#selectprojection-expression-collection
  */
-export function select(input: any[], criteria: Atom): any[] {
-  return criteria.eval(input);
+export function select(input: unknown[], criteria: Atom): unknown[] {
+  return ensureArray(criteria.eval(input));
 }
 
 /**
@@ -295,7 +295,7 @@ export const ofType = stub;
  * @param input The input collection.
  * @returns The single item in the input if there is just one item.
  */
-export function single(input: any[]): any[] {
+export function single(input: unknown[]): unknown[] {
   if (input.length > 1) {
     throw new Error('Expected input length one for single()');
   }
@@ -311,7 +311,7 @@ export function single(input: any[]): any[] {
  * @param input The input collection.
  * @returns A collection containing only the first item in the input collection.
  */
-export function first(input: any[]): any[] {
+export function first(input: unknown[]): unknown[] {
   return input.length === 0 ? [] : [input[0]];
 }
 
@@ -324,7 +324,7 @@ export function first(input: any[]): any[] {
  * @param input The input collection.
  * @returns A collection containing only the last item in the input collection.
  */
-export function last(input: any[]): any[] {
+export function last(input: unknown[]): unknown[] {
   return input.length === 0 ? [] : [input[input.length - 1]];
 }
 
@@ -337,7 +337,7 @@ export function last(input: any[]): any[] {
  * @param input The input collection.
  * @returns A collection containing all but the first item in the input collection.
  */
-export function tail(input: any[]): any[] {
+export function tail(input: unknown[]): unknown[] {
   return input.length === 0 ? [] : input.slice(1, input.length);
 }
 
@@ -352,7 +352,7 @@ export function tail(input: any[]): any[] {
  * @param input The input collection.
  * @returns A collection containing all but the first item in the input collection.
  */
-export function skip(input: any[], num: Atom): any[] {
+export function skip(input: unknown[], num: Atom): unknown[] {
   const numValue = num.eval(0);
   if (typeof numValue !== 'number') {
     throw new Error('Expected a number for skip(num)');
@@ -377,7 +377,7 @@ export function skip(input: any[], num: Atom): any[] {
  * @param input The input collection.
  * @returns A collection containing the first num items in the input collection.
  */
-export function take(input: any[], num: Atom): any[] {
+export function take(input: unknown[], num: Atom): unknown[] {
   const numValue = num.eval(0);
   if (typeof numValue !== 'number') {
     throw new Error('Expected a number for take(num)');
@@ -398,7 +398,7 @@ export function take(input: any[], num: Atom): any[] {
  *
  * See: http://hl7.org/fhirpath/#intersectother-collection-collection
  */
-export function intersect(input: any[], other: Atom): any[] {
+export function intersect(input: unknown[], other: Atom): unknown[] {
   if (!other) {
     return input;
   }
@@ -414,7 +414,7 @@ export function intersect(input: any[], other: Atom): any[] {
  *
  * See: http://hl7.org/fhirpath/#excludeother-collection-collection
  */
-export function exclude(input: any[], other: Atom): any[] {
+export function exclude(input: unknown[], other: Atom): unknown[] {
   if (!other) {
     return input;
   }
@@ -430,14 +430,14 @@ export function exclude(input: any[], other: Atom): any[] {
 
 /**
  * Merge the two collections into a single collection,
- * eliminating any duplicate values (using = (Equals) (=) to determine equality).
+ * eliminating unknown duplicate values (using = (Equals) (=) to determine equality).
  * There is no expectation of order in the resulting collection.
  *
  * In other words, this function returns the distinct list of elements from both inputs.
  *
  * See: http://hl7.org/fhirpath/#unionother-collection
  */
-export function union(input: any[], other: Atom): any[] {
+export function union(input: unknown[], other: Atom): unknown[] {
   if (!other) {
     return input;
   }
@@ -453,7 +453,7 @@ export function union(input: any[], other: Atom): any[] {
  *
  * See: http://hl7.org/fhirpath/#combineother-collection-collection
  */
-export function combine(input: any[], other: Atom): any[] {
+export function combine(input: unknown[], other: Atom): unknown[] {
   if (!other) {
     return input;
   }
@@ -488,18 +488,18 @@ export function combine(input: any[], other: Atom): any[] {
  * @param otherwiseResult
  * @returns
  */
-export function iif(input: any[], criterion: Atom, trueResult: Atom, otherwiseResult?: Atom): any[] {
-  const evalResult = criterion.eval(input);
+export function iif(input: unknown[], criterion: Atom, trueResult: Atom, otherwiseResult?: Atom): unknown[] {
+  const evalResult = ensureArray(criterion.eval(input));
   if (evalResult.length > 1 || (evalResult.length === 1 && typeof evalResult[0] !== 'boolean')) {
     throw new Error('Expected criterion to evaluate to a Boolean');
   }
 
   if (toJsBoolean(evalResult)) {
-    return trueResult.eval(input);
+    return ensureArray(trueResult.eval(input));
   }
 
   if (otherwiseResult) {
-    return otherwiseResult.eval(input);
+    return ensureArray(otherwiseResult.eval(input));
   }
 
   return [];
@@ -521,7 +521,7 @@ export function iif(input: any[], criterion: Atom, trueResult: Atom, otherwiseRe
  * @param input
  * @returns
  */
-export function toBoolean(input: any[]): boolean[] {
+export function toBoolean(input: unknown[]): boolean[] {
   if (input.length === 0) {
     return [];
   }
@@ -566,7 +566,7 @@ export function toBoolean(input: any[]): boolean[] {
  * @param input
  * @returns
  */
-export function convertsToBoolean(input: any[]): boolean[] {
+export function convertsToBoolean(input: unknown[]): boolean[] {
   if (input.length === 0) {
     return [];
   }
@@ -594,7 +594,7 @@ export function convertsToBoolean(input: any[]): boolean[] {
  * @param input The input collection.
  * @returns The string representation of the input.
  */
-export function toInteger(input: any[]): number[] {
+export function toInteger(input: unknown[]): number[] {
   if (input.length === 0) {
     return [];
   }
@@ -603,7 +603,7 @@ export function toInteger(input: any[]): number[] {
     return [value];
   }
   if (typeof value === 'string' && value.match(/^[+-]?\d+$/)) {
-    return [parseInt(input[0], 10)];
+    return [parseInt(value, 10)];
   }
   if (typeof value === 'boolean') {
     return [value ? 1 : 0];
@@ -629,7 +629,7 @@ export function toInteger(input: any[]): number[] {
  * @param input The input collection.
  * @returns
  */
-export function convertsToInteger(input: any[]): boolean[] {
+export function convertsToInteger(input: unknown[]): boolean[] {
   if (input.length === 0) {
     return [];
   }
@@ -652,7 +652,7 @@ export function convertsToInteger(input: any[]): boolean[] {
  *
  * See: https://hl7.org/fhirpath/#todate-date
  */
-export function toDate(input: any[]): string[] {
+export function toDate(input: unknown[]): string[] {
   if (input.length === 0) {
     return [];
   }
@@ -679,7 +679,7 @@ export function toDate(input: any[]): string[] {
  *
  * See: https://hl7.org/fhirpath/#convertstodate-boolean
  */
-export function convertsToDate(input: any[]): boolean[] {
+export function convertsToDate(input: unknown[]): boolean[] {
   if (input.length === 0) {
     return [];
   }
@@ -707,7 +707,7 @@ export function convertsToDate(input: any[]): boolean[] {
  * @param input
  * @returns
  */
-export function toDateTime(input: any[]): string[] {
+export function toDateTime(input: unknown[]): string[] {
   if (input.length === 0) {
     return [];
   }
@@ -735,7 +735,7 @@ export function toDateTime(input: any[]): string[] {
  * @param input
  * @returns
  */
-export function convertsToDateTime(input: any[]): boolean[] {
+export function convertsToDateTime(input: unknown[]): boolean[] {
   if (input.length === 0) {
     return [];
   }
@@ -760,7 +760,7 @@ export function convertsToDateTime(input: any[]): boolean[] {
  * @param input The input collection.
  * @returns
  */
-export function toDecimal(input: any[]): number[] {
+export function toDecimal(input: unknown[]): number[] {
   if (input.length === 0) {
     return [];
   }
@@ -769,7 +769,7 @@ export function toDecimal(input: any[]): number[] {
     return [value];
   }
   if (typeof value === 'string' && value.match(/^-?\d{1,9}(\.\d{1,9})?$/)) {
-    return [parseFloat(input[0])];
+    return [parseFloat(value)];
   }
   if (typeof value === 'boolean') {
     return [value ? 1 : 0];
@@ -794,7 +794,7 @@ export function toDecimal(input: any[]): number[] {
  * @param input The input collection.
  * @returns
  */
-export function convertsToDecimal(input: any[]): boolean[] {
+export function convertsToDecimal(input: unknown[]): boolean[] {
   if (input.length === 0) {
     return [];
   }
@@ -815,7 +815,7 @@ export function convertsToDecimal(input: any[]): boolean[] {
  * @param input The input collection.
  * @returns
  */
-export function toQuantity(input: any[]): Quantity[] {
+export function toQuantity(input: unknown[]): Quantity[] {
   if (input.length === 0) {
     return [];
   }
@@ -827,7 +827,7 @@ export function toQuantity(input: any[]): Quantity[] {
     return [{ value, unit: '1' }];
   }
   if (typeof value === 'string' && value.match(/^-?\d{1,9}(\.\d{1,9})?/)) {
-    return [{ value: parseFloat(input[0]), unit: '1' }];
+    return [{ value: parseFloat(value), unit: '1' }];
   }
   if (typeof value === 'boolean') {
     return [{ value: value ? 1 : 0, unit: '1' }];
@@ -858,7 +858,7 @@ export function toQuantity(input: any[]): Quantity[] {
  * @param input The input collection.
  * @returns
  */
-export function convertsToQuantity(input: any[]): boolean[] {
+export function convertsToQuantity(input: unknown[]): boolean[] {
   if (input.length === 0) {
     return [];
   }
@@ -881,15 +881,18 @@ export function convertsToQuantity(input: any[]): boolean[] {
  * @param input The input collection.
  * @returns The string representation of the input.
  */
-export function toString(input: any[]): string[] {
+export function toString(input: unknown[]): string[] {
   if (input.length === 0) {
     return [];
   }
   const [value] = validateInput(input, 1);
+  if (value === null || value === undefined) {
+    return [];
+  }
   if (isQuantity(value)) {
     return [`${value.value} '${value.unit}'`];
   }
-  return [value.toString()];
+  return [(value as boolean | number | string).toString()];
 }
 
 /**
@@ -912,7 +915,7 @@ export function toString(input: any[]): string[] {
  * @param input The input collection.
  * @returns
  */
-export function convertsToString(input: any[]): boolean[] {
+export function convertsToString(input: unknown[]): boolean[] {
   if (input.length === 0) {
     return [];
   }
@@ -939,13 +942,16 @@ export function convertsToString(input: any[]): boolean[] {
  * @param input
  * @returns
  */
-export function toTime(input: any[]): string[] {
+export function toTime(input: unknown[]): string[] {
   if (input.length === 0) {
     return [];
   }
   const [value] = validateInput(input, 1);
-  if (typeof value === 'string' && value.match(/^\d{2}(:\d{2}(:\d{2})?)?/)) {
-    return [parseDateString('T' + value)];
+  if (typeof value === 'string') {
+    const match = value.match(/^T?(\d{2}(:\d{2}(:\d{2})?)?)/);
+    if (match) {
+      return [parseDateString('T' + match[1])];
+    }
   }
   return [];
 }
@@ -966,7 +972,7 @@ export function toTime(input: any[]): string[] {
  * @param input
  * @returns
  */
-export function convertsToTime(input: any[]): boolean[] {
+export function convertsToTime(input: unknown[]): boolean[] {
   if (input.length === 0) {
     return [];
   }
@@ -993,8 +999,8 @@ export function convertsToTime(input: any[]): boolean[] {
  * @param input The input collection.
  * @returns The index of the substring.
  */
-export function indexOf(input: any[], substringAtom: Atom): number[] {
-  return applyStringFunc((str, substring) => str.indexOf(substring), input, substringAtom);
+export function indexOf(input: unknown[], substringAtom: Atom): number[] {
+  return applyStringFunc((str, substring) => str.indexOf(substring as string), input, substringAtom);
 }
 
 /**
@@ -1011,9 +1017,13 @@ export function indexOf(input: any[], substringAtom: Atom): number[] {
  * @param input The input collection.
  * @returns The index of the substring.
  */
-export function substring(input: any[], startAtom: Atom, lengthAtom?: Atom): string[] {
+export function substring(input: unknown[], startAtom: Atom, lengthAtom?: Atom): string[] {
   return applyStringFunc(
-    (str, start, length) => (start < 0 || start >= str.length ? undefined : str.substr(start, length)),
+    (str, start, length) => {
+      const startIndex = start as number;
+      const endIndex = length ? startIndex + (length as number) : str.length;
+      return startIndex < 0 || startIndex >= str.length ? undefined : str.substring(startIndex, endIndex);
+    },
     input,
     startAtom,
     lengthAtom
@@ -1025,8 +1035,8 @@ export function substring(input: any[], startAtom: Atom, lengthAtom?: Atom): str
  * @param input The input collection.
  * @returns The index of the substring.
  */
-export function startsWith(input: any[], prefixAtom: Atom): boolean[] {
-  return applyStringFunc((str, prefix) => str.startsWith(prefix), input, prefixAtom);
+export function startsWith(input: unknown[], prefixAtom: Atom): boolean[] {
+  return applyStringFunc((str, prefix) => str.startsWith(prefix as string), input, prefixAtom);
 }
 
 /**
@@ -1034,8 +1044,8 @@ export function startsWith(input: any[], prefixAtom: Atom): boolean[] {
  * @param input The input collection.
  * @returns The index of the substring.
  */
-export function endsWith(input: any[], suffixAtom: Atom): boolean[] {
-  return applyStringFunc((str, suffix) => str.endsWith(suffix), input, suffixAtom);
+export function endsWith(input: unknown[], suffixAtom: Atom): boolean[] {
+  return applyStringFunc((str, suffix) => str.endsWith(suffix as string), input, suffixAtom);
 }
 
 /**
@@ -1043,8 +1053,8 @@ export function endsWith(input: any[], suffixAtom: Atom): boolean[] {
  * @param input The input collection.
  * @returns The index of the substring.
  */
-export function contains(input: any[], substringAtom: Atom): boolean[] {
-  return applyStringFunc((str, substring) => str.includes(substring), input, substringAtom);
+export function contains(input: unknown[], substringAtom: Atom): boolean[] {
+  return applyStringFunc((str, substring) => str.includes(substring as string), input, substringAtom);
 }
 
 /**
@@ -1052,7 +1062,7 @@ export function contains(input: any[], substringAtom: Atom): boolean[] {
  * @param input The input collection.
  * @returns The index of the substring.
  */
-export function upper(input: any[]): string[] {
+export function upper(input: unknown[]): string[] {
   return applyStringFunc((str) => str.toUpperCase(), input);
 }
 
@@ -1061,7 +1071,7 @@ export function upper(input: any[]): string[] {
  * @param input The input collection.
  * @returns The index of the substring.
  */
-export function lower(input: any[]): string[] {
+export function lower(input: unknown[]): string[] {
   return applyStringFunc((str) => str.toLowerCase(), input);
 }
 
@@ -1070,9 +1080,9 @@ export function lower(input: any[]): string[] {
  * @param input The input collection.
  * @returns The index of the substring.
  */
-export function replace(input: any[], patternAtom: Atom, substitionAtom: Atom): string[] {
+export function replace(input: unknown[], patternAtom: Atom, substitionAtom: Atom): string[] {
   return applyStringFunc(
-    (str, pattern, substition) => str.replaceAll(pattern, substition),
+    (str, pattern, substition) => str.replaceAll(pattern as string, substition as string),
     input,
     patternAtom,
     substitionAtom
@@ -1084,8 +1094,8 @@ export function replace(input: any[], patternAtom: Atom, substitionAtom: Atom): 
  * @param input The input collection.
  * @returns The index of the substring.
  */
-export function matches(input: any[], regexAtom: Atom): boolean[] {
-  return applyStringFunc((str, regex) => !!str.match(regex), input, regexAtom);
+export function matches(input: unknown[], regexAtom: Atom): boolean[] {
+  return applyStringFunc((str, regex) => !!str.match(regex as string), input, regexAtom);
 }
 
 /**
@@ -1093,9 +1103,9 @@ export function matches(input: any[], regexAtom: Atom): boolean[] {
  * @param input The input collection.
  * @returns The index of the substring.
  */
-export function replaceMatches(input: any[], regexAtom: Atom, substitionAtom: Atom): string[] {
+export function replaceMatches(input: unknown[], regexAtom: Atom, substitionAtom: Atom): string[] {
   return applyStringFunc(
-    (str, pattern, substition) => str.replaceAll(pattern, substition),
+    (str, pattern, substition) => str.replaceAll(pattern as string, substition as string),
     input,
     regexAtom,
     substitionAtom
@@ -1107,7 +1117,7 @@ export function replaceMatches(input: any[], regexAtom: Atom, substitionAtom: At
  * @param input The input collection.
  * @returns The index of the substring.
  */
-export function length(input: any[]): number[] {
+export function length(input: unknown[]): number[] {
   return applyStringFunc((str) => str.length, input);
 }
 
@@ -1118,7 +1128,7 @@ export function length(input: any[]): number[] {
  *
  * @param input The input collection.
  */
-export function toChars(input: any[]): string[][] {
+export function toChars(input: unknown[]): string[][] {
   return applyStringFunc((str) => (str ? str.split('') : undefined), input);
 }
 
@@ -1138,7 +1148,7 @@ export function toChars(input: any[]): string[][] {
  * @param input The input collection.
  * @returns A collection containing the result.
  */
-export function abs(input: any[]): number[] {
+export function abs(input: unknown[]): Quantity[] | number[] {
   return applyMathFunc(Math.abs, input);
 }
 
@@ -1154,7 +1164,7 @@ export function abs(input: any[]): number[] {
  * @param input The input collection.
  * @returns A collection containing the result.
  */
-export function ceiling(input: any[]): number[] {
+export function ceiling(input: unknown[]): Quantity[] | number[] {
   return applyMathFunc(Math.ceil, input);
 }
 
@@ -1172,7 +1182,7 @@ export function ceiling(input: any[]): number[] {
  * @param input The input collection.
  * @returns A collection containing the result.
  */
-export function exp(input: any[]): number[] {
+export function exp(input: unknown[]): Quantity[] | number[] {
   return applyMathFunc(Math.exp, input);
 }
 
@@ -1188,7 +1198,7 @@ export function exp(input: any[]): number[] {
  * @param input The input collection.
  * @returns A collection containing the result.
  */
-export function floor(input: any[]): number[] {
+export function floor(input: unknown[]): Quantity[] | number[] {
   return applyMathFunc(Math.floor, input);
 }
 
@@ -1206,7 +1216,7 @@ export function floor(input: any[]): number[] {
  * @param input The input collection.
  * @returns A collection containing the result.
  */
-export function ln(input: any[]): number[] {
+export function ln(input: unknown[]): Quantity[] | number[] {
   return applyMathFunc(Math.log, input);
 }
 
@@ -1226,8 +1236,8 @@ export function ln(input: any[]): number[] {
  * @param input The input collection.
  * @returns A collection containing the result.
  */
-export function log(input: any[], baseAtom: Atom): number[] {
-  return applyMathFunc((value, base) => Math.log(value) / Math.log(base), input, baseAtom);
+export function log(input: unknown[], baseAtom: Atom): Quantity[] | number[] {
+  return applyMathFunc((value, base) => Math.log(value) / Math.log(base as number), input, baseAtom);
 }
 
 /**
@@ -1244,8 +1254,8 @@ export function log(input: any[], baseAtom: Atom): number[] {
  * @param input The input collection.
  * @returns A collection containing the result.
  */
-export function power(input: any[], expAtom: Atom): number[] {
-  return applyMathFunc(Math.pow, input, expAtom);
+export function power(input: unknown[], expAtom: Atom): Quantity[] | number[] {
+  return applyMathFunc(Math.pow as (x: number, ...args: unknown[]) => number, input, expAtom);
 }
 
 /**
@@ -1264,7 +1274,7 @@ export function power(input: any[], expAtom: Atom): number[] {
  * @param input The input collection.
  * @returns A collection containing the result.
  */
-export function round(input: any[]): number[] {
+export function round(input: unknown[]): Quantity[] | number[] {
   return applyMathFunc(Math.round, input);
 }
 
@@ -1284,7 +1294,7 @@ export function round(input: any[]): number[] {
  * @param input The input collection.
  * @returns A collection containing the result.
  */
-export function sqrt(input: any[]): number[] {
+export function sqrt(input: unknown[]): Quantity[] | number[] {
   return applyMathFunc(Math.sqrt, input);
 }
 
@@ -1300,7 +1310,7 @@ export function sqrt(input: any[]): number[] {
  * @param input The input collection.
  * @returns A collection containing the result.
  */
-export function truncate(input: any[]): number[] {
+export function truncate(input: unknown[]): Quantity[] | number[] {
   return applyMathFunc((x) => x | 0, input);
 }
 
@@ -1331,7 +1341,7 @@ export const descendants = stub;
  * @param input The input collection.
  * @param nameAtom The log name.
  */
-export function trace(input: any[], nameAtom: Atom): any[] {
+export function trace(input: unknown[], nameAtom: Atom): unknown[] {
   console.log('trace', input, nameAtom);
   return input;
 }
@@ -1380,8 +1390,8 @@ export function today(): string[] {
  * @param typeAtom
  * @returns
  */
-export function is(input: any[], typeAtom: Atom): boolean[] {
-  const typeName = typeAtom.toString();
+export function is(input: unknown[], typeAtom: Atom): boolean[] {
+  const typeName = (typeAtom as SymbolAtom).name;
   return input.map((value) => fhirPathIs(value, typeName));
 }
 
@@ -1397,7 +1407,7 @@ export function is(input: any[], typeAtom: Atom): boolean[] {
  * @param input
  * @returns
  */
-export function not(input: any[]): boolean[] {
+export function not(input: unknown[]): boolean[] {
   return toBoolean(input).map((value) => !value);
 }
 
@@ -1412,14 +1422,14 @@ export function not(input: any[]): boolean[] {
  * @param input The input collection.
  * @returns
  */
-export function resolve(input: any[]): any[] {
+export function resolve(input: unknown[]): unknown[] {
   return input
     .map((e) => {
       let refStr: string | undefined;
       if (typeof e === 'string') {
         refStr = e;
       } else if (typeof e === 'object') {
-        refStr = e.reference;
+        refStr = (e as Reference).reference;
       }
       if (!refStr) {
         return undefined;
@@ -1435,7 +1445,7 @@ export function resolve(input: any[]): any[] {
  * @param context The context value.
  * @returns The value as the specific type.
  */
-export function as(context: any): any {
+export function as(context: unknown): unknown {
   return context;
 }
 
@@ -1457,7 +1467,7 @@ export function as(context: any): any {
  * @param input The input collection.
  * @returns
  */
-export function type(input: any[]): any[] {
+export function type(input: unknown[]): unknown[] {
   return input.map((value) => {
     if (typeof value === 'boolean') {
       return { namespace: 'System', name: 'Boolean' };
@@ -1465,20 +1475,20 @@ export function type(input: any[]): any[] {
     if (typeof value === 'number') {
       return { namespace: 'System', name: 'Integer' };
     }
-    if (typeof value === 'object' && 'resourceType' in value) {
-      return { namespace: 'FHIR', name: value.resourceType };
+    if (value && typeof value === 'object' && 'resourceType' in value) {
+      return { namespace: 'FHIR', name: (value as Resource).resourceType };
     }
     return null;
   });
 }
 
-export function conformsTo(input: any[], systemAtom: Atom): boolean[] {
+export function conformsTo(input: unknown[], systemAtom: Atom): boolean[] {
   const system = systemAtom.eval(undefined) as string;
   if (!system.startsWith('http://hl7.org/fhir/StructureDefinition/')) {
     throw new Error('Expected a StructureDefinition URL');
   }
   const expectedResourceType = system.replace('http://hl7.org/fhir/StructureDefinition/', '');
-  return input.map((resource) => resource?.resourceType === expectedResourceType);
+  return input.map((resource) => (resource as Resource | undefined)?.resourceType === expectedResourceType);
 }
 
 /*
@@ -1486,12 +1496,12 @@ export function conformsTo(input: any[], systemAtom: Atom): boolean[] {
  */
 
 function applyStringFunc<T>(
-  func: (str: string, ...args: any[]) => T | undefined,
-  input: any[],
+  func: (str: string, ...args: unknown[]) => T | undefined,
+  input: unknown[],
   ...argsAtoms: (Atom | undefined)[]
 ): T[] {
   if (input.length === 0) {
-    return input;
+    return [];
   }
   const [value] = validateInput(input, 1);
   if (typeof value !== 'string') {
@@ -1501,9 +1511,13 @@ function applyStringFunc<T>(
   return result === undefined ? [] : [result];
 }
 
-function applyMathFunc(func: (x: number, ...args: any[]) => number, input: any[], ...argsAtoms: Atom[]): number[] {
+function applyMathFunc(
+  func: (x: number, ...args: unknown[]) => number,
+  input: unknown[],
+  ...argsAtoms: Atom[]
+): Quantity[] | number[] {
   if (input.length === 0) {
-    return input;
+    return [];
   }
   const [value] = validateInput(input, 1);
   const quantity = isQuantity(value);
@@ -1515,7 +1529,7 @@ function applyMathFunc(func: (x: number, ...args: any[]) => number, input: any[]
   return quantity ? [{ ...value, value: result }] : [result];
 }
 
-function validateInput(input: any[], count: number): any[] {
+function validateInput(input: unknown[], count: number): unknown[] {
   if (input.length !== count) {
     throw new Error(`Expected ${count} arguments`);
   }

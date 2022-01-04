@@ -37,7 +37,7 @@ describe('Subscription Worker', () => {
 
   beforeEach(async () => {
     await getClient().query('DELETE FROM "Subscription"');
-    (fetch as any).mockClear();
+    (fetch as unknown as jest.Mock).mockClear();
   });
 
   test('Send subscriptions', async () => {
@@ -55,7 +55,7 @@ describe('Subscription Worker', () => {
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
@@ -67,9 +67,9 @@ describe('Subscription Worker', () => {
     expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
-    (fetch as any).mockImplementation(() => ({ status: 200 }));
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execSubscriptionJob(job);
 
     expect(fetch).toHaveBeenCalledWith(
@@ -97,7 +97,7 @@ describe('Subscription Worker', () => {
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
@@ -109,9 +109,9 @@ describe('Subscription Worker', () => {
     expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
-    (fetch as any).mockImplementation(() => ({ status: 200 }));
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execSubscriptionJob(job);
 
     expect(fetch).toHaveBeenCalledWith(
@@ -149,7 +149,7 @@ describe('Subscription Worker', () => {
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
@@ -161,12 +161,12 @@ describe('Subscription Worker', () => {
     expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
-    (fetch as any).mockImplementation(() => ({ status: 200 }));
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
 
     const body = stringify(patient);
     const signature = createHmac('sha256', secret).update(body).digest('hex');
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execSubscriptionJob(job);
 
     expect(fetch).toHaveBeenCalledWith(
@@ -194,7 +194,7 @@ describe('Subscription Worker', () => {
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
@@ -220,7 +220,7 @@ describe('Subscription Worker', () => {
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
@@ -245,7 +245,7 @@ describe('Subscription Worker', () => {
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
@@ -271,7 +271,7 @@ describe('Subscription Worker', () => {
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
@@ -297,7 +297,7 @@ describe('Subscription Worker', () => {
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     await repo.createResource<Observation>({
@@ -330,7 +330,7 @@ describe('Subscription Worker', () => {
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
@@ -362,7 +362,7 @@ describe('Subscription Worker', () => {
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
@@ -400,7 +400,7 @@ describe('Subscription Worker', () => {
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
@@ -431,7 +431,7 @@ describe('Subscription Worker', () => {
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
@@ -443,9 +443,9 @@ describe('Subscription Worker', () => {
     expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
-    (fetch as any).mockImplementation(() => ({ status: 400 }));
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 400 }));
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
 
     // If the job throws, then the QueueScheduler will retry
     await expect(execSubscriptionJob(job)).rejects.toThrow();
@@ -466,7 +466,7 @@ describe('Subscription Worker', () => {
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
@@ -478,11 +478,11 @@ describe('Subscription Worker', () => {
     expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
-    (fetch as any).mockImplementation(() => {
+    (fetch as unknown as jest.Mock).mockImplementation(() => {
       throw new Error();
     });
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
 
     // If the job throws, then the QueueScheduler will retry
     await expect(execSubscriptionJob(job)).rejects.toThrow();
@@ -512,7 +512,7 @@ describe('Subscription Worker', () => {
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
@@ -524,9 +524,9 @@ describe('Subscription Worker', () => {
     expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
-    (fetch as any).mockImplementation(() => ({ status: 200 }));
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execSubscriptionJob(job);
     expect(fetch).not.toHaveBeenCalled();
 
@@ -572,7 +572,7 @@ describe('Subscription Worker', () => {
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
@@ -584,9 +584,9 @@ describe('Subscription Worker', () => {
     expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
-    (fetch as any).mockImplementation(() => ({ status: 200 }));
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execSubscriptionJob(job);
     expect(fetch).not.toHaveBeenCalled();
 
@@ -621,7 +621,7 @@ describe('Subscription Worker', () => {
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
@@ -641,7 +641,7 @@ describe('Subscription Worker', () => {
     });
     expect(updateOutcome.id).toEqual('ok');
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execSubscriptionJob(job);
 
     // Fetch should not have been called
@@ -676,7 +676,7 @@ describe('Subscription Worker', () => {
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
@@ -693,7 +693,7 @@ describe('Subscription Worker', () => {
     const [deleteOutcome] = await repo.deleteResource('Subscription', subscription?.id as string);
     assertOk(deleteOutcome);
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execSubscriptionJob(job);
 
     // Fetch should not have been called
@@ -728,7 +728,7 @@ describe('Subscription Worker', () => {
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [patientOutcome, patient] = await repo.createResource<Patient>({
@@ -745,7 +745,7 @@ describe('Subscription Worker', () => {
     const [deleteOutcome] = await repo.deleteResource('Patient', patient?.id as string);
     assertOk(deleteOutcome);
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execSubscriptionJob(job);
 
     // Fetch should not have been called
@@ -789,7 +789,7 @@ describe('Subscription Worker', () => {
     expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [patientOutcome, patient] = await systemRepo.createResource<Patient>({
@@ -805,9 +805,9 @@ describe('Subscription Worker', () => {
     expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
-    (fetch as any).mockImplementation(() => ({ status: 200 }));
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execSubscriptionJob(job);
 
     const [searchOutcome, bundle] = await systemRepo.search<AuditEvent>({

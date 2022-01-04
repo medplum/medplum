@@ -19,7 +19,7 @@ export function RegisterPage(): JSX.Element {
                 .register({
                   ...formData,
                   recaptchaResponse: token,
-                } as any as RegisterRequest)
+                } as unknown as RegisterRequest)
                 .then(() => setSuccess(true))
                 .catch((err) => {
                   if (err.outcome) {

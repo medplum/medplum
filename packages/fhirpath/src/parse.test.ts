@@ -32,7 +32,7 @@ describe('FHIRPath parser', () => {
   });
 
   test('Parser throws on missing tokens', () => {
-    expect(() => parseFhirPath('1 * ')).toThrowError('Cant consume any more tokens.');
+    expect(() => parseFhirPath('1 * ')).toThrowError('Cant consume unknown more tokens.');
   });
 
   test('Function minus number', () => {

@@ -1,5 +1,5 @@
-import { Resource } from '@medplum/fhirtypes';
 import { evalFhirPath } from '@medplum/fhirpath';
+import { Resource } from '@medplum/fhirtypes';
 import parser from 'fast-xml-parser';
 import fhirpath from 'fhirpath';
 import fs from 'fs';
@@ -204,7 +204,7 @@ function getFhirpathOutput(resource: Resource, expr: string): string {
     const result = fhirpath.evaluate(resource, expr);
     return JSON.stringify(result, undefined, 2);
   } catch (e) {
-    return (e as any).message;
+    return (e as Error).message;
   }
 }
 
@@ -213,7 +213,7 @@ function getMedplumOutput(resource: Resource, expr: string): string {
     const result = evalFhirPath(expr, resource);
     return JSON.stringify(result, undefined, 2);
   } catch (e) {
-    return (e as any).message;
+    return (e as Error).message;
   }
 }
 

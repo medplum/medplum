@@ -45,7 +45,7 @@ describe('FHIR Patient utils', () => {
       getPatientId({
         resourceType: 'Observation',
         subject: null,
-      } as any as Observation)
+      } as unknown as Observation)
     ).toBeUndefined();
     expect(getPatientId({ resourceType: 'Observation', subject: {} } as Observation)).toBeUndefined();
     expect(
@@ -63,7 +63,7 @@ describe('FHIR Patient utils', () => {
 
     expect(getPatientId({ resourceType: 'Patient' } as Patient)).toBeUndefined();
     expect(getPatientId({ resourceType: 'Patient', id: undefined } as Patient)).toBeUndefined();
-    expect(getPatientId({ resourceType: 'Patient', id: null } as any as Patient)).toBeNull();
+    expect(getPatientId({ resourceType: 'Patient', id: null } as unknown as Patient)).toBeNull();
     expect(getPatientId({ resourceType: 'Patient', id: '123' } as Patient)).toBe('123');
   });
 });

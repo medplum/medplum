@@ -34,7 +34,7 @@ describe('FHIR Repo', () => {
   });
 
   test('Read resource with undefined id', async () => {
-    const [outcome] = await systemRepo.readResource('Patient', undefined as any as string);
+    const [outcome] = await systemRepo.readResource('Patient', undefined as unknown as string);
     expect(isOk(outcome)).toBe(false);
   });
 

@@ -2,8 +2,8 @@ import { Quantity } from '@medplum/fhirtypes';
 import {
   AndAtom,
   ArithemticOperatorAtom,
+  AsAtom,
   Atom,
-  BinaryOperatorAtom,
   ComparisonOperatorAtom,
   ConcatAtom,
   ContainsAtom,
@@ -128,7 +128,7 @@ class Parser {
 
   private consume(): Token {
     if (!this.tokens.length) {
-      throw Error('Cant consume any more tokens.');
+      throw Error('Cant consume unknown more tokens.');
     }
     return this.tokens.shift() as Token;
   }
@@ -201,7 +201,11 @@ const FUNCTION_CALL_PARSELET: InfixParselet = {
       parser.match(',');
     }
 
-    return new FunctionAtom(left.name, args, (functions as Record<string, (...args: any[]) => any>)[left.name]);
+    return new FunctionAtom(
+      left.name,
+      args,
+      (functions as Record<string, (context: unknown[], ...a: Atom[]) => unknown[]>)[left.name]
+    );
   },
   precedence: Precedence.FunctionCall,
 };
@@ -275,7 +279,7 @@ const parserBuilder = new ParserBuilder()
       case 'and':
         return new AndAtom(left, right);
       case 'as':
-        return new BinaryOperatorAtom(left, right, (x) => x);
+        return new AsAtom(left, right);
       case 'contains':
         return new ContainsAtom(left, right);
       case 'div':
@@ -317,6 +321,6 @@ export function parseFhirPath(input: string): FhirPathAtom {
  * @param context The resource or object to evaluate the expression against.
  * @returns The result of the FHIRPath expression against the resource or object.
  */
-export function evalFhirPath(input: string, context: any): any[] {
+export function evalFhirPath(input: string, context: unknown): unknown[] {
   return parseFhirPath(input).eval(context);
 }

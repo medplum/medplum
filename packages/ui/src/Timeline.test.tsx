@@ -1,16 +1,12 @@
-import { MedplumClient } from '@medplum/core';
 import { Communication } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
 import { Timeline, TimelineItem } from './Timeline';
 
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: (() => undefined) as any,
-});
+const medplum = new MockClient();
 
 describe('Timeline', () => {
   test('Renders', async () => {

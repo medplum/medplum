@@ -30,14 +30,14 @@ describe('useResource', () => {
   }
 
   test('Renders null', () => {
-    setup({ value: null as any as Reference });
+    setup({ value: null as unknown as Reference });
     const el = screen.getByTestId('test-component');
     expect(el).toBeInTheDocument();
     expect(el.innerHTML).toBe('');
   });
 
   test('Renders undefined', () => {
-    setup({ value: undefined as any as Reference });
+    setup({ value: undefined as unknown as Reference });
     const el = screen.getByTestId('test-component');
     expect(el).toBeInTheDocument();
     expect(el.innerHTML).toBe('');
