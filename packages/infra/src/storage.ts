@@ -5,25 +5,22 @@ import * as route53 from '@aws-cdk/aws-route53';
 import * as targets from '@aws-cdk/aws-route53-targets/lib';
 import * as s3 from '@aws-cdk/aws-s3';
 import * as cdk from '@aws-cdk/core';
-import { DOMAIN_NAME, PUBLIC_KEY, STORAGE_BUCKET_NAME, STORAGE_DOMAIN_NAME, STORAGE_SSL_CERT_ARN } from './constants';
+import { MedplumInfraConfig } from './config';
 
 /**
  * Binary storage bucket and CloudFront distribution.
  */
 export class Storage extends cdk.Construct {
-  readonly id: string;
-
-  constructor(parent: cdk.Construct, id: string) {
-    super(parent, id);
-    this.id = id;
+  constructor(parent: cdk.Construct, config: MedplumInfraConfig) {
+    super(parent, 'Storage');
 
     const zone = route53.HostedZone.fromLookup(this, 'Zone', {
-      domainName: DOMAIN_NAME,
+      domainName: config.domainName,
     });
 
     // S3 bucket
     const storageBucket = new s3.Bucket(this, 'StorageBucket', {
-      bucketName: STORAGE_BUCKET_NAME,
+      bucketName: config.storageBucketName,
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.S3_MANAGED,
@@ -35,7 +32,7 @@ export class Storage extends cdk.Construct {
 
     // Public key in PEM format
     const publicKey = new cloudfront.PublicKey(this, 'StoragePublicKey', {
-      encodedKey: PUBLIC_KEY,
+      encodedKey: config.storagePublicKey,
     });
 
     // Authorized key group for presigned URLs
@@ -50,13 +47,13 @@ export class Storage extends cdk.Construct {
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         trustedKeyGroups: [keyGroup],
       },
-      certificate: acm.Certificate.fromCertificateArn(this, 'StorageCertificate', STORAGE_SSL_CERT_ARN),
-      domainNames: [STORAGE_DOMAIN_NAME],
+      certificate: acm.Certificate.fromCertificateArn(this, 'StorageCertificate', config.storageSslCertArn),
+      domainNames: [config.storageDomainName],
     });
 
     // Route53 alias record for the CloudFront distribution
     const record = new route53.ARecord(this, 'StorageAliasRecord', {
-      recordName: STORAGE_DOMAIN_NAME,
+      recordName: config.storageDomainName,
       target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(distribution)),
       zone,
     });

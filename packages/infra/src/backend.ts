@@ -11,7 +11,7 @@ import * as targets from '@aws-cdk/aws-route53-targets/lib';
 import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
 import * as ssm from '@aws-cdk/aws-ssm';
 import * as cdk from '@aws-cdk/core';
-import { API_DOMAIN_NAME, API_SSL_CERT_ARN, DOMAIN_NAME } from './constants';
+import { MedplumInfraConfig } from './config';
 
 /**
  * Based on: https://github.com/aws-samples/http-api-aws-fargate-cdk/blob/master/cdk/singleAccount/lib/fargate-vpclink-stack.ts
@@ -19,13 +19,10 @@ import { API_DOMAIN_NAME, API_SSL_CERT_ARN, DOMAIN_NAME } from './constants';
  * RDS config: https://docs.aws.amazon.com/cdk/api/latest/docs/aws-rds-readme.html
  */
 export class BackEnd extends cdk.Construct {
-  readonly id: string;
+  constructor(scope: cdk.Construct, config: MedplumInfraConfig) {
+    super(scope, 'BackEnd');
 
-  constructor(scope: cdk.Construct, id: string) {
-    super(scope, id);
-    this.id = id;
-
-    const name = 'prod';
+    const name = config.name;
 
     // VPC Flow Logs
     const vpcFlowLogs = new logs.LogGroup(this, 'VpcFlowLogs', {
@@ -184,7 +181,7 @@ export class BackEnd extends cdk.Construct {
       vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_WITH_NAT,
       },
-      desiredCount: 2,
+      desiredCount: config.desiredServerCount,
       securityGroups: [fargateSecurityGroup],
     });
 
@@ -216,7 +213,7 @@ export class BackEnd extends cdk.Construct {
       port: 443,
       certificates: [
         {
-          certificateArn: API_SSL_CERT_ARN,
+          certificateArn: config.apiSslCertArn,
         },
       ],
       sslPolicy: elbv2.SslPolicy.FORWARD_SECRECY_TLS12_RES_GCM,
@@ -231,12 +228,12 @@ export class BackEnd extends cdk.Construct {
 
     // Route 53
     const zone = route53.HostedZone.fromLookup(this, 'Zone', {
-      domainName: DOMAIN_NAME,
+      domainName: config.domainName,
     });
 
     // Route53 alias record for the load balancer
     const record = new route53.ARecord(this, 'LoadBalancerAliasRecord', {
-      recordName: API_DOMAIN_NAME,
+      recordName: config.apiDomainName,
       target: route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(loadBalancer)),
       zone: zone,
     });

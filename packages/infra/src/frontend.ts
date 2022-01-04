@@ -4,7 +4,7 @@ import * as route53 from '@aws-cdk/aws-route53';
 import * as targets from '@aws-cdk/aws-route53-targets/lib';
 import * as s3 from '@aws-cdk/aws-s3';
 import * as cdk from '@aws-cdk/core';
-import { APP_DOMAIN_NAME, APP_SSL_CERT_ARN, DOMAIN_NAME } from './constants';
+import { MedplumInfraConfig } from './config';
 
 /**
  * Static app infrastructure, which deploys app content to an S3 bucket.
@@ -13,19 +13,16 @@ import { APP_DOMAIN_NAME, APP_SSL_CERT_ARN, DOMAIN_NAME } from './constants';
  * Route53 alias record, and ACM certificate.
  */
 export class FrontEnd extends cdk.Construct {
-  readonly id: string;
-
-  constructor(parent: cdk.Construct, id: string) {
-    super(parent, id);
-    this.id = id;
+  constructor(parent: cdk.Construct, config: MedplumInfraConfig) {
+    super(parent, 'FrontEnd');
 
     const zone = route53.HostedZone.fromLookup(this, 'Zone', {
-      domainName: DOMAIN_NAME,
+      domainName: config.domainName,
     });
 
     // S3 bucket
     const appBucket = new s3.Bucket(this, 'AppBucket', {
-      bucketName: APP_DOMAIN_NAME,
+      bucketName: config.appDomainName,
       websiteIndexDocument: 'index.html',
       websiteErrorDocument: 'error.html',
       publicReadAccess: false,
@@ -41,9 +38,9 @@ export class FrontEnd extends cdk.Construct {
     // CloudFront distribution that provides HTTPS
     const distribution = new cloudfront.CloudFrontWebDistribution(this, 'AppDistribution', {
       viewerCertificate: cloudfront.ViewerCertificate.fromAcmCertificate(
-        acm.Certificate.fromCertificateArn(this, 'AppCertificate', APP_SSL_CERT_ARN),
+        acm.Certificate.fromCertificateArn(this, 'AppCertificate', config.appSslCertArn),
         {
-          aliases: [APP_DOMAIN_NAME],
+          aliases: [config.appDomainName],
           sslMethod: cloudfront.SSLMethod.SNI,
           securityPolicy: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
         }
@@ -73,7 +70,7 @@ export class FrontEnd extends cdk.Construct {
 
     // Route53 alias record for the CloudFront distribution
     const record = new route53.ARecord(this, 'AppAliasRecord', {
-      recordName: APP_DOMAIN_NAME,
+      recordName: config.appDomainName,
       target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(distribution)),
       zone,
     });
