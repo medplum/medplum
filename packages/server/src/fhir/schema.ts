@@ -22,7 +22,7 @@ export function getSchemaDefinition(resourceType: string): JSONSchema4 {
 }
 
 export function getResourceTypes(): string[] {
-  return Object.keys((getSchema() as any).discriminator.mapping);
+  return Object.keys(getSchema().discriminator.mapping);
 }
 
 export function isResourceType(resourceType: string): boolean {

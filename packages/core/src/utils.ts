@@ -59,9 +59,8 @@ export function getDisplayString(resource: Resource): string {
       return resource.email;
     }
   }
-  const simpleName = (resource as any).name;
-  if (simpleName && typeof simpleName === 'string') {
-    return simpleName;
+  if ('name' in resource && resource.name && typeof resource.name === 'string') {
+    return resource.name;
   }
   return getReferenceString(resource);
 }
