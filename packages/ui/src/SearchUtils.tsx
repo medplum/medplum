@@ -447,7 +447,18 @@ export function getOpString(op: Operator): string {
   return operatorNames[op] ?? '';
 }
 
-export function buildFieldNameString(schema: IndexedStructureDefinition, resourceType: string, key: string): string {
+/**
+ * Returns a field display name.
+ * @param schema The schema if available.
+ * @param resourceType The FHIR resource type.
+ * @param key The field key.
+ * @returns The field display name.
+ */
+export function buildFieldNameString(
+  schema: IndexedStructureDefinition | undefined,
+  resourceType: string,
+  key: string
+): string {
   if (key === 'id') {
     return 'ID';
   }
@@ -460,12 +471,7 @@ export function buildFieldNameString(schema: IndexedStructureDefinition, resourc
     return 'Last Updated';
   }
 
-  const typeDef = schema.types[resourceType];
-  if (!typeDef) {
-    return key;
-  }
-
-  const property = typeDef.properties[key];
+  const property = schema?.types?.[resourceType]?.properties?.[key];
   if (!property) {
     return key;
   }
