@@ -2,75 +2,75 @@ import { Atom, LiteralAtom } from './atoms';
 import * as functions from './functions';
 
 const isEven: Atom = {
-  eval: (num) => [num % 2 === 0],
+  eval: (num) => [(num as number) % 2 === 0],
 };
 
 describe('FHIRPath functions', () => {
   // 5.1 Existence
 
   test('empty', () => {
-    expect(functions.empty([])).toEqual(true);
-    expect(functions.empty([1])).toEqual(false);
-    expect(functions.empty([1, 2])).toEqual(false);
+    expect(functions.empty([])).toEqual([true]);
+    expect(functions.empty([1])).toEqual([false]);
+    expect(functions.empty([1, 2])).toEqual([false]);
   });
 
   test('exists', () => {
-    expect(functions.exists([])).toEqual(false);
-    expect(functions.exists([1])).toEqual(true);
-    expect(functions.exists([1, 2])).toEqual(true);
-    expect(functions.exists([], isEven)).toEqual(false);
-    expect(functions.exists([1], isEven)).toEqual(false);
-    expect(functions.exists([1, 2], isEven)).toEqual(true);
+    expect(functions.exists([])).toEqual([false]);
+    expect(functions.exists([1])).toEqual([true]);
+    expect(functions.exists([1, 2])).toEqual([true]);
+    expect(functions.exists([], isEven)).toEqual([false]);
+    expect(functions.exists([1], isEven)).toEqual([false]);
+    expect(functions.exists([1, 2], isEven)).toEqual([true]);
   });
 
   test('all', () => {
-    expect(functions.all([], isEven)).toEqual(true);
-    expect(functions.all([1], isEven)).toEqual(false);
-    expect(functions.all([2], isEven)).toEqual(true);
-    expect(functions.all([1, 2], isEven)).toEqual(false);
-    expect(functions.all([2, 4], isEven)).toEqual(true);
+    expect(functions.all([], isEven)).toEqual([true]);
+    expect(functions.all([1], isEven)).toEqual([false]);
+    expect(functions.all([2], isEven)).toEqual([true]);
+    expect(functions.all([1, 2], isEven)).toEqual([false]);
+    expect(functions.all([2, 4], isEven)).toEqual([true]);
   });
 
   test('allTrue', () => {
-    expect(functions.allTrue([])).toEqual(true);
-    expect(functions.allTrue([true])).toEqual(true);
-    expect(functions.allTrue([false])).toEqual(false);
-    expect(functions.allTrue([true, false])).toEqual(false);
-    expect(functions.allTrue([true, true])).toEqual(true);
-    expect(functions.allTrue([false, false])).toEqual(false);
+    expect(functions.allTrue([])).toEqual([true]);
+    expect(functions.allTrue([true])).toEqual([true]);
+    expect(functions.allTrue([false])).toEqual([false]);
+    expect(functions.allTrue([true, false])).toEqual([false]);
+    expect(functions.allTrue([true, true])).toEqual([true]);
+    expect(functions.allTrue([false, false])).toEqual([false]);
   });
 
   test('anyTrue', () => {
-    expect(functions.anyTrue([])).toEqual(false);
-    expect(functions.anyTrue([true])).toEqual(true);
-    expect(functions.anyTrue([false])).toEqual(false);
-    expect(functions.anyTrue([true, false])).toEqual(true);
-    expect(functions.anyTrue([true, true])).toEqual(true);
-    expect(functions.anyTrue([false, false])).toEqual(false);
+    expect(functions.anyTrue([])).toEqual([false]);
+    expect(functions.anyTrue([true])).toEqual([true]);
+    expect(functions.anyTrue([false])).toEqual([false]);
+    expect(functions.anyTrue([true, false])).toEqual([true]);
+    expect(functions.anyTrue([true, true])).toEqual([true]);
+    expect(functions.anyTrue([false, false])).toEqual([false]);
   });
 
   test('allFalse', () => {
-    expect(functions.allFalse([])).toEqual(true);
-    expect(functions.allFalse([true])).toEqual(false);
-    expect(functions.allFalse([false])).toEqual(true);
-    expect(functions.allFalse([true, false])).toEqual(false);
-    expect(functions.allFalse([true, true])).toEqual(false);
-    expect(functions.allFalse([false, false])).toEqual(true);
+    expect(functions.allFalse([])).toEqual([true]);
+    expect(functions.allFalse([true])).toEqual([false]);
+    expect(functions.allFalse([false])).toEqual([true]);
+    expect(functions.allFalse([true, false])).toEqual([false]);
+    expect(functions.allFalse([true, true])).toEqual([false]);
+    expect(functions.allFalse([false, false])).toEqual([true]);
   });
 
   test('anyFalse', () => {
-    expect(functions.anyFalse([])).toEqual(false);
-    expect(functions.anyFalse([true])).toEqual(false);
-    expect(functions.anyFalse([false])).toEqual(true);
-    expect(functions.anyFalse([true, false])).toEqual(true);
-    expect(functions.anyFalse([true, true])).toEqual(false);
-    expect(functions.anyFalse([false, false])).toEqual(true);
+    expect(functions.anyFalse([])).toEqual([false]);
+    expect(functions.anyFalse([true])).toEqual([false]);
+    expect(functions.anyFalse([false])).toEqual([true]);
+    expect(functions.anyFalse([true, false])).toEqual([true]);
+    expect(functions.anyFalse([true, true])).toEqual([false]);
+    expect(functions.anyFalse([false, false])).toEqual([true]);
   });
 
   test('count', () => {
-    expect(functions.count([])).toEqual(0);
-    expect(functions.count([1])).toEqual(1);
-    expect(functions.count([1, 2])).toEqual(2);
+    expect(functions.count([])).toEqual([0]);
+    expect(functions.count([1])).toEqual([1]);
+    expect(functions.count([1, 2])).toEqual([2]);
   });
 
   test('distinct', () => {
@@ -84,13 +84,13 @@ describe('FHIRPath functions', () => {
   });
 
   test('isDistinct', () => {
-    expect(functions.isDistinct([])).toEqual(true);
-    expect(functions.isDistinct([1])).toEqual(true);
-    expect(functions.isDistinct([1, 2])).toEqual(true);
-    expect(functions.isDistinct([1, 1])).toEqual(false);
-    expect(functions.isDistinct(['a'])).toEqual(true);
-    expect(functions.isDistinct(['a', 'b'])).toEqual(true);
-    expect(functions.isDistinct(['a', 'a'])).toEqual(false);
+    expect(functions.isDistinct([])).toEqual([true]);
+    expect(functions.isDistinct([1])).toEqual([true]);
+    expect(functions.isDistinct([1, 2])).toEqual([true]);
+    expect(functions.isDistinct([1, 1])).toEqual([false]);
+    expect(functions.isDistinct(['a'])).toEqual([true]);
+    expect(functions.isDistinct(['a', 'b'])).toEqual([true]);
+    expect(functions.isDistinct(['a', 'a'])).toEqual([false]);
   });
 
   // 5.2. Filtering and projection
@@ -338,7 +338,7 @@ describe('FHIRPath functions', () => {
   });
 
   test('toString', () => {
-    const toString = functions.toString as unknown as (input: any[]) => string[];
+    const toString = functions.toString as unknown as (input: unknown[]) => string[];
     expect(toString([])).toEqual([]);
     expect(() => toString([1, 2])).toThrow();
     expect(toString([true])).toEqual(['true']);

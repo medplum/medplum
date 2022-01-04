@@ -214,7 +214,7 @@ class Tokenizer {
     return buildToken(c, c);
   }
 
-  private consumeWhile(condition: () => any): string {
+  private consumeWhile(condition: () => unknown): string {
     const start = this.pos;
 
     while (this.pos < this.str.length && condition()) {
