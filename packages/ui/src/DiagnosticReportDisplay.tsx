@@ -8,10 +8,10 @@ import {
 } from '@medplum/fhirtypes';
 import React from 'react';
 import { CodeableConceptDisplay } from './CodeableConceptDisplay';
+import { DateTimeDisplay } from './DateTimeDisplay';
 import { MedplumLink } from './MedplumLink';
 import { ResourceBadge } from './ResourceBadge';
 import { useResource } from './useResource';
-import { formatDateTime } from './utils/format';
 import './DiagnosticReportDisplay.css';
 
 export interface DiagnosticReportDisplayProps {
@@ -56,7 +56,9 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
         {diagnosticReport.issued && (
           <dl>
             <dt>Issued</dt>
-            <dd>{formatDateTime(diagnosticReport.issued)}</dd>
+            <dd>
+              <DateTimeDisplay value={diagnosticReport.issued} />
+            </dd>
           </dl>
         )}
         {diagnosticReport.status && (

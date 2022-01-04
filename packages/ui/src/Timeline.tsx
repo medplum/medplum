@@ -2,9 +2,9 @@ import { Reference, Resource } from '@medplum/fhirtypes';
 import React from 'react';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
+import { DateTimeDisplay } from './DateTimeDisplay';
 import { MedplumLink } from './MedplumLink';
 import { ResourceName } from './ResourceName';
-import { formatDateTime } from './utils/format';
 import './Timeline.css';
 
 export interface TimelineProps {
@@ -34,7 +34,9 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
         <div className="medplum-timeline-item-title">
           <ResourceName value={author} link={true} />
           <div className="medplum-timeline-item-subtitle">
-            <MedplumLink to={props.resource}>{formatDateTime(props.resource.meta?.lastUpdated)}</MedplumLink>
+            <MedplumLink to={props.resource}>
+              <DateTimeDisplay value={props.resource.meta?.lastUpdated} />
+            </MedplumLink>
             <span>&middot;</span>
             <MedplumLink to={props.resource}>{props.resource.resourceType}</MedplumLink>
           </div>
