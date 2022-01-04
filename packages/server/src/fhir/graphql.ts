@@ -238,8 +238,8 @@ async function resolveBySearch(
         } as Filter)
     ),
   });
-  assertOk(outcome);
-  return bundle?.entry?.map((e) => e.resource as Resource);
+  assertOk(outcome, bundle);
+  return bundle.entry?.map((e) => e.resource as Resource);
 }
 
 /**
@@ -256,7 +256,7 @@ async function resolveBySearch(
 async function resolveById(source: any, args: any, ctx: any, info: GraphQLResolveInfo): Promise<Resource | undefined> {
   const repo = ctx.res.locals.repo as Repository;
   const [outcome, resource] = await repo.readResource(info.fieldName, args.id);
-  assertOk(outcome);
+  assertOk(outcome, resource);
   return resource;
 }
 
@@ -273,7 +273,7 @@ async function resolveById(source: any, args: any, ctx: any, info: GraphQLResolv
 async function resolveByReference(source: any, args: any, ctx: any): Promise<Resource | undefined> {
   const repo = ctx.res.locals.repo as Repository;
   const [outcome, resource] = await repo.readReference(source as Reference);
-  assertOk(outcome);
+  assertOk(outcome, resource);
   return resource;
 }
 

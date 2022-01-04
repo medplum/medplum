@@ -65,10 +65,10 @@ export async function registerHandler(req: Request, res: Response): Promise<void
     nonce: randomUUID(),
     remember: true,
   });
-  assertOk(loginOutcome);
+  assertOk(loginOutcome, login);
 
   const [tokenOutcome, token] = await getAuthTokens(login as Login);
-  assertOk(tokenOutcome);
+  assertOk(tokenOutcome, token);
 
   res.status(200).json({
     ...token,
@@ -103,8 +103,8 @@ async function searchForExisting(email: string): Promise<boolean> {
     ],
   });
 
-  assertOk(outcome);
-  return (bundle?.entry as BundleEntry<User>[]).length > 0;
+  assertOk(outcome, bundle);
+  return (bundle.entry as BundleEntry<User>[]).length > 0;
 }
 
 async function createUser(request: RegisterRequest): Promise<User> {
@@ -117,9 +117,9 @@ async function createUser(request: RegisterRequest): Promise<User> {
     passwordHash,
     admin,
   });
-  assertOk(outcome);
-  logger.info('Created: ' + (result as User).id);
-  return result as User;
+  assertOk(outcome, result);
+  logger.info('Created: ' + result.id);
+  return result;
 }
 
 async function createProject(request: RegisterRequest, user: User): Promise<Project> {
@@ -129,9 +129,9 @@ async function createProject(request: RegisterRequest, user: User): Promise<Proj
     name: request.projectName,
     owner: createReference(user),
   });
-  assertOk(outcome);
-  logger.info('Created: ' + (result as Project).id);
-  return result as Project;
+  assertOk(outcome, result);
+  logger.info('Created: ' + result.id);
+  return result;
 }
 
 async function createClientApplication(project: Project): Promise<ClientApplication> {
@@ -146,9 +146,9 @@ async function createClientApplication(project: Project): Promise<ClientApplicat
       project: project.id,
     },
   });
-  assertOk(outcome);
-  logger.info('Created: ' + (result as ClientApplication).id);
-  return result as ClientApplication;
+  assertOk(outcome, result);
+  logger.info('Created: ' + result.id);
+  return result;
 }
 
 /**

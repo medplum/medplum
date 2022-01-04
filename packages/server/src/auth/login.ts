@@ -1,5 +1,4 @@
 import { assertOk } from '@medplum/core';
-import { Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -30,6 +29,6 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
     nonce: randomUUID(),
     remember: true,
   });
-  assertOk(loginOutcome);
-  await sendLoginResult(res, login as Login);
+  assertOk(loginOutcome, login);
+  await sendLoginResult(res, login);
 }

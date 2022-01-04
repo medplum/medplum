@@ -489,7 +489,7 @@ describe('Batch', () => {
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
     });
-    assertOk(patientOutcome);
+    assertOk(patientOutcome, patient);
 
     const [outcome, bundle] = await processBatch(repo, {
       resourceType: 'Bundle',
@@ -501,7 +501,7 @@ describe('Batch', () => {
             url: 'Patient/' + patient?.id,
           },
           resource: {
-            ...(patient as Patient),
+            ...patient,
             active: true,
           },
         },
@@ -567,7 +567,7 @@ describe('Batch', () => {
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
     });
-    assertOk(patientOutcome);
+    assertOk(patientOutcome, patient);
 
     const [outcome, bundle] = await processBatch(repo, {
       resourceType: 'Bundle',
@@ -576,7 +576,7 @@ describe('Batch', () => {
         {
           request: {
             method: 'DELETE',
-            url: 'Patient/' + patient?.id,
+            url: 'Patient/' + patient.id,
           },
         },
       ],
@@ -741,7 +741,7 @@ describe('Batch', () => {
       resourceType: 'Patient',
       name: [{ family: 'Foo', given: ['Bar'] }],
     });
-    assertOk(createOutcome);
+    assertOk(createOutcome, patient);
 
     const [outcome, bundle] = await processBatch(repo, {
       resourceType: 'Bundle',
@@ -750,7 +750,7 @@ describe('Batch', () => {
         {
           request: {
             method: 'GET',
-            url: `Patient/${patient?.id}/_history`,
+            url: `Patient/${patient.id}/_history`,
           },
         },
       ],

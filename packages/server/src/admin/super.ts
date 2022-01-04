@@ -2,7 +2,7 @@ import { accessDenied, allOk, assertOk, isOk } from '@medplum/core';
 import { User } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
-import { systemRepo, sendOutcome, validateResourceType } from '../fhir';
+import { sendOutcome, systemRepo, validateResourceType } from '../fhir';
 import { authenticateToken } from '../oauth';
 import { createStructureDefinitions } from '../seeds/structuredefinitions';
 import { createValueSetElements } from '../seeds/valuesets';
@@ -17,9 +17,9 @@ superAdminRouter.post(
   '/valuesets',
   asyncWrap(async (req: Request, res: Response) => {
     const [outcome, user] = await systemRepo.readResource<User>('User', res.locals.user);
-    assertOk(outcome);
+    assertOk(outcome, user);
 
-    if (!user?.admin) {
+    if (!user.admin) {
       sendOutcome(res, accessDenied);
       return;
     }
@@ -36,9 +36,9 @@ superAdminRouter.post(
   '/structuredefinitions',
   asyncWrap(async (req: Request, res: Response) => {
     const [outcome, user] = await systemRepo.readResource<User>('User', res.locals.user);
-    assertOk(outcome);
+    assertOk(outcome, user);
 
-    if (!user?.admin) {
+    if (!user.admin) {
       sendOutcome(res, accessDenied);
       return;
     }
@@ -55,9 +55,9 @@ superAdminRouter.post(
   '/reindex',
   asyncWrap(async (req: Request, res: Response) => {
     const [outcome, user] = await systemRepo.readResource<User>('User', res.locals.user);
-    assertOk(outcome);
+    assertOk(outcome, user);
 
-    if (!user?.admin) {
+    if (!user.admin) {
       sendOutcome(res, accessDenied);
       return;
     }

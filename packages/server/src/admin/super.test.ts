@@ -27,10 +27,10 @@ describe('Super Admin routes', () => {
     client = await createTestClient();
 
     const [outcome1, practitioner1] = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
-    assertOk(outcome1);
+    assertOk(outcome1, practitioner1);
 
     const [outcome2, practitioner2] = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
-    assertOk(outcome2);
+    assertOk(outcome2, practitioner2);
 
     const [outcome3, user1] = await systemRepo.createResource<User>({
       resourceType: 'User',
@@ -38,7 +38,7 @@ describe('Super Admin routes', () => {
       passwordHash: 'abc',
       admin: true,
     });
-    assertOk(outcome3);
+    assertOk(outcome3, user1);
 
     const [outcome4, user2] = await systemRepo.createResource<User>({
       resourceType: 'User',
@@ -46,7 +46,7 @@ describe('Super Admin routes', () => {
       passwordHash: 'abc',
       admin: false,
     });
-    assertOk(outcome4);
+    assertOk(outcome4, user2);
 
     const [outcome5, login1] = await systemRepo.createResource<Login>({
       resourceType: 'Login',
@@ -55,7 +55,7 @@ describe('Super Admin routes', () => {
       authTime: new Date().toISOString(),
       scope: 'openid',
     });
-    assertOk(outcome5);
+    assertOk(outcome5, login1);
 
     const [outcome6, login2] = await systemRepo.createResource<Login>({
       resourceType: 'Login',
@@ -64,7 +64,7 @@ describe('Super Admin routes', () => {
       authTime: new Date().toISOString(),
       scope: 'openid',
     });
-    assertOk(outcome6);
+    assertOk(outcome6, login2);
 
     adminAccessToken = await generateAccessToken({
       login_id: login1?.id as string,

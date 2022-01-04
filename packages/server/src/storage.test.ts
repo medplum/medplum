@@ -13,7 +13,7 @@ import { seedDatabase } from './seed';
 
 const app = express();
 const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
-let binary: Binary | undefined = undefined;
+let binary: Binary;
 
 describe('Storage Routes', () => {
   beforeAll(async () => {
@@ -27,14 +27,14 @@ describe('Storage Routes', () => {
       resourceType: 'Binary',
       contentType: 'text/plain',
     });
-    assertOk(outcome);
+    assertOk(outcome, resource);
     binary = resource;
 
     const req = new Readable();
     req.push('hello world');
     req.push(null);
     (req as any).headers = {};
-    await getBinaryStorage().writeBinary(binary as Binary, req as Request);
+    await getBinaryStorage().writeBinary(binary, req as Request);
   });
 
   afterAll(async () => {
@@ -43,12 +43,12 @@ describe('Storage Routes', () => {
   });
 
   test('Missing signature', async () => {
-    const res = await request(app).get(`/storage/${binary?.id}`);
+    const res = await request(app).get(`/storage/${binary.id}`);
     expect(res.status).toBe(401);
   });
 
   test('Success', async () => {
-    const res = await request(app).get(`/storage/${binary?.id}?Signature=xyz&Expires=123`);
+    const res = await request(app).get(`/storage/${binary.id}?Signature=xyz&Expires=123`);
     expect(res.status).toBe(200);
   });
 });

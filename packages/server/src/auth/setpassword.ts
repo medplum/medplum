@@ -19,7 +19,7 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
   }
 
   const [pcrOutcome, pcr] = await systemRepo.readResource<PasswordChangeRequest>('PasswordChangeRequest', req.body.id);
-  assertOk(pcrOutcome);
+  assertOk(pcrOutcome, pcr);
 
   if (pcr?.used) {
     sendOutcome(res, badRequest('Already used'));
@@ -32,20 +32,20 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
   }
 
   const [userOutcome, user] = await systemRepo.readReference(pcr?.user as Reference<User>);
-  assertOk(userOutcome);
+  assertOk(userOutcome, user);
 
   const passwordHash = await bcrypt.hash(req.body.password, 10);
-  const [updateUserOutcome] = await systemRepo.updateResource<User>({
+  const [updateUserOutcome, updatedUser] = await systemRepo.updateResource<User>({
     ...(user as User),
     passwordHash,
   });
-  assertOk(updateUserOutcome);
+  assertOk(updateUserOutcome, updatedUser);
 
-  const [updatePcrOutcome] = await systemRepo.updateResource<PasswordChangeRequest>({
+  const [updatePcrOutcome, updatedPcr] = await systemRepo.updateResource<PasswordChangeRequest>({
     ...(pcr as PasswordChangeRequest),
     used: true,
   });
-  assertOk(updatePcrOutcome);
+  assertOk(updatePcrOutcome, updatedPcr);
 
   sendOutcome(res, allOk);
 }

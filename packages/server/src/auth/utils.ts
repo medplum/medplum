@@ -33,9 +33,9 @@ export async function createPractitioner(request: NewAccountRequest, project: Pr
       },
     ],
   });
-  assertOk(outcome);
-  logger.info('Created: ' + (result as Practitioner).id);
-  return result as Practitioner;
+  assertOk(outcome, result);
+  logger.info('Created: ' + result.id);
+  return result;
 }
 
 export async function createProjectMembership(
@@ -54,9 +54,9 @@ export async function createProjectMembership(
     accessPolicy,
     admin,
   });
-  assertOk(outcome);
-  logger.info('Created: ' + (result as ProjectMembership).id);
-  return result as ProjectMembership;
+  assertOk(outcome, result);
+  logger.info('Created: ' + result.id);
+  return result;
 }
 
 /**

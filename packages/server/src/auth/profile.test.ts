@@ -94,9 +94,9 @@ describe('Profile', () => {
     expect(res1.body.login).toBeDefined();
 
     const [readOutcome, login] = await systemRepo.readResource<Login>('Login', res1.body.login);
-    assertOk(readOutcome);
+    assertOk(readOutcome, login);
     await systemRepo.updateResource({
-      ...(login as Login),
+      ...login,
       revoked: true,
     });
 
@@ -122,9 +122,9 @@ describe('Profile', () => {
     expect(res1.body.login).toBeDefined();
 
     const [readOutcome, login] = await systemRepo.readResource<Login>('Login', res1.body.login);
-    assertOk(readOutcome);
+    assertOk(readOutcome, login);
     await systemRepo.updateResource({
-      ...(login as Login),
+      ...login,
       granted: true,
     });
 
@@ -150,9 +150,9 @@ describe('Profile', () => {
     expect(res1.body.login).toBeDefined();
 
     const [readOutcome, login] = await systemRepo.readResource<Login>('Login', res1.body.login);
-    assertOk(readOutcome);
+    assertOk(readOutcome, login);
     await systemRepo.updateResource({
-      ...(login as Login),
+      ...login,
       project: {
         reference: `Project/${randomUUID()}`,
       },

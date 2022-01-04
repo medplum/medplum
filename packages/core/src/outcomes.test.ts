@@ -46,7 +46,7 @@ describe('Outcomes', () => {
   });
 
   test('Assert OK', () => {
-    expect(() => assertOk(allOk)).not.toThrow();
-    expect(() => assertOk(notFound)).toThrowError('Not found');
+    expect(() => assertOk(allOk, { resourceType: 'Patient' })).not.toThrow();
+    expect(() => assertOk(notFound, undefined)).toThrowError('Not found');
   });
 });
