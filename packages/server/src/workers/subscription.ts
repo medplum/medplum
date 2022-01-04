@@ -294,7 +294,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     if (subscription?.channel?.endpoint?.startsWith('Bot/')) {
       await execBot(job, subscription, resourceVersion as Resource);
     } else {
-      await sendRestHook(job, subscription as Subscription, resourceVersion as Resource);
+      await sendRestHook(job, subscription, resourceVersion as Resource);
     }
   }
 }
@@ -416,7 +416,7 @@ export async function execBot(
 
   const botRepo = new Repository({
     project: bot?.meta?.project as string,
-    author: createReference(bot as Bot),
+    author: createReference(bot),
   });
 
   const sandbox = {
