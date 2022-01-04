@@ -3,6 +3,10 @@ import { resolve } from 'path';
 import { main } from './index';
 
 describe('Infra', () => {
+  test('Missing config', () => {
+    expect(() => main()).not.toThrow();
+  });
+
   test('Synth stack', () => {
     // Create a temp config file
     const filename = resolve('./medplum.test.config.json');

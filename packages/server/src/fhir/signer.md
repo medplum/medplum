@@ -22,7 +22,6 @@ openssl rsa -pubout -in private_key.pem -out public_key.pem
 
 Copy the contents of public_key.pem into the "storagePublicKey" property of your CDK config file.
 
-## 5. Add the private key to Parameter Store
+## 5. Add the private key to server config
 
-Copy the contents of private_key.pem into the 
-
+Copy the contents of private_key.pem into the "signingKey" property of your server config.
