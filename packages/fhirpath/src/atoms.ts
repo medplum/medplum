@@ -65,7 +65,7 @@ export class SymbolAtom implements Atom {
 }
 
 export class EmptySetAtom implements Atom {
-  eval(): unknown {
+  eval(): [] {
     return [];
   }
 }
@@ -98,7 +98,7 @@ export class ArithemticOperatorAtom implements Atom {
     const rightValue = this.right.eval(context);
     if (isQuantity(leftValue) && isQuantity(rightValue)) {
       return {
-        ...(leftValue as Quantity),
+        ...leftValue,
         value: this.impl(leftValue.value as number, rightValue.value as number),
       };
     } else {

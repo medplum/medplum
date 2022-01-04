@@ -892,7 +892,7 @@ export function toString(input: unknown[]): string[] {
   if (isQuantity(value)) {
     return [`${value.value} '${value.unit}'`];
   }
-  return [(value as boolean | number | object | string).toString()];
+  return [(value as boolean | number | string).toString()];
 }
 
 /**
