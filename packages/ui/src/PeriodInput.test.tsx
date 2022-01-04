@@ -20,6 +20,25 @@ describe('PeriodInput', () => {
   });
 
   test('Set value', async () => {
+    render(<PeriodInput name="a" />);
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Start'), {
+        target: { value: startDateTime },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('End'), {
+        target: { value: endDateTime },
+      });
+    });
+
+    expect(screen.getByDisplayValue(startDateTime)).toBeInTheDocument();
+    expect(screen.getByDisplayValue(endDateTime)).toBeInTheDocument();
+  });
+
+  test('Change event', async () => {
     let lastValue: Period | undefined = undefined;
 
     render(<PeriodInput name="a" onChange={(value) => (lastValue = value)} />);

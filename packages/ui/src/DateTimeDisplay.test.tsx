@@ -1,20 +1,18 @@
 import { render, screen } from '@testing-library/react';
 import React from 'react';
-import { CodingDisplay } from './CodingDisplay';
+import { DateTimeDisplay } from './DateTimeDisplay';
 
-describe('CodingDisplay', () => {
-  test('Renders display', () => {
-    render(<CodingDisplay value={{ display: 'Display Text', code: '123' }} />);
-    expect(screen.getByText('Display Text')).toBeInTheDocument();
-    expect(screen.queryByText('123')).not.toBeInTheDocument();
+describe('DateTimeDisplay', () => {
+  test('Handles undefined value', () => {
+    render(<DateTimeDisplay />);
   });
 
-  test('Renders code', () => {
-    render(<CodingDisplay value={{ code: '123' }} />);
-    expect(screen.getByText('123')).toBeInTheDocument();
+  test('Handles malformed value', () => {
+    render(<DateTimeDisplay value="xyz" />);
   });
 
-  test('Renders undefined value', () => {
-    render(<CodingDisplay />);
+  test('Renders dateTime', () => {
+    render(<DateTimeDisplay value="2021-06-01T12:00:00Z" />);
+    expect(screen.getByText('2021', { exact: false })).toBeInTheDocument();
   });
 });
