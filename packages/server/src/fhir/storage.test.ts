@@ -10,9 +10,9 @@ jest.mock('@aws-sdk/lib-storage');
 
 describe('Storage', () => {
   beforeEach(() => {
-    (S3Client as any).mockClear();
-    (Upload as any).mockClear();
-    (GetObjectCommand as any).mockClear();
+    (S3Client as unknown as jest.Mock).mockClear();
+    (Upload as unknown as jest.Mock).mockClear();
+    (GetObjectCommand as unknown as jest.Mock).mockClear();
   });
 
   test('Undefined binary storage', () => {
@@ -60,7 +60,7 @@ describe('Storage', () => {
     initBinaryStorage('s3:foo');
     expect(S3Client).toHaveBeenCalled();
 
-    const client = (S3Client as any).mock.instances[0];
+    const client = (S3Client as unknown as jest.Mock).mock.instances[0];
     client.send = async () => ({
       Body: {
         pipe: jest.fn(),

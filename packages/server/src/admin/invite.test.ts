@@ -29,9 +29,9 @@ describe('Admin Invite', () => {
   });
 
   beforeEach(() => {
-    (SESv2Client as any).mockClear();
-    (SendEmailCommand as any).mockClear();
-    (fetch as any).mockClear();
+    (SESv2Client as unknown as jest.Mock).mockClear();
+    (SendEmailCommand as unknown as jest.Mock).mockClear();
+    (fetch as unknown as jest.Mock).mockClear();
     setupRecaptchaMock(fetch, true);
   });
 
@@ -67,7 +67,7 @@ describe('Admin Invite', () => {
     expect(SESv2Client).toHaveBeenCalledTimes(1);
     expect(SendEmailCommand).toHaveBeenCalledTimes(1);
 
-    const args = (SendEmailCommand as any).mock.calls[0][0];
+    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
     expect(args).toMatchObject({
       Destination: {
         ToAddresses: [bobEmail],
@@ -128,7 +128,7 @@ describe('Admin Invite', () => {
     expect(SESv2Client).toHaveBeenCalledTimes(1);
     expect(SendEmailCommand).toHaveBeenCalledTimes(1);
 
-    const args = (SendEmailCommand as any).mock.calls[0][0];
+    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
     expect(args).toMatchObject({
       Destination: {
         ToAddresses: [bobEmail],

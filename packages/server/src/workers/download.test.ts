@@ -42,13 +42,13 @@ describe('Download Worker', () => {
   });
 
   beforeEach(async () => {
-    (fetch as any).mockClear();
+    (fetch as unknown as jest.Mock).mockClear();
   });
 
   test('Download external URL', async () => {
     const url = 'https://example.com/download';
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [mediaOutcome, media] = await repo.createResource<Media>({
@@ -67,7 +67,7 @@ describe('Download Worker', () => {
     body.push('foo');
     body.push(null);
 
-    (fetch as any).mockImplementation(() => ({
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
       headers: {
         get: jest.fn(),
@@ -75,14 +75,14 @@ describe('Download Worker', () => {
       body,
     }));
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execDownloadJob(job);
 
     expect(fetch).toHaveBeenCalledWith(url);
   });
 
   test('Ignore media missing URL', async () => {
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [mediaOutcome, media] = await repo.createResource<Media>({
@@ -101,7 +101,7 @@ describe('Download Worker', () => {
   test('Retry on 400', async () => {
     const url = 'https://example.com/download';
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [mediaOutcome, media] = await repo.createResource<Media>({
@@ -116,9 +116,9 @@ describe('Download Worker', () => {
     expect(media).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
-    (fetch as any).mockImplementation(() => ({ status: 400 }));
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 400 }));
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
 
     // If the job throws, then the QueueScheduler will retry
     await expect(execDownloadJob(job)).rejects.toThrow();
@@ -127,7 +127,7 @@ describe('Download Worker', () => {
   test('Retry on exception', async () => {
     const url = 'https://example.com/download';
 
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [mediaOutcome, media] = await repo.createResource<Media>({
@@ -142,18 +142,18 @@ describe('Download Worker', () => {
     expect(media).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
-    (fetch as any).mockImplementation(() => {
+    (fetch as unknown as jest.Mock).mockImplementation(() => {
       throw new Error();
     });
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
 
     // If the job throws, then the QueueScheduler will retry
     await expect(execDownloadJob(job)).rejects.toThrow();
   });
 
   test('Stop retries if Resource deleted', async () => {
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [mediaOutcome, media] = await repo.createResource<Media>({
@@ -173,7 +173,7 @@ describe('Download Worker', () => {
     const [deleteOutcome] = await repo.deleteResource('Media', media?.id as string);
     assertOk(deleteOutcome);
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execDownloadJob(job);
 
     // Fetch should not have been called
@@ -181,7 +181,7 @@ describe('Download Worker', () => {
   });
 
   test('Stop if URL changed', async () => {
-    const queue = (Queue as any).mock.instances[0];
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     const [mediaOutcome, media] = await repo.createResource<Media>({
@@ -207,7 +207,7 @@ describe('Download Worker', () => {
     });
     assertOk(updateOutcome);
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as any as Job;
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execDownloadJob(job);
 
     // Fetch should not have been called

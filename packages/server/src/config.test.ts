@@ -7,7 +7,7 @@ jest.mock('@aws-sdk/client-ssm');
 
 describe('Config', () => {
   beforeAll(() => {
-    (SSMClient as any).mockImplementation(() => {
+    (SSMClient as unknown as jest.Mock).mockImplementation(() => {
       return {
         send: () => {
           return {
@@ -21,7 +21,7 @@ describe('Config', () => {
       };
     });
 
-    (SecretsManagerClient as any).mockImplementation(() => {
+    (SecretsManagerClient as unknown as jest.Mock).mockImplementation(() => {
       return {
         send: () => {
           return {
@@ -33,8 +33,8 @@ describe('Config', () => {
   });
 
   beforeEach(() => {
-    (SSMClient as any).mockClear();
-    (SecretsManagerClient as any).mockClear();
+    (SSMClient as unknown as jest.Mock).mockClear();
+    (SecretsManagerClient as unknown as jest.Mock).mockClear();
   });
 
   test('Unrecognized config', async () => {

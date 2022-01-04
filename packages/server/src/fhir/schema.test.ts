@@ -9,9 +9,11 @@ describe('FHIR schema', () => {
   });
 
   test('validateResource', () => {
-    expect(validateResource(null as any as Resource).issue?.[0]?.severity).toEqual('error');
-    expect(validateResource({} as any as Resource).issue?.[0]?.severity).toEqual('error');
-    expect(validateResource({ resourceType: 'FakeResource' } as any as Resource).issue?.[0]?.severity).toEqual('error');
+    expect(validateResource(null as unknown as Resource).issue?.[0]?.severity).toEqual('error');
+    expect(validateResource({} as unknown as Resource).issue?.[0]?.severity).toEqual('error');
+    expect(validateResource({ resourceType: 'FakeResource' } as unknown as Resource).issue?.[0]?.severity).toEqual(
+      'error'
+    );
     expect(validateResource({ resourceType: 'Patient' }).id).toEqual('ok');
   });
 
@@ -26,7 +28,7 @@ describe('FHIR schema', () => {
     const outcome = validateResource({
       resourceType: 'Patient',
       name: 'Homer',
-    } as any as Resource);
+    } as unknown as Resource);
     expect(outcome.issue?.[0]?.severity).toEqual('error');
     expect(outcome.issue?.[0]?.expression?.[0]).toEqual('name');
   });
@@ -43,7 +45,7 @@ describe('FHIR schema', () => {
     const outcome = validateResource({
       resourceType: 'Patient',
       fakeProperty: 'test',
-    } as any as Resource);
+    } as unknown as Resource);
     expect(outcome.issue?.[0]?.severity).toEqual('error');
     expect(outcome.issue?.[0]?.expression?.[0]).toEqual('fakeProperty');
   });
