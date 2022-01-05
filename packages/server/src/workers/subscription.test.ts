@@ -445,7 +445,7 @@ describe('Subscription Worker', () => {
     expect(queue.add).not.toHaveBeenCalled();
   });
 
-  test('Retry on 400', async () => {
+  test('Retry on 429', async () => {
     const url = 'https://example.com/subscription';
 
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
@@ -472,7 +472,7 @@ describe('Subscription Worker', () => {
     expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 400 }));
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 429 }));
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
 
