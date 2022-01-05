@@ -50,6 +50,7 @@ describe('Set Password', () => {
 
     const res2 = await request(app).post('/auth/resetpassword').type('json').send({
       email,
+      recaptchaToken: 'xyz',
     });
     expect(res2.status).toBe(200);
     expect(SESv2Client).toHaveBeenCalledTimes(1);
@@ -102,6 +103,7 @@ describe('Set Password', () => {
 
     const res2 = await request(app).post('/auth/resetpassword').type('json').send({
       email,
+      recaptchaToken: 'xyz',
     });
     expect(res2.status).toBe(200);
     expect(SESv2Client).toHaveBeenCalledTimes(1);

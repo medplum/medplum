@@ -36,10 +36,33 @@ describe('Reset Password', () => {
   });
 
   test('Blank email address', async () => {
-    const res = await request(app).post('/auth/resetpassword').type('json').send({ email: '' });
+    const res = await request(app).post('/auth/resetpassword').type('json').send({
+      email: '',
+      recaptchaToken: 'xyz',
+    });
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toBe('Valid email address is required');
     expect(res.body.issue[0].expression[0]).toBe('email');
+  });
+
+  test('Missing recaptcha', async () => {
+    const res = await request(app).post('/auth/resetpassword').type('json').send({
+      email: 'admin@example.com',
+      recaptchaToken: '',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Recaptcha token is required');
+  });
+
+  test('Incorrect recaptcha', async () => {
+    setupRecaptchaMock(fetch, false);
+
+    const res = await request(app).post('/auth/resetpassword').type('json').send({
+      email: 'admin@example.com',
+      recaptchaToken: 'wrong',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Recaptcha failed');
   });
 
   test('User not found', async () => {
@@ -48,6 +71,7 @@ describe('Reset Password', () => {
       .type('json')
       .send({
         email: `alex${randomUUID()}@example.com`,
+        recaptchaToken: 'xyz',
       });
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toBe('User not found');
@@ -70,6 +94,7 @@ describe('Reset Password', () => {
 
     const res2 = await request(app).post('/auth/resetpassword').type('json').send({
       email,
+      recaptchaToken: 'xyz',
     });
     expect(res2.status).toBe(200);
     expect(SESv2Client).toHaveBeenCalledTimes(1);

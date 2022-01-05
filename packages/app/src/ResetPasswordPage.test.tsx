@@ -18,6 +18,19 @@ function setup(): void {
 }
 
 describe('ResetPasswordPage', () => {
+  beforeAll(() => {
+    Object.defineProperty(global, 'grecaptcha', {
+      value: {
+        ready(callback: () => void): void {
+          callback();
+        },
+        execute(): Promise<string> {
+          return Promise.resolve('token');
+        },
+      },
+    });
+  });
+
   test('Renders', () => {
     setup();
     const input = screen.getByTestId('submit') as HTMLButtonElement;

@@ -12,14 +12,14 @@ export function ResetPasswordPage(): JSX.Element {
       <Form
         style={{ maxWidth: 400 }}
         onSubmit={(formData: Record<string, string>) => {
-          medplum
-            .post('auth/resetpassword', formData)
-            .then(() => setSuccess(true))
-            .catch((err) => {
-              if (err.outcome) {
-                setOutcome(err.outcome);
-              }
+          grecaptcha.ready(() => {
+            grecaptcha.execute(process.env.RECAPTCHA_SITE_KEY as string, { action: 'submit' }).then((token: string) => {
+              medplum
+                .post('auth/resetpassword', { ...formData, recaptchaToken: token })
+                .then(() => setSuccess(true))
+                .catch(setOutcome);
             });
+          });
         }}
       >
         <div className="center">

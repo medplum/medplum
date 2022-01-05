@@ -6,13 +6,22 @@ import { getConfig } from '../config';
 import { sendEmail } from '../email';
 import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { generateSecret } from '../oauth';
+import { verifyRecaptcha } from './utils';
 
-export const resetPasswordValidators = [body('email').isEmail().withMessage('Valid email address is required')];
+export const resetPasswordValidators = [
+  body('email').isEmail().withMessage('Valid email address is required'),
+  body('recaptchaToken').notEmpty().withMessage('Recaptcha token is required'),
+];
 
 export async function resetPasswordHandler(req: Request, res: Response): Promise<void> {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     sendOutcome(res, invalidRequest(errors));
+    return;
+  }
+
+  if (!(await verifyRecaptcha(req.body.recaptchaToken))) {
+    sendOutcome(res, badRequest('Recaptcha failed'));
     return;
   }
 
