@@ -292,9 +292,9 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   const channelType = subscription?.channel?.type;
   if (channelType === 'rest-hook') {
     if (subscription?.channel?.endpoint?.startsWith('Bot/')) {
-      await execBot(job, subscription, resourceVersion as Resource);
+      await execBot(job, subscription, resourceVersion);
     } else {
-      await sendRestHook(job, subscription, resourceVersion as Resource);
+      await sendRestHook(job, subscription, resourceVersion);
     }
   }
 }

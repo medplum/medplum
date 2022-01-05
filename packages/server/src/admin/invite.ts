@@ -124,5 +124,5 @@ async function createUser(request: InviteRequest): Promise<User> {
   });
   assertOk(outcome, result);
   logger.info('Created: ' + result.id);
-  return result as User;
+  return result;
 }

@@ -55,8 +55,8 @@ export async function profileHandler(req: Request, res: Response): Promise<void>
   // Update the login
   const [updateOutcome, updated] = await systemRepo.updateResource({
     ...login,
-    project: createReference(project as Project),
-    profile: createReference(profile as ProfileResource),
+    project: createReference(project),
+    profile: createReference(profile),
     accessPolicy: membership.accessPolicy,
   });
   assertOk(updateOutcome, updated);
