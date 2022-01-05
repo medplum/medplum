@@ -1,15 +1,13 @@
 import { assertOk, badRequest, createReference, Operator, ProfileResource } from '@medplum/core';
-import { BundleEntry, ClientApplication, Login, Project, User } from '@medplum/fhirtypes';
+import { BundleEntry, ClientApplication, Project, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import fetch from 'node-fetch';
-import { getConfig } from '../config';
 import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { logger } from '../logger';
 import { generateSecret, getAuthTokens, tryLogin } from '../oauth';
-import { createPractitioner, createProjectMembership } from './utils';
+import { createPractitioner, createProjectMembership, verifyRecaptcha } from './utils';
 
 export interface RegisterRequest {
   readonly firstName: string;
@@ -44,14 +42,14 @@ export async function registerHandler(req: Request, res: Response): Promise<void
     return;
   }
 
-  const { email, password } = req.body;
-  if (await searchForExisting(email)) {
-    sendOutcome(res, badRequest('Email already registered', 'email'));
+  if (!(await verifyRecaptcha(req.body.recaptchaToken))) {
+    sendOutcome(res, badRequest('Recaptcha failed'));
     return;
   }
 
-  if (!(await verifyRecaptcha(req.body.recaptchaToken))) {
-    sendOutcome(res, badRequest('Recaptcha failed'));
+  const { email, password } = req.body;
+  if (await searchForExisting(email)) {
+    sendOutcome(res, badRequest('Email already registered', 'email'));
     return;
   }
 
@@ -67,7 +65,7 @@ export async function registerHandler(req: Request, res: Response): Promise<void
   });
   assertOk(loginOutcome, login);
 
-  const [tokenOutcome, token] = await getAuthTokens(login as Login);
+  const [tokenOutcome, token] = await getAuthTokens(login);
   assertOk(tokenOutcome, token);
 
   res.status(200).json({
@@ -149,24 +147,4 @@ async function createClientApplication(project: Project): Promise<ClientApplicat
   assertOk(outcome, result);
   logger.info('Created: ' + result.id);
   return result;
-}
-
-/**
- * Verifies the recaptcha response from the client.
- * @param recaptchaToken The Recaptcha response from the client.
- * @returns True on success, false on failure.
- */
-async function verifyRecaptcha(recaptchaToken: string): Promise<boolean> {
-  const secretKey = getConfig().recaptchaSecretKey as string;
-
-  const url =
-    'https://www.google.com/recaptcha/api/siteverify' +
-    '?secret=' +
-    encodeURIComponent(secretKey) +
-    '&response=' +
-    encodeURIComponent(recaptchaToken);
-
-  const response = await fetch(url, { method: 'POST' });
-  const json = await response.json();
-  return json.success;
 }

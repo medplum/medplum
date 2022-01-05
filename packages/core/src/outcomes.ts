@@ -1,4 +1,4 @@
-import { OperationOutcome, Resource } from '@medplum/fhirtypes';
+import { OperationOutcome } from '@medplum/fhirtypes';
 
 const OK_ID = 'ok';
 const CREATED_ID = 'created';
@@ -142,8 +142,8 @@ export function getStatus(outcome: OperationOutcome): number {
  * @param outcome The operation outcome.
  * @param resource The resource that may or may not have been returned.
  */
-export function assertOk(outcome: OperationOutcome, resource: Resource | undefined): asserts resource is Resource {
-  if (!isOk(outcome) || !resource) {
+export function assertOk<T>(outcome: OperationOutcome, resource: T | undefined): asserts resource is T {
+  if (!isOk(outcome) || resource === undefined) {
     throw new OperationOutcomeError(outcome);
   }
 }

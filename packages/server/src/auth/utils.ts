@@ -1,6 +1,8 @@
 import { assertOk, createReference } from '@medplum/core';
 import { AccessPolicy, Login, Practitioner, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Response } from 'express';
+import fetch from 'node-fetch';
+import { getConfig } from '../config';
 import { systemRepo } from '../fhir';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { logger } from '../logger';
@@ -90,4 +92,24 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
       code: login?.code,
     });
   }
+}
+
+/**
+ * Verifies the recaptcha response from the client.
+ * @param recaptchaToken The Recaptcha response from the client.
+ * @returns True on success, false on failure.
+ */
+export async function verifyRecaptcha(recaptchaToken: string): Promise<boolean> {
+  const secretKey = getConfig().recaptchaSecretKey as string;
+
+  const url =
+    'https://www.google.com/recaptcha/api/siteverify' +
+    '?secret=' +
+    encodeURIComponent(secretKey) +
+    '&response=' +
+    encodeURIComponent(recaptchaToken);
+
+  const response = await fetch(url, { method: 'POST' });
+  const json = await response.json();
+  return json.success;
 }

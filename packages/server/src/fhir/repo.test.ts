@@ -1646,12 +1646,11 @@ describe('FHIR Repo', () => {
       name: [{ given: ['John'], family: 'CodeableConcept' }],
     });
     assertOk(outcome0, patient);
-    expect(patient).toBeDefined();
 
     // Use code.coding[0].code
     const [outcome1, serviceRequest1] = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
-      subject: createReference(patient as Patient),
+      subject: createReference(patient),
       code: {
         coding: [
           {
@@ -1661,12 +1660,11 @@ describe('FHIR Repo', () => {
       },
     });
     assertOk(outcome1, serviceRequest1);
-    expect(serviceRequest1).toBeDefined();
 
     // Use code.coding[0].display
     const [outcome2, serviceRequest2] = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
-      subject: createReference(patient as Patient),
+      subject: createReference(patient),
       code: {
         coding: [
           {
@@ -1676,18 +1674,16 @@ describe('FHIR Repo', () => {
       },
     });
     assertOk(outcome2, serviceRequest2);
-    expect(serviceRequest2).toBeDefined();
 
     // Use code.text
     const [outcome3, serviceRequest3] = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
-      subject: createReference(patient as Patient),
+      subject: createReference(patient),
       code: {
         text: x3,
       },
     });
-    assertOk(outcome3);
-    expect(serviceRequest3).toBeDefined();
+    assertOk(outcome3, serviceRequest3);
 
     const [outcome4, bundle1] = await systemRepo.search({
       resourceType: 'ServiceRequest',
@@ -1699,11 +1695,11 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome4);
-    expect(bundle1?.entry?.length).toEqual(1);
-    expect(bundleContains(bundle1 as Bundle, serviceRequest1 as ServiceRequest)).toEqual(true);
-    expect(bundleContains(bundle1 as Bundle, serviceRequest2 as ServiceRequest)).toEqual(false);
-    expect(bundleContains(bundle1 as Bundle, serviceRequest3 as ServiceRequest)).toEqual(false);
+    assertOk(outcome4, bundle1);
+    expect(bundle1.entry?.length).toEqual(1);
+    expect(bundleContains(bundle1, serviceRequest1)).toEqual(true);
+    expect(bundleContains(bundle1, serviceRequest2)).toEqual(false);
+    expect(bundleContains(bundle1, serviceRequest3)).toEqual(false);
 
     const [outcome5, bundle2] = await systemRepo.search({
       resourceType: 'ServiceRequest',
@@ -1715,11 +1711,11 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome5);
-    expect(bundle2?.entry?.length).toEqual(1);
-    expect(bundleContains(bundle2 as Bundle, serviceRequest1 as ServiceRequest)).toEqual(false);
-    expect(bundleContains(bundle2 as Bundle, serviceRequest2 as ServiceRequest)).toEqual(true);
-    expect(bundleContains(bundle2 as Bundle, serviceRequest3 as ServiceRequest)).toEqual(false);
+    assertOk(outcome5, bundle2);
+    expect(bundle2.entry?.length).toEqual(1);
+    expect(bundleContains(bundle2, serviceRequest1)).toEqual(false);
+    expect(bundleContains(bundle2, serviceRequest2)).toEqual(true);
+    expect(bundleContains(bundle2, serviceRequest3)).toEqual(false);
 
     const [outcome6, bundle3] = await systemRepo.search({
       resourceType: 'ServiceRequest',
@@ -1731,11 +1727,11 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome6);
-    expect(bundle3?.entry?.length).toEqual(1);
-    expect(bundleContains(bundle3 as Bundle, serviceRequest1 as ServiceRequest)).toEqual(false);
-    expect(bundleContains(bundle3 as Bundle, serviceRequest2 as ServiceRequest)).toEqual(false);
-    expect(bundleContains(bundle3 as Bundle, serviceRequest3 as ServiceRequest)).toEqual(true);
+    assertOk(outcome6, bundle3);
+    expect(bundle3.entry?.length).toEqual(1);
+    expect(bundleContains(bundle3, serviceRequest1)).toEqual(false);
+    expect(bundleContains(bundle3, serviceRequest2)).toEqual(false);
+    expect(bundleContains(bundle3, serviceRequest3)).toEqual(true);
   });
 
   test('Reindex resource type as non-admin', async () => {
@@ -1769,7 +1765,7 @@ describe('FHIR Repo', () => {
 
   test('Reindex success', async () => {
     const [reindexOutcome] = await systemRepo.reindexResourceType('Practitioner');
-    assertOk(reindexOutcome);
+    expect(isOk(reindexOutcome)).toBe(true);
   });
 });
 

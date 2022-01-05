@@ -155,7 +155,7 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
     // If the resource was deleted, then stop processing it.
     return;
   }
-  assertOk(readOutcome);
+  assertOk(readOutcome, resource);
 
   if (!JSON.stringify(resource).includes(url)) {
     // If the resource no longer includes the URL, then stop processing it.
@@ -178,13 +178,13 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
         project: resource?.meta?.project,
       },
     });
-    assertOk(createBinaryOutcome);
-    await getBinaryStorage().writeBinary(binary as Binary, response.body);
+    assertOk(createBinaryOutcome, binary);
+    await getBinaryStorage().writeBinary(binary, response.body);
 
     const updated = JSON.parse(JSON.stringify(resource).replace(url, `Binary/${binary?.id}`)) as Resource;
     (updated.meta as any).author = { reference: 'system' };
-    const [updateOutcome] = await systemRepo.updateResource(updated);
-    assertOk(updateOutcome);
+    const [updateOutcome, updatedResource] = await systemRepo.updateResource(updated);
+    assertOk(updateOutcome, updatedResource);
     logger.info('Downloaded content successfully');
   } catch (ex) {
     logger.info('Download exception: ' + ex);

@@ -170,7 +170,7 @@ describe('Profile', () => {
       });
     expect(res2.status).toBe(400);
     expect(res2.body.issue).toBeDefined();
-    expect(res2.body.issue[0].details.text).toBe('Login profile set');
+    expect(res2.body.issue[0].details.text).toBe('Login profile already set');
   });
 
   test('Membership not found', async () => {

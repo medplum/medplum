@@ -1190,8 +1190,8 @@ export async function getRepoForLogin(login: Login): Promise<Repository> {
 
   if (login.accessPolicy) {
     const [accessPolicyOutcome, accessPolicyResource] = await systemRepo.readReference(login.accessPolicy);
-    assertOk(accessPolicyOutcome);
-    accessPolicy = accessPolicyResource as AccessPolicy;
+    assertOk(accessPolicyOutcome, accessPolicyResource);
+    accessPolicy = accessPolicyResource;
   }
 
   // If the resource is an "actor" resource,
@@ -1210,8 +1210,8 @@ export async function getRepoForLogin(login: Login): Promise<Repository> {
         profileType.startsWith('Subscription'))
     ) {
       const [profileOutcome, profileResource] = await systemRepo.readReference(login.profile);
-      assertOk(profileOutcome);
-      if (profileResource?.meta?.account) {
+      assertOk(profileOutcome, profileResource);
+      if (profileResource.meta?.account) {
         accessPolicy = buildSyntheticAccessPolicy(profileResource.meta.account);
       }
     }

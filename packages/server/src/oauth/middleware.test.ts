@@ -40,7 +40,7 @@ describe('Auth middleware', () => {
       scope,
     });
 
-    assertOk(loginOutcome);
+    assertOk(loginOutcome, login);
 
     const accessToken = await generateAccessToken({
       login_id: login?.id as string,
@@ -85,7 +85,7 @@ describe('Auth middleware', () => {
       scope,
     });
 
-    assertOk(loginOutcome);
+    assertOk(loginOutcome, login);
 
     const accessToken = await generateAccessToken({
       login_id: login?.id as string,
