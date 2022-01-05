@@ -2,6 +2,7 @@ import { RegisterRequest } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Button, Document, Form, FormSection, Logo, TextField, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
+import { getRecaptcha } from './utils';
 
 export function RegisterPage(): JSX.Element {
   const medplum = useMedplum();
@@ -13,20 +14,14 @@ export function RegisterPage(): JSX.Element {
       <Form
         style={{ maxWidth: 400 }}
         onSubmit={(formData: Record<string, string>) => {
-          grecaptcha.ready(() => {
-            grecaptcha.execute(process.env.RECAPTCHA_SITE_KEY as string, { action: 'submit' }).then((token: string) => {
-              medplum
-                .register({
-                  ...formData,
-                  recaptchaToken: token,
-                } as unknown as RegisterRequest)
-                .then(() => setSuccess(true))
-                .catch((err) => {
-                  if (err.outcome) {
-                    setOutcome(err.outcome);
-                  }
-                });
-            });
+          getRecaptcha().then((recaptchaToken: string) => {
+            medplum
+              .register({
+                ...formData,
+                recaptchaToken,
+              } as unknown as RegisterRequest)
+              .then(() => setSuccess(true))
+              .catch(setOutcome);
           });
         }}
       >
@@ -36,7 +31,7 @@ export function RegisterPage(): JSX.Element {
         </div>
         {!success && (
           <>
-            <FormSection title="First Name">
+            <FormSection title="First Name" htmlFor="firstName" outcome={outcome}>
               <TextField
                 name="firstName"
                 type="text"
@@ -46,16 +41,16 @@ export function RegisterPage(): JSX.Element {
                 outcome={outcome}
               />
             </FormSection>
-            <FormSection title="Last Name">
+            <FormSection title="Last Name" htmlFor="lastName" outcome={outcome}>
               <TextField name="lastName" type="text" testid="lastName" required={true} outcome={outcome} />
             </FormSection>
-            <FormSection title="Project Name">
+            <FormSection title="Project Name" htmlFor="projectName" outcome={outcome}>
               <TextField name="projectName" type="text" testid="projectName" required={true} outcome={outcome} />
             </FormSection>
-            <FormSection title="Email">
+            <FormSection title="Email" htmlFor="email" outcome={outcome}>
               <TextField name="email" type="email" testid="email" required={true} outcome={outcome} />
             </FormSection>
-            <FormSection title="Password">
+            <FormSection title="Password" htmlFor="password" outcome={outcome}>
               <TextField name="password" type="password" testid="password" required={true} outcome={outcome} />
             </FormSection>
             <p style={{ fontSize: '12px', color: '#888' }}>

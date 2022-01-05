@@ -9,7 +9,6 @@ export function InvitePage(): JSX.Element {
   const medplum = useMedplum();
   const [loading, setLoading] = useState<boolean>(true);
   const [result, setResult] = useState<any>();
-  const [error, setError] = useState();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [success, setSuccess] = useState(false);
 
@@ -20,16 +19,8 @@ export function InvitePage(): JSX.Element {
         setResult(response);
         setLoading(false);
       })
-      .catch((reason) => setError(reason));
+      .catch(setOutcome);
   }, [id]);
-
-  if (error) {
-    return (
-      <Document>
-        <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>
-      </Document>
-    );
-  }
 
   if (loading || !result) {
     return <Loading />;
@@ -56,7 +47,7 @@ export function InvitePage(): JSX.Element {
       >
         {!success && (
           <>
-            <FormSection title="First Name">
+            <FormSection title="First Name" htmlFor="firstName" outcome={outcome}>
               <TextField
                 name="firstName"
                 type="text"
@@ -66,13 +57,13 @@ export function InvitePage(): JSX.Element {
                 outcome={outcome}
               />
             </FormSection>
-            <FormSection title="Last Name">
+            <FormSection title="Last Name" htmlFor="lastName" outcome={outcome}>
               <TextField name="lastName" type="text" testid="lastName" required={true} outcome={outcome} />
             </FormSection>
-            <FormSection title="Email">
+            <FormSection title="Email" htmlFor="email" outcome={outcome}>
               <TextField name="email" type="email" testid="email" required={true} outcome={outcome} />
             </FormSection>
-            <FormSection title="Access Policy">
+            <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={outcome}>
               <AccessPolicyInput name="accessPolicy" />
             </FormSection>
             <div className="medplum-signin-buttons">
