@@ -9,7 +9,6 @@ export function EditMembershipPage(): JSX.Element {
   const medplum = useMedplum();
   const [loading, setLoading] = useState<boolean>(true);
   const [result, setResult] = useState<ProjectMembership>();
-  const [error, setError] = useState();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [success, setSuccess] = useState(false);
 
@@ -20,16 +19,8 @@ export function EditMembershipPage(): JSX.Element {
         setResult(response);
         setLoading(false);
       })
-      .catch((reason) => setError(reason));
+      .catch(setOutcome);
   }, [projectId, membershipId]);
-
-  if (error) {
-    return (
-      <Document>
-        <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>
-      </Document>
-    );
-  }
 
   if (loading || !result) {
     return <Loading />;
@@ -56,19 +47,15 @@ export function EditMembershipPage(): JSX.Element {
           medplum
             .post(`admin/projects/${projectId}/members/${membershipId}`, updated)
             .then(() => setSuccess(true))
-            .catch((err) => {
-              if (err.outcome) {
-                setOutcome(err.outcome);
-              }
-            });
+            .catch(setOutcome);
         }}
       >
         {!success && (
           <>
-            <FormSection title="Access Policy">
+            <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={outcome}>
               <AccessPolicyInput name="accessPolicy" defaultValue={result.accessPolicy} />
             </FormSection>
-            <FormSection title="Admin">
+            <FormSection title="Admin" htmlFor="admin" outcome={outcome}>
               <input type="checkbox" name="admin" defaultChecked={!!result.admin} value="true" />
             </FormSection>
             <div className="medplum-signin-buttons">

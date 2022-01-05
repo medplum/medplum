@@ -1,6 +1,7 @@
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Button, Document, Form, FormSection, Logo, MedplumLink, TextField, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
+import { getRecaptcha } from './utils';
 
 export function ResetPasswordPage(): JSX.Element {
   const medplum = useMedplum();
@@ -12,13 +13,11 @@ export function ResetPasswordPage(): JSX.Element {
       <Form
         style={{ maxWidth: 400 }}
         onSubmit={(formData: Record<string, string>) => {
-          grecaptcha.ready(() => {
-            grecaptcha.execute(process.env.RECAPTCHA_SITE_KEY as string, { action: 'submit' }).then((token: string) => {
-              medplum
-                .post('auth/resetpassword', { ...formData, recaptchaToken: token })
-                .then(() => setSuccess(true))
-                .catch(setOutcome);
-            });
+          getRecaptcha().then((recaptchaToken: string) => {
+            medplum
+              .post('auth/resetpassword', { ...formData, recaptchaToken })
+              .then(() => setSuccess(true))
+              .catch(setOutcome);
           });
         }}
       >
@@ -28,7 +27,7 @@ export function ResetPasswordPage(): JSX.Element {
         </div>
         {!success && (
           <>
-            <FormSection title="Email">
+            <FormSection title="Email" htmlFor="email" outcome={outcome}>
               <TextField name="email" type="email" testid="email" required={true} autoFocus={true} outcome={outcome} />
             </FormSection>
             <div className="medplum-signin-buttons">
