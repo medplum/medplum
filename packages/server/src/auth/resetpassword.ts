@@ -7,10 +7,7 @@ import { sendEmail } from '../email';
 import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { generateSecret } from '../oauth';
 
-export const resetPasswordValidators = [
-  body('email').isEmail().withMessage('Valid email address is required'),
-  body('recaptchaToken').notEmpty().withMessage('Recaptcha token is required'),
-];
+export const resetPasswordValidators = [body('email').isEmail().withMessage('Valid email address is required')];
 
 export async function resetPasswordHandler(req: Request, res: Response): Promise<void> {
   const errors = validationResult(req);
