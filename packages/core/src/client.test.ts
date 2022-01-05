@@ -296,7 +296,7 @@ describe('Client', () => {
       firstName: 'Sally',
       lastName: 'Foo',
       projectName: 'Sally World',
-      recaptchaResponse: 'xyz',
+      recaptchaToken: 'xyz',
     });
     expect(client.getActiveLogin()).toBeDefined();
   });
