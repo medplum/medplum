@@ -104,11 +104,25 @@ export function parseSearchDefinition(location: { pathname: string; search?: str
     } else if (key === '_count') {
       count = parseInt(value);
     } else {
-      filters.push({
-        code: key,
-        operator: Operator.EQUALS,
-        value: value,
-      });
+      let code = key;
+      let operator = Operator.EQUALS;
+
+      for (const modifier of MODIFIER_OPERATORS) {
+        const modifierIndex = code.indexOf(':' + modifier);
+        if (modifierIndex !== -1) {
+          operator = modifier as Operator;
+          code = code.substring(0, modifierIndex);
+        }
+      }
+
+      for (const prefix of PREFIX_OPERATORS) {
+        if (value.match(new RegExp('^' + prefix + '\\d'))) {
+          operator = prefix as Operator;
+          value = value.substring(prefix.length);
+        }
+      }
+
+      filters.push({ code, operator, value });
     }
   });
 

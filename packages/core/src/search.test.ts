@@ -49,6 +49,57 @@ describe('Search Utils', () => {
     expect(result.sortRules).toEqual([{ code: 'birthDate', descending: true }]);
   });
 
+  test('Parse modifier operator', () => {
+    const result = parseSearchDefinition({
+      pathname: 'Patient',
+      search: 'name:contains=alice',
+    });
+    expect(result).toMatchObject({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.CONTAINS,
+          value: 'alice',
+        },
+      ],
+    });
+  });
+
+  test('Parse prefix operator', () => {
+    const result = parseSearchDefinition({
+      pathname: 'Patient',
+      search: 'birthdate=gt2000-01-01',
+    });
+    expect(result).toMatchObject({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'birthdate',
+          operator: Operator.GREATER_THAN,
+          value: '2000-01-01',
+        },
+      ],
+    });
+  });
+
+  test('Parse prefix operator does not work on string', () => {
+    const result = parseSearchDefinition({
+      pathname: 'Patient',
+      search: 'name=leslie',
+    });
+    expect(result).toMatchObject({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'leslie',
+        },
+      ],
+    });
+  });
+
   test('Format Patient search', () => {
     const result = formatSearchQuery({
       resourceType: 'Patient',
