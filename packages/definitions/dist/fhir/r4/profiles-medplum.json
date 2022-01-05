@@ -84,6 +84,16 @@
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/User"]
             }]
+          },
+          {
+            "id" : "Project.features",
+            "path" : "Project.features",
+            "definition" : "A list of optional features that are enabled for the project.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "code"
+            }]
           }
         ]
       }

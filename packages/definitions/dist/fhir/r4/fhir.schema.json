@@ -61036,6 +61036,13 @@
         "owner": {
           "description": "Indicates the user with responsibility for managing the Project.",
           "$ref": "#/definitions/Reference"
+        },
+        "features": {
+          "description": "A list of optional features that are enabled for the project.",
+          "items": {
+            "$ref": "#/definitions/code"
+          },
+          "type": "array"
         }
       },
       "required": [

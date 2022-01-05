@@ -1,5 +1,5 @@
 import { assertOk, getReferenceString, Operator, stringify } from '@medplum/core';
-import { AuditEvent, Bot, Observation, Patient, Subscription } from '@medplum/fhirtypes';
+import { AuditEvent, Bot, Observation, Patient, Project, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue } from 'bullmq';
 import { createHmac, randomUUID } from 'crypto';
 import fetch from 'node-fetch';
@@ -13,6 +13,7 @@ jest.mock('bullmq');
 jest.mock('node-fetch');
 
 let repo: Repository;
+let botRepo: Repository;
 
 describe('Subscription Worker', () => {
   beforeAll(async () => {
@@ -21,8 +22,36 @@ describe('Subscription Worker', () => {
     await seedDatabase();
     await initSubscriptionWorker(config.redis);
 
+    // Create one simple project with no advanced features enabled
+    const [testProjectOutcome, testProject] = await systemRepo.createResource<Project>({
+      resourceType: 'Project',
+      name: 'Test Project',
+      owner: {
+        reference: 'User/' + randomUUID(),
+      },
+    });
+    assertOk(testProjectOutcome, testProject);
+
     repo = new Repository({
-      project: randomUUID(),
+      project: testProject.id,
+      author: {
+        reference: 'ClientApplication/' + randomUUID(),
+      },
+    });
+
+    // Create another project, this one with bots enabled
+    const [botProjectOutcome, botProject] = await systemRepo.createResource<Project>({
+      resourceType: 'Project',
+      name: 'Bot Project',
+      owner: {
+        reference: 'User/' + randomUUID(),
+      },
+      features: ['bots'],
+    });
+    assertOk(botProjectOutcome, botProject);
+
+    botRepo = new Repository({
+      project: botProject.id,
       author: {
         reference: 'ClientApplication/' + randomUUID(),
       },
@@ -488,7 +517,7 @@ describe('Subscription Worker', () => {
     await expect(execSubscriptionJob(job)).rejects.toThrow();
   });
 
-  test('Execute bot subscriptions', async () => {
+  test('Ignore bots if feature not enabled', async () => {
     const nonce = randomUUID();
 
     const [botOutcome, bot] = await repo.createResource<Bot>({
@@ -497,8 +526,7 @@ describe('Subscription Worker', () => {
       description: 'Test Bot',
       code: `console.log('${nonce}');`,
     });
-    expect(botOutcome.id).toEqual('created');
-    expect(bot).toBeDefined();
+    assertOk(botOutcome, bot);
 
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
@@ -509,8 +537,7 @@ describe('Subscription Worker', () => {
         endpoint: getReferenceString(bot as Bot),
       },
     });
-    expect(subscriptionOutcome.id).toEqual('created');
-    expect(subscription).toBeDefined();
+    assertOk(subscriptionOutcome, subscription);
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
@@ -541,25 +568,21 @@ describe('Subscription Worker', () => {
       ],
     });
     assertOk(searchOutcome, bundle);
-    expect(bundle.entry?.length).toEqual(1);
-    expect(bundle.entry?.[0]?.resource?.outcome).toEqual('0');
-    expect(bundle.entry?.[0]?.resource?.outcomeDesc).toContain('Success');
-    expect(bundle.entry?.[0]?.resource?.outcomeDesc).toContain(nonce);
+    expect(bundle.entry?.length).toEqual(0);
   });
 
-  test('Bot failure', async () => {
+  test('Execute bot subscriptions', async () => {
     const nonce = randomUUID();
 
-    const [botOutcome, bot] = await repo.createResource<Bot>({
+    const [botOutcome, bot] = await botRepo.createResource<Bot>({
       resourceType: 'Bot',
       name: 'Test Bot',
       description: 'Test Bot',
-      code: `throw new Error('${nonce}');`,
+      code: `console.log('${nonce}');`,
     });
-    expect(botOutcome.id).toEqual('created');
-    expect(bot).toBeDefined();
+    assertOk(botOutcome, bot);
 
-    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+    const [subscriptionOutcome, subscription] = await botRepo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       criteria: 'Patient',
@@ -568,13 +591,12 @@ describe('Subscription Worker', () => {
         endpoint: getReferenceString(bot as Bot),
       },
     });
-    expect(subscriptionOutcome.id).toEqual('created');
-    expect(subscription).toBeDefined();
+    assertOk(subscriptionOutcome, subscription);
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    const [patientOutcome, patient] = await botRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
@@ -589,7 +611,66 @@ describe('Subscription Worker', () => {
     await execSubscriptionJob(job);
     expect(fetch).not.toHaveBeenCalled();
 
-    const [searchOutcome, bundle] = await repo.search<AuditEvent>({
+    const [searchOutcome, bundle] = await botRepo.search<AuditEvent>({
+      resourceType: 'AuditEvent',
+      filters: [
+        {
+          code: 'entity',
+          operator: Operator.EQUALS,
+          value: getReferenceString(subscription as Subscription),
+        },
+      ],
+    });
+    assertOk(searchOutcome, bundle);
+    expect(bundle.entry?.length).toEqual(1);
+    expect(bundle.entry?.[0]?.resource?.outcome).toEqual('0');
+    expect(bundle.entry?.[0]?.resource?.outcomeDesc).toContain('Success');
+    expect(bundle.entry?.[0]?.resource?.outcomeDesc).toContain(nonce);
+  });
+
+  test('Bot failure', async () => {
+    const nonce = randomUUID();
+
+    const [botOutcome, bot] = await botRepo.createResource<Bot>({
+      resourceType: 'Bot',
+      name: 'Test Bot',
+      description: 'Test Bot',
+      code: `throw new Error('${nonce}');`,
+    });
+    expect(botOutcome.id).toEqual('created');
+    expect(bot).toBeDefined();
+
+    const [subscriptionOutcome, subscription] = await botRepo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      status: 'active',
+      criteria: 'Patient',
+      channel: {
+        type: 'rest-hook',
+        endpoint: getReferenceString(bot as Bot),
+      },
+    });
+    expect(subscriptionOutcome.id).toEqual('created');
+    expect(subscription).toBeDefined();
+
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    queue.add.mockClear();
+
+    const [patientOutcome, patient] = await botRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+
+    expect(patientOutcome.id).toEqual('created');
+    expect(patient).toBeDefined();
+    expect(queue.add).toHaveBeenCalled();
+
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    await execSubscriptionJob(job);
+    expect(fetch).not.toHaveBeenCalled();
+
+    const [searchOutcome, bundle] = await botRepo.search<AuditEvent>({
       resourceType: 'AuditEvent',
       filters: [
         {
