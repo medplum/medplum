@@ -18,7 +18,7 @@ export function RegisterPage(): JSX.Element {
               medplum
                 .register({
                   ...formData,
-                  recaptchaResponse: token,
+                  recaptchaToken: token,
                 } as unknown as RegisterRequest)
                 .then(() => setSuccess(true))
                 .catch((err) => {

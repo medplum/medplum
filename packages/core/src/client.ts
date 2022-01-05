@@ -100,7 +100,7 @@ export interface RegisterRequest {
   readonly email: string;
   readonly password: string;
   readonly remember?: boolean;
-  readonly recaptchaResponse: string;
+  readonly recaptchaToken: string;
 }
 
 export interface GoogleCredentialResponse {
