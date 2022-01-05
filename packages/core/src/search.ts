@@ -78,6 +78,9 @@ const PREFIX_OPERATORS: Operator[] = [
 
 /**
  * Parses a URL into a SearchRequest.
+ *
+ * See the FHIR search spec: http://hl7.org/fhir/r4/search.html
+ *
  * @param location The URL to parse.
  * @returns Parsed search definition.
  */
@@ -93,22 +96,14 @@ export function parseSearchDefinition(location: { pathname: string; search?: str
   params.forEach((value, key) => {
     if (key === '_fields') {
       fields = value.split(',');
-    } else if (key === '_sort') {
-      if (value.startsWith('-')) {
-        sortRules.push({ code: value.substr(1), descending: true });
-      } else {
-        sortRules.push({ code: value });
-      }
     } else if (key === '_page') {
       page = parseInt(value);
     } else if (key === '_count') {
       count = parseInt(value);
+    } else if (key === '_sort') {
+      sortRules.push(parseSortRule(value));
     } else {
-      filters.push({
-        code: key,
-        operator: Operator.EQUALS,
-        value: value,
-      });
+      filters.push(parseSearchFilter(key, value));
     }
   });
 
@@ -120,6 +115,63 @@ export function parseSearchDefinition(location: { pathname: string; search?: str
     count,
     sortRules,
   };
+}
+
+/**
+ * Parses a URL query parameter into a sort rule.
+ *
+ * By default, the sort rule is the field name.
+ *
+ * Sort rules can be reversed into descending order by prefixing the field name with a minus sign.
+ *
+ * See sorting: http://hl7.org/fhir/r4/search.html#_sort
+ *
+ * @param value The URL parameter value.
+ * @returns The parsed sort rule.
+ */
+function parseSortRule(value: string): SortRule {
+  if (value.startsWith('-')) {
+    return { code: value.substring(1), descending: true };
+  } else {
+    return { code: value };
+  }
+}
+
+/**
+ * Parses a URL query parameter into a search filter.
+ *
+ * FHIR search filters can be specified as modifiers or prefixes.
+ *
+ * For string properties, modifiers are appended to the key, e.g. "name:contains=eve".
+ *
+ * For date and numeric properties, prefixes are prepended to the value, e.g. "birthdate=gt2000".
+ *
+ * See the FHIR search spec: http://hl7.org/fhir/r4/search.html
+ *
+ * @param key The URL parameter key.
+ * @param value The URL parameter value.
+ * @returns The parsed search filter.
+ */
+function parseSearchFilter(key: string, value: string): Filter {
+  let code = key;
+  let operator = Operator.EQUALS;
+
+  for (const modifier of MODIFIER_OPERATORS) {
+    const modifierIndex = code.indexOf(':' + modifier);
+    if (modifierIndex !== -1) {
+      operator = modifier;
+      code = code.substring(0, modifierIndex);
+    }
+  }
+
+  for (const prefix of PREFIX_OPERATORS) {
+    if (value.match(new RegExp('^' + prefix + '\\d'))) {
+      operator = prefix;
+      value = value.substring(prefix.length);
+    }
+  }
+
+  return { code, operator, value };
 }
 
 /**
