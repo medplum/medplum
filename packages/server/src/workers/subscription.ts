@@ -1,6 +1,6 @@
 import { assertOk, createReference, Filter, isGone, Operator, SearchRequest, stringify } from '@medplum/core';
 import { evalFhirPath } from '@medplum/fhirpath';
-import { AuditEvent, Bot, BundleEntry, Extension, Resource, Subscription } from '@medplum/fhirtypes';
+import { AuditEvent, Bot, BundleEntry, Extension, Project, Resource, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
@@ -403,6 +403,16 @@ export async function execBot(
 
   const code = bot.code;
   if (!code) {
+    logger.debug('Ignore action subscription missing code');
+    return;
+  }
+
+  // Get the bot project
+  const [projectOutcome, project] = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
+  assertOk(projectOutcome, project);
+
+  // Make sure that the "bots" feature is enabled
+  if (!project.features?.includes('bots')) {
     logger.debug('Ignore action subscription missing code');
     return;
   }

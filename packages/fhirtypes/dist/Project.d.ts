@@ -54,4 +54,9 @@ export interface Project {
    * The user who owns the project.
    */
   readonly owner?: Reference<User>;
+
+  /**
+   * A list of optional features that are enabled for the project.
+   */
+  readonly features?: string[];
 }
