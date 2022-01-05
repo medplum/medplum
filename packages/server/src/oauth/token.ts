@@ -83,7 +83,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
     },
     scope,
   });
-  assertOk(loginOutcome);
+  assertOk(loginOutcome, login);
 
   const accessToken = await generateAccessToken({
     login_id: login?.id as string,

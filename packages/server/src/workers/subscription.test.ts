@@ -7,7 +7,7 @@ import { loadTestConfig } from '../config';
 import { closeDatabase, getClient, initDatabase } from '../database';
 import { Repository, systemRepo } from '../fhir/repo';
 import { seedDatabase } from '../seed';
-import { closeSubscriptionWorker, initSubscriptionWorker, execSubscriptionJob } from './subscription';
+import { closeSubscriptionWorker, execSubscriptionJob, initSubscriptionWorker } from './subscription';
 
 jest.mock('bullmq');
 jest.mock('node-fetch');
@@ -540,12 +540,11 @@ describe('Subscription Worker', () => {
         },
       ],
     });
-    assertOk(searchOutcome);
-    expect(bundle).toBeDefined();
-    expect(bundle?.entry?.length).toEqual(1);
-    expect(bundle?.entry?.[0]?.resource?.outcome).toEqual('0');
-    expect(bundle?.entry?.[0]?.resource?.outcomeDesc).toContain('Success');
-    expect(bundle?.entry?.[0]?.resource?.outcomeDesc).toContain(nonce);
+    assertOk(searchOutcome, bundle);
+    expect(bundle.entry?.length).toEqual(1);
+    expect(bundle.entry?.[0]?.resource?.outcome).toEqual('0');
+    expect(bundle.entry?.[0]?.resource?.outcomeDesc).toContain('Success');
+    expect(bundle.entry?.[0]?.resource?.outcomeDesc).toContain(nonce);
   });
 
   test('Bot failure', async () => {
@@ -600,12 +599,11 @@ describe('Subscription Worker', () => {
         },
       ],
     });
-    assertOk(searchOutcome);
-    expect(bundle).toBeDefined();
-    expect(bundle?.entry?.length).toEqual(1);
-    expect(bundle?.entry?.[0]?.resource?.outcome).not.toEqual('0');
-    expect(bundle?.entry?.[0]?.resource?.outcomeDesc).toContain('Error');
-    expect(bundle?.entry?.[0]?.resource?.outcomeDesc).toContain(nonce);
+    assertOk(searchOutcome, bundle);
+    expect(bundle.entry?.length).toEqual(1);
+    expect(bundle.entry?.[0]?.resource?.outcome).not.toEqual('0');
+    expect(bundle.entry?.[0]?.resource?.outcomeDesc).toContain('Error');
+    expect(bundle.entry?.[0]?.resource?.outcomeDesc).toContain(nonce);
   });
 
   test('Stop retries if Subscription status not active', async () => {
@@ -658,9 +656,8 @@ describe('Subscription Worker', () => {
         },
       ],
     });
-    assertOk(searchOutcome);
-    expect(bundle).toBeDefined();
-    expect(bundle?.entry?.length).toEqual(0);
+    assertOk(searchOutcome, bundle);
+    expect(bundle.entry?.length).toEqual(0);
   });
 
   test('Stop retries if Subscription deleted', async () => {
@@ -684,14 +681,13 @@ describe('Subscription Worker', () => {
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
-    expect(patientOutcome.id).toEqual('created');
-    expect(patient).toBeDefined();
+    assertOk(patientOutcome, patient);
     expect(queue.add).toHaveBeenCalled();
 
     // At this point the job should be in the queue
     // But let's delete the subscription
     const [deleteOutcome] = await repo.deleteResource('Subscription', subscription?.id as string);
-    assertOk(deleteOutcome);
+    assertOk(deleteOutcome, subscription);
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execSubscriptionJob(job);
@@ -710,9 +706,8 @@ describe('Subscription Worker', () => {
         },
       ],
     });
-    assertOk(searchOutcome);
-    expect(bundle).toBeDefined();
-    expect(bundle?.entry?.length).toEqual(0);
+    assertOk(searchOutcome, bundle);
+    expect(bundle.entry?.length).toEqual(0);
   });
 
   test('Stop retries if Resource deleted', async () => {
@@ -736,14 +731,13 @@ describe('Subscription Worker', () => {
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
-    expect(patientOutcome.id).toEqual('created');
-    expect(patient).toBeDefined();
+    assertOk(patientOutcome, patient);
     expect(queue.add).toHaveBeenCalled();
 
     // At this point the job should be in the queue
     // But let's delete the resource
-    const [deleteOutcome] = await repo.deleteResource('Patient', patient?.id as string);
-    assertOk(deleteOutcome);
+    const [deleteOutcome] = await repo.deleteResource('Patient', patient.id as string);
+    assertOk(deleteOutcome, patient);
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execSubscriptionJob(job);
@@ -762,9 +756,8 @@ describe('Subscription Worker', () => {
         },
       ],
     });
-    assertOk(searchOutcome);
-    expect(bundle).toBeDefined();
-    expect(bundle?.entry?.length).toEqual(0);
+    assertOk(searchOutcome, bundle);
+    expect(bundle.entry?.length).toEqual(0);
   });
 
   test('AuditEvent has Subscription account details', async () => {
@@ -820,9 +813,8 @@ describe('Subscription Worker', () => {
         },
       ],
     });
-    assertOk(searchOutcome);
-    expect(bundle).toBeDefined();
-    expect(bundle?.entry?.length).toEqual(1);
+    assertOk(searchOutcome, bundle);
+    expect(bundle.entry?.length).toEqual(1);
 
     const auditEvent = bundle?.entry?.[0].resource as AuditEvent;
     expect(auditEvent.meta?.account).toBeDefined();

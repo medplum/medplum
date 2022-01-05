@@ -164,14 +164,13 @@ describe('Download Worker', () => {
       },
     });
 
-    expect(mediaOutcome.id).toEqual('created');
-    expect(media).toBeDefined();
+    assertOk(mediaOutcome, media);
     expect(queue.add).toHaveBeenCalled();
 
     // At this point the job should be in the queue
     // But let's delete the resource
     const [deleteOutcome] = await repo.deleteResource('Media', media?.id as string);
-    assertOk(deleteOutcome);
+    assertOk(deleteOutcome, media);
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execDownloadJob(job);
@@ -198,14 +197,14 @@ describe('Download Worker', () => {
 
     // At this point the job should be in the queue
     // But let's change the URL to an internal Binary resource
-    const [updateOutcome] = await repo.updateResource({
+    const [updateOutcome, updated] = await repo.updateResource({
       ...(media as Media),
       content: {
         contentType: 'text/plain',
         url: 'Binary/' + randomUUID(),
       },
     });
-    assertOk(updateOutcome);
+    assertOk(updateOutcome, updated);
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execDownloadJob(job);

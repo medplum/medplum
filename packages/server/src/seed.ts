@@ -43,8 +43,8 @@ async function isSeeded(): Promise<boolean> {
     resourceType: 'User',
     count: 1,
   });
-  assertOk(outcome);
-  return !!bundle?.entry && bundle.entry.length > 0;
+  assertOk(outcome, bundle);
+  return !!bundle.entry && bundle.entry.length > 0;
 }
 
 /**
@@ -59,8 +59,8 @@ async function createPublicProject(owner: User): Promise<void> {
     name: 'Public',
     owner: createReference(owner),
   });
-  assertOk(outcome);
-  logger.info('Created: ' + (result as Project).id);
+  assertOk(outcome, result);
+  logger.info('Created: ' + result.id);
 }
 
 /**
@@ -77,7 +77,7 @@ async function createSearchParameters(): Promise<void> {
       ...searchParam,
       text: undefined,
     });
-    assertOk(outcome);
-    logger.debug('Created: ' + (result as SearchParameter).id);
+    assertOk(outcome, result);
+    logger.debug('Created: ' + result.id);
   }
 }

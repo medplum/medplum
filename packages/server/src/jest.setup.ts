@@ -12,18 +12,18 @@ export async function createTestClient(): Promise<ClientApplication> {
       reference: 'User/' + randomUUID(),
     },
   });
-  assertOk(projectOutcome);
+  assertOk(projectOutcome, project);
 
   const [clientOutcome, client] = await systemRepo.createResource<ClientApplication>({
     resourceType: 'ClientApplication',
     secret: randomUUID(),
     redirectUri: 'https://example.com/',
     meta: {
-      project: project?.id as string,
+      project: project.id as string,
     },
   });
-  assertOk(clientOutcome);
-  return client as ClientApplication;
+  assertOk(clientOutcome, client);
+  return client;
 }
 
 export async function initTestAuth(): Promise<string> {

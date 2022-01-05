@@ -105,8 +105,8 @@ async function searchForExisting(email: string): Promise<User | undefined> {
       },
     ],
   });
-  assertOk(outcome);
-  if (bundle?.entry && bundle.entry.length > 0) {
+  assertOk(outcome, bundle);
+  if (bundle.entry && bundle.entry.length > 0) {
     return bundle.entry[0].resource as User;
   }
   return undefined;
@@ -122,7 +122,7 @@ async function createUser(request: InviteRequest): Promise<User> {
     email,
     passwordHash,
   });
-  assertOk(outcome);
-  logger.info('Created: ' + (result as User).id);
-  return result as User;
+  assertOk(outcome, result);
+  logger.info('Created: ' + result.id);
+  return result;
 }

@@ -137,8 +137,13 @@ export function getStatus(outcome: OperationOutcome): number {
   }
 }
 
-export function assertOk(outcome: OperationOutcome): void {
-  if (!isOk(outcome)) {
+/**
+ * Asserts that the operation completed successfully and that the resource is defined.
+ * @param outcome The operation outcome.
+ * @param resource The resource that may or may not have been returned.
+ */
+export function assertOk<T>(outcome: OperationOutcome, resource: T | undefined): asserts resource is T {
+  if (!isOk(outcome) || resource === undefined) {
     throw new OperationOutcomeError(outcome);
   }
 }

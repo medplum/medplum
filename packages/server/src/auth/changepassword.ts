@@ -3,7 +3,7 @@ import { OperationOutcome, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { invalidRequest, systemRepo, sendOutcome } from '../fhir';
+import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { authenticateToken } from '../oauth';
 
 export const changePasswordValidators = [
@@ -20,10 +20,10 @@ export async function changePasswordHandler(req: Request, res: Response): Promis
     }
 
     const [userOutcome, user] = await systemRepo.readResource<User>('User', res.locals.user);
-    assertOk(userOutcome);
+    assertOk(userOutcome, user);
 
     const outcome = await changePassword({
-      user: user as User,
+      user,
       oldPassword: req.body.oldPassword,
       newPassword: req.body.newPassword,
     });

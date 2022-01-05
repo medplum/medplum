@@ -18,10 +18,9 @@ storageRouter.get(
     }
 
     const { id } = req.params;
-    const [outcome, resource] = await systemRepo.readResource('Binary', id);
-    assertOk(outcome);
+    const [outcome, binary] = await systemRepo.readResource<Binary>('Binary', id);
+    assertOk(outcome, binary);
 
-    const binary = resource as Binary;
     res.status(200).contentType(binary.contentType as string);
 
     const stream = await getBinaryStorage().readBinary(binary);

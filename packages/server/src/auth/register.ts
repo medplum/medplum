@@ -1,15 +1,13 @@
 import { assertOk, badRequest, createReference, Operator, ProfileResource } from '@medplum/core';
-import { BundleEntry, ClientApplication, Login, Project, User } from '@medplum/fhirtypes';
+import { BundleEntry, ClientApplication, Project, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import fetch from 'node-fetch';
-import { getConfig } from '../config';
 import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { logger } from '../logger';
 import { generateSecret, getAuthTokens, tryLogin } from '../oauth';
-import { createPractitioner, createProjectMembership } from './utils';
+import { createPractitioner, createProjectMembership, verifyRecaptcha } from './utils';
 
 export interface RegisterRequest {
   readonly firstName: string;
@@ -44,14 +42,14 @@ export async function registerHandler(req: Request, res: Response): Promise<void
     return;
   }
 
-  const { email, password } = req.body;
-  if (await searchForExisting(email)) {
-    sendOutcome(res, badRequest('Email already registered', 'email'));
+  if (!(await verifyRecaptcha(req.body.recaptchaToken))) {
+    sendOutcome(res, badRequest('Recaptcha failed'));
     return;
   }
 
-  if (!(await verifyRecaptcha(req.body.recaptchaToken))) {
-    sendOutcome(res, badRequest('Recaptcha failed'));
+  const { email, password } = req.body;
+  if (await searchForExisting(email)) {
+    sendOutcome(res, badRequest('Email already registered', 'email'));
     return;
   }
 
@@ -65,10 +63,10 @@ export async function registerHandler(req: Request, res: Response): Promise<void
     nonce: randomUUID(),
     remember: true,
   });
-  assertOk(loginOutcome);
+  assertOk(loginOutcome, login);
 
-  const [tokenOutcome, token] = await getAuthTokens(login as Login);
-  assertOk(tokenOutcome);
+  const [tokenOutcome, token] = await getAuthTokens(login);
+  assertOk(tokenOutcome, token);
 
   res.status(200).json({
     ...token,
@@ -103,8 +101,8 @@ async function searchForExisting(email: string): Promise<boolean> {
     ],
   });
 
-  assertOk(outcome);
-  return (bundle?.entry as BundleEntry<User>[]).length > 0;
+  assertOk(outcome, bundle);
+  return (bundle.entry as BundleEntry<User>[]).length > 0;
 }
 
 async function createUser(request: RegisterRequest): Promise<User> {
@@ -117,9 +115,9 @@ async function createUser(request: RegisterRequest): Promise<User> {
     passwordHash,
     admin,
   });
-  assertOk(outcome);
-  logger.info('Created: ' + (result as User).id);
-  return result as User;
+  assertOk(outcome, result);
+  logger.info('Created: ' + result.id);
+  return result;
 }
 
 async function createProject(request: RegisterRequest, user: User): Promise<Project> {
@@ -129,9 +127,9 @@ async function createProject(request: RegisterRequest, user: User): Promise<Proj
     name: request.projectName,
     owner: createReference(user),
   });
-  assertOk(outcome);
-  logger.info('Created: ' + (result as Project).id);
-  return result as Project;
+  assertOk(outcome, result);
+  logger.info('Created: ' + result.id);
+  return result;
 }
 
 async function createClientApplication(project: Project): Promise<ClientApplication> {
@@ -146,27 +144,7 @@ async function createClientApplication(project: Project): Promise<ClientApplicat
       project: project.id,
     },
   });
-  assertOk(outcome);
-  logger.info('Created: ' + (result as ClientApplication).id);
-  return result as ClientApplication;
-}
-
-/**
- * Verifies the recaptcha response from the client.
- * @param recaptchaToken The Recaptcha response from the client.
- * @returns True on success, false on failure.
- */
-async function verifyRecaptcha(recaptchaToken: string): Promise<boolean> {
-  const secretKey = getConfig().recaptchaSecretKey as string;
-
-  const url =
-    'https://www.google.com/recaptcha/api/siteverify' +
-    '?secret=' +
-    encodeURIComponent(secretKey) +
-    '&response=' +
-    encodeURIComponent(recaptchaToken);
-
-  const response = await fetch(url, { method: 'POST' });
-  const json = await response.json();
-  return json.success;
+  assertOk(outcome, result);
+  logger.info('Created: ' + result.id);
+  return result;
 }

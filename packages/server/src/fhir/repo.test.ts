@@ -827,7 +827,7 @@ describe('FHIR Repo', () => {
       remember: true,
     });
 
-    assertOk(loginOutcome1);
+    assertOk(loginOutcome1, login1);
     expect(login1).toBeDefined();
 
     const repo1 = await getRepoForLogin(login1 as Login);
@@ -835,12 +835,12 @@ describe('FHIR Repo', () => {
       resourceType: 'Patient',
     });
 
-    assertOk(patientOutcome1);
+    assertOk(patientOutcome1, patient1);
     expect(patient1).toBeDefined();
     expect(patient1?.id).toBeDefined();
 
     const [patientOutcome2, patient2] = await repo1.readResource('Patient', patient1?.id as string);
-    assertOk(patientOutcome2);
+    assertOk(patientOutcome2, patient2);
     expect(patient2).toBeDefined();
     expect(patient2?.id).toEqual(patient1?.id);
 
@@ -864,7 +864,7 @@ describe('FHIR Repo', () => {
       remember: true,
     });
 
-    assertOk(loginOutcome2);
+    assertOk(loginOutcome2, login2);
     expect(login2).toBeDefined();
 
     const repo2 = await getRepoForLogin(login2 as Login);
@@ -879,7 +879,7 @@ describe('FHIR Repo', () => {
       name: [{ given: ['Alice'], family: 'Smith' }],
       birthDate: '1970-01-01',
     });
-    assertOk(createOutcome);
+    assertOk(createOutcome, patient);
     expect(patient).toBeDefined();
 
     // Empty access policy effectively blocks all reads and writes
@@ -939,7 +939,7 @@ describe('FHIR Repo', () => {
       name: [{ given: ['Alice'], family: 'Smith' }],
       birthDate: '1970-01-01',
     });
-    assertOk(createOutcome);
+    assertOk(createOutcome, patient);
     expect(patient).toBeDefined();
 
     const accessPolicy: AccessPolicy = {
@@ -959,10 +959,10 @@ describe('FHIR Repo', () => {
       accessPolicy,
     });
 
-    const [readOutcome] = await repo2.readResource('Patient', patient?.id as string);
-    assertOk(readOutcome);
+    const [readOutcome, patient2] = await repo2.readResource('Patient', patient.id as string);
+    assertOk(readOutcome, patient2);
 
-    const [writeOutcome] = await repo2.updateResource(patient as Patient);
+    const [writeOutcome] = await repo2.updateResource(patient);
     expect(writeOutcome.id).toEqual('access-denied');
   });
 
@@ -972,7 +972,7 @@ describe('FHIR Repo', () => {
       name: [{ given: ['Alice'], family: 'Smith' }],
       birthDate: '1970-01-01',
     });
-    assertOk(createOutcome);
+    assertOk(createOutcome, patient);
     expect(patient).toBeDefined();
 
     const accessPolicy: AccessPolicy = {
@@ -992,10 +992,10 @@ describe('FHIR Repo', () => {
       accessPolicy,
     });
 
-    const [readOutcome] = await repo2.readResource('Patient', patient?.id as string);
-    assertOk(readOutcome);
+    const [readOutcome, patient2] = await repo2.readResource('Patient', patient.id as string);
+    assertOk(readOutcome, patient2);
 
-    const [deleteOutcome] = await repo2.deleteResource('Patient', patient?.id as string);
+    const [deleteOutcome] = await repo2.deleteResource('Patient', patient.id as string);
     expect(deleteOutcome.id).toEqual('access-denied');
   });
 
@@ -1029,12 +1029,12 @@ describe('FHIR Repo', () => {
       name: [{ given: ['Alice'], family: 'Smith' }],
       birthDate: '1970-01-01',
     });
-    assertOk(createOutcome);
+    assertOk(createOutcome, patient);
     expect(patient).toBeDefined();
     expect(patient?.meta?.account).toBeDefined();
 
     const [readOutcome, readPatient] = await systemRepo.readResource('Patient', patient?.id as string);
-    assertOk(readOutcome);
+    assertOk(readOutcome, readPatient);
     expect(readPatient).toBeDefined();
     expect(readPatient?.meta?.account).toBeDefined();
   });
@@ -1092,13 +1092,13 @@ describe('FHIR Repo', () => {
       name: [{ given: ['Alice'], family: 'Smith' }],
       birthDate: '1970-01-01',
     });
-    assertOk(createOutcome1);
+    assertOk(createOutcome1, patient1);
     expect(patient1).toBeDefined();
     expect(patient1?.meta?.account).toBeDefined();
     expect(patient1?.meta?.account?.reference).toEqual('Organization/' + org1);
 
     const [readOutcome1, readPatient1] = await repo1.readResource('Patient', patient1?.id as string);
-    assertOk(readOutcome1);
+    assertOk(readOutcome1, readPatient1);
     expect(readPatient1).toBeDefined();
     expect(readPatient1?.meta?.account).toBeDefined();
 
@@ -1107,13 +1107,13 @@ describe('FHIR Repo', () => {
       name: [{ given: ['Alice'], family: 'Smith' }],
       birthDate: '1970-01-01',
     });
-    assertOk(createOutcome2);
+    assertOk(createOutcome2, patient2);
     expect(patient2).toBeDefined();
     expect(patient2?.meta?.account).toBeDefined();
     expect(patient2?.meta?.account?.reference).toEqual('Organization/' + org2);
 
     const [readOutcome2, readPatient2] = await repo2.readResource('Patient', patient2?.id as string);
-    assertOk(readOutcome2);
+    assertOk(readOutcome2, readPatient2);
     expect(readPatient2).toBeDefined();
     expect(readPatient2?.meta?.account).toBeDefined();
 
@@ -1145,7 +1145,7 @@ describe('FHIR Repo', () => {
         },
       },
     });
-    assertOk(outcome1);
+    assertOk(outcome1, clientApplication);
     expect(clientApplication).toBeDefined();
 
     // Create a systemRepo for the ClientApplication
@@ -1164,7 +1164,7 @@ describe('FHIR Repo', () => {
       name: [{ given: ['Al'], family: 'Bundy' }],
       birthDate: '1975-12-12',
     });
-    assertOk(outcome2);
+    assertOk(outcome2, patient);
     expect(patient).toBeDefined();
 
     // The Patient should have the account value set
@@ -1179,7 +1179,7 @@ describe('FHIR Repo', () => {
       },
       valueString: 'positive',
     });
-    assertOk(outcome3);
+    assertOk(outcome3, observation);
     expect(observation).toBeDefined();
 
     // The Observation should have the account value set
@@ -1191,7 +1191,7 @@ describe('FHIR Repo', () => {
       name: [{ given: ['Peggy'], family: 'Bundy' }],
       birthDate: '1975-11-11',
     });
-    assertOk(outcome4);
+    assertOk(outcome4, patient2);
     expect(patient2).toBeDefined();
 
     // The ClientApplication should not be able to access it
@@ -1207,7 +1207,7 @@ describe('FHIR Repo', () => {
       },
       valueString: 'positive',
     });
-    assertOk(outcome6);
+    assertOk(outcome6, observation2);
     expect(observation2).toBeDefined();
 
     // The ClientApplication should not be able to access it
@@ -1318,7 +1318,7 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome1);
+    assertOk(outcome1, bundle1);
     expect(bundle1?.entry?.length).toEqual(2);
     expect((bundle1?.entry?.[0]?.resource as StructureDefinition).name).toEqual('Questionnaire');
     expect((bundle1?.entry?.[1]?.resource as StructureDefinition).name).toEqual('QuestionnaireResponse');
@@ -1333,7 +1333,7 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome2);
+    assertOk(outcome2, bundle2);
     expect(bundle2?.entry?.length).toEqual(1);
     expect((bundle2?.entry?.[0]?.resource as StructureDefinition).name).toEqual('Questionnaire');
   });
@@ -1346,7 +1346,7 @@ describe('FHIR Repo', () => {
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family }],
     });
-    assertOk(createOutcome);
+    assertOk(createOutcome, patient);
     expect(patient).toBeDefined();
 
     const [searchOutcome1, searchResult1] = await systemRepo.search({
@@ -1395,7 +1395,7 @@ describe('FHIR Repo', () => {
         project: project1,
       },
     });
-    assertOk(outcome1);
+    assertOk(outcome1, patient1);
     expect(patient1).toBeDefined();
 
     const [outcome2, patient2] = await systemRepo.createResource<Patient>({
@@ -1405,7 +1405,7 @@ describe('FHIR Repo', () => {
         project: project2,
       },
     });
-    assertOk(outcome2);
+    assertOk(outcome2, patient2);
     expect(patient2).toBeDefined();
 
     const [outcome3, bundle] = await systemRepo.search({
@@ -1418,7 +1418,7 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome3);
+    assertOk(outcome3, bundle);
     expect(bundle?.entry?.length).toEqual(1);
     expect(bundleContains(bundle as Bundle, patient1 as Patient)).toEqual(true);
     expect(bundleContains(bundle as Bundle, patient2 as Patient)).toEqual(false);
@@ -1441,7 +1441,7 @@ describe('FHIR Repo', () => {
         lastUpdated: nowMinus1Second.toISOString(),
       },
     });
-    assertOk(outcome1);
+    assertOk(outcome1, patient1);
     expect(patient1).toBeDefined();
 
     const [outcome2, patient2] = await systemRepo.createResource<Patient>({
@@ -1451,7 +1451,7 @@ describe('FHIR Repo', () => {
         lastUpdated: nowMinus2Seconds.toISOString(),
       },
     });
-    assertOk(outcome2);
+    assertOk(outcome2, patient2);
     expect(patient2).toBeDefined();
 
     // Greater than (newer than) 2 seconds ago should only return patient 1
@@ -1560,7 +1560,7 @@ describe('FHIR Repo', () => {
         project,
       },
     });
-    assertOk(outcome1);
+    assertOk(outcome1, patient1);
     expect(patient1).toBeDefined();
 
     const [outcome2, patient2] = await systemRepo.createResource<Patient>({
@@ -1571,7 +1571,7 @@ describe('FHIR Repo', () => {
         project,
       },
     });
-    assertOk(outcome2);
+    assertOk(outcome2, patient2);
     expect(patient2).toBeDefined();
 
     const [outcome3, bundle3] = await systemRepo.search({
@@ -1590,7 +1590,7 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome3);
+    assertOk(outcome3, bundle3);
     expect(bundle3?.entry?.length).toEqual(2);
     expect(bundle3?.entry?.[0]?.resource?.id).toEqual(patient1?.id);
     expect(bundle3?.entry?.[1]?.resource?.id).toEqual(patient2?.id);
@@ -1611,7 +1611,7 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome4);
+    assertOk(outcome4, bundle4);
     expect(bundle4?.entry?.length).toEqual(2);
     expect(bundle4?.entry?.[0]?.resource?.id).toEqual(patient2?.id);
     expect(bundle4?.entry?.[1]?.resource?.id).toEqual(patient1?.id);
@@ -1645,13 +1645,12 @@ describe('FHIR Repo', () => {
       resourceType: 'Patient',
       name: [{ given: ['John'], family: 'CodeableConcept' }],
     });
-    assertOk(outcome0);
-    expect(patient).toBeDefined();
+    assertOk(outcome0, patient);
 
     // Use code.coding[0].code
     const [outcome1, serviceRequest1] = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
-      subject: createReference(patient as Patient),
+      subject: createReference(patient),
       code: {
         coding: [
           {
@@ -1660,13 +1659,12 @@ describe('FHIR Repo', () => {
         ],
       },
     });
-    assertOk(outcome1);
-    expect(serviceRequest1).toBeDefined();
+    assertOk(outcome1, serviceRequest1);
 
     // Use code.coding[0].display
     const [outcome2, serviceRequest2] = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
-      subject: createReference(patient as Patient),
+      subject: createReference(patient),
       code: {
         coding: [
           {
@@ -1675,19 +1673,17 @@ describe('FHIR Repo', () => {
         ],
       },
     });
-    assertOk(outcome2);
-    expect(serviceRequest2).toBeDefined();
+    assertOk(outcome2, serviceRequest2);
 
     // Use code.text
     const [outcome3, serviceRequest3] = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
-      subject: createReference(patient as Patient),
+      subject: createReference(patient),
       code: {
         text: x3,
       },
     });
-    assertOk(outcome3);
-    expect(serviceRequest3).toBeDefined();
+    assertOk(outcome3, serviceRequest3);
 
     const [outcome4, bundle1] = await systemRepo.search({
       resourceType: 'ServiceRequest',
@@ -1699,11 +1695,11 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome4);
-    expect(bundle1?.entry?.length).toEqual(1);
-    expect(bundleContains(bundle1 as Bundle, serviceRequest1 as ServiceRequest)).toEqual(true);
-    expect(bundleContains(bundle1 as Bundle, serviceRequest2 as ServiceRequest)).toEqual(false);
-    expect(bundleContains(bundle1 as Bundle, serviceRequest3 as ServiceRequest)).toEqual(false);
+    assertOk(outcome4, bundle1);
+    expect(bundle1.entry?.length).toEqual(1);
+    expect(bundleContains(bundle1, serviceRequest1)).toEqual(true);
+    expect(bundleContains(bundle1, serviceRequest2)).toEqual(false);
+    expect(bundleContains(bundle1, serviceRequest3)).toEqual(false);
 
     const [outcome5, bundle2] = await systemRepo.search({
       resourceType: 'ServiceRequest',
@@ -1715,11 +1711,11 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome5);
-    expect(bundle2?.entry?.length).toEqual(1);
-    expect(bundleContains(bundle2 as Bundle, serviceRequest1 as ServiceRequest)).toEqual(false);
-    expect(bundleContains(bundle2 as Bundle, serviceRequest2 as ServiceRequest)).toEqual(true);
-    expect(bundleContains(bundle2 as Bundle, serviceRequest3 as ServiceRequest)).toEqual(false);
+    assertOk(outcome5, bundle2);
+    expect(bundle2.entry?.length).toEqual(1);
+    expect(bundleContains(bundle2, serviceRequest1)).toEqual(false);
+    expect(bundleContains(bundle2, serviceRequest2)).toEqual(true);
+    expect(bundleContains(bundle2, serviceRequest3)).toEqual(false);
 
     const [outcome6, bundle3] = await systemRepo.search({
       resourceType: 'ServiceRequest',
@@ -1731,11 +1727,11 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome6);
-    expect(bundle3?.entry?.length).toEqual(1);
-    expect(bundleContains(bundle3 as Bundle, serviceRequest1 as ServiceRequest)).toEqual(false);
-    expect(bundleContains(bundle3 as Bundle, serviceRequest2 as ServiceRequest)).toEqual(false);
-    expect(bundleContains(bundle3 as Bundle, serviceRequest3 as ServiceRequest)).toEqual(true);
+    assertOk(outcome6, bundle3);
+    expect(bundle3.entry?.length).toEqual(1);
+    expect(bundleContains(bundle3, serviceRequest1)).toEqual(false);
+    expect(bundleContains(bundle3, serviceRequest2)).toEqual(false);
+    expect(bundleContains(bundle3, serviceRequest3)).toEqual(true);
   });
 
   test('Reindex resource type as non-admin', async () => {
@@ -1769,7 +1765,7 @@ describe('FHIR Repo', () => {
 
   test('Reindex success', async () => {
     const [reindexOutcome] = await systemRepo.reindexResourceType('Practitioner');
-    assertOk(reindexOutcome);
+    expect(isOk(reindexOutcome)).toBe(true);
   });
 });
 

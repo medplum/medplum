@@ -118,7 +118,7 @@ protectedRoutes.post(
     }
     const repo = res.locals.repo as Repository;
     const [outcome, result] = await processBatch(repo, bundle);
-    assertOk(outcome);
+    assertOk(outcome, result);
     sendResponse(res, outcome, result);
   })
 );
@@ -131,7 +131,7 @@ protectedRoutes.get(
     const repo = res.locals.repo as Repository;
     const query = req.query as Record<string, string[] | string | undefined>;
     const [outcome, bundle] = await repo.search(parseSearchRequest(resourceType, query));
-    assertOk(outcome);
+    assertOk(outcome, bundle);
     sendResponse(res, outcome, bundle);
   })
 );
@@ -152,7 +152,7 @@ protectedRoutes.post(
     }
     const repo = res.locals.repo as Repository;
     const [outcome, result] = await repo.createResource(resource);
-    assertOk(outcome);
+    assertOk(outcome, result);
     sendResponse(res, outcome, result);
   })
 );
@@ -164,7 +164,7 @@ protectedRoutes.get(
     const { resourceType, id } = req.params;
     const repo = res.locals.repo as Repository;
     const [outcome, resource] = await repo.readResource(resourceType, id);
-    assertOk(outcome);
+    assertOk(outcome, resource);
     sendResponse(res, outcome, resource);
   })
 );
@@ -176,7 +176,7 @@ protectedRoutes.get(
     const { resourceType, id } = req.params;
     const repo = res.locals.repo as Repository;
     const [outcome, bundle] = await repo.readHistory(resourceType, id);
-    assertOk(outcome);
+    assertOk(outcome, bundle);
     res.status(getStatus(outcome)).json(bundle);
   })
 );
@@ -188,7 +188,7 @@ protectedRoutes.get(
     const { resourceType, id, vid } = req.params;
     const repo = res.locals.repo as Repository;
     const [outcome, resource] = await repo.readVersion(resourceType, id, vid);
-    assertOk(outcome);
+    assertOk(outcome, resource);
     res.status(getStatus(outcome)).json(resource);
   })
 );
@@ -213,7 +213,7 @@ protectedRoutes.put(
     }
     const repo = res.locals.repo as Repository;
     const [outcome, result] = await repo.updateResource(resource);
-    assertOk(outcome);
+    assertOk(outcome, result);
     sendResponse(res, outcome, result);
   })
 );
@@ -225,7 +225,7 @@ protectedRoutes.delete(
     const { resourceType, id } = req.params;
     const repo = res.locals.repo as Repository;
     const [outcome] = await repo.deleteResource(resourceType, id);
-    assertOk(outcome);
+    assertOk(outcome, { resourceType });
     sendOutcome(res, outcome);
   })
 );
@@ -242,7 +242,7 @@ protectedRoutes.patch(
     const patch = req.body as Operation[];
     const repo = res.locals.repo as Repository;
     const [outcome, resource] = await repo.patchResource(resourceType, id, patch);
-    assertOk(outcome);
+    assertOk(outcome, resource);
     sendResponse(res, outcome, resource);
   })
 );

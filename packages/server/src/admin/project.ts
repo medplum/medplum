@@ -57,7 +57,7 @@ projectAdminRouter.get(
 
     const { membershipId } = req.params;
     const [outcome, membership] = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
-    assertOk(outcome);
+    assertOk(outcome, membership);
     res.status(getStatus(outcome)).json(membership);
   })
 );
@@ -78,7 +78,7 @@ projectAdminRouter.post(
     }
 
     const [outcome, result] = await systemRepo.updateResource(resource);
-    assertOk(outcome);
+    assertOk(outcome, result);
     res.status(getStatus(outcome)).json(result);
   })
 );

@@ -23,7 +23,7 @@ binaryRouter.post(
         project: req.query['_project'] as string | undefined,
       },
     });
-    assertOk(outcome);
+    assertOk(outcome, resource);
 
     const stream = getContentStream(req);
     if (!stream) {
@@ -31,10 +31,10 @@ binaryRouter.post(
       return;
     }
 
-    await getBinaryStorage().writeBinary(resource as Binary, stream);
+    await getBinaryStorage().writeBinary(resource, stream);
     res.status(201).json({
       ...resource,
-      url: getPresignedUrl(resource as Binary),
+      url: getPresignedUrl(resource),
     });
   })
 );
@@ -53,7 +53,7 @@ binaryRouter.put(
         project: req.query['_project'] as string | undefined,
       },
     });
-    assertOk(outcome);
+    assertOk(outcome, resource);
 
     const stream = getContentStream(req);
     if (!stream) {
@@ -61,7 +61,7 @@ binaryRouter.put(
       return;
     }
 
-    await getBinaryStorage().writeBinary(resource as Binary, stream);
+    await getBinaryStorage().writeBinary(resource, stream);
     res.status(200).json(resource);
   })
 );
@@ -72,10 +72,9 @@ binaryRouter.get(
   asyncWrap(async (req: Request, res: Response) => {
     const { id } = req.params;
     const repo = res.locals.repo as Repository;
-    const [outcome, resource] = await repo.readResource('Binary', id);
-    assertOk(outcome);
+    const [outcome, binary] = await repo.readResource<Binary>('Binary', id);
+    assertOk(outcome, binary);
 
-    const binary = resource as Binary;
     res.status(200).contentType(binary.contentType as string);
 
     const stream = await getBinaryStorage().readBinary(binary);

@@ -25,8 +25,8 @@ async function createStructureDefinitionsForBundle(structureDefinitions: Bundle)
         ...resource,
         text: undefined,
       });
-      assertOk(outcome);
-      logger.debug('Created: ' + (result as StructureDefinition).id);
+      assertOk(outcome, result);
+      logger.debug('Created: ' + result.id);
     }
   }
 }

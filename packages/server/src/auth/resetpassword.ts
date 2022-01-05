@@ -1,5 +1,5 @@
 import { allOk, assertOk, badRequest, createReference, Operator } from '@medplum/core';
-import { Bundle, BundleEntry, PasswordChangeRequest, User } from '@medplum/fhirtypes';
+import { BundleEntry, PasswordChangeRequest, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { getConfig } from '../config';
@@ -26,9 +26,9 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
       },
     ],
   });
-  assertOk(existingOutcome);
+  assertOk(existingOutcome, existingBundle);
 
-  if (((existingBundle as Bundle).entry as BundleEntry[]).length === 0) {
+  if ((existingBundle.entry as BundleEntry[]).length === 0) {
     sendOutcome(res, badRequest('User not found', 'email'));
     return;
   }
@@ -71,8 +71,8 @@ export async function resetPassword(user: User): Promise<string> {
     user: createReference(user),
     secret: generateSecret(16),
   });
-  assertOk(createOutcome);
+  assertOk(createOutcome, pcr);
 
   // Build the reset URL
-  return `${getConfig().appBaseUrl}setpassword/${pcr?.id}/${pcr?.secret}`;
+  return `${getConfig().appBaseUrl}setpassword/${pcr.id}/${pcr.secret}`;
 }

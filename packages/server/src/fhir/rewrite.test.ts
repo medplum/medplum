@@ -19,8 +19,8 @@ describe('URL rewrite', () => {
     const [outcome, resource] = await systemRepo.createResource({
       resourceType: 'Binary',
     });
-    assertOk(outcome);
-    binary = resource as Binary;
+    assertOk(outcome, resource);
+    binary = resource;
   });
 
   afterAll(async () => {

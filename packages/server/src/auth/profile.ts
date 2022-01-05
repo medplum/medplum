@@ -18,20 +18,20 @@ export async function profileHandler(req: Request, res: Response): Promise<void>
   }
 
   const [loginOutcome, login] = await systemRepo.readResource<Login>('Login', req.body.login);
-  assertOk(loginOutcome);
+  assertOk(loginOutcome, login);
 
-  if (login?.revoked) {
+  if (login.revoked) {
     sendOutcome(res, badRequest('Login revoked'));
     return;
   }
 
-  if (login?.granted) {
+  if (login.granted) {
     sendOutcome(res, badRequest('Login granted'));
     return;
   }
 
-  if (login?.project || login?.profile) {
-    sendOutcome(res, badRequest('Login profile set'));
+  if (login.project || login.profile) {
+    sendOutcome(res, badRequest('Login profile already set'));
     return;
   }
 
@@ -45,21 +45,21 @@ export async function profileHandler(req: Request, res: Response): Promise<void>
 
   // Get up-to-date project and profile
   const [projectOutcome, project] = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
-  assertOk(projectOutcome);
+  assertOk(projectOutcome, project);
 
   const [profileOutcome, profile] = await systemRepo.readReference<ProfileResource>(
     membership.profile as Reference<ProfileResource>
   );
-  assertOk(profileOutcome);
+  assertOk(profileOutcome, profile);
 
   // Update the login
-  const [updateOutcome] = await systemRepo.updateResource({
-    ...(login as Login),
-    project: createReference(project as Project),
-    profile: createReference(profile as ProfileResource),
+  const [updateOutcome, updated] = await systemRepo.updateResource({
+    ...login,
+    project: createReference(project),
+    profile: createReference(profile),
     accessPolicy: membership.accessPolicy,
   });
-  assertOk(updateOutcome);
+  assertOk(updateOutcome, updated);
 
   res.status(200).json({
     login: login?.id,

@@ -94,9 +94,9 @@ describe('Profile', () => {
     expect(res1.body.login).toBeDefined();
 
     const [readOutcome, login] = await systemRepo.readResource<Login>('Login', res1.body.login);
-    assertOk(readOutcome);
+    assertOk(readOutcome, login);
     await systemRepo.updateResource({
-      ...(login as Login),
+      ...login,
       revoked: true,
     });
 
@@ -122,9 +122,9 @@ describe('Profile', () => {
     expect(res1.body.login).toBeDefined();
 
     const [readOutcome, login] = await systemRepo.readResource<Login>('Login', res1.body.login);
-    assertOk(readOutcome);
+    assertOk(readOutcome, login);
     await systemRepo.updateResource({
-      ...(login as Login),
+      ...login,
       granted: true,
     });
 
@@ -150,9 +150,9 @@ describe('Profile', () => {
     expect(res1.body.login).toBeDefined();
 
     const [readOutcome, login] = await systemRepo.readResource<Login>('Login', res1.body.login);
-    assertOk(readOutcome);
+    assertOk(readOutcome, login);
     await systemRepo.updateResource({
-      ...(login as Login),
+      ...login,
       project: {
         reference: `Project/${randomUUID()}`,
       },
@@ -170,7 +170,7 @@ describe('Profile', () => {
       });
     expect(res2.status).toBe(400);
     expect(res2.body.issue).toBeDefined();
-    expect(res2.body.issue[0].details.text).toBe('Login profile set');
+    expect(res2.body.issue[0].details.text).toBe('Login profile already set');
   });
 
   test('Membership not found', async () => {

@@ -253,8 +253,8 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
       },
     ],
   });
-  assertOk(outcome);
-  return (bundle?.entry as BundleEntry<Subscription>[]).map((e) => e.resource as Subscription);
+  assertOk(outcome, bundle);
+  return (bundle.entry as BundleEntry<Subscription>[]).map((e) => e.resource as Subscription);
 }
 
 /**
@@ -272,29 +272,29 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     // If the subscription was deleted, then stop processing it.
     return;
   }
-  assertOk(subscriptionOutcome);
+  assertOk(subscriptionOutcome, subscription);
 
-  if (subscription?.status !== 'active') {
+  if (subscription.status !== 'active') {
     // If the subscription has been disabled, then stop processing it.
     return;
   }
 
-  const [readOutcome] = await systemRepo.readResource(resourceType, id);
+  const [readOutcome, currentVersion] = await systemRepo.readResource(resourceType, id);
   if (isGone(readOutcome)) {
     // If the resource was deleted, then stop processing it.
     return;
   }
-  assertOk(readOutcome);
+  assertOk(readOutcome, currentVersion);
 
   const [versionOutcome, resourceVersion] = await systemRepo.readVersion(resourceType, id, versionId);
-  assertOk(versionOutcome);
+  assertOk(versionOutcome, resourceVersion);
 
   const channelType = subscription?.channel?.type;
   if (channelType === 'rest-hook') {
     if (subscription?.channel?.endpoint?.startsWith('Bot/')) {
-      await execBot(job, subscription, resourceVersion as Resource);
+      await execBot(job, subscription, resourceVersion);
     } else {
-      await sendRestHook(job, subscription, resourceVersion as Resource);
+      await sendRestHook(job, subscription, resourceVersion);
     }
   }
 }
@@ -399,9 +399,9 @@ export async function execBot(
 
   // URL should be a Bot reference string
   const [botOutcome, bot] = await systemRepo.readReference<Bot>({ reference: url });
-  assertOk(botOutcome);
+  assertOk(botOutcome, bot);
 
-  const code = bot?.code;
+  const code = bot.code;
   if (!code) {
     logger.debug('Ignore action subscription missing code');
     return;

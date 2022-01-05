@@ -29,8 +29,8 @@ describe('OAuth2 Token', () => {
       secret: randomUUID(),
       redirectUri: 'https://example.com/',
     });
-    assertOk(outcome);
-    client = resource as ClientApplication;
+    assertOk(outcome, resource);
+    client = resource;
   });
 
   afterAll(async () => {
@@ -129,11 +129,11 @@ describe('OAuth2 Token', () => {
       secret: '',
       redirectUri: 'https://example.com',
     });
-    assertOk(outcome);
+    assertOk(outcome, badClient);
 
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',
-      client_id: badClient?.id,
+      client_id: badClient.id,
       client_secret: 'wrong-client-secret',
     });
     expect(res.status).toBe(400);

@@ -226,8 +226,8 @@ export async function getUserMemberships(user: Reference<User>): Promise<Project
       },
     ],
   });
-  assertOk(membershipsOutcome);
-  return (memberships?.entry as BundleEntry<ProjectMembership>[]).map((entry) => entry.resource as ProjectMembership);
+  assertOk(membershipsOutcome, memberships);
+  return (memberships.entry as BundleEntry<ProjectMembership>[]).map((entry) => entry.resource as ProjectMembership);
 }
 
 export async function getAuthTokens(login: Login): Promise<[OperationOutcome, TokenResult | undefined]> {
@@ -316,9 +316,9 @@ async function getUserByEmail(email: string): RepositoryResult<User | undefined>
       },
     ],
   });
-  assertOk(outcome);
+  assertOk(outcome, bundle);
 
-  if (!bundle?.entry || bundle.entry.length === 0) {
+  if (!bundle.entry || bundle.entry.length === 0) {
     return [notFound, undefined];
   }
 
