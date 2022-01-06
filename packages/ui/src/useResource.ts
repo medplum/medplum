@@ -59,7 +59,7 @@ function getInitialResource<T extends Resource>(
   }
 
   if ('resourceType' in value) {
-    return value as T;
+    return value;
   }
 
   if ('reference' in value) {
@@ -67,7 +67,7 @@ function getInitialResource<T extends Resource>(
       return system as T;
     }
 
-    return medplum.getCachedReference(value as Reference<T>);
+    return medplum.getCachedReference(value);
   }
 
   return undefined;
