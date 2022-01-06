@@ -353,22 +353,29 @@ describe('Client', () => {
 
   test('Read cached resource', async () => {
     const client = new MedplumClient(defaultOptions);
-    const result = await client.readCached('Patient', '123');
+    expect(client.getCached('Patient', '123')).toBeUndefined(); // Nothing in the cache
+    const readPromise = client.readCached('Patient', '123');
+    expect(client.getCached('Patient', '123')).toBeUndefined(); // Promise in the cache
+    const result = await readPromise;
     expect(result).toBeDefined();
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
     expect(result.resourceType).toBe('Patient');
     expect(result.id).toBe('123');
+    expect(client.getCached('Patient', '123')).toBe(result); // Value in the cache
   });
 
   test('Read cached reference', async () => {
     const client = new MedplumClient(defaultOptions);
-    const result = await client.readCachedReference({
-      reference: 'Patient/123',
-    });
+    const reference = { reference: 'Patient/123' };
+    expect(client.getCachedReference(reference)).toBeUndefined();
+    const readPromise = client.readCachedReference(reference);
+    expect(client.getCachedReference(reference)).toBeUndefined(); // Promise in the cache
+    const result = await readPromise;
     expect(result).toBeDefined();
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
     expect(result.resourceType).toBe('Patient');
     expect(result.id).toBe('123');
+    expect(client.getCachedReference(reference)).toBe(result);
   });
 
   test('Read cached empty reference', async () => {

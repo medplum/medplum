@@ -1,5 +1,5 @@
 import { formatSearchQuery, parseSearchDefinition, SearchRequest } from '@medplum/core';
-import { Loading, SearchControl, useMedplum } from '@medplum/ui';
+import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -34,7 +34,7 @@ export function HomePage(): JSX.Element {
   }
 
   return (
-    <SearchControl
+    <MemoizedSearchControl
       checkboxesEnabled={true}
       search={search}
       onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}

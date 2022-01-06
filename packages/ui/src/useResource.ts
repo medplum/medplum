@@ -1,3 +1,4 @@
+import { MedplumClient } from '@medplum/core';
 import { Device, Reference, Resource } from '@medplum/fhirtypes';
 import { useEffect, useState } from 'react';
 import { useMedplum } from './MedplumProvider';
@@ -20,17 +21,12 @@ const system: Device = {
  */
 export function useResource<T extends Resource>(value: Reference<T> | T | undefined): T | undefined {
   const medplum = useMedplum();
-  const [resource, setResource] = useState<T | undefined>(value && 'resourceType' in value ? value : undefined);
+  const [resource, setResource] = useState<T | undefined>(getInitialResource(medplum, value));
 
   useEffect(() => {
     let subscribed = true;
 
-    if (value && 'reference' in value) {
-      if (value.reference === 'system') {
-        setResource(system as T);
-        return;
-      }
-
+    if (!resource && value && 'reference' in value) {
       medplum.readCachedReference(value as Reference<T>).then((r) => {
         if (subscribed) {
           setResource(r);
@@ -42,4 +38,37 @@ export function useResource<T extends Resource>(value: Reference<T> | T | undefi
   }, [value]);
 
   return resource;
+}
+
+/**
+ * Returns the initial resource value based on the input value.
+ * If the input value is a resource, returns the resource.
+ * If the input value is a reference to system, returns the system resource.
+ * If the input value is a reference to a resource available in the cache, returns the resource.
+ * Otherwise, returns undefined.
+ * @param medplum The medplum client.
+ * @param value The resource or reference to resource.
+ * @returns An initial resource if available; undefined otherwise.
+ */
+function getInitialResource<T extends Resource>(
+  medplum: MedplumClient,
+  value: Reference<T> | T | undefined
+): T | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  if ('resourceType' in value) {
+    return value;
+  }
+
+  if ('reference' in value) {
+    if (value.reference === 'system') {
+      return system as T;
+    }
+
+    return medplum.getCachedReference(value);
+  }
+
+  return undefined;
 }

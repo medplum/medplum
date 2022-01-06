@@ -403,6 +403,8 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   );
 }
 
+export const MemoizedSearchControl = React.memo(SearchControl);
+
 interface FilterDescriptionProps {
   readonly resourceType: string;
   readonly field: string;

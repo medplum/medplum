@@ -319,6 +319,34 @@ export class MedplumClient extends EventTarget {
     );
   }
 
+  /**
+   * Returns a cached resource if it is available.
+   * @param resourceType The FHIR resource type.
+   * @param id The FHIR resource ID.
+   * @returns The resource if it is available in the cache; undefined otherwise.
+   */
+  getCached<T extends Resource>(resourceType: string, id: string): T | undefined {
+    const cached = this.resourceCache.get(resourceType + '/' + id) as T | undefined;
+    if (cached && !('then' in cached)) {
+      return cached;
+    }
+    return undefined;
+  }
+
+  /**
+   * Returns a cached resource if it is available.
+   * @param resourceType The FHIR resource type.
+   * @param id The FHIR resource ID.
+   * @returns The resource if it is available in the cache; undefined otherwise.
+   */
+  getCachedReference<T extends Resource>(reference: Reference<T>): T | undefined {
+    const cached = this.resourceCache.get(reference.reference as string) as T | undefined;
+    if (cached && !('then' in cached)) {
+      return cached;
+    }
+    return undefined;
+  }
+
   read<T extends Resource>(resourceType: string, id: string): Promise<T> {
     const cacheKey = resourceType + '/' + id;
     const promise = this.get(this.fhirUrl(resourceType, id)).then((resource: T) => {
