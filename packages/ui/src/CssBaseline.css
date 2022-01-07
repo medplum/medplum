@@ -95,6 +95,10 @@ hr {
   text-align: center;
 }
 
+.surface {
+  background-color: var(--medplum-surface);
+}
+
 table {
   width: 100%;
 }

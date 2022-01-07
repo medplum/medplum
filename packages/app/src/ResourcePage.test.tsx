@@ -37,10 +37,11 @@ describe('ResourcePage', () => {
     setup('/Practitioner/123');
 
     await act(async () => {
-      await waitFor(() => screen.getByText('Name'));
+      await waitFor(() => screen.queryAllByText('Name'));
     });
 
-    expect(screen.getByText('Name')).toBeInTheDocument();
+    expect(screen.queryAllByText('Name')[0]).toBeInTheDocument();
+    expect(screen.getByText('Gender')).toBeInTheDocument();
   });
 
   test('Edit tab renders', async () => {

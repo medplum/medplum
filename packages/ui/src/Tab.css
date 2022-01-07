@@ -3,7 +3,7 @@ a.medplum-tab {
   line-height: 50px;
   margin: 0;
   padding: 0 8px;
-  width: 75px;
+  min-width: 75px;
   height: 50px;
   text-align: center;
   cursor: pointer;

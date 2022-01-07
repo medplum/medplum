@@ -1,5 +1,6 @@
+import { getDisplayString, getReferenceString } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
-import { useResource } from '@medplum/ui';
+import { Scrollable, useResource } from '@medplum/ui';
 import React from 'react';
 import './ResourceHeader.css';
 
@@ -15,30 +16,35 @@ export function ResourceHeader(props: ResourceHeaderProps): JSX.Element | null {
 
   const entries: { key: string; value: string | undefined }[] = [{ key: 'Type', value: resource.resourceType }];
 
-  // let identifierArray: Identifier[] | undefined = undefined;
-  // let identifier: Identifier | undefined = undefined;
+  const name = getDisplayString(resource);
+  if (name !== getReferenceString(resource)) {
+    entries.push({ key: 'Name', value: name });
+  }
+
   if ('identifier' in resource) {
     if (Array.isArray(resource.identifier)) {
-      // identifierArray = resource.identifier;
       resource.identifier.forEach((id) => entries.push({ key: id.system as string, value: id.value }));
     } else {
-      // identifier = resource.identifier;
       entries.push({ key: resource.identifier?.system as string, value: resource.identifier?.value });
     }
   }
 
   if (entries.length === 1) {
+    // If no other names or identifiers were found,
+    // then at least show the resource ID
     entries.push({ key: 'ID', value: resource.id });
   }
 
   return (
-    <div className="medplum-resource-header">
-      {entries.map((entry) => (
-        <dl key={entry.key}>
-          <dt>{entry.key}</dt>
-          <dd>{entry.value}</dd>
-        </dl>
-      ))}
-    </div>
+    <Scrollable className="surface" height={50}>
+      <div className="medplum-resource-header">
+        {entries.map((entry) => (
+          <dl key={entry.key}>
+            <dt>{entry.key}</dt>
+            <dd>{entry.value}</dd>
+          </dl>
+        ))}
+      </div>
+    </Scrollable>
   );
 }

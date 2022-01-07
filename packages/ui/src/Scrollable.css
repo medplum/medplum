@@ -1,11 +1,11 @@
 .medplum-scrollable-container {
-  /* background-color: var(--medplum-surface); */
+  position: relative;
   overflow: hidden;
   width: 100%;
 }
 
 .medplum-scrollable-content {
-  /* background-color: var(--medplum-surface); */
+  position: relative;
   width: 100%;
   overflow: auto;
 }

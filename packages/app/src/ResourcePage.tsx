@@ -27,7 +27,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PatientHeader } from './PatientHeader';
 import { ResourceHeader } from './ResourceHeader';
-import { Scrollable } from './Scrollable';
 import { getPatient } from './utils';
 
 function getTabs(resourceType: string, questionnaires?: Bundle): string[] {
@@ -170,13 +169,11 @@ export function ResourcePage(): JSX.Element {
     <>
       {patient && <PatientHeader patient={patient} />}
       {resourceType !== 'Patient' && <ResourceHeader resource={value} />}
-      <Scrollable backgroundColor="white" height={50}>
-        <TabList value={tab || defaultTab} onChange={onTabChange}>
-          {tabs.map((t) => (
-            <Tab key={t} name={t.toLowerCase()} label={t} />
-          ))}
-        </TabList>
-      </Scrollable>
+      <TabList value={tab || defaultTab} onChange={onTabChange}>
+        {tabs.map((t) => (
+          <Tab key={t} name={t.toLowerCase()} label={t} />
+        ))}
+      </TabList>
       <Document>
         {error && <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>}
         <TabSwitch value={tab || defaultTab}>

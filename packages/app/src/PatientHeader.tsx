@@ -1,7 +1,6 @@
 import { Patient, Reference } from '@medplum/fhirtypes';
-import { Avatar, HumanNameDisplay, MedplumLink, useResource } from '@medplum/ui';
+import { Avatar, HumanNameDisplay, MedplumLink, Scrollable, useResource } from '@medplum/ui';
 import React from 'react';
-import { Scrollable } from './Scrollable';
 import './PatientHeader.css';
 
 export interface PatientHeaderProps {
@@ -14,7 +13,7 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
     return null;
   }
   return (
-    <Scrollable backgroundColor="white" height={74}>
+    <Scrollable className="surface" height={74}>
       <div className="medplum-patient-header">
         <Avatar value={patient} size="large" color={getDefaultColor(patient)} />
         <dl>

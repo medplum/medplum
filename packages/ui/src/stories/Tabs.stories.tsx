@@ -32,3 +32,35 @@ export const Basic = (): JSX.Element => {
     </>
   );
 };
+
+export const LongStrings = (): JSX.Element => {
+  const [value, setValue] = useState('item1');
+  return (
+    <>
+      <TabList value={value} onChange={setValue}>
+        <Tab name="item1" label="Timeline" />
+        <Tab name="item2" label="Details" />
+        <Tab name="item3" label="Edit" />
+        <Tab name="item4" label="History" />
+        <Tab name="item5" label="Blame" />
+        <Tab name="item6" label="JSON" />
+        <Tab name="item7" label="Apps" />
+        <Tab name="item8" label="KitchenSink" />
+      </TabList>
+      <Document>
+        <TabSwitch value={value}>
+          <TabPanel name="item1">This is item #1!</TabPanel>
+          <TabPanel name="item2">
+            <strong>Panel number two</strong>
+          </TabPanel>
+          <TabPanel name="item3">Three</TabPanel>
+          <TabPanel name="item4">item4</TabPanel>
+          <TabPanel name="item5">item5</TabPanel>
+          <TabPanel name="item6">item6</TabPanel>
+          <TabPanel name="item7">item7</TabPanel>
+          <TabPanel name="item8">item8</TabPanel>
+        </TabSwitch>
+      </Document>
+    </>
+  );
+};
