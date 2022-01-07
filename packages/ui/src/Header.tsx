@@ -1,15 +1,15 @@
 import { getReferenceString, ProfileResource } from '@medplum/core';
 import { HumanName, Patient } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
-import './Header.css';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { MedplumLink } from './MedplumLink';
 import { useMedplumContext } from './MedplumProvider';
 import { Popup } from './Popup';
 import { ResourceInput } from './ResourceInput';
+import './Header.css';
 
 export interface HeaderProps {
   onLogo?: () => void;
@@ -30,6 +30,7 @@ export interface SidebarLink {
 
 export function Header(props: HeaderProps): JSX.Element {
   const navigate = useNavigate();
+  const location = useLocation();
   const context = useMedplumContext();
   const medplum = context.medplum;
   const logins = medplum.getLogins();
@@ -59,6 +60,7 @@ export function Header(props: HeaderProps): JSX.Element {
           </MedplumLink>
           {context.profile && (
             <ResourceInput
+              key={`header-input-${location.pathname}`}
               resourceType="Patient"
               name="search"
               className="medplum-nav-search-container"

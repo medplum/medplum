@@ -110,6 +110,7 @@ div.medplum-nav-search-container {
   border: none;
   box-shadow: none;
   background: transparent;
+  height: 28px;
 }
 
 .medplum-nav-search-container > ul > li > input::placeholder {
