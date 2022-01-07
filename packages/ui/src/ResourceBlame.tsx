@@ -59,33 +59,37 @@ function getVersionUrl(resource: Resource, versionId: string): string {
   return `/${resource.resourceType}/${resource.id}/_history/${versionId}`;
 }
 
-function getTimeString(lastUpdated: string): string {
-  const seconds = (Date.now() - Date.parse(lastUpdated)) / 1000;
+export function getTimeString(lastUpdated: string): string {
+  const seconds = Math.floor((Date.now() - Date.parse(lastUpdated)) / 1000);
 
-  const years = seconds / 31536000;
-  if (years > 1) {
-    return Math.floor(years) + ' years ago';
+  const years = Math.floor(seconds / 31536000);
+  if (years > 0) {
+    return pluralizeTime(years, 'year');
   }
 
-  const months = seconds / 2592000;
-  if (months > 1) {
-    return Math.floor(months) + ' months ago';
+  const months = Math.floor(seconds / 2592000);
+  if (months > 0) {
+    return pluralizeTime(months, 'month');
   }
 
-  const days = seconds / 86400;
-  if (days > 1) {
-    return Math.floor(days) + ' days ago';
+  const days = Math.floor(seconds / 86400);
+  if (days > 0) {
+    return pluralizeTime(days, 'day');
   }
 
-  const hours = seconds / 3600;
-  if (hours > 1) {
-    return Math.floor(hours) + ' hours ago';
+  const hours = Math.floor(seconds / 3600);
+  if (hours > 0) {
+    return pluralizeTime(hours, 'hour');
   }
 
-  const minutes = seconds / 60;
-  if (minutes > 1) {
-    return Math.floor(minutes) + ' minutes ago';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes > 0) {
+    return pluralizeTime(minutes, 'minute');
   }
 
-  return Math.floor(seconds) + ' seconds ago';
+  return pluralizeTime(seconds, 'second');
+}
+
+function pluralizeTime(count: number, noun: string): string {
+  return `${count} ${count === 1 ? noun : noun + 's'} ago`;
 }
