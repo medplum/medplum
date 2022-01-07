@@ -2,6 +2,7 @@ import { formatSearchQuery, parseSearchDefinition, SearchRequest } from '@medplu
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Scrollable } from './Scrollable';
 
 export function HomePage(): JSX.Element {
   const medplum = useMedplum();
@@ -34,36 +35,38 @@ export function HomePage(): JSX.Element {
   }
 
   return (
-    <MemoizedSearchControl
-      checkboxesEnabled={true}
-      search={search}
-      onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
-      onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
-      onChange={(e) => {
-        if (e.definition.resourceType && e.definition.fields && e.definition.fields.length > 0) {
-          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
-        }
-      }}
-      onNew={() => {
-        navigate(`/${search.resourceType}/new`);
-      }}
-      onDelete={(ids: string[]) => {
-        if (window.confirm('Are you sure you want to delete these resources?')) {
-          medplum
-            .post('fhir/R4', {
-              resourceType: 'Bundle',
-              type: 'batch',
-              entry: ids.map((id) => ({
-                request: {
-                  method: 'DELETE',
-                  url: `${search.resourceType}/${id}`,
-                },
-              })),
-            })
-            .then(() => setSearch({ ...search }));
-        }
-      }}
-    />
+    <Scrollable height="100%">
+      <MemoizedSearchControl
+        checkboxesEnabled={true}
+        search={search}
+        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+        onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
+        onChange={(e) => {
+          if (e.definition.resourceType && e.definition.fields && e.definition.fields.length > 0) {
+            navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+          }
+        }}
+        onNew={() => {
+          navigate(`/${search.resourceType}/new`);
+        }}
+        onDelete={(ids: string[]) => {
+          if (window.confirm('Are you sure you want to delete these resources?')) {
+            medplum
+              .post('fhir/R4', {
+                resourceType: 'Bundle',
+                type: 'batch',
+                entry: ids.map((id) => ({
+                  request: {
+                    method: 'DELETE',
+                    url: `${search.resourceType}/${id}`,
+                  },
+                })),
+              })
+              .then(() => setSearch({ ...search }));
+          }
+        }}
+      />
+    </Scrollable>
   );
 }
 
