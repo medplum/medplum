@@ -11,6 +11,7 @@ import { Document, Loading, QuestionnaireForm, TitleBar, useMedplum } from '@med
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { PatientHeader } from './PatientHeader';
+import { ResourceHeader } from './ResourceHeader';
 import { getPatient } from './utils';
 
 export function FormPage(): JSX.Element {
@@ -81,11 +82,7 @@ export function FormPage(): JSX.Element {
   return (
     <>
       {patient && <PatientHeader patient={patient} />}
-      {subject && subject.resourceType !== 'Patient' && (
-        <TitleBar>
-          <h1>{getDisplayString(subject)}</h1>
-        </TitleBar>
-      )}
+      {subject && subject.resourceType !== 'Patient' && <ResourceHeader resource={subject} />}
       <TitleBar>
         <h1>{getDisplayString(questionnaire)}</h1>
       </TitleBar>

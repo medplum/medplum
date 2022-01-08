@@ -1,5 +1,5 @@
 import { Patient, Reference } from '@medplum/fhirtypes';
-import { Avatar, HumanNameDisplay, MedplumLink, useResource } from '@medplum/ui';
+import { Avatar, HumanNameDisplay, MedplumLink, Scrollable, useResource } from '@medplum/ui';
 import React from 'react';
 import './PatientHeader.css';
 
@@ -13,41 +13,43 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
     return null;
   }
   return (
-    <div className="medplum-patient-header">
-      <Avatar value={patient} size="large" color={getDefaultColor(patient)} />
-      <dl>
-        <dt>Name</dt>
-        <dd>
-          <MedplumLink to={patient}>
-            <HumanNameDisplay value={patient.name?.[0]} options={{ use: false }} />
-          </MedplumLink>
-        </dd>
-      </dl>
-      {patient.birthDate && (
-        <>
-          <dl>
-            <dt>DoB</dt>
-            <dd>{patient.birthDate}</dd>
-          </dl>
-          <dl>
-            <dt>Age</dt>
-            <dd>{getAge(patient)}</dd>
-          </dl>
-        </>
-      )}
-      {patient.gender && (
+    <Scrollable className="surface" height={74}>
+      <div className="medplum-patient-header">
+        <Avatar value={patient} size="large" color={getDefaultColor(patient)} />
         <dl>
-          <dt>Gender</dt>
-          <dd>{patient.gender}</dd>
+          <dt>Name</dt>
+          <dd>
+            <MedplumLink to={patient}>
+              <HumanNameDisplay value={patient.name?.[0]} options={{ use: false }} />
+            </MedplumLink>
+          </dd>
         </dl>
-      )}
-      {patient.identifier?.map((identifier) => (
-        <dl key={identifier.system}>
-          <dt>{identifier.system}</dt>
-          <dd>{identifier.value}</dd>
-        </dl>
-      ))}
-    </div>
+        {patient.birthDate && (
+          <>
+            <dl>
+              <dt>DoB</dt>
+              <dd>{patient.birthDate}</dd>
+            </dl>
+            <dl>
+              <dt>Age</dt>
+              <dd>{getAge(patient)}</dd>
+            </dl>
+          </>
+        )}
+        {patient.gender && (
+          <dl>
+            <dt>Gender</dt>
+            <dd>{patient.gender}</dd>
+          </dl>
+        )}
+        {patient.identifier?.map((identifier) => (
+          <dl key={identifier.system}>
+            <dt>{identifier.system}</dt>
+            <dd>{identifier.value}</dd>
+          </dl>
+        ))}
+      </div>
+    </Scrollable>
   );
 }
 

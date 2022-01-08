@@ -1,4 +1,4 @@
-.medplum-patient-header {
+.medplum-resource-header {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -7,22 +7,18 @@
   overflow: auto;
 }
 
-.medplum-patient-header > .medplum-avatar {
-  margin: 5px;
+.medplum-resource-header > dl {
+  margin: 5px 22px 5px 8px;
 }
 
-.medplum-patient-header > dl {
-  margin: 5px 10px 5px 20px;
-}
-
-.medplum-patient-header dt {
+.medplum-resource-header dt {
   color: #444;
   text-transform: uppercase;
   font-size: 10px;
   white-space: nowrap;
 }
 
-.medplum-patient-header dd {
+.medplum-resource-header dd {
   font-size: 16px;
   font-weight: bold;
   white-space: nowrap;

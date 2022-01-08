@@ -1,4 +1,4 @@
-import { getDisplayString, getReferenceString, stringify } from '@medplum/core';
+import { getReferenceString, stringify } from '@medplum/core';
 import { Bot, Bundle, DiagnosticReport, OperationOutcome, Questionnaire, Resource } from '@medplum/fhirtypes';
 import {
   Button,
@@ -21,12 +21,12 @@ import {
   TabList,
   TabPanel,
   TabSwitch,
-  TitleBar,
   useMedplum,
 } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PatientHeader } from './PatientHeader';
+import { ResourceHeader } from './ResourceHeader';
 import { getPatient } from './utils';
 
 function getTabs(resourceType: string, questionnaires?: Bundle): string[] {
@@ -168,11 +168,7 @@ export function ResourcePage(): JSX.Element {
   return (
     <>
       {patient && <PatientHeader patient={patient} />}
-      {resourceType !== 'Patient' && (
-        <TitleBar>
-          <h1>{value ? getDisplayString(value) : `${resourceType} ${id}`}</h1>
-        </TitleBar>
-      )}
+      {resourceType !== 'Patient' && <ResourceHeader resource={value} />}
       <TabList value={tab || defaultTab} onChange={onTabChange}>
         {tabs.map((t) => (
           <Tab key={t} name={t.toLowerCase()} label={t} />

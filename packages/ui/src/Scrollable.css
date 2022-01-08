@@ -1,0 +1,11 @@
+.medplum-scrollable-container {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.medplum-scrollable-content {
+  position: relative;
+  width: 100%;
+  overflow: auto;
+}

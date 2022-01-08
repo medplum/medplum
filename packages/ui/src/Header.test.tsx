@@ -5,6 +5,13 @@ import { MemoryRouter } from 'react-router-dom';
 import { Header, HeaderProps } from './Header';
 import { MedplumProvider } from './MedplumProvider';
 
+const mockNavigate = jest.fn();
+
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useNavigate: () => mockNavigate,
+}));
+
 const medplum = new MockClient();
 
 function setup(props?: HeaderProps): void {
@@ -20,6 +27,7 @@ function setup(props?: HeaderProps): void {
 describe('Header', () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    mockNavigate.mockClear();
   });
 
   afterEach(async () => {
@@ -71,7 +79,7 @@ describe('Header', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Homer Simpson')).toBeDefined();
+    expect(mockNavigate).toHaveBeenCalledWith('/Patient/123');
   });
 
   test('Profile menu', async () => {
