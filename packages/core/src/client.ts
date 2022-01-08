@@ -153,8 +153,6 @@ export class MedplumClient extends EventTarget {
   private readonly logoutUrl: string;
   private readonly onUnauthenticated?: () => void;
   private refreshPromise?: Promise<any>;
-  private activeLogin?: LoginState;
-  private profile?: ProfileResource;
   private loading: boolean;
 
   constructor(options: MedplumClientOptions) {
@@ -179,8 +177,7 @@ export class MedplumClient extends EventTarget {
     this.tokenUrl = options.tokenUrl || this.baseUrl + 'oauth2/token';
     this.logoutUrl = options.logoutUrl || this.baseUrl + 'oauth2/logout';
     this.onUnauthenticated = options.onUnauthenticated;
-    this.activeLogin = this.storage.getObject<LoginState>('activeLogin');
-    if (!this.activeLogin?.profile?.reference) {
+    if (!this.getActiveLogin()?.profile?.reference) {
       this.clear();
     }
     this.loading = false;
@@ -194,8 +191,6 @@ export class MedplumClient extends EventTarget {
     this.storage.clear();
     this.schema.clear();
     this.resourceCache.clear();
-    this.activeLogin = undefined;
-    this.profile = undefined;
     this.dispatchEvent({ type: 'change' });
   }
 
@@ -500,11 +495,10 @@ export class MedplumClient extends EventTarget {
   }
 
   getActiveLogin(): LoginState | undefined {
-    return this.activeLogin;
+    return this.storage.getObject('activeLogin');
   }
 
   async setActiveLogin(login: LoginState): Promise<void> {
-    this.activeLogin = login;
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
     this.resourceCache.clear();
@@ -526,16 +520,15 @@ export class MedplumClient extends EventTarget {
     const reference = this.getActiveLogin()?.profile;
     if (reference?.reference) {
       this.loading = true;
-      this.profile = await this.readCachedReference(reference);
+      this.storage.setObject('profile', await this.readCachedReference(reference));
       this.loading = false;
       this.dispatchEvent({ type: 'change' });
     }
-
-    return this.profile;
+    return this.getProfile();
   }
 
   getProfile(): ProfileResource | undefined {
-    return this.profile;
+    return this.storage.getObject('profile');
   }
 
   isLoading(): boolean {
@@ -744,7 +737,7 @@ export class MedplumClient extends EventTarget {
         return response.json();
       })
       .then((tokens) => this.verifyTokens(tokens))
-      .then(() => this.profile as ProfileResource);
+      .then(() => this.getProfile() as ProfileResource);
   }
 
   /**

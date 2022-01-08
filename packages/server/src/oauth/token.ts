@@ -4,7 +4,7 @@ import { createHash } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
 import { systemRepo } from '../fhir';
-import { generateAccessToken, MedplumRefreshTokenClaims, verifyJwt } from './keys';
+import { generateAccessToken, generateSecret, MedplumRefreshTokenClaims, verifyJwt } from './keys';
 import { getAuthTokens, getReferenceIdPart, revokeLogin } from './utils';
 
 /**
@@ -226,7 +226,15 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
     }
   }
 
-  const [tokenOutcome, token] = await getAuthTokens(login);
+  // Refresh token rotation
+  // Generate a new refresh secret and update the login
+  const [updateOutcome, updatedLogin] = await systemRepo.updateResource<Login>({
+    ...login,
+    refreshSecret: generateSecret(48),
+  });
+  assertOk(updateOutcome, updatedLogin);
+
+  const [tokenOutcome, token] = await getAuthTokens(updatedLogin);
   if (!isOk(tokenOutcome)) {
     return sendTokenError(res, 'invalid_request', 'Invalid token');
   }
