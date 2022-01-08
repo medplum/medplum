@@ -1,11 +1,11 @@
-import { Bundle } from '@medplum/fhirtypes';
+import { Bundle, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
-import { Avatar } from './Avatar';
-import { DateTimeDisplay } from './DateTimeDisplay';
+import { InputRow } from './InputRow';
+import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
-import { ResourceName } from './ResourceName';
-import { blame } from './utils/blame';
+import { ResourceBadge } from './ResourceBadge';
 import './ResourceBlame.css';
+import { blame } from './utils/blame';
 
 export interface ResourceBlameProps {
   history?: Bundle;
@@ -27,6 +27,7 @@ export function ResourceBlame(props: ResourceBlameProps): JSX.Element {
     return <div>Loading...</div>;
   }
 
+  const resource = value.entry?.[0]?.resource as Resource;
   const table = blame(value);
   return (
     <table className="medplum-blame">
@@ -35,12 +36,12 @@ export function ResourceBlame(props: ResourceBlameProps): JSX.Element {
           <tr key={'row-' + index} className={row.span > 0 ? 'start-row' : 'normal-row'}>
             {row.span > 0 && (
               <td className="details" rowSpan={row.span}>
-                <Avatar size="xsmall" value={row.meta.author} />
-                <ResourceName value={row.meta.author} link={true} />
-                <br />
-                <DateTimeDisplay value={row.meta.lastUpdated} />
-                <br />
-                <span>{row.meta.versionId}</span>
+                <InputRow justifyContent="space-between">
+                  <ResourceBadge value={row.meta.author} size="xsmall" link={true} />
+                  <MedplumLink to={getVersionUrl(resource, row.meta.versionId as string)}>
+                    {getTimeString(row.meta.lastUpdated as string)}
+                  </MedplumLink>
+                </InputRow>
               </td>
             )}
             <td className="line-number">{index + 1}</td>
@@ -52,4 +53,43 @@ export function ResourceBlame(props: ResourceBlameProps): JSX.Element {
       </tbody>
     </table>
   );
+}
+
+function getVersionUrl(resource: Resource, versionId: string): string {
+  return `/${resource.resourceType}/${resource.id}/_history/${versionId}`;
+}
+
+export function getTimeString(lastUpdated: string): string {
+  const seconds = Math.floor((Date.now() - Date.parse(lastUpdated)) / 1000);
+
+  const years = Math.floor(seconds / 31536000);
+  if (years > 0) {
+    return pluralizeTime(years, 'year');
+  }
+
+  const months = Math.floor(seconds / 2592000);
+  if (months > 0) {
+    return pluralizeTime(months, 'month');
+  }
+
+  const days = Math.floor(seconds / 86400);
+  if (days > 0) {
+    return pluralizeTime(days, 'day');
+  }
+
+  const hours = Math.floor(seconds / 3600);
+  if (hours > 0) {
+    return pluralizeTime(hours, 'hour');
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  if (minutes > 0) {
+    return pluralizeTime(minutes, 'minute');
+  }
+
+  return pluralizeTime(seconds, 'second');
+}
+
+function pluralizeTime(count: number, noun: string): string {
+  return `${count} ${count === 1 ? noun : noun + 's'} ago`;
 }
