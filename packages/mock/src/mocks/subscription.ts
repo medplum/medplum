@@ -1,5 +1,4 @@
 import { AuditEvent, Bundle, Subscription } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 
 export const ExampleSubscription: Subscription = {
   resourceType: 'Subscription',
@@ -21,10 +20,10 @@ export const ExampleSubscriptionHistory: Bundle<Subscription> = {
 
 export const ExampleAuditEvent: AuditEvent = {
   resourceType: 'AuditEvent',
-  id: randomUUID(),
+  id: '123',
   meta: {
     lastUpdated: new Date().toISOString(),
-    versionId: randomUUID(),
+    versionId: '456',
     author: {
       reference: 'Practitioner/123',
     },

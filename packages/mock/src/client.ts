@@ -1,6 +1,5 @@
 import { allOk, getStatus, LoginState, MedplumClient, notFound, ProfileResource } from '@medplum/core';
 import { Bundle, BundleEntry, Communication, Media, Practitioner } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import {
   DifferentOrganization,
   DrAliceSmith,
@@ -40,7 +39,7 @@ import {
 
 const newComment: Communication = {
   resourceType: 'Communication',
-  id: randomUUID(),
+  id: 'new-comment',
   payload: [
     {
       contentString: 'Test comment',
@@ -50,7 +49,7 @@ const newComment: Communication = {
 
 const newMedia: Media = {
   resourceType: 'Media',
-  id: randomUUID(),
+  id: 'new-media',
   content: {
     contentType: 'text/plain',
     url: 'https://example.com/test2.txt',

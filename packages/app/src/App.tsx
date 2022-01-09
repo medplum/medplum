@@ -1,11 +1,13 @@
 import { getReferenceString } from '@medplum/core';
 import { CssBaseline, DefaultTheme, FooterLinks, Header, Loading, useMedplum, useMedplumProfile } from '@medplum/ui';
+import '@medplum/ui/dist/esm/index.css';
 import React from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 import { EditMembershipPage } from './admin/EditMembershipPage';
 import { InvitePage } from './admin/InvitePage';
 import { ProjectPage } from './admin/ProjectPage';
 import { SuperAdminPage } from './admin/SuperAdminPage';
+import './App.css';
 import { BatchPage } from './BatchPage';
 import { ChangePasswordPage } from './ChangePasswordPage';
 import { CreateResourcePage } from './CreateResourcePage';
@@ -17,7 +19,6 @@ import { ResourcePage } from './ResourcePage';
 import { ResourceVersionPage } from './ResourceVersionPage';
 import { SetPasswordPage } from './SetPasswordPage';
 import { SignInPage } from './SignInPage';
-import './App.css';
 
 export function App(): JSX.Element {
   const navigate = useNavigate();
