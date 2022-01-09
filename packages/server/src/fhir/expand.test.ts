@@ -59,4 +59,26 @@ describe('Expand', () => {
     expect(res.body.expansion.offset).toBe(1);
     expect(res.body.expansion.contains.length).toBe(1);
   });
+
+  test('Resource types', async () => {
+    const system = 'http://hl7.org/fhir/ValueSet/resource-types|4.0.1';
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(system)}&filter=Patient`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      resourceType: 'ValueSet',
+      url: 'http://hl7.org/fhir/ValueSet/resource-types',
+      expansion: {
+        offset: 0,
+        contains: [
+          {
+            system: 'http://hl7.org/fhir/ValueSet/resource-types',
+            code: 'Patient',
+            display: 'Patient',
+          },
+        ],
+      },
+    });
+  });
 });
