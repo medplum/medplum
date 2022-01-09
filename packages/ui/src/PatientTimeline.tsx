@@ -10,7 +10,7 @@ export interface PatientTimelineProps {
 const searches = [
   '$/_history',
   'Communication?subject=$',
-  'Device?subject=$',
+  'Device?patient=$',
   'DeviceRequest?patient=$',
   'DiagnosticReport?subject=$',
   'Media?subject=$',
