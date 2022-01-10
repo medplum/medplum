@@ -1,15 +1,9 @@
 ---
-slug: learning-fhir-quickly
-title: Learning FHIR Quickly
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [fhir, medplum, devtools, infrastructure]
 ---
 
-## Learning FHIR Quickly
+# Learning FHIR Quickly
 
 You can use Medplum as a tool to help you learn FHIR quickly.
 
