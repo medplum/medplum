@@ -4,6 +4,10 @@ sidebar_position: 1
 
 # Hello World Part 1
 
+Welcome to Part 1 of the Medplum Hello World series.
+
+In Part 1, we will go through the basics of registering a new account and creating a minimal Medplum application.
+
 ## Register for a Medplum account
 
 Open the Medplum register page in your browser: https://app.medplum.com/register

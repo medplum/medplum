@@ -1,11 +1,5 @@
 ---
-slug: introducing-medplum
-title: Introducing Medplum
-authors:
-  name: Cody Ebberson
-  title: Medplum Core Team
-  url: https://github.com/codyebberson
-  image_url: https://github.com/codyebberson.png
+authors: cody
 tags: [fhir, medplum, devtools, infrastructure]
 ---
 
