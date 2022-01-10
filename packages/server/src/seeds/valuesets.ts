@@ -1,5 +1,13 @@
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, CodeSystem, CodeSystemConcept, ValueSet } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  BundleEntry,
+  CodeSystem,
+  CodeSystemConcept,
+  ValueSet,
+  ValueSetComposeInclude,
+  ValueSetComposeIncludeConcept,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Pool } from 'pg';
 import { getClient } from '../database';
@@ -14,17 +22,17 @@ export async function createValueSetElements(): Promise<void> {
 
   const bundle = readJson('fhir/r4/valuesets.json') as Bundle<CodeSystem | ValueSet>;
 
-  new ValueSystemImporter(client, bundle).importValueSetEleemnts();
+  new ValueSystemImporter(client, bundle).importValueSetElements();
 }
 
 class ValueSystemImporter {
   constructor(private client: Pool, private bundle: Bundle<CodeSystem | ValueSet>) {}
 
-  async importValueSetEleemnts(): Promise<void> {
+  async importValueSetElements(): Promise<void> {
     for (const entry of this.bundle.entry as BundleEntry<CodeSystem | ValueSet>[]) {
       const resource = entry.resource;
       if (resource) {
-        this.importResource(resource);
+        await this.importResource(resource);
       }
     }
 
@@ -46,7 +54,7 @@ class ValueSystemImporter {
    */
   private async importCodeSystem(codeSystem: CodeSystem): Promise<void> {
     if (codeSystem.valueSet) {
-      this.importCodeSystemAs(codeSystem, codeSystem.valueSet);
+      await this.importCodeSystemAs(codeSystem, codeSystem.valueSet);
     }
   }
 
@@ -59,7 +67,7 @@ class ValueSystemImporter {
   private async importCodeSystemAs(codeSystem: CodeSystem, system: string): Promise<void> {
     if (codeSystem.concept) {
       for (const concept of codeSystem.concept) {
-        this.importCodeSystemConcept(system, concept);
+        await this.importCodeSystemConcept(system, concept);
       }
     }
   }
@@ -87,21 +95,38 @@ class ValueSystemImporter {
    * @param valueSet The FHIR ValueSet resource.
    */
   private async importValueSet(valueSet: ValueSet): Promise<void> {
-    if (!valueSet.url || !valueSet.compose?.include) {
-      return;
+    if (valueSet.url && valueSet.compose?.include) {
+      for (const include of valueSet.compose.include) {
+        await this.importValueSetInclude(valueSet.url, include);
+      }
     }
-    for (const include of valueSet.compose.include) {
-      if (include.concept) {
-        for (const concept of include.concept) {
-          if (concept.code && concept.display) {
-            await this.insertValueSetElement(valueSet.url, concept.code, concept.display);
-          }
-        }
-      } else if (include.system) {
-        const includedResource = this.getByUrl(include.system);
-        if (includedResource) {
-          this.importCodeSystemAs(includedResource, valueSet.url);
-        }
+  }
+
+  /**
+   * Imports one set of ValueSet included elements.
+   * @param system The ValueSet system.
+   * @param include The included codes or system references.
+   */
+  private async importValueSetInclude(system: string, include: ValueSetComposeInclude): Promise<void> {
+    if (include.concept) {
+      await this.importValueSetConcepts(system, include.concept);
+    } else if (include.system) {
+      const includedResource = this.getByUrl(include.system);
+      if (includedResource) {
+        await this.importCodeSystemAs(includedResource, system);
+      }
+    }
+  }
+
+  /**
+   * Imports a collection of ValueSet concepts into the system.
+   * @param system The ValueSet system.
+   * @param concepts The included concepts.
+   */
+  private async importValueSetConcepts(system: string, concepts: ValueSetComposeIncludeConcept[]): Promise<void> {
+    for (const concept of concepts) {
+      if (concept.code && concept.display) {
+        await this.insertValueSetElement(system, concept.code, concept.display);
       }
     }
   }
