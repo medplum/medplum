@@ -212,10 +212,10 @@ describe('ResourcePage', () => {
     setup('/Questionnaire/123/builder');
 
     await act(async () => {
-      await waitFor(() => screen.getByText('OK'));
+      await waitFor(() => screen.getByText('Save'));
     });
 
-    expect(screen.getByText('OK')).toBeDefined();
+    expect(screen.getByText('Save')).toBeDefined();
   });
 
   test('Questionnaire preview', async () => {
@@ -226,6 +226,10 @@ describe('ResourcePage', () => {
     });
 
     expect(screen.getByText('Preview')).toBeInTheDocument();
+
+    window.alert = jest.fn();
+    fireEvent.click(screen.getByText('OK'));
+    expect(window.alert).toHaveBeenCalledWith('You submitted the preview');
   });
 
   test('Bot editor', async () => {

@@ -296,12 +296,17 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
       return <QuestionnaireBuilder questionnaire={props.resource as Questionnaire} onSubmit={props.onSubmit} />;
     case 'preview':
       return (
-        <QuestionnaireForm
-          questionnaire={props.resource as Questionnaire}
-          onSubmit={(formData) => {
-            console.log('formData', formData);
-          }}
-        />
+        <>
+          <p className="medplum-alert">
+            This is just a preview! Access your form here:
+            <br />
+            <a href={`/forms/${props.resource.id}`}>{`/forms/${props.resource.id}`}</a>
+          </p>
+          <QuestionnaireForm
+            questionnaire={props.resource as Questionnaire}
+            onSubmit={() => alert('You submitted the preview')}
+          />
+        </>
       );
     case 'report':
       return <DiagnosticReportDisplay value={props.resource as DiagnosticReport} />;

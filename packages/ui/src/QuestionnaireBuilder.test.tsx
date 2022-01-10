@@ -114,10 +114,10 @@ describe('QuestionnaireBuilder', () => {
       onSubmit,
     });
 
-    expect(screen.getByText('OK')).toBeDefined();
+    expect(screen.getByText('Save')).toBeDefined();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Save'));
     });
 
     expect(onSubmit).toBeCalled();
@@ -148,10 +148,10 @@ describe('QuestionnaireBuilder', () => {
       onSubmit,
     });
 
-    expect(screen.getByText('OK')).toBeDefined();
+    expect(screen.getByText('Save')).toBeDefined();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Save'));
     });
 
     expect(onSubmit).toBeCalled();
@@ -191,7 +191,7 @@ describe('QuestionnaireBuilder', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Save'));
     });
 
     expect(onSubmit).toBeCalled();
@@ -234,7 +234,7 @@ describe('QuestionnaireBuilder', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Save'));
     });
 
     expect(onSubmit).toBeCalled();
@@ -286,7 +286,7 @@ describe('QuestionnaireBuilder', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Save'));
     });
 
     expect(onSubmit).toBeCalled();
@@ -329,7 +329,7 @@ describe('QuestionnaireBuilder', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Save'));
     });
 
     expect(onSubmit).toBeCalled();
@@ -377,7 +377,7 @@ describe('QuestionnaireBuilder', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Save'));
     });
 
     expect(onSubmit).toBeCalled();
@@ -416,7 +416,7 @@ describe('QuestionnaireBuilder', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Save'));
     });
 
     expect(onSubmit).toBeCalled();
@@ -500,7 +500,7 @@ describe('QuestionnaireBuilder', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Save'));
     });
 
     expect(onSubmit).toBeCalled();
@@ -564,7 +564,7 @@ describe('QuestionnaireBuilder', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Save'));
     });
 
     expect(onSubmit).toBeCalled();

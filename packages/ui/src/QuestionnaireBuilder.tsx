@@ -64,7 +64,7 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
           onChange={setValue}
         />
         <Button type="submit" size="large">
-          OK
+          Save
         </Button>
       </Form>
     </div>
