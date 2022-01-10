@@ -304,7 +304,7 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
           </p>
           <QuestionnaireForm
             questionnaire={props.resource as Questionnaire}
-            onSubmit={() => alert('You submited the preview')}
+            onSubmit={() => alert('You submitted the preview')}
           />
         </>
       );
