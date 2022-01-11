@@ -3,9 +3,9 @@ authors: cody
 tags: [fhir, medplum, devtools, infrastructure]
 ---
 
-## Introducing Medplum
+# Introducing Medplum
 
-### Developer infrastructure and tools for healthcare apps
+## Developer infrastructure and tools for healthcare apps
 
 Healthcare applications are famous for being complex, rigid and hideous, and we on the Medplum team have seen many up close and witnessed the problems firsthand. It's easy to dismiss the hideous phenomenon as lazy app developers or poor product management, but in reality, it's not that straightforward.
 

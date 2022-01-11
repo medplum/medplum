@@ -1,8 +1,8 @@
 ---
-sidebar_position: 1
+sidebar_position: 2
 ---
 
-# Authenticating to the service
+# Authentication
 
 The Medplum API uses standard OAuth2/OpenID authentication. "Client Credentials Flow" is recommended for machine-to-machine access.
 
