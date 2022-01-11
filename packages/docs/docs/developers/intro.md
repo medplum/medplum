@@ -1,0 +1,18 @@
+---
+sidebar_position: 1
+---
+
+# Intro
+
+These are instructions for developers who wish to contribute to the Medplum project.  If you want to *use* the Medplum project, check out the [App](/) or [API](/) docs instead.
+
+There are two methods for running and developing locally:
+
+1. [Dev on the host](./dev-on-host) including running Postgres and Redis on the host
+2. [Dev on docker](./dev-on-docker) without running any services directly on the host
+
+Which one should you choose?
+
+The core development team all uses option 1, dev on the host, as it provides more control, better debugging, and better runtime performance.
+
+If you are just getting started, and want to experiment quickly, then using Docker will get you up and running faster.
