@@ -1,5 +1,5 @@
 import { getDisplayString, getReferenceString } from '@medplum/core';
-import { Reference, Resource } from '@medplum/fhirtypes';
+import { Identifier, Reference, Resource } from '@medplum/fhirtypes';
 import { Scrollable, useResource } from '@medplum/ui';
 import React from 'react';
 import './ResourceHeader.css';
@@ -16,6 +16,18 @@ export function ResourceHeader(props: ResourceHeaderProps): JSX.Element | null {
 
   const entries: { key: string; value: string | undefined }[] = [{ key: 'Type', value: resource.resourceType }];
 
+  function addEntry(key: string | undefined, value: string | undefined): void {
+    if (key && value) {
+      entries.push({ key, value });
+    }
+  }
+
+  function addIdentifier(identifier: Identifier | undefined): void {
+    if (identifier) {
+      addEntry(identifier.system, identifier.value);
+    }
+  }
+
   const name = getDisplayString(resource);
   if (name !== getReferenceString(resource)) {
     entries.push({ key: 'Name', value: name });
@@ -23,9 +35,9 @@ export function ResourceHeader(props: ResourceHeaderProps): JSX.Element | null {
 
   if ('identifier' in resource) {
     if (Array.isArray(resource.identifier)) {
-      resource.identifier.forEach((id) => entries.push({ key: id.system as string, value: id.value }));
+      resource.identifier.forEach(addIdentifier);
     } else {
-      entries.push({ key: resource.identifier?.system as string, value: resource.identifier?.value });
+      addIdentifier(resource.identifier);
     }
   }
 
