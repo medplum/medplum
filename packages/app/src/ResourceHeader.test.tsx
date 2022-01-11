@@ -1,4 +1,4 @@
-import { Reference, Resource } from '@medplum/fhirtypes';
+import { Identifier, Reference, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/ui';
 import { act, render, screen, waitFor } from '@testing-library/react';
@@ -78,5 +78,37 @@ describe('ResourceHeader', () => {
     });
 
     expect(screen.getByText('Test Organization')).toBeInTheDocument();
+  });
+
+  test('Handles null identifier', async () => {
+    setup({
+      resourceType: 'ServiceRequest',
+      id: '123',
+      identifier: [null as unknown as Identifier],
+    });
+
+    expect(screen.getByText('123')).toBeInTheDocument();
+  });
+
+  test('Handles missing identifier system', async () => {
+    setup({
+      resourceType: 'ServiceRequest',
+      id: '123',
+      identifier: [{ value: 'abc' }],
+    });
+
+    expect(screen.getByText('123')).toBeInTheDocument();
+    expect(screen.queryByText('abc')).not.toBeInTheDocument();
+  });
+
+  test('Handles missing identifier value', async () => {
+    setup({
+      resourceType: 'ServiceRequest',
+      id: '123',
+      identifier: [{ system: 'abc' }],
+    });
+
+    expect(screen.getByText('123')).toBeInTheDocument();
+    expect(screen.queryByText('abc')).not.toBeInTheDocument();
   });
 });
