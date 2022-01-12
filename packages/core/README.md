@@ -48,10 +48,12 @@ Before you begin
 1. Create a project in the [Medplum App](https://app.medplum.com/)
 2. Enable Email/Password
 
-After that, you can use the `signIn()` method:
+After that, you can use the `startLogin()` method:
 
 ```typescript
-medplum.signIn(email, password, role, scope).then((user) => console.log(user));
+const loginResult = await medplum.startLogin(email, password, remember);
+const profile = await medplum.processCode(loginResult.code);
+console.log(profile);
 ```
 
 ## Search
