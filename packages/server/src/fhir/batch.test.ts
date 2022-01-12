@@ -1,5 +1,5 @@
 import { assertOk, isOk } from '@medplum/core';
-import { Bundle, BundleEntry, Observation, OperationOutcome, Patient } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Observation, OperationOutcome, Patient, Subscription } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
@@ -759,5 +759,78 @@ describe('Batch', () => {
     expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
+  });
+
+  test('Embedded urn:uuid', async () => {
+    const authorId = randomUUID();
+    const projectId = randomUUID();
+
+    const userRepo = new Repository({
+      author: {
+        reference: 'Practitioner/' + authorId,
+      },
+      project: projectId,
+    });
+
+    const [outcome, bundle] = await processBatch(userRepo, {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          fullUrl: 'urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
+          request: {
+            method: 'POST',
+            url: 'Questionnaire',
+          },
+          resource: {
+            resourceType: 'Questionnaire',
+            name: 'Example Questionnaire',
+            title: 'Example Questionnaire',
+            item: [
+              {
+                linkId: 'q1',
+                type: 'string',
+                text: 'Question',
+              },
+            ],
+          },
+        },
+        {
+          fullUrl: 'urn:uuid:14b4f91f-1119-40b8-b10e-3db77cf1c191',
+          request: {
+            method: 'POST',
+            url: 'Subscription',
+          },
+          resource: {
+            resourceType: 'Subscription',
+            status: 'active',
+            criteria: 'QuestionnaireResponse?questionnaire=urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
+            channel: {
+              type: 'rest-hook',
+              endpoint: 'urn:uuid:32178250-67a4-4ec9-89bc-d16f1d619403',
+              payload: 'application/fhir+json',
+            },
+          },
+        },
+      ],
+    });
+
+    expect(isOk(outcome)).toBe(true);
+    expect(bundle).toBeDefined();
+    expect(bundle?.type).toEqual('batch-response');
+    expect(bundle?.entry).toBeDefined();
+
+    const results = bundle?.entry as BundleEntry[];
+    expect(results.length).toEqual(2);
+    expect(results[0].response?.status).toEqual('201');
+    expect(results[1].response?.status).toEqual('201');
+
+    const [subscriptionOutcome, subscription] = await userRepo.readReference<Subscription>({
+      reference: results[1].response?.location as string,
+    });
+    assertOk(subscriptionOutcome, subscription);
+    expect(subscription.criteria).toMatch(
+      /QuestionnaireResponse\?questionnaire=Questionnaire\/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/
+    );
   });
 });

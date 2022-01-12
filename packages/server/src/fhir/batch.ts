@@ -314,8 +314,15 @@ class BatchProcessor {
   }
 
   private rewriteIdsInString(input: string): string {
-    const resource = this.ids[input];
-    return resource ? getReferenceString(resource) : input;
+    const matches = input.match(/urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/);
+    if (matches) {
+      const fullUrl = matches[0];
+      const resource = this.ids[fullUrl];
+      if (resource) {
+        return input.replaceAll(fullUrl, getReferenceString(resource));
+      }
+    }
+    return input;
   }
 }
 
