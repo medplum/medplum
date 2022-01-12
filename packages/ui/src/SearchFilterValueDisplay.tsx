@@ -11,12 +11,8 @@ export interface SearchFilterValueDisplayProps {
 
 export function SearchFilterValueDisplay(props: SearchFilterValueDisplayProps): JSX.Element | null {
   const medplum = useMedplum();
-  const schema = medplum.getSchema(props.resourceType);
-  if (!schema) {
-    return null;
-  }
-
-  const searchParam = schema.types[props.resourceType].searchParams?.[props.filter.code];
+  const schema = medplum.getSchema();
+  const searchParam = schema.types[props.resourceType]?.searchParams?.[props.filter.code];
 
   const filter = props.filter;
   if (searchParam?.type === 'reference') {

@@ -113,10 +113,7 @@ interface FilterRowDisplayProps {
 function FilterRowDisplay(props: FilterRowDisplayProps): JSX.Element | null {
   const { resourceType, filter } = props;
   const medplum = useMedplum();
-  const schema = medplum.getSchema(resourceType);
-  if (!schema) {
-    return null;
-  }
+  const schema = medplum.getSchema();
   return (
     <tr>
       <td>{buildFieldNameString(schema, resourceType, filter.code)}</td>

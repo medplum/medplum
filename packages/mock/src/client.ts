@@ -14,6 +14,7 @@ import {
   ExampleSubscription,
   ExampleSubscriptionHistory,
   exampleValueSet,
+  GraphQLSchemaResponse,
   HomerCommunications,
   HomerDiagnosticReport,
   HomerDiagnosticReportBundle,
@@ -32,16 +33,7 @@ import {
   HomerServiceRequestSearchBundle,
   HomerSimpson,
   HomerSimpsonHistory,
-  ObservationSearchParameterBundle,
-  ObservationStructureBundle,
   OrganizationSearchBundle,
-  PatientSearchParameterBundle,
-  PatientStructureBundle,
-  PractitionerStructureBundle,
-  QuestionnaireResponseStructureDefinitionBundle,
-  QuestionnaireSearchParameterBundle,
-  QuestionnaireStructureDefinitionBundle,
-  ServiceRequestStructureDefinitionBundle,
   SimpsonSearchBundle,
   TestOrganization,
 } from './mocks';
@@ -306,15 +298,6 @@ const routes: Record<string, Record<string, any>> = {
   'fhir/R4/QuestionnaireResponse/123': {
     GET: ExampleQuestionnaireResponse,
   },
-  'fhir/R4/SearchParameter?_count=100&base=Observation': {
-    GET: ObservationSearchParameterBundle,
-  },
-  'fhir/R4/SearchParameter?_count=100&base=Patient': {
-    GET: PatientSearchParameterBundle,
-  },
-  'fhir/R4/SearchParameter?_count=100&base=Questionnaire': {
-    GET: QuestionnaireSearchParameterBundle,
-  },
   'fhir/R4/ServiceRequest/123': {
     GET: HomerServiceRequest,
   },
@@ -324,24 +307,6 @@ const routes: Record<string, Record<string, any>> = {
   'fhir/R4/ServiceRequest?subject=Patient/123': {
     GET: HomerServiceRequestSearchBundle,
   },
-  'fhir/R4/StructureDefinition?_count=1&name:exact=Observation': {
-    GET: ObservationStructureBundle,
-  },
-  'fhir/R4/StructureDefinition?_count=1&name:exact=Patient': {
-    GET: PatientStructureBundle,
-  },
-  'fhir/R4/StructureDefinition?_count=1&name:exact=Practitioner': {
-    GET: PractitionerStructureBundle,
-  },
-  'fhir/R4/StructureDefinition?_count=1&name:exact=Questionnaire': {
-    GET: QuestionnaireStructureDefinitionBundle,
-  },
-  'fhir/R4/StructureDefinition?_count=1&name:exact=QuestionnaireResponse': {
-    GET: QuestionnaireResponseStructureDefinitionBundle,
-  },
-  'fhir/R4/StructureDefinition?_count=1&name:exact=ServiceRequest': {
-    GET: ServiceRequestStructureDefinitionBundle,
-  },
   'fhir/R4/Subscription/123': {
     GET: ExampleSubscription,
   },
@@ -350,6 +315,9 @@ const routes: Record<string, Record<string, any>> = {
   },
   'fhir/R4/ValueSet/%24expand?url=https%3A%2F%2Fexample.com%2Ftest&filter=xyz': {
     GET: exampleValueSet,
+  },
+  'fhir/R4/%24graphql': {
+    POST: GraphQLSchemaResponse,
   },
   'fhir/R4': {
     POST: (body: string) => {

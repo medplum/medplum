@@ -202,7 +202,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
 
   useEffect(() => requestResources(), [props.search]);
 
-  if (!schema) {
+  if (!schema?.types?.[props.search.resourceType]) {
     return <Loading />;
   }
 
