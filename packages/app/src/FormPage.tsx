@@ -1,4 +1,4 @@
-import { getDisplayString, getReferenceString } from '@medplum/core';
+import { createReference, getDisplayString, getReferenceString } from '@medplum/core';
 import {
   Bundle,
   BundleEntry,
@@ -89,6 +89,7 @@ export function FormPage(): JSX.Element {
       <Document>
         <QuestionnaireForm
           questionnaire={questionnaire}
+          subject={subject && createReference(subject)}
           onSubmit={(questionnaireResponse: QuestionnaireResponse) => {
             medplum.create(questionnaireResponse).then((result) => {
               navigate(`/${getReferenceString(result)}`);
