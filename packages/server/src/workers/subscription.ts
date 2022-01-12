@@ -433,6 +433,8 @@ export async function execBot(
     resource,
     console: botConsole,
     repo: botRepo,
+    assertOk,
+    createReference,
   };
 
   const options: vm.RunningScriptOptions = {
@@ -442,8 +444,8 @@ export async function execBot(
   let outcome: AuditEventOutcome = AuditEventOutcome.Success;
 
   try {
-    vm.runInNewContext(code, sandbox, options);
-    botLog.push('Success');
+    const result = (await vm.runInNewContext('(async () => {' + code + '})();', sandbox, options)) as Promise<any>;
+    botLog.push('Success:', result);
   } catch (error) {
     outcome = AuditEventOutcome.MinorFailure;
     botLog.push('Error:', (error as Error).message);

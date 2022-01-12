@@ -628,6 +628,77 @@ describe('Subscription Worker', () => {
     expect(bundle.entry?.[0]?.resource?.outcomeDesc).toContain(nonce);
   });
 
+  test('Async Bot with await', async () => {
+    const code = `
+      const [outcome, appointment] = await repo.createResource({
+        resourceType: 'Appointment',
+        status: 'booked',
+        start: new Date().toISOString(),
+        participant: [
+          {
+            actor: createReference(resource),
+            status: 'accepted',
+          },
+        ],
+      });
+      assertOk(outcome, appointment);
+      return appointment;
+    `;
+
+    const [botOutcome, bot] = await botRepo.createResource<Bot>({
+      resourceType: 'Bot',
+      name: 'Test Bot',
+      description: 'Test Bot',
+      code,
+    });
+    assertOk(botOutcome, bot);
+
+    const [subscriptionOutcome, subscription] = await botRepo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      status: 'active',
+      criteria: 'Patient',
+      channel: {
+        type: 'rest-hook',
+        endpoint: getReferenceString(bot as Bot),
+      },
+    });
+    assertOk(subscriptionOutcome, subscription);
+
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    queue.add.mockClear();
+
+    const [patientOutcome, patient] = await botRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+
+    expect(patientOutcome.id).toEqual('created');
+    expect(patient).toBeDefined();
+    expect(queue.add).toHaveBeenCalled();
+
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    await execSubscriptionJob(job);
+    expect(fetch).not.toHaveBeenCalled();
+
+    const [searchOutcome, bundle] = await botRepo.search<AuditEvent>({
+      resourceType: 'AuditEvent',
+      filters: [
+        {
+          code: 'entity',
+          operator: Operator.EQUALS,
+          value: getReferenceString(subscription as Subscription),
+        },
+      ],
+    });
+    assertOk(searchOutcome, bundle);
+    expect(bundle.entry?.length).toEqual(1);
+    expect(bundle.entry?.[0]?.resource?.outcome).toEqual('0');
+    expect(bundle.entry?.[0]?.resource?.outcomeDesc).toContain('Success');
+    expect(bundle.entry?.[0]?.resource?.outcomeDesc).toContain('"resourceType": "Appointment"');
+  });
+
   test('Bot failure', async () => {
     const nonce = randomUUID();
 
