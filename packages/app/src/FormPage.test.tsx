@@ -64,6 +64,10 @@ describe('FormPage', () => {
 
     expect(screen.getByText('First question')).toBeInTheDocument();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
   });
 
   test('ServiceRequest subject', async () => {
