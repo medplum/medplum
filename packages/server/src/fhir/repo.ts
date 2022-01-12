@@ -22,6 +22,7 @@ import {
 import { evalFhirPath } from '@medplum/fhirpath';
 import {
   AccessPolicy,
+  AccessPolicyResource,
   Bundle,
   Login,
   Meta,
@@ -177,7 +178,7 @@ export class Repository {
       return [gone, undefined];
     }
 
-    return [allOk, JSON.parse(rows[0].content as string)];
+    return [allOk, this.removeHiddenFields(JSON.parse(rows[0].content as string))];
   }
 
   async readReference<T extends Resource>(reference: Reference<T>): RepositoryResult<T> {
@@ -199,8 +200,8 @@ export class Repository {
    * @param id The FHIR resource ID.
    * @returns Operation outcome and a history bundle.
    */
-  async readHistory(resourceType: string, id: string): RepositoryResult<Bundle> {
-    const [resourceOutcome] = await this.readResource(resourceType, id);
+  async readHistory<T extends Resource>(resourceType: string, id: string): RepositoryResult<Bundle<T>> {
+    const [resourceOutcome] = await this.readResource<T>(resourceType, id);
     if (!isOk(resourceOutcome)) {
       return [resourceOutcome, undefined];
     }
@@ -219,7 +220,7 @@ export class Repository {
         resourceType: 'Bundle',
         type: 'history',
         entry: rows.map((row: any) => ({
-          resource: JSON.parse(row.content as string),
+          resource: this.removeHiddenFields(JSON.parse(row.content as string)),
         })),
       },
     ];
@@ -246,7 +247,7 @@ export class Repository {
       return [notFound, undefined];
     }
 
-    return [allOk, JSON.parse(rows[0].content as string)];
+    return [allOk, this.removeHiddenFields(JSON.parse(rows[0].content as string))];
   }
 
   async updateResource<T extends Resource>(resource: T): RepositoryResult<T> {
@@ -254,6 +255,8 @@ export class Repository {
   }
 
   private async updateResourceImpl<T extends Resource>(resource: T, create: boolean): RepositoryResult<T> {
+    this.removeReadonlyFields(resource);
+
     const validateOutcome = validateResource(resource);
     if (!isOk(validateOutcome)) {
       return [validateOutcome, undefined];
@@ -321,6 +324,7 @@ export class Repository {
       return [badRequest((error as Error).message), undefined];
     }
 
+    this.removeHiddenFields(result);
     return [existing ? allOk : created, result];
   }
 
@@ -456,7 +460,7 @@ export class Repository {
         type: 'searchest',
         total,
         entry: rows.map((row) => ({
-          resource: JSON.parse(row.content as string),
+          resource: this.removeHiddenFields(JSON.parse(row.content as string)),
         })),
       },
     ];
@@ -1116,6 +1120,47 @@ export class Repository {
       }
     }
     return false;
+  }
+
+  /**
+   * Removes hidden fields from a resource as defined by the access policy.
+   * This should be called for any "read" operation.
+   * @param input The input resource.
+   */
+  private removeHiddenFields<T extends Resource>(input: T): T {
+    const policy = this.getResourceAccessPolicy(input.resourceType);
+    if (policy?.hiddenFields) {
+      for (const field of policy.hiddenFields) {
+        delete input[field as keyof T];
+      }
+    }
+    return input;
+  }
+
+  /**
+   * Removes readonly fields from a resource as defined by the access policy.
+   * This should be called for any "write" operation.
+   * @param input The input resource.
+   */
+  private removeReadonlyFields<T extends Resource>(input: T): T {
+    const policy = this.getResourceAccessPolicy(input.resourceType);
+    if (policy?.readonlyFields) {
+      for (const field of policy.readonlyFields) {
+        delete input[field as keyof T];
+      }
+    }
+    return input;
+  }
+
+  private getResourceAccessPolicy(resourceType: string): AccessPolicyResource | undefined {
+    if (this.context.accessPolicy?.resource) {
+      for (const resourcePolicy of this.context.accessPolicy.resource) {
+        if (resourcePolicy.resourceType === resourceType) {
+          return resourcePolicy;
+        }
+      }
+    }
+    return undefined;
   }
 
   private isSystem(): boolean {
