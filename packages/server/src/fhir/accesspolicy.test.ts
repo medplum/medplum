@@ -359,6 +359,55 @@ describe('AccessPolicy', () => {
     expect(outcome7.id).toEqual('not-found');
   });
 
+  test('Readonly fields on write', async () => {
+    const [createOutcome, patient] = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      birthDate: '1970-01-01',
+    });
+    assertOk(createOutcome, patient);
+    expect(patient).toBeDefined();
+
+    // AccessPolicy that hides Patient name
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Patient',
+          readonlyFields: ['name'],
+        },
+      ],
+    };
+
+    const repo2 = new Repository({
+      author: {
+        reference: 'Practitioner/123',
+      },
+      accessPolicy,
+    });
+
+    const [readOutcome, readResource] = await repo2.readResource<Patient>('Patient', patient?.id as string);
+    assertOk(readOutcome, readResource);
+    expect(readResource).toMatchObject({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      birthDate: '1970-01-01',
+    });
+
+    const [writeOutcome, writeResource] = await repo2.updateResource<Patient>({
+      ...readResource,
+      active: true,
+      name: [{ given: ['Bob'], family: 'Smith' }],
+    });
+    assertOk(writeOutcome, writeResource);
+    expect(writeResource).toMatchObject({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      birthDate: '1970-01-01',
+      active: true,
+    });
+  });
+
   test('Hidden fields on read', async () => {
     const [createOutcome, patient] = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',

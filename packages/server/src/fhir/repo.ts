@@ -255,6 +255,8 @@ export class Repository {
   }
 
   private async updateResourceImpl<T extends Resource>(resource: T, create: boolean): RepositoryResult<T> {
+    this.removeReadonlyFields(resource);
+
     const validateOutcome = validateResource(resource);
     if (!isOk(validateOutcome)) {
       return [validateOutcome, undefined];
@@ -1126,24 +1128,39 @@ export class Repository {
    * @param input The input resource.
    */
   private removeHiddenFields<T extends Resource>(input: T): T {
-    let resourceAccessPolicy: AccessPolicyResource | undefined = undefined;
-
-    if (this.context.accessPolicy?.resource) {
-      for (const resourcePolicy of this.context.accessPolicy.resource) {
-        if (resourcePolicy.resourceType === input.resourceType || resourcePolicy.resourceType === '*') {
-          resourceAccessPolicy = resourcePolicy;
-          break;
-        }
-      }
-    }
-
-    if (resourceAccessPolicy?.hiddenFields) {
-      for (const field of resourceAccessPolicy.hiddenFields) {
+    const policy = this.getResourceAccessPolicy(input.resourceType);
+    if (policy?.hiddenFields) {
+      for (const field of policy.hiddenFields) {
         delete input[field as keyof T];
       }
     }
-
     return input;
+  }
+
+  /**
+   * Removes readonly fields from a resource as defined by the access policy.
+   * This should be called for any "write" operation.
+   * @param input The input resource.
+   */
+  private removeReadonlyFields<T extends Resource>(input: T): T {
+    const policy = this.getResourceAccessPolicy(input.resourceType);
+    if (policy?.readonlyFields) {
+      for (const field of policy.readonlyFields) {
+        delete input[field as keyof T];
+      }
+    }
+    return input;
+  }
+
+  private getResourceAccessPolicy(resourceType: string): AccessPolicyResource | undefined {
+    if (this.context.accessPolicy?.resource) {
+      for (const resourcePolicy of this.context.accessPolicy.resource) {
+        if (resourcePolicy.resourceType === resourceType) {
+          return resourcePolicy;
+        }
+      }
+    }
+    return undefined;
   }
 
   private isSystem(): boolean {
