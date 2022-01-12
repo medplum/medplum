@@ -29,7 +29,7 @@ export function HomePage(): JSX.Element {
     }
   }, [location]);
 
-  if (!search.resourceType) {
+  if (!search.resourceType || !search.fields || search.fields.length === 0) {
     return <Loading />;
   }
 
