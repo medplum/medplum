@@ -197,12 +197,16 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   }
 
   useEffect(() => {
-    medplum.requestSchema(props.search.resourceType).then(setSchema);
+    medplum.requestSchema(props.search.resourceType).then((newSchema) => {
+      // The schema could have the same object identity,
+      // so need to use the spread operator to kick React re-render.
+      setSchema({ ...newSchema });
+    });
   }, [props.search.resourceType]);
 
   useEffect(() => requestResources(), [props.search]);
 
-  if (!schema) {
+  if (!schema?.types?.[props.search.resourceType]) {
     return <Loading />;
   }
 

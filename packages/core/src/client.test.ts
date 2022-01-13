@@ -27,11 +27,6 @@ const patientStructureDefinition: StructureDefinition = {
   },
 };
 
-const patientStructureDefinitionBundle: Bundle<StructureDefinition> = {
-  resourceType: 'Bundle',
-  entry: [{ resource: patientStructureDefinition }],
-};
-
 const patientSearchParameter: SearchParameter = {
   resourceType: 'SearchParameter',
   id: 'Patient-name',
@@ -41,9 +36,11 @@ const patientSearchParameter: SearchParameter = {
   expression: 'Patient.name',
 };
 
-const patientSearchParameterBundle: Bundle<SearchParameter> = {
-  resourceType: 'Bundle',
-  entry: [{ resource: patientSearchParameter }],
+const schemaResponse = {
+  data: {
+    StructureDefinitionList: [patientStructureDefinition],
+    SearchParameterList: [patientSearchParameter],
+  },
 };
 
 const emptyBundle: Bundle = {
@@ -118,10 +115,6 @@ function mockFetch(url: string, options: any): Promise<any> {
     result = emptyBundle;
   } else if (method === 'GET' && url.endsWith('/fhir/R4/StructureDefinition?_count=1&name:exact=DoesNotExist')) {
     result = emptyBundle;
-  } else if (method === 'GET' && url.endsWith('/fhir/R4/StructureDefinition?_count=1&name:exact=Patient')) {
-    result = patientStructureDefinitionBundle;
-  } else if (method === 'GET' && url.endsWith('/fhir/R4/SearchParameter?_count=100&base=Patient')) {
-    result = patientSearchParameterBundle;
   } else if (method === 'PUT' && url.endsWith('Patient/777')) {
     result = {
       status: 304, // Not modified
@@ -136,6 +129,8 @@ function mockFetch(url: string, options: any): Promise<any> {
     result = {
       resourceType: 'ValueSet',
     };
+  } else if (method === 'POST' && url.endsWith('fhir/R4/%24graphql')) {
+    result = schemaResponse;
   }
 
   const response: any = {
@@ -444,6 +439,8 @@ describe('Client', () => {
 
   test('Request schema', async () => {
     const client = new MedplumClient(defaultOptions);
+    expect(client.getSchema()).toBeDefined();
+    expect(client.getSchema().types['Patient']).toBeUndefined();
     const schema = await client.requestSchema('Patient');
     expect(schema).toBeDefined();
     expect(schema.types['Patient']).toBeDefined();
@@ -458,16 +455,6 @@ describe('Client', () => {
 
     const schema2 = await client.requestSchema('Patient');
     expect(schema2).toEqual(schema);
-  });
-
-  test('Request schema for missing resource type', async () => {
-    const client = new MedplumClient(defaultOptions);
-    expect(client.requestSchema('')).rejects.toEqual('StructureDefinition not found');
-  });
-
-  test('Request schema for bad resource type', async () => {
-    const client = new MedplumClient(defaultOptions);
-    expect(client.requestSchema('DoesNotExist')).rejects.toEqual('StructureDefinition not found');
   });
 
   test('Search ValueSet', async () => {

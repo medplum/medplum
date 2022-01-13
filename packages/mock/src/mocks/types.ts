@@ -7,74 +7,61 @@ export const EmptySearchBundle: Bundle = {
   entry: [],
 };
 
-export const ObservationStructureBundle: Bundle = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: {
-        resourceType: 'StructureDefinition',
-        name: 'Observation',
-        snapshot: {
-          element: [
-            {
-              path: 'Observation.id',
-              type: [
-                {
-                  code: 'code',
-                },
-              ],
-            },
-            {
-              path: 'Observation.value[x]',
-              min: 0,
-              max: '1',
-              type: [
-                {
-                  code: 'Quantity',
-                },
-                {
-                  code: 'CodeableConcept',
-                },
-                {
-                  code: 'string',
-                },
-                {
-                  code: 'boolean',
-                },
-                {
-                  code: 'integer',
-                },
-                {
-                  code: 'Range',
-                },
-                {
-                  code: 'Ratio',
-                },
-                {
-                  code: 'SampledData',
-                },
-                {
-                  code: 'time',
-                },
-                {
-                  code: 'dateTime',
-                },
-                {
-                  code: 'Period',
-                },
-              ],
-            },
-          ],
-        },
+export const ObservationStructureDefinition: StructureDefinition = {
+  resourceType: 'StructureDefinition',
+  name: 'Observation',
+  snapshot: {
+    element: [
+      {
+        path: 'Observation.id',
+        type: [
+          {
+            code: 'code',
+          },
+        ],
       },
-    },
-  ],
-};
-
-export const ObservationSearchParameterBundle: Bundle = {
-  resourceType: 'Bundle',
-  type: 'searchset',
-  entry: [],
+      {
+        path: 'Observation.value[x]',
+        min: 0,
+        max: '1',
+        type: [
+          {
+            code: 'Quantity',
+          },
+          {
+            code: 'CodeableConcept',
+          },
+          {
+            code: 'string',
+          },
+          {
+            code: 'boolean',
+          },
+          {
+            code: 'integer',
+          },
+          {
+            code: 'Range',
+          },
+          {
+            code: 'Ratio',
+          },
+          {
+            code: 'SampledData',
+          },
+          {
+            code: 'time',
+          },
+          {
+            code: 'dateTime',
+          },
+          {
+            code: 'Period',
+          },
+        ],
+      },
+    ],
+  },
 };
 
 export const PatientStructureDefinition: StructureDefinition = {
@@ -97,205 +84,159 @@ export const PatientStructureDefinition: StructureDefinition = {
   },
 };
 
-export const PatientStructureBundle: Bundle<StructureDefinition> = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: PatientStructureDefinition,
-    },
-  ],
+export const PatientSearchParameters: SearchParameter[] = [
+  {
+    resourceType: 'SearchParameter',
+    id: 'Patient-name',
+    base: ['Patient'],
+    code: 'name',
+    name: 'name',
+    type: 'string',
+    expression: 'Patient.name',
+  },
+  {
+    resourceType: 'SearchParameter',
+    id: 'Patient-birthdate',
+    base: ['Patient'],
+    code: 'birthdate',
+    name: 'birthdate',
+    type: 'date',
+    expression: 'Patient.birthdate',
+  },
+  {
+    resourceType: 'SearchParameter',
+    id: 'Patient-organization',
+    base: ['Patient'],
+    code: 'organization',
+    name: 'organization',
+    type: 'reference',
+    expression: 'Patient.organization',
+    target: ['Organization'],
+  },
+];
+
+export const PractitionerStructureDefinition: StructureDefinition = {
+  resourceType: 'StructureDefinition',
+  name: 'Practitioner',
+  snapshot: {
+    element: [
+      {
+        path: 'Practitioner.id',
+        type: [
+          {
+            code: 'code',
+          },
+        ],
+      },
+      {
+        path: 'Practitioner.name',
+        type: [
+          {
+            code: 'HumanName',
+          },
+        ],
+        max: '*',
+      },
+      {
+        path: 'Practitioner.gender',
+        type: [
+          {
+            code: 'code',
+          },
+        ],
+      },
+    ],
+  },
 };
 
-export const PatientSearchParameterBundle: Bundle<SearchParameter> = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: {
-        resourceType: 'SearchParameter',
-        id: 'Patient-name',
-        base: ['Patient'],
-        code: 'name',
-        name: 'name',
-        type: 'string',
-        expression: 'Patient.name',
+export const QuestionnaireStructureDefinition: StructureDefinition = {
+  resourceType: 'StructureDefinition',
+  name: 'Questionnaire',
+  snapshot: {
+    element: [
+      {
+        id: 'Questionnaire.item',
+        path: 'Questionnaire.item',
+        type: [
+          {
+            code: 'BackboneElement',
+          },
+        ],
       },
-    },
-    {
-      resource: {
-        resourceType: 'SearchParameter',
-        id: 'Patient-birthdate',
-        base: ['Patient'],
-        code: 'birthdate',
-        name: 'birthdate',
-        type: 'date',
-        expression: 'Patient.birthdate',
+      {
+        id: 'Questionnaire.item.answerOption',
+        path: 'Questionnaire.item.answerOption',
+        type: [
+          {
+            code: 'BackboneElement',
+          },
+        ],
       },
-    },
-    {
-      resource: {
-        resourceType: 'SearchParameter',
-        id: 'Patient-organization',
-        base: ['Patient'],
-        code: 'organization',
-        name: 'organization',
-        type: 'reference',
-        expression: 'Patient.organization',
-        target: ['Organization'],
+      {
+        id: 'Questionnaire.item.answerOption.value[x]',
+        path: 'Questionnaire.item.answerOption.value[x]',
+        min: 1,
+        max: '1',
+        type: [
+          {
+            code: 'integer',
+          },
+          {
+            code: 'date',
+          },
+          {
+            code: 'time',
+          },
+          {
+            code: 'string',
+          },
+          {
+            code: 'Coding',
+          },
+          {
+            code: 'Reference',
+            targetProfile: ['http://hl7.org/fhir/StructureDefinition/Resource'],
+          },
+        ],
       },
-    },
-  ],
+    ],
+  },
 };
 
-export const PractitionerStructureBundle: Bundle<StructureDefinition> = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: {
-        resourceType: 'StructureDefinition',
-        name: 'Practitioner',
-        snapshot: {
-          element: [
-            {
-              path: 'Practitioner.id',
-              type: [
-                {
-                  code: 'code',
-                },
-              ],
-            },
-            {
-              path: 'Practitioner.name',
-              type: [
-                {
-                  code: 'HumanName',
-                },
-              ],
-              max: '*',
-            },
-            {
-              path: 'Practitioner.gender',
-              type: [
-                {
-                  code: 'code',
-                },
-              ],
-            },
-          ],
-        },
+export const ServiceRequestServiceDefinition: StructureDefinition = {
+  resourceType: 'StructureDefinition',
+  name: 'ServiceRequest',
+  snapshot: {
+    element: [
+      {
+        path: 'ServiceRequest.id',
+        type: [
+          {
+            code: 'code',
+          },
+        ],
       },
-    },
-  ],
+      {
+        path: 'ServiceRequest.code',
+        type: [
+          {
+            code: 'CodeableConcept',
+          },
+        ],
+      },
+    ],
+  },
 };
 
-export const QuestionnaireStructureDefinitionBundle: Bundle<StructureDefinition> = {
-  resourceType: 'Bundle',
-  type: 'searchset',
-  entry: [
-    {
-      resource: {
-        resourceType: 'StructureDefinition',
-        name: 'Questionnaire',
-        snapshot: {
-          element: [
-            {
-              id: 'Questionnaire.item',
-              path: 'Questionnaire.item',
-              type: [
-                {
-                  code: 'BackboneElement',
-                },
-              ],
-            },
-            {
-              id: 'Questionnaire.item.answerOption',
-              path: 'Questionnaire.item.answerOption',
-              type: [
-                {
-                  code: 'BackboneElement',
-                },
-              ],
-            },
-            {
-              id: 'Questionnaire.item.answerOption.value[x]',
-              path: 'Questionnaire.item.answerOption.value[x]',
-              min: 1,
-              max: '1',
-              type: [
-                {
-                  code: 'integer',
-                },
-                {
-                  code: 'date',
-                },
-                {
-                  code: 'time',
-                },
-                {
-                  code: 'string',
-                },
-                {
-                  code: 'Coding',
-                },
-                {
-                  code: 'Reference',
-                  targetProfile: ['http://hl7.org/fhir/StructureDefinition/Resource'],
-                },
-              ],
-            },
-          ],
-        },
-      },
-    },
-  ],
-};
-
-export const QuestionnaireSearchParameterBundle: Bundle<SearchParameter> = {
-  resourceType: 'Bundle',
-  type: 'searchset',
-  entry: [],
-};
-
-export const QuestionnaireResponseStructureDefinitionBundle: Bundle<StructureDefinition> = {
-  resourceType: 'Bundle',
-  type: 'searchset',
-  entry: [
-    {
-      resource: {
-        resourceType: 'StructureDefinition',
-        name: 'QuestionnaireResponse',
-      },
-    },
-  ],
-};
-
-export const ServiceRequestStructureDefinitionBundle: Bundle<StructureDefinition> = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: {
-        resourceType: 'StructureDefinition',
-        name: 'ServiceRequest',
-        snapshot: {
-          element: [
-            {
-              path: 'ServiceRequest.id',
-              type: [
-                {
-                  code: 'code',
-                },
-              ],
-            },
-            {
-              path: 'ServiceRequest.code',
-              type: [
-                {
-                  code: 'CodeableConcept',
-                },
-              ],
-            },
-          ],
-        },
-      },
-    },
-  ],
+export const GraphQLSchemaResponse = {
+  data: {
+    StructureDefinitionList: [
+      ObservationStructureDefinition,
+      PatientStructureDefinition,
+      PractitionerStructureDefinition,
+      QuestionnaireStructureDefinition,
+      ServiceRequestServiceDefinition,
+    ],
+    SearchParameterList: [...PatientSearchParameters],
+  },
 };

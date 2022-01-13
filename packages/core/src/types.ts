@@ -1,4 +1,4 @@
-import { Bundle, ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
+import { ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import { capitalize } from './utils';
 
 /**
@@ -134,7 +134,7 @@ export function indexStructureDefinition(
 ): void {
   const typeName = structureDefinition.name;
   if (!typeName) {
-    throw new Error('Invalid StructureDefinition');
+    return;
   }
 
   schema.types[typeName] = {
@@ -199,38 +199,20 @@ function indexProperty(schema: IndexedStructureDefinition, element: ElementDefin
 }
 
 /**
- * Indexes a bundle of SearchParameter resources.
- * See indexSearchParameter for more details.
- * @param schema The output IndexedStructureDefinition.
- * @param searchParamBundle The Bundle of SearchParameter resources.
- */
-export function indexSearchParameters(
-  schema: IndexedStructureDefinition,
-  searchParamBundle: Bundle<SearchParameter>
-): void {
-  if (searchParamBundle.entry) {
-    for (const entry of searchParamBundle.entry) {
-      indexSearchParameter(schema, entry.resource as SearchParameter);
-    }
-  }
-}
-
-/**
  * Indexes a SearchParameter resource for fast lookup.
  * Indexes by SearchParameter.code, which is the query string parameter name.
  * @param schema The output IndexedStructureDefinition.
  * @param searchParam The SearchParameter resource.
  */
-function indexSearchParameter(schema: IndexedStructureDefinition, searchParam: SearchParameter): void {
+export function indexSearchParameter(schema: IndexedStructureDefinition, searchParam: SearchParameter): void {
   if (!searchParam.base) {
     return;
   }
 
   for (const resourceType of searchParam.base) {
-    let typeSchema = schema.types[resourceType];
-
+    const typeSchema = schema.types[resourceType];
     if (!typeSchema) {
-      schema.types[resourceType] = typeSchema = {} as TypeSchema;
+      continue;
     }
 
     if (!typeSchema.searchParams) {

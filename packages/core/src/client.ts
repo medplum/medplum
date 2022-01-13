@@ -10,18 +10,16 @@ import {
   Resource,
   SearchParameter,
   StructureDefinition,
-  Subscription,
   ValueSet,
 } from '@medplum/fhirtypes';
-import { createSchema, indexSearchParameters } from '.';
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { parseJWTPayload } from './jwt';
 import { isOk } from './outcomes';
-import { formatSearchQuery, Operator, SearchRequest } from './search';
+import { formatSearchQuery, SearchRequest } from './search';
 import { ClientStorage } from './storage';
-import { IndexedStructureDefinition, indexStructureDefinition } from './types';
+import { createSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
 import { arrayBufferToBase64, ProfileResource, stringify } from './utils';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
@@ -141,10 +139,17 @@ export interface TokenResponse {
   readonly profile: Reference<ProfileResource>;
 }
 
+interface SchemaGraphQLResponse {
+  readonly data: {
+    readonly StructureDefinitionList: StructureDefinition[];
+    readonly SearchParameterList: SearchParameter[];
+  };
+}
+
 export class MedplumClient extends EventTarget {
   private readonly fetch: FetchLike;
   private readonly storage: ClientStorage;
-  private readonly schema: Map<string, IndexedStructureDefinition>;
+  private readonly schema: IndexedStructureDefinition;
   private readonly resourceCache: LRUCache<Resource | Promise<Resource>>;
   private readonly baseUrl: string;
   private readonly clientId: string;
@@ -169,7 +174,7 @@ export class MedplumClient extends EventTarget {
 
     this.fetch = options.fetch || window.fetch.bind(window);
     this.storage = new ClientStorage();
-    this.schema = new Map();
+    this.schema = createSchema();
     this.resourceCache = new LRUCache(options.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
     this.baseUrl = options.baseUrl || DEFAULT_BASE_URL;
     this.clientId = options.clientId || '';
@@ -189,7 +194,6 @@ export class MedplumClient extends EventTarget {
    */
   clear(): void {
     this.storage.clear();
-    this.schema.clear();
     this.resourceCache.clear();
     this.dispatchEvent({ type: 'change' });
   }
@@ -382,8 +386,8 @@ export class MedplumClient extends EventTarget {
    * @param resourceType The FHIR resource type.
    * @returns The schema if immediately available, undefined otherwise.
    */
-  getSchema(resourceType: string): IndexedStructureDefinition | undefined {
-    return this.schema.get(resourceType);
+  getSchema(): IndexedStructureDefinition {
+    return this.schema;
   }
 
   /**
@@ -393,43 +397,46 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to a schema with the requested resource type.
    */
   async requestSchema(resourceType: string): Promise<IndexedStructureDefinition> {
-    const cached = this.schema.get(resourceType);
-    if (cached) {
-      return Promise.resolve(cached);
+    if (resourceType in this.schema.types) {
+      return Promise.resolve(this.schema);
     }
 
-    const schema: IndexedStructureDefinition = createSchema();
-    const structureDefinitionBundle = await this.search<StructureDefinition>({
-      resourceType: 'StructureDefinition',
-      count: 1,
-      filters: [
-        {
-          code: 'name',
-          operator: Operator.EXACT,
-          value: resourceType,
-        },
-      ],
-    });
-    const structureDefinition = structureDefinitionBundle?.entry?.[0]?.resource;
-    if (!structureDefinition) {
-      return Promise.reject('StructureDefinition not found');
-    }
-    indexStructureDefinition(schema, structureDefinition);
+    const query = `{
+      StructureDefinitionList(name: "${encodeURIComponent(resourceType)}") {
+        name,
+        description,
+        snapshot {
+          element {
+            id,
+            path,
+            min,
+            max,
+            type {
+              code,
+              targetProfile
+            },
+            definition
+          }
+        }
+      }
+      SearchParameterList(base: "${encodeURIComponent(resourceType)}") {
+        base,
+        code,
+        type
+      }
+    }`.replace(/\s+/g, ' ');
 
-    const searchParamBundle = await this.search<SearchParameter>({
-      resourceType: 'SearchParameter',
-      count: 100,
-      filters: [
-        {
-          code: 'base',
-          operator: Operator.EQUALS,
-          value: resourceType,
-        },
-      ],
-    });
-    indexSearchParameters(schema, searchParamBundle);
-    this.schema.set(resourceType, schema);
-    return schema;
+    const response = (await this.graphql(query)) as SchemaGraphQLResponse;
+
+    for (const structureDefinition of response.data.StructureDefinitionList) {
+      indexStructureDefinition(this.schema, structureDefinition);
+    }
+
+    for (const searchParameter of response.data.SearchParameterList) {
+      indexSearchParameter(this.schema, searchParameter);
+    }
+
+    return this.schema;
   }
 
   readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>> {
@@ -469,29 +476,8 @@ export class MedplumClient extends EventTarget {
     return this.delete(this.fhirUrl(resourceType, id));
   }
 
-  graphql(gql: any): Promise<any> {
-    return this.post(this.fhirUrl('$graphql'), gql, JSON_CONTENT_TYPE);
-  }
-
-  subscribe(criteria: string, handler: (e: Resource) => void): Promise<EventSource> {
-    return this.create({
-      resourceType: 'Subscription',
-      status: 'active',
-      criteria: criteria,
-      channel: {
-        type: 'sse',
-      },
-    }).then((sub: Subscription) => {
-      const eventSource = new EventSource(this.baseUrl + 'sse?subscription=' + encodeURIComponent(sub.id as string), {
-        withCredentials: true,
-      });
-
-      eventSource.onmessage = (e: MessageEvent) => {
-        handler(JSON.parse(e.data) as Resource);
-      };
-
-      return eventSource;
-    });
+  graphql(query: string): Promise<any> {
+    return this.post(this.fhirUrl('$graphql'), { query }, JSON_CONTENT_TYPE);
   }
 
   getActiveLogin(): LoginState | undefined {

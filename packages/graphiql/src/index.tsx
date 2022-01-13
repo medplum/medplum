@@ -1,5 +1,5 @@
 import { MedplumClient } from '@medplum/core';
-import { Document, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/ui';
+import { MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/ui';
 import GraphiQL from 'graphiql';
 import React from 'react';
 import { render } from 'react-dom';
@@ -42,9 +42,7 @@ function App(): JSX.Element {
   return profile ? (
     <GraphiQL fetcher={async (graphQLParams) => medplum.graphql(graphQLParams)} defaultQuery={HELP_TEXT} />
   ) : (
-    <Document width={450}>
-      <SignInForm onSuccess={() => undefined} />
-    </Document>
+    <SignInForm onSuccess={() => undefined} />
   );
 }
 
