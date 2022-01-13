@@ -321,7 +321,7 @@ describe('FHIR Repo', () => {
   test('Create Patient with custom ID', async () => {
     const author = 'Practitioner/' + randomUUID();
 
-    const systemRepo = new Repository({
+    const repo = new Repository({
       project: randomUUID(),
       author: {
         reference: author,
@@ -331,7 +331,7 @@ describe('FHIR Repo', () => {
     // Try to "update" a resource, which does not exist.
     // Some FHIR systems allow users to set ID's.
     // We do not.
-    const [createOutcome, patient] = await systemRepo.updateResource<Patient>({
+    const [createOutcome, patient] = await repo.updateResource<Patient>({
       resourceType: 'Patient',
       id: randomUUID(),
       name: [{ given: ['Alice'], family: 'Smith' }],
@@ -370,13 +370,13 @@ describe('FHIR Repo', () => {
   test('Create Patient as ClientApplication with no author', async () => {
     const clientApp = 'ClientApplication/' + randomUUID();
 
-    const systemRepo = new Repository({
+    const repo = new Repository({
       author: {
         reference: clientApp,
       },
     });
 
-    const [createOutcome, patient] = await systemRepo.createResource<Patient>({
+    const [createOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
@@ -385,40 +385,16 @@ describe('FHIR Repo', () => {
     expect(patient?.meta?.author?.reference).toEqual(clientApp);
   });
 
-  test('Create Patient as ClientApplication on behalf of author', async () => {
-    const clientApp = 'ClientApplication/' + randomUUID();
-    const author = 'Practitioner/' + randomUUID();
-
-    const systemRepo = new Repository({
-      author: {
-        reference: clientApp,
-      },
-    });
-
-    const [createOutcome, patient] = await systemRepo.createResource<Patient>({
-      resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }],
-      meta: {
-        author: {
-          reference: author,
-        },
-      },
-    });
-
-    expect(createOutcome.id).toEqual('created');
-    expect(patient?.meta?.author?.reference).toEqual(author);
-  });
-
   test('Create Patient as Practitioner with no author', async () => {
     const author = 'Practitioner/' + randomUUID();
 
-    const systemRepo = new Repository({
+    const repo = new Repository({
       author: {
         reference: author,
       },
     });
 
-    const [createOutcome, patient] = await systemRepo.createResource<Patient>({
+    const [createOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
@@ -431,7 +407,7 @@ describe('FHIR Repo', () => {
     const author = 'Practitioner/' + randomUUID();
     const fakeAuthor = 'Practitioner/' + randomUUID();
 
-    const systemRepo = new Repository({
+    const repo = new Repository({
       author: {
         reference: author,
       },
@@ -441,7 +417,7 @@ describe('FHIR Repo', () => {
     // Practitioner does *not* have the right to set the author
     // So even though we pass in an author,
     // We expect the Practitioner to be in the result.
-    const [createOutcome, patient] = await systemRepo.createResource<Patient>({
+    const [createOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
       meta: {
@@ -453,6 +429,33 @@ describe('FHIR Repo', () => {
 
     expect(createOutcome.id).toEqual('created');
     expect(patient?.meta?.author?.reference).toEqual(author);
+  });
+
+  test('Create resource with account', async () => {
+    const author = 'Practitioner/' + randomUUID();
+    const account = 'Organization/' + randomUUID();
+
+    // This user does not have an access policy
+    // So they can optionally set an account
+    const repo = new Repository({
+      author: {
+        reference: author,
+      },
+    });
+
+    const [createOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      meta: {
+        account: {
+          reference: account,
+        },
+      },
+    });
+
+    expect(createOutcome.id).toEqual('created');
+    expect(patient?.meta?.author?.reference).toEqual(author);
+    expect(patient?.meta?.account?.reference).toEqual(account);
   });
 
   test('Create resource with lastUpdated', async () => {
@@ -1390,26 +1393,26 @@ describe('FHIR Repo', () => {
   });
 
   test('Reindex resource type as non-admin', async () => {
-    const systemRepo = new Repository({
+    const repo = new Repository({
       project: randomUUID(),
       author: {
         reference: 'Practitioner/' + randomUUID(),
       },
     });
 
-    const [reindexOutcome] = await systemRepo.reindexResourceType('Practitioner');
+    const [reindexOutcome] = await repo.reindexResourceType('Practitioner');
     expect(isOk(reindexOutcome)).toBe(false);
   });
 
   test('Reindex resource as non-admin', async () => {
-    const systemRepo = new Repository({
+    const repo = new Repository({
       project: randomUUID(),
       author: {
         reference: 'Practitioner/' + randomUUID(),
       },
     });
 
-    const [reindexOutcome] = await systemRepo.reindexResource('Practitioner', randomUUID());
+    const [reindexOutcome] = await repo.reindexResource('Practitioner', randomUUID());
     expect(isOk(reindexOutcome)).toBe(false);
   });
 
