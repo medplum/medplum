@@ -81,4 +81,27 @@ describe('Expand', () => {
       },
     });
   });
+
+  test('No duplicates', async () => {
+    const system = 'http://hl7.org/fhir/ValueSet/subscription-status|4.0.1';
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(system)}&filter=active`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      resourceType: 'ValueSet',
+      url: 'http://hl7.org/fhir/ValueSet/subscription-status',
+      expansion: {
+        offset: 0,
+        contains: [
+          {
+            system: 'http://hl7.org/fhir/ValueSet/subscription-status',
+            code: 'active',
+            display: 'Active',
+          },
+        ],
+      },
+    });
+    expect(res.body.expansion.contains.length).toBe(1);
+  });
 });

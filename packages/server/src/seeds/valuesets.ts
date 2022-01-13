@@ -112,7 +112,7 @@ class ValueSystemImporter {
       await this.importValueSetConcepts(system, include.concept);
     } else if (include.system) {
       const includedResource = this.getByUrl(include.system);
-      if (includedResource) {
+      if (includedResource && includedResource.valueSet !== system) {
         await this.importCodeSystemAs(includedResource, system);
       }
     }
