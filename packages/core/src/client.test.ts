@@ -1,7 +1,8 @@
-import { Bundle, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
+import { Bundle, Patient, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import crypto, { randomUUID } from 'crypto';
 import { TextEncoder } from 'util';
 import { MedplumClient } from './client';
+import { Operator } from './search';
 import { stringify } from './utils';
 
 const defaultOptions = {
@@ -421,12 +422,39 @@ describe('Client', () => {
     expect(promise).rejects.toMatchObject({});
   });
 
+  test('Create resource', async () => {
+    const client = new MedplumClient(defaultOptions);
+    expect(() => client.create({} as Patient)).toThrowError('Missing resourceType');
+    const result = await client.create({ resourceType: 'Patient', name: [{ family: 'Smith' }] });
+    expect(result).toBeDefined();
+    expect((result as any).request.options.method).toBe('POST');
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Patient');
+  });
+
   test('Create binary', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.createBinary('Hello world', 'text/plain');
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('POST');
     expect((result as any).request.url).toBe('https://x/fhir/R4/Binary');
+  });
+
+  test('Update resource', async () => {
+    const client = new MedplumClient(defaultOptions);
+    expect(() => client.update({} as Patient)).toThrowError('Missing resourceType');
+    expect(() => client.update({ resourceType: 'Patient' })).toThrowError('Missing id');
+    const result = await client.update({ resourceType: 'Patient', id: '123', name: [{ family: 'Smith' }] });
+    expect(result).toBeDefined();
+    expect((result as any).request.options.method).toBe('PUT');
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
+  });
+
+  test('Patch resource', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.patch('Patient', '123', []);
+    expect(result).toBeDefined();
+    expect((result as any).request.options.method).toBe('PATCH');
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
   });
 
   test('Delete resource', async () => {
@@ -455,6 +483,17 @@ describe('Client', () => {
 
     const schema2 = await client.requestSchema('Patient');
     expect(schema2).toEqual(schema);
+  });
+
+  test('Search', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.search({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.CONTAINS, value: 'alice' }],
+    });
+    expect(result).toBeDefined();
+    expect((result as any).request.options.method).toBe('GET');
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Patient?name:contains=alice');
   });
 
   test('Search ValueSet', async () => {

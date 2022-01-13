@@ -289,18 +289,25 @@ export class MedplumClient extends EventTarget {
     window.location.assign(this.logoutUrl);
   }
 
+  /**
+   * Builds a FHIR URL from a collection of URL path components.
+   * For example, `buildUrl('/Patient', '123')` returns `fhir/R4/Patient/123`.
+   * @param path The path component of the URL.
+   * @returns The well-formed FHIR URL.
+   */
   fhirUrl(...path: string[]): string {
     const builder = [this.baseUrl, 'fhir/R4'];
     path.forEach((p) => builder.push('/', encodeURIComponent(p)));
     return builder.join('');
   }
 
-  search<T extends Resource>(search: string | SearchRequest): Promise<Bundle<T>> {
-    if (typeof search === 'string') {
-      return this.get('fhir/R4/' + search);
-    } else {
-      return this.get(this.fhirUrl(search.resourceType) + formatSearchQuery(search));
-    }
+  /**
+   * Sends a FHIR search request.
+   * @param search The search query.
+   * @returns Promise to the search result bundle.
+   */
+  search<T extends Resource>(search: SearchRequest): Promise<Bundle<T>> {
+    return this.get(this.fhirUrl(search.resourceType) + formatSearchQuery(search));
   }
 
   /**
