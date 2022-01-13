@@ -439,6 +439,8 @@ describe('Client', () => {
 
   test('Request schema', async () => {
     const client = new MedplumClient(defaultOptions);
+    expect(client.getSchema()).toBeDefined();
+    expect(client.getSchema().types['Patient']).toBeUndefined();
     const schema = await client.requestSchema('Patient');
     expect(schema).toBeDefined();
     expect(schema.types['Patient']).toBeDefined();

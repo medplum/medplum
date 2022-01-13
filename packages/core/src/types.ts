@@ -134,7 +134,7 @@ export function indexStructureDefinition(
 ): void {
   const typeName = structureDefinition.name;
   if (!typeName) {
-    throw new Error('Invalid StructureDefinition');
+    return;
   }
 
   schema.types[typeName] = {

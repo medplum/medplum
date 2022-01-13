@@ -10,7 +10,6 @@ import {
   Resource,
   SearchParameter,
   StructureDefinition,
-  Subscription,
   ValueSet,
 } from '@medplum/fhirtypes';
 import { LRUCache } from './cache';
@@ -479,27 +478,6 @@ export class MedplumClient extends EventTarget {
 
   graphql(query: string): Promise<any> {
     return this.post(this.fhirUrl('$graphql'), { query }, JSON_CONTENT_TYPE);
-  }
-
-  subscribe(criteria: string, handler: (e: Resource) => void): Promise<EventSource> {
-    return this.create({
-      resourceType: 'Subscription',
-      status: 'active',
-      criteria: criteria,
-      channel: {
-        type: 'sse',
-      },
-    }).then((sub: Subscription) => {
-      const eventSource = new EventSource(this.baseUrl + 'sse?subscription=' + encodeURIComponent(sub.id as string), {
-        withCredentials: true,
-      });
-
-      eventSource.onmessage = (e: MessageEvent) => {
-        handler(JSON.parse(e.data) as Resource);
-      };
-
-      return eventSource;
-    });
   }
 
   getActiveLogin(): LoginState | undefined {
