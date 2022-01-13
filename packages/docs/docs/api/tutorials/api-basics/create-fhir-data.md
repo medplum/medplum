@@ -33,11 +33,11 @@ This example will illustrate how to create FHIR object, how to update them, how 
 Here is a breakdown of workflow at a high level
 
 - Authenticate with the server using OAuth client credentials flow
-- Use FHIR batch request to create a [Patient](/docs/api/fhir/patient) and a [ServiceRequest](/docs/api/fhir/servicerequest)
+- Use FHIR batch request to create a [Patient](/docs/api/fhir/resources/patient) and a [ServiceRequest](/docs/api/fhir/resources/servicerequest)
   - The example will use a conditional to only create the Patient if it does not already exist
   - The example will link the ServiceRequest to the Patient
-- Create an [Observation](/docs/api/fhir/observation) and DiagnosticReport resources
-- Read back the [DiagnosticReport](/docs/api/fhir/diagnosticreport) and [Observations](/docs/api/fhir/observation)
+- Create an [Observation](/docs/api/fhir/resources/observation) and DiagnosticReport resources
+- Read back the [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport) and [Observations](/docs/api/fhir/resources/observation)
   - Use a batch request to read all Observations in one go, versus making mulitple requests
 
 ## Authenticating using OAuth client credentials flow
@@ -72,7 +72,7 @@ async function authenticate() {
 
 ## Using a FHIR batch request to write data
 
-[Patient](/docs/api/fhir/patient) and a [ServiceRequest](/docs/api/fhir/servicerequest) sounds simple, but there are several nuances. If the [Patient](/docs/api/fhir/patient) already exists, a new one should not be created. We also need to ensure that the [ServiceRequest](/docs/api/fhir/servicerequest) is linked to the correct patient.
+[Patient](/docs/api/fhir/resources/patient) and a [ServiceRequest](/docs/api/fhir/resources/servicerequest) sounds simple, but there are several nuances. If the [Patient](/docs/api/fhir/resources/patient) already exists, a new one should not be created. We also need to ensure that the [ServiceRequest](/docs/api/fhir/resources/servicerequest) is linked to the correct patient.
 
 Creating a Patient if one does not exist uses the **conditional create** logic in FHIR. In this example, a patient has an Medical Record Number or MRN. If that MRN exists, then a new patient should not be created. In a lab workflow, it is common for a lab to serve patients repeatedly. In this case where there is already a patient in the system, it would be incorrect (and confusing) to make a new patient record.
 
@@ -178,7 +178,7 @@ The behavior of the the `Patient.identifier` field is important to note. `Patien
 
 We recommend that providers put documentation of their identifier system online for interoperability purposes.
 
-Creating a new [ServiceRequest](/docs/api/fhir/servicerequest) also has some nuance to it. ServiceRequests in this context can be thought of as a "requisition for a lab test" and the `ServiceRequest.code` specifies _what test panel_ is being ordered. Most labs will have a concept of a test menu and that should indicate which labs should be run for this service request.
+Creating a new [ServiceRequest](/docs/api/fhir/resources/servicerequest) also has some nuance to it. ServiceRequests in this context can be thought of as a "requisition for a lab test" and the `ServiceRequest.code` specifies _what test panel_ is being ordered. Most labs will have a concept of a test menu and that should indicate which labs should be run for this service request.
 
 TODO: Add to sample how to indicate that this is a lab requisition (vs procedure)
 
