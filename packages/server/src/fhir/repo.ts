@@ -1046,7 +1046,7 @@ export class Repository {
     }
 
     // Otherwise, default to the existing value.
-    return existing?.meta?.account;
+    return existing?.meta?.account ?? updated.meta?.account;
   }
 
   /**
@@ -1063,7 +1063,7 @@ export class Repository {
    * @returns True if the current user can manually set meta fields.
    */
   private canWriteMeta(): boolean {
-    return this.isSystem() || this.isAdmin() || this.isClientApplication();
+    return this.isSystem() || this.isAdmin();
   }
 
   /**
@@ -1169,10 +1169,6 @@ export class Repository {
 
   private isAdmin(): boolean {
     return !!this.context.admin || this.isAdminClient();
-  }
-
-  private isClientApplication(): boolean {
-    return !!this.context.author.reference?.startsWith('ClientApplication/');
   }
 
   private isAdminClient(): boolean {

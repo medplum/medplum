@@ -373,14 +373,9 @@ describe('Subscription Worker', () => {
   });
 
   test('Ignore resource changes in different project', async () => {
-    const project1 = randomUUID();
-    const project2 = randomUUID();
-
+    // Create a subscription in project 1
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
-      meta: {
-        project: project1,
-      },
       status: 'active',
       criteria: 'Patient',
       channel: {
@@ -394,11 +389,9 @@ describe('Subscription Worker', () => {
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    // Create a patient in project 2
+    const [patientOutcome, patient] = await botRepo.createResource<Patient>({
       resourceType: 'Patient',
-      meta: {
-        project: project2,
-      },
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
 

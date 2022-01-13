@@ -161,14 +161,14 @@ describe('AccessPolicy', () => {
       ],
     };
 
-    const systemRepo = new Repository({
+    const repo = new Repository({
       author: {
         reference: 'Practitioner/123',
       },
       accessPolicy,
     });
 
-    const [createOutcome, patient] = await systemRepo.createResource<Patient>({
+    const [createOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
       birthDate: '1970-01-01',
@@ -177,10 +177,60 @@ describe('AccessPolicy', () => {
     expect(patient).toBeDefined();
     expect(patient?.meta?.account).toBeDefined();
 
-    const [readOutcome, readPatient] = await systemRepo.readResource('Patient', patient?.id as string);
+    const [readOutcome, readPatient] = await repo.readResource('Patient', patient?.id as string);
     assertOk(readOutcome, readPatient);
     expect(readPatient).toBeDefined();
     expect(readPatient?.meta?.account).toBeDefined();
+  });
+
+  test('Access policy blocks account override', async () => {
+    // Setup:
+    // User has an access policy with account/compartment restriction
+    // User tries to override the account
+    // That should be blocked
+
+    const orgId = randomUUID();
+
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      compartment: {
+        reference: 'Organization/' + orgId,
+      },
+      resource: [
+        {
+          resourceType: 'Patient',
+          compartment: {
+            reference: 'Organization/' + orgId,
+          },
+        },
+      ],
+    };
+
+    const repo = new Repository({
+      author: {
+        reference: 'Practitioner/123',
+      },
+      accessPolicy,
+    });
+
+    const [createOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      birthDate: '1970-01-01',
+      meta: {
+        account: {
+          reference: 'Organization/' + randomUUID(), // naughty!
+        },
+      },
+    });
+    assertOk(createOutcome, patient);
+    expect(patient.meta?.account).toBeDefined();
+    expect(patient.meta?.account?.reference).toEqual('Organization/' + orgId);
+
+    const [readOutcome, readPatient] = await repo.readResource('Patient', patient?.id as string);
+    assertOk(readOutcome, readPatient);
+    expect(readPatient.meta?.account).toBeDefined();
+    expect(readPatient.meta?.account?.reference).toEqual('Organization/' + orgId);
   });
 
   test('Access policy restrict compartment', async () => {
