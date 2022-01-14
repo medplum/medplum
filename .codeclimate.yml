@@ -5,6 +5,7 @@ exclude_patterns:
 - "**/dist/"
 - "**/stories/"
 - "**/babel.config.js"
+- "**/rollup.config.js"
 - "**/webpack.config.js"
 - "**/jest.sequencer.js"
 - "**/*.test.ts"
