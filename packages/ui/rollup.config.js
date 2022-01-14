@@ -34,6 +34,6 @@ export default {
       sourcemap: true,
     },
   ],
-  plugins: [peerDepsExternal(), postcss({ extract: true }), resolve({ extensions }), typescript()],
+  plugins: [peerDepsExternal(), postcss({ extract: 'styles.css' }), resolve({ extensions }), typescript()],
   external: ['@medplum/core', '@medplum/mock', 'react', 'react-dom', 'react-router-dom'],
 };
