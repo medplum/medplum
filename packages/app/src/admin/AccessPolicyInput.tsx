@@ -1,23 +1,32 @@
-import { AccessPolicy, ElementDefinition, Reference } from '@medplum/fhirtypes';
-import { ReferenceInput } from '@medplum/ui';
+import { createReference } from '@medplum/core';
+import { AccessPolicy, Reference } from '@medplum/fhirtypes';
+import { ResourceInput } from '@medplum/ui';
 import React from 'react';
-
-const accessPolicyProperty: ElementDefinition = {
-  min: 0,
-  max: '1',
-  type: [
-    {
-      code: 'Reference',
-      targetProfile: ['https://medplum.com/fhir/StructureDefinition/AccessPolicy'],
-    },
-  ],
-};
 
 export interface AccessPolicyInputProps {
   readonly name: string;
-  readonly defaultValue?: Reference<AccessPolicy>;
+  readonly defaultValue?: AccessPolicy | Reference<AccessPolicy>;
+  readonly onChange: (value: Reference<AccessPolicy> | undefined) => void;
 }
 
 export function AccessPolicyInput(props: AccessPolicyInputProps): JSX.Element {
-  return <ReferenceInput name="accessPolicy" property={accessPolicyProperty} defaultValue={props.defaultValue} />;
+  return (
+    <ResourceInput
+      resourceType="AccessPolicy"
+      name="accessPolicy"
+      defaultValue={props.defaultValue}
+      placeholder="Access Policy"
+      onChange={(newValue) => {
+        if (newValue) {
+          if ('reference' in newValue) {
+            props.onChange(newValue);
+          } else if ('resourceType' in newValue) {
+            props.onChange(createReference(newValue));
+          }
+        } else {
+          props.onChange(undefined);
+        }
+      }}
+    />
+  );
 }

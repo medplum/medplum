@@ -9,6 +9,10 @@ export function InvitePage(): JSX.Element {
   const medplum = useMedplum();
   const [loading, setLoading] = useState<boolean>(true);
   const [result, setResult] = useState<any>();
+  const [firstName, setFirstName] = useState<string>('');
+  const [lastName, setLastName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [accessPolicy, setAccessPolicy] = useState<Reference<AccessPolicy>>();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [success, setSuccess] = useState(false);
 
@@ -31,12 +35,11 @@ export function InvitePage(): JSX.Element {
       <h1>Admin / Projects / {result.project.name}</h1>
       <h3>Invite new member</h3>
       <Form
-        onSubmit={(formData: Record<string, string>) => {
-          const accessPolicy = formData.accessPolicy
-            ? (JSON.parse(formData.accessPolicy) as Reference<AccessPolicy>)
-            : undefined;
+        onSubmit={() => {
           const body = {
-            ...formData,
+            firstName,
+            lastName,
+            email,
             accessPolicy,
           };
           medplum
@@ -54,17 +57,32 @@ export function InvitePage(): JSX.Element {
                 testid="firstName"
                 required={true}
                 autoFocus={true}
+                onChange={(e) => setFirstName(e.target.value)}
                 outcome={outcome}
               />
             </FormSection>
             <FormSection title="Last Name" htmlFor="lastName" outcome={outcome}>
-              <TextField name="lastName" type="text" testid="lastName" required={true} outcome={outcome} />
+              <TextField
+                name="lastName"
+                type="text"
+                testid="lastName"
+                required={true}
+                onChange={(e) => setLastName(e.target.value)}
+                outcome={outcome}
+              />
             </FormSection>
             <FormSection title="Email" htmlFor="email" outcome={outcome}>
-              <TextField name="email" type="email" testid="email" required={true} outcome={outcome} />
+              <TextField
+                name="email"
+                type="email"
+                testid="email"
+                required={true}
+                onChange={(e) => setEmail(e.target.value)}
+                outcome={outcome}
+              />
             </FormSection>
             <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={outcome}>
-              <AccessPolicyInput name="accessPolicy" />
+              <AccessPolicyInput name="accessPolicy" onChange={setAccessPolicy} />
             </FormSection>
             <div className="medplum-signin-buttons">
               <div></div>
