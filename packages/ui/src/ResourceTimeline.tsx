@@ -54,12 +54,16 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       return;
     }
 
-    const bathRequest = props.buildSearchRequests(resource);
-    medplum.post('fhir/R4', bathRequest).then((batchResponse) => {
+    const batchRequest = props.buildSearchRequests(resource);
+    medplum.post('fhir/R4', batchRequest).then((batchResponse) => {
       const newItems = [];
 
       for (const batchEntry of batchResponse.entry) {
         const bundle = batchEntry.resource as Bundle;
+        if (!bundle) {
+          // User may not have access to all resource types
+          continue;
+        }
 
         if (bundle.type === 'history') {
           setHistory(bundle);

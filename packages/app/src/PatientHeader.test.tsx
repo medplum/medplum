@@ -184,4 +184,12 @@ describe('PatientHeader', () => {
 
     expect(screen.getByText('019M')).toBeInTheDocument();
   });
+
+  test('Handles blank name', async () => {
+    setup({
+      resourceType: 'Patient',
+    });
+
+    expect(screen.getByText('[blank]')).toBeInTheDocument();
+  });
 });
