@@ -20,7 +20,7 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
           <dt>Name</dt>
           <dd>
             <MedplumLink to={patient}>
-              <HumanNameDisplay value={patient.name?.[0]} options={{ use: false }} />
+              {patient.name ? <HumanNameDisplay value={patient.name?.[0]} options={{ use: false }} /> : '[blank]'}
             </MedplumLink>
           </dd>
         </dl>
