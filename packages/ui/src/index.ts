@@ -43,6 +43,7 @@ export * from './ResourceBlame';
 export * from './ResourceDiff';
 export * from './ResourceForm';
 export * from './ResourceHistoryTable';
+export * from './ResourceInput';
 export * from './ResourceName';
 export * from './ResourcePropertyDisplay';
 export * from './ResourcePropertyInput';

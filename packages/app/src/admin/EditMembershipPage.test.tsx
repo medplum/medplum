@@ -24,23 +24,23 @@ describe('EditMembershipPage', () => {
     setup('/admin/projects/123/members/456');
 
     await act(async () => {
-      await waitFor(() => screen.getByText('Edit'));
+      await waitFor(() => screen.getByText('Save'));
     });
 
-    expect(screen.getByText('Edit')).toBeInTheDocument();
+    expect(screen.getByText('Save')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
     setup('/admin/projects/123/members/456');
 
     await act(async () => {
-      await waitFor(() => screen.getByText('Edit'));
+      await waitFor(() => screen.getByText('Save'));
     });
 
-    expect(screen.getByText('Edit')).toBeInTheDocument();
+    expect(screen.getByText('Save')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Edit'));
+      fireEvent.click(screen.getByText('Save'));
     });
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
