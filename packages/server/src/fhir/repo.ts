@@ -1131,7 +1131,7 @@ export class Repository {
     const policy = this.getResourceAccessPolicy(input.resourceType);
     if (policy?.hiddenFields) {
       for (const field of policy.hiddenFields) {
-        delete input[field as keyof T];
+        this.removeField(input, field);
       }
     }
     return input;
@@ -1146,10 +1146,22 @@ export class Repository {
     const policy = this.getResourceAccessPolicy(input.resourceType);
     if (policy?.readonlyFields) {
       for (const field of policy.readonlyFields) {
-        delete input[field as keyof T];
+        this.removeField(input, field);
       }
     }
     return input;
+  }
+
+  /**
+   * Removes a field from the input resource.
+   * Uses JSONPatch to process the remove operation, which supports nested fields.
+   * @param input The input resource.
+   * @param path The path to the field to remove.
+   * @returns The new document with the field removed.
+   */
+  private removeField<T extends Resource>(input: T, path: string): T {
+    const patch: Operation[] = [{ op: 'remove', path: `/${path.replaceAll('.', '/')}` }];
+    return applyPatch(input, patch).newDocument;
   }
 
   private getResourceAccessPolicy(resourceType: string): AccessPolicyResource | undefined {
