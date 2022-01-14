@@ -17,12 +17,8 @@ export function AccessPolicyInput(props: AccessPolicyInputProps): JSX.Element {
       defaultValue={props.defaultValue}
       placeholder="Access Policy"
       onChange={(newValue) => {
-        if (newValue) {
-          if ('reference' in newValue) {
-            props.onChange(newValue);
-          } else if ('resourceType' in newValue) {
-            props.onChange(createReference(newValue));
-          }
+        if (newValue && 'resourceType' in newValue) {
+          props.onChange(createReference(newValue));
         } else {
           props.onChange(undefined);
         }

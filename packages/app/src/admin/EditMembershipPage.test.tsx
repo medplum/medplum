@@ -20,6 +20,17 @@ function setup(url: string): void {
 }
 
 describe('EditMembershipPage', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(async () => {
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
+  });
+
   test('Renders', async () => {
     setup('/admin/projects/123/members/456');
 
@@ -38,6 +49,40 @@ describe('EditMembershipPage', () => {
     });
 
     expect(screen.getByText('Save')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(screen.getByTestId('success')).toBeInTheDocument();
+  });
+
+  test('Submit with access policy', async () => {
+    setup('/admin/projects/123/members/456');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Save'));
+    });
+
+    expect(screen.getByText('Save')).toBeInTheDocument();
+
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+
+    // Enter "Example Access Policy"
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Example Access Policy' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+      await waitFor(() => screen.getByTestId('dropdown'));
+    });
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
 
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
