@@ -422,6 +422,9 @@ export class MedplumClient extends EventTarget {
               code,
               targetProfile
             },
+            binding {
+              valueSet
+            },
             definition
           }
         }
