@@ -1,5 +1,5 @@
 import { assertOk, createReference } from '@medplum/core';
-import { AccessPolicy, ClientApplication, Observation, Patient } from '@medplum/fhirtypes';
+import { AccessPolicy, ClientApplication, Observation, Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
@@ -416,7 +416,6 @@ describe('AccessPolicy', () => {
       birthDate: '1970-01-01',
     });
     assertOk(createOutcome, patient);
-    expect(patient).toBeDefined();
 
     // AccessPolicy that hides Patient name
     const accessPolicy: AccessPolicy = {
@@ -465,7 +464,6 @@ describe('AccessPolicy', () => {
       birthDate: '1970-01-01',
     });
     assertOk(createOutcome, patient);
-    expect(patient).toBeDefined();
 
     // AccessPolicy that hides Patient name
     const accessPolicy: AccessPolicy = {
@@ -508,5 +506,144 @@ describe('AccessPolicy', () => {
       ],
     });
     expect(historyBundle.entry?.[0]?.resource?.name).toBeUndefined();
+  });
+
+  test('Nested hidden fields on read', async () => {
+    const [createOutcome, serviceRequest] = await systemRepo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      code: {
+        text: 'test',
+      },
+      subject: {
+        reference: 'Patient/' + randomUUID(),
+        display: 'Alice Smith',
+      },
+    });
+    assertOk(createOutcome, serviceRequest);
+
+    // AccessPolicy that hides ServiceRequest subject.display
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'ServiceRequest',
+          hiddenFields: ['subject.display'],
+        },
+      ],
+    };
+
+    const repo2 = new Repository({
+      author: {
+        reference: 'Practitioner/123',
+      },
+      accessPolicy,
+    });
+
+    const [readOutcome, readResource] = await repo2.readResource<ServiceRequest>(
+      'ServiceRequest',
+      serviceRequest?.id as string
+    );
+    assertOk(readOutcome, readResource);
+    expect(readResource).toMatchObject({
+      resourceType: 'ServiceRequest',
+      code: {
+        text: 'test',
+      },
+    });
+    expect(readResource.subject).toBeDefined();
+    expect(readResource.subject?.reference).toBeDefined();
+    expect(readResource.subject?.display).toBeUndefined();
+
+    const [readHistoryOutcome, historyBundle] = await repo2.readHistory<ServiceRequest>(
+      'ServiceRequest',
+      serviceRequest?.id as string
+    );
+    assertOk(readHistoryOutcome, historyBundle);
+    expect(historyBundle).toMatchObject({
+      resourceType: 'Bundle',
+      type: 'history',
+      entry: [
+        {
+          resource: {
+            resourceType: 'ServiceRequest',
+            code: {
+              text: 'test',
+            },
+          },
+        },
+      ],
+    });
+    expect(historyBundle.entry?.[0]?.resource?.subject).toBeDefined();
+    expect(historyBundle.entry?.[0]?.resource?.subject?.reference).toBeDefined();
+    expect(historyBundle.entry?.[0]?.resource?.subject?.display).toBeUndefined();
+  });
+
+  test('Hide nonexistent field', async () => {
+    const [createOutcome, serviceRequest] = await systemRepo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      code: {
+        text: 'test',
+      },
+      subject: {
+        reference: 'Patient/' + randomUUID(),
+      },
+    });
+    assertOk(createOutcome, serviceRequest);
+
+    // AccessPolicy that hides ServiceRequest subject.display
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'ServiceRequest',
+          hiddenFields: ['subject.display'],
+        },
+      ],
+    };
+
+    const repo2 = new Repository({
+      author: {
+        reference: 'Practitioner/123',
+      },
+      accessPolicy,
+    });
+
+    const [readOutcome, readResource] = await repo2.readResource<ServiceRequest>(
+      'ServiceRequest',
+      serviceRequest?.id as string
+    );
+    assertOk(readOutcome, readResource);
+    expect(readResource).toMatchObject({
+      resourceType: 'ServiceRequest',
+      code: {
+        text: 'test',
+      },
+    });
+    expect(readResource.subject).toBeDefined();
+    expect(readResource.subject?.reference).toBeDefined();
+    expect(readResource.subject?.display).toBeUndefined();
+
+    const [readHistoryOutcome, historyBundle] = await repo2.readHistory<ServiceRequest>(
+      'ServiceRequest',
+      serviceRequest?.id as string
+    );
+    assertOk(readHistoryOutcome, historyBundle);
+    expect(historyBundle).toMatchObject({
+      resourceType: 'Bundle',
+      type: 'history',
+      entry: [
+        {
+          resource: {
+            resourceType: 'ServiceRequest',
+            code: {
+              text: 'test',
+            },
+          },
+        },
+      ],
+    });
+    expect(historyBundle.entry?.[0]?.resource?.subject).toBeDefined();
+    expect(historyBundle.entry?.[0]?.resource?.subject?.reference).toBeDefined();
+    expect(historyBundle.entry?.[0]?.resource?.subject?.display).toBeUndefined();
   });
 });
