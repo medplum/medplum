@@ -1,6 +1,6 @@
 import { evalFhirPath } from '@medplum/fhirpath';
 import { Resource } from '@medplum/fhirtypes';
-import parser from 'fast-xml-parser';
+import { XMLParser } from 'fast-xml-parser';
 import fhirpath from 'fhirpath';
 import fs from 'fs';
 
@@ -27,8 +27,9 @@ const options = {
   trimValues: true,
 };
 
-const tObj = parser.getTraversalObj(xmlData, options);
-const jsonObj = parser.convertToJson(tObj, options);
+const parser = new XMLParser(options);
+const jsonObj = parser.parse(xmlData);
+fs.writeFileSync('compare.json', JSON.stringify(jsonObj, null, 2));
 
 const lines = [
   `
@@ -93,7 +94,7 @@ const counts = [
 ];
 
 function getName(obj: any): string {
-  return obj.attr['@_description'] || obj.attr['@_name'];
+  return obj['@_description'] || obj['@_name'];
 }
 
 function processTests(tests: any): void {
@@ -117,7 +118,7 @@ function processGroup(group: any): void {
 }
 
 function processTest(test: any): void {
-  if (test.attr && test.attr['@_predicate'] === true) {
+  if (test['@_predicate'] === true) {
     // Ignore predicate tests
     // There is only one currently, and it is duplicative
     return;
@@ -134,7 +135,7 @@ function processTest(test: any): void {
     expr = unescapeXml(test.expression);
   } else if (typeof test.expression === 'object' && test.expression['#text']) {
     expr = unescapeXml(test.expression['#text']);
-    valid = !(test.expression.attr && test.expression.attr['@_invalid']);
+    valid = !test.expression?.['@_invalid'];
   } else {
     console.log('unknown test expression');
     console.log(test);
@@ -143,7 +144,7 @@ function processTest(test: any): void {
 
   lines.push(`<td>${escapeXml(JSON.stringify(expr))}</td>`);
 
-  const resourceType = test.attr['@_inputfile'].split('-')[0];
+  const resourceType = test['@_inputfile'].split('-')[0];
   const resource = resources[resourceType];
 
   let outputStr;
