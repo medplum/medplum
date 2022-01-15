@@ -160,10 +160,10 @@ export class MedplumClient extends EventTarget {
   private refreshPromise?: Promise<any>;
   private loading: boolean;
 
-  constructor(options: MedplumClientOptions) {
+  constructor(options?: MedplumClientOptions) {
     super();
 
-    if (options.baseUrl) {
+    if (options?.baseUrl) {
       if (!options.baseUrl.startsWith('http')) {
         throw new Error('Base URL must start with http or https');
       }
@@ -172,16 +172,16 @@ export class MedplumClient extends EventTarget {
       }
     }
 
-    this.fetch = options.fetch || window.fetch.bind(window);
+    this.fetch = options?.fetch || window.fetch.bind(window);
     this.storage = new ClientStorage();
     this.schema = createSchema();
-    this.resourceCache = new LRUCache(options.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
-    this.baseUrl = options.baseUrl || DEFAULT_BASE_URL;
-    this.clientId = options.clientId || '';
-    this.authorizeUrl = options.authorizeUrl || this.baseUrl + 'oauth2/authorize';
-    this.tokenUrl = options.tokenUrl || this.baseUrl + 'oauth2/token';
-    this.logoutUrl = options.logoutUrl || this.baseUrl + 'oauth2/logout';
-    this.onUnauthenticated = options.onUnauthenticated;
+    this.resourceCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
+    this.baseUrl = options?.baseUrl || DEFAULT_BASE_URL;
+    this.clientId = options?.clientId || '';
+    this.authorizeUrl = options?.authorizeUrl || this.baseUrl + 'oauth2/authorize';
+    this.tokenUrl = options?.tokenUrl || this.baseUrl + 'oauth2/token';
+    this.logoutUrl = options?.logoutUrl || this.baseUrl + 'oauth2/logout';
+    this.onUnauthenticated = options?.onUnauthenticated;
     if (!this.getActiveLogin()?.profile?.reference) {
       this.clear();
     }

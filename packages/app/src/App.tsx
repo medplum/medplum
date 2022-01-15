@@ -17,6 +17,7 @@ import { ResourcePage } from './ResourcePage';
 import { ResourceVersionPage } from './ResourceVersionPage';
 import { SetPasswordPage } from './SetPasswordPage';
 import { SignInPage } from './SignInPage';
+import '@medplum/ui/styles.css';
 import './App.css';
 
 export function App(): JSX.Element {
