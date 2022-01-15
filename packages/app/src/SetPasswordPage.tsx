@@ -1,3 +1,4 @@
+import { badRequest } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Button, Document, Form, FormSection, Logo, MedplumLink, TextField, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
@@ -14,6 +15,11 @@ export function SetPasswordPage(): JSX.Element {
       <Form
         style={{ maxWidth: 400 }}
         onSubmit={(formData: Record<string, string>) => {
+          if (formData.password !== formData.confirmPassword) {
+            setOutcome(badRequest('Passwords do not match', 'confirmPassword'));
+            return;
+          }
+          setOutcome(undefined);
           const body = {
             id,
             secret,

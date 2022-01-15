@@ -3,12 +3,13 @@ import { PasswordChangeRequest, Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
+import { pwnedPassword } from 'hibp';
 import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 
 export const setPasswordValidators = [
   body('id').isUUID().withMessage('Invalid request ID'),
   body('secret').notEmpty().withMessage('Missing secret'),
-  body('password').isLength({ min: 5 }).withMessage('Invalid password, must be at least 5 characters'),
+  body('password').isLength({ min: 8 }).withMessage('Invalid password, must be at least 8 characters'),
 ];
 
 export async function setPasswordHandler(req: Request, res: Response): Promise<void> {
@@ -33,6 +34,12 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
 
   const [userOutcome, user] = await systemRepo.readReference(pcr.user as Reference<User>);
   assertOk(userOutcome, user);
+
+  const numPwns = await pwnedPassword(req.body.password);
+  if (numPwns > 0) {
+    sendOutcome(res, badRequest('Password found in breach database', 'password'));
+    return;
+  }
 
   const passwordHash = await bcrypt.hash(req.body.password, 10);
   const [updateUserOutcome, updatedUser] = await systemRepo.updateResource<User>({

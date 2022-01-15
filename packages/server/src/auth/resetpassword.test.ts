@@ -1,16 +1,18 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { setupRecaptchaMock } from '../jest.setup';
+import { setupPwnedPasswordMock, setupRecaptchaMock } from '../jest.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 
 jest.mock('@aws-sdk/client-sesv2');
+jest.mock('hibp');
 jest.mock('node-fetch');
 
 const app = express();
@@ -32,7 +34,9 @@ describe('Reset Password', () => {
     (SESv2Client as unknown as jest.Mock).mockClear();
     (SendEmailCommand as unknown as jest.Mock).mockClear();
     (fetch as unknown as jest.Mock).mockClear();
-    setupRecaptchaMock(fetch, true);
+    (pwnedPassword as unknown as jest.Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
+    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
   });
 
   test('Blank email address', async () => {
@@ -55,7 +59,7 @@ describe('Reset Password', () => {
   });
 
   test('Incorrect recaptcha', async () => {
-    setupRecaptchaMock(fetch, false);
+    setupRecaptchaMock(fetch as unknown as jest.Mock, false);
 
     const res = await request(app).post('/auth/resetpassword').type('json').send({
       email: 'admin@example.com',

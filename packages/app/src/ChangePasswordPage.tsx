@@ -12,6 +12,7 @@ export function ChangePasswordPage(): JSX.Element {
       <Form
         style={{ maxWidth: 400 }}
         onSubmit={(formData: Record<string, string>) => {
+          setOutcome(undefined);
           medplum
             .post('auth/changepassword', formData)
             .then(() => setSuccess(true))
@@ -56,7 +57,7 @@ export function ChangePasswordPage(): JSX.Element {
             </div>
           </>
         )}
-        {success && <div data-testid="success">Email sent</div>}
+        {success && <div data-testid="success">Password changed successfully</div>}
       </Form>
     </Document>
   );

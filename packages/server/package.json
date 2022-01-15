@@ -39,6 +39,7 @@
     "express-validator": "6.14.0",
     "fast-json-patch": "3.1.0",
     "graphql": "16.2.0",
+    "hibp": "11.0.0",
     "ioredis": "4.28.2",
     "jose": "4.3.8",
     "mustache": "4.2.0",

@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
+import { pwnedPassword } from 'hibp';
 import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { logger } from '../logger';
 import { generateSecret, getAuthTokens, tryLogin } from '../oauth';
@@ -31,7 +32,7 @@ export const registerValidators = [
   body('lastName').notEmpty().withMessage('Last name is required'),
   body('projectName').notEmpty().withMessage('Project name is required'),
   body('email').isEmail().withMessage('Valid email address is required'),
-  body('password').isLength({ min: 5 }).withMessage('Invalid password, must be at least 5 characters'),
+  body('password').isLength({ min: 8 }).withMessage('Invalid password, must be at least 8 characters'),
   body('recaptchaToken').notEmpty().withMessage('Recaptcha token is required'),
 ];
 
@@ -50,6 +51,12 @@ export async function registerHandler(req: Request, res: Response): Promise<void
   const { email, password } = req.body;
   if (await searchForExisting(email)) {
     sendOutcome(res, badRequest('Email already registered', 'email'));
+    return;
+  }
+
+  const numPwns = await pwnedPassword(password);
+  if (numPwns > 0) {
+    sendOutcome(res, badRequest('Password found in breach database', 'password'));
     return;
   }
 
