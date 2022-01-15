@@ -224,7 +224,7 @@ function generateJwt(exp: '1h' | '2w', claims: JWTPayload): Promise<string> {
   }
 
   return new SignJWT(claims)
-    .setProtectedHeader({ alg: ALG, kid: signingKeyId })
+    .setProtectedHeader({ alg: ALG, kid: signingKeyId, typ: 'JWT' })
     .setIssuedAt()
     .setIssuer(issuer)
     .setAudience(claims.client_id as string)

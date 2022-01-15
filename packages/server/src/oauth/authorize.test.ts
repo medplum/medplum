@@ -151,7 +151,7 @@ describe('OAuth Authorize', () => {
         nonce: 'asdf',
       });
     expect(res.status).toBe(200);
-    expect(res.text).toContain('Incorrect password');
+    expect(res.text).toContain('Email or password is invalid');
   });
 
   test('Authorize POST success without code_challenge', async () => {

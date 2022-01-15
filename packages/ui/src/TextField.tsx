@@ -10,6 +10,7 @@ export interface TextFieldProps {
   step?: number;
   defaultValue?: string;
   required?: boolean;
+  autoComplete?: string;
   autoFocus?: boolean;
   inputRef?: RefObject<HTMLInputElement>;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -31,6 +32,7 @@ export function TextField(props: TextFieldProps): JSX.Element {
       className={className}
       defaultValue={props.defaultValue || ''}
       required={props.required}
+      autoComplete={props.autoComplete}
       autoFocus={props.autoFocus}
       ref={props.inputRef}
       onChange={props.onChange}

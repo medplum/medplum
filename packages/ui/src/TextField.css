@@ -114,6 +114,7 @@ input[type='radio'] {
   border: 0.1px solid var(--medplum-gray-300);
   border-radius: 0;
   background: var(--medplum-surface);
+  margin: 4px;
 }
 
 input[type='checkbox']:focus,

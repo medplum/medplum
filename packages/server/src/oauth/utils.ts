@@ -98,7 +98,7 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
   }
 
   if (!user) {
-    return [badRequest('User not found', 'email'), undefined];
+    return [badRequest('Email or password is invalid'), undefined];
   }
 
   const authOutcome = await authenticate(request, user);
@@ -184,12 +184,12 @@ async function authenticate(request: LoginRequest, user: User): Promise<Operatio
   if (request.password) {
     const passwordHash = user?.passwordHash;
     if (!passwordHash) {
-      return badRequest('Invalid user', 'email');
+      return badRequest('Email or password is invalid');
     }
 
     const bcryptResult = await bcrypt.compare(request.password, passwordHash);
     if (!bcryptResult) {
-      return badRequest('Incorrect password', 'password');
+      return badRequest('Email or password is invalid');
     }
 
     return allOk;
