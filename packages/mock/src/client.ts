@@ -37,6 +37,7 @@ import {
   SimpsonSearchBundle,
   TestOrganization,
 } from './mocks';
+import { ExampleAccessPolicy, ExampleAccessPolicySearchBundle } from './mocks/accesspolicy';
 
 const newComment: Communication = {
   resourceType: 'Communication',
@@ -162,6 +163,12 @@ const routes: Record<string, Record<string, any>> = {
         };
       }
     },
+  },
+  'fhir/R4/AccessPolicy?name=Example%20Access%20Policy': {
+    GET: ExampleAccessPolicySearchBundle,
+  },
+  'fhir/R4/AccessPolicy/123': {
+    GET: ExampleAccessPolicy,
   },
   'fhir/R4/AuditEvent?entity=Subscription/123&_count=20&_sort=-_lastUpdated': {
     GET: ExampleAuditEventBundle,

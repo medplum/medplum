@@ -20,6 +20,17 @@ function setup(url: string): void {
 }
 
 describe('InvitePage', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(async () => {
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
+  });
+
   test('Renders', async () => {
     setup('/admin/projects/123/invite');
 
@@ -77,9 +88,24 @@ describe('InvitePage', () => {
       fireEvent.change(screen.getByTestId('email'), {
         target: { value: 'george@example.com' },
       });
-      fireEvent.change(screen.getByTestId('input-element'), {
-        target: { value: '{"reference":"AccessPolicy/123"' },
-      });
+    });
+
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+
+    // Enter "Example Access Policy"
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Example Access Policy' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+      await waitFor(() => screen.getByTestId('dropdown'));
+    });
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
     await act(async () => {

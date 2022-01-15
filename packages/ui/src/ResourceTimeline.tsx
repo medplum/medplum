@@ -55,9 +55,17 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     }
 
     const batchRequest = props.buildSearchRequests(resource);
-    medplum.post('fhir/R4', batchRequest).then((batchResponse) => {
-      const newItems = [];
+    medplum.post('fhir/R4', batchRequest).then(handleBatchResponse);
+  }
 
+  /**
+   * Handles a batch request response.
+   * @param batchResponse The batch response.
+   */
+  function handleBatchResponse(batchResponse: Bundle): void {
+    const newItems = [];
+
+    if (batchResponse.entry) {
       for (const batchEntry of batchResponse.entry) {
         const bundle = batchEntry.resource as Bundle;
         if (!bundle) {
@@ -78,8 +86,9 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
 
       sortByDate(newItems);
       newItems.reverse();
-      setItems(newItems);
-    });
+    }
+
+    setItems(newItems);
   }
 
   /**
