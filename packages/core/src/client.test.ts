@@ -207,6 +207,9 @@ describe('Client', () => {
           fetch: mockFetch,
         })
     ).not.toThrow();
+
+    window.fetch = jest.fn();
+    expect(() => new MedplumClient()).not.toThrow();
   });
 
   test('Clear', () => {

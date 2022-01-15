@@ -21,13 +21,13 @@ export default {
     {
       file: 'dist/cjs/index.js',
       format: 'umd',
-      name: '@medplum/core',
+      name: 'medplum.core',
       sourcemap: true,
     },
     {
       file: 'dist/cjs/index.min.js',
       format: 'umd',
-      name: '@medplum/core',
+      name: 'medplum.core',
       plugins: [terser()],
       sourcemap: true,
     },

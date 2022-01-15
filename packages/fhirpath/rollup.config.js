@@ -21,13 +21,13 @@ export default {
     {
       file: 'dist/cjs/index.js',
       format: 'umd',
-      name: '@medplum/fhirpath',
+      name: 'medplum.fhirpath',
       sourcemap: true,
     },
     {
       file: 'dist/cjs/index.min.js',
       format: 'umd',
-      name: '@medplum/fhirpath',
+      name: 'medplum.fhirpath',
       plugins: [terser()],
       sourcemap: true,
     },

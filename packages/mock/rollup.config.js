@@ -21,15 +21,21 @@ export default {
     {
       file: 'dist/cjs/index.js',
       format: 'umd',
-      name: '@medplum/mock',
+      name: 'medplum.mock',
       sourcemap: true,
+      globals: {
+        '@medplum/core': 'medplum.core',
+      },
     },
     {
       file: 'dist/cjs/index.min.js',
       format: 'umd',
-      name: '@medplum/mock',
+      name: 'medplum.mock',
       plugins: [terser()],
       sourcemap: true,
+      globals: {
+        '@medplum/core': 'medplum.core',
+      },
     },
   ],
   plugins: [resolve({ extensions }), typescript()],

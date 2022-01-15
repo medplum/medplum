@@ -6,6 +6,14 @@ import { terser } from 'rollup-plugin-terser';
 
 const extensions = ['.ts', '.tsx'];
 
+const globals = {
+  '@medplum/core': 'medplum.core',
+  '@medplum/mock': 'medplum.mock',
+  react: 'React',
+  'react-dom': 'ReactDOM',
+  'react-router-dom': 'ReactRouterDOM',
+};
+
 export default {
   input: 'src/index.ts',
   output: [
@@ -23,17 +31,19 @@ export default {
     {
       file: 'dist/cjs/index.js',
       format: 'umd',
-      name: '@medplum/ui',
+      name: 'medplum.ui',
       sourcemap: true,
+      globals,
     },
     {
       file: 'dist/cjs/index.min.js',
       format: 'umd',
-      name: '@medplum/ui',
+      name: 'medplum.ui',
       plugins: [terser()],
       sourcemap: true,
+      globals,
     },
   ],
   plugins: [peerDepsExternal(), postcss({ extract: 'styles.css' }), resolve({ extensions }), typescript()],
-  external: ['@medplum/core', '@medplum/mock', 'react', 'react-dom', 'react-router-dom'],
+  external: Object.keys(globals),
 };
