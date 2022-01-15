@@ -22,7 +22,7 @@ function setup(url: string): void {
 describe('SetPasswordPage', () => {
   test('Renders', () => {
     setup('/setpassword/123/456');
-    const input = screen.getByTestId('submit') as HTMLButtonElement;
+    const input = screen.getByRole('button') as HTMLButtonElement;
     expect(input.innerHTML).toBe('Set password');
   });
 
@@ -33,28 +33,53 @@ describe('SetPasswordPage', () => {
       fireEvent.change(screen.getByTestId('password'), {
         target: { value: 'orange' },
       });
+      fireEvent.change(screen.getByTestId('confirmPassword'), {
+        target: { value: 'orange' },
+      });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByRole('button'));
     });
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
   });
 
-  test('Wrong old password', async () => {
+  test('Passwords do not match', async () => {
+    setup('/setpassword/123/456');
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('password'), {
+        target: { value: 'orange' },
+      });
+      fireEvent.change(screen.getByTestId('confirmPassword'), {
+        target: { value: 'watermelon' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button'));
+    });
+
+    expect(screen.getByText('Passwords do not match')).toBeInTheDocument();
+  });
+
+  test('Invalid new password', async () => {
     setup('/setpassword/123/456');
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('password'), {
         target: { value: 'watermelon' },
       });
+      fireEvent.change(screen.getByTestId('confirmPassword'), {
+        target: { value: 'watermelon' },
+      });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByRole('button'));
     });
 
-    expect(screen.getByText('Incorrect password')).toBeInTheDocument();
+    expect(screen.getByText('Invalid password')).toBeInTheDocument();
   });
 });

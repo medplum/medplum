@@ -52,9 +52,7 @@ export function SetPasswordPage(): JSX.Element {
             <div className="medplum-signin-buttons">
               <div></div>
               <div>
-                <Button type="submit" testid="submit">
-                  Set password
-                </Button>
+                <Button type="submit">Set password</Button>
               </div>
             </div>
           </>
