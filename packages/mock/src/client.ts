@@ -116,7 +116,7 @@ const routes: Record<string, Record<string, any>> = {
             {
               expression: ['password'],
               details: {
-                text: 'Incorrect password',
+                text: 'Invalid password',
               },
             },
           ],

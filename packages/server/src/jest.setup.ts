@@ -53,11 +53,20 @@ export async function initTestAuth(): Promise<string> {
 }
 
 /**
+ * Sets up the pwnedPassword mock to handle "Have I Been Pwned" requests.
+ * @param pwnedPassword The pwnedPassword mock.
+ * @param numPwns The mock value to return. Zero is a safe password.
+ */
+export function setupPwnedPasswordMock(pwnedPassword: jest.Mock, numPwns: number): void {
+  pwnedPassword.mockImplementation(async () => numPwns);
+}
+
+/**
  * Sets up the fetch mock to handle Recaptcha requests.
  * @param fetch The fetch mock.
  * @param success Whether the mock should return a successful response.
  */
-export function setupRecaptchaMock(fetch: any, success: boolean): void {
+export function setupRecaptchaMock(fetch: jest.Mock, success: boolean): void {
   fetch.mockImplementation(() => ({
     status: 200,
     json: () => ({ success }),
