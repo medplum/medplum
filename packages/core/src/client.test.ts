@@ -505,4 +505,37 @@ describe('Client', () => {
     expect(result).toBeDefined();
     expect(result.resourceType).toBe('ValueSet');
   });
+
+  test('Storage events', async () => {
+    // Make window.location writeable
+    Object.defineProperty(window, 'location', {
+      value: { assign: {} },
+      writable: true,
+    });
+
+    const mockAddEventListener = jest.fn();
+    const mockReload = jest.fn();
+
+    window.addEventListener = mockAddEventListener;
+    window.location.reload = mockReload;
+
+    const client = new MedplumClient(defaultOptions);
+    expect(client).toBeDefined();
+    expect(mockAddEventListener).toHaveBeenCalled();
+    expect(mockAddEventListener.mock.calls[0][0]).toBe('storage');
+
+    const callback = mockAddEventListener.mock.calls[0][1];
+
+    mockReload.mockReset();
+    callback({ key: 'randomKey' });
+    expect(mockReload).not.toHaveBeenCalled();
+
+    mockReload.mockReset();
+    callback({ key: 'activeLogin' });
+    expect(mockReload).toHaveBeenCalled();
+
+    mockReload.mockReset();
+    callback({ key: null });
+    expect(mockReload).toHaveBeenCalled();
+  });
 });
