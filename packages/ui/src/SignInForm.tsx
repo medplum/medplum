@@ -11,6 +11,7 @@ import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
 import './SignInForm.css';
 import { TextField } from './TextField';
+import { getIssuesForExpression } from './utils/outcomes';
 
 export interface SignInFormProps {
   scopes?: string;
@@ -79,36 +80,62 @@ interface AuthenticationFormProps {
 function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome>();
+  const issues = getIssuesForExpression(outcome, undefined);
 
   return (
     <Form
       style={{ maxWidth: 400 }}
       onSubmit={(formData: Record<string, string>) => {
-        medplum.startLogin(formData.email, formData.password).then(props.handleAuthResponse).catch(setOutcome);
+        medplum
+          .startLogin(formData.email, formData.password, formData.remember === 'true')
+          .then(props.handleAuthResponse)
+          .catch(setOutcome);
       }}
     >
       <div className="center">
         <Logo size={32} />
         <h1>Sign in to Medplum</h1>
       </div>
+      {issues && (
+        <div className="medplum-input-error">
+          {issues.map((issue) => (
+            <div data-testid="text-field-error" key={issue.details?.text}>
+              {issue.details?.text}
+            </div>
+          ))}
+        </div>
+      )}
       <FormSection title="Email" htmlFor="email" outcome={outcome}>
         <TextField name="email" type="email" testid="email" required={true} autoFocus={true} outcome={outcome} />
       </FormSection>
       <FormSection title="Password" htmlFor="password" outcome={outcome}>
-        <TextField name="password" type="password" testid="password" required={true} outcome={outcome} />
+        <TextField
+          name="password"
+          type="password"
+          testid="password"
+          autoComplete="off"
+          required={true}
+          outcome={outcome}
+        />
       </FormSection>
       <div className="medplum-signin-buttons">
+        {(props.onForgotPassword || props.onRegister) && (
+          <div>
+            {props.onForgotPassword && (
+              <MedplumLink testid="forgotpassword" onClick={props.onForgotPassword}>
+                Forgot password
+              </MedplumLink>
+            )}
+            {props.onRegister && (
+              <MedplumLink testid="register" onClick={props.onRegister}>
+                Register
+              </MedplumLink>
+            )}
+          </div>
+        )}
         <div>
-          {props.onForgotPassword && (
-            <MedplumLink testid="forgotpassword" onClick={props.onForgotPassword}>
-              Forgot password
-            </MedplumLink>
-          )}
-          {props.onRegister && (
-            <MedplumLink testid="register" onClick={props.onRegister}>
-              Register
-            </MedplumLink>
-          )}
+          <input type="checkbox" id="remember" name="remember" value="true" />
+          <label htmlFor="remember">Remember me</label>
         </div>
         <div>
           <Button type="submit" testid="submit">

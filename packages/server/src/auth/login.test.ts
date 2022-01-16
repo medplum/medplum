@@ -112,7 +112,7 @@ describe('Login', () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
-    expect(res.body.issue[0].details.text).toBe('Incorrect password');
+    expect(res.body.issue[0].details.text).toBe('Email or password is invalid');
   });
 
   test('Success', async () => {
@@ -259,6 +259,7 @@ describe('Login', () => {
       email: memberEmail,
       password: 'my-new-password',
       scope: 'openid',
+      remember: true,
     });
     expect(res8.status).toBe(200);
     expect(res8.body.code).toBeDefined();

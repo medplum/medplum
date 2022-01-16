@@ -10,11 +10,16 @@
 
 .medplum-signin-buttons > div {
   display: flex;
+  align-items: center;
 }
 
 .medplum-signin-buttons a {
   font-size: 12px;
   margin-right: 16px;
+}
+
+.medplum-signin-buttons label {
+  font-size: 12px;
 }
 
 .medplum-signin-google-container {

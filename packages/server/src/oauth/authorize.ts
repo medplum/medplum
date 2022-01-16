@@ -247,16 +247,12 @@ function sendErrorRedirect(res: Response, redirectUri: string, error: string, st
 function buildView(outcome?: OperationOutcome): any {
   const view = {
     title: 'Sign In',
-    errors: {} as Record<string, string[]>,
+    errors: [] as string[],
   };
 
   if (outcome) {
     outcome.issue?.forEach((issue) => {
-      const param = issue.expression?.[0] as string;
-      if (!view.errors[param]) {
-        view.errors[param] = [];
-      }
-      view.errors[param].push(issue.details?.text as string);
+      view.errors.push(issue.details?.text as string);
     });
   }
 
