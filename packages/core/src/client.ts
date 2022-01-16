@@ -184,19 +184,7 @@ export class MedplumClient extends EventTarget {
     this.onUnauthenticated = options?.onUnauthenticated;
     this.loading = false;
     this.refreshProfile().catch(console.log);
-
-    try {
-      window.addEventListener('storage', (e: StorageEvent) => {
-        if (e.key === null || e.key === 'activeLogin') {
-          // Storage events fire when different tabs make changes.
-          // On storage clear (key === null) or activeLogin change (key === 'activeLogin')
-          // Refresh the page to ensure the active login is up to date.
-          window.location.reload();
-        }
-      });
-    } catch (err) {
-      // Silently ignore if this environment does not support storage events
-    }
+    this.setupStorageListener();
   }
 
   /**
@@ -774,6 +762,25 @@ export class MedplumClient extends EventTarget {
       project: tokens.project,
       profile: tokens.profile,
     });
+  }
+
+  /**
+   * Sets up a listener for window storage events.
+   * This synchronizes state across browser windows and browser tabs.
+   */
+  private setupStorageListener(): void {
+    try {
+      window.addEventListener('storage', (e: StorageEvent) => {
+        if (e.key === null || e.key === 'activeLogin') {
+          // Storage events fire when different tabs make changes.
+          // On storage clear (key === null) or activeLogin change (key === 'activeLogin')
+          // Refresh the page to ensure the active login is up to date.
+          window.location.reload();
+        }
+      });
+    } catch (err) {
+      // Silently ignore if this environment does not support storage events
+    }
   }
 }
 
