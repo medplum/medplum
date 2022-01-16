@@ -3,6 +3,7 @@ const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPl
 const DotenvPlugin = require('dotenv-webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const { SubresourceIntegrityPlugin } = require('webpack-subresource-integrity');
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -14,6 +15,7 @@ module.exports = (env, argv) => ({
     path: path.resolve(__dirname, 'dist'),
     filename: 'js/[name].[contenthash].js',
     publicPath: '/',
+    crossOriginLoading: 'anonymous',
   },
   resolve: {
     extensions: ['.ts', '.tsx', '.js'],
@@ -37,6 +39,7 @@ module.exports = (env, argv) => ({
     new MiniCssExtractPlugin({
       filename: 'css/[name].[contenthash].css',
     }),
+    new SubresourceIntegrityPlugin(),
   ],
   module: {
     rules: [
