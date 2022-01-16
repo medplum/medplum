@@ -182,12 +182,7 @@ export function validateLoginRequest(request: LoginRequest): OperationOutcome | 
 
 async function authenticate(request: LoginRequest, user: User): Promise<OperationOutcome> {
   if (request.password) {
-    const passwordHash = user?.passwordHash;
-    if (!passwordHash) {
-      return badRequest('Email or password is invalid');
-    }
-
-    const bcryptResult = await bcrypt.compare(request.password, passwordHash);
+    const bcryptResult = await bcrypt.compare(request.password, user.passwordHash as string);
     if (!bcryptResult) {
       return badRequest('Email or password is invalid');
     }

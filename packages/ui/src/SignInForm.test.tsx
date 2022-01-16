@@ -48,26 +48,13 @@ function mockFetch(url: string, options: any): Promise<any> {
           },
         ],
       };
-    } else if (email !== 'admin@example.com') {
-      result = {
-        resourceType: 'OperationOutcome',
-        issue: [
-          {
-            expression: ['email'],
-            details: {
-              text: 'User not found',
-            },
-          },
-        ],
-      };
     } else {
       result = {
         resourceType: 'OperationOutcome',
         issue: [
           {
-            expression: ['password'],
             details: {
-              text: 'Incorrect password',
+              text: 'Email or password is invalid',
             },
           },
         ],
@@ -267,6 +254,7 @@ describe('SignInForm', () => {
     });
 
     expect(screen.getByTestId('text-field-error')).toBeInTheDocument();
+    expect(screen.getByText('Email or password is invalid')).toBeInTheDocument();
   });
 
   test('Incorrect password', async () => {
@@ -293,6 +281,7 @@ describe('SignInForm', () => {
     });
 
     expect(screen.getByTestId('text-field-error')).toBeInTheDocument();
+    expect(screen.getByText('Email or password is invalid')).toBeInTheDocument();
   });
 
   test('Forgot password', async () => {
