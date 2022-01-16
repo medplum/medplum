@@ -26,10 +26,6 @@ export class Storage extends cdk.Construct {
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
 
-    // Access Identity for CloudFront to access S3
-    const accessIdentity = new cloudfront.OriginAccessIdentity(this, 'StorageAccessIdentity', {});
-    storageBucket.grantRead(accessIdentity);
-
     // Public key in PEM format
     const publicKey = new cloudfront.PublicKey(this, 'StoragePublicKey', {
       encodedKey: config.storagePublicKey,
@@ -40,10 +36,34 @@ export class Storage extends cdk.Construct {
       items: [publicKey],
     });
 
+    // HTTP response headers policy
+    const responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, 'ResponseHeadersPolicy', {
+      securityHeadersBehavior: {
+        contentSecurityPolicy: {
+          contentSecurityPolicy: "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none';",
+          override: true,
+        },
+        contentTypeOptions: { override: true },
+        frameOptions: { frameOption: cloudfront.HeadersFrameOption.DENY, override: true },
+        referrerPolicy: { referrerPolicy: cloudfront.HeadersReferrerPolicy.NO_REFERRER, override: true },
+        strictTransportSecurity: {
+          accessControlMaxAge: cdk.Duration.seconds(63072000),
+          includeSubdomains: true,
+          override: true,
+        },
+        xssProtection: {
+          protection: true,
+          modeBlock: true,
+          override: true,
+        },
+      },
+    });
+
     // CloudFront distribution
     const distribution = new cloudfront.Distribution(this, 'StorageDistribution', {
       defaultBehavior: {
         origin: new origins.S3Origin(storageBucket),
+        responseHeadersPolicy,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         trustedKeyGroups: [keyGroup],
       },

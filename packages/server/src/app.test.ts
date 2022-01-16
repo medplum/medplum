@@ -2,38 +2,40 @@ import express from 'express';
 import request from 'supertest';
 import { initApp } from './app';
 import { getConfig, loadTestConfig } from './config';
-import { closeDatabase, initDatabase } from './database';
-import { closeRedis, initRedis } from './redis';
 
 describe('App', () => {
   test('Get HTTP config', async () => {
     const app = express();
-    const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await initRedis(config.redis);
+    await loadTestConfig();
     await initApp(app);
     const res = await request(app).get('/');
     expect(res.status).toBe(200);
     expect(res.headers['cache-control']).toBeDefined();
     expect(res.headers['content-security-policy']).toBeDefined();
-    await closeDatabase();
-    await closeRedis();
   });
 
   test('Get HTTPS config', async () => {
     const app = express();
-    const config = await loadTestConfig();
+    await loadTestConfig();
     getConfig().baseUrl = 'https://example.com/';
-    await initDatabase(config.database);
-    await initRedis(config.redis);
     await initApp(app);
     const res = await request(app).get('/');
     expect(res.status).toBe(200);
     expect(res.headers['cache-control']).toBeDefined();
     expect(res.headers['content-security-policy']).toBeDefined();
     expect(res.headers['strict-transport-security']).toBeDefined();
-    await closeDatabase();
-    await closeRedis();
+  });
+
+  test('Internal Server Error', async () => {
+    const app = express();
+    app.get('/throw', () => {
+      throw new Error('Error');
+    });
+    await loadTestConfig();
+    await initApp(app);
+    const res = await request(app).get('/throw');
+    expect(res.status).toBe(500);
+    expect(res.body).toMatchObject({ msg: 'Internal Server Error' });
   });
 
   test.skip('Preflight max age', async () => {

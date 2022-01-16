@@ -1,5 +1,6 @@
 import * as acm from '@aws-cdk/aws-certificatemanager';
 import * as cloudfront from '@aws-cdk/aws-cloudfront';
+import * as origins from '@aws-cdk/aws-cloudfront-origins';
 import * as route53 from '@aws-cdk/aws-route53';
 import * as targets from '@aws-cdk/aws-route53-targets/lib';
 import * as s3 from '@aws-cdk/aws-s3';
@@ -23,46 +24,68 @@ export class FrontEnd extends cdk.Construct {
     // S3 bucket
     const appBucket = new s3.Bucket(this, 'AppBucket', {
       bucketName: config.appDomainName,
-      websiteIndexDocument: 'index.html',
-      websiteErrorDocument: 'error.html',
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
 
-    // Access Identity for CloudFront to access S3
-    const accessIdentity = new cloudfront.OriginAccessIdentity(this, 'AccessIdentity', {});
-    appBucket.grantRead(accessIdentity);
-
-    // CloudFront distribution that provides HTTPS
-    const distribution = new cloudfront.CloudFrontWebDistribution(this, 'AppDistribution', {
-      viewerCertificate: cloudfront.ViewerCertificate.fromAcmCertificate(
-        acm.Certificate.fromCertificateArn(this, 'AppCertificate', config.appSslCertArn),
-        {
-          aliases: [config.appDomainName],
-          sslMethod: cloudfront.SSLMethod.SNI,
-          securityPolicy: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
-        }
-      ),
-      originConfigs: [
-        {
-          s3OriginSource: {
-            s3BucketSource: appBucket,
-            originAccessIdentity: accessIdentity,
-          },
-          behaviors: [{ isDefaultBehavior: true }],
+    // HTTP response headers policy
+    const responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, 'ResponseHeadersPolicy', {
+      securityHeadersBehavior: {
+        contentSecurityPolicy: {
+          contentSecurityPolicy: [
+            `default-src 'none'`,
+            `base-uri 'self'`,
+            `child-src 'self'`,
+            `connect-src 'self' ${config.apiDomainName} *.google.com`,
+            `font-src 'self' fonts.gstatic.com`,
+            `form-action 'self' *.gstatic.com *.google.com`,
+            `frame-ancestors 'none'`,
+            `frame-src 'self' *.gstatic.com *.google.com`,
+            `img-src 'self' ${config.storageDomainName} *.gstatic.com *.google.com`,
+            `manifest-src 'self'`,
+            `media-src 'self' ${config.storageDomainName}`,
+            `script-src 'self' *.gstatic.com *.google.com`,
+            `style-src 'self' 'unsafe-inline' *.gstatic.com *.google.com`,
+            `worker-src 'self' *.gstatic.com *.google.com`,
+          ].join('; '),
+          override: true,
         },
-      ],
-      errorConfigurations: [
+        contentTypeOptions: { override: true },
+        frameOptions: { frameOption: cloudfront.HeadersFrameOption.DENY, override: true },
+        strictTransportSecurity: {
+          accessControlMaxAge: cdk.Duration.seconds(63072000),
+          includeSubdomains: true,
+          override: true,
+        },
+        xssProtection: {
+          protection: true,
+          modeBlock: true,
+          override: true,
+        },
+      },
+    });
+
+    // CloudFront distribution
+    const distribution = new cloudfront.Distribution(this, 'AppDistribution', {
+      defaultRootObject: 'index.html',
+      defaultBehavior: {
+        origin: new origins.S3Origin(appBucket),
+        responseHeadersPolicy,
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+      },
+      certificate: acm.Certificate.fromCertificateArn(this, 'AppCertificate', config.appSslCertArn),
+      domainNames: [config.appDomainName],
+      errorResponses: [
         {
-          errorCode: 403,
-          responseCode: 200,
+          httpStatus: 403,
+          responseHttpStatus: 200,
           responsePagePath: '/index.html',
         },
         {
-          errorCode: 404,
-          responseCode: 200,
+          httpStatus: 404,
+          responseHttpStatus: 200,
           responsePagePath: '/index.html',
         },
       ],
