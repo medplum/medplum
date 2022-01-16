@@ -12,6 +12,7 @@ describe('App', () => {
     expect(res.status).toBe(200);
     expect(res.headers['cache-control']).toBeDefined();
     expect(res.headers['content-security-policy']).toBeDefined();
+    expect(res.headers['referrer-policy']).toBeDefined();
   });
 
   test('Get HTTPS config', async () => {
