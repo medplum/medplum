@@ -182,11 +182,21 @@ export class MedplumClient extends EventTarget {
     this.tokenUrl = options?.tokenUrl || this.baseUrl + 'oauth2/token';
     this.logoutUrl = options?.logoutUrl || this.baseUrl + 'oauth2/logout';
     this.onUnauthenticated = options?.onUnauthenticated;
-    if (!this.getActiveLogin()?.profile?.reference) {
-      this.clear();
-    }
     this.loading = false;
     this.refreshProfile().catch(console.log);
+
+    try {
+      window.addEventListener('storage', (e: StorageEvent) => {
+        if (e.key === null || e.key === 'activeLogin') {
+          // Storage events fire when different tabs make changes.
+          // On storage clear (key === null) or activeLogin change (key === 'activeLogin')
+          // Refresh the page to ensure the active login is up to date.
+          window.location.reload();
+        }
+      });
+    } catch (err) {
+      // Silently ignore if this environment does not support storage events
+    }
   }
 
   /**
