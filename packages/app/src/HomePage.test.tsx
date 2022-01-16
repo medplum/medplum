@@ -22,6 +22,10 @@ function setup(url = '/Patient'): void {
 }
 
 describe('HomePage', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
   test('Renders default page', async () => {
     setup('/');
 
