@@ -40,7 +40,7 @@ describe('Storage', () => {
     req.push('foo');
     req.push(null);
     (req as any).headers = {};
-    await storage.writeBinary(binary, req as Request);
+    await storage.writeBinary(binary, 'test.txt', 'text/plain', req as Request);
 
     // Request the binary
     const stream = await storage.readBinary(binary);
@@ -82,7 +82,7 @@ describe('Storage', () => {
     req.push('foo');
     req.push(null);
     (req as any).headers = {};
-    await storage.writeBinary(binary, req as Request);
+    await storage.writeBinary(binary, 'test.txt', 'text/plain', req as Request);
     expect(Upload).toHaveBeenCalled();
 
     // Read a file

@@ -1,4 +1,4 @@
-import { Attachment, Binary } from '@medplum/fhirtypes';
+import { Attachment, Binary, OperationOutcome } from '@medplum/fhirtypes';
 import React, { useRef } from 'react';
 import { useMedplum } from './MedplumProvider';
 import { killEvent } from './utils/dom';
@@ -34,18 +34,19 @@ export function UploadButton(props: UploadButtonProps): JSX.Element {
       return;
     }
 
+    const filename = file.name;
     const contentType = file.type || 'application/octet-stream';
     medplum
-      .createBinary(file, contentType)
+      .createBinary(file, filename, contentType)
       .then((binary: Binary) => {
         props.onUpload({
           contentType: binary.contentType,
           url: binary.url,
-          title: file.name,
+          title: filename,
         });
       })
-      .catch((err: any) => {
-        alert(err?.outcome?.issue?.[0]?.details?.text);
+      .catch((outcome: OperationOutcome) => {
+        alert(outcome?.issue?.[0]?.details?.text);
       });
   }
 
