@@ -16,12 +16,23 @@ import { scimRouter } from './scim';
 import { storageRouter } from './storage';
 import { wellKnownRouter } from './wellknown';
 
-const corsOptions: cors.CorsOptions = {
-  credentials: true,
-  origin: (origin, callback) => {
-    // TODO: Check origin against whitelist
-    callback(null, true);
-  },
+/**
+ * CORS configuration.
+ * @param req The express request.
+ * @param callback The cors plugin callback.
+ */
+const corsOptionsDelegate: cors.CorsOptionsDelegate<Request> = (req, callback) => {
+  const origin = req.header('Origin');
+  let allow = false;
+  if (origin) {
+    const path = req.path;
+    allow =
+      (path.startsWith('/auth/') && getConfig().appBaseUrl.startsWith(origin)) ||
+      path.startsWith('/.well-known/') ||
+      path.startsWith('/fhir/') ||
+      path.startsWith('/oauth2/');
+  }
+  callback(null, allow ? { origin, credentials: true } : undefined);
 };
 
 /**
@@ -94,7 +105,7 @@ export async function initApp(app: Express): Promise<Express> {
   app.set('trust proxy', true);
   app.set('x-powered-by', false);
   app.use(standardHeaders);
-  app.use(cors(corsOptions));
+  app.use(cors(corsOptionsDelegate));
   app.use('/fhir/R4/Binary', [authenticateToken], binaryRouter);
   app.use(
     urlencoded({

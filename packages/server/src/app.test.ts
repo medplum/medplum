@@ -26,6 +26,15 @@ describe('App', () => {
     expect(res.headers['strict-transport-security']).toBeDefined();
   });
 
+  test('No CORS', async () => {
+    const app = express();
+    await loadTestConfig();
+    await initApp(app);
+    const res = await request(app).get('/').set('Origin', 'https://blackhat.xyz');
+    expect(res.status).toBe(200);
+    expect(res.headers['origin']).toBeUndefined();
+  });
+
   test('Internal Server Error', async () => {
     const app = express();
     app.get('/throw', () => {
