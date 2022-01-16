@@ -45,7 +45,10 @@ function standardHeaders(req: Request, res: Response, next: NextFunction): void 
   // Set Content Security Policy
   // As an API server, block everything
   // See: https://stackoverflow.com/a/45631261/2051724
-  res.set('Content-Security-Policy', "default-src 'none'");
+  res.set(
+    'Content-Security-Policy',
+    "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none';"
+  );
 
   // Prevent browsers from incorrectly detecting non-scripts as scripts
   res.set('X-Content-Type-Options', 'nosniff');
