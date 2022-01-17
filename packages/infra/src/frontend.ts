@@ -49,6 +49,8 @@ export class FrontEnd extends cdk.Construct {
             `script-src 'self' *.gstatic.com *.google.com`,
             `style-src 'self' 'unsafe-inline' *.gstatic.com *.google.com`,
             `worker-src 'self' *.gstatic.com *.google.com`,
+            `require-trusted-types-for 'script'`,
+            `upgrade-insecure-requests`,
           ].join('; '),
           override: true,
         },
