@@ -61,6 +61,9 @@ function standardHeaders(req: Request, res: Response, next: NextFunction): void 
     "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none';"
   );
 
+  // Never send the Referer header
+  res.set('Referrer-Policy', 'no-referrer');
+
   // Prevent browsers from incorrectly detecting non-scripts as scripts
   res.set('X-Content-Type-Options', 'nosniff');
 
