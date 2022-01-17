@@ -13,13 +13,13 @@ if [[ -z "$NEW_VERSION" ]]; then
 fi
 
 set_version () {
-  sed -i "s_\"version\": \"$OLD_VERSION\"_\"version\": \"$NEW_VERSION\"_g" $1
-  sed -i "s_\"@medplum/definitions\": \"$OLD_VERSION\"_\"@medplum/definitions\": \"$NEW_VERSION\"_g" $1
-  sed -i "s_\"@medplum/core\": \"$OLD_VERSION\"_\"@medplum/core\": \"$NEW_VERSION\"_g" $1
-  sed -i "s_\"@medplum/fhirpath\": \"$OLD_VERSION\"_\"@medplum/fhirpath\": \"$NEW_VERSION\"_g" $1
-  sed -i "s_\"@medplum/fhirtypes\": \"$OLD_VERSION\"_\"@medplum/fhirtypes\": \"$NEW_VERSION\"_g" $1
-  sed -i "s_\"@medplum/mock\": \"$OLD_VERSION\"_\"@medplum/mock\": \"$NEW_VERSION\"_g" $1
-  sed -i "s_\"@medplum/ui\": \"$OLD_VERSION\"_\"@medplum/ui\": \"$NEW_VERSION\"_g" $1
+  sed -i "s_\"version\": \"$OLD_VERSION\"_\"version\": \"$NEW_VERSION\"_g" "$1"
+  sed -i "s_\"@medplum/definitions\": \"$OLD_VERSION\"_\"@medplum/definitions\": \"$NEW_VERSION\"_g" "$1"
+  sed -i "s_\"@medplum/core\": \"$OLD_VERSION\"_\"@medplum/core\": \"$NEW_VERSION\"_g" "$1"
+  sed -i "s_\"@medplum/fhirpath\": \"$OLD_VERSION\"_\"@medplum/fhirpath\": \"$NEW_VERSION\"_g" "$1"
+  sed -i "s_\"@medplum/fhirtypes\": \"$OLD_VERSION\"_\"@medplum/fhirtypes\": \"$NEW_VERSION\"_g" "$1"
+  sed -i "s_\"@medplum/mock\": \"$OLD_VERSION\"_\"@medplum/mock\": \"$NEW_VERSION\"_g" "$1"
+  sed -i "s_\"@medplum/ui\": \"$OLD_VERSION\"_\"@medplum/ui\": \"$NEW_VERSION\"_g" "$1"
 }
 
 # Update package.json files

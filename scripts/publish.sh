@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-PACKAGES=("core" "definitions" "fhirpath" "fhirtypes" "ui")
+PACKAGES=("core" "definitions" "fhirpath" "fhirtypes" "mock" "ui")
 for package in ${PACKAGES[@]}; do
   echo "Publish $package"
   pushd packages/$package
