@@ -128,7 +128,7 @@ class S3Storage implements BinaryStorage {
         Bucket: this.bucket,
         Key: this.getKey(binary),
         ContentDisposition: filename ? `attachment; filename="${encodeURIComponent(filename)}"` : undefined,
-        ContentType: contentType,
+        ContentType: contentType || 'application/octet-stream',
         Body: stream,
       },
       client: this.client,
