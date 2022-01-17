@@ -126,20 +126,6 @@ describe('Login', () => {
     expect(res.body.code).toBeDefined();
   });
 
-  test('No CORS', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .set('Origin', 'https://bad-guys-attacking.xyz')
-      .type('json')
-      .send({
-        clientId: client.id,
-        email: 'admin@example.com',
-        password: 'admin',
-        scope: 'openid',
-      });
-    expect(res.headers['origin']).toBeUndefined();
-  });
-
   test('Success default client', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
       email: 'admin@example.com',

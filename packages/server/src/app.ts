@@ -27,8 +27,8 @@ const corsOptionsDelegate: cors.CorsOptionsDelegate<Request> = (req, callback) =
   if (origin) {
     const path = req.path;
     allow =
-      (path.startsWith('/auth/') && getConfig().appBaseUrl.startsWith(origin)) ||
       path.startsWith('/.well-known/') ||
+      path.startsWith('/auth/') ||
       path.startsWith('/fhir/') ||
       path.startsWith('/oauth2/');
   }
