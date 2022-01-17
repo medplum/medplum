@@ -23,7 +23,7 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element {
   }
 
   return (
-    <a href={value?.url} data-testid="attachment-details">
+    <a href={value?.url} data-testid="attachment-details" target="_blank" rel="noopener noreferrer">
       {value?.title}
     </a>
   );

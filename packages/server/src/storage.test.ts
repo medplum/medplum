@@ -34,7 +34,7 @@ describe('Storage Routes', () => {
     req.push('hello world');
     req.push(null);
     (req as any).headers = {};
-    await getBinaryStorage().writeBinary(binary, req as Request);
+    await getBinaryStorage().writeBinary(binary, 'hello.txt', 'text/plain', req as Request);
   });
 
   afterAll(async () => {

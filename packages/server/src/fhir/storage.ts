@@ -28,7 +28,12 @@ export function getBinaryStorage(): BinaryStorage {
  * The BinaryStorage interface represents a method of reading and writing binary blobs.
  */
 interface BinaryStorage {
-  writeBinary(binary: Binary, stream: internal.Readable | NodeJS.ReadableStream): Promise<void>;
+  writeBinary(
+    binary: Binary,
+    filename: string | undefined,
+    contentType: string | undefined,
+    stream: internal.Readable | NodeJS.ReadableStream
+  ): Promise<void>;
 
   readBinary(binary: Binary): Promise<internal.Readable>;
 }
@@ -47,7 +52,12 @@ class FileSystemStorage implements BinaryStorage {
     }
   }
 
-  async writeBinary(binary: Binary, stream: internal.Readable | NodeJS.ReadableStream): Promise<void> {
+  async writeBinary(
+    binary: Binary,
+    filename: string | undefined,
+    contentType: string | undefined,
+    stream: internal.Readable | NodeJS.ReadableStream
+  ): Promise<void> {
     const dir = this.getDir(binary);
     if (!existsSync(dir)) {
       mkdirSync(dir);
@@ -101,11 +111,24 @@ class S3Storage implements BinaryStorage {
    * @param binary The binary resource destination.
    * @param req The HTTP request with the binary content.
    */
-  async writeBinary(binary: Binary, stream: internal.Readable | NodeJS.ReadableStream): Promise<void> {
+  async writeBinary(
+    binary: Binary,
+    filename: string | undefined,
+    contentType: string | undefined,
+    stream: internal.Readable | NodeJS.ReadableStream
+  ): Promise<void> {
+    if (checkFileExtension(filename)) {
+      return Promise.reject('Invalid file extension');
+    }
+    if (checkContentType(contentType)) {
+      return Promise.reject('Invalid content type');
+    }
     const upload = new Upload({
       params: {
         Bucket: this.bucket,
         Key: this.getKey(binary),
+        ContentDisposition: filename ? `attachment; filename="${encodeURIComponent(filename)}"` : undefined,
+        ContentType: contentType || 'application/octet-stream',
         Body: stream,
       },
       client: this.client,
@@ -128,4 +151,109 @@ class S3Storage implements BinaryStorage {
   private getKey(binary: Binary): string {
     return 'binary/' + binary.id + '/' + binary.meta?.versionId;
   }
+}
+
+/**
+ * List of blocked file extensions.
+ * Derived from "File types blocked in Gmail"
+ * https://support.google.com/mail/answer/6590?hl=en#zippy=%2Cmessages-that-have-attachments
+ */
+const BLOCKED_FILE_EXTENSIONS = [
+  '.7z',
+  '.ade',
+  '.adp',
+  '.apk',
+  '.appx',
+  '.appxbundle',
+  '.bat',
+  '.cab',
+  '.chm',
+  '.cmd',
+  '.com',
+  '.cpl',
+  '.dll',
+  '.dmg',
+  '.ex',
+  '.ex_',
+  '.exe',
+  '.hta',
+  '.ins',
+  '.isp',
+  '.iso',
+  '.jar',
+  '.js',
+  '.jse',
+  '.lib',
+  '.lnk',
+  '.mde',
+  '.msc',
+  '.msi',
+  '.msix',
+  '.msixbundle',
+  '.msp',
+  '.mst',
+  '.nsh',
+  '.pif',
+  '.ps1',
+  '.scr',
+  '.sct',
+  '.shb',
+  '.sys',
+  '.vb',
+  '.vbe',
+  '.vbs',
+  '.vxd',
+  '.wsc',
+  '.wsf',
+  '.wsh',
+];
+
+/**
+ * List of blocked content types.
+ * Derived from: https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
+ */
+const BLOCKED_CONTENT_TYPES = [
+  'application/java-archive',
+  'application/x-7z-compressed',
+  'application/x-bzip',
+  'application/x-bzip2',
+  'application/x-msdownload',
+  'application/x-sh',
+  'application/x-tar',
+  'application/vnd.apple.installer+xml',
+  'application/vnd.microsoft.portable-executable',
+  'application/vnd.rar',
+  'application/zip',
+  'text/javascript',
+];
+
+/**
+ * Checks if the file extension is blocked.
+ * @param filename The input filename.
+ * @returns True if the filename has a blocked file extension.
+ */
+function checkFileExtension(filename: string | undefined): boolean {
+  if (filename) {
+    const lower = filename.toLowerCase();
+    for (const ext of BLOCKED_FILE_EXTENSIONS) {
+      if (lower.endsWith(ext)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Checks if the content type is blocked.
+ * @param contentType The input content type.
+ * @returns True if the content type is blocked.
+ */
+function checkContentType(contentType: string | undefined): boolean {
+  if (contentType) {
+    return BLOCKED_CONTENT_TYPES.includes(contentType.toLowerCase());
+  }
+
+  return false;
 }

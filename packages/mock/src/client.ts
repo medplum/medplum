@@ -1,4 +1,4 @@
-import { allOk, getStatus, LoginState, MedplumClient, notFound, ProfileResource } from '@medplum/core';
+import { allOk, badRequest, getStatus, LoginState, MedplumClient, notFound, ProfileResource } from '@medplum/core';
 import { Bundle, BundleEntry, Communication, Media, Practitioner } from '@medplum/fhirtypes';
 import {
   DifferentOrganization,
@@ -171,6 +171,9 @@ const routes: Record<string, Record<string, any>> = {
   },
   'fhir/R4/AuditEvent?entity=Subscription/123&_count=20&_sort=-_lastUpdated': {
     GET: ExampleAuditEventBundle,
+  },
+  'fhir/R4/Binary?_filename=hello.exe': {
+    POST: badRequest('Invalid file type'),
   },
   'fhir/R4/Bot/123': {
     GET: ExampleBot,

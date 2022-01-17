@@ -462,8 +462,8 @@ export class MedplumClient extends EventTarget {
     return this.post(this.fhirUrl(resource.resourceType), resource);
   }
 
-  createBinary(data: any, contentType: string): Promise<Binary> {
-    return this.post(this.fhirUrl('Binary'), data, contentType);
+  createBinary(data: any, filename: string, contentType: string): Promise<Binary> {
+    return this.post(this.fhirUrl('Binary') + '?_filename=' + encodeURIComponent(filename), data, contentType);
   }
 
   update<T extends Resource>(resource: T): Promise<T> {

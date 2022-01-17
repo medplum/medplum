@@ -40,7 +40,7 @@ describe('Storage', () => {
     req.push('foo');
     req.push(null);
     (req as any).headers = {};
-    await storage.writeBinary(binary, req as Request);
+    await storage.writeBinary(binary, 'test.txt', 'text/plain', req as Request);
 
     // Request the binary
     const stream = await storage.readBinary(binary);
@@ -82,13 +82,92 @@ describe('Storage', () => {
     req.push('foo');
     req.push(null);
     (req as any).headers = {};
-    await storage.writeBinary(binary, req as Request);
-    expect(Upload).toHaveBeenCalled();
+    await storage.writeBinary(binary, 'test.txt', 'text/plain', req as Request);
+    expect(Upload).toHaveBeenCalledWith(
+      expect.objectContaining({
+        params: expect.objectContaining({
+          Bucket: 'foo',
+          Key: 'binary/123/456',
+          ContentDisposition: 'attachment; filename="test.txt"',
+          ContentType: 'text/plain',
+        }),
+      })
+    );
 
     // Read a file
     const stream = await storage.readBinary(binary);
     expect(stream).toBeDefined();
     expect(GetObjectCommand).toHaveBeenCalled();
+  });
+
+  test('Missing metadata', async () => {
+    initBinaryStorage('s3:foo');
+    expect(S3Client).toHaveBeenCalled();
+
+    const client = (S3Client as unknown as jest.Mock).mock.instances[0];
+    client.send = async () => ({
+      Body: {
+        pipe: jest.fn(),
+      },
+    });
+
+    const storage = getBinaryStorage();
+    expect(storage).toBeDefined();
+
+    // Write a file
+    const binary: Binary = {
+      resourceType: 'Binary',
+      id: '123',
+      meta: {
+        versionId: '456',
+      },
+    };
+    const req = new Readable();
+    req.push('foo');
+    req.push(null);
+    (req as any).headers = {};
+    await storage.writeBinary(binary, '', '', req as Request);
+    expect(Upload).toHaveBeenCalledWith(
+      expect.objectContaining({
+        params: expect.objectContaining({
+          Bucket: 'foo',
+          Key: 'binary/123/456',
+          ContentDisposition: undefined,
+          ContentType: 'application/octet-stream',
+        }),
+      })
+    );
+
+    // Read a file
+    const stream = await storage.readBinary(binary);
+    expect(stream).toBeDefined();
+    expect(GetObjectCommand).toHaveBeenCalled();
+  });
+
+  test('Invalid file extension', async () => {
+    initBinaryStorage('s3:foo');
+    expect(S3Client).toHaveBeenCalled();
+
+    const storage = getBinaryStorage();
+    expect(storage).toBeDefined();
+
+    const binary = null as unknown as Binary;
+    const stream = null as unknown as internal.Readable;
+    expect(storage.writeBinary(binary, 'test.exe', 'text/plain', stream)).rejects.toEqual('Invalid file extension');
+    expect(Upload).not.toHaveBeenCalled();
+  });
+
+  test('Invalid content type', async () => {
+    initBinaryStorage('s3:foo');
+    expect(S3Client).toHaveBeenCalled();
+
+    const storage = getBinaryStorage();
+    expect(storage).toBeDefined();
+
+    const binary = null as unknown as Binary;
+    const stream = null as unknown as internal.Readable;
+    expect(storage.writeBinary(binary, 'test.sh', 'application/x-sh', stream)).rejects.toEqual('Invalid content type');
+    expect(Upload).not.toHaveBeenCalled();
   });
 });
 

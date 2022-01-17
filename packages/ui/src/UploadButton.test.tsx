@@ -100,4 +100,19 @@ describe('UploadButton', () => {
       fireEvent.click(screen.getByTestId('upload-button'));
     });
   });
+
+  test('Error handling', async () => {
+    window.alert = jest.fn();
+
+    setup();
+
+    await act(async () => {
+      const files = [new File(['exe'], 'hello.exe', { type: 'application/exe' })];
+      fireEvent.change(screen.getByTestId('upload-file-input'), {
+        target: { files },
+      });
+    });
+
+    expect(window.alert).toHaveBeenCalledWith('Invalid file type');
+  });
 });

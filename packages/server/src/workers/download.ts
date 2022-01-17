@@ -171,15 +171,17 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
       throw new Error('Received status ' + response.status);
     }
 
+    const contentDisposition = response.headers.get('content-disposition') as string | undefined;
+    const contentType = response.headers.get('content-type') as string | undefined;
     const [createBinaryOutcome, binary] = await systemRepo.createResource<Binary>({
       resourceType: 'Binary',
-      contentType: response.headers.get('content-type') as string,
+      contentType,
       meta: {
         project: resource?.meta?.project,
       },
     });
     assertOk(createBinaryOutcome, binary);
-    await getBinaryStorage().writeBinary(binary, response.body);
+    await getBinaryStorage().writeBinary(binary, contentDisposition, contentType, response.body);
 
     const updated = JSON.parse(JSON.stringify(resource).replace(url, `Binary/${binary?.id}`)) as Resource;
     (updated.meta as any).author = { reference: 'system' };

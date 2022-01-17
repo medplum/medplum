@@ -15,10 +15,12 @@ export const binaryRouter = Router();
 binaryRouter.post(
   '/',
   asyncWrap(async (req: Request, res: Response) => {
+    const filename = req.query['_filename'] as string | undefined;
+    const contentType = req.get('Content-Type');
     const repo = res.locals.repo as Repository;
     const [outcome, resource] = await repo.createResource<Binary>({
       resourceType: 'Binary',
-      contentType: req.get('Content-Type'),
+      contentType,
       meta: {
         project: req.query['_project'] as string | undefined,
       },
@@ -31,11 +33,15 @@ binaryRouter.post(
       return;
     }
 
-    await getBinaryStorage().writeBinary(resource, stream);
-    res.status(201).json({
-      ...resource,
-      url: getPresignedUrl(resource),
-    });
+    try {
+      await getBinaryStorage().writeBinary(resource, filename, contentType, stream);
+      res.status(201).json({
+        ...resource,
+        url: getPresignedUrl(resource),
+      });
+    } catch (err) {
+      sendOutcome(res, badRequest(err as string));
+    }
   })
 );
 
@@ -44,11 +50,13 @@ binaryRouter.put(
   '/:id',
   asyncWrap(async (req: Request, res: Response) => {
     const { id } = req.params;
+    const filename = req.query['_filename'] as string | undefined;
+    const contentType = req.get('Content-Type');
     const repo = res.locals.repo as Repository;
     const [outcome, resource] = await repo.updateResource<Binary>({
       resourceType: 'Binary',
       id,
-      contentType: req.get('Content-Type'),
+      contentType,
       meta: {
         project: req.query['_project'] as string | undefined,
       },
@@ -61,7 +69,7 @@ binaryRouter.put(
       return;
     }
 
-    await getBinaryStorage().writeBinary(resource, stream);
+    await getBinaryStorage().writeBinary(resource, filename, contentType, stream);
     res.status(200).json(resource);
   })
 );

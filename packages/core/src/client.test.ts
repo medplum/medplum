@@ -436,10 +436,10 @@ describe('Client', () => {
 
   test('Create binary', async () => {
     const client = new MedplumClient(defaultOptions);
-    const result = await client.createBinary('Hello world', 'text/plain');
+    const result = await client.createBinary('Hello world', 'hello.txt', 'text/plain');
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('POST');
-    expect((result as any).request.url).toBe('https://x/fhir/R4/Binary');
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Binary?_filename=hello.txt');
   });
 
   test('Update resource', async () => {
