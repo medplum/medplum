@@ -24,21 +24,21 @@
     "typecheck": "tsc"
   },
   "dependencies": {
-    "@docusaurus/core": "^2.0.0-beta.14",
-    "@docusaurus/preset-classic": "^2.0.0-beta.14",
-    "@mdx-js/react": "^1.6.22",
-    "@svgr/webpack": "^6.1.2",
-    "clsx": "^1.1.1",
-    "file-loader": "^6.2.0",
-    "prism-react-renderer": "^1.2.1",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "url-loader": "^4.1.1"
+    "@docusaurus/core": "2.0.0-beta.14",
+    "@docusaurus/preset-classic": "2.0.0-beta.14",
+    "@mdx-js/react": "1.6.22",
+    "@svgr/webpack": "6.2.0",
+    "clsx": "1.1.1",
+    "file-loader": "6.2.0",
+    "prism-react-renderer": "1.2.1",
+    "react": "17.0.2",
+    "react-dom": "17.0.2",
+    "url-loader": "4.1.1"
   },
   "devDependencies": {
-    "@docusaurus/module-type-aliases": "^2.0.0-beta.14",
-    "@tsconfig/docusaurus": "^1.0.4",
-    "typescript": "^4.5.4"
+    "@docusaurus/module-type-aliases": "2.0.0-beta.14",
+    "@tsconfig/docusaurus": "1.0.4",
+    "typescript": "4.5.4"
   },
   "browserslist": {
     "production": [
