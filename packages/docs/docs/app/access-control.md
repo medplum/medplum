@@ -120,6 +120,10 @@ This access policy grants read-only access to all Patients that are within that 
 {
   "resourceType": "AccessPolicy",
   "name": "Patient Example",
+  "compartment": {
+    "reference": "Organization/a23a2966-d58a-4098-b41b-e8f18bcda339",
+    "display": "Example Customer Organization"
+  },
   "resource": [
     {
       "resourceType": "Patient",
@@ -132,3 +136,37 @@ This access policy grants read-only access to all Patients that are within that 
   ]
 }
 ```
+
+When a user has such an Access Policy, the following happens:
+
+- Any resource created or updated will be tagged with `meta.account` set to `Organization/a23a2966-d58a-4098-b41b-e8f18bcda339`
+- Any read or search operation will filter on `meta.account` equals `Organization/a23a2966-d58a-4098-b41b-e8f18bcda339`
+
+The `meta.account` property is not FHIR standard.  It is an extra `Reference` property in the `Meta` section.
+
+For example:
+
+```json
+{
+  "resourceType": "Patient",
+  "id": "54aa8595-e3a7-48ae-af91-9c7cb940149b",
+  "meta": {
+    "versionId": "02900c57-4da8-498f-85d5-5077077e3e2c",
+    "lastUpdated": "2022-01-13T16:21:11.870Z",
+    "account": {
+      "reference": "Organization/a23a2966-d58a-4098-b41b-e8f18bcda339",
+      "display": "Example Customer Organization"
+    }
+  },
+  "name": [
+    {
+      "given": [
+        "Homer"
+      ],
+      "family": "Simpson"
+    }
+  ]
+}
+```
+
+Because the account-tagging is handled within the resource, project administrators and API users can set the account directly.
