@@ -1,17 +1,31 @@
-import { IndexedStructureDefinition, indexStructureDefinition } from '@medplum/core';
+import {
+  createSchema,
+  IndexedStructureDefinition,
+  indexSearchParameter,
+  indexStructureDefinition,
+} from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Resource, SearchParameter } from '@medplum/fhirtypes';
 
-const structureDefinitions = { types: {} } as IndexedStructureDefinition;
+const schema = createSchema();
 
 export function getStructureDefinitions(): IndexedStructureDefinition {
-  if (Object.keys(structureDefinitions.types).length === 0) {
+  if (Object.keys(schema.types).length === 0) {
     buildStructureDefinitions('profiles-types.json');
     buildStructureDefinitions('profiles-resources.json');
     buildStructureDefinitions('profiles-medplum.json');
+    buildSearchParameters();
   }
 
-  return structureDefinitions;
+  return schema;
+}
+
+export function getSearchParameters(resourceType: string): Record<string, SearchParameter> | undefined {
+  return getStructureDefinitions().types[resourceType]?.searchParams;
+}
+
+export function getSearchParameter(resourceType: string, code: string): SearchParameter | undefined {
+  return getSearchParameters(resourceType)?.[code];
 }
 
 function buildStructureDefinitions(fileName: string): void {
@@ -27,8 +41,15 @@ function buildStructureDefinitions(fileName: string): void {
       resource.name !== 'MetadataResource' &&
       !isLowerCase(resource.name[0])
     ) {
-      indexStructureDefinition(structureDefinitions, resource);
+      indexStructureDefinition(schema, resource);
     }
+  }
+}
+
+function buildSearchParameters(): void {
+  const searchParams = readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>;
+  for (const entry of searchParams.entry as BundleEntry<SearchParameter>[]) {
+    indexSearchParameter(schema, entry.resource as SearchParameter);
   }
 }
 

@@ -1,5 +1,4 @@
-import { assertOk, createReference, Filter, isGone, Operator, SearchRequest, stringify } from '@medplum/core';
-import { evalFhirPath } from '@medplum/fhirpath';
+import { assertOk, createReference, isGone, Operator, stringify } from '@medplum/core';
 import { AuditEvent, Bot, BundleEntry, Extension, Project, Resource, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
@@ -8,7 +7,7 @@ import { URL } from 'url';
 import vm from 'vm';
 import { MedplumRedisConfig } from '../config';
 import { Repository, systemRepo } from '../fhir';
-import { getSearchParameter, parseSearchUrl } from '../fhir/search';
+import { matchesSearchRequest, parseSearchUrl } from '../fhir/search';
 import { logger } from '../logger';
 
 /*
@@ -181,42 +180,6 @@ function matchesChannelType(subscription: Subscription): boolean {
   }
 
   return false;
-}
-
-/**
- * Determines if the resource matches the search request.
- * @param resource The resource that was created or updated.
- * @param searchRequest The subscription criteria as a search request.
- * @returns True if the resource satisfies the search request.
- */
-function matchesSearchRequest(resource: Resource, searchRequest: SearchRequest): boolean {
-  if (searchRequest.filters) {
-    for (const filter of searchRequest.filters) {
-      if (!matchesSearchFilter(resource, searchRequest, filter)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-/**
- * Determines if the resource matches the search filter.
- * @param resource The resource that was created or updated.
- * @param filter One of the filters of a subscription criteria.
- * @returns True if the resource satisfies the search filter.
- */
-function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, filter: Filter): boolean {
-  const searchParam = getSearchParameter(searchRequest.resourceType, filter.code);
-  if (searchParam) {
-    const values = evalFhirPath(searchParam.expression as string, resource);
-    const value = values.length > 0 ? values[0] : undefined;
-    if (value !== filter.value) {
-      logger.debug(`Ignore rest hook for filter value (wanted "${filter.value}", received "${value})"`);
-      return false;
-    }
-  }
-  return true;
 }
 
 /**

@@ -1,7 +1,7 @@
 import { Filter, Operator, SearchRequest, SortRule } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, SearchParameter } from '@medplum/fhirtypes';
+import { SearchParameter } from '@medplum/fhirtypes';
 import { URL } from 'url';
+import { getSearchParameter } from '../structure';
 
 /**
  * Parses a FHIR search query.
@@ -42,78 +42,6 @@ const modifierMap: Record<string, Operator> = {
   'not-in': Operator.NOT_IN,
   'of-type': Operator.OF_TYPE,
 };
-
-/**
- * The original search parameters bundle from the FHIR spec.
- */
-let searchParams: Bundle | undefined = undefined;
-
-/**
- * The pre-indexed search mappings.
- * @see buildMappings
- */
-let searchMappings: Record<string, Record<string, SearchParameter>> | undefined = undefined;
-
-function getSearchParams(): Bundle {
-  if (!searchParams) {
-    searchParams = readJson('fhir/r4/search-parameters.json') as Bundle;
-  }
-  return searchParams;
-}
-
-function getSearchMappings(): Record<string, Record<string, SearchParameter>> {
-  if (!searchMappings) {
-    searchMappings = buildMappings();
-  }
-  return searchMappings;
-}
-
-/**
- * Returns a search parameter lookup table indexed by resource type and search code.
- * The original FHIR spec includes all search parameter details,
- * but stored in a flat list in a bundle.
- * For runtime performance, we index by resource type and search code.
- * @returns Search parameter lookup table.
- */
-function buildMappings(): Record<string, Record<string, SearchParameter>> {
-  const mappings: Record<string, Record<string, SearchParameter>> = {};
-  for (const entry of getSearchParams().entry as BundleEntry[]) {
-    const searchParam = entry.resource as SearchParameter;
-    if (!searchParam.expression || !searchParam.code || !searchParam.base) {
-      // Ignore special case search parameters
-      // 'text' = 'Search on the narrative of the resource'
-      // 'content' = 'Search on the entire content of the resource'
-      // 'query' = 'A custom search profile that describes a specific defined query operation'
-      continue;
-    }
-
-    const code = searchParam.code;
-    for (const resourceType of searchParam.base) {
-      mappings[resourceType] = mappings[resourceType] || {};
-      mappings[resourceType][code] = searchParam;
-    }
-  }
-  return mappings;
-}
-
-/**
- * Returns a collection of SearchParameters by resource type.
- * @param resourceType The FHIR resource type.
- * @returns The SearchParameters.
- */
-export function getSearchParameters(resourceType: string): Record<string, SearchParameter> {
-  return getSearchMappings()[resourceType];
-}
-
-/**
- * Returns a SearchParameter by resource type and code.
- * @param resourceType The FHIR resource type.
- * @param code The search parameter code (i.e., the key in a query string parameter).
- * @returns The SearchParameter if found; otherwise undefined.
- */
-export function getSearchParameter(resourceType: string, code: string): SearchParameter | undefined {
-  return getSearchMappings()[resourceType]?.[code];
-}
 
 /**
  * Parses a search URL into a search request.

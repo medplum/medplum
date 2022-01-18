@@ -1,6 +1,7 @@
 import { Operator } from '@medplum/core';
 import { URL } from 'url';
-import { getSearchParameters, parseSearchRequest, parseSearchUrl } from './search';
+import { getSearchParameters } from '../structure';
+import { parseSearchRequest, parseSearchUrl } from './parse';
 
 describe('FHIR Search Utils', () => {
   test('Parse Patient search', () => {
@@ -45,7 +46,7 @@ describe('FHIR Search Utils', () => {
 
   test('Patient has birthdate param', () => {
     const params = getSearchParameters('Patient');
-    expect(params['birthdate']).toBeDefined();
+    expect(params?.['birthdate']).toBeDefined();
   });
 
   test('Parse URL', () => {
