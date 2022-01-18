@@ -15,6 +15,7 @@ import {
   notModified,
   Operator as FhirOperator,
   SearchParameterDetails,
+  SearchParameterType,
   SearchRequest,
   SortRule,
   stringify,
@@ -41,9 +42,8 @@ import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, Looku
 import { getPatientCompartmentResourceTypes, getPatientId } from './patient';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { validateResource, validateResourceType } from './schema';
-import { getSearchParameter, getSearchParameters } from './search';
 import { InsertQuery, Operator, SelectQuery } from './sql';
-import { getStructureDefinitions } from './structure';
+import { getSearchParameter, getSearchParameters, getStructureDefinitions } from './structure';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -640,10 +640,11 @@ export class Repository {
   }
 
   private addTokenSearchFilter(builder: SelectQuery, details: SearchParameterDetails, query: string): void {
+    const value = details.type === SearchParameterType.BOOLEAN ? query === 'true' : query;
     if (details.array) {
-      builder.where(details.columnName, Operator.ARRAY_CONTAINS, query);
+      builder.where(details.columnName, Operator.ARRAY_CONTAINS, value);
     } else {
-      builder.where(details.columnName, Operator.EQUALS, query);
+      builder.where(details.columnName, Operator.EQUALS, value);
     }
   }
 

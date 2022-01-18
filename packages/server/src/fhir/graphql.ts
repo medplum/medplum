@@ -19,7 +19,7 @@ import {
 import { JSONSchema4 } from 'json-schema';
 import { Repository } from './repo';
 import { getResourceTypes, getSchemaDefinition } from './schema';
-import { getSearchParameters } from './search';
+import { getSearchParameters } from './structure';
 
 const typeCache: Record<string, GraphQLOutputType> = {
   base64Binary: GraphQLString,
