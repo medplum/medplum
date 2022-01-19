@@ -10,4 +10,5 @@ storybook-static/
 .env.defaults
 babel.config.json
 jest.config.json
+rollup.config.js
 tsconfig.json
