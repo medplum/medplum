@@ -28,6 +28,7 @@ const corsOptionsDelegate: cors.CorsOptionsDelegate<Request> = (req, callback) =
     const path = req.path;
     allow =
       path.startsWith('/.well-known/') ||
+      path.startsWith('/admin/') ||
       path.startsWith('/auth/') ||
       path.startsWith('/fhir/') ||
       path.startsWith('/oauth2/');
