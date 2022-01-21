@@ -1,6 +1,6 @@
 import { assertOk, createReference, getReferenceString, isOk, Operator } from '@medplum/core';
 import { ClientApplication, Login } from '@medplum/fhirtypes';
-import { createHash } from 'crypto';
+import { createHash, timingSafeEqual } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
 import { systemRepo } from '../fhir';
@@ -66,7 +66,9 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
     return sendTokenError(res, 'invalid_request', 'Invalid client');
   }
 
-  if (client.secret !== clientSecret) {
+  // Use a timing-safe-equal here so that we don't expose timing information which could be
+  // used to infer the secret value
+  if (!timingSafeEqual(Buffer.from(client.secret), Buffer.from(clientSecret))) {
     return sendTokenError(res, 'invalid_request', 'Invalid secret');
   }
 
@@ -206,7 +208,14 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
     return sendTokenError(res, 'invalid_request', 'Invalid token');
   }
 
-  if (login.refreshSecret !== claims.refresh_secret) {
+  if (typeof login.refreshSecret === 'undefined') {
+    // This token does not have a refresh available
+    return sendTokenError(res, 'invalid_request', 'Invalid token');
+  }
+
+  // Use a timing-safe-equal here so that we don't expose timing information which could be
+  // used to infer the secret value
+  if (!timingSafeEqual(Buffer.from(login.refreshSecret), Buffer.from(claims.refresh_secret))) {
     return sendTokenError(res, 'invalid_request', 'Invalid token');
   }
 
