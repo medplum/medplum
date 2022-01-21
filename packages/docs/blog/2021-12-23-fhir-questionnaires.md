@@ -2,14 +2,14 @@
 slug: understanding-fhir-questionniares
 title: Understanding FHIR Questionniares
 authors:
-  name: Reshma Khilnani
+  name: reshma
   title: Medplum Core Team
   url: https://github.com/reshmakh
   image_url: https://github.com/reshmakh.png
 tags: [fhir, questionniares, healthcare, api]
 ---
 
-## Easy Custom Forms for Your Healthcare App
+# Easy Custom Forms for Your Healthcare App
 
 At Medplum we know that customizable forms are critical for any healthcare app.  Is it even a healthcare app without tons of forms?
 
