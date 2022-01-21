@@ -12,6 +12,8 @@ import { HumanNameDisplay } from './HumanNameDisplay';
 import { IdentifierDisplay } from './IdentifierDisplay';
 import { PeriodDisplay } from './PeriodDisplay';
 import { QuantityDisplay } from './QuantityDisplay';
+import { RangeDisplay } from './RangeDisplay';
+import { RatioDisplay } from './RatioDisplay';
 import { ReferenceDisplay } from './ReferenceDisplay';
 import { ResourceArrayDisplay } from './ResourceArrayDisplay';
 
@@ -80,6 +82,10 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       return <PeriodDisplay value={value} />;
     case PropertyType.Quantity:
       return <QuantityDisplay value={value} />;
+    case PropertyType.Range:
+      return <RangeDisplay value={value} />;
+    case PropertyType.Ratio:
+      return <RatioDisplay value={value} />;
     case PropertyType.Reference:
       return <ReferenceDisplay value={value} />;
     default:

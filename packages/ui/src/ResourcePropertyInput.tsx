@@ -16,6 +16,8 @@ import { IdentifierInput } from './IdentifierInput';
 import { InputRow } from './InputRow';
 import { PeriodInput } from './PeriodInput';
 import { QuantityInput } from './QuantityInput';
+import { RangeInput } from './RangeInput';
+import { RatioInput } from './RatioInput';
 import { ReferenceInput } from './ReferenceInput';
 import { ResourceArrayInput } from './ResourceArrayInput';
 import { TextField } from './TextField';
@@ -116,6 +118,9 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
   const value = props.defaultValue;
 
   switch (propertyType) {
+    // 2.24.0.1 Primitive Types
+    // https://www.hl7.org/fhir/datatypes.html#primitive
+
     case PropertyType.SystemString:
     case PropertyType.canonical:
     case PropertyType.string:
@@ -193,10 +198,15 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       return (
         <textarea
           name={name}
+          data-testid={name}
           defaultValue={value}
           onChange={(e: React.ChangeEvent) => props.onChange && props.onChange((e.target as HTMLInputElement).value)}
         />
       );
+
+    // 2.24.0.2 Complex Types
+    // https://www.hl7.org/fhir/datatypes.html#complex
+
     case PropertyType.Address:
       return <AddressInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Annotation:
@@ -209,6 +219,8 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       return <CodingInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.ContactPoint:
       return <ContactPointInput name={name} defaultValue={value} onChange={props.onChange} />;
+    case PropertyType.Extension:
+      return <ExtensionInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.HumanName:
       return <HumanNameInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Identifier:
@@ -217,10 +229,12 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       return <PeriodInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Quantity:
       return <QuantityInput name={name} defaultValue={value} onChange={props.onChange} />;
+    case PropertyType.Range:
+      return <RangeInput name={name} defaultValue={value} onChange={props.onChange} />;
+    case PropertyType.Ratio:
+      return <RatioInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Reference:
       return <ReferenceInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
-    case PropertyType.Extension:
-      return <ExtensionInput name={name} defaultValue={value} onChange={props.onChange} />;
     default:
       return (
         <BackboneElementInput
