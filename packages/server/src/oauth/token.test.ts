@@ -213,6 +213,48 @@ describe('OAuth2 Token', () => {
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeUndefined();
+  });
+
+  test('Authorization code token success with refresh', async () => {
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: client.id as string,
+      redirect_uri: client.redirectUri as string,
+      scope: 'openid',
+      code_challenge: 'xyz',
+      code_challenge_method: 'plain',
+    });
+    const res = await request(app)
+      .post('/oauth2/authorize?' + params.toString())
+      .type('form')
+      .send({
+        email: 'admin@example.com',
+        password: 'admin',
+        nonce: 'asdf',
+        state: 'xyz',
+        remember: 'true',
+      });
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBeDefined();
+
+    const location = new URL(res.headers.location);
+    expect(location.searchParams.get('error')).toBeNull();
+
+    const res2 = await request(app)
+      .post('/oauth2/token')
+      .type('form')
+      .send({
+        grant_type: 'authorization_code',
+        code: location.searchParams.get('code'),
+        code_verifier: 'xyz',
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
     expect(res2.body.refresh_token).toBeDefined();
   });
 
@@ -255,7 +297,6 @@ describe('OAuth2 Token', () => {
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
-    expect(res2.body.refresh_token).toBeDefined();
   });
 
   test('Authorization code token failure with client ID', async () => {
@@ -334,7 +375,6 @@ describe('OAuth2 Token', () => {
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
-    expect(res2.body.refresh_token).toBeDefined();
 
     const res3 = await request(app)
       .post('/oauth2/token')
@@ -387,6 +427,7 @@ describe('OAuth2 Token', () => {
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz',
+        remember: 'true',
       })
       .expect(302);
     expect(res.status).toBe(302);
@@ -422,6 +463,60 @@ describe('OAuth2 Token', () => {
     expect(res3.body.id_token).toBeDefined();
     expect(res3.body.access_token).toBeDefined();
     expect(res3.body.refresh_token).toBeDefined();
+  });
+
+  test('Refresh token failed for no refresh secret', async () => {
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: client.id as string,
+      redirect_uri: client.redirectUri as string,
+      scope: 'openid',
+      code_challenge: 'xyz',
+      code_challenge_method: 'plain',
+    });
+
+    const res = await request(app)
+      .post('/oauth2/authorize?' + params.toString())
+      .type('form')
+      .send({
+        email: 'admin@example.com',
+        password: 'admin',
+        nonce: 'asdf',
+        state: 'xyz',
+        remember: 'false',
+      })
+      .expect(302);
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBeDefined();
+
+    const location = new URL(res.headers.location);
+    expect(location.searchParams.get('error')).toBeNull();
+
+    const res2 = await request(app)
+      .post('/oauth2/token')
+      .type('form')
+      .send({
+        grant_type: 'authorization_code',
+        code: location.searchParams.get('code'),
+        code_verifier: 'xyz',
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeUndefined();
+
+    const res3 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'refresh_token',
+      refresh_token: res2.body.refresh_token,
+    });
+    expect(res3.status).toBe(400);
+    expect(res3.body).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'Invalid refresh token',
+    });
   });
 
   test('Refresh token failure with S256 code', async () => {
@@ -483,6 +578,7 @@ describe('OAuth2 Token', () => {
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz',
+        remember: 'true',
       })
       .expect(302);
     expect(res.status).toBe(302);
@@ -538,6 +634,7 @@ describe('OAuth2 Token', () => {
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz',
+        remember: 'true',
       })
       .expect(302);
     expect(res.status).toBe(302);
@@ -597,6 +694,7 @@ describe('OAuth2 Token', () => {
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz',
+        remember: 'true',
       })
       .expect(302);
     expect(res.status).toBe(302);
@@ -652,6 +750,7 @@ describe('OAuth2 Token', () => {
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz',
+        remember: 'true',
       })
       .expect(302);
     expect(res.status).toBe(302);
@@ -707,6 +806,7 @@ describe('OAuth2 Token', () => {
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz',
+        remember: 'true',
       })
       .expect(302);
     expect(res.status).toBe(302);
@@ -769,6 +869,7 @@ describe('OAuth2 Token', () => {
         password: 'admin',
         nonce: 'asdf',
         state: 'xyz',
+        remember: 'true',
       })
       .expect(302);
     expect(res.status).toBe(302);
