@@ -11,7 +11,7 @@ import { compareArrays } from './util';
  * Each name is represented as a separate row in the "HumanName" table.
  */
 export class HumanNameTable implements LookupTable {
-  private static readonly knownParams: Set<string> = new Set<string>([
+  static readonly #knownParams: Set<string> = new Set<string>([
     'individual-given',
     'individual-family',
     'Patient-name',
@@ -34,7 +34,7 @@ export class HumanNameTable implements LookupTable {
    * @returns True if the search parameter is an "identifier" parameter.
    */
   isIndexed(searchParam: SearchParameter): boolean {
-    return HumanNameTable.knownParams.has(searchParam.id as string);
+    return HumanNameTable.#knownParams.has(searchParam.id as string);
   }
 
   /**
@@ -69,7 +69,7 @@ export class HumanNameTable implements LookupTable {
     }
 
     const resourceId = resource.id as string;
-    const existing = await this.getNames(resourceId);
+    const existing = await this.#getNames(resourceId);
 
     if (!compareArrays(names, existing)) {
       const client = getClient();
@@ -124,7 +124,7 @@ export class HumanNameTable implements LookupTable {
    * @param resourceId The FHIR resource ID.
    * @returns Promise for the list of indexed names.
    */
-  private async getNames(resourceId: string): Promise<HumanName[]> {
+  async #getNames(resourceId: string): Promise<HumanName[]> {
     return new SelectQuery('HumanName')
       .column('content')
       .where('resourceId', Operator.EQUALS, resourceId)

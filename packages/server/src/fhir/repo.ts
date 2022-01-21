@@ -126,11 +126,11 @@ const lookupTables: LookupTable[] = [
  * Repository instances should be created per author and project.
  */
 export class Repository {
-  private readonly context: RepositoryContext;
+  readonly #context: RepositoryContext;
 
   constructor(context: RepositoryContext) {
-    this.context = context;
-    if (!this.context.author.reference) {
+    this.#context = context;
+    if (!this.#context.author.reference) {
       throw new Error('Invalid author reference');
     }
   }
@@ -141,7 +141,7 @@ export class Repository {
       return [validateOutcome, undefined];
     }
 
-    return this.updateResourceImpl(
+    return this.#updateResourceImpl(
       {
         ...resource,
         id: randomUUID(),
@@ -160,14 +160,14 @@ export class Repository {
       return [validateOutcome, undefined];
     }
 
-    if (!this.canReadResourceType(resourceType)) {
+    if (!this.#canReadResourceType(resourceType)) {
       return [accessDenied, undefined];
     }
 
     const client = getClient();
     const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', Operator.EQUALS, id);
 
-    this.addCompartments(builder, resourceType);
+    this.#addCompartments(builder, resourceType);
 
     const rows = await builder.execute(client);
     if (rows.length === 0) {
@@ -178,7 +178,7 @@ export class Repository {
       return [gone, undefined];
     }
 
-    return [allOk, this.removeHiddenFields(JSON.parse(rows[0].content as string))];
+    return [allOk, this.#removeHiddenFields(JSON.parse(rows[0].content as string))];
   }
 
   async readReference<T extends Resource>(reference: Reference<T>): RepositoryResult<T> {
@@ -220,7 +220,7 @@ export class Repository {
         resourceType: 'Bundle',
         type: 'history',
         entry: rows.map((row: any) => ({
-          resource: this.removeHiddenFields(JSON.parse(row.content as string)),
+          resource: this.#removeHiddenFields(JSON.parse(row.content as string)),
         })),
       },
     ];
@@ -247,15 +247,15 @@ export class Repository {
       return [notFound, undefined];
     }
 
-    return [allOk, this.removeHiddenFields(JSON.parse(rows[0].content as string))];
+    return [allOk, this.#removeHiddenFields(JSON.parse(rows[0].content as string))];
   }
 
   async updateResource<T extends Resource>(resource: T): RepositoryResult<T> {
-    return this.updateResourceImpl(resource, false);
+    return this.#updateResourceImpl(resource, false);
   }
 
-  private async updateResourceImpl<T extends Resource>(resource: T, create: boolean): RepositoryResult<T> {
-    this.removeReadonlyFields(resource);
+  async #updateResourceImpl<T extends Resource>(resource: T, create: boolean): RepositoryResult<T> {
+    this.#removeReadonlyFields(resource);
 
     const validateOutcome = validateResource(resource);
     if (!isOk(validateOutcome)) {
@@ -267,7 +267,7 @@ export class Repository {
       return [badRequest('Missing id'), undefined];
     }
 
-    if (!this.canWriteResourceType(resourceType)) {
+    if (!this.#canWriteResourceType(resourceType)) {
       return [accessDenied, undefined];
     }
 
@@ -276,7 +276,7 @@ export class Repository {
       return [existingOutcome, undefined];
     }
 
-    if (!create && isNotFound(existingOutcome) && !this.canSetId()) {
+    if (!create && isNotFound(existingOutcome) && !this.#canSetId()) {
       return [existingOutcome, undefined];
     }
 
@@ -298,33 +298,33 @@ export class Repository {
       meta: {
         ...updated?.meta,
         versionId: randomUUID(),
-        lastUpdated: this.getLastUpdated(existing, resource),
-        author: this.getAuthor(resource),
+        lastUpdated: this.#getLastUpdated(existing, resource),
+        author: this.#getAuthor(resource),
       },
     };
 
-    const project = this.getProjectId(updated);
+    const project = this.#getProjectId(updated);
     if (project) {
       // Need cast to overwrite a readonly property
       (result.meta as any).project = project;
     }
 
-    const account = await this.getAccount(existing, updated);
+    const account = await this.#getAccount(existing, updated);
     if (account) {
       // Need cast to overwrite a readonly property
       (result.meta as any).account = account;
     }
 
     try {
-      await this.writeResource(result);
-      await this.writeResourceVersion(result);
-      await this.writeLookupTables(result);
+      await this.#writeResource(result);
+      await this.#writeResourceVersion(result);
+      await this.#writeLookupTables(result);
       await addBackgroundJobs(result);
     } catch (error) {
       return [badRequest((error as Error).message), undefined];
     }
 
-    this.removeHiddenFields(result);
+    this.#removeHiddenFields(result);
     return [existing ? allOk : created, result];
   }
 
@@ -335,13 +335,13 @@ export class Repository {
    * @param resourceType The resource type.
    */
   async reindexResourceType(resourceType: string): RepositoryResult<undefined> {
-    if (!this.isSystem()) {
+    if (!this.#isSystem()) {
       return [accessDenied, undefined];
     }
 
     const client = getClient();
     const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'id' });
-    this.addDeletedFilter(builder);
+    this.#addDeletedFilter(builder);
 
     const rows = await builder.execute(client);
     for (const { id } of rows) {
@@ -358,7 +358,7 @@ export class Repository {
    * @param id The resource ID.
    */
   async reindexResource<T extends Resource>(resourceType: string, id: string): RepositoryResult<T> {
-    if (!this.isSystem()) {
+    if (!this.#isSystem()) {
       return [accessDenied, undefined];
     }
 
@@ -368,8 +368,8 @@ export class Repository {
     }
 
     try {
-      await this.writeResource(resource as T);
-      await this.writeLookupTables(resource as T);
+      await this.#writeResource(resource as T);
+      await this.#writeLookupTables(resource as T);
     } catch (error) {
       return [badRequest((error as Error).message), undefined];
     }
@@ -383,7 +383,7 @@ export class Repository {
       return [readOutcome, undefined];
     }
 
-    if (!this.canWriteResourceType(resourceType)) {
+    if (!this.#canWriteResourceType(resourceType)) {
       return [accessDenied, undefined];
     }
 
@@ -407,7 +407,7 @@ export class Repository {
       content,
     }).execute(client);
 
-    await this.deleteFromLookupTables(resource as Resource);
+    await this.#deleteFromLookupTables(resource as Resource);
 
     return [allOk, undefined];
   }
@@ -430,7 +430,7 @@ export class Repository {
       return [validateOutcome, undefined];
     }
 
-    if (!this.canReadResourceType(resourceType)) {
+    if (!this.#canReadResourceType(resourceType)) {
       return [accessDenied, undefined];
     }
 
@@ -439,18 +439,18 @@ export class Repository {
       .column({ tableName: resourceType, columnName: 'id' })
       .column({ tableName: resourceType, columnName: 'content' });
 
-    this.addDeletedFilter(builder);
-    this.addCompartments(builder, resourceType);
-    this.addJoins(builder, searchRequest);
-    this.addSearchFilters(builder, searchRequest);
-    this.addSortRules(builder, searchRequest);
+    this.#addDeletedFilter(builder);
+    this.#addCompartments(builder, resourceType);
+    this.#addJoins(builder, searchRequest);
+    this.#addSearchFilters(builder, searchRequest);
+    this.#addSortRules(builder, searchRequest);
 
     const count = searchRequest.count || 20;
     const page = searchRequest.page || 0;
     builder.limit(count);
     builder.offset(count * page);
 
-    const total = await this.getTotalCount(searchRequest);
+    const total = await this.#getTotalCount(searchRequest);
     const rows = await builder.execute(client);
 
     return [
@@ -460,7 +460,7 @@ export class Repository {
         type: 'searchest',
         total,
         entry: rows.map((row) => ({
-          resource: this.removeHiddenFields(JSON.parse(row.content as string)),
+          resource: this.#removeHiddenFields(JSON.parse(row.content as string)),
         })),
       },
     ];
@@ -472,16 +472,16 @@ export class Repository {
    * @param searchRequest The search request.
    * @returns The total number of matching results.
    */
-  private async getTotalCount(searchRequest: SearchRequest): Promise<number> {
+  async #getTotalCount(searchRequest: SearchRequest): Promise<number> {
     const client = getClient();
     const builder = new SelectQuery(searchRequest.resourceType).raw(
       `COUNT (DISTINCT "${searchRequest.resourceType}"."id") AS "count"`
     );
 
-    this.addDeletedFilter(builder);
-    this.addCompartments(builder, searchRequest.resourceType);
-    this.addJoins(builder, searchRequest);
-    this.addSearchFilters(builder, searchRequest);
+    this.#addDeletedFilter(builder);
+    this.#addCompartments(builder, searchRequest.resourceType);
+    this.#addJoins(builder, searchRequest);
+    this.#addSearchFilters(builder, searchRequest);
     const rows = await builder.execute(client);
     return rows[0].count as number;
   }
@@ -490,7 +490,7 @@ export class Repository {
    * Adds filters to ignore soft-deleted resources.
    * @param builder The select query builder.
    */
-  private addDeletedFilter(builder: SelectQuery): void {
+  #addDeletedFilter(builder: SelectQuery): void {
     builder.where('deleted', Operator.EQUALS, false);
   }
 
@@ -499,19 +499,19 @@ export class Repository {
    * @param builder The select query builder.
    * @param resourceType The resource type for compartments.
    */
-  private addCompartments(builder: SelectQuery, resourceType: string): void {
+  #addCompartments(builder: SelectQuery, resourceType: string): void {
     if (publicResourceTypes.includes(resourceType)) {
       return;
     }
 
-    if (this.isAdmin()) {
+    if (this.#isAdmin()) {
       return;
     }
 
     const compartmentIds = [];
 
-    if (this.context.accessPolicy?.resource) {
-      for (const policy of this.context.accessPolicy.resource) {
+    if (this.#context.accessPolicy?.resource) {
+      for (const policy of this.#context.accessPolicy.resource) {
         if (policy.resourceType === resourceType) {
           const policyCompartmentId = resolveId(policy.compartment);
           if (policyCompartmentId) {
@@ -521,8 +521,8 @@ export class Repository {
       }
     }
 
-    if (compartmentIds.length === 0 && this.context.project !== undefined) {
-      compartmentIds.push(this.context.project);
+    if (compartmentIds.length === 0 && this.#context.project !== undefined) {
+      compartmentIds.push(this.#context.project);
     }
 
     if (compartmentIds.length > 0) {
@@ -536,7 +536,7 @@ export class Repository {
    * @param builder The client query builder.
    * @param searchRequest The search request.
    */
-  private addJoins(builder: SelectQuery, searchRequest: SearchRequest): void {
+  #addJoins(builder: SelectQuery, searchRequest: SearchRequest): void {
     const { resourceType } = searchRequest;
 
     const codes = new Set<string>();
@@ -547,7 +547,7 @@ export class Repository {
     codes.forEach((code) => {
       const param = getSearchParameter(resourceType, code);
       if (param) {
-        const lookupTable = this.getLookupTable(param);
+        const lookupTable = this.#getLookupTable(param);
         if (lookupTable) {
           joinedTables.set(lookupTable.getName(), lookupTable);
         }
@@ -562,8 +562,8 @@ export class Repository {
    * @param builder The client query builder.
    * @param searchRequest The search request.
    */
-  private addSearchFilters(builder: SelectQuery, searchRequest: SearchRequest): void {
-    searchRequest.filters?.forEach((filter) => this.addSearchFilter(builder, searchRequest, filter));
+  #addSearchFilters(builder: SelectQuery, searchRequest: SearchRequest): void {
+    searchRequest.filters?.forEach((filter) => this.#addSearchFilter(builder, searchRequest, filter));
   }
 
   /**
@@ -572,10 +572,10 @@ export class Repository {
    * @param searchRequest The search request.
    * @param filter The search filter.
    */
-  private addSearchFilter(builder: SelectQuery, searchRequest: SearchRequest, filter: Filter): void {
+  #addSearchFilter(builder: SelectQuery, searchRequest: SearchRequest, filter: Filter): void {
     const resourceType = searchRequest.resourceType;
 
-    if (this.trySpecialSearchParameter(builder, resourceType, filter)) {
+    if (this.#trySpecialSearchParameter(builder, resourceType, filter)) {
       return;
     }
 
@@ -584,7 +584,7 @@ export class Repository {
       return;
     }
 
-    const lookupTable = this.getLookupTable(param);
+    const lookupTable = this.#getLookupTable(param);
     if (lookupTable) {
       lookupTable.addWhere(builder, filter);
       return;
@@ -592,11 +592,11 @@ export class Repository {
 
     const details = getSearchParameterDetails(getStructureDefinitions(), resourceType, param);
     if (param.type === 'string') {
-      this.addStringSearchFilter(builder, details, filter);
+      this.#addStringSearchFilter(builder, details, filter);
     } else if (param.type === 'token') {
-      this.addTokenSearchFilter(builder, details, filter.value);
+      this.#addTokenSearchFilter(builder, details, filter.value);
     } else if (param.type === 'reference') {
-      this.addReferenceSearchFilter(builder, details, filter);
+      this.#addReferenceSearchFilter(builder, details, filter);
     } else {
       builder.where(details.columnName, Operator.EQUALS, filter.value);
     }
@@ -612,7 +612,7 @@ export class Repository {
    * @param filter The search filter.
    * @returns True if the search parameter is a special code.
    */
-  private trySpecialSearchParameter(builder: SelectQuery, resourceType: string, filter: Filter): boolean {
+  #trySpecialSearchParameter(builder: SelectQuery, resourceType: string, filter: Filter): boolean {
     const code = filter.code;
     if (!code.startsWith('_')) {
       return false;
@@ -631,7 +631,7 @@ export class Repository {
     return true;
   }
 
-  private addStringSearchFilter(builder: SelectQuery, details: SearchParameterDetails, filter: Filter): void {
+  #addStringSearchFilter(builder: SelectQuery, details: SearchParameterDetails, filter: Filter): void {
     if (filter.operator === FhirOperator.EXACT) {
       builder.where(details.columnName, Operator.EQUALS, filter.value);
     } else {
@@ -639,7 +639,7 @@ export class Repository {
     }
   }
 
-  private addTokenSearchFilter(builder: SelectQuery, details: SearchParameterDetails, query: string): void {
+  #addTokenSearchFilter(builder: SelectQuery, details: SearchParameterDetails, query: string): void {
     const value = details.type === SearchParameterType.BOOLEAN ? query === 'true' : query;
     if (details.array) {
       builder.where(details.columnName, Operator.ARRAY_CONTAINS, value);
@@ -648,7 +648,7 @@ export class Repository {
     }
   }
 
-  private addReferenceSearchFilter(builder: SelectQuery, details: SearchParameterDetails, filter: Filter): void {
+  #addReferenceSearchFilter(builder: SelectQuery, details: SearchParameterDetails, filter: Filter): void {
     // TODO: Support optional resource type when known (param.target.length === 1)
     // TODO: Support reference queries (filter.value === 'Patient?identifier=123')
     if (details.array) {
@@ -663,8 +663,8 @@ export class Repository {
    * @param builder The client query builder.
    * @param searchRequest The search request.
    */
-  private addSortRules(builder: SelectQuery, searchRequest: SearchRequest): void {
-    searchRequest.sortRules?.forEach((sortRule) => this.addOrderByClause(builder, searchRequest, sortRule));
+  #addSortRules(builder: SelectQuery, searchRequest: SearchRequest): void {
+    searchRequest.sortRules?.forEach((sortRule) => this.#addOrderByClause(builder, searchRequest, sortRule));
   }
 
   /**
@@ -673,7 +673,7 @@ export class Repository {
    * @param searchRequest The search request.
    * @param sortRule The sort rule.
    */
-  private addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, sortRule: SortRule): void {
+  #addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, sortRule: SortRule): void {
     if (sortRule.code === '_lastUpdated') {
       builder.orderBy('lastUpdated', !!sortRule.descending);
       return;
@@ -685,7 +685,7 @@ export class Repository {
       return;
     }
 
-    const lookupTable = this.getLookupTable(param);
+    const lookupTable = this.#getLookupTable(param);
     if (lookupTable) {
       lookupTable.addOrderBy(builder, sortRule);
       return;
@@ -701,7 +701,7 @@ export class Repository {
    * This does *not* write the version to the history table.
    * @param resource The resource.
    */
-  private async writeResource(resource: Resource): Promise<void> {
+  async #writeResource(resource: Resource): Promise<void> {
     const client = getClient();
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
@@ -711,14 +711,14 @@ export class Repository {
       id: resource.id,
       lastUpdated: meta.lastUpdated,
       deleted: false,
-      compartments: this.getCompartments(resource),
+      compartments: this.#getCompartments(resource),
       content,
     };
 
     const searchParams = getSearchParameters(resourceType);
     if (searchParams) {
       for (const searchParam of Object.values(searchParams)) {
-        this.buildColumn(resource, columns, searchParam);
+        this.#buildColumn(resource, columns, searchParam);
       }
     }
 
@@ -729,7 +729,7 @@ export class Repository {
    * Writes a version of the resource to the resource history table.
    * @param resource The resource.
    */
-  private async writeResourceVersion(resource: Resource): Promise<void> {
+  async #writeResourceVersion(resource: Resource): Promise<void> {
     const client = getClient();
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
@@ -751,7 +751,7 @@ export class Repository {
    * @param resource The resource.
    * @returns The list of compartments for the resource.
    */
-  private getCompartments(resource: Resource): string[] {
+  #getCompartments(resource: Resource): string[] {
     const result = new Set<string>();
 
     if (resource.meta?.project) {
@@ -778,8 +778,8 @@ export class Repository {
    * @param columns The output columns to write.
    * @param searchParam The search parameter definition.
    */
-  private buildColumn(resource: Resource, columns: Record<string, any>, searchParam: SearchParameter): void {
-    if (this.isIndexTable(searchParam)) {
+  #buildColumn(resource: Resource, columns: Record<string, any>, searchParam: SearchParameter): void {
+    if (this.#isIndexTable(searchParam)) {
       return;
     }
 
@@ -788,9 +788,9 @@ export class Repository {
 
     if (values.length > 0) {
       if (details.array) {
-        columns[details.columnName] = values.map((v) => this.buildColumnValue(searchParam, v));
+        columns[details.columnName] = values.map((v) => this.#buildColumnValue(searchParam, v));
       } else {
-        columns[details.columnName] = this.buildColumnValue(searchParam, values[0]);
+        columns[details.columnName] = this.#buildColumnValue(searchParam, values[0]);
       }
     }
   }
@@ -803,21 +803,21 @@ export class Repository {
    * @param value The FHIR resource value.
    * @returns The column value.
    */
-  private buildColumnValue(searchParam: SearchParameter, value: any): any {
+  #buildColumnValue(searchParam: SearchParameter, value: any): any {
     if (searchParam.type === 'boolean') {
       return value === 'true';
     }
 
     if (searchParam.type === 'date') {
-      return this.buildDateColumn(value);
+      return this.#buildDateColumn(value);
     }
 
     if (searchParam.type === 'reference') {
-      return this.buildReferenceColumns(searchParam, value);
+      return this.#buildReferenceColumns(searchParam, value);
     }
 
     if (searchParam.type === 'token') {
-      return this.buildTokenColumn(value);
+      return this.#buildTokenColumn(value);
     }
 
     return typeof value === 'string' ? value : stringify(value);
@@ -830,7 +830,7 @@ export class Repository {
    * @param value The FHIRPath result.
    * @returns The date string if parsed; undefined otherwise.
    */
-  private buildDateColumn(value: any): string | undefined {
+  #buildDateColumn(value: any): string | undefined {
     if (typeof value === 'string') {
       try {
         const date = new Date(value);
@@ -847,7 +847,7 @@ export class Repository {
    * @param searchParam The search parameter definition.
    * @param value The property value of the reference.
    */
-  private buildReferenceColumns(searchParam: SearchParameter, value: any): string | undefined {
+  #buildReferenceColumns(searchParam: SearchParameter, value: any): string | undefined {
     const refStr = (value as Reference).reference;
     if (!refStr) {
       return undefined;
@@ -866,7 +866,7 @@ export class Repository {
    * @param value The property value of the code.
    * @returns The value to write to the database column.
    */
-  private buildTokenColumn(value: any): string | undefined {
+  #buildTokenColumn(value: any): string | undefined {
     if (!value) {
       return undefined;
     }
@@ -877,7 +877,7 @@ export class Repository {
     }
 
     if (typeof value === 'object') {
-      const codeableConceptValue = this.buildCodeableConceptColumn(value);
+      const codeableConceptValue = this.#buildCodeableConceptColumn(value);
       if (codeableConceptValue) {
         return codeableConceptValue;
       }
@@ -892,7 +892,7 @@ export class Repository {
    * @param value The property value of the code.
    * @returns The value to write to the database column.
    */
-  private buildCodeableConceptColumn(value: any): string | undefined {
+  #buildCodeableConceptColumn(value: any): string | undefined {
     // If the value is a CodeableConcept,
     // then use the following logic to determine the code:
     // 1) value.coding[0].code
@@ -918,23 +918,23 @@ export class Repository {
     return undefined;
   }
 
-  private async writeLookupTables(resource: Resource): Promise<void> {
+  async #writeLookupTables(resource: Resource): Promise<void> {
     for (const lookupTable of lookupTables) {
       await lookupTable.indexResource(resource);
     }
   }
 
-  private async deleteFromLookupTables(resource: Resource): Promise<void> {
+  async #deleteFromLookupTables(resource: Resource): Promise<void> {
     for (const lookupTable of lookupTables) {
       await lookupTable.deleteResource(resource);
     }
   }
 
-  private isIndexTable(searchParam: SearchParameter): boolean {
-    return !!this.getLookupTable(searchParam);
+  #isIndexTable(searchParam: SearchParameter): boolean {
+    return !!this.#getLookupTable(searchParam);
   }
 
-  private getLookupTable(searchParam: SearchParameter): LookupTable | undefined {
+  #getLookupTable(searchParam: SearchParameter): LookupTable | undefined {
     for (const lookupTable of lookupTables) {
       if (lookupTable.isIndexed(searchParam)) {
         return lookupTable;
@@ -950,14 +950,14 @@ export class Repository {
    * @param resource The FHIR resource.
    * @returns The last updated date.
    */
-  private getLastUpdated(existing: Resource | undefined, resource: Resource): string {
+  #getLastUpdated(existing: Resource | undefined, resource: Resource): string {
     if (!existing) {
       // If the resource has a specified "lastUpdated",
       // and there is no existing version,
       // and the current context is a ClientApplication (i.e., OAuth client credentials),
       // then allow the ClientApplication to set the date.
       const lastUpdated = resource.meta?.lastUpdated;
-      if (lastUpdated && this.canWriteMeta()) {
+      if (lastUpdated && this.#canWriteMeta()) {
         return lastUpdated;
       }
     }
@@ -974,7 +974,7 @@ export class Repository {
    * @param resource The FHIR resource.
    * @returns The project ID.
    */
-  private getProjectId(resource: Resource): string | undefined {
+  #getProjectId(resource: Resource): string | undefined {
     if (publicResourceTypes.includes(resource.resourceType)) {
       return undefined;
     }
@@ -984,14 +984,14 @@ export class Repository {
     }
 
     const submittedProjectId = resource.meta?.project;
-    if (submittedProjectId && this.canWriteMeta()) {
+    if (submittedProjectId && this.#canWriteMeta()) {
       // If the resource has an project (whether provided or from existing),
       // and the current context is allowed to write meta,
       // then use the provided value.
       return submittedProjectId;
     }
 
-    return this.context.project;
+    return this.#context.project;
   }
 
   /**
@@ -1003,16 +1003,16 @@ export class Repository {
    * @param resource The FHIR resource.
    * @returns
    */
-  private getAuthor(resource: Resource): Reference {
+  #getAuthor(resource: Resource): Reference {
     // If the resource has an author (whether provided or from existing),
     // and the current context is allowed to write meta,
     // then use the provided value.
     const author = resource.meta?.author;
-    if (author && this.canWriteMeta()) {
+    if (author && this.#canWriteMeta()) {
       return author;
     }
 
-    return this.context.author;
+    return this.#context.author;
   }
 
   /**
@@ -1022,16 +1022,16 @@ export class Repository {
    * @param resource The FHIR resource.
    * @returns
    */
-  private async getAccount(existing: Resource | undefined, updated: Resource): Promise<Reference | undefined> {
+  async #getAccount(existing: Resource | undefined, updated: Resource): Promise<Reference | undefined> {
     const account = updated.meta?.account;
-    if (account && this.canWriteMeta()) {
+    if (account && this.#canWriteMeta()) {
       // If the user specifies an account, allow it if they have permission.
       return account;
     }
 
-    if (this.context.accessPolicy?.compartment) {
+    if (this.#context.accessPolicy?.compartment) {
       // If the user access policy specifies a comparment, then use it as the account.
-      return this.context.accessPolicy?.compartment;
+      return this.#context.accessPolicy?.compartment;
     }
 
     if (updated.resourceType !== 'Patient') {
@@ -1055,16 +1055,16 @@ export class Repository {
    * This is very powerful, and reserved for the system account.
    * @returns True if the current user can manually set the ID field.
    */
-  private canSetId(): boolean {
-    return this.isSystem() || this.isAdmin();
+  #canSetId(): boolean {
+    return this.#isSystem() || this.#isAdmin();
   }
 
   /**
    * Determines if the current user can manually set meta fields.
    * @returns True if the current user can manually set meta fields.
    */
-  private canWriteMeta(): boolean {
-    return this.isSystem() || this.isAdmin();
+  #canWriteMeta(): boolean {
+    return this.#isSystem() || this.#isAdmin();
   }
 
   /**
@@ -1072,8 +1072,8 @@ export class Repository {
    * @param resourceType The resource type.
    * @returns True if the current user can read the specified resource type.
    */
-  private canReadResourceType(resourceType: string): boolean {
-    if (this.isSystem() || this.isAdmin()) {
+  #canReadResourceType(resourceType: string): boolean {
+    if (this.#isSystem() || this.#isAdmin()) {
       return true;
     }
     if (protectedResourceTypes.includes(resourceType)) {
@@ -1082,11 +1082,11 @@ export class Repository {
     if (publicResourceTypes.includes(resourceType)) {
       return true;
     }
-    if (!this.context.accessPolicy) {
+    if (!this.#context.accessPolicy) {
       return true;
     }
-    if (this.context.accessPolicy.resource) {
-      for (const resourcePolicy of this.context.accessPolicy.resource) {
+    if (this.#context.accessPolicy.resource) {
+      for (const resourcePolicy of this.#context.accessPolicy.resource) {
         if (resourcePolicy.resourceType === resourceType || resourcePolicy.resourceType === '*') {
           return true;
         }
@@ -1100,8 +1100,8 @@ export class Repository {
    * @param resourceType The resource type.
    * @returns True if the current user can write the specified resource type.
    */
-  private canWriteResourceType(resourceType: string): boolean {
-    if (this.isSystem() || this.isAdmin()) {
+  #canWriteResourceType(resourceType: string): boolean {
+    if (this.#isSystem() || this.#isAdmin()) {
       return true;
     }
     if (protectedResourceTypes.includes(resourceType)) {
@@ -1110,11 +1110,11 @@ export class Repository {
     if (publicResourceTypes.includes(resourceType)) {
       return false;
     }
-    if (!this.context.accessPolicy) {
+    if (!this.#context.accessPolicy) {
       return true;
     }
-    if (this.context.accessPolicy.resource) {
-      for (const resourcePolicy of this.context.accessPolicy.resource) {
+    if (this.#context.accessPolicy.resource) {
+      for (const resourcePolicy of this.#context.accessPolicy.resource) {
         if (resourcePolicy.resourceType === resourceType || resourcePolicy.resourceType === '*') {
           return !resourcePolicy.readonly;
         }
@@ -1128,11 +1128,11 @@ export class Repository {
    * This should be called for any "read" operation.
    * @param input The input resource.
    */
-  private removeHiddenFields<T extends Resource>(input: T): T {
-    const policy = this.getResourceAccessPolicy(input.resourceType);
+  #removeHiddenFields<T extends Resource>(input: T): T {
+    const policy = this.#getResourceAccessPolicy(input.resourceType);
     if (policy?.hiddenFields) {
       for (const field of policy.hiddenFields) {
-        this.removeField(input, field);
+        this.#removeField(input, field);
       }
     }
     return input;
@@ -1143,11 +1143,11 @@ export class Repository {
    * This should be called for any "write" operation.
    * @param input The input resource.
    */
-  private removeReadonlyFields<T extends Resource>(input: T): T {
-    const policy = this.getResourceAccessPolicy(input.resourceType);
+  #removeReadonlyFields<T extends Resource>(input: T): T {
+    const policy = this.#getResourceAccessPolicy(input.resourceType);
     if (policy?.readonlyFields) {
       for (const field of policy.readonlyFields) {
-        this.removeField(input, field);
+        this.#removeField(input, field);
       }
     }
     return input;
@@ -1160,14 +1160,14 @@ export class Repository {
    * @param path The path to the field to remove.
    * @returns The new document with the field removed.
    */
-  private removeField<T extends Resource>(input: T, path: string): T {
+  #removeField<T extends Resource>(input: T, path: string): T {
     const patch: Operation[] = [{ op: 'remove', path: `/${path.replaceAll('.', '/')}` }];
     return applyPatch(input, patch).newDocument;
   }
 
-  private getResourceAccessPolicy(resourceType: string): AccessPolicyResource | undefined {
-    if (this.context.accessPolicy?.resource) {
-      for (const resourcePolicy of this.context.accessPolicy.resource) {
+  #getResourceAccessPolicy(resourceType: string): AccessPolicyResource | undefined {
+    if (this.#context.accessPolicy?.resource) {
+      for (const resourcePolicy of this.#context.accessPolicy.resource) {
         if (resourcePolicy.resourceType === resourceType) {
           return resourcePolicy;
         }
@@ -1176,17 +1176,17 @@ export class Repository {
     return undefined;
   }
 
-  private isSystem(): boolean {
-    return this.context.author.reference === 'system';
+  #isSystem(): boolean {
+    return this.#context.author.reference === 'system';
   }
 
-  private isAdmin(): boolean {
-    return !!this.context.admin || this.isAdminClient();
+  #isAdmin(): boolean {
+    return !!this.#context.admin || this.#isAdminClient();
   }
 
-  private isAdminClient(): boolean {
+  #isAdminClient(): boolean {
     const { adminClientId } = getConfig();
-    return !!adminClientId && this.context.author.reference === 'ClientApplication/' + adminClientId;
+    return !!adminClientId && this.#context.author.reference === 'ClientApplication/' + adminClientId;
   }
 }
 

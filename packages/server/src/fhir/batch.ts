@@ -22,7 +22,7 @@ export async function processBatch(repo: Repository, bundle: Bundle): Repository
  * In particular, it tracks rewritten ID's as necessary.
  */
 class BatchProcessor {
-  private readonly ids: Record<string, Resource>;
+  readonly #ids: Record<string, Resource>;
 
   /**
    * Creates a batch processor.
@@ -30,7 +30,7 @@ class BatchProcessor {
    * @param bundle The input bundle.
    */
   constructor(private readonly repo: Repository, private readonly bundle: Bundle) {
-    this.ids = {};
+    this.#ids = {};
   }
 
   /**
@@ -56,8 +56,8 @@ class BatchProcessor {
 
     const resultEntries: BundleEntry[] = [];
     for (const entry of entries) {
-      const rewritten = this.rewriteIdsInObject(entry);
-      resultEntries.push(await this.processBatchEntry(rewritten));
+      const rewritten = this.#rewriteIdsInObject(entry);
+      resultEntries.push(await this.#processBatchEntry(rewritten));
     }
 
     const result: Bundle = {
@@ -74,7 +74,7 @@ class BatchProcessor {
    * @param entry The bundle entry.
    * @returns The bundle entry response.
    */
-  private async processBatchEntry(entry: BundleEntry): Promise<BundleEntry> {
+  async #processBatchEntry(entry: BundleEntry): Promise<BundleEntry> {
     if (!entry.request) {
       return buildBundleResponse(badRequest('Missing entry.request'));
     }
@@ -93,16 +93,16 @@ class BatchProcessor {
 
     switch (entry.request.method) {
       case 'GET':
-        return this.processGet(url);
+        return this.#processGet(url);
 
       case 'POST':
-        return this.processPost(entry, url);
+        return this.#processPost(entry, url);
 
       case 'PUT':
-        return this.processPut(entry, url);
+        return this.#processPut(entry, url);
 
       case 'DELETE':
-        return this.processDelete(url);
+        return this.#processDelete(url);
 
       default:
         return buildBundleResponse(badRequest('Unsupported entry.request.method'));
@@ -115,16 +115,16 @@ class BatchProcessor {
    * @param url The entry request URL.
    * @returns The bundle entry response.
    */
-  private async processGet(url: URL): Promise<BundleEntry> {
+  async #processGet(url: URL): Promise<BundleEntry> {
     const path = url.pathname.split('/');
     if (path.length === 2) {
-      return this.processSearch(url);
+      return this.#processSearch(url);
     }
     if (path.length === 3) {
-      return this.processReadResource(path[1], path[2]);
+      return this.#processReadResource(path[1], path[2]);
     }
     if (path.length === 4 && path[3] === '_history') {
-      return this.processReadHistory(path[1], path[2]);
+      return this.#processReadHistory(path[1], path[2]);
     }
     return buildBundleResponse(notFound);
   }
@@ -135,7 +135,7 @@ class BatchProcessor {
    * @param url The entry request URL.
    * @returns The bundle entry response.
    */
-  private async processSearch(url: URL): Promise<BundleEntry> {
+  async #processSearch(url: URL): Promise<BundleEntry> {
     const [outcome, bundle] = await this.repo.search(parseSearchUrl(url));
     return buildBundleResponse(outcome, bundle, true);
   }
@@ -147,7 +147,7 @@ class BatchProcessor {
    * @param id The FHIR resource ID.
    * @returns The bundle entry response.
    */
-  private async processReadResource(resourceType: string, id: string): Promise<BundleEntry> {
+  async #processReadResource(resourceType: string, id: string): Promise<BundleEntry> {
     const [outcome, resource] = await this.repo.readResource(resourceType, id);
     return buildBundleResponse(outcome, resource, true);
   }
@@ -159,7 +159,7 @@ class BatchProcessor {
    * @param id The FHIR resource ID.
    * @returns The bundle entry response.
    */
-  private async processReadHistory(resourceType: string, id: string): Promise<BundleEntry> {
+  async #processReadHistory(resourceType: string, id: string): Promise<BundleEntry> {
     const [outcome, resource] = await this.repo.readHistory(resourceType, id);
     return buildBundleResponse(outcome, resource, true);
   }
@@ -171,10 +171,10 @@ class BatchProcessor {
    * @param url The entry request URL.
    * @returns The bundle entry response.
    */
-  private async processPost(entry: BundleEntry, url: URL): Promise<BundleEntry> {
+  async #processPost(entry: BundleEntry, url: URL): Promise<BundleEntry> {
     const path = url.pathname.split('/');
     if (path.length === 2) {
-      return this.processCreateResource(entry);
+      return this.#processCreateResource(entry);
     }
     return buildBundleResponse(notFound);
   }
@@ -189,7 +189,7 @@ class BatchProcessor {
    * @param entry The bundle entry.
    * @returns The bundle entry response.
    */
-  private async processCreateResource(entry: BundleEntry): Promise<BundleEntry> {
+  async #processCreateResource(entry: BundleEntry): Promise<BundleEntry> {
     if (!entry.resource) {
       return buildBundleResponse(badRequest('Missing entry.resource'));
     }
@@ -228,7 +228,7 @@ class BatchProcessor {
     }
 
     if (entry.fullUrl && result) {
-      this.addReplacementId(entry.fullUrl, result);
+      this.#addReplacementId(entry.fullUrl, result);
     }
 
     return buildBundleResponse(outcome as OperationOutcome, result);
@@ -241,10 +241,10 @@ class BatchProcessor {
    * @param url The entry request URL.
    * @returns The bundle entry response.
    */
-  private async processPut(entry: BundleEntry, url: URL): Promise<BundleEntry> {
+  async #processPut(entry: BundleEntry, url: URL): Promise<BundleEntry> {
     const path = url.pathname.split('/');
     if (path.length === 3) {
-      return this.processUpdateResource(entry.resource);
+      return this.#processUpdateResource(entry.resource);
     }
     return buildBundleResponse(notFound);
   }
@@ -254,7 +254,7 @@ class BatchProcessor {
    * @param resource The FHIR resource.
    * @returns The bundle entry response.
    */
-  private async processUpdateResource(resource: Resource | undefined): Promise<BundleEntry> {
+  async #processUpdateResource(resource: Resource | undefined): Promise<BundleEntry> {
     if (!resource) {
       return buildBundleResponse(badRequest('Missing entry.resource'));
     }
@@ -268,10 +268,10 @@ class BatchProcessor {
    * @param url The entry request URL.
    * @returns The bundle entry response.
    */
-  private async processDelete(url: URL): Promise<BundleEntry> {
+  async #processDelete(url: URL): Promise<BundleEntry> {
     const path = url.pathname.split('/');
     if (path.length === 3) {
-      return this.processDeleteResource(path[1], path[2]);
+      return this.#processDeleteResource(path[1], path[2]);
     }
     return buildBundleResponse(notFound);
   }
@@ -281,43 +281,43 @@ class BatchProcessor {
    * @param resource The FHIR resource.
    * @returns The bundle entry response.
    */
-  private async processDeleteResource(resourceType: string, id: string): Promise<BundleEntry> {
+  async #processDeleteResource(resourceType: string, id: string): Promise<BundleEntry> {
     const [outcome] = await this.repo.deleteResource(resourceType, id);
     return buildBundleResponse(outcome);
   }
 
-  private addReplacementId(fullUrl: string, resource: Resource): void {
+  #addReplacementId(fullUrl: string, resource: Resource): void {
     if (fullUrl?.startsWith('urn:uuid:')) {
-      this.ids[fullUrl] = resource;
+      this.#ids[fullUrl] = resource;
     }
   }
 
-  private rewriteIds(input: any): any {
+  #rewriteIds(input: any): any {
     if (Array.isArray(input)) {
-      return this.rewriteIdsInArray(input);
+      return this.#rewriteIdsInArray(input);
     }
     if (typeof input === 'string') {
-      return this.rewriteIdsInString(input);
+      return this.#rewriteIdsInString(input);
     }
     if (typeof input === 'object') {
-      return this.rewriteIdsInObject(input);
+      return this.#rewriteIdsInObject(input);
     }
     return input;
   }
 
-  private rewriteIdsInArray(input: any[]): any[] {
-    return input.map((item) => this.rewriteIds(item));
+  #rewriteIdsInArray(input: any[]): any[] {
+    return input.map((item) => this.#rewriteIds(item));
   }
 
-  private rewriteIdsInObject(input: any): any {
-    return Object.fromEntries(Object.entries(input).map(([k, v]) => [k, this.rewriteIds(v)]));
+  #rewriteIdsInObject(input: any): any {
+    return Object.fromEntries(Object.entries(input).map(([k, v]) => [k, this.#rewriteIds(v)]));
   }
 
-  private rewriteIdsInString(input: string): string {
+  #rewriteIdsInString(input: string): string {
     const matches = input.match(/urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/);
     if (matches) {
       const fullUrl = matches[0];
-      const resource = this.ids[fullUrl];
+      const resource = this.#ids[fullUrl];
       if (resource) {
         return input.replaceAll(fullUrl, getReferenceString(resource));
       }
