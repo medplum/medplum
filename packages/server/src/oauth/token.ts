@@ -68,7 +68,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
 
   // Use a timing-safe-equal here so that we don't expose timing information which could be
   // used to infer the secret value
-  if (!timingSafeEqual(Buffer.from(client.secret), Buffer.from(clientSecret))) {
+  if (!timingSafeEqualStr(client.secret, clientSecret)) {
     return sendTokenError(res, 'invalid_request', 'Invalid secret');
   }
 
@@ -208,14 +208,14 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
     return sendTokenError(res, 'invalid_request', 'Invalid token');
   }
 
-  if (typeof login.refreshSecret === 'undefined') {
+  if (login.refreshSecret === undefined) {
     // This token does not have a refresh available
     return sendTokenError(res, 'invalid_request', 'Invalid token');
   }
 
   // Use a timing-safe-equal here so that we don't expose timing information which could be
   // used to infer the secret value
-  if (!timingSafeEqual(Buffer.from(login.refreshSecret), Buffer.from(claims.refresh_secret))) {
+  if (!timingSafeEqualStr(login.refreshSecret, claims.refresh_secret)) {
     return sendTokenError(res, 'invalid_request', 'Invalid token');
   }
 
@@ -313,4 +313,23 @@ export function hashCode(code: string): string {
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=/g, '');
+}
+
+/**
+ * Performs constant time comparison of two strings.
+ * Returns true if a is equal to b, without leaking timing information
+ * that would allow an attacker to guess one of the values.
+ *
+ * The built-in function timingSafeEqual requires that buffers are equal length.
+ * Per the discussion here: https://github.com/nodejs/node/issues/17178
+ * That is considered ok, and does not invalidate the protection from timing attack.
+ *
+ * @param a First string.
+ * @param b Second string.
+ * @returns True if the strings are equal.
+ */
+function timingSafeEqualStr(a: string, b: string): boolean {
+  const buf1 = Buffer.from(a);
+  const buf2 = Buffer.from(b);
+  return buf1.length === buf2.length && timingSafeEqual(buf1, buf2);
 }
