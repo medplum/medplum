@@ -11,6 +11,8 @@ import {
   Identifier,
   Period,
   Quantity,
+  Range,
+  Ratio,
   Reference,
   SubscriptionChannel,
 } from '@medplum/fhirtypes';
@@ -21,808 +23,9 @@ import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisp
 
 const schema: IndexedStructureDefinition = {
   types: {
-    Observation: {
-      display: 'Observation',
-      properties: {
-        meta: {
-          path: 'Observation.meta',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'Meta',
-            },
-          ],
-        },
-        language: {
-          path: 'Observation.language',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'code',
-            },
-          ],
-        },
-        text: {
-          path: 'Observation.text',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'Narrative',
-            },
-          ],
-        },
-        identifier: {
-          path: 'Observation.identifier',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'Identifier',
-            },
-          ],
-        },
-        basedOn: {
-          path: 'Observation.basedOn',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'Reference',
-              targetProfile: [
-                'http://hl7.org/fhir/StructureDefinition/CarePlan',
-                'http://hl7.org/fhir/StructureDefinition/DeviceRequest',
-                'http://hl7.org/fhir/StructureDefinition/ImmunizationRecommendation',
-                'http://hl7.org/fhir/StructureDefinition/MedicationRequest',
-                'http://hl7.org/fhir/StructureDefinition/NutritionOrder',
-                'http://hl7.org/fhir/StructureDefinition/ServiceRequest',
-              ],
-            },
-          ],
-        },
-        partOf: {
-          path: 'Observation.partOf',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'Reference',
-              targetProfile: [
-                'http://hl7.org/fhir/StructureDefinition/MedicationAdministration',
-                'http://hl7.org/fhir/StructureDefinition/MedicationDispense',
-                'http://hl7.org/fhir/StructureDefinition/MedicationStatement',
-                'http://hl7.org/fhir/StructureDefinition/Procedure',
-                'http://hl7.org/fhir/StructureDefinition/Immunization',
-                'http://hl7.org/fhir/StructureDefinition/ImagingStudy',
-              ],
-            },
-          ],
-        },
-        status: {
-          path: 'Observation.status',
-          min: 1,
-          max: '1',
-          type: [
-            {
-              code: 'code',
-            },
-          ],
-        },
-        category: {
-          path: 'Observation.category',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'CodeableConcept',
-            },
-          ],
-        },
-        code: {
-          path: 'Observation.code',
-          min: 1,
-          max: '1',
-          type: [
-            {
-              code: 'CodeableConcept',
-            },
-          ],
-        },
-        subject: {
-          path: 'Observation.subject',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'Reference',
-              targetProfile: [
-                'http://hl7.org/fhir/StructureDefinition/Patient',
-                'http://hl7.org/fhir/StructureDefinition/Group',
-                'http://hl7.org/fhir/StructureDefinition/Device',
-                'http://hl7.org/fhir/StructureDefinition/Location',
-              ],
-            },
-          ],
-        },
-        focus: {
-          path: 'Observation.focus',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'Reference',
-              targetProfile: ['http://hl7.org/fhir/StructureDefinition/Resource'],
-            },
-          ],
-        },
-        encounter: {
-          path: 'Observation.encounter',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'Reference',
-              targetProfile: ['http://hl7.org/fhir/StructureDefinition/Encounter'],
-            },
-          ],
-        },
-        'effective[x]': {
-          path: 'Observation.effective[x]',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'dateTime',
-            },
-            {
-              code: 'Period',
-            },
-            {
-              code: 'Timing',
-            },
-            {
-              code: 'instant',
-            },
-          ],
-        },
-        issued: {
-          path: 'Observation.issued',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'instant',
-            },
-          ],
-        },
-        performer: {
-          path: 'Observation.performer',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'Reference',
-              targetProfile: [
-                'http://hl7.org/fhir/StructureDefinition/Practitioner',
-                'http://hl7.org/fhir/StructureDefinition/PractitionerRole',
-                'http://hl7.org/fhir/StructureDefinition/Organization',
-                'http://hl7.org/fhir/StructureDefinition/CareTeam',
-                'http://hl7.org/fhir/StructureDefinition/Patient',
-                'http://hl7.org/fhir/StructureDefinition/RelatedPerson',
-              ],
-            },
-          ],
-        },
-        'value[x]': {
-          path: 'Observation.value[x]',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'Quantity',
-            },
-            {
-              code: 'CodeableConcept',
-            },
-            {
-              code: 'string',
-            },
-            {
-              code: 'boolean',
-            },
-            {
-              code: 'integer',
-            },
-            {
-              code: 'Range',
-            },
-            {
-              code: 'Ratio',
-            },
-            {
-              code: 'SampledData',
-            },
-            {
-              code: 'time',
-            },
-            {
-              code: 'dateTime',
-            },
-            {
-              code: 'Period',
-            },
-          ],
-          condition: ['obs-7'],
-        },
-        dataAbsentReason: {
-          path: 'Observation.dataAbsentReason',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'CodeableConcept',
-            },
-          ],
-          condition: ['obs-6'],
-        },
-        interpretation: {
-          path: 'Observation.interpretation',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'CodeableConcept',
-            },
-          ],
-        },
-        note: {
-          path: 'Observation.note',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'Annotation',
-            },
-          ],
-        },
-        bodySite: {
-          path: 'Observation.bodySite',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'CodeableConcept',
-            },
-          ],
-        },
-        method: {
-          path: 'Observation.method',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'CodeableConcept',
-            },
-          ],
-        },
-        specimen: {
-          path: 'Observation.specimen',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'Reference',
-              targetProfile: ['http://hl7.org/fhir/StructureDefinition/Specimen'],
-            },
-          ],
-        },
-        device: {
-          path: 'Observation.device',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'Reference',
-              targetProfile: [
-                'http://hl7.org/fhir/StructureDefinition/Device',
-                'http://hl7.org/fhir/StructureDefinition/DeviceMetric',
-              ],
-            },
-          ],
-        },
-        referenceRange: {
-          path: 'Observation.referenceRange',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'BackboneElement',
-            },
-          ],
-        },
-        hasMember: {
-          path: 'Observation.hasMember',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'Reference',
-              targetProfile: [
-                'http://hl7.org/fhir/StructureDefinition/Observation',
-                'http://hl7.org/fhir/StructureDefinition/QuestionnaireResponse',
-                'http://hl7.org/fhir/StructureDefinition/MolecularSequence',
-              ],
-            },
-          ],
-        },
-        derivedFrom: {
-          path: 'Observation.derivedFrom',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'Reference',
-              targetProfile: [
-                'http://hl7.org/fhir/StructureDefinition/DocumentReference',
-                'http://hl7.org/fhir/StructureDefinition/ImagingStudy',
-                'http://hl7.org/fhir/StructureDefinition/Media',
-                'http://hl7.org/fhir/StructureDefinition/QuestionnaireResponse',
-                'http://hl7.org/fhir/StructureDefinition/Observation',
-                'http://hl7.org/fhir/StructureDefinition/MolecularSequence',
-              ],
-            },
-          ],
-        },
-        component: {
-          path: 'Observation.component',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'BackboneElement',
-            },
-          ],
-        },
-      },
-    },
-    Patient: {
-      display: 'Patient',
-      properties: {
-        meta: {
-          path: 'Patient.meta',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'Meta',
-            },
-          ],
-        },
-        language: {
-          path: 'Patient.language',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'code',
-            },
-          ],
-        },
-        text: {
-          path: 'Patient.text',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'Narrative',
-            },
-          ],
-        },
-        identifier: {
-          path: 'Patient.identifier',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'Identifier',
-            },
-          ],
-        },
-        active: {
-          path: 'Patient.active',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'boolean',
-            },
-          ],
-          meaningWhenMissing:
-            'This resource is generally assumed to be active if no value is provided for the active element',
-        },
-        name: {
-          path: 'Patient.name',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'HumanName',
-            },
-          ],
-        },
-        telecom: {
-          path: 'Patient.telecom',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'ContactPoint',
-            },
-          ],
-        },
-        gender: {
-          path: 'Patient.gender',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'code',
-            },
-          ],
-        },
-        birthDate: {
-          path: 'Patient.birthDate',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'date',
-            },
-          ],
-        },
-        'deceased[x]': {
-          path: 'Patient.deceased[x]',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'boolean',
-            },
-            {
-              code: 'dateTime',
-            },
-          ],
-        },
-        address: {
-          path: 'Patient.address',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'Address',
-            },
-          ],
-        },
-        maritalStatus: {
-          path: 'Patient.maritalStatus',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'CodeableConcept',
-            },
-          ],
-        },
-        'multipleBirth[x]': {
-          path: 'Patient.multipleBirth[x]',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'boolean',
-            },
-            {
-              code: 'integer',
-            },
-          ],
-        },
-        photo: {
-          path: 'Patient.photo',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'Attachment',
-            },
-          ],
-        },
-        contact: {
-          path: 'Patient.contact',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'BackboneElement',
-            },
-          ],
-        },
-        communication: {
-          path: 'Patient.communication',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'BackboneElement',
-            },
-          ],
-        },
-        generalPractitioner: {
-          path: 'Patient.generalPractitioner',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'Reference',
-              targetProfile: [
-                'http://hl7.org/fhir/StructureDefinition/Organization',
-                'http://hl7.org/fhir/StructureDefinition/Practitioner',
-                'http://hl7.org/fhir/StructureDefinition/PractitionerRole',
-              ],
-            },
-          ],
-        },
-        managingOrganization: {
-          path: 'Patient.managingOrganization',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'Reference',
-              targetProfile: ['http://hl7.org/fhir/StructureDefinition/Organization'],
-            },
-          ],
-        },
-        link: {
-          path: 'Patient.link',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'BackboneElement',
-            },
-          ],
-        },
-      },
-    },
-    PatientContact: {
-      display: 'PatientContact',
-      parentType: 'Patient',
-      properties: {
-        relationship: {
-          path: 'Patient.contact.relationship',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'CodeableConcept',
-            },
-          ],
-        },
-        name: {
-          path: 'Patient.contact.name',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'HumanName',
-            },
-          ],
-        },
-        telecom: {
-          path: 'Patient.contact.telecom',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'ContactPoint',
-            },
-          ],
-        },
-        address: {
-          path: 'Patient.contact.address',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'Address',
-            },
-          ],
-        },
-        gender: {
-          path: 'Patient.contact.gender',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'code',
-            },
-          ],
-        },
-        organization: {
-          path: 'Patient.contact.organization',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'Reference',
-              targetProfile: ['http://hl7.org/fhir/StructureDefinition/Organization'],
-            },
-          ],
-          condition: ['pat-1'],
-        },
-        period: {
-          path: 'Patient.contact.period',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'Period',
-            },
-          ],
-        },
-      },
-    },
-    PatientCommunication: {
-      display: 'PatientCommunication',
-      parentType: 'Patient',
-      properties: {
-        language: {
-          path: 'Patient.communication.language',
-          min: 1,
-          max: '1',
-          type: [
-            {
-              code: 'CodeableConcept',
-            },
-          ],
-        },
-        preferred: {
-          path: 'Patient.communication.preferred',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'boolean',
-            },
-          ],
-        },
-      },
-    },
-    PatientLink: {
-      display: 'PatientLink',
-      parentType: 'Patient',
-      properties: {
-        other: {
-          path: 'Patient.link.other',
-          min: 1,
-          max: '1',
-          type: [
-            {
-              code: 'Reference',
-              targetProfile: [
-                'http://hl7.org/fhir/StructureDefinition/Patient',
-                'http://hl7.org/fhir/StructureDefinition/RelatedPerson',
-              ],
-            },
-          ],
-        },
-        type: {
-          path: 'Patient.link.type',
-          min: 1,
-          max: '1',
-          type: [
-            {
-              code: 'code',
-            },
-          ],
-        },
-      },
-    },
     Subscription: {
       display: 'Subscription',
       properties: {
-        meta: {
-          path: 'Subscription.meta',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'Meta',
-            },
-          ],
-        },
-        language: {
-          path: 'Subscription.language',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'code',
-            },
-          ],
-        },
-        text: {
-          path: 'Subscription.text',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'Narrative',
-            },
-          ],
-        },
-        status: {
-          path: 'Subscription.status',
-          min: 1,
-          max: '1',
-          type: [
-            {
-              code: 'code',
-            },
-          ],
-        },
-        contact: {
-          path: 'Subscription.contact',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'ContactPoint',
-            },
-          ],
-        },
-        end: {
-          path: 'Subscription.end',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'instant',
-            },
-          ],
-        },
-        reason: {
-          path: 'Subscription.reason',
-          min: 1,
-          max: '1',
-          type: [
-            {
-              code: 'string',
-            },
-          ],
-        },
-        criteria: {
-          path: 'Subscription.criteria',
-          min: 1,
-          max: '1',
-          type: [
-            {
-              code: 'string',
-            },
-          ],
-        },
-        error: {
-          path: 'Subscription.error',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'string',
-            },
-          ],
-        },
         channel: {
           path: 'Subscription.channel',
           min: 1,
@@ -889,7 +92,7 @@ describe('ResourcePropertyDisplay', () => {
     render(
       <ResourcePropertyDisplay
         schema={schema}
-        property={schema.types.Observation.properties['value[x]']}
+        property={{ type: [{ code: 'string' }] }}
         propertyType={PropertyType.string}
         value={null}
       />
@@ -900,12 +103,12 @@ describe('ResourcePropertyDisplay', () => {
     render(
       <ResourcePropertyDisplay
         schema={schema}
-        property={schema.types.Observation.properties['value[x]']}
+        property={{ type: [{ code: 'boolean' }] }}
         propertyType={PropertyType.boolean}
         value={true}
       />
     );
-    expect(screen.getByText('true')).toBeDefined();
+    expect(screen.getByText('true')).toBeInTheDocument();
     expect(screen.queryByText('false')).toBeNull();
   });
 
@@ -913,12 +116,12 @@ describe('ResourcePropertyDisplay', () => {
     render(
       <ResourcePropertyDisplay
         schema={schema}
-        property={schema.types.Observation.properties['value[x]']}
+        property={{ type: [{ code: 'boolean' }] }}
         propertyType={PropertyType.boolean}
         value={false}
       />
     );
-    expect(screen.getByText('false')).toBeDefined();
+    expect(screen.getByText('false')).toBeInTheDocument();
     expect(screen.queryByText('true')).toBeNull();
   });
 
@@ -926,7 +129,7 @@ describe('ResourcePropertyDisplay', () => {
     render(
       <ResourcePropertyDisplay
         schema={schema}
-        property={schema.types.Observation.properties['value[x]']}
+        property={{ type: [{ code: 'boolean' }] }}
         propertyType={PropertyType.boolean}
         value={undefined}
       />
@@ -939,12 +142,12 @@ describe('ResourcePropertyDisplay', () => {
     render(
       <ResourcePropertyDisplay
         schema={schema}
-        property={schema.types.Observation.properties['value[x]']}
+        property={{ type: [{ code: 'string' }] }}
         propertyType={PropertyType.string}
         value={'hello'}
       />
     );
-    expect(screen.getByText('hello')).toBeDefined();
+    expect(screen.getByText('hello')).toBeInTheDocument();
   });
 
   test('Renders canonical', () => {
@@ -956,7 +159,7 @@ describe('ResourcePropertyDisplay', () => {
         value="hello"
       />
     );
-    expect(screen.getByText('hello')).toBeDefined();
+    expect(screen.getByText('hello')).toBeInTheDocument();
   });
 
   test('Renders url', () => {
@@ -968,7 +171,7 @@ describe('ResourcePropertyDisplay', () => {
         value="https://example.com"
       />
     );
-    expect(screen.getByText('https://example.com')).toBeDefined();
+    expect(screen.getByText('https://example.com')).toBeInTheDocument();
   });
 
   test('Renders uri', () => {
@@ -980,20 +183,20 @@ describe('ResourcePropertyDisplay', () => {
         value="https://example.com"
       />
     );
-    expect(screen.getByText('https://example.com')).toBeDefined();
+    expect(screen.getByText('https://example.com')).toBeInTheDocument();
   });
 
   test('Renders string array', () => {
     render(
       <ResourcePropertyDisplay
         schema={schema}
-        property={schema.types.SubscriptionChannel.properties.header}
+        property={{ type: [{ code: 'string' }], max: '*' }}
         propertyType={PropertyType.string}
         value={['hello', 'world']}
       />
     );
-    expect(screen.getByText('hello')).toBeDefined();
-    expect(screen.getByText('world')).toBeDefined();
+    expect(screen.getByText('hello')).toBeInTheDocument();
+    expect(screen.getByText('world')).toBeInTheDocument();
   });
 
   test('Renders markdown', () => {
@@ -1005,7 +208,7 @@ describe('ResourcePropertyDisplay', () => {
         value="hello"
       />
     );
-    expect(screen.getByText('hello')).toBeDefined();
+    expect(screen.getByText('hello')).toBeInTheDocument();
   });
 
   test('Renders Address', () => {
@@ -1022,7 +225,7 @@ describe('ResourcePropertyDisplay', () => {
       />
     );
 
-    expect(screen.getByText('London')).toBeDefined();
+    expect(screen.getByText('London')).toBeInTheDocument();
   });
 
   test('Renders Annotation', () => {
@@ -1039,7 +242,7 @@ describe('ResourcePropertyDisplay', () => {
       />
     );
 
-    expect(screen.getByText('hello')).toBeDefined();
+    expect(screen.getByText('hello')).toBeInTheDocument();
   });
 
   test('Renders Attachment', () => {
@@ -1058,7 +261,7 @@ describe('ResourcePropertyDisplay', () => {
       />
     );
 
-    expect(screen.getByText('file.txt')).toBeDefined();
+    expect(screen.getByText('file.txt')).toBeInTheDocument();
   });
 
   test('Renders Attachment array', () => {
@@ -1078,13 +281,13 @@ describe('ResourcePropertyDisplay', () => {
     render(
       <ResourcePropertyDisplay
         schema={schema}
-        property={schema.types.Patient.properties.photo}
+        property={{ type: [{ code: 'Attachment' }], max: '*' }}
         propertyType={PropertyType.Attachment}
         value={value}
       />
     );
-    expect(screen.getByText('file.txt')).toBeDefined();
-    expect(screen.getByText('file2.txt')).toBeDefined();
+    expect(screen.getByText('file.txt')).toBeInTheDocument();
+    expect(screen.getByText('file2.txt')).toBeInTheDocument();
   });
 
   test('Renders CodeableConcept', () => {
@@ -1095,13 +298,13 @@ describe('ResourcePropertyDisplay', () => {
     render(
       <ResourcePropertyDisplay
         schema={schema}
-        property={schema.types.Observation.properties['value[x]']}
+        property={{ type: [{ code: 'CodeableConcept' }] }}
         propertyType={PropertyType.CodeableConcept}
         value={value}
       />
     );
 
-    expect(screen.getByText('foo')).toBeDefined();
+    expect(screen.getByText('foo')).toBeInTheDocument();
   });
 
   test('Renders Coding', () => {
@@ -1119,7 +322,7 @@ describe('ResourcePropertyDisplay', () => {
       />
     );
 
-    expect(screen.getByText('Test Coding')).toBeDefined();
+    expect(screen.getByText('Test Coding')).toBeInTheDocument();
   });
 
   test('Renders ContactPoint', () => {
@@ -1137,7 +340,7 @@ describe('ResourcePropertyDisplay', () => {
       />
     );
 
-    expect(screen.getByText('foo@example.com [email]')).toBeDefined();
+    expect(screen.getByText('foo@example.com [email]')).toBeInTheDocument();
   });
 
   test('Renders HumanName', () => {
@@ -1154,7 +357,7 @@ describe('ResourcePropertyDisplay', () => {
       />
     );
 
-    expect(screen.getByText('Smith')).toBeDefined();
+    expect(screen.getByText('Smith')).toBeInTheDocument();
   });
 
   test('Renders Identifier', () => {
@@ -1172,7 +375,7 @@ describe('ResourcePropertyDisplay', () => {
       />
     );
 
-    expect(screen.getByText('xyz: xyz123')).toBeDefined();
+    expect(screen.getByText('xyz: xyz123')).toBeInTheDocument();
   });
 
   test('Renders Period', () => {
@@ -1208,7 +411,43 @@ describe('ResourcePropertyDisplay', () => {
       />
     );
 
-    expect(screen.getByText('1 mg')).toBeDefined();
+    expect(screen.getByText('1 mg')).toBeInTheDocument();
+  });
+
+  test('Renders Range', () => {
+    const value: Range = {
+      low: { value: 5, unit: 'mg' },
+      high: { value: 10, unit: 'mg' },
+    };
+
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'Range' }] }}
+        propertyType={PropertyType.Range}
+        value={value}
+      />
+    );
+
+    expect(screen.getByText('5 mg')).toBeInTheDocument();
+  });
+
+  test('Renders Ratio', () => {
+    const value: Ratio = {
+      numerator: { value: 5, unit: 'mg' },
+      denominator: { value: 10, unit: 'ml' },
+    };
+
+    render(
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={{ type: [{ code: 'Ratio' }] }}
+        propertyType={PropertyType.Ratio}
+        value={value}
+      />
+    );
+
+    expect(screen.getByText('5 mg')).toBeInTheDocument();
   });
 
   test('Renders Reference', () => {
@@ -1228,7 +467,7 @@ describe('ResourcePropertyDisplay', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText(value.display as string)).toBeDefined();
+    expect(screen.getByText(value.display as string)).toBeInTheDocument();
   });
 
   test('Renders BackboneElement', () => {
@@ -1246,7 +485,7 @@ describe('ResourcePropertyDisplay', () => {
       />
     );
 
-    expect(screen.getByText(value.endpoint as string)).toBeDefined();
+    expect(screen.getByText(value.endpoint as string)).toBeInTheDocument();
   });
 
   test('getValueAndType', () => {

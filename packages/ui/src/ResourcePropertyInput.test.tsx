@@ -1,4 +1,4 @@
-import { IndexedStructureDefinition, PropertyType } from '@medplum/core';
+import { createSchema, PropertyType } from '@medplum/core';
 import {
   Address,
   Annotation,
@@ -6,9 +6,13 @@ import {
   CodeableConcept,
   ContactPoint,
   ElementDefinition,
+  Extension,
   HumanName,
   Identifier,
   Period,
+  Quantity,
+  Range,
+  Ratio,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
@@ -16,151 +20,8 @@ import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
 import { ResourcePropertyInput, ResourcePropertyInputProps } from './ResourcePropertyInput';
 
-const patientNameProperty: ElementDefinition = {
-  id: 'Patient.name',
-  path: 'Patient.name',
-  type: [
-    {
-      code: 'HumanName',
-    },
-  ],
-  max: '*',
-};
-
-const patientActiveProperty: ElementDefinition = {
-  id: 'Patient.active',
-  path: 'Patient.active',
-  type: [
-    {
-      code: 'boolean',
-    },
-  ],
-};
-
-const patientBirthDateProperty: ElementDefinition = {
-  id: 'Patient.birthDate',
-  path: 'Patient.birthDate',
-  type: [
-    {
-      code: 'date',
-    },
-  ],
-};
-
-const patientAddressProperty: ElementDefinition = {
-  id: 'Patient.address',
-  path: 'Patient.address',
-  type: [
-    {
-      code: 'Address',
-    },
-  ],
-  max: '*',
-};
-
-const patientPhotoProperty: ElementDefinition = {
-  id: 'Patient.photo',
-  path: 'Patient.photo',
-  type: [
-    {
-      code: 'Attachment',
-    },
-  ],
-  max: '*',
-};
-
-const patientMaritalStatusProperty: ElementDefinition = {
-  id: 'Patient.maritalStatus',
-  path: 'Patient.maritalStatus',
-  type: [
-    {
-      code: 'CodeableConcept',
-    },
-  ],
-};
-
-const patientTelecomProperty: ElementDefinition = {
-  id: 'Patient.telecom',
-  path: 'Patient.telecom',
-  type: [
-    {
-      code: 'ContactPoint',
-    },
-  ],
-  max: '*',
-};
-
-const patientIdentifierProperty: ElementDefinition = {
-  id: 'Patient.identifier',
-  path: 'Patient.identifier',
-  type: [
-    {
-      code: 'Identifier',
-    },
-  ],
-  max: '*',
-};
-
-const patientManagingOrganizationProperty: ElementDefinition = {
-  id: 'Patient.managingOrganization',
-  path: 'Patient.managingOrganization',
-  type: [
-    {
-      code: 'Reference',
-      targetProfile: ['Organization'],
-    },
-  ],
-};
-
-const observationValueProperty: ElementDefinition = {
-  id: 'Observation.value[x]',
-  path: 'Observation.value[x]',
-  type: [{ code: 'Quantity' }, { code: 'string' }, { code: 'integer' }],
-};
-
-const specimenNoteProperty: ElementDefinition = {
-  id: 'Specimen.note',
-  path: 'Specimen.note',
-  type: [
-    {
-      code: 'Annotation',
-    },
-  ],
-  max: '*',
-};
-
-const schema: IndexedStructureDefinition = {
-  types: {
-    Patient: {
-      display: 'Patient',
-      properties: {
-        name: patientNameProperty,
-        active: patientActiveProperty,
-        birthDate: patientBirthDateProperty,
-        address: patientAddressProperty,
-        photo: patientPhotoProperty,
-        maritalStatus: patientMaritalStatusProperty,
-        telecom: patientTelecomProperty,
-        identifier: patientIdentifierProperty,
-        managingOrganization: patientManagingOrganizationProperty,
-      },
-    },
-    Observation: {
-      display: 'Observation',
-      properties: {
-        valueInteger: observationValueProperty,
-      },
-    },
-    Specimen: {
-      display: 'Specimen',
-      properties: {
-        note: specimenNoteProperty,
-      },
-    },
-  },
-};
-
 const medplum = new MockClient();
+const schema = createSchema();
 
 describe('ResourcePropertyInput', () => {
   function setup(props: ResourcePropertyInputProps): void {
@@ -171,14 +32,24 @@ describe('ResourcePropertyInput', () => {
     );
   }
 
-  test('Renders boolean property', () => {
+  // 2.24.0.1 Primitive Types
+  // https://www.hl7.org/fhir/datatypes.html#primitive
+
+  test('boolean property', () => {
+    const property: ElementDefinition = {
+      type: [
+        {
+          code: 'boolean',
+        },
+      ],
+    };
+
     const onChange = jest.fn();
 
     setup({
-      schema,
-      property: patientActiveProperty,
       name: 'active',
-      defaultValue: undefined,
+      schema,
+      property,
       onChange,
     });
     expect(screen.getByTestId('active')).toBeDefined();
@@ -191,18 +62,20 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Date property', async () => {
+    const property: ElementDefinition = {
+      type: [
+        {
+          code: 'date',
+        },
+      ],
+    };
+
     const onChange = jest.fn();
 
     setup({
-      schema,
-      property: {
-        type: [
-          {
-            code: 'date',
-          },
-        ],
-      },
       name: 'date',
+      schema,
+      property,
       onChange,
     });
     expect(screen.getByTestId('date')).toBeDefined();
@@ -215,18 +88,20 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Date/Time property', async () => {
+    const property: ElementDefinition = {
+      type: [
+        {
+          code: 'dateTime',
+        },
+      ],
+    };
+
     const onChange = jest.fn();
 
     setup({
-      schema,
-      property: {
-        type: [
-          {
-            code: 'dateTime',
-          },
-        ],
-      },
       name: 'dateTime',
+      schema,
+      property,
       onChange,
     });
     expect(screen.getByTestId('dateTime')).toBeDefined();
@@ -238,26 +113,87 @@ describe('ResourcePropertyInput', () => {
     expect(onChange).toHaveBeenCalledWith('2021-01-01T12:00:00Z');
   });
 
-  test('Renders Address property', () => {
-    const address: Address[] = [
+  test('Markdown property', () => {
+    const property: ElementDefinition = {
+      type: [
+        {
+          code: 'markdown',
+        },
+      ],
+    };
+
+    const onChange = jest.fn();
+
+    setup({
+      name: 'markdown',
+      schema,
+      property,
+      onChange,
+    });
+    expect(screen.getByTestId('markdown')).toBeDefined();
+
+    act(() => {
+      fireEvent.change(screen.getByTestId('markdown'), { target: { value: 'xyz' } });
+    });
+
+    expect(onChange).toHaveBeenCalledWith('xyz');
+  });
+
+  // 2.24.0.2 Complex Types
+  // https://www.hl7.org/fhir/datatypes.html#complex
+
+  test('Address property', () => {
+    const property: ElementDefinition = {
+      type: [
+        {
+          code: 'Address',
+        },
+      ],
+      max: '*',
+    };
+
+    const defaultValue: Address[] = [
       {
         city: 'San Francisco',
       },
     ];
 
     setup({
-      schema,
-      property: patientAddressProperty,
       name: 'address',
-      defaultValue: address,
+      schema,
+      property,
+      defaultValue,
     });
     expect(screen.getByDisplayValue('San Francisco')).toBeDefined();
   });
 
-  test('Renders Attachment property', async () => {
-    const mediaContentProperty: ElementDefinition = {
-      id: 'Media.content',
-      path: 'Media.content',
+  test('Annotation property', () => {
+    const property: ElementDefinition = {
+      type: [
+        {
+          code: 'Annotation',
+        },
+      ],
+      max: '*',
+    };
+
+    const defaultValue: Annotation[] = [
+      {
+        text: 'This is a note',
+      },
+    ];
+
+    setup({
+      name: 'note',
+      schema,
+      property,
+      defaultValue,
+    });
+    expect(screen.getByDisplayValue('This is a note')).toBeDefined();
+  });
+
+  test('Attachment property', async () => {
+    const property: ElementDefinition = {
       type: [
         {
           code: 'Attachment',
@@ -265,7 +201,7 @@ describe('ResourcePropertyInput', () => {
       ],
     };
 
-    const content: Attachment = {
+    const defaultValue: Attachment = {
       contentType: 'text/plain',
       url: 'https://example.com/hello.txt',
       title: 'hello.txt',
@@ -274,10 +210,10 @@ describe('ResourcePropertyInput', () => {
     const onChange = jest.fn();
 
     setup({
-      schema,
-      property: mediaContentProperty,
       name: 'content',
-      defaultValue: content,
+      schema,
+      property,
+      defaultValue,
       onChange,
     });
     expect(screen.getByText('hello.txt')).toBeDefined();
@@ -298,8 +234,17 @@ describe('ResourcePropertyInput', () => {
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ title: 'world.txt' }));
   });
 
-  test('Renders Attachment array property', async () => {
-    const photo: Attachment[] = [
+  test('Attachment array property', async () => {
+    const property: ElementDefinition = {
+      type: [
+        {
+          code: 'Attachment',
+        },
+      ],
+      max: '*',
+    };
+
+    const defaultValue: Attachment[] = [
       {
         contentType: 'text/plain',
         url: 'https://example.com/hello.txt',
@@ -310,10 +255,10 @@ describe('ResourcePropertyInput', () => {
     const onChange = jest.fn();
 
     setup({
-      schema,
-      property: patientPhotoProperty,
       name: 'photo',
-      defaultValue: photo,
+      schema,
+      property,
+      defaultValue,
       onChange,
     });
     expect(screen.getByText('hello.txt')).toBeDefined();
@@ -333,8 +278,16 @@ describe('ResourcePropertyInput', () => {
     );
   });
 
-  test('Renders CodeableConcept property', () => {
-    const maritalStatus: CodeableConcept = {
+  test('CodeableConcept property', () => {
+    const property: ElementDefinition = {
+      type: [
+        {
+          code: 'CodeableConcept',
+        },
+      ],
+    };
+
+    const defaultValue: CodeableConcept = {
       coding: [
         {
           code: 'M',
@@ -344,32 +297,25 @@ describe('ResourcePropertyInput', () => {
     };
 
     setup({
-      schema,
-      property: patientMaritalStatusProperty,
       name: 'maritalStatus',
-      defaultValue: maritalStatus,
+      schema,
+      property,
+      defaultValue,
     });
     expect(screen.getByText('Married')).toBeDefined();
   });
 
-  test('Renders HumanName property', () => {
-    const name: HumanName[] = [
-      {
-        family: 'Smith',
-      },
-    ];
+  test('ContactPoint property', () => {
+    const property: ElementDefinition = {
+      type: [
+        {
+          code: 'ContactPoint',
+        },
+      ],
+      max: '*',
+    };
 
-    setup({
-      schema,
-      property: patientNameProperty,
-      name: 'name',
-      defaultValue: name,
-    });
-    expect(screen.getByDisplayValue('Smith')).toBeDefined();
-  });
-
-  test('Renders ContactPoint property', () => {
-    const telecom: ContactPoint[] = [
+    const defaultValue: ContactPoint[] = [
       {
         system: 'email',
         value: 'homer@example.com',
@@ -377,35 +323,126 @@ describe('ResourcePropertyInput', () => {
     ];
 
     setup({
-      schema,
-      property: patientTelecomProperty,
       name: 'telecom',
-      defaultValue: telecom,
+      schema,
+      property,
+      defaultValue,
     });
     expect(screen.getByDisplayValue('email')).toBeDefined();
     expect(screen.getByDisplayValue('homer@example.com')).toBeDefined();
   });
 
-  test('Renders Identifier property', () => {
-    const identifier: Identifier[] = [
+  test('Extension property', async () => {
+    const property: ElementDefinition = {
+      type: [
+        {
+          code: 'Extension',
+        },
+      ],
+      max: '*',
+    };
+
+    const defaultValue: Extension[] = [
+      {
+        url: 'https://example.com',
+        valueString: 'foo',
+      },
+    ];
+
+    const onChange = jest.fn();
+
+    setup({
+      name: 'extension',
+      schema,
+      property,
+      defaultValue,
+      onChange,
+    });
+
+    expect(screen.getByTestId('extension-input')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('extension-input'), {
+        target: { value: '{"url":"https://example.com","valueString":"bar"}' },
+      });
+    });
+
+    expect(onChange).toHaveBeenCalledWith([{ url: 'https://example.com', valueString: 'bar' }]);
+  });
+
+  test('HumanName property', () => {
+    const property: ElementDefinition = {
+      type: [
+        {
+          code: 'HumanName',
+        },
+      ],
+      max: '*',
+    };
+
+    const defaultValue: HumanName[] = [
+      {
+        family: 'Smith',
+      },
+    ];
+
+    setup({
+      name: 'name',
+      schema,
+      property,
+      defaultValue,
+    });
+    expect(screen.getByDisplayValue('Smith')).toBeDefined();
+  });
+
+  test('Identifier property', async () => {
+    const property: ElementDefinition = {
+      type: [
+        {
+          code: 'Identifier',
+        },
+      ],
+      max: '*',
+    };
+
+    const defaultValue: Identifier[] = [
       {
         system: 'https://example.com',
         value: '123',
       },
     ];
 
+    const onChange = jest.fn();
+
     setup({
-      schema,
-      property: patientIdentifierProperty,
       name: 'identifier',
-      defaultValue: identifier,
+      schema,
+      property,
+      defaultValue,
+      onChange,
     });
     expect(screen.getByDisplayValue('https://example.com')).toBeDefined();
     expect(screen.getByDisplayValue('123')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.change(screen.getByDisplayValue('123'), {
+        target: { value: '456' },
+      });
+    });
+
+    expect(onChange).toHaveBeenCalledWith([{ system: 'https://example.com', value: '456' }]);
   });
 
-  test('Renders Period property', async () => {
-    const period: Period = {
+  test('Period property', async () => {
+    const property: ElementDefinition = {
+      type: [
+        {
+          code: 'Period',
+        },
+      ],
+    };
+
+    const defaultValue: Period = {
       start: '2020-01-01T12:00:00Z',
       end: '2021-01-02T12:00:00Z',
     };
@@ -413,16 +450,10 @@ describe('ResourcePropertyInput', () => {
     const onChange = jest.fn();
 
     setup({
-      schema,
-      property: {
-        type: [
-          {
-            code: 'Period',
-          },
-        ],
-      },
       name: 'period',
-      defaultValue: period,
+      schema,
+      property,
+      defaultValue,
       onChange,
     });
 
@@ -438,22 +469,149 @@ describe('ResourcePropertyInput', () => {
     expect(onChange).toHaveBeenCalledWith({ start: '2020-01-01T12:00:00Z', end: '2021-01-03T12:00:00Z' });
   });
 
-  test('Renders Reference property', () => {
+  test('Quantity property', async () => {
+    const property: ElementDefinition = {
+      type: [
+        {
+          code: 'Quantity',
+        },
+      ],
+    };
+
+    const defaultValue: Quantity = {
+      value: 1,
+      unit: 'mg',
+    };
+
+    const onChange = jest.fn();
+
     setup({
+      name: 'test',
       schema,
-      property: patientManagingOrganizationProperty,
+      property,
+      defaultValue,
+      onChange,
+    });
+
+    expect(screen.getByPlaceholderText('Value')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Unit')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Value'), {
+        target: { value: '2' },
+      });
+    });
+
+    expect(onChange).toHaveBeenCalledWith({ value: 2, unit: 'mg' });
+  });
+
+  test('Range property', async () => {
+    const property: ElementDefinition = {
+      type: [
+        {
+          code: 'Range',
+        },
+      ],
+    };
+
+    const defaultValue: Range = {
+      low: { value: 5, unit: 'mg' },
+      high: { value: 10, unit: 'mg' },
+    };
+
+    const onChange = jest.fn();
+
+    setup({
+      name: 'test',
+      schema,
+      property,
+      defaultValue,
+      onChange,
+    });
+
+    expect(screen.getAllByPlaceholderText('Value').length).toBe(2);
+    expect(screen.getAllByPlaceholderText('Unit').length).toBe(2);
+
+    await act(async () => {
+      fireEvent.change(screen.getAllByPlaceholderText('Value')[0], {
+        target: { value: '2' },
+      });
+    });
+
+    expect(onChange).toHaveBeenCalledWith({
+      low: { value: 2, unit: 'mg' },
+      high: { value: 10, unit: 'mg' },
+    });
+  });
+
+  test('Ratio property', async () => {
+    const property: ElementDefinition = {
+      type: [
+        {
+          code: 'Ratio',
+        },
+      ],
+    };
+
+    const defaultValue: Ratio = {
+      numerator: { value: 5, unit: 'mg' },
+      denominator: { value: 10, unit: 'ml' },
+    };
+
+    const onChange = jest.fn();
+
+    setup({
+      name: 'test',
+      schema,
+      property,
+      defaultValue,
+      onChange,
+    });
+
+    expect(screen.getAllByPlaceholderText('Value').length).toBe(2);
+    expect(screen.getAllByPlaceholderText('Unit').length).toBe(2);
+
+    await act(async () => {
+      fireEvent.change(screen.getAllByPlaceholderText('Value')[0], {
+        target: { value: '2' },
+      });
+    });
+
+    expect(onChange).toHaveBeenCalledWith({
+      numerator: { value: 2, unit: 'mg' },
+      denominator: { value: 10, unit: 'ml' },
+    });
+  });
+
+  test('Reference property', () => {
+    const property: ElementDefinition = {
+      type: [
+        {
+          code: 'Reference',
+          targetProfile: ['Organization'],
+        },
+      ],
+    };
+
+    setup({
       name: 'managingOrganization',
+      schema,
+      property,
     });
     expect(screen.getByTestId('autocomplete')).toBeInTheDocument();
   });
 
   test('Type selector', async () => {
+    const property: ElementDefinition = {
+      type: [{ code: 'Quantity' }, { code: 'string' }, { code: 'integer' }],
+    };
+
     const onChange = jest.fn();
 
     setup({
-      schema,
-      property: observationValueProperty,
       name: 'value[x]',
+      schema,
+      property,
       onChange,
     });
 
@@ -519,30 +677,18 @@ describe('ResourcePropertyInput', () => {
   });
 
   test('Type selector default value', async () => {
+    const property: ElementDefinition = {
+      type: [{ code: 'Quantity' }, { code: 'string' }, { code: 'integer' }],
+    };
+
     setup({
-      schema,
-      property: observationValueProperty,
       name: 'value[x]',
+      schema,
+      property,
       defaultPropertyType: PropertyType.integer,
     });
 
     expect(screen.getByDisplayValue('integer')).toBeInTheDocument();
     expect(screen.queryByDisplayValue('Quantity')).toBeNull();
-  });
-
-  test('Renders Annotation property', () => {
-    const note: Annotation[] = [
-      {
-        text: 'This is a note',
-      },
-    ];
-
-    setup({
-      schema,
-      property: specimenNoteProperty,
-      name: 'note',
-      defaultValue: note,
-    });
-    expect(screen.getByDisplayValue('This is a note')).toBeDefined();
   });
 });
