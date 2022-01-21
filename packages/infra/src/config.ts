@@ -12,5 +12,9 @@ export interface MedplumInfraConfig {
   readonly storageDomainName: string;
   readonly storageSslCertArn: string;
   readonly storagePublicKey: string;
+  readonly maxAzs: number;
+  readonly rdsInstances: number;
   readonly desiredServerCount: number;
+  readonly serverMemory: number;
+  readonly serverCpu: number;
 }
