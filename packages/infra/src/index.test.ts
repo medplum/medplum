@@ -26,7 +26,11 @@ describe('Infra', () => {
         storageDomainName: 'storage.medplum.com',
         storageSslCertArn: 'arn:aws:acm:us-east-1:647991932601:certificate/19d85245-0a1d-4bf5-9789-23082b1a15fc',
         storagePublicKey: '-----BEGIN PUBLIC KEY-----\n-----END PUBLIC KEY-----',
-        desiredServerCount: 2,
+        maxAzs: 2,
+        rdsInstances: 1,
+        desiredServerCount: 1,
+        serverMemory: 512,
+        serverCpu: 256,
       }),
       { encoding: 'utf-8' }
     );

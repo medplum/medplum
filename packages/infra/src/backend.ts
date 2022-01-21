@@ -32,6 +32,7 @@ export class BackEnd extends cdk.Construct {
 
     // VPC
     const vpc = new ec2.Vpc(this, 'VPC', {
+      maxAzs: config.maxAzs,
       flowLogs: {
         cloudwatch: {
           destination: ec2.FlowLogDestination.toCloudWatchLogs(vpcFlowLogs),
@@ -48,7 +49,7 @@ export class BackEnd extends cdk.Construct {
       credentials: rds.Credentials.fromGeneratedSecret('clusteradmin'),
       defaultDatabaseName: 'medplum',
       storageEncrypted: true,
-      instances: 1,
+      instances: config.rdsInstances,
       instanceProps: {
         vpc: vpc,
         vpcSubnets: {
@@ -135,8 +136,8 @@ export class BackEnd extends cdk.Construct {
 
     // Task Definitions
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDefinition', {
-      memoryLimitMiB: 512,
-      cpu: 256,
+      memoryLimitMiB: config.serverMemory,
+      cpu: config.serverCpu,
       taskRole: taskRole,
     });
 
