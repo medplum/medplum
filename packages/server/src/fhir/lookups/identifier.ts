@@ -56,7 +56,7 @@ export class IdentifierTable implements LookupTable {
     }
 
     const resourceId = resource.id as string;
-    const existing = await this.getIdentifiers(resourceId);
+    const existing = await this.#getIdentifiers(resourceId);
 
     if (!compareArrays(identifiers, existing)) {
       const client = getClient();
@@ -110,7 +110,7 @@ export class IdentifierTable implements LookupTable {
    * @param resourceId The FHIR resource ID.
    * @returns Promise for the list of indexed identifiers.
    */
-  private async getIdentifiers(resourceId: string): Promise<Identifier[]> {
+  async #getIdentifiers(resourceId: string): Promise<Identifier[]> {
     return new SelectQuery('Identifier')
       .column('content')
       .where('resourceId', Operator.EQUALS, resourceId)

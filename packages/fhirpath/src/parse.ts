@@ -38,16 +38,16 @@ interface InfixParselet {
 }
 
 class ParserBuilder {
-  private readonly prefixParselets: Record<string, PrefixParselet> = {};
-  private readonly infixParselets: Record<string, InfixParselet> = {};
+  readonly #prefixParselets: Record<string, PrefixParselet> = {};
+  readonly #infixParselets: Record<string, InfixParselet> = {};
 
   public registerInfix(tokenType: string, parselet: InfixParselet): ParserBuilder {
-    this.infixParselets[tokenType] = parselet;
+    this.#infixParselets[tokenType] = parselet;
     return this;
   }
 
   public registerPrefix(tokenType: string, parselet: PrefixParselet): ParserBuilder {
-    this.prefixParselets[tokenType] = parselet;
+    this.#prefixParselets[tokenType] = parselet;
     return this;
   }
 
@@ -75,66 +75,74 @@ class ParserBuilder {
   }
 
   public construct(input: string): Parser {
-    return new Parser(tokenize(input), this.prefixParselets, this.infixParselets);
+    return new Parser(tokenize(input), this.#prefixParselets, this.#infixParselets);
   }
 }
 
 class Parser {
+  #tokens: Token[];
+  #prefixParselets: Record<string, PrefixParselet>;
+  #infixParselets: Record<string, InfixParselet>;
+
   constructor(
-    private tokens: Token[],
-    private prefixParselets: Record<string, PrefixParselet>,
-    private infixParselets: Record<string, InfixParselet>
-  ) {}
+    tokens: Token[],
+    prefixParselets: Record<string, PrefixParselet>,
+    infixParselets: Record<string, InfixParselet>
+  ) {
+    this.#tokens = tokens;
+    this.#prefixParselets = prefixParselets;
+    this.#infixParselets = infixParselets;
+  }
 
   public match(expected: string): boolean {
-    const token = this.look();
+    const token = this.#look();
     if (token?.id !== expected) {
       return false;
     }
 
-    this.consume();
+    this.#consume();
     return true;
   }
 
   public parse(precedence = Precedence.MaximumPrecedence): Atom {
-    const token = this.consume();
-    const prefix = this.prefixParselets[token.id];
+    const token = this.#consume();
+    const prefix = this.#prefixParselets[token.id];
     if (!prefix) {
       throw Error(`Parse error at ${token.value}. No matching prefix parselet.`);
     }
 
     let left = prefix.parse(this, token);
 
-    while (precedence > this.getPrecedence()) {
-      const next = this.consume();
-      const infix = this.infixParselets[next.id];
+    while (precedence > this.#getPrecedence()) {
+      const next = this.#consume();
+      const infix = this.#infixParselets[next.id];
       left = infix.parse(this, left, next);
     }
 
     return left;
   }
 
-  private getPrecedence(): number {
-    const nextToken = this.look();
+  #getPrecedence(): number {
+    const nextToken = this.#look();
     if (!nextToken) {
       return Precedence.MaximumPrecedence;
     }
-    const parser = this.infixParselets[nextToken.id];
+    const parser = this.#infixParselets[nextToken.id];
     if (parser) {
       return parser.precedence;
     }
     return Precedence.MaximumPrecedence;
   }
 
-  private consume(): Token {
-    if (!this.tokens.length) {
+  #consume(): Token {
+    if (!this.#tokens.length) {
       throw Error('Cant consume unknown more tokens.');
     }
-    return this.tokens.shift() as Token;
+    return this.#tokens.shift() as Token;
   }
 
-  private look(): Token | undefined {
-    return this.tokens.length > 0 ? this.tokens[0] : undefined;
+  #look(): Token | undefined {
+    return this.#tokens.length > 0 ? this.#tokens[0] : undefined;
   }
 }
 

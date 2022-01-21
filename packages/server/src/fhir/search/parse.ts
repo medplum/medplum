@@ -85,14 +85,14 @@ class SearchParser {
 
     for (const [key, value] of Object.entries(query)) {
       if (Array.isArray(value)) {
-        value.forEach((element) => this.parseKeyValue(key, element));
+        value.forEach((element) => this.#parseKeyValue(key, element));
       } else {
-        this.parseKeyValue(key, value ?? '');
+        this.#parseKeyValue(key, value ?? '');
       }
     }
   }
 
-  private parseKeyValue(key: string, value: string): void {
+  #parseKeyValue(key: string, value: string): void {
     let code;
     let modifier;
 
@@ -127,7 +127,7 @@ class SearchParser {
         break;
 
       case '_sort':
-        this.parseSortRule(value);
+        this.#parseSortRule(value);
         break;
 
       case '_page':
@@ -141,13 +141,13 @@ class SearchParser {
       default: {
         const param = getSearchParameter(this.resourceType, code);
         if (param) {
-          this.parseParameter(param, modifier, value);
+          this.#parseParameter(param, modifier, value);
         }
       }
     }
   }
 
-  private parseSortRule(value: string): void {
+  #parseSortRule(value: string): void {
     for (const field of value.split(',')) {
       let code;
       let descending = false;
@@ -161,27 +161,27 @@ class SearchParser {
     }
   }
 
-  private parseParameter(searchParam: SearchParameter, modifier: string, value: string): void {
+  #parseParameter(searchParam: SearchParameter, modifier: string, value: string): void {
     switch (searchParam.type) {
       case 'number':
       case 'date':
-        this.parsePrefixType(searchParam, value);
+        this.#parsePrefixType(searchParam, value);
         break;
       case 'string':
       case 'token':
       case 'uri':
-        this.parseModifierType(searchParam, modifier, value);
+        this.#parseModifierType(searchParam, modifier, value);
         break;
       case 'reference':
-        this.parseReference(searchParam, value);
+        this.#parseReference(searchParam, value);
         break;
       case 'quantity':
-        this.parseQuantity(searchParam, value);
+        this.#parseQuantity(searchParam, value);
         break;
     }
   }
 
-  private parsePrefixType(param: SearchParameter, input: string): void {
+  #parsePrefixType(param: SearchParameter, input: string): void {
     const { operator, value } = parsePrefix(input);
     this.filters.push({
       code: param.code as string,
@@ -190,7 +190,7 @@ class SearchParser {
     });
   }
 
-  private parseModifierType(param: SearchParameter, modifier: string, value: string): void {
+  #parseModifierType(param: SearchParameter, modifier: string, value: string): void {
     this.filters.push({
       code: param.code as string,
       operator: parseModifier(modifier),
@@ -198,7 +198,7 @@ class SearchParser {
     });
   }
 
-  private parseReference(param: SearchParameter, value: string): void {
+  #parseReference(param: SearchParameter, value: string): void {
     this.filters.push({
       code: param.code as string,
       operator: Operator.EQUALS,
@@ -206,7 +206,7 @@ class SearchParser {
     });
   }
 
-  private parseQuantity(param: SearchParameter, input: string): void {
+  #parseQuantity(param: SearchParameter, input: string): void {
     const [prefixNumber, unitSystem, unitCode] = input.split('|');
     const { operator, value } = parsePrefix(prefixNumber);
     this.filters.push({

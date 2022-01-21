@@ -11,7 +11,7 @@ import { compareArrays } from './util';
  * Each name is represented as a separate row in the "ContactPoint" table.
  */
 export class ContactPointTable implements LookupTable {
-  private static readonly knownParams: Set<string> = new Set<string>([
+  static readonly #knownParams: Set<string> = new Set<string>([
     'individual-telecom',
     'individual-email',
     'individual-phone',
@@ -34,7 +34,7 @@ export class ContactPointTable implements LookupTable {
    * @returns True if the search parameter is an "identifier" parameter.
    */
   isIndexed(searchParam: SearchParameter): boolean {
-    return ContactPointTable.knownParams.has(searchParam.id as string);
+    return ContactPointTable.#knownParams.has(searchParam.id as string);
   }
 
   /**
@@ -69,7 +69,7 @@ export class ContactPointTable implements LookupTable {
     }
 
     const resourceId = resource.id as string;
-    const existing = await this.getExisting(resourceId);
+    const existing = await this.#getExisting(resourceId);
 
     if (!compareArrays(contactPoints, existing)) {
       const client = getClient();
@@ -127,7 +127,7 @@ export class ContactPointTable implements LookupTable {
    * @param resourceId The FHIR resource ID.
    * @returns Promise for the list of indexed names.
    */
-  private async getExisting(resourceId: string): Promise<ContactPoint[]> {
+  async #getExisting(resourceId: string): Promise<ContactPoint[]> {
     return new SelectQuery('ContactPoint')
       .column('content')
       .where('resourceId', Operator.EQUALS, resourceId)

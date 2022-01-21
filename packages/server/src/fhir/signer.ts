@@ -13,11 +13,15 @@ import { getConfig } from '../config';
  * https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-canned-policy.html
  */
 export class Signer {
-  constructor(
-    private readonly keyPairId: string,
-    private readonly privateKey: string,
-    private readonly passphrase: string
-  ) {}
+  readonly #keyPairId: string;
+  readonly #privateKey: string;
+  readonly #passphrase: string;
+
+  constructor(keyPairId: string, privateKey: string, passphrase: string) {
+    this.#keyPairId = keyPairId;
+    this.#privateKey = privateKey;
+    this.#passphrase = passphrase;
+  }
 
   /**
    * Creates a signed URL.
@@ -46,15 +50,15 @@ export class Signer {
 
     const result = new URL(url);
     result.searchParams.set('Expires', expires.toString());
-    result.searchParams.set('Key-Pair-Id', this.keyPairId);
-    result.searchParams.set('Signature', this.signPolicy(policy));
+    result.searchParams.set('Key-Pair-Id', this.#keyPairId);
+    result.searchParams.set('Signature', this.#signPolicy(policy));
     return result.toString();
   }
 
-  private signPolicy(policy: any): string {
+  #signPolicy(policy: any): string {
     const sign = crypto.createSign('RSA-SHA1');
     sign.write(JSON.stringify(policy));
-    return this.queryEncode(sign.sign({ key: this.privateKey, passphrase: this.passphrase }, 'base64'));
+    return this.#queryEncode(sign.sign({ key: this.#privateKey, passphrase: this.#passphrase }, 'base64'));
   }
 
   /**
@@ -67,7 +71,7 @@ export class Signer {
    * For more information, see
    * http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-canned-policy.html
    */
-  private queryEncode(str: string): string {
+  #queryEncode(str: string): string {
     return str.replace(/\+/g, '-').replace(/=/g, '_').replace(/\//g, '~');
   }
 }

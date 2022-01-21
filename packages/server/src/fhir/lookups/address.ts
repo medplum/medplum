@@ -11,7 +11,7 @@ import { compareArrays } from './util';
  * Each name is represented as a separate row in the "Address" table.
  */
 export class AddressTable implements LookupTable {
-  private static readonly knownParams: Set<string> = new Set<string>([
+  static readonly #knownParams: Set<string> = new Set<string>([
     'individual-address',
     'individual-address-city',
     'individual-address-country',
@@ -52,7 +52,7 @@ export class AddressTable implements LookupTable {
    * @returns True if the search parameter is an "identifier" parameter.
    */
   isIndexed(searchParam: SearchParameter): boolean {
-    return AddressTable.knownParams.has(searchParam.id as string);
+    return AddressTable.#knownParams.has(searchParam.id as string);
   }
 
   /**
@@ -72,13 +72,13 @@ export class AddressTable implements LookupTable {
    * @returns Promise on completion.
    */
   async indexResource(resource: Resource): Promise<void> {
-    const addresses = this.getIncomingAddresses(resource);
+    const addresses = this.#getIncomingAddresses(resource);
     if (!addresses || !Array.isArray(addresses)) {
       return;
     }
 
     const resourceId = resource.id as string;
-    const existing = await this.getExistingAddresses(resourceId);
+    const existing = await this.#getExistingAddresses(resourceId);
 
     if (!compareArrays(addresses, existing)) {
       const client = getClient();
@@ -120,7 +120,7 @@ export class AddressTable implements LookupTable {
    */
   addWhere(selectQuery: SelectQuery, filter: Filter): void {
     selectQuery.where(
-      { tableName: 'Address', columnName: this.getColumnName(filter.code) },
+      { tableName: 'Address', columnName: this.#getColumnName(filter.code) },
       Operator.LIKE,
       '%' + filter.value + '%'
     );
@@ -132,7 +132,7 @@ export class AddressTable implements LookupTable {
    * @param sortRule The sort rule details.
    */
   addOrderBy(selectQuery: SelectQuery, sortRule: SortRule): void {
-    selectQuery.orderBy({ tableName: 'Address', columnName: this.getColumnName(sortRule.code) }, sortRule.descending);
+    selectQuery.orderBy({ tableName: 'Address', columnName: this.#getColumnName(sortRule.code) }, sortRule.descending);
   }
 
   /**
@@ -150,11 +150,11 @@ export class AddressTable implements LookupTable {
    * @param code The search parameter code.
    * @returns The column name.
    */
-  private getColumnName(code: string): string {
+  #getColumnName(code: string): string {
     return code === 'address' ? 'address' : code.replace('address-', '');
   }
 
-  private getIncomingAddresses(resource: Resource): Address[] | undefined {
+  #getIncomingAddresses(resource: Resource): Address[] | undefined {
     if (
       resource.resourceType === 'Patient' ||
       resource.resourceType === 'Person' ||
@@ -187,7 +187,7 @@ export class AddressTable implements LookupTable {
    * @param resourceId The FHIR resource ID.
    * @returns Promise for the list of indexed addresses.
    */
-  private async getExistingAddresses(resourceId: string): Promise<Address[]> {
+  async #getExistingAddresses(resourceId: string): Promise<Address[]> {
     return new SelectQuery('Address')
       .column('content')
       .where('resourceId', Operator.EQUALS, resourceId)

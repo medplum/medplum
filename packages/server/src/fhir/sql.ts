@@ -44,21 +44,21 @@ export interface OrderBy {
 }
 
 export class SqlBuilder {
-  private readonly sql: string[];
-  private readonly values: any[];
+  readonly #sql: string[];
+  readonly #values: any[];
 
   constructor() {
-    this.sql = [];
-    this.values = [];
+    this.#sql = [];
+    this.#values = [];
   }
 
   append(value: any): this {
-    this.sql.push(value.toString());
+    this.#sql.push(value.toString());
     return this;
   }
 
   appendIdentifier(str: string): this {
-    this.sql.push('"', str, '"');
+    this.#sql.push('"', str, '"');
     return this;
   }
 
@@ -76,18 +76,18 @@ export class SqlBuilder {
   }
 
   param(value: any): this {
-    this.values.push(value);
-    this.sql.push('$' + this.values.length);
+    this.#values.push(value);
+    this.#sql.push('$' + this.#values.length);
     return this;
   }
 
   async execute(conn: Client | Pool): Promise<any[]> {
-    const sql = this.sql.join('');
+    const sql = this.#sql.join('');
     if (DEBUG) {
       console.log('sql', sql);
-      console.log('values', this.values);
+      console.log('values', this.#values);
     }
-    const result = await conn.query(sql, this.values);
+    const result = await conn.query(sql, this.#values);
     return result.rows;
   }
 }
@@ -224,10 +224,10 @@ export class SelectQuery extends BaseQuery {
 
   async execute(conn: Pool): Promise<any[]> {
     const sql = new SqlBuilder();
-    this.buildSelect(sql);
-    this.buildFrom(sql);
+    this.#buildSelect(sql);
+    this.#buildFrom(sql);
     this.buildConditions(sql);
-    this.buildOrderBy(sql);
+    this.#buildOrderBy(sql);
 
     if (this.limit_ > 0) {
       sql.append(' LIMIT ');
@@ -242,7 +242,7 @@ export class SelectQuery extends BaseQuery {
     return sql.execute(conn);
   }
 
-  private buildSelect(sql: SqlBuilder): void {
+  #buildSelect(sql: SqlBuilder): void {
     sql.append('SELECT ');
 
     let first = true;
@@ -255,7 +255,7 @@ export class SelectQuery extends BaseQuery {
     }
   }
 
-  private buildFrom(sql: SqlBuilder): void {
+  #buildFrom(sql: SqlBuilder): void {
     sql.append(' FROM ');
     sql.appendIdentifier(this.tableName);
 
@@ -269,7 +269,7 @@ export class SelectQuery extends BaseQuery {
     }
   }
 
-  private buildOrderBy(sql: SqlBuilder): void {
+  #buildOrderBy(sql: SqlBuilder): void {
     let first = true;
 
     for (const orderBy of this.orderBys) {
@@ -282,16 +282,16 @@ export class SelectQuery extends BaseQuery {
 }
 
 export class InsertQuery extends BaseQuery {
-  private readonly values: Record<string, any>;
-  private merge?: boolean;
+  readonly #values: Record<string, any>;
+  #merge?: boolean;
 
   constructor(tableName: string, values: Record<string, any>) {
     super(tableName);
-    this.values = values;
+    this.#values = values;
   }
 
   mergeOnConflict(merge: boolean): this {
-    this.merge = merge;
+    this.#merge = merge;
     return this;
   }
 
@@ -301,7 +301,7 @@ export class InsertQuery extends BaseQuery {
     sql.appendIdentifier(this.tableName);
     sql.append(' (');
 
-    const entries = Object.entries(this.values);
+    const entries = Object.entries(this.#values);
 
     let first = true;
     for (const [columnName] of entries) {
@@ -323,7 +323,7 @@ export class InsertQuery extends BaseQuery {
 
     sql.append(')');
 
-    if (this.merge) {
+    if (this.#merge) {
       sql.append(' ON CONFLICT ("id") DO UPDATE SET ');
 
       first = true;
