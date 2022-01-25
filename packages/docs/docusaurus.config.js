@@ -86,7 +86,7 @@ const config = {
               },
               {
                 label: 'Discord',
-                href: 'https://discordapp.com/invite/medplum',
+                href: 'https://discord.gg/4YTE7A5Q',
               },
               {
                 label: 'Storybook',
