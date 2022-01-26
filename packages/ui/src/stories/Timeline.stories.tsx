@@ -1,4 +1,5 @@
-import { Reference } from '@medplum/fhirtypes';
+import { createReference } from '@medplum/core';
+import { DrAliceSmith } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Timeline, TimelineItem } from '../Timeline';
@@ -8,9 +9,7 @@ export default {
   component: Timeline,
 } as Meta;
 
-const author: Reference = {
-  reference: 'Patient/' + process.env.SAMPLE_PATIENT_ID,
-};
+const author = createReference(DrAliceSmith);
 
 export const Basic = (): JSX.Element => (
   <Timeline>

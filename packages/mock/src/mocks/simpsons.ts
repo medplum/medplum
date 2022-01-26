@@ -31,8 +31,8 @@ export const HomerSimpson: Patient = {
   ],
   photo: [
     {
-      contentType: 'image/jpeg',
-      url: 'https://example.com/picture.jpg',
+      contentType: 'image/png',
+      url: 'https://docs.medplum.com/img/homer-simpson.png',
     },
   ],
 };
@@ -63,8 +63,8 @@ export const HomerSimpsonHistory: Bundle<Patient> = {
         ],
         photo: [
           {
-            contentType: 'image/jpeg',
-            url: 'https://example.com/picture.jpg',
+            contentType: 'image/png',
+            url: 'https://docs.medplum.com/img/homer-simpson.png',
           },
         ],
       },

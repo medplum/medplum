@@ -1,3 +1,4 @@
+import { HomerSimpson } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Avatar } from '../Avatar';
@@ -50,7 +51,7 @@ export const LetterSizes = (): JSX.Element => (
 
 export const Resource = (): JSX.Element => (
   <Document>
-    <Avatar value={{ reference: 'Patient/' + process.env.SAMPLE_PATIENT_ID }} />
+    <Avatar value={HomerSimpson} />
   </Document>
 );
 

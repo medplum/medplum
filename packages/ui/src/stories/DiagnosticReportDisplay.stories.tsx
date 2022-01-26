@@ -1,3 +1,4 @@
+import { HomerDiagnosticReport } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay';
@@ -10,10 +11,6 @@ export default {
 
 export const Simple = (): JSX.Element => (
   <Document>
-    <DiagnosticReportDisplay
-      value={{
-        reference: `DiagnosticReport/${process.env.SAMPLE_DIAGNOSTIC_REPORT_ID}`,
-      }}
-    />
+    <DiagnosticReportDisplay value={HomerDiagnosticReport} />
   </Document>
 );

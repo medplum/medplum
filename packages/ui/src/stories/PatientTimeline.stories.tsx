@@ -1,3 +1,4 @@
+import { HomerSimpson } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { PatientTimeline } from '../PatientTimeline';
@@ -7,6 +8,4 @@ export default {
   component: PatientTimeline,
 } as Meta;
 
-export const Patient = (): JSX.Element => (
-  <PatientTimeline patient={{ reference: 'Patient/' + process.env.SAMPLE_PATIENT_ID }} />
-);
+export const Patient = (): JSX.Element => <PatientTimeline patient={HomerSimpson} />;

@@ -1,3 +1,4 @@
+import { HomerSimpson } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Document } from '../Document';
@@ -10,6 +11,6 @@ export default {
 
 export const Basic = (): JSX.Element => (
   <Document>
-    <ResourceHistoryTable resourceType="Patient" id={process.env.SAMPLE_PATIENT_ID} />
+    <ResourceHistoryTable resourceType="Patient" id={HomerSimpson.id} />
   </Document>
 );
