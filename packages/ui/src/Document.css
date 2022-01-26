@@ -14,7 +14,6 @@ article {
   border: 0.1px solid var(--medplum-gray-300);
   border-radius: 8px;
   box-shadow: 0 1px 3px 0 var(--medplum-gray-300);
-  overflow: auto;
 }
 
 article h1,

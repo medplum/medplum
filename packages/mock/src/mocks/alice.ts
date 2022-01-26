@@ -44,6 +44,12 @@ export const DrAliceSmith: Practitioner = {
       family: 'Smith',
     },
   ],
+  photo: [
+    {
+      contentType: 'image/png',
+      url: 'https://docs.medplum.com/img/cdc-femaledoc.png',
+    },
+  ],
 };
 
 export const DrAliceSmithHistoryBundle: Bundle<Practitioner> = {
