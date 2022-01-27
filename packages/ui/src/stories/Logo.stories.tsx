@@ -1,6 +1,5 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
-import { Document } from '../Document';
 import { Logo } from '../Logo';
 
 export default {
@@ -8,8 +7,4 @@ export default {
   component: Logo,
 } as Meta;
 
-export const Basic = (): JSX.Element => (
-  <Document>
-    <Logo size={200} />
-  </Document>
-);
+export const Basic = (): JSX.Element => <Logo size={200} />;

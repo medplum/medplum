@@ -1,3 +1,4 @@
+import json from '@rollup/plugin-json';
 import resolve from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
 import { terser } from 'rollup-plugin-terser';
@@ -38,6 +39,6 @@ export default {
       },
     },
   ],
-  plugins: [resolve({ extensions }), typescript()],
+  plugins: [resolve({ extensions }), typescript(), json()],
   external: ['@medplum/core'],
 };

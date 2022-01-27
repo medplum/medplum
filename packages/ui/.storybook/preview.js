@@ -1,4 +1,4 @@
-import { MedplumClient } from '@medplum/core';
+import { MockClient } from '@medplum/mock';
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { MedplumProvider } from '../src/MedplumProvider';
@@ -16,9 +16,7 @@ export const parameters = {
   },
 };
 
-const medplum = new MedplumClient({
-  baseUrl: process.env.MEDPLUM_BASE_URL,
-});
+const medplum = new MockClient({ debug: true });
 
 export const decorators = [
   (Story) => (

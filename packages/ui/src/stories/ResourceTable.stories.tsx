@@ -1,3 +1,4 @@
+import { HomerObservation1, HomerSimpson } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Document } from '../Document';
@@ -10,21 +11,18 @@ export default {
 
 export const Patient = (): JSX.Element => (
   <Document>
-    <ResourceTable value={{ reference: `Patient/${process.env.SAMPLE_PATIENT_ID}` }} />
+    <ResourceTable value={HomerSimpson} />
   </Document>
 );
 
 export const Observation = (): JSX.Element => (
   <Document>
-    <ResourceTable value={{ reference: `Observation/${process.env.SAMPLE_OBSERVATION_ID}` }} />
+    <ResourceTable value={HomerObservation1} />
   </Document>
 );
 
 export const ObservationIgnoreEmpty = (): JSX.Element => (
   <Document>
-    <ResourceTable
-      value={{ reference: `Observation/${process.env.SAMPLE_OBSERVATION_ID}` }}
-      ignoreMissingValues={true}
-    />
+    <ResourceTable value={HomerObservation1} ignoreMissingValues={true} />
   </Document>
 );

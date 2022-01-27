@@ -1,3 +1,4 @@
+import { DrAliceSmith, HomerSimpson, TestOrganization } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Document } from '../Document';
@@ -11,9 +12,7 @@ export default {
 export const Patient = (): JSX.Element => (
   <Document>
     <ResourceForm
-      defaultValue={{
-        reference: `Patient/${process.env.SAMPLE_PATIENT_ID}`,
-      }}
+      defaultValue={HomerSimpson}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
       }}
@@ -24,9 +23,7 @@ export const Patient = (): JSX.Element => (
 export const Organization = (): JSX.Element => (
   <Document>
     <ResourceForm
-      defaultValue={{
-        reference: `Organization/${process.env.SAMPLE_ORGANIZATION_ID}`,
-      }}
+      defaultValue={TestOrganization}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
       }}
@@ -37,9 +34,7 @@ export const Organization = (): JSX.Element => (
 export const Practitioner = (): JSX.Element => (
   <Document>
     <ResourceForm
-      defaultValue={{
-        reference: `Practitioner/${process.env.SAMPLE_PRACTITIONER_ID}`,
-      }}
+      defaultValue={DrAliceSmith}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
       }}
@@ -105,71 +100,6 @@ export const Questionnaire = (): JSX.Element => (
     <ResourceForm
       defaultValue={{
         resourceType: 'Questionnaire',
-      }}
-      onSubmit={(formData: any) => {
-        console.log('submit', formData);
-      }}
-    />
-  </Document>
-);
-
-export const Subscription = (): JSX.Element => (
-  <Document>
-    <ResourceForm
-      defaultValue={{
-        resourceType: 'Subscription',
-      }}
-      onSubmit={(formData: any) => {
-        console.log('submit', formData);
-      }}
-    />
-  </Document>
-);
-
-export const ValueSet = (): JSX.Element => (
-  <Document>
-    <ResourceForm
-      defaultValue={{
-        resourceType: 'ValueSet',
-      }}
-      onSubmit={(formData: any) => {
-        console.log('submit', formData);
-      }}
-    />
-  </Document>
-);
-
-export const DeviceRequest = (): JSX.Element => (
-  <Document>
-    <ResourceForm
-      defaultValue={{
-        resourceType: 'DeviceRequest',
-      }}
-      onSubmit={(formData: any) => {
-        console.log('submit', formData);
-      }}
-    />
-  </Document>
-);
-
-export const Specimen = (): JSX.Element => (
-  <Document>
-    <ResourceForm
-      defaultValue={{
-        resourceType: 'Specimen',
-      }}
-      onSubmit={(formData: any) => {
-        console.log('submit', formData);
-      }}
-    />
-  </Document>
-);
-
-export const Media = (): JSX.Element => (
-  <Document>
-    <ResourceForm
-      defaultValue={{
-        resourceType: 'Media',
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);

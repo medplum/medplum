@@ -16,7 +16,6 @@
     "build": "npm run clean && tsc && npm run rollup",
     "rollup": "rollup --config rollup.config.js",
     "test": "jest",
-    "copyfiles": "copyfiles -u 1 \"./src/**/*.css\" dist/cjs && copyfiles -u 1 \"./src/**/*.css\" dist/esm",
     "storybook": "build-storybook"
   },
   "devDependencies": {

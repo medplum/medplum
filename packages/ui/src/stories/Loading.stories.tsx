@@ -1,6 +1,5 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
-import { Document } from '../Document';
 import { Loading } from '../Loading';
 
 export default {
@@ -8,8 +7,4 @@ export default {
   component: Loading,
 } as Meta;
 
-export const Example = (): JSX.Element => (
-  <Document>
-    <Loading />
-  </Document>
-);
+export const Example = (): JSX.Element => <Loading />;

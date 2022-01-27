@@ -23,6 +23,7 @@ export const HomerSimpson: Patient = {
     { system: 'abc', value: '123' },
     { system: 'def', value: '456' },
   ],
+  birthDate: '1956-05-12',
   name: [
     {
       given: ['Homer'],
@@ -31,8 +32,8 @@ export const HomerSimpson: Patient = {
   ],
   photo: [
     {
-      contentType: 'image/jpeg',
-      url: 'https://example.com/picture.jpg',
+      contentType: 'image/png',
+      url: 'https://docs.medplum.com/img/homer-simpson.png',
     },
   ],
 };
@@ -63,8 +64,8 @@ export const HomerSimpsonHistory: Bundle<Patient> = {
         ],
         photo: [
           {
-            contentType: 'image/jpeg',
-            url: 'https://example.com/picture.jpg',
+            contentType: 'image/png',
+            url: 'https://docs.medplum.com/img/homer-simpson.png',
           },
         ],
       },
@@ -77,6 +78,10 @@ export const HomerEncounter: Encounter = {
   id: '123',
   meta: {
     versionId: '456',
+    lastUpdated: '2020-01-01T00:00:00.000Z',
+    author: {
+      reference: 'Practitioner/123',
+    },
   },
 };
 
@@ -138,6 +143,13 @@ export const HomerMedia: Bundle<Media> = {
 export const HomerDiagnosticReport: DiagnosticReport = {
   resourceType: 'DiagnosticReport',
   id: '123',
+  meta: {
+    versionId: '1',
+    lastUpdated: '2020-01-02T12:00:00Z',
+    author: {
+      reference: 'Practitioner/123',
+    },
+  },
   subject: {
     reference: 'Patient/123',
     display: 'Homer Simpson',
@@ -171,12 +183,18 @@ export const HomerDiagnosticReportBundle: Bundle<DiagnosticReport> = {
 export const HomerObservation1: Observation = {
   resourceType: 'Observation',
   id: '1',
+  code: {
+    text: 'Test 1',
+  },
   valueString: 'test',
 };
 
 export const HomerObservation2: Observation = {
   resourceType: 'Observation',
   id: '2',
+  code: {
+    text: 'Test 2',
+  },
   valueQuantity: {
     value: 20,
     unit: 'x',
@@ -193,6 +211,9 @@ export const HomerObservation2: Observation = {
 export const HomerObservation3: Observation = {
   resourceType: 'Observation',
   id: '3',
+  code: {
+    text: 'Test 3',
+  },
   valueQuantity: {
     value: 30,
     unit: 'x',
@@ -209,6 +230,9 @@ export const HomerObservation3: Observation = {
 export const HomerObservation4: Observation = {
   resourceType: 'Observation',
   id: '4',
+  code: {
+    text: 'Test 4',
+  },
   valueQuantity: {
     value: 50,
     unit: 'x',
@@ -233,6 +257,9 @@ export const HomerObservation4: Observation = {
 export const HomerObservation5: Observation = {
   resourceType: 'Observation',
   id: '5',
+  code: {
+    text: 'Test 5',
+  },
   valueQuantity: {
     value: 100,
     unit: 'x',
@@ -243,6 +270,9 @@ export const HomerObservation5: Observation = {
 
 export const HomerObservation6: Observation = {
   resourceType: 'Observation',
+  code: {
+    text: 'Test 6',
+  },
   component: [
     {
       valueQuantity: {
@@ -293,6 +323,12 @@ export const HomerServiceRequest: ServiceRequest = {
     reference: 'Patient/123',
     display: 'Homer Simpson',
   },
+  status: 'completed',
+  orderDetail: [
+    {
+      text: 'Test 1',
+    },
+  ],
 };
 
 export const HomerServiceRequestHistoryBundle: Bundle<ServiceRequest> = {
@@ -325,6 +361,7 @@ export const BartSimpson: Patient = {
       reference: 'Practitioner/123',
     },
   },
+  birthDate: '1979-12-17',
   name: [
     {
       given: ['Bart'],

@@ -20,6 +20,9 @@
   text-transform: uppercase;
   font-size: 10px;
   white-space: nowrap;
+  height: 16px;
+  display: flex;
+  align-items: center;
 }
 
 .medplum-diagnostic-report-header dd {
@@ -27,6 +30,9 @@
   font-weight: bold;
   line-height: 32px;
   white-space: nowrap;
+  height: 40px;
+  display: flex;
+  align-items: center;
 }
 
 .medplum-observation-table {

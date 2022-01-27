@@ -1,4 +1,5 @@
-import { Reference } from '@medplum/fhirtypes';
+import { createReference } from '@medplum/core';
+import { DrAliceSmith } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Timeline, TimelineItem } from '../Timeline';
@@ -8,9 +9,7 @@ export default {
   component: Timeline,
 } as Meta;
 
-const author: Reference = {
-  reference: 'Patient/' + process.env.SAMPLE_PATIENT_ID,
-};
+const author = createReference(DrAliceSmith);
 
 export const Basic = (): JSX.Element => (
   <Timeline>
@@ -34,7 +33,7 @@ export const Basic = (): JSX.Element => (
         meta: { lastUpdated: '2021-01-01T12:00:00Z' },
       }}
     >
-      <img src="https://storybook.medplum.com/assets/papercut.jpg" alt="Papercut" title="Papercut" />
+      <img src="https://docs.medplum.com/img/wikimedia-papercut.jpg" alt="Papercut" title="Papercut" />
     </TimelineItem>
     <TimelineItem
       profile={author}
@@ -44,7 +43,7 @@ export const Basic = (): JSX.Element => (
         meta: { lastUpdated: '2021-01-01T12:00:00Z' },
       }}
     >
-      <video src="https://storybook.medplum.com/assets/injury.mp4" controls></video>
+      <video src="https://docs.medplum.com/img/beat-boxing-mri.mp4" controls autoPlay muted></video>
     </TimelineItem>
   </Timeline>
 );
