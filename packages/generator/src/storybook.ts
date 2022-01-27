@@ -34,7 +34,9 @@ export function main(): void {
     const resource = entry.resource as Resource;
     if (resource.resourceType === 'StructureDefinition' && resourceTypes.includes(resource.id as string)) {
       console.log(
-        `export const ${resource.id}StructureDefinition: StructureDefinition = ` + JSON.stringify(resource, keyReplacer, 2) + ';\n\n'
+        `export const ${resource.id}StructureDefinition: StructureDefinition = ` +
+          JSON.stringify(resource, keyReplacer, 2) +
+          ';\n\n'
       );
     }
   }
