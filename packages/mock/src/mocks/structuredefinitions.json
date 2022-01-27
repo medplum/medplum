@@ -1,0 +1,4054 @@
+[
+  {
+    "resourceType": "StructureDefinition",
+    "id": "DiagnosticReport",
+    "name": "DiagnosticReport",
+    "description": "The findings and interpretation of diagnostic  tests performed on patients, groups of patients, devices, and locations, and/or specimens derived from these. The report includes clinical context such as requesting and provider information, and some mix of atomic results, images, textual and coded interpretations, and formatted representation of diagnostic reports.",
+    "type": "DiagnosticReport",
+    "snapshot": {
+      "element": [
+        {
+          "id": "DiagnosticReport",
+          "path": "DiagnosticReport",
+          "definition": "The findings and interpretation of diagnostic  tests performed on patients, groups of patients, devices, and locations, and/or specimens derived from these. The report includes clinical context such as requesting and provider information, and some mix of atomic results, images, textual and coded interpretations, and formatted representation of diagnostic reports.",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "DiagnosticReport.id",
+          "path": "DiagnosticReport.id",
+          "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "https://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.meta",
+          "path": "DiagnosticReport.meta",
+          "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.implicitRules",
+          "path": "DiagnosticReport.implicitRules",
+          "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.language",
+          "path": "DiagnosticReport.language",
+          "definition": "The base language in which the resource is written.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "A human language.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/languages"
+          }
+        },
+        {
+          "id": "DiagnosticReport.text",
+          "path": "DiagnosticReport.text",
+          "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.contained",
+          "path": "DiagnosticReport.contained",
+          "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.extension",
+          "path": "DiagnosticReport.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.modifierExtension",
+          "path": "DiagnosticReport.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.identifier",
+          "path": "DiagnosticReport.identifier",
+          "definition": "Identifiers assigned to this report by the performer or other systems.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.basedOn",
+          "path": "DiagnosticReport.basedOn",
+          "definition": "Details concerning a service requested.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/CarePlan",
+                "https://hl7.org/fhir/StructureDefinition/ImmunizationRecommendation",
+                "https://hl7.org/fhir/StructureDefinition/MedicationRequest",
+                "https://hl7.org/fhir/StructureDefinition/NutritionOrder",
+                "https://hl7.org/fhir/StructureDefinition/ServiceRequest"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.status",
+          "path": "DiagnosticReport.status",
+          "definition": "The status of the diagnostic report.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "The status of the diagnostic report.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/diagnostic-report-status|4.0.1"
+          }
+        },
+        {
+          "id": "DiagnosticReport.category",
+          "path": "DiagnosticReport.category",
+          "definition": "A code that classifies the clinical discipline, department or diagnostic service that created the report (e.g. cardiology, biochemistry, hematology, MRI). This is used for searching, sorting and display purposes.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Codes for diagnostic service sections.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/diagnostic-service-sections"
+          }
+        },
+        {
+          "id": "DiagnosticReport.code",
+          "path": "DiagnosticReport.code",
+          "definition": "A code or name that describes this diagnostic report.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Codes that describe Diagnostic Reports.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/report-codes"
+          }
+        },
+        {
+          "id": "DiagnosticReport.subject",
+          "path": "DiagnosticReport.subject",
+          "definition": "The subject of the report. Usually, but not always, this is a patient. However, diagnostic services also perform analyses on specimens collected from a variety of other sources.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Patient",
+                "https://hl7.org/fhir/StructureDefinition/Group",
+                "https://hl7.org/fhir/StructureDefinition/Device",
+                "https://hl7.org/fhir/StructureDefinition/Location"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.encounter",
+          "path": "DiagnosticReport.encounter",
+          "definition": "The healthcare event  (e.g. a patient and healthcare provider interaction) which this DiagnosticReport is about.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Encounter"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.effective[x]",
+          "path": "DiagnosticReport.effective[x]",
+          "definition": "The time or time-period the observed values are related to. When the subject of the report is a patient, this is usually either the time of the procedure or of specimen collection(s), but very often the source of the date/time is not known, only the date/time itself.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.issued",
+          "path": "DiagnosticReport.issued",
+          "definition": "The date and time that this version of the report was made available to providers, typically after the report was reviewed and verified.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "instant"
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.performer",
+          "path": "DiagnosticReport.performer",
+          "definition": "The diagnostic service that is responsible for issuing the report.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Practitioner",
+                "https://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "https://hl7.org/fhir/StructureDefinition/Organization",
+                "https://hl7.org/fhir/StructureDefinition/CareTeam"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.resultsInterpreter",
+          "path": "DiagnosticReport.resultsInterpreter",
+          "definition": "The practitioner or organization that is responsible for the report's conclusions and interpretations.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Practitioner",
+                "https://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "https://hl7.org/fhir/StructureDefinition/Organization",
+                "https://hl7.org/fhir/StructureDefinition/CareTeam"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.specimen",
+          "path": "DiagnosticReport.specimen",
+          "definition": "Details about the specimens on which this diagnostic report is based.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Specimen"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.result",
+          "path": "DiagnosticReport.result",
+          "definition": "[Observations](observation.html)  that are part of this diagnostic report.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Observation"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.imagingStudy",
+          "path": "DiagnosticReport.imagingStudy",
+          "definition": "One or more links to full details of any imaging performed during the diagnostic investigation. Typically, this is imaging performed by DICOM enabled modalities, but this is not required. A fully enabled PACS viewer can use this information to provide views of the source images.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/ImagingStudy"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.media",
+          "path": "DiagnosticReport.media",
+          "definition": "A list of key images associated with this report. The images are generally created during the diagnostic process, and may be directly of the patient, or of treated specimens (i.e. slides of interest).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.media.id",
+          "path": "DiagnosticReport.media.id",
+          "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "https://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.media.extension",
+          "path": "DiagnosticReport.media.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.media.modifierExtension",
+          "path": "DiagnosticReport.media.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.media.comment",
+          "path": "DiagnosticReport.media.comment",
+          "definition": "A comment about the image. Typically, this is used to provide an explanation for why the image is included, or to draw the viewer's attention to important features.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.media.link",
+          "path": "DiagnosticReport.media.link",
+          "definition": "Reference to the image source.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Media"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.conclusion",
+          "path": "DiagnosticReport.conclusion",
+          "definition": "Concise and clinically contextualized summary conclusion (interpretation/impression) of the diagnostic report.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "DiagnosticReport.conclusionCode",
+          "path": "DiagnosticReport.conclusionCode",
+          "definition": "One or more codes that represent the summary conclusion (interpretation/impression) of the diagnostic report.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Diagnosis codes provided as adjuncts to the report.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/clinical-findings"
+          }
+        },
+        {
+          "id": "DiagnosticReport.presentedForm",
+          "path": "DiagnosticReport.presentedForm",
+          "definition": "Rich text representation of the entire result as issued by the diagnostic service. Multiple formats are allowed but they SHALL be semantically equivalent.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Attachment"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
+    "id": "Observation",
+    "name": "Observation",
+    "description": "Measurements and simple assertions made about a patient, device or other subject.",
+    "type": "Observation",
+    "snapshot": {
+      "element": [
+        {
+          "id": "Observation",
+          "path": "Observation",
+          "definition": "Measurements and simple assertions made about a patient, device or other subject.",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "Observation.id",
+          "path": "Observation.id",
+          "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "https://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Observation.meta",
+          "path": "Observation.meta",
+          "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "Observation.implicitRules",
+          "path": "Observation.implicitRules",
+          "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "Observation.language",
+          "path": "Observation.language",
+          "definition": "The base language in which the resource is written.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "A human language.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/languages"
+          }
+        },
+        {
+          "id": "Observation.text",
+          "path": "Observation.text",
+          "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "Observation.contained",
+          "path": "Observation.contained",
+          "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "Observation.extension",
+          "path": "Observation.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Observation.modifierExtension",
+          "path": "Observation.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Observation.identifier",
+          "path": "Observation.identifier",
+          "definition": "A unique identifier assigned to this observation.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "Observation.basedOn",
+          "path": "Observation.basedOn",
+          "definition": "A plan, proposal or order that is fulfilled in whole or in part by this event.  For example, a MedicationRequest may require a patient to have laboratory test performed before  it is dispensed.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/CarePlan",
+                "https://hl7.org/fhir/StructureDefinition/DeviceRequest",
+                "https://hl7.org/fhir/StructureDefinition/ImmunizationRecommendation",
+                "https://hl7.org/fhir/StructureDefinition/MedicationRequest",
+                "https://hl7.org/fhir/StructureDefinition/NutritionOrder",
+                "https://hl7.org/fhir/StructureDefinition/ServiceRequest"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Observation.partOf",
+          "path": "Observation.partOf",
+          "definition": "A larger event of which this particular Observation is a component or step.  For example,  an observation as part of a procedure.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/MedicationAdministration",
+                "https://hl7.org/fhir/StructureDefinition/MedicationDispense",
+                "https://hl7.org/fhir/StructureDefinition/MedicationStatement",
+                "https://hl7.org/fhir/StructureDefinition/Procedure",
+                "https://hl7.org/fhir/StructureDefinition/Immunization",
+                "https://hl7.org/fhir/StructureDefinition/ImagingStudy"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Observation.status",
+          "path": "Observation.status",
+          "definition": "The status of the result value.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "Codes providing the status of an observation.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/observation-status|4.0.1"
+          }
+        },
+        {
+          "id": "Observation.category",
+          "path": "Observation.category",
+          "definition": "A code that classifies the general type of observation being made.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Codes for high level observation categories.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/observation-category"
+          }
+        },
+        {
+          "id": "Observation.code",
+          "path": "Observation.code",
+          "definition": "Describes what was observed. Sometimes this is called the observation \"name\".",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Codes identifying names of simple observations.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/observation-codes"
+          }
+        },
+        {
+          "id": "Observation.subject",
+          "path": "Observation.subject",
+          "definition": "The patient, or group of patients, location, or device this observation is about and into whose record the observation is placed. If the actual focus of the observation is different from the subject (or a sample of, part, or region of the subject), the `focus` element or the `code` itself specifies the actual focus of the observation.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Patient",
+                "https://hl7.org/fhir/StructureDefinition/Group",
+                "https://hl7.org/fhir/StructureDefinition/Device",
+                "https://hl7.org/fhir/StructureDefinition/Location"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Observation.focus",
+          "path": "Observation.focus",
+          "definition": "The actual focus of an observation when it is not the patient of record representing something or someone associated with the patient such as a spouse, parent, fetus, or donor. For example, fetus observations in a mother's record.  The focus of an observation could also be an existing condition,  an intervention, the subject's diet,  another observation of the subject,  or a body structure such as tumor or implanted device.   An example use case would be using the Observation resource to capture whether the mother is trained to change her child's tracheostomy tube. In this example, the child is the patient of record and the mother is the focus.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Resource"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Observation.encounter",
+          "path": "Observation.encounter",
+          "definition": "The healthcare event  (e.g. a patient and healthcare provider interaction) during which this observation is made.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Encounter"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Observation.effective[x]",
+          "path": "Observation.effective[x]",
+          "definition": "The time or time-period the observed value is asserted as being true. For biological subjects - e.g. human patients - this is usually called the \"physiologically relevant time\". This is usually either the time of the procedure or of specimen collection, but very often the source of the date/time is not known, only the date/time itself.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "Period"
+            },
+            {
+              "code": "Timing"
+            },
+            {
+              "code": "instant"
+            }
+          ]
+        },
+        {
+          "id": "Observation.issued",
+          "path": "Observation.issued",
+          "definition": "The date and time this version of the observation was made available to providers, typically after the results have been reviewed and verified.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "instant"
+            }
+          ]
+        },
+        {
+          "id": "Observation.performer",
+          "path": "Observation.performer",
+          "definition": "Who was responsible for asserting the observed value as \"true\".",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Practitioner",
+                "https://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "https://hl7.org/fhir/StructureDefinition/Organization",
+                "https://hl7.org/fhir/StructureDefinition/CareTeam",
+                "https://hl7.org/fhir/StructureDefinition/Patient",
+                "https://hl7.org/fhir/StructureDefinition/RelatedPerson"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Observation.value[x]",
+          "path": "Observation.value[x]",
+          "definition": "The information determined as a result of making the observation, if the information has a simple value.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            },
+            {
+              "code": "CodeableConcept"
+            },
+            {
+              "code": "string"
+            },
+            {
+              "code": "boolean"
+            },
+            {
+              "code": "integer"
+            },
+            {
+              "code": "Range"
+            },
+            {
+              "code": "Ratio"
+            },
+            {
+              "code": "SampledData"
+            },
+            {
+              "code": "time"
+            },
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        {
+          "id": "Observation.dataAbsentReason",
+          "path": "Observation.dataAbsentReason",
+          "definition": "Provides a reason why the expected value in the element Observation.value[x] is missing.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Codes specifying why the result (`Observation.value[x]`) is missing.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/data-absent-reason"
+          }
+        },
+        {
+          "id": "Observation.interpretation",
+          "path": "Observation.interpretation",
+          "definition": "A categorical assessment of an observation value.  For example, high, low, normal.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Codes identifying interpretations of observations.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/observation-interpretation"
+          }
+        },
+        {
+          "id": "Observation.note",
+          "path": "Observation.note",
+          "definition": "Comments about the observation or the results.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Annotation"
+            }
+          ]
+        },
+        {
+          "id": "Observation.bodySite",
+          "path": "Observation.bodySite",
+          "definition": "Indicates the site on the subject's body where the observation was made (i.e. the target site).",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Codes describing anatomical locations. May include laterality.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/body-site"
+          }
+        },
+        {
+          "id": "Observation.method",
+          "path": "Observation.method",
+          "definition": "Indicates the mechanism used to perform the observation.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Methods for simple observations.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/observation-methods"
+          }
+        },
+        {
+          "id": "Observation.specimen",
+          "path": "Observation.specimen",
+          "definition": "The specimen that was used when this observation was made.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Specimen"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Observation.device",
+          "path": "Observation.device",
+          "definition": "The device used to generate the observation data.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Device",
+                "https://hl7.org/fhir/StructureDefinition/DeviceMetric"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Observation.referenceRange",
+          "path": "Observation.referenceRange",
+          "definition": "Guidance on how to interpret the value by comparison to a normal or recommended range.  Multiple reference ranges are interpreted as an \"OR\".   In other words, to represent two distinct target populations, two `referenceRange` elements would be used.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Observation.referenceRange.id",
+          "path": "Observation.referenceRange.id",
+          "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "https://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Observation.referenceRange.extension",
+          "path": "Observation.referenceRange.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Observation.referenceRange.modifierExtension",
+          "path": "Observation.referenceRange.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Observation.referenceRange.low",
+          "path": "Observation.referenceRange.low",
+          "definition": "The value of the low bound of the reference range.  The low bound of the reference range endpoint is inclusive of the value (e.g.  reference range is >=5 - <=9). If the low bound is omitted,  it is assumed to be meaningless (e.g. reference range is <=2.3).",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            }
+          ]
+        },
+        {
+          "id": "Observation.referenceRange.high",
+          "path": "Observation.referenceRange.high",
+          "definition": "The value of the high bound of the reference range.  The high bound of the reference range endpoint is inclusive of the value (e.g.  reference range is >=5 - <=9). If the high bound is omitted,  it is assumed to be meaningless (e.g. reference range is >= 2.3).",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            }
+          ]
+        },
+        {
+          "id": "Observation.referenceRange.type",
+          "path": "Observation.referenceRange.type",
+          "definition": "Codes to indicate the what part of the targeted reference population it applies to. For example, the normal or therapeutic range.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Code for the meaning of a reference range.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/referencerange-meaning"
+          }
+        },
+        {
+          "id": "Observation.referenceRange.appliesTo",
+          "path": "Observation.referenceRange.appliesTo",
+          "definition": "Codes to indicate the target population this reference range applies to.  For example, a reference range may be based on the normal population or a particular sex or race.  Multiple `appliesTo`  are interpreted as an \"AND\" of the target populations.  For example, to represent a target population of African American females, both a code of female and a code for African American would be used.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Codes identifying the population the reference range applies to.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/referencerange-appliesto"
+          }
+        },
+        {
+          "id": "Observation.referenceRange.age",
+          "path": "Observation.referenceRange.age",
+          "definition": "The age at which this reference range is applicable. This is a neonatal age (e.g. number of weeks at term) if the meaning says so.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Range"
+            }
+          ]
+        },
+        {
+          "id": "Observation.referenceRange.text",
+          "path": "Observation.referenceRange.text",
+          "definition": "Text based reference range in an observation which may be used when a quantitative range is not appropriate for an observation.  An example would be a reference value of \"Negative\" or a list or table of \"normals\".",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Observation.hasMember",
+          "path": "Observation.hasMember",
+          "definition": "This observation is a group observation (e.g. a battery, a panel of tests, a set of vital sign measurements) that includes the target as a member of the group.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Observation",
+                "https://hl7.org/fhir/StructureDefinition/QuestionnaireResponse",
+                "https://hl7.org/fhir/StructureDefinition/MolecularSequence"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Observation.derivedFrom",
+          "path": "Observation.derivedFrom",
+          "definition": "The target resource that represents a measurement from which this observation value is derived. For example, a calculated anion gap or a fetal measurement based on an ultrasound image.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/DocumentReference",
+                "https://hl7.org/fhir/StructureDefinition/ImagingStudy",
+                "https://hl7.org/fhir/StructureDefinition/Media",
+                "https://hl7.org/fhir/StructureDefinition/QuestionnaireResponse",
+                "https://hl7.org/fhir/StructureDefinition/Observation",
+                "https://hl7.org/fhir/StructureDefinition/MolecularSequence"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Observation.component",
+          "path": "Observation.component",
+          "definition": "Some observations have multiple component observations.  These component observations are expressed as separate code value pairs that share the same attributes.  Examples include systolic and diastolic component observations for blood pressure measurement and multiple component observations for genetics observations.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Observation.component.id",
+          "path": "Observation.component.id",
+          "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "https://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Observation.component.extension",
+          "path": "Observation.component.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Observation.component.modifierExtension",
+          "path": "Observation.component.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Observation.component.code",
+          "path": "Observation.component.code",
+          "definition": "Describes what was observed. Sometimes this is called the observation \"code\".",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Codes identifying names of simple observations.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/observation-codes"
+          }
+        },
+        {
+          "id": "Observation.component.value[x]",
+          "path": "Observation.component.value[x]",
+          "definition": "The information determined as a result of making the observation, if the information has a simple value.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            },
+            {
+              "code": "CodeableConcept"
+            },
+            {
+              "code": "string"
+            },
+            {
+              "code": "boolean"
+            },
+            {
+              "code": "integer"
+            },
+            {
+              "code": "Range"
+            },
+            {
+              "code": "Ratio"
+            },
+            {
+              "code": "SampledData"
+            },
+            {
+              "code": "time"
+            },
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        {
+          "id": "Observation.component.dataAbsentReason",
+          "path": "Observation.component.dataAbsentReason",
+          "definition": "Provides a reason why the expected value in the element Observation.component.value[x] is missing.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Codes specifying why the result (`Observation.value[x]`) is missing.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/data-absent-reason"
+          }
+        },
+        {
+          "id": "Observation.component.interpretation",
+          "path": "Observation.component.interpretation",
+          "definition": "A categorical assessment of an observation value.  For example, high, low, normal.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Codes identifying interpretations of observations.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/observation-interpretation"
+          }
+        },
+        {
+          "id": "Observation.component.referenceRange",
+          "path": "Observation.component.referenceRange",
+          "definition": "Guidance on how to interpret the value by comparison to a normal or recommended range.",
+          "min": 0,
+          "max": "*"
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
+    "id": "Organization",
+    "name": "Organization",
+    "description": "A formally or informally recognized grouping of people or organizations formed for the purpose of achieving some form of collective action.  Includes companies, institutions, corporations, departments, community groups, healthcare practice groups, payer/insurer, etc.",
+    "type": "Organization",
+    "snapshot": {
+      "element": [
+        {
+          "id": "Organization",
+          "path": "Organization",
+          "definition": "A formally or informally recognized grouping of people or organizations formed for the purpose of achieving some form of collective action.  Includes companies, institutions, corporations, departments, community groups, healthcare practice groups, payer/insurer, etc.",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "Organization.id",
+          "path": "Organization.id",
+          "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "https://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Organization.meta",
+          "path": "Organization.meta",
+          "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "Organization.implicitRules",
+          "path": "Organization.implicitRules",
+          "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "Organization.language",
+          "path": "Organization.language",
+          "definition": "The base language in which the resource is written.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "A human language.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/languages"
+          }
+        },
+        {
+          "id": "Organization.text",
+          "path": "Organization.text",
+          "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "Organization.contained",
+          "path": "Organization.contained",
+          "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "Organization.extension",
+          "path": "Organization.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Organization.modifierExtension",
+          "path": "Organization.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Organization.identifier",
+          "path": "Organization.identifier",
+          "definition": "Identifier for the organization that is used to identify the organization across multiple disparate systems.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "Organization.active",
+          "path": "Organization.active",
+          "definition": "Whether the organization's record is still in active use.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "Organization.type",
+          "path": "Organization.type",
+          "definition": "The kind(s) of organization that this is.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Used to categorize the organization.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/organization-type"
+          }
+        },
+        {
+          "id": "Organization.name",
+          "path": "Organization.name",
+          "definition": "A name associated with the organization.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Organization.alias",
+          "path": "Organization.alias",
+          "definition": "A list of alternate names that the organization is known as, or was known as in the past.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Organization.telecom",
+          "path": "Organization.telecom",
+          "definition": "A contact detail for the organization.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "ContactPoint"
+            }
+          ]
+        },
+        {
+          "id": "Organization.address",
+          "path": "Organization.address",
+          "definition": "An address for the organization.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Address"
+            }
+          ]
+        },
+        {
+          "id": "Organization.partOf",
+          "path": "Organization.partOf",
+          "definition": "The organization of which this organization forms a part.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Organization"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Organization.contact",
+          "path": "Organization.contact",
+          "definition": "Contact for the organization for a certain purpose.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Organization.contact.id",
+          "path": "Organization.contact.id",
+          "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "https://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Organization.contact.extension",
+          "path": "Organization.contact.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Organization.contact.modifierExtension",
+          "path": "Organization.contact.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Organization.contact.purpose",
+          "path": "Organization.contact.purpose",
+          "definition": "Indicates a purpose for which the contact can be reached.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "The purpose for which you would contact a contact party.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/contactentity-type"
+          }
+        },
+        {
+          "id": "Organization.contact.name",
+          "path": "Organization.contact.name",
+          "definition": "A name associated with the contact.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "HumanName"
+            }
+          ]
+        },
+        {
+          "id": "Organization.contact.telecom",
+          "path": "Organization.contact.telecom",
+          "definition": "A contact detail (e.g. a telephone number or an email address) by which the party may be contacted.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "ContactPoint"
+            }
+          ]
+        },
+        {
+          "id": "Organization.contact.address",
+          "path": "Organization.contact.address",
+          "definition": "Visiting or postal addresses for the contact.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Address"
+            }
+          ]
+        },
+        {
+          "id": "Organization.endpoint",
+          "path": "Organization.endpoint",
+          "definition": "Technical endpoints providing access to services operated for the organization.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Endpoint"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
+    "id": "Patient",
+    "name": "Patient",
+    "description": "Demographics and other administrative information about an individual or animal receiving care or other health-related services.",
+    "type": "Patient",
+    "snapshot": {
+      "element": [
+        {
+          "id": "Patient",
+          "path": "Patient",
+          "definition": "Demographics and other administrative information about an individual or animal receiving care or other health-related services.",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "Patient.id",
+          "path": "Patient.id",
+          "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "https://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Patient.meta",
+          "path": "Patient.meta",
+          "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "Patient.implicitRules",
+          "path": "Patient.implicitRules",
+          "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "Patient.language",
+          "path": "Patient.language",
+          "definition": "The base language in which the resource is written.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "A human language.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/languages"
+          }
+        },
+        {
+          "id": "Patient.text",
+          "path": "Patient.text",
+          "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "Patient.contained",
+          "path": "Patient.contained",
+          "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "Patient.extension",
+          "path": "Patient.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Patient.modifierExtension",
+          "path": "Patient.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Patient.identifier",
+          "path": "Patient.identifier",
+          "definition": "An identifier for this patient.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "Patient.active",
+          "path": "Patient.active",
+          "definition": "Whether this patient record is in active use. \nMany systems use this property to mark as non-current patients, such as those that have not been seen for a period of time based on an organization's business rules.\n\nIt is often used to filter patient lists to exclude inactive patients\n\nDeceased patients may also be marked as inactive for the same reasons, but may be active for some time after death.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "Patient.name",
+          "path": "Patient.name",
+          "definition": "A name associated with the individual.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "HumanName"
+            }
+          ]
+        },
+        {
+          "id": "Patient.telecom",
+          "path": "Patient.telecom",
+          "definition": "A contact detail (e.g. a telephone number or an email address) by which the individual may be contacted.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "ContactPoint"
+            }
+          ]
+        },
+        {
+          "id": "Patient.gender",
+          "path": "Patient.gender",
+          "definition": "Administrative Gender - the gender that the patient is considered to have for administration and record keeping purposes.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "The gender of a person used for administrative purposes.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/administrative-gender|4.0.1"
+          }
+        },
+        {
+          "id": "Patient.birthDate",
+          "path": "Patient.birthDate",
+          "definition": "The date of birth for the individual.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "date"
+            }
+          ]
+        },
+        {
+          "id": "Patient.deceased[x]",
+          "path": "Patient.deceased[x]",
+          "definition": "Indicates if the individual is deceased or not.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            },
+            {
+              "code": "dateTime"
+            }
+          ]
+        },
+        {
+          "id": "Patient.address",
+          "path": "Patient.address",
+          "definition": "An address for the individual.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Address"
+            }
+          ]
+        },
+        {
+          "id": "Patient.maritalStatus",
+          "path": "Patient.maritalStatus",
+          "definition": "This field contains a patient's most recent marital (civil) status.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "The domestic partnership status of a person.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/marital-status"
+          }
+        },
+        {
+          "id": "Patient.multipleBirth[x]",
+          "path": "Patient.multipleBirth[x]",
+          "definition": "Indicates whether the patient is part of a multiple (boolean) or indicates the actual birth order (integer).",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            },
+            {
+              "code": "integer"
+            }
+          ]
+        },
+        {
+          "id": "Patient.photo",
+          "path": "Patient.photo",
+          "definition": "Image of the patient.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Attachment"
+            }
+          ]
+        },
+        {
+          "id": "Patient.contact",
+          "path": "Patient.contact",
+          "definition": "A contact party (e.g. guardian, partner, friend) for the patient.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Patient.contact.id",
+          "path": "Patient.contact.id",
+          "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "https://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Patient.contact.extension",
+          "path": "Patient.contact.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Patient.contact.modifierExtension",
+          "path": "Patient.contact.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Patient.contact.relationship",
+          "path": "Patient.contact.relationship",
+          "definition": "The nature of the relationship between the patient and the contact person.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "The nature of the relationship between a patient and a contact person for that patient.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/patient-contactrelationship"
+          }
+        },
+        {
+          "id": "Patient.contact.name",
+          "path": "Patient.contact.name",
+          "definition": "A name associated with the contact person.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "HumanName"
+            }
+          ]
+        },
+        {
+          "id": "Patient.contact.telecom",
+          "path": "Patient.contact.telecom",
+          "definition": "A contact detail for the person, e.g. a telephone number or an email address.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "ContactPoint"
+            }
+          ]
+        },
+        {
+          "id": "Patient.contact.address",
+          "path": "Patient.contact.address",
+          "definition": "Address for the contact person.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Address"
+            }
+          ]
+        },
+        {
+          "id": "Patient.contact.gender",
+          "path": "Patient.contact.gender",
+          "definition": "Administrative Gender - the gender that the contact person is considered to have for administration and record keeping purposes.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "The gender of a person used for administrative purposes.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/administrative-gender|4.0.1"
+          }
+        },
+        {
+          "id": "Patient.contact.organization",
+          "path": "Patient.contact.organization",
+          "definition": "Organization on behalf of which the contact is acting or for which the contact is working.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Organization"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Patient.contact.period",
+          "path": "Patient.contact.period",
+          "definition": "The period during which this contact person or organization is valid to be contacted relating to this patient.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        {
+          "id": "Patient.communication",
+          "path": "Patient.communication",
+          "definition": "A language which may be used to communicate with the patient about his or her health.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Patient.communication.id",
+          "path": "Patient.communication.id",
+          "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "https://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Patient.communication.extension",
+          "path": "Patient.communication.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Patient.communication.modifierExtension",
+          "path": "Patient.communication.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Patient.communication.language",
+          "path": "Patient.communication.language",
+          "definition": "The ISO-639-1 alpha 2 code in lower case for the language, optionally followed by a hyphen and the ISO-3166-1 alpha 2 code for the region in upper case; e.g. \"en\" for English, or \"en-US\" for American English versus \"en-EN\" for England English.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "A human language.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/languages"
+          }
+        },
+        {
+          "id": "Patient.communication.preferred",
+          "path": "Patient.communication.preferred",
+          "definition": "Indicates whether or not the patient prefers this language (over other languages he masters up a certain level).",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "Patient.generalPractitioner",
+          "path": "Patient.generalPractitioner",
+          "definition": "Patient's nominated care provider.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Organization",
+                "https://hl7.org/fhir/StructureDefinition/Practitioner",
+                "https://hl7.org/fhir/StructureDefinition/PractitionerRole"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Patient.managingOrganization",
+          "path": "Patient.managingOrganization",
+          "definition": "Organization that is the custodian of the patient record.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Organization"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Patient.link",
+          "path": "Patient.link",
+          "definition": "Link to another patient resource that concerns the same actual patient.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Patient.link.id",
+          "path": "Patient.link.id",
+          "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "https://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Patient.link.extension",
+          "path": "Patient.link.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Patient.link.modifierExtension",
+          "path": "Patient.link.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Patient.link.other",
+          "path": "Patient.link.other",
+          "definition": "The other patient resource that the link refers to.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Patient",
+                "https://hl7.org/fhir/StructureDefinition/RelatedPerson"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Patient.link.type",
+          "path": "Patient.link.type",
+          "definition": "The type of link between this patient resource and another patient resource.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "The type of link between this patient resource and another patient resource.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/link-type|4.0.1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
+    "id": "Practitioner",
+    "name": "Practitioner",
+    "description": "A person who is directly or indirectly involved in the provisioning of healthcare.",
+    "type": "Practitioner",
+    "snapshot": {
+      "element": [
+        {
+          "id": "Practitioner",
+          "path": "Practitioner",
+          "definition": "A person who is directly or indirectly involved in the provisioning of healthcare.",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "Practitioner.id",
+          "path": "Practitioner.id",
+          "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "https://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.meta",
+          "path": "Practitioner.meta",
+          "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.implicitRules",
+          "path": "Practitioner.implicitRules",
+          "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.language",
+          "path": "Practitioner.language",
+          "definition": "The base language in which the resource is written.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "A human language.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/languages"
+          }
+        },
+        {
+          "id": "Practitioner.text",
+          "path": "Practitioner.text",
+          "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.contained",
+          "path": "Practitioner.contained",
+          "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.extension",
+          "path": "Practitioner.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.modifierExtension",
+          "path": "Practitioner.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.identifier",
+          "path": "Practitioner.identifier",
+          "definition": "An identifier that applies to this person in this role.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.active",
+          "path": "Practitioner.active",
+          "definition": "Whether this practitioner's record is in active use.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.name",
+          "path": "Practitioner.name",
+          "definition": "The name(s) associated with the practitioner.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "HumanName"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.telecom",
+          "path": "Practitioner.telecom",
+          "definition": "A contact detail for the practitioner, e.g. a telephone number or an email address.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "ContactPoint"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.address",
+          "path": "Practitioner.address",
+          "definition": "Address(es) of the practitioner that are not role specific (typically home address). \rWork addresses are not typically entered in this property as they are usually role dependent.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Address"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.gender",
+          "path": "Practitioner.gender",
+          "definition": "Administrative Gender - the gender that the person is considered to have for administration and record keeping purposes.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "The gender of a person used for administrative purposes.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/administrative-gender|4.0.1"
+          }
+        },
+        {
+          "id": "Practitioner.birthDate",
+          "path": "Practitioner.birthDate",
+          "definition": "The date of birth for the practitioner.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "date"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.photo",
+          "path": "Practitioner.photo",
+          "definition": "Image of the person.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Attachment"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.qualification",
+          "path": "Practitioner.qualification",
+          "definition": "The official certifications, training, and licenses that authorize or otherwise pertain to the provision of care by the practitioner.  For example, a medical license issued by a medical board authorizing the practitioner to practice medicine within a certian locality.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.qualification.id",
+          "path": "Practitioner.qualification.id",
+          "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "https://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.qualification.extension",
+          "path": "Practitioner.qualification.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.qualification.modifierExtension",
+          "path": "Practitioner.qualification.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.qualification.identifier",
+          "path": "Practitioner.qualification.identifier",
+          "definition": "An identifier that applies to this person's qualification in this role.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.qualification.code",
+          "path": "Practitioner.qualification.code",
+          "definition": "Coded representation of the qualification.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Specific qualification the practitioner has to provide a service.",
+            "valueSet": "https://terminology.hl7.org/ValueSet/v2-2.7-0360"
+          }
+        },
+        {
+          "id": "Practitioner.qualification.period",
+          "path": "Practitioner.qualification.period",
+          "definition": "Period during which the qualification is valid.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.qualification.issuer",
+          "path": "Practitioner.qualification.issuer",
+          "definition": "Organization that regulates and issues the qualification.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Organization"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Practitioner.communication",
+          "path": "Practitioner.communication",
+          "definition": "A language the practitioner can use in patient communication.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "A human language.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/languages"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
+    "id": "Questionnaire",
+    "name": "Questionnaire",
+    "description": "A structured set of questions intended to guide the collection of answers from end-users. Questionnaires provide detailed control over order, presentation, phraseology and grouping to allow coherent, consistent data collection.",
+    "type": "Questionnaire",
+    "snapshot": {
+      "element": [
+        {
+          "id": "Questionnaire",
+          "path": "Questionnaire",
+          "definition": "A structured set of questions intended to guide the collection of answers from end-users. Questionnaires provide detailed control over order, presentation, phraseology and grouping to allow coherent, consistent data collection.",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "Questionnaire.id",
+          "path": "Questionnaire.id",
+          "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "https://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.meta",
+          "path": "Questionnaire.meta",
+          "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.implicitRules",
+          "path": "Questionnaire.implicitRules",
+          "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.language",
+          "path": "Questionnaire.language",
+          "definition": "The base language in which the resource is written.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "A human language.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/languages"
+          }
+        },
+        {
+          "id": "Questionnaire.text",
+          "path": "Questionnaire.text",
+          "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.contained",
+          "path": "Questionnaire.contained",
+          "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.extension",
+          "path": "Questionnaire.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.modifierExtension",
+          "path": "Questionnaire.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.url",
+          "path": "Questionnaire.url",
+          "definition": "An absolute URI that is used to identify this questionnaire when it is referenced in a specification, model, design or an instance; also called its canonical identifier. This SHOULD be globally unique and SHOULD be a literal address at which at which an authoritative instance of this questionnaire is (or will be) published. This URL can be the target of a canonical reference. It SHALL remain the same when the questionnaire is stored on different servers.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.identifier",
+          "path": "Questionnaire.identifier",
+          "definition": "A formal identifier that is used to identify this questionnaire when it is represented in other formats, or referenced in a specification, model, design or an instance.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.version",
+          "path": "Questionnaire.version",
+          "definition": "The identifier that is used to identify this version of the questionnaire when it is referenced in a specification, model, design or instance. This is an arbitrary value managed by the questionnaire author and is not expected to be globally unique. For example, it might be a timestamp (e.g. yyyymmdd) if a managed version is not available. There is also no expectation that versions can be placed in a lexicographical sequence.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.name",
+          "path": "Questionnaire.name",
+          "definition": "A natural language name identifying the questionnaire. This name should be usable as an identifier for the module by machine processing applications such as code generation.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.title",
+          "path": "Questionnaire.title",
+          "definition": "A short, descriptive, user-friendly title for the questionnaire.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.derivedFrom",
+          "path": "Questionnaire.derivedFrom",
+          "definition": "The URL of a Questionnaire that this Questionnaire is based on.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "canonical",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Questionnaire"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.status",
+          "path": "Questionnaire.status",
+          "definition": "The status of this questionnaire. Enables tracking the life-cycle of the content.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "The lifecycle status of an artifact.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/publication-status|4.0.1"
+          }
+        },
+        {
+          "id": "Questionnaire.experimental",
+          "path": "Questionnaire.experimental",
+          "definition": "A Boolean value to indicate that this questionnaire is authored for testing purposes (or education/evaluation/marketing) and is not intended to be used for genuine usage.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.subjectType",
+          "path": "Questionnaire.subjectType",
+          "definition": "The types of subjects that can be the subject of responses created for the questionnaire.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "One of the resource types defined as part of this version of FHIR.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/resource-types|4.0.1"
+          }
+        },
+        {
+          "id": "Questionnaire.date",
+          "path": "Questionnaire.date",
+          "definition": "The date  (and optionally time) when the questionnaire was published. The date must change when the business version changes and it must change if the status code changes. In addition, it should change when the substantive content of the questionnaire changes.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.publisher",
+          "path": "Questionnaire.publisher",
+          "definition": "The name of the organization or individual that published the questionnaire.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.contact",
+          "path": "Questionnaire.contact",
+          "definition": "Contact details to assist a user in finding and communicating with the publisher.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "ContactDetail"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.description",
+          "path": "Questionnaire.description",
+          "definition": "A free text natural language description of the questionnaire from a consumer's perspective.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "markdown"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.useContext",
+          "path": "Questionnaire.useContext",
+          "definition": "The content was developed with a focus and intent of supporting the contexts that are listed. These contexts may be general categories (gender, age, ...) or may be references to specific programs (insurance plans, studies, ...) and may be used to assist with indexing and searching for appropriate questionnaire instances.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "UsageContext"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.jurisdiction",
+          "path": "Questionnaire.jurisdiction",
+          "definition": "A legal or geographic region in which the questionnaire is intended to be used.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Countries and regions within which this artifact is targeted for use.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/jurisdiction"
+          }
+        },
+        {
+          "id": "Questionnaire.purpose",
+          "path": "Questionnaire.purpose",
+          "definition": "Explanation of why this questionnaire is needed and why it has been designed as it has.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "markdown"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.copyright",
+          "path": "Questionnaire.copyright",
+          "definition": "A copyright statement relating to the questionnaire and/or its contents. Copyright statements are generally legal restrictions on the use and publishing of the questionnaire.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "markdown"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.approvalDate",
+          "path": "Questionnaire.approvalDate",
+          "definition": "The date on which the resource content was approved by the publisher. Approval happens once when the content is officially approved for usage.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "date"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.lastReviewDate",
+          "path": "Questionnaire.lastReviewDate",
+          "definition": "The date on which the resource content was last reviewed. Review happens periodically after approval but does not change the original approval date.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "date"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.effectivePeriod",
+          "path": "Questionnaire.effectivePeriod",
+          "definition": "The period during which the questionnaire content was or is planned to be in active use.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.code",
+          "path": "Questionnaire.code",
+          "definition": "An identifier for this question or group of questions in a particular terminology such as LOINC.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Coding"
+            }
+          ],
+          "binding": {
+            "description": "Codes for questionnaires, groups and individual questions.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/questionnaire-questions"
+          }
+        },
+        {
+          "id": "Questionnaire.item",
+          "path": "Questionnaire.item",
+          "definition": "A particular question, question grouping or display text that is part of the questionnaire.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.id",
+          "path": "Questionnaire.item.id",
+          "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "https://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.extension",
+          "path": "Questionnaire.item.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.modifierExtension",
+          "path": "Questionnaire.item.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.linkId",
+          "path": "Questionnaire.item.linkId",
+          "definition": "An identifier that is unique within the Questionnaire allowing linkage to the equivalent item in a QuestionnaireResponse resource.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.definition",
+          "path": "Questionnaire.item.definition",
+          "definition": "This element is a URI that refers to an [ElementDefinition](elementdefinition.html) that provides information about this item, including information that might otherwise be included in the instance of the Questionnaire resource. A detailed description of the construction of the URI is shown in Comments, below. If this element is present then the following element values MAY be derived from the Element Definition if the corresponding elements of this Questionnaire resource instance have no value:\n\n* code (ElementDefinition.code) \n* type (ElementDefinition.type) \n* required (ElementDefinition.min) \n* repeats (ElementDefinition.max) \n* maxLength (ElementDefinition.maxLength) \n* answerValueSet (ElementDefinition.binding)\n* options (ElementDefinition.binding).",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.code",
+          "path": "Questionnaire.item.code",
+          "definition": "A terminology code that corresponds to this group or question (e.g. a code from LOINC, which defines many questions and answers).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Coding"
+            }
+          ],
+          "binding": {
+            "description": "Codes for questionnaires, groups and individual questions.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/questionnaire-questions"
+          }
+        },
+        {
+          "id": "Questionnaire.item.prefix",
+          "path": "Questionnaire.item.prefix",
+          "definition": "A short label for a particular group, question or set of display text within the questionnaire used for reference by the individual completing the questionnaire.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.text",
+          "path": "Questionnaire.item.text",
+          "definition": "The name of a section, the text of a question or text content for a display item.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.type",
+          "path": "Questionnaire.item.type",
+          "definition": "The type of questionnaire item this is - whether text for display, a grouping of other items or a particular type of data to be captured (string, integer, coded choice, etc.).",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "Distinguishes groups from questions and display text and indicates data type for questions.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/item-type|4.0.1"
+          }
+        },
+        {
+          "id": "Questionnaire.item.enableWhen",
+          "path": "Questionnaire.item.enableWhen",
+          "definition": "A constraint indicating that this item should only be enabled (displayed/allow answers to be captured) when the specified condition is true.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.enableWhen.id",
+          "path": "Questionnaire.item.enableWhen.id",
+          "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "https://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.enableWhen.extension",
+          "path": "Questionnaire.item.enableWhen.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.enableWhen.modifierExtension",
+          "path": "Questionnaire.item.enableWhen.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.enableWhen.question",
+          "path": "Questionnaire.item.enableWhen.question",
+          "definition": "The linkId for the question whose answer (or lack of answer) governs whether this item is enabled.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.enableWhen.operator",
+          "path": "Questionnaire.item.enableWhen.operator",
+          "definition": "Specifies the criteria by which the question is enabled.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "The criteria by which a question is enabled.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/questionnaire-enable-operator|4.0.1"
+          }
+        },
+        {
+          "id": "Questionnaire.item.enableWhen.answer[x]",
+          "path": "Questionnaire.item.enableWhen.answer[x]",
+          "definition": "A value that the referenced question is tested using the specified operator in order for the item to be enabled.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            },
+            {
+              "code": "decimal"
+            },
+            {
+              "code": "integer"
+            },
+            {
+              "code": "date"
+            },
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "time"
+            },
+            {
+              "code": "string"
+            },
+            {
+              "code": "Coding"
+            },
+            {
+              "code": "Quantity"
+            },
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Resource"
+              ]
+            }
+          ],
+          "binding": {
+            "description": "Allowed values to answer questions.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/questionnaire-answers"
+          }
+        },
+        {
+          "id": "Questionnaire.item.enableBehavior",
+          "path": "Questionnaire.item.enableBehavior",
+          "definition": "Controls how multiple enableWhen values are interpreted -  whether all or any must be true.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "Controls how multiple enableWhen values are interpreted -  whether all or any must be true.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/questionnaire-enable-behavior|4.0.1"
+          }
+        },
+        {
+          "id": "Questionnaire.item.required",
+          "path": "Questionnaire.item.required",
+          "definition": "An indication, if true, that the item must be present in a \"completed\" QuestionnaireResponse.  If false, the item may be skipped when answering the questionnaire.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.repeats",
+          "path": "Questionnaire.item.repeats",
+          "definition": "An indication, if true, that the item may occur multiple times in the response, collecting multiple answers for questions or multiple sets of answers for groups.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.readOnly",
+          "path": "Questionnaire.item.readOnly",
+          "definition": "An indication, when true, that the value cannot be changed by a human respondent to the Questionnaire.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.maxLength",
+          "path": "Questionnaire.item.maxLength",
+          "definition": "The maximum number of characters that are permitted in the answer to be considered a \"valid\" QuestionnaireResponse.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "integer"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.answerValueSet",
+          "path": "Questionnaire.item.answerValueSet",
+          "definition": "A reference to a value set containing a list of codes representing permitted answers for a \"choice\" or \"open-choice\" question.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "canonical",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/ValueSet"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.answerOption",
+          "path": "Questionnaire.item.answerOption",
+          "definition": "One of the permitted answers for a \"choice\" or \"open-choice\" question.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.answerOption.id",
+          "path": "Questionnaire.item.answerOption.id",
+          "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "https://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.answerOption.extension",
+          "path": "Questionnaire.item.answerOption.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.answerOption.modifierExtension",
+          "path": "Questionnaire.item.answerOption.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.answerOption.value[x]",
+          "path": "Questionnaire.item.answerOption.value[x]",
+          "definition": "A potential answer that's allowed as the answer to this question.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "integer"
+            },
+            {
+              "code": "date"
+            },
+            {
+              "code": "time"
+            },
+            {
+              "code": "string"
+            },
+            {
+              "code": "Coding"
+            },
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Resource"
+              ]
+            }
+          ],
+          "binding": {
+            "description": "Allowed values to answer questions.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/questionnaire-answers"
+          }
+        },
+        {
+          "id": "Questionnaire.item.answerOption.initialSelected",
+          "path": "Questionnaire.item.answerOption.initialSelected",
+          "definition": "Indicates whether the answer value is selected when the list of possible answers is initially shown.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.initial",
+          "path": "Questionnaire.item.initial",
+          "definition": "One or more values that should be pre-populated in the answer when initially rendering the questionnaire for user input.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.initial.id",
+          "path": "Questionnaire.item.initial.id",
+          "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "https://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.initial.extension",
+          "path": "Questionnaire.item.initial.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.initial.modifierExtension",
+          "path": "Questionnaire.item.initial.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Questionnaire.item.initial.value[x]",
+          "path": "Questionnaire.item.initial.value[x]",
+          "definition": "The actual value to for an initial answer.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            },
+            {
+              "code": "decimal"
+            },
+            {
+              "code": "integer"
+            },
+            {
+              "code": "date"
+            },
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "time"
+            },
+            {
+              "code": "string"
+            },
+            {
+              "code": "uri"
+            },
+            {
+              "code": "Attachment"
+            },
+            {
+              "code": "Coding"
+            },
+            {
+              "code": "Quantity"
+            },
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Resource"
+              ]
+            }
+          ],
+          "binding": {
+            "description": "Allowed values to answer questions.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/questionnaire-answers"
+          }
+        },
+        {
+          "id": "Questionnaire.item.item",
+          "path": "Questionnaire.item.item",
+          "definition": "Text, questions and other groups to be nested beneath a question or group.",
+          "min": 0,
+          "max": "*"
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
+    "id": "ServiceRequest",
+    "name": "ServiceRequest",
+    "description": "A record of a request for service such as diagnostic investigations, treatments, or operations to be performed.",
+    "type": "ServiceRequest",
+    "snapshot": {
+      "element": [
+        {
+          "id": "ServiceRequest",
+          "path": "ServiceRequest",
+          "definition": "A record of a request for service such as diagnostic investigations, treatments, or operations to be performed.",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "ServiceRequest.id",
+          "path": "ServiceRequest.id",
+          "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "https://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.meta",
+          "path": "ServiceRequest.meta",
+          "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.implicitRules",
+          "path": "ServiceRequest.implicitRules",
+          "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.language",
+          "path": "ServiceRequest.language",
+          "definition": "The base language in which the resource is written.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "A human language.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/languages"
+          }
+        },
+        {
+          "id": "ServiceRequest.text",
+          "path": "ServiceRequest.text",
+          "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.contained",
+          "path": "ServiceRequest.contained",
+          "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.extension",
+          "path": "ServiceRequest.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.modifierExtension",
+          "path": "ServiceRequest.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.identifier",
+          "path": "ServiceRequest.identifier",
+          "definition": "Identifiers assigned to this order instance by the orderer and/or the receiver and/or order fulfiller.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.instantiatesCanonical",
+          "path": "ServiceRequest.instantiatesCanonical",
+          "definition": "The URL pointing to a FHIR-defined protocol, guideline, orderset or other definition that is adhered to in whole or in part by this ServiceRequest.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "canonical",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/ActivityDefinition",
+                "https://hl7.org/fhir/StructureDefinition/PlanDefinition"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.instantiatesUri",
+          "path": "ServiceRequest.instantiatesUri",
+          "definition": "The URL pointing to an externally maintained protocol, guideline, orderset or other definition that is adhered to in whole or in part by this ServiceRequest.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.basedOn",
+          "path": "ServiceRequest.basedOn",
+          "definition": "Plan/proposal/order fulfilled by this request.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/CarePlan",
+                "https://hl7.org/fhir/StructureDefinition/ServiceRequest",
+                "https://hl7.org/fhir/StructureDefinition/MedicationRequest"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.replaces",
+          "path": "ServiceRequest.replaces",
+          "definition": "The request takes the place of the referenced completed or terminated request(s).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/ServiceRequest"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.requisition",
+          "path": "ServiceRequest.requisition",
+          "definition": "A shared identifier common to all service requests that were authorized more or less simultaneously by a single author, representing the composite or group identifier.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.status",
+          "path": "ServiceRequest.status",
+          "definition": "The status of the order.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "The status of a service order.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/request-status|4.0.1"
+          }
+        },
+        {
+          "id": "ServiceRequest.intent",
+          "path": "ServiceRequest.intent",
+          "definition": "Whether the request is a proposal, plan, an original order or a reflex order.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "The kind of service request.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/request-intent|4.0.1"
+          }
+        },
+        {
+          "id": "ServiceRequest.category",
+          "path": "ServiceRequest.category",
+          "definition": "A code that classifies the service for searching, sorting and display purposes (e.g. \"Surgical Procedure\").",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Classification of the requested service.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/servicerequest-category"
+          }
+        },
+        {
+          "id": "ServiceRequest.priority",
+          "path": "ServiceRequest.priority",
+          "definition": "Indicates how quickly the ServiceRequest should be addressed with respect to other requests.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "Identifies the level of importance to be assigned to actioning the request.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/request-priority|4.0.1"
+          }
+        },
+        {
+          "id": "ServiceRequest.doNotPerform",
+          "path": "ServiceRequest.doNotPerform",
+          "definition": "Set this to true if the record is saying that the service/procedure should NOT be performed.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.code",
+          "path": "ServiceRequest.code",
+          "definition": "A code that identifies a particular service (i.e., procedure, diagnostic investigation, or panel of investigations) that have been requested.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Codes for tests or services that can be carried out by a designated individual, organization or healthcare service.  For laboratory, LOINC is  (preferred)[http://build.fhir.org/terminologies.html#preferred] and a valueset using LOINC Order codes is available [here](valueset-diagnostic-requests.html).",
+            "valueSet": "https://hl7.org/fhir/ValueSet/procedure-code"
+          }
+        },
+        {
+          "id": "ServiceRequest.orderDetail",
+          "path": "ServiceRequest.orderDetail",
+          "definition": "Additional details and instructions about the how the services are to be delivered.   For example, and order for a urinary catheter may have an order detail for an external or indwelling catheter, or an order for a bandage may require additional instructions specifying how the bandage should be applied.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Codified order entry details which are based on order context.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/servicerequest-orderdetail"
+          }
+        },
+        {
+          "id": "ServiceRequest.quantity[x]",
+          "path": "ServiceRequest.quantity[x]",
+          "definition": "An amount of service being requested which can be a quantity ( for example $1,500 home modification), a ratio ( for example, 20 half day visits per month), or a range (2.0 to 1.8 Gy per fraction).",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            },
+            {
+              "code": "Ratio"
+            },
+            {
+              "code": "Range"
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.subject",
+          "path": "ServiceRequest.subject",
+          "definition": "On whom or what the service is to be performed. This is usually a human patient, but can also be requested on animals, groups of humans or animals, devices such as dialysis machines, or even locations (typically for environmental scans).",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Patient",
+                "https://hl7.org/fhir/StructureDefinition/Group",
+                "https://hl7.org/fhir/StructureDefinition/Location",
+                "https://hl7.org/fhir/StructureDefinition/Device"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.encounter",
+          "path": "ServiceRequest.encounter",
+          "definition": "An encounter that provides additional information about the healthcare context in which this request is made.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Encounter"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.occurrence[x]",
+          "path": "ServiceRequest.occurrence[x]",
+          "definition": "The date/time at which the requested service should occur.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "Period"
+            },
+            {
+              "code": "Timing"
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.asNeeded[x]",
+          "path": "ServiceRequest.asNeeded[x]",
+          "definition": "If a CodeableConcept is present, it indicates the pre-condition for performing the service.  For example \"pain\", \"on flare-up\", etc.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            },
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "A coded concept identifying the pre-condition that should hold prior to performing a procedure.  For example \"pain\", \"on flare-up\", etc.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/medication-as-needed-reason"
+          }
+        },
+        {
+          "id": "ServiceRequest.authoredOn",
+          "path": "ServiceRequest.authoredOn",
+          "definition": "When the request transitioned to being actionable.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.requester",
+          "path": "ServiceRequest.requester",
+          "definition": "The individual who initiated the request and has responsibility for its activation.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Practitioner",
+                "https://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "https://hl7.org/fhir/StructureDefinition/Organization",
+                "https://hl7.org/fhir/StructureDefinition/Patient",
+                "https://hl7.org/fhir/StructureDefinition/RelatedPerson",
+                "https://hl7.org/fhir/StructureDefinition/Device"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.performerType",
+          "path": "ServiceRequest.performerType",
+          "definition": "Desired type of performer for doing the requested service.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Indicates specific responsibility of an individual within the care team, such as \"Primary physician\", \"Team coordinator\", \"Caregiver\", etc.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/participant-role"
+          }
+        },
+        {
+          "id": "ServiceRequest.performer",
+          "path": "ServiceRequest.performer",
+          "definition": "The desired performer for doing the requested service.  For example, the surgeon, dermatopathologist, endoscopist, etc.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Practitioner",
+                "https://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "https://hl7.org/fhir/StructureDefinition/Organization",
+                "https://hl7.org/fhir/StructureDefinition/CareTeam",
+                "https://hl7.org/fhir/StructureDefinition/HealthcareService",
+                "https://hl7.org/fhir/StructureDefinition/Patient",
+                "https://hl7.org/fhir/StructureDefinition/Device",
+                "https://hl7.org/fhir/StructureDefinition/RelatedPerson"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.locationCode",
+          "path": "ServiceRequest.locationCode",
+          "definition": "The preferred location(s) where the procedure should actually happen in coded or free text form. E.g. at home or nursing day care center.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "A location type where services are delivered.",
+            "valueSet": "https://terminology.hl7.org/ValueSet/v3-ServiceDeliveryLocationRoleType"
+          }
+        },
+        {
+          "id": "ServiceRequest.locationReference",
+          "path": "ServiceRequest.locationReference",
+          "definition": "A reference to the the preferred location(s) where the procedure should actually happen. E.g. at home or nursing day care center.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Location"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.reasonCode",
+          "path": "ServiceRequest.reasonCode",
+          "definition": "An explanation or justification for why this service is being requested in coded or textual form.   This is often for billing purposes.  May relate to the resources referred to in `supportingInfo`.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Diagnosis or problem codes justifying the reason for requesting the service investigation.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/procedure-reason"
+          }
+        },
+        {
+          "id": "ServiceRequest.reasonReference",
+          "path": "ServiceRequest.reasonReference",
+          "definition": "Indicates another resource that provides a justification for why this service is being requested.   May relate to the resources referred to in `supportingInfo`.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Condition",
+                "https://hl7.org/fhir/StructureDefinition/Observation",
+                "https://hl7.org/fhir/StructureDefinition/DiagnosticReport",
+                "https://hl7.org/fhir/StructureDefinition/DocumentReference"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.insurance",
+          "path": "ServiceRequest.insurance",
+          "definition": "Insurance plans, coverage extensions, pre-authorizations and/or pre-determinations that may be needed for delivering the requested service.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Coverage",
+                "https://hl7.org/fhir/StructureDefinition/ClaimResponse"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.supportingInfo",
+          "path": "ServiceRequest.supportingInfo",
+          "definition": "Additional clinical information about the patient or specimen that may influence the services or their interpretations.     This information includes diagnosis, clinical findings and other observations.  In laboratory ordering these are typically referred to as \"ask at order entry questions (AOEs)\".  This includes observations explicitly requested by the producer (filler) to provide context or supporting information needed to complete the order. For example,  reporting the amount of inspired oxygen for blood gas measurements.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Resource"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.specimen",
+          "path": "ServiceRequest.specimen",
+          "definition": "One or more specimens that the laboratory procedure will use.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Specimen"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.bodySite",
+          "path": "ServiceRequest.bodySite",
+          "definition": "Anatomic location where the procedure should be performed. This is the target site.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Codes describing anatomical locations. May include laterality.",
+            "valueSet": "https://hl7.org/fhir/ValueSet/body-site"
+          }
+        },
+        {
+          "id": "ServiceRequest.note",
+          "path": "ServiceRequest.note",
+          "definition": "Any other notes and comments made about the service request. For example, internal billing notes.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Annotation"
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.patientInstruction",
+          "path": "ServiceRequest.patientInstruction",
+          "definition": "Instructions in terms that are understood by the patient or consumer.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "ServiceRequest.relevantHistory",
+          "path": "ServiceRequest.relevantHistory",
+          "definition": "Key events in the history of the request.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://hl7.org/fhir/StructureDefinition/Provenance"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

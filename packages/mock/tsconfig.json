@@ -3,7 +3,8 @@
   "compilerOptions": {
     "outDir": "dist/types",
     "lib": ["esnext", "dom"],
-    "emitDeclarationOnly": true
+    "emitDeclarationOnly": true,
+    "resolveJsonModule": true
   },
   "include": ["src/**/*.ts"]
 }

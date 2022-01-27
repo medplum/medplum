@@ -30,20 +30,24 @@ const properties = [
 
 export function main(): void {
   const bundle = readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition>;
+  const output: StructureDefinition[] = [];
   for (const entry of bundle.entry as BundleEntry<StructureDefinition>[]) {
     const resource = entry.resource as Resource;
     if (resource.resourceType === 'StructureDefinition' && resourceTypes.includes(resource.id as string)) {
-      console.log(
-        `export const ${resource.id}StructureDefinition: StructureDefinition = ` +
-          JSON.stringify(resource, keyReplacer, 2) +
-          ';\n\n'
-      );
+      output.push(resource);
     }
   }
+  console.log(JSON.stringify(output, keyReplacer, 2));
 }
 
 function keyReplacer(key: string, value: any): any {
-  return key === '' || key.match(/\d+/) || properties.includes(key) ? value : undefined;
+  if (key !== '' && !key.match(/\d+/) && !properties.includes(key)) {
+    return undefined;
+  }
+  if (value && typeof value === 'string' && value.startsWith('http://')) {
+    return value.replace('http://', 'https://');
+  }
+  return value;
 }
 
 if (process.argv[1].endsWith('storybook.ts')) {
