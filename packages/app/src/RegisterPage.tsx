@@ -1,13 +1,17 @@
 import { RegisterRequest } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Button, Document, Form, FormSection, Logo, TextField, useMedplum } from '@medplum/ui';
-import React, { useState } from 'react';
-import { getRecaptcha } from './utils';
+import React, { useEffect, useState } from 'react';
+import { getRecaptcha, initRecaptcha } from './utils';
 
 export function RegisterPage(): JSX.Element {
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    initRecaptcha();
+  }, []);
 
   return (
     <Document width={450}>
