@@ -28,6 +28,16 @@ describe('RegisterPage', () => {
     Object.defineProperty(global, 'crypto', {
       value: crypto.webcrypto,
     });
+  });
+
+  test('Renders', () => {
+    setup();
+    const input = screen.getByTestId('submit') as HTMLButtonElement;
+    expect(input.innerHTML).toBe('Create account');
+  });
+
+  test('Submit success', async () => {
+    setup();
 
     Object.defineProperty(global, 'grecaptcha', {
       value: {
@@ -39,16 +49,6 @@ describe('RegisterPage', () => {
         },
       },
     });
-  });
-
-  test('Renders', () => {
-    setup();
-    const input = screen.getByTestId('submit') as HTMLButtonElement;
-    expect(input.innerHTML).toBe('Create account');
-  });
-
-  test('Submit success', async () => {
-    setup();
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('firstName'), {
