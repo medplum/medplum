@@ -1,8 +1,6 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
-import { Button } from '../Button';
 import { FooterLinks } from '../FooterLinks';
-import { useMedplumContext } from '../MedplumProvider';
 import { SignInForm } from '../SignInForm';
 
 export default {
@@ -11,59 +9,27 @@ export default {
 } as Meta;
 
 export function Basic(): JSX.Element {
-  const ctx = useMedplumContext();
-  return (
-    <>
-      {ctx.profile ? (
-        <div>
-          <pre>User: {JSON.stringify(ctx.profile)}</pre>
-          <Button onClick={() => ctx.medplum.signOut().then(() => alert('Signed out!'))}>Sign out</Button>
-        </div>
-      ) : (
-        <SignInForm onSuccess={() => alert('Signed in!')} />
-      )}
-    </>
-  );
+  return <SignInForm onSuccess={() => alert('Signed in!')} />;
 }
 
 export function WithLinks(): JSX.Element {
-  const ctx = useMedplumContext();
   return (
-    <>
-      {ctx.profile ? (
-        <div>
-          <pre>User: {JSON.stringify(ctx.profile)}</pre>
-          <Button onClick={() => ctx.medplum.signOut().then(() => alert('Signed out!'))}>Sign out</Button>
-        </div>
-      ) : (
-        <SignInForm
-          onSuccess={() => alert('Signed in!')}
-          onForgotPassword={() => alert('Forgot password')}
-          onRegister={() => alert('Register')}
-        />
-      )}
-    </>
+    <SignInForm
+      onSuccess={() => alert('Signed in!')}
+      onForgotPassword={() => alert('Forgot password')}
+      onRegister={() => alert('Register')}
+    />
   );
 }
 
 export function WithFooter(): JSX.Element {
-  const ctx = useMedplumContext();
   return (
     <>
-      <>
-        {ctx.profile ? (
-          <div>
-            <pre>User: {JSON.stringify(ctx.profile)}</pre>
-            <Button onClick={() => ctx.medplum.signOut().then(() => alert('Signed out!'))}>Sign out</Button>
-          </div>
-        ) : (
-          <SignInForm
-            onSuccess={() => alert('Signed in!')}
-            onForgotPassword={() => alert('Forgot password')}
-            onRegister={() => alert('Register')}
-          />
-        )}
-      </>
+      <SignInForm
+        onSuccess={() => alert('Signed in!')}
+        onForgotPassword={() => alert('Forgot password')}
+        onRegister={() => alert('Register')}
+      />
       <FooterLinks>
         <a href="#">Help</a>
         <a href="#">Terms</a>
@@ -74,24 +40,14 @@ export function WithFooter(): JSX.Element {
 }
 
 export function WithGoogle(): JSX.Element {
-  const ctx = useMedplumContext();
   return (
     <>
-      <>
-        {ctx.profile ? (
-          <div>
-            <pre>User: {JSON.stringify(ctx.profile)}</pre>
-            <Button onClick={() => ctx.medplum.signOut().then(() => alert('Signed out!'))}>Sign out</Button>
-          </div>
-        ) : (
-          <SignInForm
-            onSuccess={() => alert('Signed in!')}
-            onForgotPassword={() => alert('Forgot password')}
-            onRegister={() => alert('Register')}
-            googleClientId="xyz"
-          />
-        )}
-      </>
+      <SignInForm
+        onSuccess={() => alert('Signed in!')}
+        onForgotPassword={() => alert('Forgot password')}
+        onRegister={() => alert('Register')}
+        googleClientId="xyz"
+      />
       <FooterLinks>
         <a href="#">Help</a>
         <a href="#">Terms</a>
