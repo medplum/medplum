@@ -1,5 +1,6 @@
 import { badRequest } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
+import compression from 'compression';
 import cors from 'cors';
 import { Express, json, NextFunction, Request, Response, urlencoded } from 'express';
 import { adminRouter } from './admin';
@@ -110,6 +111,7 @@ export async function initApp(app: Express): Promise<Express> {
   app.set('x-powered-by', false);
   app.use(standardHeaders);
   app.use(cors(corsOptionsDelegate));
+  app.use(compression());
   app.use('/fhir/R4/Binary', [authenticateToken], binaryRouter);
   app.use(
     urlencoded({
