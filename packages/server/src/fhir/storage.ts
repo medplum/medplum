@@ -108,6 +108,17 @@ class S3Storage implements BinaryStorage {
    * https://github.com/aws/aws-sdk-js-v3/blob/main/UPGRADING.md#s3-multipart-upload
    * https://github.com/aws/aws-sdk-js-v3/tree/main/lib/lib-storage
    *
+   * Be mindful of Cache-Control settings.
+   *
+   * Because we use signed URLs intended for one hour use,
+   * we set "max-age" to 1 hour = 3600 seconds.
+   *
+   * But we want CloudFront to cache the response for 1 day,
+   * so we set "s-maxage" to 1 day = 86400 seconds.
+   *
+   * Learn more:
+   * https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Expiration.html
+   *
    * @param binary The binary resource destination.
    * @param req The HTTP request with the binary content.
    */
@@ -127,6 +138,7 @@ class S3Storage implements BinaryStorage {
       params: {
         Bucket: this.#bucket,
         Key: this.#getKey(binary),
+        CacheControl: 'max-age=3600, s-maxage=86400',
         ContentDisposition: filename ? `attachment; filename="${encodeURIComponent(filename)}"` : undefined,
         ContentType: contentType || 'application/octet-stream',
         Body: stream,
