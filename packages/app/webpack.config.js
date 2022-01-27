@@ -32,9 +32,6 @@ module.exports = (env, argv) => ({
     new HtmlWebpackPlugin({
       template: 'index.html.ejs',
       favicon: 'favicon.ico',
-      templateParameters: {
-        RECAPTCHA_SITE_KEY: process.env.RECAPTCHA_SITE_KEY,
-      },
     }),
     new MiniCssExtractPlugin({
       filename: 'css/[name].[contenthash].css',
