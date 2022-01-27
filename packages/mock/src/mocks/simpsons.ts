@@ -23,6 +23,7 @@ export const HomerSimpson: Patient = {
     { system: 'abc', value: '123' },
     { system: 'def', value: '456' },
   ],
+  birthDate: '1956-05-12',
   name: [
     {
       given: ['Homer'],
@@ -360,6 +361,7 @@ export const BartSimpson: Patient = {
       reference: 'Practitioner/123',
     },
   },
+  birthDate: '1979-12-17',
   name: [
     {
       given: ['Bart'],

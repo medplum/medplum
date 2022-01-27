@@ -31,6 +31,7 @@ export const Checkboxes = (): JSX.Element => {
 export const NoCheckboxes = (): JSX.Element => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Patient',
+    fields: ['id', '_lastUpdated', 'name'],
   });
 
   return (
@@ -69,26 +70,6 @@ export const ServiceRequests = (): JSX.Element => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'ServiceRequest',
     fields: ['id', '_lastUpdated', 'subject', 'code', 'status', 'orderDetail'],
-  });
-
-  return (
-    <SearchControl
-      search={search}
-      checkboxesEnabled={true}
-      onLoad={(e) => console.log('onLoad', e)}
-      onClick={(e) => console.log('onClick', e)}
-      onChange={(e) => {
-        console.log('onChange', e);
-        setSearch(e.definition);
-      }}
-    />
-  );
-};
-
-export const DeviceDefinitions = (): JSX.Element => {
-  const [search, setSearch] = useState<SearchRequest>({
-    resourceType: 'DeviceDefinition',
-    fields: ['id', '_lastUpdated', 'manufacturer[x]', 'deviceName'],
   });
 
   return (

@@ -259,6 +259,12 @@ const routes: Record<string, Record<string, any>> = {
   'fhir/R4/Patient?name=Simpson': {
     GET: SimpsonSearchBundle,
   },
+  'fhir/R4/Patient?_fields=id,_lastUpdated,name': {
+    GET: SimpsonSearchBundle,
+  },
+  'fhir/R4/Patient?_fields=id,_lastUpdated,name,birthDate': {
+    GET: SimpsonSearchBundle,
+  },
   'fhir/R4/Patient?_fields=id,_lastUpdated,name&name=Simpson': {
     GET: SimpsonSearchBundle,
   },
@@ -314,6 +320,9 @@ const routes: Record<string, Record<string, any>> = {
     GET: HomerServiceRequestHistoryBundle,
   },
   'fhir/R4/ServiceRequest?subject=Patient/123': {
+    GET: HomerServiceRequestSearchBundle,
+  },
+  'fhir/R4/ServiceRequest?_fields=id,_lastUpdated,subject,code,status,orderDetail': {
     GET: HomerServiceRequestSearchBundle,
   },
   'fhir/R4/Subscription/123': {
