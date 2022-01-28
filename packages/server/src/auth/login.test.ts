@@ -47,7 +47,7 @@ describe('Login', () => {
     const res = await request(app).post('/auth/login').type('json').send({
       clientId: '123',
       email: 'admin@example.com',
-      password: 'admin',
+      password: 'medplum_admin',
       scope: 'openid',
     });
     expect(res.status).toBe(400);
@@ -59,7 +59,7 @@ describe('Login', () => {
     const res = await request(app).post('/auth/login').type('json').send({
       clientId: 'e99126bb-c748-4c00-8d28-4e88dfb88278',
       email: 'admin@example.com',
-      password: 'admin',
+      password: 'medplum_admin',
       scope: 'openid',
     });
     expect(res.status).toBe(404);
@@ -71,7 +71,7 @@ describe('Login', () => {
     const res = await request(app).post('/auth/login').type('json').send({
       clientId: client.id,
       email: '',
-      password: 'admin',
+      password: 'medplum_admin',
       scope: 'openid',
     });
     expect(res.status).toBe(400);
@@ -83,7 +83,7 @@ describe('Login', () => {
     const res = await request(app).post('/auth/login').type('json').send({
       clientId: client.id,
       email: 'xyz',
-      password: 'admin',
+      password: 'medplum_admin',
       scope: 'openid',
     });
     expect(res.status).toBe(400);
@@ -119,7 +119,7 @@ describe('Login', () => {
     const res = await request(app).post('/auth/login').type('json').send({
       clientId: client.id,
       email: 'admin@example.com',
-      password: 'admin',
+      password: 'medplum_admin',
       scope: 'openid',
     });
     expect(res.status).toBe(200);
@@ -129,7 +129,7 @@ describe('Login', () => {
   test('Success default client', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
       email: 'admin@example.com',
-      password: 'admin',
+      password: 'medplum_admin',
       scope: 'openid',
     });
     expect(res.status).toBe(200);

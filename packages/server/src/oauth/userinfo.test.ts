@@ -40,7 +40,7 @@ describe('OAuth2 UserInfo', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
         state: 'xyz',
       });
@@ -87,7 +87,7 @@ describe('OAuth2 UserInfo', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
         state: 'xyz',
       });

@@ -20,7 +20,7 @@ export async function seedDatabase(): Promise<void> {
     lastName: 'Admin',
     projectName: 'Medplum',
     email: 'admin@example.com',
-    password: 'admin',
+    password: 'medplum_admin',
   });
 
   await systemRepo.updateResource({
