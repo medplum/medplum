@@ -5,6 +5,7 @@ import { killEvent } from './utils/dom';
 
 export interface MedplumLinkProps {
   to?: Resource | Reference | string;
+  label?: string;
   testid?: string;
   onClick?: () => void;
   children: React.ReactNode;
@@ -27,6 +28,7 @@ export function MedplumLink(props: MedplumLinkProps): JSX.Element {
   return (
     <a
       href={href}
+      aria-label={props.label}
       data-testid={props.testid || 'link'}
       onClick={(e: React.SyntheticEvent) => {
         killEvent(e);

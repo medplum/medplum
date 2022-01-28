@@ -284,6 +284,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 <input
                   type="checkbox"
                   value="checked"
+                  aria-label="all-checkbox"
                   data-testid="all-checkbox"
                   checked={isAllSelected()}
                   onChange={(e) => handleAllCheckboxClick(e)}
@@ -321,6 +322,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                         type="checkbox"
                         value="checked"
                         data-testid="row-checkbox"
+                        aria-label={resource.id}
                         checked={!!state.selected[resource.id as string]}
                         onChange={(e) => handleSingleCheckboxClick(e, resource.id as string)}
                       />
@@ -418,7 +420,7 @@ interface FilterDescriptionProps {
 function FilterDescription(props: FilterDescriptionProps): JSX.Element {
   const filters = (props.filters ?? []).filter((f) => f.code === props.field);
   if (filters.length === 0) {
-    return <span className="muted">no filters</span>;
+    return <span>no filters</span>;
   }
 
   return (
