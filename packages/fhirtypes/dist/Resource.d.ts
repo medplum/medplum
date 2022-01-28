@@ -155,6 +155,7 @@ import { TerminologyCapabilities } from './TerminologyCapabilities';
 import { TestReport } from './TestReport';
 import { TestScript } from './TestScript';
 import { User } from './User';
+import { UserConfiguration } from './UserConfiguration';
 import { ValueSet } from './ValueSet';
 import { VerificationResult } from './VerificationResult';
 import { VisionPrescription } from './VisionPrescription';
@@ -311,6 +312,7 @@ export type Resource = AccessPolicy
   | TestReport
   | TestScript
   | User
+  | UserConfiguration
   | ValueSet
   | VerificationResult
   | VisionPrescription;

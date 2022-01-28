@@ -1188,5 +1188,184 @@
         ]
       }
     }
+  },
+  {
+    "fullUrl" : "https://medplum.com/fhir/StructureDefinition/UserConfiguration",
+    "resource" : {
+      "resourceType" : "StructureDefinition",
+      "id" : "UserConfiguration",
+      "name" : "UserConfiguration",
+      "description" : "User specific configuration for the Medplum application.",
+      "snapshot" : {
+        "element" : [
+          {
+            "id" : "UserConfiguration.id",
+            "path" : "UserConfiguration.id",
+            "short" : "Logical id of this artifact",
+            "definition" : "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.meta",
+            "path" : "UserConfiguration.meta",
+            "definition" : "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Meta"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.implicitRules",
+            "path" : "UserConfiguration.implicitRules",
+            "definition" : "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "uri"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.language",
+            "path" : "UserConfiguration.language",
+            "definition" : "The base language in which the resource is written.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.menu",
+            "path" : "UserConfiguration.menu",
+            "definition" : "Optional menu of shortcuts to URLs.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "BackboneElement"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.menu.title",
+            "path" : "UserConfiguration.menu.title",
+            "definition" : "Title of the menu.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.menu.link",
+            "path" : "UserConfiguration.menu.link",
+            "definition" : "Shortcut links to URLs.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "BackboneElement"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.menu.link.name",
+            "path" : "UserConfiguration.menu.link.name",
+            "definition" : "The human friendly name of the link.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.menu.link.target",
+            "path" : "UserConfiguration.menu.link.target",
+            "definition" : "The URL target of the link.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "url"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.search",
+            "path" : "UserConfiguration.search",
+            "definition" : "Shortcut links to URLs.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "BackboneElement"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.search.name",
+            "path" : "UserConfiguration.search.name",
+            "definition" : "The human friendly name of the link.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.search.criteria",
+            "path" : "UserConfiguration.search.criteria",
+            "definition" : "The rules that the server should use to determine which resources to return.",
+            "comment" : "The rules are search criteria (without the [base] part). Like Bundle.entry.request.url, it has no leading \"/\".",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.option",
+            "path" : "UserConfiguration.option",
+            "definition" : "User options that control the display of the application.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "BackboneElement"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.option.id",
+            "path" : "UserConfiguration.option.id",
+            "definition" : "The unique identifier of the option.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }]
+          },
+          {
+            "id" : "UserConfiguration.option.value[x]",
+            "path" : "UserConfiguration.option.value[x]",
+            "short" : "Value of option",
+            "definition" : "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+            "min" : 1,
+            "max" : "1",
+            "type" : [
+            {
+              "code" : "boolean"
+            },
+            {
+              "code" : "code"
+            },
+            {
+              "code" : "decimal"
+            },
+            {
+              "code" : "integer"
+            },
+            {
+              "code" : "string"
+            }]
+          }
+        ]
+      }
+    }
   }]
 }

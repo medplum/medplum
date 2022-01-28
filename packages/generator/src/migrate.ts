@@ -15,7 +15,7 @@ import { FileBuilder } from './filebuilder';
 
 const structureDefinitions = { types: {} } as IndexedStructureDefinition;
 const searchParams = readJson('fhir/r4/search-parameters.json');
-const v6Builder = new FileBuilder();
+const builder = new FileBuilder();
 
 export function main(): void {
   buildStructureDefinitions('profiles-types.json');
@@ -46,7 +46,7 @@ function writeMigrations(): void {
   const b = new FileBuilder();
   buildMigrationUp(b);
   // writeFileSync(resolve(__dirname, '../../server/src/migrations/init.ts'), b.toString(), 'utf8');
-  writeFileSync(resolve(__dirname, '../../server/src/migrations/v6.ts'), v6Builder.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../server/src/migrations/v8.ts'), builder.toString(), 'utf8');
 }
 
 function buildMigrationUp(b: FileBuilder): void {
@@ -55,16 +55,16 @@ function buildMigrationUp(b: FileBuilder): void {
   b.append('export async function run(client: PoolClient): Promise<void> {');
   b.indentCount++;
 
-  v6Builder.append("import { PoolClient } from 'pg';");
-  v6Builder.newLine();
-  v6Builder.append('export async function run(client: PoolClient): Promise<void> {');
-  v6Builder.indentCount++;
+  builder.append("import { PoolClient } from 'pg';");
+  builder.newLine();
+  builder.append('export async function run(client: PoolClient): Promise<void> {');
+  builder.indentCount++;
 
   for (const [resourceType, typeSchema] of Object.entries(structureDefinitions.types)) {
     buildCreateTables(b, resourceType, typeSchema);
 
-    if (resourceType === 'AccessPolicy') {
-      buildCreateTables(v6Builder, resourceType, typeSchema);
+    if (resourceType === 'UserConfiguration') {
+      buildCreateTables(builder, resourceType, typeSchema);
     }
   }
 
@@ -76,8 +76,8 @@ function buildMigrationUp(b: FileBuilder): void {
   b.indentCount--;
   b.append('}');
 
-  v6Builder.indentCount--;
-  v6Builder.append('}');
+  builder.indentCount--;
+  builder.append('}');
 }
 
 function isResourceType(typeSchema: TypeSchema): boolean {
