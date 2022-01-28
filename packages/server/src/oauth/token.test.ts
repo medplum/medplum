@@ -189,7 +189,7 @@ describe('OAuth2 Token', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
         state: 'xyz',
       });
@@ -230,7 +230,7 @@ describe('OAuth2 Token', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
         state: 'xyz',
         remember: 'true',
@@ -272,7 +272,7 @@ describe('OAuth2 Token', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
         state: 'xyz',
       });
@@ -313,7 +313,7 @@ describe('OAuth2 Token', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
         state: 'xyz',
       });
@@ -351,7 +351,7 @@ describe('OAuth2 Token', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
         state: 'xyz',
       });
@@ -424,7 +424,7 @@ describe('OAuth2 Token', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
         state: 'xyz',
         remember: 'true',
@@ -480,7 +480,7 @@ describe('OAuth2 Token', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
         state: 'xyz',
         remember: 'false',
@@ -536,7 +536,7 @@ describe('OAuth2 Token', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
         state: 'xyz',
       });
@@ -575,7 +575,7 @@ describe('OAuth2 Token', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
         state: 'xyz',
         remember: 'true',
@@ -631,7 +631,7 @@ describe('OAuth2 Token', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
         state: 'xyz',
         remember: 'true',
@@ -691,7 +691,7 @@ describe('OAuth2 Token', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
         state: 'xyz',
         remember: 'true',
@@ -747,7 +747,7 @@ describe('OAuth2 Token', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
         state: 'xyz',
         remember: 'true',
@@ -803,7 +803,7 @@ describe('OAuth2 Token', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
         state: 'xyz',
         remember: 'true',
@@ -866,7 +866,7 @@ describe('OAuth2 Token', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
         state: 'xyz',
         remember: 'true',

@@ -127,7 +127,7 @@ describe('OAuth Authorize', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
       });
     expect(res.status).toBe(400);
@@ -166,7 +166,7 @@ describe('OAuth Authorize', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
       });
     expect(res.status).toBe(302);
@@ -190,7 +190,7 @@ describe('OAuth Authorize', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
       });
     expect(res.status).toBe(302);
@@ -213,7 +213,7 @@ describe('OAuth Authorize', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
       });
     expect(res.status).toBe(302);
@@ -236,7 +236,7 @@ describe('OAuth Authorize', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
       });
     expect(res.status).toBe(302);
@@ -260,7 +260,7 @@ describe('OAuth Authorize', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
       });
     expect(res.status).toBe(302);
@@ -283,7 +283,7 @@ describe('OAuth Authorize', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
       });
     expect(res2.status).toBe(302);
@@ -308,7 +308,7 @@ describe('OAuth Authorize', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
       });
     expect(res.status).toBe(302);
@@ -352,7 +352,7 @@ describe('OAuth Authorize', () => {
       .type('form')
       .send({
         email: 'admin@example.com',
-        password: 'admin',
+        password: 'medplum_admin',
         nonce: 'asdf',
         state: 'xyz',
       });
