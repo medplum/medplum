@@ -41,7 +41,11 @@ export function Header(props: HeaderProps): JSX.Element {
     <>
       <header role="banner" data-testid="header">
         <div>
-          <MedplumLink testid="header-menu-button" onClick={() => setSidebarVisible(!sidebarVisible)}>
+          <MedplumLink
+            label="Toggle sidebar"
+            testid="header-menu-button"
+            onClick={() => setSidebarVisible(!sidebarVisible)}
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               style={{ width: 20, height: 20, verticalAlign: 'text-top' }}

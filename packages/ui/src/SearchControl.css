@@ -45,25 +45,14 @@
   position: relative;
 }
 
+.medplum-search-control > table thead th:hover {
+  background-color: var(--medplum-blue-200);
+}
+
 .medplum-search-control > table thead th.filters {
   background-color: var(--medplum-gray-100);
   text-align: center;
-  color: var(--medplum-gray-800);
-}
-
-.medplum-search-control > table thead th.filters i {
   color: var(--medplum-gray-600);
-}
-
-.medplum-search-control > table thead th img {
-  position: absolute;
-  bottom: 6px;
-  right: 6px;
-  border: 0;
-  margin: 0;
-  padding: 0;
-  width: 17px;
-  height: 17px;
 }
 
 /* Body cells */
@@ -96,10 +85,6 @@
   text-align: center;
   padding: 40px;
   font-size: var(--medplum-font-big);
-}
-
-.medplum-search-control > table thead th:hover {
-  background-color: var(--medplum-blue-200);
 }
 
 .medplum-search-icon-cell {

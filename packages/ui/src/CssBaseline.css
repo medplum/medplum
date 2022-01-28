@@ -79,10 +79,6 @@ hr {
   background-color: var(--medplum-gray-200);
 }
 
-.muted {
-  color: var(--medplum-gray-500);
-}
-
 .left {
   text-align: left;
 }
