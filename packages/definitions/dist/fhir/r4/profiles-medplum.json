@@ -1240,28 +1240,6 @@
             }]
           },
           {
-            "id" : "UserConfiguration.user",
-            "path" : "UserConfiguration.user",
-            "definition" : "Reference to the user for which this configuration applies.",
-            "min" : 1,
-            "max" : "1",
-            "type" : [{
-              "code" : "Reference",
-              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/User"]
-            }]
-          },
-          {
-            "id" : "UserConfiguration.project",
-            "path" : "UserConfiguration.project",
-            "definition" : "Reference to the project for which this configuration applies.",
-            "min" : 1,
-            "max" : "1",
-            "type" : [{
-              "code" : "Reference",
-              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Project"]
-            }]
-          },
-          {
             "id" : "UserConfiguration.menu",
             "path" : "UserConfiguration.menu",
             "definition" : "Optional menu of shortcuts to URLs.",

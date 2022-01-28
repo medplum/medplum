@@ -65578,41 +65578,5 @@
       "xpath" : "f:Bot/f:name",
       "xpathUsage" : "normal"
     }
-  },
-  {
-    "fullUrl" : "https://medplum.com/fhir/SearchParameter/UserConfiguration-user",
-    "resource" : {
-      "resourceType" : "SearchParameter",
-      "id" : "UserConfiguration-user",
-      "url" : "https://medplum.com/fhir/SearchParameter/UserConfiguration-user",
-      "version" : "4.0.1",
-      "name" : "user",
-      "publisher" : "Medplum",
-      "code" : "user",
-      "base" : ["UserConfiguration"],
-      "type" : "reference",
-      "expression" : "UserConfiguration.user",
-      "xpath" : "f:UserConfiguration/f:user",
-      "xpathUsage" : "normal",
-      "target" : ["User"]
-    }
-  },
-  {
-    "fullUrl" : "https://medplum.com/fhir/SearchParameter/UserConfiguration-project",
-    "resource" : {
-      "resourceType" : "SearchParameter",
-      "id" : "UserConfiguration-project",
-      "url" : "https://medplum.com/fhir/SearchParameter/UserConfiguration-project",
-      "version" : "4.0.1",
-      "name" : "project",
-      "publisher" : "Medplum",
-      "code" : "project",
-      "base" : ["UserConfiguration"],
-      "type" : "reference",
-      "expression" : "UserConfiguration.project",
-      "xpath" : "f:UserConfiguration/f:project",
-      "xpathUsage" : "normal",
-      "target" : ["Project"]
-    }
   }]
 }

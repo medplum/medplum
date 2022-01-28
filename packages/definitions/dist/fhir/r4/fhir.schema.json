@@ -61595,11 +61595,11 @@
       }
     },
     "UserConfiguration": {
-      "description": "Access control policy.",
+      "description": "User specific configuration for the Medplum application.",
       "properties": {
         "resourceType": {
-          "description": "This is a AccessPolicy resource",
-          "const": "AccessPolicy"
+          "description": "This is a UserConfiguration resource",
+          "const": "UserConfiguration"
         },
         "id": {
           "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
@@ -61624,14 +61624,6 @@
         "_language": {
           "description": "Extensions for language",
           "$ref": "#/definitions/Element"
-        },
-        "user": {
-          "description": "Optional compartment restriction for the user account.",
-          "$ref": "#/definitions/Reference"
-        },
-        "project": {
-          "description": "Optional compartment restriction for the user account.",
-          "$ref": "#/definitions/Reference"
         },
         "menu": {
           "description": "Optional menu of shortcuts to URLs for quick access.",
