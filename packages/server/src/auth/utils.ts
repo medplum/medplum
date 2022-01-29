@@ -69,7 +69,7 @@ export async function createProjectMembership(
  * @param login The login details.
  */
 export async function sendLoginResult(res: Response, login: Login): Promise<void> {
-  if (!login?.profile) {
+  if (!login?.membership) {
     // User has multiple profiles, so the user needs to select
     // Safe to rewrite attachments,
     // because we know that these are all resources that the user has access to

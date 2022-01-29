@@ -1,5 +1,5 @@
-import { createReference, getReferenceString, isOk } from '@medplum/core';
-import { ClientApplication, Login } from '@medplum/fhirtypes';
+import { assertOk, createReference, getReferenceString, isOk, ProfileResource } from '@medplum/core';
+import { ClientApplication, Login, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
 import { getRepoForLogin, systemRepo } from '../fhir';
 import { logger } from '../logger';
@@ -32,10 +32,39 @@ async function authenticateBearerToken(req: Request, res: Response, next: NextFu
       return;
     }
 
+    let membership: ProjectMembership | undefined = undefined;
+
+    // TODO: Make login.membership a required field
+    if (login.membership) {
+      const [membershipOutcome, membership2] = await systemRepo.readReference<ProjectMembership>(
+        login.membership as Reference<ProjectMembership>
+      );
+      assertOk(membershipOutcome, membership2);
+      membership = membership2;
+    } else {
+      const [profileOutcome, profile] = await systemRepo.readReference<ProfileResource>({
+        reference: claims.profile,
+      } as Reference<ProfileResource>);
+      assertOk(profileOutcome, profile);
+      membership = {
+        resourceType: 'ProjectMembership',
+        project: {
+          reference: 'Project/' + profile.meta?.project,
+        },
+        profile: createReference(profile),
+      };
+    }
+
+    if (!membership) {
+      res.sendStatus(500);
+      return;
+    }
+
+    res.locals.login = login;
     res.locals.user = claims.username;
     res.locals.profile = claims.profile;
     res.locals.scope = claims.scope;
-    res.locals.repo = await getRepoForLogin(login);
+    res.locals.repo = await getRepoForLogin(membership);
     next();
   } catch (err) {
     logger.error('verify error', err);
@@ -63,8 +92,9 @@ async function authenticateBasicAuth(req: Request, res: Response, next: NextFunc
     return;
   }
 
-  const login: Login = {
-    resourceType: 'Login',
+  // TODO: Lookup project membership for client.
+  const membership: ProjectMembership = {
+    resourceType: 'ProjectMembership',
     project: {
       reference: `Project/${client.meta?.project}`,
     },
@@ -74,6 +104,6 @@ async function authenticateBasicAuth(req: Request, res: Response, next: NextFunc
   res.locals.user = client.id;
   res.locals.profile = getReferenceString(client);
   res.locals.scope = 'openid';
-  res.locals.repo = await getRepoForLogin(login);
+  res.locals.repo = await getRepoForLogin(membership);
   next();
 }

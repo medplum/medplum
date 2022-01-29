@@ -342,10 +342,10 @@ describe('AccessPolicy', () => {
     assertOk(outcome1, clientApplication);
     expect(clientApplication).toBeDefined();
 
-    // Create a systemRepo for the ClientApplication
+    // Create a repo for the ClientApplication
     // Use getRepoForLogin to generate the synthetic access policy
     const clientRepo = await getRepoForLogin({
-      resourceType: 'Login',
+      resourceType: 'ProjectMembership',
       project: {
         reference: 'Project/' + project,
       },

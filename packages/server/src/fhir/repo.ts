@@ -25,9 +25,9 @@ import {
   AccessPolicy,
   AccessPolicyResource,
   Bundle,
-  Login,
   Meta,
   OperationOutcome,
+  ProjectMembership,
   Reference,
   Resource,
   SearchParameter,
@@ -394,7 +394,7 @@ export class Repository {
       id,
       lastUpdated,
       deleted: true,
-      compartments: [],
+      compartments: this.#getCompartments(resource as Resource),
       content,
     };
 
@@ -1239,7 +1239,7 @@ function fhirOperatorToSqlOperator(fhirOperator: FhirOperator): Operator {
  * @param login The user login.
  * @returns A repository configured for the login details.
  */
-export async function getRepoForLogin(login: Login): Promise<Repository> {
+export async function getRepoForLogin(login: ProjectMembership): Promise<Repository> {
   let accessPolicy: AccessPolicy | undefined = undefined;
 
   if (!login.profile?.reference) {
@@ -1278,7 +1278,6 @@ export async function getRepoForLogin(login: Login): Promise<Repository> {
   return new Repository({
     project: resolveId(login.project) as string,
     author: login.profile as Reference,
-    admin: login.admin,
     accessPolicy,
   });
 }

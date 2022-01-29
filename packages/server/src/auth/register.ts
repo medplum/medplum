@@ -1,5 +1,5 @@
 import { assertOk, badRequest, createReference, Operator, ProfileResource } from '@medplum/core';
-import { BundleEntry, ClientApplication, Project, User } from '@medplum/fhirtypes';
+import { BundleEntry, ClientApplication, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
@@ -23,6 +23,7 @@ export interface RegisterRequest {
 export interface RegisterResponse {
   readonly user: User;
   readonly project: Project;
+  readonly membership: ProjectMembership;
   readonly profile: ProfileResource;
   readonly client: ClientApplication;
 }
@@ -72,7 +73,7 @@ export async function registerHandler(req: Request, res: Response): Promise<void
   });
   assertOk(loginOutcome, login);
 
-  const [tokenOutcome, token] = await getAuthTokens(login);
+  const [tokenOutcome, token] = await getAuthTokens(login, createReference(result.profile));
   assertOk(tokenOutcome, token);
 
   res.status(200).json({
@@ -86,11 +87,12 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
   const user = await createUser(request);
   const project = await createProject(request, user);
   const profile = await createPractitioner(request, project);
-  await createProjectMembership(user, project, profile, undefined, true);
+  const membership = await createProjectMembership(user, project, profile, undefined, true);
   const client = await createClientApplication(project);
   return {
     user,
     project,
+    membership,
     profile,
     client,
   };

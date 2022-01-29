@@ -1,5 +1,5 @@
-import { assertOk, createReference, getReferenceString, isOk, Operator } from '@medplum/core';
-import { ClientApplication, Login } from '@medplum/fhirtypes';
+import { assertOk, createReference, getReferenceString, isOk, Operator, ProfileResource } from '@medplum/core';
+import { ClientApplication, Login, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { createHash, timingSafeEqual } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
@@ -77,12 +77,8 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
   const [loginOutcome, login] = await systemRepo.createResource<Login>({
     resourceType: 'Login',
     client: createReference(client),
-    profile: createReference(client),
     authTime: new Date().toISOString(),
     granted: true,
-    project: {
-      reference: 'Project/' + client.meta?.project,
-    },
     scope,
   });
   assertOk(loginOutcome, login);
@@ -138,11 +134,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
     return sendTokenError(res, 'invalid_request', 'Invalid client');
   }
 
-  if (!login.project) {
-    return sendTokenError(res, 'invalid_request', 'Invalid project');
-  }
-
-  if (!login.profile) {
+  if (!login.membership) {
     return sendTokenError(res, 'invalid_request', 'Invalid profile');
   }
 
@@ -166,7 +158,10 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
     }
   }
 
-  const [tokenOutcome, token] = await getAuthTokens(login);
+  const [membershipOutcome, membership] = await systemRepo.readReference<ProjectMembership>(login.membership);
+  assertOk(membershipOutcome, membership);
+
+  const [tokenOutcome, token] = await getAuthTokens(login, membership.profile as Reference<ProfileResource>);
   if (!isOk(tokenOutcome) || !token) {
     return sendTokenError(res, 'invalid_request', 'Invalid token');
   }
@@ -178,8 +173,6 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
     id_token: token.idToken,
     access_token: token.accessToken,
     refresh_token: token.refreshToken,
-    project: login.project,
-    profile: login.profile,
   });
 }
 
@@ -243,7 +236,12 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
   });
   assertOk(updateOutcome, updatedLogin);
 
-  const [tokenOutcome, token] = await getAuthTokens(updatedLogin);
+  const [membershipOutcome, membership] = await systemRepo.readReference<ProjectMembership>(
+    login.membership as Reference<ProjectMembership>
+  );
+  assertOk(membershipOutcome, membership);
+
+  const [tokenOutcome, token] = await getAuthTokens(updatedLogin, membership.profile as Reference<ProfileResource>);
   if (!isOk(tokenOutcome)) {
     return sendTokenError(res, 'invalid_request', 'Invalid token');
   }
@@ -259,8 +257,6 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
     id_token: token.idToken,
     access_token: token.accessToken,
     refresh_token: token.refreshToken,
-    project: login.project,
-    profile: login.profile,
   });
 }
 

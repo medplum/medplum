@@ -35,7 +35,6 @@ describe('Auth middleware', () => {
     const [loginOutcome, login] = await systemRepo.createResource<Login>({
       resourceType: 'Login',
       client: createReference(client),
-      profile: createReference(client),
       authTime: new Date().toISOString(),
       scope,
     });
@@ -79,7 +78,6 @@ describe('Auth middleware', () => {
     const [loginOutcome, login] = await systemRepo.createResource<Login>({
       resourceType: 'Login',
       client: createReference(client),
-      profile: createReference(client),
       authTime: new Date().toISOString(),
       revoked: true,
       scope,

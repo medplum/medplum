@@ -51,7 +51,6 @@ describe('Super Admin routes', () => {
     const [outcome5, login1] = await systemRepo.createResource<Login>({
       resourceType: 'Login',
       client: createReference(client),
-      profile: createReference(practitioner1 as Practitioner),
       authTime: new Date().toISOString(),
       scope: 'openid',
     });
@@ -60,7 +59,6 @@ describe('Super Admin routes', () => {
     const [outcome6, login2] = await systemRepo.createResource<Login>({
       resourceType: 'Login',
       client: createReference(client),
-      profile: createReference(practitioner2 as Practitioner),
       authTime: new Date().toISOString(),
       scope: 'openid',
     });

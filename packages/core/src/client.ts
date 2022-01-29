@@ -10,6 +10,7 @@ import {
   Resource,
   SearchParameter,
   StructureDefinition,
+  UserConfiguration,
   ValueSet,
 } from '@medplum/fhirtypes';
 import { LRUCache } from './cache';
@@ -527,6 +528,54 @@ export class MedplumClient extends EventTarget {
 
   isLoading(): boolean {
     return this.#loading;
+  }
+
+  getUserConfiguration(): UserConfiguration {
+    const profile = this.getProfile();
+    return {
+      resourceType: 'UserConfiguration',
+      menu: [
+        {
+          title: 'Favorites',
+          link: [
+            { name: 'Patients', target: '/Patient' },
+            { name: 'Practitioners', target: '/Practitioner' },
+            { name: 'Observations', target: '/Observation' },
+            { name: 'Organizations', target: '/Organization' },
+            { name: 'Service Requests', target: '/ServiceRequest' },
+            { name: 'Encounters', target: '/Encounter' },
+            { name: 'Diagnostic Reports', target: '/DiagnosticReport' },
+            { name: 'Questionnaires', target: '/Questionnaire' },
+          ],
+        },
+        {
+          title: 'Admin',
+          link: [
+            { name: 'Project', target: '/admin/project' },
+            { name: 'AccessPolicy', target: '/AccessPolicy' },
+          ],
+        },
+        {
+          title: 'Developer',
+          link: [
+            { name: 'Client Applications', target: '/ClientApplication' },
+            { name: 'Subscriptions', target: '/Subscription' },
+            { name: 'Bots', target: '/Bot' },
+            { name: 'Batch', target: '/batch' },
+          ],
+        },
+        {
+          title: 'Settings',
+          link: [
+            {
+              name: 'Profile',
+              target: `/${profile?.resourceType}/${profile?.id}`,
+            },
+            { name: 'Change Password', target: '/changepassword' },
+          ],
+        },
+      ],
+    };
   }
 
   /**

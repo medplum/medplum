@@ -40,47 +40,7 @@ export function App(): JSX.Element {
             medplum.signOut();
             navigate('/signin');
           }}
-          sidebarLinks={[
-            {
-              title: 'Favorites',
-              links: [
-                { label: 'Patients', href: '/Patient' },
-                { label: 'Practitioners', href: '/Practitioner' },
-                { label: 'Observations', href: '/Observation' },
-                { label: 'Organizations', href: '/Organization' },
-                { label: 'Service Requests', href: '/ServiceRequest' },
-                { label: 'Encounters', href: '/Encounter' },
-                { label: 'Diagnostic Reports', href: '/DiagnosticReport' },
-                { label: 'Questionnaires', href: '/Questionnaire' },
-              ],
-            },
-            {
-              title: 'Admin',
-              links: [
-                { label: 'Project', href: '/admin/project' },
-                { label: 'AccessPolicy', href: '/AccessPolicy' },
-              ],
-            },
-            {
-              title: 'Developer',
-              links: [
-                { label: 'Client Applications', href: '/ClientApplication' },
-                { label: 'Subscriptions', href: '/Subscription' },
-                { label: 'Bots', href: '/Bot' },
-                { label: 'Batch', href: '/batch' },
-              ],
-            },
-            {
-              title: 'Settings',
-              links: [
-                {
-                  label: 'Profile',
-                  href: `/${profile.resourceType}/${profile.id}`,
-                },
-                { label: 'Change Password', href: '/changepassword' },
-              ],
-            },
-          ]}
+          config={medplum.getUserConfiguration()}
         />
       )}
       <Routes>

@@ -153,11 +153,8 @@ describe('Profile', () => {
     assertOk(readOutcome, login);
     await systemRepo.updateResource({
       ...login,
-      project: {
-        reference: `Project/${randomUUID()}`,
-      },
-      profile: {
-        reference: `Practitioner/${randomUUID()}`,
+      membership: {
+        reference: `ProjectMembership/${randomUUID()}`,
       },
     });
 

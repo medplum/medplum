@@ -11,12 +11,10 @@ import {
   ProfileResource,
 } from '@medplum/core';
 import {
-  AccessPolicy,
   BundleEntry,
   ClientApplication,
   Login,
   OperationOutcome,
-  Project,
   ProjectMembership,
   Reference,
   User,
@@ -112,14 +110,6 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
   // If they only have one membership, set it now
   // Otherwise the application will need to prompt the user
   const memberships = await getUserMemberships(createReference(user));
-  let project: Reference<Project> | undefined = undefined;
-  let profile: Reference<ProfileResource> | undefined = undefined;
-  let accessPolicy: Reference<AccessPolicy> | undefined = undefined;
-  if (memberships.length === 1) {
-    project = memberships[0].project;
-    profile = memberships[0].profile;
-    accessPolicy = memberships[0].accessPolicy;
-  }
 
   return systemRepo.createResource<Login>({
     resourceType: 'Login',
@@ -134,9 +124,7 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     codeChallenge: request.codeChallenge,
     codeChallengeMethod: request.codeChallengeMethod,
     admin: user.admin,
-    project,
-    profile,
-    accessPolicy,
+    membership: memberships.length === 1 ? createReference(memberships[0]) : undefined,
   });
 }
 
@@ -225,7 +213,10 @@ export async function getUserMemberships(user: Reference<User>): Promise<Project
   return (memberships.entry as BundleEntry<ProjectMembership>[]).map((entry) => entry.resource as ProjectMembership);
 }
 
-export async function getAuthTokens(login: Login): Promise<[OperationOutcome, TokenResult | undefined]> {
+export async function getAuthTokens(
+  login: Login,
+  profile: Reference<ProfileResource>
+): Promise<[OperationOutcome, TokenResult | undefined]> {
   const clientId = login.client && getReferenceIdPart(login.client);
   const userId = getReferenceIdPart(login.user);
   if (!userId) {
@@ -242,7 +233,7 @@ export async function getAuthTokens(login: Login): Promise<[OperationOutcome, To
   const idToken = await generateIdToken({
     client_id: clientId,
     login_id: login.id as string,
-    fhirUser: login.profile?.reference,
+    fhirUser: profile.reference,
     sub: userId,
     nonce: login.nonce as string,
     auth_time: (getDateProperty(login.authTime) as Date).getTime() / 1000,
@@ -254,7 +245,7 @@ export async function getAuthTokens(login: Login): Promise<[OperationOutcome, To
     sub: userId,
     username: userId,
     scope: login.scope as string,
-    profile: login.profile?.reference as string,
+    profile: profile.reference as string,
   });
 
   const refreshToken = login.refreshSecret
