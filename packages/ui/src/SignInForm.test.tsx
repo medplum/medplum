@@ -83,6 +83,15 @@ function mockFetch(url: string, options: any): Promise<any> {
       project: { reference: 'Project/123' },
       profile: { reference: 'Practitioner/123' },
     };
+  } else if (options.method === 'GET' && url.endsWith('auth/me')) {
+    status = 200;
+    result = {
+      profile: {
+        resourceType: 'Practitioner',
+        id: '123',
+        name: [{ given: ['Medplum'], family: ['Admin'] }],
+      },
+    };
   } else {
     console.log(options.method, url);
   }
