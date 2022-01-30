@@ -1,14 +1,17 @@
 import { Router } from 'express';
 import { asyncWrap } from '../async';
+import { authenticateToken } from '../oauth';
 import { changePasswordHandler, changePasswordValidators } from './changepassword';
 import { googleHandler, googleValidators } from './google';
 import { loginHandler, loginValidators } from './login';
+import { meHandler } from './me';
 import { profileHandler, profileValidators } from './profile';
 import { registerHandler, registerValidators } from './register';
 import { resetPasswordHandler, resetPasswordValidators } from './resetpassword';
 import { setPasswordHandler, setPasswordValidators } from './setpassword';
 
 export const authRouter = Router();
+authRouter.get('/me', authenticateToken, asyncWrap(meHandler));
 authRouter.post('/register', registerValidators, asyncWrap(registerHandler));
 authRouter.post('/login', loginValidators, asyncWrap(loginHandler));
 authRouter.post('/profile', profileValidators, asyncWrap(profileHandler));

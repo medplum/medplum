@@ -1,4 +1,4 @@
-import { assertOk, badRequest } from '@medplum/core';
+import { assertOk, badRequest, createReference } from '@medplum/core';
 import { Login, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -51,7 +51,7 @@ export async function profileHandler(req: Request, res: Response): Promise<void>
   // Update the login
   const [updateOutcome, updated] = await systemRepo.updateResource<Login>({
     ...login,
-    membership,
+    membership: createReference(membership),
   });
   assertOk(updateOutcome, updated);
 

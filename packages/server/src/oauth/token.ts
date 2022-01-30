@@ -88,13 +88,15 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
     return sendTokenError(res, 'invalid_request', 'Invalid client');
   }
 
+  const membership = membershipBundle.entry[0].resource as ProjectMembership;
+
   const scope = req.body.scope as string;
 
   const [loginOutcome, login] = await systemRepo.createResource<Login>({
     resourceType: 'Login',
     user: createReference(client),
     client: createReference(client),
-    membership: createReference(membershipBundle.entry[0].resource as ProjectMembership),
+    membership: createReference(membership),
     authTime: new Date().toISOString(),
     granted: true,
     scope,
@@ -114,6 +116,8 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
     token_type: 'Bearer',
     access_token: accessToken,
     expires_in: 3600,
+    project: membership.project,
+    profile: membership.profile,
     scope,
   });
 }
@@ -191,6 +195,8 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
     id_token: token.idToken,
     access_token: token.accessToken,
     refresh_token: token.refreshToken,
+    project: membership.project,
+    profile: membership.profile,
   });
 }
 
@@ -275,6 +281,8 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
     id_token: token.idToken,
     access_token: token.accessToken,
     refresh_token: token.refreshToken,
+    project: membership.project,
+    profile: membership.profile,
   });
 }
 

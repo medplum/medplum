@@ -36,6 +36,7 @@ async function authenticateBearerToken(req: Request, res: Response, next: NextFu
     assertOk(membershipOutcome, membership);
 
     res.locals.login = login;
+    res.locals.membership = membership;
     res.locals.user = claims.username;
     res.locals.profile = claims.profile;
     res.locals.scope = claims.scope;
@@ -81,6 +82,8 @@ async function authenticateBasicAuth(req: Request, res: Response, next: NextFunc
     profile: createReference(client),
   };
 
+  res.locals.login = login;
+  res.locals.membership = membership;
   res.locals.user = client.id;
   res.locals.profile = getReferenceString(client);
   res.locals.scope = 'openid';

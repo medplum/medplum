@@ -158,8 +158,12 @@ export class MedplumClient extends EventTarget {
   readonly #tokenUrl: string;
   readonly #logoutUrl: string;
   readonly #onUnauthenticated?: () => void;
+  #accessToken?: string;
+  #refreshToken?: string;
   #refreshPromise?: Promise<any>;
   #loading: boolean;
+  #profile?: ProfileResource;
+  #config?: UserConfiguration;
 
   constructor(options?: MedplumClientOptions) {
     super();
@@ -184,7 +188,14 @@ export class MedplumClient extends EventTarget {
     this.#logoutUrl = options?.logoutUrl || this.#baseUrl + 'oauth2/logout';
     this.#onUnauthenticated = options?.onUnauthenticated;
     this.#loading = false;
-    this.#refreshProfile().catch(console.log);
+
+    const activeLogin = this.getActiveLogin();
+    if (activeLogin) {
+      this.#accessToken = activeLogin.accessToken;
+      this.#refreshToken = activeLogin.refreshToken;
+      this.#refreshProfile().catch(console.log);
+    }
+
     this.#setupStorageListener();
   }
 
@@ -194,6 +205,10 @@ export class MedplumClient extends EventTarget {
   clear(): void {
     this.#storage.clear();
     this.#resourceCache.clear();
+    this.#accessToken = undefined;
+    this.#refreshToken = undefined;
+    this.#profile = undefined;
+    this.#config = undefined;
     this.dispatchEvent({ type: 'change' });
   }
 
@@ -494,6 +509,10 @@ export class MedplumClient extends EventTarget {
   }
 
   async setActiveLogin(login: LoginState): Promise<void> {
+    this.#accessToken = login.accessToken;
+    this.#refreshToken = login.refreshToken;
+    this.#profile = undefined;
+    this.#config = undefined;
     this.#storage.setObject('activeLogin', login);
     this.#addLogin(login);
     this.#resourceCache.clear();
@@ -512,70 +531,27 @@ export class MedplumClient extends EventTarget {
   }
 
   async #refreshProfile(): Promise<ProfileResource | undefined> {
-    const reference = this.getActiveLogin()?.profile;
-    if (reference?.reference) {
+    if (this.#accessToken) {
       this.#loading = true;
-      this.#storage.setObject('profile', await this.readCachedReference(reference));
+      const result = await this.get('auth/me');
+      this.#profile = result.profile;
+      this.#config = result.config;
       this.#loading = false;
       this.dispatchEvent({ type: 'change' });
     }
     return this.getProfile();
   }
 
-  getProfile(): ProfileResource | undefined {
-    return this.#storage.getObject('profile');
-  }
-
   isLoading(): boolean {
     return this.#loading;
   }
 
-  getUserConfiguration(): UserConfiguration {
-    const profile = this.getProfile();
-    return {
-      resourceType: 'UserConfiguration',
-      menu: [
-        {
-          title: 'Favorites',
-          link: [
-            { name: 'Patients', target: '/Patient' },
-            { name: 'Practitioners', target: '/Practitioner' },
-            { name: 'Observations', target: '/Observation' },
-            { name: 'Organizations', target: '/Organization' },
-            { name: 'Service Requests', target: '/ServiceRequest' },
-            { name: 'Encounters', target: '/Encounter' },
-            { name: 'Diagnostic Reports', target: '/DiagnosticReport' },
-            { name: 'Questionnaires', target: '/Questionnaire' },
-          ],
-        },
-        {
-          title: 'Admin',
-          link: [
-            { name: 'Project', target: '/admin/project' },
-            { name: 'AccessPolicy', target: '/AccessPolicy' },
-          ],
-        },
-        {
-          title: 'Developer',
-          link: [
-            { name: 'Client Applications', target: '/ClientApplication' },
-            { name: 'Subscriptions', target: '/Subscription' },
-            { name: 'Bots', target: '/Bot' },
-            { name: 'Batch', target: '/batch' },
-          ],
-        },
-        {
-          title: 'Settings',
-          link: [
-            {
-              name: 'Profile',
-              target: `/${profile?.resourceType}/${profile?.id}`,
-            },
-            { name: 'Change Password', target: '/changepassword' },
-          ],
-        },
-      ],
-    };
+  getProfile(): ProfileResource | undefined {
+    return this.#profile;
+  }
+
+  getUserConfiguration(): UserConfiguration | undefined {
+    return this.#config;
   }
 
   /**
@@ -598,9 +574,8 @@ export class MedplumClient extends EventTarget {
       'Content-Type': contentType || FHIR_CONTENT_TYPE,
     };
 
-    const accessToken = this.getActiveLogin()?.accessToken;
-    if (accessToken) {
-      headers['Authorization'] = 'Bearer ' + accessToken;
+    if (this.#accessToken) {
+      headers['Authorization'] = 'Bearer ' + this.#accessToken;
     }
 
     const options: RequestInit = {
@@ -741,8 +716,7 @@ export class MedplumClient extends EventTarget {
       return this.#refreshPromise;
     }
 
-    const refreshToken = this.getActiveLogin()?.refreshToken;
-    if (!refreshToken) {
+    if (!this.#refreshToken) {
       this.clear();
       return Promise.reject('Invalid refresh token');
     }
@@ -752,7 +726,7 @@ export class MedplumClient extends EventTarget {
         '&client_id=' +
         encodeURIComponent(this.#clientId) +
         '&refresh_token=' +
-        encodeURIComponent(refreshToken)
+        encodeURIComponent(this.#refreshToken)
     );
 
     await this.#refreshPromise;
