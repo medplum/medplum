@@ -94,6 +94,9 @@ projectAdminRouter.post(
  * @returns A string representing the role of the user in the project.
  */
 function getRole(project: Project, membership: ProjectMembership): string {
+  if (membership.user?.reference?.startsWith('ClientApplication/')) {
+    return 'client';
+  }
   if (membership.user?.reference === project.owner?.reference) {
     return 'owner';
   }

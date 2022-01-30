@@ -199,13 +199,14 @@ describe('Login', () => {
     // Get the project details
     // Make sure the new member is in the members list
     // Get the project details and members
+    // 3 members total (1 admin, 1 client, 1 invited)
     const res3 = await request(app)
       .get('/admin/projects/' + projectId)
       .set('Authorization', 'Bearer ' + res.body.accessToken);
     expect(res3.status).toBe(200);
     expect(res3.body.project).toBeDefined();
     expect(res3.body.members).toBeDefined();
-    expect(res3.body.members.length).toEqual(2);
+    expect(res3.body.members.length).toEqual(3);
 
     const owner = res3.body.members.find((m: any) => m.role === 'owner');
     expect(owner).toBeDefined();
@@ -231,14 +232,14 @@ describe('Login', () => {
 
     // Get the project details
     // Make sure the access policy is set
+    // 3 members total (1 admin, 1 client, 1 invited)
     const res6 = await request(app)
       .get('/admin/projects/' + projectId)
       .set('Authorization', 'Bearer ' + res.body.accessToken);
-
     expect(res6.status).toBe(200);
     expect(res6.body.project).toBeDefined();
     expect(res6.body.members).toBeDefined();
-    expect(res6.body.members.length).toEqual(2);
+    expect(res6.body.members.length).toEqual(3);
 
     const member2 = res6.body.members.find((m: any) => m.role === 'member');
     expect(member2).toBeDefined();

@@ -65473,7 +65473,7 @@
       "expression" : "ProjectMembership.user",
       "xpath" : "f:ProjectMembership/f:user",
       "xpathUsage" : "normal",
-      "target" : ["User"]
+      "target" : ["ClientApplication", "User"]
     }
   },
   {

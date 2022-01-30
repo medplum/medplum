@@ -73,13 +73,14 @@ describe('Project Admin routes', () => {
     // Get the project details
     // Make sure the new member is in the members list
     // Get the project details and members
+    // 3 members total (1 admin, 1 client, 1 invited)
     const res3 = await request(app)
       .get('/admin/projects/' + projectId)
       .set('Authorization', 'Bearer ' + res.body.accessToken);
     expect(res3.status).toBe(200);
     expect(res3.body.project).toBeDefined();
     expect(res3.body.members).toBeDefined();
-    expect(res3.body.members.length).toEqual(2);
+    expect(res3.body.members.length).toEqual(3);
 
     const owner = res3.body.members.find((m: any) => m.role === 'owner');
     expect(owner).toBeDefined();
@@ -126,14 +127,14 @@ describe('Project Admin routes', () => {
 
     // Get the project details
     // Make sure the new member is an admin
+    // 3 members total (1 admin, 1 client, 1 invited)
     const res8 = await request(app)
       .get('/admin/projects/' + projectId)
       .set('Authorization', 'Bearer ' + res.body.accessToken);
-
     expect(res8.status).toBe(200);
     expect(res8.body.project).toBeDefined();
     expect(res8.body.members).toBeDefined();
-    expect(res8.body.members.length).toEqual(2);
+    expect(res8.body.members.length).toEqual(3);
 
     const admin = res8.body.members.find((m: any) => m.role === 'admin');
     expect(admin).toBeDefined();

@@ -72,11 +72,29 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
     return sendTokenError(res, 'invalid_request', 'Invalid secret');
   }
 
+  const [membershipOutcome, membershipBundle] = await systemRepo.search<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    filters: [
+      {
+        code: 'user',
+        operator: Operator.EQUALS,
+        value: getReferenceString(client),
+      },
+    ],
+  });
+  assertOk(membershipOutcome, membershipBundle);
+
+  if (!membershipBundle.entry || membershipBundle.entry.length !== 1) {
+    return sendTokenError(res, 'invalid_request', 'Invalid client');
+  }
+
   const scope = req.body.scope as string;
 
   const [loginOutcome, login] = await systemRepo.createResource<Login>({
     resourceType: 'Login',
+    user: createReference(client),
     client: createReference(client),
+    membership: createReference(membershipBundle.entry[0].resource as ProjectMembership),
     authTime: new Date().toISOString(),
     granted: true,
     scope,

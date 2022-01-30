@@ -59,7 +59,7 @@ export interface ProjectMembership {
   /**
    * User that is granted access to the project.
    */
-  readonly user?: Reference<User>;
+  readonly user?: Reference<ClientApplication | User>;
 
   /**
    * Reference to the resource that represents the user profile within the

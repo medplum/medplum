@@ -29,33 +29,6 @@ describe('Auth middleware', () => {
     await closeDatabase();
   });
 
-  test('Success', async () => {
-    const scope = 'openid';
-
-    const [loginOutcome, login] = await systemRepo.createResource<Login>({
-      resourceType: 'Login',
-      client: createReference(client),
-      authTime: new Date().toISOString(),
-      scope,
-    });
-
-    assertOk(loginOutcome, login);
-
-    const accessToken = await generateAccessToken({
-      login_id: login?.id as string,
-      sub: client.id as string,
-      username: client.id as string,
-      client_id: client.id as string,
-      profile: client.resourceType + '/' + client.id,
-      scope,
-    });
-
-    const res = await request(app)
-      .get('/fhir/R4/Patient')
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
-  });
-
   test('Login not found', async () => {
     const accessToken = await generateAccessToken({
       login_id: randomUUID(),

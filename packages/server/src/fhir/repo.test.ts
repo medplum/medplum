@@ -845,7 +845,7 @@ describe('FHIR Repo', () => {
     const result1 = await registerNew(registration1);
     expect(result1.profile).toBeDefined();
 
-    const repo1 = await getRepoForLogin(result1.membership);
+    const repo1 = await getRepoForLogin({ resourceType: 'Login' }, result1.membership);
     const [patientOutcome1, patient1] = await repo1.createResource<Patient>({
       resourceType: 'Patient',
     });
@@ -870,7 +870,7 @@ describe('FHIR Repo', () => {
     const result2 = await registerNew(registration2);
     expect(result2.profile).toBeDefined();
 
-    const repo2 = await getRepoForLogin(result2.membership);
+    const repo2 = await getRepoForLogin({ resourceType: 'Login' }, result2.membership);
     const [patientOutcome3, patient3] = await repo2.readResource('Patient', patient1?.id as string);
     expect(patientOutcome3.id).toEqual('not-found');
     expect(patient3).toBeUndefined();

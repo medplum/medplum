@@ -80,6 +80,7 @@ export async function registerHandler(req: Request, res: Response): Promise<void
     ...token,
     project: result.project && createReference(result.project),
     profile: result.profile && createReference(result.profile),
+    client: result.client && createReference(result.client),
   });
 }
 
@@ -155,5 +156,16 @@ async function createClientApplication(project: Project): Promise<ClientApplicat
   });
   assertOk(outcome, result);
   logger.info('Created: ' + result.id);
+
+  logger.info('Create client project membership');
+  const [membershipOutcome, membership] = await systemRepo.createResource<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    project: createReference(project),
+    user: createReference(result),
+    profile: createReference(result),
+  });
+  assertOk(membershipOutcome, membership);
+  logger.info('Created: ' + membership.id);
+
   return result;
 }

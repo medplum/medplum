@@ -25,6 +25,7 @@ import {
   AccessPolicy,
   AccessPolicyResource,
   Bundle,
+  Login,
   Meta,
   OperationOutcome,
   ProjectMembership,
@@ -1201,7 +1202,7 @@ export class Repository {
  * @param reference A FHIR reference.
  * @returns The ID portion of a reference.
  */
-function resolveId(reference: Reference | undefined): string | undefined {
+export function resolveId(reference: Reference | undefined): string | undefined {
   return reference?.reference?.split('/')[1];
 }
 
@@ -1239,15 +1240,23 @@ function fhirOperatorToSqlOperator(fhirOperator: FhirOperator): Operator {
  * @param login The user login.
  * @returns A repository configured for the login details.
  */
-export async function getRepoForLogin(login: ProjectMembership): Promise<Repository> {
+export async function getRepoForLogin(login: Login, membership: ProjectMembership): Promise<Repository> {
   let accessPolicy: AccessPolicy | undefined = undefined;
 
-  if (!login.profile?.reference) {
+  if (!membership.profile?.reference) {
     throw new Error('Cannot create repo for login without profile');
   }
 
-  if (login.accessPolicy) {
-    const [accessPolicyOutcome, accessPolicyResource] = await systemRepo.readReference(login.accessPolicy);
+  if (login.admin) {
+    return new Repository({
+      project: resolveId(membership.project) as string,
+      author: membership.profile as Reference,
+      admin: true,
+    });
+  }
+
+  if (membership.accessPolicy) {
+    const [accessPolicyOutcome, accessPolicyResource] = await systemRepo.readReference(membership.accessPolicy);
     assertOk(accessPolicyOutcome, accessPolicyResource);
     accessPolicy = accessPolicyResource;
   }
@@ -1259,15 +1268,15 @@ export async function getRepoForLogin(login: ProjectMembership): Promise<Reposit
   // If the profile has a profile.meta.account,
   // Always write with account as the compartment
   // Always read with the account as a filter
-  if (login.profile) {
-    const profileType = login.profile.reference;
+  if (membership.profile) {
+    const profileType = membership.profile.reference;
     if (
       profileType &&
       (profileType.startsWith('Bot') ||
         profileType.startsWith('ClientApplication') ||
         profileType.startsWith('Subscription'))
     ) {
-      const [profileOutcome, profileResource] = await systemRepo.readReference(login.profile);
+      const [profileOutcome, profileResource] = await systemRepo.readReference(membership.profile);
       assertOk(profileOutcome, profileResource);
       if (profileResource.meta?.account) {
         accessPolicy = buildSyntheticAccessPolicy(profileResource.meta.account);
@@ -1276,8 +1285,8 @@ export async function getRepoForLogin(login: ProjectMembership): Promise<Reposit
   }
 
   return new Repository({
-    project: resolveId(login.project) as string,
-    author: login.profile as Reference,
+    project: resolveId(membership.project) as string,
+    author: membership.profile as Reference,
     accessPolicy,
   });
 }

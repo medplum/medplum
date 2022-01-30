@@ -30,9 +30,9 @@ export async function createTestProject(): Promise<{
 
   const [membershipOutcome, membership] = await systemRepo.createResource<ProjectMembership>({
     resourceType: 'ProjectMembership',
-    user: { reference: 'User/' + randomUUID() },
-    project: createReference(project),
+    user: createReference(client),
     profile: createReference(client),
+    project: createReference(project),
   });
   assertOk(membershipOutcome, membership);
 

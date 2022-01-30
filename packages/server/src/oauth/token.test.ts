@@ -8,6 +8,7 @@ import { initApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { systemRepo } from '../fhir';
+import { createTestClient } from '../jest.setup';
 import { seedDatabase } from '../seed';
 import { initKeys } from './keys';
 import { hashCode } from './token';
@@ -23,14 +24,7 @@ describe('OAuth2 Token', () => {
     await seedDatabase();
     await initApp(app);
     await initKeys(config);
-
-    const [outcome, resource] = await systemRepo.createResource<ClientApplication>({
-      resourceType: 'ClientApplication',
-      secret: randomUUID(),
-      redirectUri: 'https://example.com/',
-    });
-    assertOk(outcome, resource);
-    client = resource;
+    client = await createTestClient();
   });
 
   afterAll(async () => {

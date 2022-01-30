@@ -344,13 +344,18 @@ describe('AccessPolicy', () => {
 
     // Create a repo for the ClientApplication
     // Use getRepoForLogin to generate the synthetic access policy
-    const clientRepo = await getRepoForLogin({
-      resourceType: 'ProjectMembership',
-      project: {
-        reference: 'Project/' + project,
+    const clientRepo = await getRepoForLogin(
+      {
+        resourceType: 'Login',
       },
-      profile: createReference(clientApplication as ClientApplication),
-    });
+      {
+        resourceType: 'ProjectMembership',
+        project: {
+          reference: 'Project/' + project,
+        },
+        profile: createReference(clientApplication as ClientApplication),
+      }
+    );
 
     // Create a Patient using the ClientApplication
     const [outcome2, patient] = await clientRepo.createResource<Patient>({

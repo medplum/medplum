@@ -340,6 +340,7 @@ describe('Register', () => {
 
     expect(res3.status).toBe(200);
     expect(res3.body.profile).toBeDefined();
+    expect(res3.body.client).toBeDefined();
 
     // Try to access User1 patient using User2 directly
     // This should fail
@@ -348,21 +349,11 @@ describe('Register', () => {
       .set('Authorization', 'Bearer ' + res3.body.accessToken);
     expect(res4.status).toBe(404);
 
-    // Create a client application
-    const client: ClientApplication = {
-      resourceType: 'ClientApplication',
-      name: 'User2 Client',
-      secret: generateSecret(48),
-      redirectUri: 'https://example.com',
-    };
-
+    // Get the client
     const res5 = await request(app)
-      .post(`/fhir/R4/ClientApplication`)
-      .set('Authorization', 'Bearer ' + res3.body.accessToken)
-      .type('json')
-      .send(client);
-
-    expect(res5.status).toBe(201);
+      .get(`/fhir/R4/${res3.body.client.reference}`)
+      .set('Authorization', 'Bearer ' + res3.body.accessToken);
+    expect(res5.status).toBe(200);
 
     // Get a token using the client
     const res6 = await request(app).post('/oauth2/token').type('form').send({
