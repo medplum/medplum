@@ -60,6 +60,7 @@ describe('Client admin', () => {
     const res2 = await request(app)
       .post('/admin/projects/' + resolveId(res.body.project) + '/client')
       .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .type('json')
       .send({
         name: 'Alice personal client',
         description: 'Alice client description',
@@ -77,5 +78,13 @@ describe('Client admin', () => {
     expect(res3.status).toBe(200);
     expect(res3.body.resourceType).toBe('ClientApplication');
     expect(res3.body.id).toBe(res2.body.id);
+
+    // Invalid clients should fail
+    const res4 = await request(app)
+      .post('/admin/projects/' + resolveId(res.body.project) + '/client')
+      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .type('json')
+      .send({});
+    expect(res4.status).toBe(400);
   });
 });

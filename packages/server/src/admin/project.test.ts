@@ -171,8 +171,10 @@ describe('Project Admin routes', () => {
 
     expect(res2.status).toBe(200);
     expect(res2.body.project).toBeDefined();
+    expect(res2.body.client).toBeDefined();
 
     const projectId = resolveId(res.body.project);
+    const clientId = resolveId(res.body.client);
 
     // Try to access Alice's project using Alices's access token
     // Should succeed
@@ -207,5 +209,42 @@ describe('Project Admin routes', () => {
       .send({ resourceType: 'ProjectMembership' });
 
     expect(res6.status).toBe(404);
+
+    // Try to read Alice's client using Alices's access token
+    // Should succeed
+    const res7 = await request(app)
+      .get('/admin/projects/' + projectId + '/client/' + clientId)
+      .set('Authorization', 'Bearer ' + res.body.accessToken);
+
+    expect(res7.status).toBe(200);
+
+    // Try to read Alice's client using Bob's access token
+    // Should fail
+    const res8 = await request(app)
+      .get('/admin/projects/' + projectId + '/client/' + clientId)
+      .set('Authorization', 'Bearer ' + res2.body.accessToken);
+
+    expect(res8.status).toBe(404);
+
+    // Try to create a new client in Alice's project using Alices's access token
+    // Should succeed
+    const res9 = await request(app)
+      .post('/admin/projects/' + projectId + '/client')
+      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .type('json')
+      .send({
+        resourceType: 'ClientApplication',
+        name: 'Test client',
+      });
+
+    expect(res9.status).toBe(201);
+
+    // Try to create a new client in Alice's project using Bob's access token
+    // Should fail
+    const res10 = await request(app)
+      .post('/admin/projects/' + projectId + '/client')
+      .set('Authorization', 'Bearer ' + res2.body.accessToken);
+
+    expect(res10.status).toBe(404);
   });
 });
