@@ -4,6 +4,7 @@ import { NextFunction, Request, Response } from 'express';
 import { getRepoForLogin, systemRepo } from '../fhir';
 import { logger } from '../logger';
 import { MedplumAccessTokenClaims, verifyJwt } from './keys';
+import { getUserMemberships, timingSafeEqualStr } from './utils';
 
 export async function authenticateToken(req: Request, res: Response, next: NextFunction): Promise<void> {
   const [tokenType, token] = req.headers.authorization?.split(' ') ?? [];
@@ -64,7 +65,7 @@ async function authenticateBasicAuth(req: Request, res: Response, next: NextFunc
     return;
   }
 
-  if (client.secret !== password) {
+  if (!timingSafeEqualStr(client.secret as string, password)) {
     res.sendStatus(401);
     return;
   }
@@ -73,14 +74,13 @@ async function authenticateBasicAuth(req: Request, res: Response, next: NextFunc
     resourceType: 'Login',
   };
 
-  // TODO: Lookup project membership for client.
-  const membership: ProjectMembership = {
-    resourceType: 'ProjectMembership',
-    project: {
-      reference: `Project/${client.meta?.project}`,
-    },
-    profile: createReference(client),
-  };
+  const memberships = await getUserMemberships(createReference(client));
+  if (memberships.length !== 1) {
+    res.sendStatus(401);
+    return;
+  }
+
+  const membership = memberships[0];
 
   res.locals.login = login;
   res.locals.membership = membership;

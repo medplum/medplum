@@ -21,6 +21,7 @@ import {
   User,
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
+import { timingSafeEqual } from 'crypto';
 import { JWTPayload } from 'jose';
 import { RepositoryResult, systemRepo } from '../fhir';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
@@ -195,7 +196,7 @@ async function authenticate(request: LoginRequest, user: User): Promise<Operatio
  * @param user Reference to the user.
  * @returns Array of profile resources that the user has access to.
  */
-export async function getUserMemberships(user: Reference<User>): Promise<ProjectMembership[]> {
+export async function getUserMemberships(user: Reference<ClientApplication | User>): Promise<ProjectMembership[]> {
   if (!user.reference) {
     throw new Error('User reference is missing');
   }
@@ -297,4 +298,23 @@ async function getUserByEmail(email: string): RepositoryResult<User | undefined>
   }
 
   return [allOk, bundle.entry[0].resource as User];
+}
+
+/**
+ * Performs constant time comparison of two strings.
+ * Returns true if a is equal to b, without leaking timing information
+ * that would allow an attacker to guess one of the values.
+ *
+ * The built-in function timingSafeEqual requires that buffers are equal length.
+ * Per the discussion here: https://github.com/nodejs/node/issues/17178
+ * That is considered ok, and does not invalidate the protection from timing attack.
+ *
+ * @param a First string.
+ * @param b Second string.
+ * @returns True if the strings are equal.
+ */
+export function timingSafeEqualStr(a: string, b: string): boolean {
+  const buf1 = Buffer.from(a);
+  const buf2 = Buffer.from(b);
+  return buf1.length === buf2.length && timingSafeEqual(buf1, buf2);
 }

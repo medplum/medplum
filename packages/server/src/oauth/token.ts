@@ -8,12 +8,12 @@ import {
   resolveId,
 } from '@medplum/core';
 import { ClientApplication, Login, ProjectMembership, Reference } from '@medplum/fhirtypes';
-import { createHash, timingSafeEqual } from 'crypto';
+import { createHash } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
 import { systemRepo } from '../fhir';
 import { generateAccessToken, generateSecret, MedplumRefreshTokenClaims, verifyJwt } from './keys';
-import { getAuthTokens, revokeLogin } from './utils';
+import { getAuthTokens, getUserMemberships, revokeLogin, timingSafeEqualStr } from './utils';
 
 /**
  * Handles the OAuth/OpenID Token Endpoint.
@@ -80,23 +80,12 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
     return sendTokenError(res, 'invalid_request', 'Invalid secret');
   }
 
-  const [membershipOutcome, membershipBundle] = await systemRepo.search<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    filters: [
-      {
-        code: 'user',
-        operator: Operator.EQUALS,
-        value: getReferenceString(client),
-      },
-    ],
-  });
-  assertOk(membershipOutcome, membershipBundle);
-
-  if (!membershipBundle.entry || membershipBundle.entry.length !== 1) {
+  const memberships = await getUserMemberships(createReference(client));
+  if (!memberships || memberships.length !== 1) {
     return sendTokenError(res, 'invalid_request', 'Invalid client');
   }
 
-  const membership = membershipBundle.entry[0].resource as ProjectMembership;
+  const membership = memberships[0];
 
   const scope = req.body.scope as string;
 
@@ -343,23 +332,4 @@ export function hashCode(code: string): string {
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=/g, '');
-}
-
-/**
- * Performs constant time comparison of two strings.
- * Returns true if a is equal to b, without leaking timing information
- * that would allow an attacker to guess one of the values.
- *
- * The built-in function timingSafeEqual requires that buffers are equal length.
- * Per the discussion here: https://github.com/nodejs/node/issues/17178
- * That is considered ok, and does not invalidate the protection from timing attack.
- *
- * @param a First string.
- * @param b Second string.
- * @returns True if the strings are equal.
- */
-function timingSafeEqualStr(a: string, b: string): boolean {
-  const buf1 = Buffer.from(a);
-  const buf2 = Buffer.from(b);
-  return buf1.length === buf2.length && timingSafeEqual(buf1, buf2);
 }

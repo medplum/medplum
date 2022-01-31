@@ -10,7 +10,7 @@ import { systemRepo } from '../fhir';
 import { createTestClient } from '../jest.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
-import { generateAccessToken } from './keys';
+import { generateAccessToken, generateSecret } from './keys';
 
 const app = express();
 let client: ClientApplication;
@@ -155,5 +155,19 @@ describe('Auth middleware', () => {
     expect(res.status).toBe(201);
     expect(res.body.meta).toBeDefined();
     expect(res.body.meta.project).toBeDefined();
+  });
+
+  test('Basic auth without project membership', async () => {
+    const [clientOutcome, client] = await systemRepo.createResource<ClientApplication>({
+      resourceType: 'ClientApplication',
+      name: 'Client without project membership',
+      secret: generateSecret(48),
+    });
+    assertOk(clientOutcome, client);
+
+    const res = await request(app)
+      .get('/fhir/R4/Patient')
+      .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'));
+    expect(res.status).toBe(401);
   });
 });
