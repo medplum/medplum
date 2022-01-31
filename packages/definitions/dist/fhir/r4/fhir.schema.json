@@ -61161,8 +61161,7 @@
       },
       "required": [
         "resourceType",
-        "secret",
-        "redirectUri"
+        "secret"
       ]
     },
     "User": {

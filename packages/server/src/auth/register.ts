@@ -5,9 +5,10 @@ import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { pwnedPassword } from 'hibp';
+import { createClient } from '../admin/client';
 import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { logger } from '../logger';
-import { generateSecret, getAuthTokens, tryLogin } from '../oauth';
+import { getAuthTokens, tryLogin } from '../oauth';
 import { createPractitioner, createProjectMembership, verifyRecaptcha } from './utils';
 
 export interface RegisterRequest {
@@ -90,7 +91,11 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
   const project = await createProject(request, user);
   const profile = await createPractitioner(request, project);
   const membership = await createProjectMembership(user, project, profile, undefined, true);
-  const client = await createClientApplication(project);
+  const client = await createClient({
+    project,
+    name: project.name + ' Default Client',
+    description: 'Default client for ' + project.name,
+  });
   return {
     user,
     project,
@@ -140,33 +145,5 @@ async function createProject(request: RegisterRequest, user: User): Promise<Proj
   });
   assertOk(outcome, result);
   logger.info('Created: ' + result.id);
-  return result;
-}
-
-async function createClientApplication(project: Project): Promise<ClientApplication> {
-  logger.info('Create default client ' + project.name);
-  const [outcome, result] = await systemRepo.createResource<ClientApplication>({
-    resourceType: 'ClientApplication',
-    name: project.name + ' Default Client',
-    description: 'Default client for ' + project.name,
-    secret: generateSecret(32),
-    redirectUri: 'https://example.com/',
-    meta: {
-      project: project.id,
-    },
-  });
-  assertOk(outcome, result);
-  logger.info('Created: ' + result.id);
-
-  logger.info('Create client project membership');
-  const [membershipOutcome, membership] = await systemRepo.createResource<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    project: createReference(project),
-    user: createReference(result),
-    profile: createReference(result),
-  });
-  assertOk(membershipOutcome, membership);
-  logger.info('Created: ' + membership.id);
-
   return result;
 }

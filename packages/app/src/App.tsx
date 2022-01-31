@@ -2,6 +2,7 @@ import { getReferenceString } from '@medplum/core';
 import { FooterLinks, Header, Loading, useMedplum, useMedplumProfile } from '@medplum/ui';
 import React from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
+import { CreateClientPage } from './admin/CreateClientPage';
 import { EditMembershipPage } from './admin/EditMembershipPage';
 import { InvitePage } from './admin/InvitePage';
 import { ProjectPage } from './admin/ProjectPage';
@@ -52,7 +53,8 @@ export function App(): JSX.Element {
         <Route path="/batch" element={<BatchPage />} />
         <Route path="/forms/:id" element={<FormPage />} />
         <Route path="/admin/project" element={<ProjectPage />} />
-        <Route path="/admin/projects/:id/invite" element={<InvitePage />} />
+        <Route path="/admin/projects/:projectId/client" element={<CreateClientPage />} />
+        <Route path="/admin/projects/:projectId/invite" element={<InvitePage />} />
         <Route path="/admin/projects/:projectId/members/:membershipId" element={<EditMembershipPage />} />
         <Route path="/admin/super" element={<SuperAdminPage />} />
         <Route path="/:resourceType/:id/_history/:versionId/:tab" element={<ResourceVersionPage />} />

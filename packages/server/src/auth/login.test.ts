@@ -1,5 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { createReference } from '@medplum/core';
+import { createReference, resolveId } from '@medplum/core';
 import { ClientApplication } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -153,7 +153,7 @@ describe('Login', () => {
     expect(res.status).toBe(200);
     expect(res.body.project).toBeDefined();
 
-    const projectId = res.body.project.reference.replace('Project/', '');
+    const projectId = resolveId(res.body.project);
 
     // Create an access policy
     const resX = await request(app)

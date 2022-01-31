@@ -1,4 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
+import { resolveId } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -59,7 +60,7 @@ describe('Admin Invite', () => {
     // Second, Alice invites Bob to the project
     const bobEmail = `bob${randomUUID()}@example.com`;
     const res2 = await request(app)
-      .post('/admin/projects/' + res.body.project.reference.replace('Project/', '') + '/invite')
+      .post('/admin/projects/' + resolveId(res.body.project) + '/invite')
       .set('Authorization', 'Bearer ' + res.body.accessToken)
       .send({
         firstName: 'Bob',
@@ -120,7 +121,7 @@ describe('Admin Invite', () => {
     // Third, Alice invites Bob to the project
     // Because Bob already has an account, no emails should be sent
     const res3 = await request(app)
-      .post('/admin/projects/' + res.body.project.reference.replace('Project/', '') + '/invite')
+      .post('/admin/projects/' + resolveId(res.body.project) + '/invite')
       .set('Authorization', 'Bearer ' + res.body.accessToken)
       .send({
         firstName: 'Bob',
@@ -184,7 +185,7 @@ describe('Admin Invite', () => {
     // In this example, Bob is not an admin of Alice's project
     // So access is denied
     const res3 = await request(app)
-      .post('/admin/projects/' + res.body.project.reference.replace('Project/', '') + '/invite')
+      .post('/admin/projects/' + resolveId(res.body.project) + '/invite')
       .set('Authorization', 'Bearer ' + res2.body.accessToken)
       .send({
         firstName: 'Carol',
@@ -218,7 +219,7 @@ describe('Admin Invite', () => {
     // But she forgets his email address
     // So the request should fail
     const res2 = await request(app)
-      .post('/admin/projects/' + res.body.project.reference.replace('Project/', '') + '/invite')
+      .post('/admin/projects/' + resolveId(res.body.project) + '/invite')
       .set('Authorization', 'Bearer ' + res.body.accessToken)
       .send({
         firstName: 'Bob',

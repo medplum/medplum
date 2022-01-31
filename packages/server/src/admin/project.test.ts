@@ -1,4 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
+import { resolveId } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -56,7 +57,7 @@ describe('Project Admin routes', () => {
     expect(res.status).toBe(200);
     expect(res.body.project).toBeDefined();
 
-    const projectId = res.body.project.reference.replace('Project/', '');
+    const projectId = resolveId(res.body.project);
 
     // Invite a new member
     const res2 = await request(app)
@@ -171,7 +172,7 @@ describe('Project Admin routes', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.project).toBeDefined();
 
-    const projectId = res.body.project.reference.replace('Project/', '');
+    const projectId = resolveId(res.body.project);
 
     // Try to access Alice's project using Alices's access token
     // Should succeed
