@@ -1,9 +1,10 @@
+import { resolveId } from '@medplum/core';
 import { Document, Loading, MedplumLink, ResourceBadge, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 
 export function ProjectPage(): JSX.Element {
   const medplum = useMedplum();
-  const id = medplum.getActiveLogin()?.project?.reference?.split('/')?.[1] as string;
+  const id = resolveId(medplum.getActiveLogin()?.project) as string;
   const [loading, setLoading] = useState<boolean>(true);
   const [result, setResult] = useState<any>();
   const [error, setError] = useState();

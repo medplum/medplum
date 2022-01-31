@@ -79,6 +79,7 @@ export async function registerHandler(req: Request, res: Response): Promise<void
   res.status(200).json({
     ...token,
     project: result.project && createReference(result.project),
+    membership: result.membership && createReference(result.membership),
     profile: result.profile && createReference(result.profile),
     client: result.client && createReference(result.client),
   });

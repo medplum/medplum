@@ -9,6 +9,7 @@ import {
   notFound,
   Operator,
   ProfileResource,
+  resolveId,
 } from '@medplum/core';
 import {
   BundleEntry,
@@ -217,8 +218,8 @@ export async function getAuthTokens(
   login: Login,
   profile: Reference<ProfileResource>
 ): Promise<[OperationOutcome, TokenResult | undefined]> {
-  const clientId = login.client && getReferenceIdPart(login.client);
-  const userId = getReferenceIdPart(login.user);
+  const clientId = login.client && resolveId(login.client);
+  const userId = resolveId(login.user);
   if (!userId) {
     return [badRequest('Login missing user'), undefined];
   }
@@ -271,19 +272,6 @@ export async function revokeLogin(login: Login): Promise<void> {
     ...login,
     revoked: true,
   });
-}
-
-/**
- * Returns the ID portion of a FHIR reference.
- * @param reference A reference object.
- * @returns The resource ID portion of the reference.
- */
-export function getReferenceIdPart(reference: Reference | undefined): string | undefined {
-  const str = reference?.reference;
-  if (!str) {
-    return undefined;
-  }
-  return str.split('/')[1];
 }
 
 /**

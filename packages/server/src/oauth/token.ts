@@ -1,11 +1,19 @@
-import { assertOk, createReference, getReferenceString, isOk, Operator, ProfileResource } from '@medplum/core';
+import {
+  assertOk,
+  createReference,
+  getReferenceString,
+  isOk,
+  Operator,
+  ProfileResource,
+  resolveId,
+} from '@medplum/core';
 import { ClientApplication, Login, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { createHash, timingSafeEqual } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
 import { systemRepo } from '../fhir';
 import { generateAccessToken, generateSecret, MedplumRefreshTokenClaims, verifyJwt } from './keys';
-import { getAuthTokens, getReferenceIdPart, revokeLogin } from './utils';
+import { getAuthTokens, revokeLogin } from './utils';
 
 /**
  * Handles the OAuth/OpenID Token Endpoint.
@@ -244,7 +252,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
     const base64Credentials = authHeader.split(' ')[1];
     const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
     const [clientId, clientSecret] = credentials.split(':');
-    if (clientId !== getReferenceIdPart(login.client)) {
+    if (clientId !== resolveId(login.client)) {
       return sendTokenError(res, 'invalid_grant', 'Incorrect client');
     }
     if (!clientSecret) {
