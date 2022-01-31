@@ -296,7 +296,7 @@ export async function sendRestHook(
       `Attempt ${job.attemptsMade} received status ${response.status}`
     );
 
-    if (response.status > 410) {
+    if (response.status >= 400) {
       error = new Error('Received status ' + response.status);
     }
   } catch (ex) {
