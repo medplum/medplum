@@ -29,46 +29,22 @@ async function getUserConfiguration(membership: ProjectMembership): Promise<User
     return config;
   }
 
+  const favorites = ['Patient', 'Practitioner', 'Organization', 'ServiceRequest', 'DiagnosticReport', 'Questionnaire'];
+
   return {
     resourceType: 'UserConfiguration',
     menu: [
       {
         title: 'Favorites',
-        link: [
-          { name: 'Patients', target: '/Patient' },
-          { name: 'Practitioners', target: '/Practitioner' },
-          { name: 'Observations', target: '/Observation' },
-          { name: 'Organizations', target: '/Organization' },
-          { name: 'Service Requests', target: '/ServiceRequest' },
-          { name: 'Encounters', target: '/Encounter' },
-          { name: 'Diagnostic Reports', target: '/DiagnosticReport' },
-          { name: 'Questionnaires', target: '/Questionnaire' },
-        ],
+        link: favorites.map((resourceType) => ({ name: resourceType, target: '/' + resourceType })),
       },
       {
         title: 'Admin',
         link: [
           { name: 'Project', target: '/admin/project' },
           { name: 'AccessPolicy', target: '/AccessPolicy' },
-        ],
-      },
-      {
-        title: 'Developer',
-        link: [
-          { name: 'Client Applications', target: '/ClientApplication' },
           { name: 'Subscriptions', target: '/Subscription' },
-          { name: 'Bots', target: '/Bot' },
           { name: 'Batch', target: '/batch' },
-        ],
-      },
-      {
-        title: 'Settings',
-        link: [
-          {
-            name: 'Profile',
-            target: `/${membership.profile?.reference}`,
-          },
-          { name: 'Change Password', target: '/changepassword' },
         ],
       },
     ],

@@ -179,6 +179,15 @@ export function Header(props: HeaderProps): JSX.Element {
                 </li>
               ))}
             </ul>
+            <h5>Settings</h5>
+            <ul>
+              <li>
+                <MedplumLink to={context.profile}>Profile</MedplumLink>
+              </li>
+              <li>
+                <MedplumLink to="/changepassword">Change password</MedplumLink>
+              </li>
+            </ul>
           </React.Fragment>
         ))}
       </Popup>
