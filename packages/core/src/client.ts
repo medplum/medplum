@@ -161,7 +161,7 @@ export class MedplumClient extends EventTarget {
   #accessToken?: string;
   #refreshToken?: string;
   #refreshPromise?: Promise<any>;
-  #loading: boolean;
+  #profilePromise?: Promise<any>;
   #profile?: ProfileResource;
   #config?: UserConfiguration;
 
@@ -187,7 +187,6 @@ export class MedplumClient extends EventTarget {
     this.#tokenUrl = options?.tokenUrl || this.#baseUrl + 'oauth2/token';
     this.#logoutUrl = options?.logoutUrl || this.#baseUrl + 'oauth2/logout';
     this.#onUnauthenticated = options?.onUnauthenticated;
-    this.#loading = false;
 
     const activeLogin = this.getActiveLogin();
     if (activeLogin) {
@@ -531,23 +530,34 @@ export class MedplumClient extends EventTarget {
   }
 
   async #refreshProfile(): Promise<ProfileResource | undefined> {
-    if (this.#accessToken) {
-      this.#loading = true;
-      const result = await this.get('auth/me');
-      this.#profile = result.profile;
-      this.#config = result.config;
-      this.#loading = false;
-      this.dispatchEvent({ type: 'change' });
-    }
-    return this.getProfile();
+    this.#profilePromise = new Promise((resolve, reject) => {
+      this.get('auth/me')
+        .then((result) => {
+          this.#profilePromise = undefined;
+          this.#profile = result.profile;
+          this.#config = result.config;
+          this.dispatchEvent({ type: 'change' });
+          resolve(this.#profile);
+        })
+        .catch(reject);
+    });
+
+    return this.#profilePromise;
   }
 
   isLoading(): boolean {
-    return this.#loading;
+    return !!this.#profilePromise;
   }
 
   getProfile(): ProfileResource | undefined {
     return this.#profile;
+  }
+
+  async getProfileAsync(): Promise<ProfileResource | undefined> {
+    if (this.#profilePromise) {
+      await this.#profilePromise;
+    }
+    return this.getProfile();
   }
 
   getUserConfiguration(): UserConfiguration | undefined {
