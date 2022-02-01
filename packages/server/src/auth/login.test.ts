@@ -215,13 +215,13 @@ describe('Login', () => {
 
     // Get the new membership details
     const res4 = await request(app)
-      .get('/admin/projects/' + projectId + '/members/' + member.membershipId)
+      .get('/admin/projects/' + projectId + '/members/' + member.id)
       .set('Authorization', 'Bearer ' + res.body.accessToken);
     expect(res4.status).toBe(200);
 
     // Set the new member's access policy
     const res5 = await request(app)
-      .post('/admin/projects/' + projectId + '/members/' + member.membershipId)
+      .post('/admin/projects/' + projectId + '/members/' + member.id)
       .set('Authorization', 'Bearer ' + res.body.accessToken)
       .type('json')
       .send({

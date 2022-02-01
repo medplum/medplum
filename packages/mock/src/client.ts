@@ -61,7 +61,7 @@ const routes: Record<string, Record<string, any>> = {
   'admin/projects/123': {
     GET: {
       project: { id: '123', name: 'Project 123' },
-      members: [{ profile: 'Practitioner/123', name: 'Alice Smith' }],
+      members: [{ id: '123', profile: { reference: 'Practitioner/123', display: 'Alice Smith' } }],
     },
   },
   'admin/super/structuredefinitions': {

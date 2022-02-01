@@ -1,5 +1,5 @@
 import { badRequest, resolveId } from '@medplum/core';
-import { ClientApplication, Patient } from '@medplum/fhirtypes';
+import { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -9,7 +9,7 @@ import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../jest.setup';
-import { generateSecret, initKeys } from '../oauth';
+import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 
 jest.mock('hibp');
@@ -249,39 +249,8 @@ describe('Register', () => {
       .get(`/fhir/R4/ClientApplication`)
       .set('Authorization', 'Bearer ' + res.body.accessToken);
 
-    expect(res2.status).toBe(403);
-  });
-
-  test('Cannot create a ClientApplication', async () => {
-    const res = await request(app)
-      .post('/auth/register')
-      .type('json')
-      .send({
-        firstName: 'Alexander',
-        lastName: 'Hamilton',
-        projectName: 'Hamilton Project',
-        email: `alex${randomUUID()}@example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.profile).toBeDefined();
-
-    const client: ClientApplication = {
-      resourceType: 'ClientApplication',
-      name: 'Test App',
-      secret: generateSecret(48),
-      redirectUri: 'https://example.com',
-    };
-
-    const res2 = await request(app)
-      .post(`/fhir/R4/ClientApplication`)
-      .set('Authorization', 'Bearer ' + res.body.accessToken)
-      .type('json')
-      .send(client);
-
-    expect(res2.status).toBe(403);
+    expect(res2.status).toBe(200);
+    expect(res2.body.entry.length).toBe(1);
   });
 
   test('ClientApplication is restricted to project', async () => {
@@ -350,7 +319,7 @@ describe('Register', () => {
 
     // Get the client
     const res5 = await request(app)
-      .get(`/admin/projects/${resolveId(res3.body.project)}/client/${resolveId(res3.body.client)}`)
+      .get(`/fhir/R4/ClientApplication/${resolveId(res3.body.client)}`)
       .set('Authorization', 'Bearer ' + res3.body.accessToken);
     expect(res5.status).toBe(200);
 

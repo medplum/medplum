@@ -64,16 +64,3 @@ export async function createClient(request: CreateClientRequest): Promise<Client
   assertOk(membershipOutcome, membership);
   return client;
 }
-
-export async function readClientHandler(req: Request, res: Response): Promise<void> {
-  const projectDetails = await verifyProjectAdmin(req, res);
-  if (!projectDetails) {
-    res.sendStatus(404);
-    return;
-  }
-
-  const { clientId } = req.params;
-  const [clientOutcome, client] = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
-  assertOk(clientOutcome, client);
-  res.json(client);
-}

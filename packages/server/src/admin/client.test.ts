@@ -73,18 +73,10 @@ describe('Client admin', () => {
 
     // Read the client
     const res3 = await request(app)
-      .get('/admin/projects/' + resolveId(res.body.project) + '/client/' + res2.body.id)
+      .get('/fhir/R4/ClientApplication/' + res2.body.id)
       .set('Authorization', 'Bearer ' + res.body.accessToken);
     expect(res3.status).toBe(200);
     expect(res3.body.resourceType).toBe('ClientApplication');
     expect(res3.body.id).toBe(res2.body.id);
-
-    // Invalid clients should fail
-    const res4 = await request(app)
-      .post('/admin/projects/' + resolveId(res.body.project) + '/client')
-      .set('Authorization', 'Bearer ' + res.body.accessToken)
-      .type('json')
-      .send({});
-    expect(res4.status).toBe(400);
   });
 });

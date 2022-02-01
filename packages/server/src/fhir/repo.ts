@@ -103,7 +103,6 @@ const publicResourceTypes = [
  * Reading and writing is limited to the system account.
  */
 const protectedResourceTypes = [
-  'ClientApplication',
   'JsonWebKey',
   'Login',
   'PasswordChangeRequest',
