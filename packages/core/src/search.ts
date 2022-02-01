@@ -6,6 +6,7 @@ export interface SearchRequest {
   readonly count?: number;
   readonly fields?: string[];
   readonly name?: string;
+  readonly total?: 'none' | 'estimate' | 'accurate';
 }
 
 export interface Filter {

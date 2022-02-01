@@ -450,8 +450,12 @@ export class Repository {
     builder.limit(count);
     builder.offset(count * page);
 
-    const total = await this.#getTotalCount(searchRequest);
     const rows = await builder.execute(client);
+
+    let total = undefined;
+    if (searchRequest.total === 'estimate' || searchRequest.total === 'accurate') {
+      total = await this.#getTotalCount(searchRequest);
+    }
 
     return [
       allOk,
