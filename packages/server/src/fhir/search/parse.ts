@@ -69,12 +69,13 @@ export function parseSearchUrl(url: URL): SearchRequest {
   return new SearchParser(resourceType, Object.fromEntries(url.searchParams.entries()));
 }
 
-class SearchParser {
+class SearchParser implements SearchRequest {
   readonly resourceType: string;
   readonly filters: Filter[];
   readonly sortRules: SortRule[];
   page: number;
   count: number;
+  total?: 'none' | 'estimate' | 'accurate';
 
   constructor(resourceType: string, query: Record<string, string[] | string | undefined>) {
     this.resourceType = resourceType;
@@ -136,6 +137,10 @@ class SearchParser {
 
       case '_count':
         this.count = parseInt(value);
+        break;
+
+      case '_total':
+        this.total = value as 'none' | 'estimate' | 'accurate';
         break;
 
       default: {

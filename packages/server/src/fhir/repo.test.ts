@@ -203,6 +203,35 @@ describe('FHIR Repo', () => {
     expect(searchResult2?.entry?.[0]?.resource?.id).toEqual(patient?.id);
   });
 
+  test('Search total', async () => {
+    const [outcome1, result1] = await systemRepo.search({
+      resourceType: 'Patient',
+    });
+    assertOk(outcome1, result1);
+    expect(result1.total).toBeUndefined();
+
+    const [outcome2, result2] = await systemRepo.search({
+      resourceType: 'Patient',
+      total: 'none',
+    });
+    assertOk(outcome2, result2);
+    expect(result2.total).toBeUndefined();
+
+    const [outcome3, result3] = await systemRepo.search({
+      resourceType: 'Patient',
+      total: 'accurate',
+    });
+    assertOk(outcome3, result3);
+    expect(result3.total).toBeDefined();
+
+    const [outcome4, result4] = await systemRepo.search({
+      resourceType: 'Patient',
+      total: 'estimate',
+    });
+    assertOk(outcome4, result4);
+    expect(result4.total).toBeDefined();
+  });
+
   test('Repo read malformed reference', async () => {
     const [outcome1, resource1] = await systemRepo.readReference({
       reference: undefined,

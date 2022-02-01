@@ -91,7 +91,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   function requestResources(): void {
     setOutcome(undefined);
     medplum
-      .search(props.search)
+      .search({ ...props.search, total: 'accurate' })
       .then((response) => {
         setState({ ...stateRef.current, searchResponse: response });
         if (props.onLoad) {
