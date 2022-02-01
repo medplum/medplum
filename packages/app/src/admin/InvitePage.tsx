@@ -7,7 +7,6 @@ import { AccessPolicyInput } from './AccessPolicyInput';
 export function InvitePage(): JSX.Element {
   const { projectId } = useParams() as { projectId: string };
   const medplum = useMedplum();
-  const [loading, setLoading] = useState<boolean>(true);
   const [result, setResult] = useState<any>();
   const [firstName, setFirstName] = useState<string>('');
   const [lastName, setLastName] = useState<string>('');
@@ -21,12 +20,11 @@ export function InvitePage(): JSX.Element {
       .get('admin/projects/' + projectId)
       .then((response) => {
         setResult(response);
-        setLoading(false);
       })
       .catch(setOutcome);
   }, [projectId]);
 
-  if (loading || !result) {
+  if (!result) {
     return <Loading />;
   }
 
