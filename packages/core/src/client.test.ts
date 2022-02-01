@@ -252,11 +252,13 @@ describe('Client', () => {
     const client = new MedplumClient(defaultOptions);
     expect(client.isLoading()).toBe(true);
     expect(client.getProfile()).toBeUndefined();
+    expect(client.getProfileAsync()).toBeDefined();
     expect(client.getUserConfiguration()).toBeUndefined();
 
     const profile = (await client.getProfileAsync()) as ProfileResource;
     expect(client.isLoading()).toBe(false);
     expect(profile.id).toBe('123');
+    expect(client.getProfileAsync()).toBeDefined();
     expect(client.getUserConfiguration()).toBeDefined();
   });
 
