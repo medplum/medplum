@@ -28,6 +28,12 @@ describe('FHIR Repo', () => {
     await closeDatabase();
   });
 
+  test('getRepoForLogin', async () => {
+    await expect(() =>
+      getRepoForLogin({ resourceType: 'Login' }, { resourceType: 'ProjectMembership' })
+    ).rejects.toEqual('Cannot create repo for login without profile');
+  });
+
   test('Read resource with undefined id', async () => {
     const [outcome] = await systemRepo.readResource('Patient', undefined as unknown as string);
     expect(isOk(outcome)).toBe(false);

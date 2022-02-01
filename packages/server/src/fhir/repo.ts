@@ -1234,7 +1234,7 @@ export async function getRepoForLogin(login: Login, membership: ProjectMembershi
   let accessPolicy: AccessPolicy | undefined = undefined;
 
   if (!membership.profile?.reference) {
-    throw new Error('Cannot create repo for login without profile');
+    return Promise.reject('Cannot create repo for login without profile');
   }
 
   if (login.admin) {
@@ -1249,28 +1249,17 @@ export async function getRepoForLogin(login: Login, membership: ProjectMembershi
     const [accessPolicyOutcome, accessPolicyResource] = await systemRepo.readReference(membership.accessPolicy);
     assertOk(accessPolicyOutcome, accessPolicyResource);
     accessPolicy = accessPolicyResource;
-  }
-
-  // If the resource is an "actor" resource,
-  // then look it up for a synthetic access policy.
-  // Actor resources: Bot, ClientApplication, Subscription
-  // Synthetic access policy:
-  // If the profile has a profile.meta.account,
-  // Always write with account as the compartment
-  // Always read with the account as a filter
-  if (membership.profile) {
-    const profileType = membership.profile.reference;
-    if (
-      profileType &&
-      (profileType.startsWith('Bot') ||
-        profileType.startsWith('ClientApplication') ||
-        profileType.startsWith('Subscription'))
-    ) {
-      const [profileOutcome, profileResource] = await systemRepo.readReference(membership.profile);
-      assertOk(profileOutcome, profileResource);
-      if (profileResource.meta?.account) {
-        accessPolicy = buildSyntheticAccessPolicy(profileResource.meta.account);
-      }
+  } else if (membership.profile.reference.startsWith('ClientApplication/')) {
+    // If the resource is an "actor" resource,
+    // then look it up for a synthetic access policy.
+    // Synthetic access policy:
+    // If the profile has a profile.meta.account,
+    // Always write with account as the compartment
+    // Always read with the account as a filter
+    const [profileOutcome, profileResource] = await systemRepo.readReference(membership.profile);
+    assertOk(profileOutcome, profileResource);
+    if (profileResource.meta?.account) {
+      accessPolicy = buildSyntheticAccessPolicy(profileResource.meta.account);
     }
   }
 
