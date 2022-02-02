@@ -118,7 +118,9 @@ function setup(args?: SignInFormProps): void {
   render(
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>
-        <SignInForm {...props} />
+        <SignInForm {...props}>
+          <h1>Sign in to Medplum</h1>
+        </SignInForm>
       </MedplumProvider>
     </MemoryRouter>
   );
