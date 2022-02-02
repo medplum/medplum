@@ -1,4 +1,5 @@
 select.medplum-select {
+  background: var(--medplum-surface);
   padding: 4px 8px;
   margin: 1px;
   line-height: 28px;
@@ -8,21 +9,16 @@ select.medplum-select {
 select.medplum-select:not([size]) {
   border: 0.1px solid var(--medplum-gray-300);
   border-radius: 3px;
-  background: var(--medplum-surface);
   box-shadow: 0 1px 1px 0 var(--medplum-gray-200);
   color: var(--medplum-gray-800);
   font-size: var(--medplum-font-normal);
-}
-
-select.medplum-select:not([size]) {
-  width: 100%;
-  max-width: 400px;
   height: 34px;
   line-height: 28px;
+  max-width: 400px;
+  width: 100%;
 }
 
 select.medplum-select:focus {
-  background: var(--medplum-surface);
   color: var(--medplum-gray-900);
   border: 0.1px solid var(--medplum-blue-300);
   box-shadow: 0 0 0 2px var(--medplum-blue-200);
