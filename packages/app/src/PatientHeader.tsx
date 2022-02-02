@@ -13,7 +13,7 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
     return null;
   }
   return (
-    <Scrollable className="surface" height={74}>
+    <Scrollable className="medplum-surface" height={74}>
       <div className="medplum-patient-header">
         <Avatar value={patient} size="large" color={getDefaultColor(patient)} />
         <dl>

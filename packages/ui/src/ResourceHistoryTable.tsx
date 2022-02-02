@@ -4,6 +4,7 @@ import { DateTimeDisplay } from './DateTimeDisplay';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
 import { ResourceBadge } from './ResourceBadge';
+import './Table.css';
 
 export interface ResourceHistoryTableProps {
   history?: Bundle;
@@ -26,7 +27,7 @@ export function ResourceHistoryTable(props: ResourceHistoryTableProps): JSX.Elem
   }
 
   return (
-    <table className="table">
+    <table className="medplum-table">
       <thead>
         <tr>
           <th>Author</th>

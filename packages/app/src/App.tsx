@@ -1,5 +1,5 @@
 import { getReferenceString } from '@medplum/core';
-import { CssBaseline, DefaultTheme, FooterLinks, Header, Loading, useMedplum, useMedplumProfile } from '@medplum/ui';
+import { FooterLinks, Header, Loading, useMedplum, useMedplumProfile } from '@medplum/ui';
 import React from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 import { EditMembershipPage } from './admin/EditMembershipPage';
@@ -17,6 +17,7 @@ import { ResourcePage } from './ResourcePage';
 import { ResourceVersionPage } from './ResourceVersionPage';
 import { SetPasswordPage } from './SetPasswordPage';
 import { SignInPage } from './SignInPage';
+import '@medplum/ui/defaulttheme.css';
 import '@medplum/ui/styles.css';
 import './App.css';
 
@@ -26,19 +27,11 @@ export function App(): JSX.Element {
   const profile = useMedplumProfile();
 
   if (medplum.isLoading()) {
-    return (
-      <>
-        <CssBaseline />
-        <DefaultTheme />
-        <Loading />
-      </>
-    );
+    return <Loading />;
   }
 
   return (
     <>
-      <CssBaseline />
-      <DefaultTheme />
       {profile && (
         <Header
           onLogo={() => navigate('/')}

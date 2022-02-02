@@ -15,11 +15,12 @@ fieldset label,
 fieldset legend {
   display: block;
   margin: 2px 0 4px 0;
-  font-size: 12px;
+  font-size: var(--medplum-font-small);
 }
 
 fieldset small {
   display: block;
   margin: 2px 0 4px 0;
   padding: 2px 0 4px 0;
+  font-size: var(--medplum-font-small);
 }

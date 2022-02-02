@@ -16,6 +16,8 @@ a.medplum-tab {
 a.medplum-tab:focus,
 a.medplum-tab:hover {
   border-bottom: 2px solid var(--medplum-blue-100);
+  outline: 0;
+  text-decoration: none;
 }
 
 a.medplum-tab.selected {

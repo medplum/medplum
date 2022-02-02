@@ -34,7 +34,7 @@ export function ProjectPage(): JSX.Element {
     <Document width={600}>
       <h1>Admin / Projects / {result.project.name}</h1>
       <h3>Members</h3>
-      <table className="table">
+      <table className="medplum-table">
         <thead>
           <tr>
             <th>Name</th>

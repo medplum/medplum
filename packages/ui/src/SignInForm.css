@@ -35,3 +35,8 @@
 .medplum-signin-google-icon {
   margin-right: 8px;
 }
+
+.medplum-signin-google-icon svg {
+  display: inline-block;
+  vertical-align: top;
+}

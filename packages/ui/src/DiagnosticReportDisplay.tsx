@@ -13,6 +13,7 @@ import { MedplumLink } from './MedplumLink';
 import { ResourceBadge } from './ResourceBadge';
 import { useResource } from './useResource';
 import './DiagnosticReportDisplay.css';
+import './Table.css';
 
 export interface DiagnosticReportDisplayProps {
   value?: DiagnosticReport | Reference<DiagnosticReport>;
@@ -80,7 +81,7 @@ export interface ObservationTableProps {
 
 export function ObservationTable(props: ObservationTableProps): JSX.Element {
   return (
-    <table className="medplum-observation-table">
+    <table className="medplum-table">
       <thead>
         <tr>
           <th>Test</th>

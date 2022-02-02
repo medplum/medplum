@@ -1,12 +1,14 @@
 dl.medplum-description-list {
   display: grid;
   grid-template-columns: 30% 70%;
+  margin: 0;
 }
 
 dl.medplum-description-list dt,
 dl.medplum-description-list dd {
-  padding: 16px 8px;
+  padding: 12px 8px;
   border-top: 0.1px solid var(--medplum-gray-300);
+  margin: 0;
 }
 
 dl.medplum-description-list.compact {

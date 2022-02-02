@@ -33,17 +33,5 @@
   height: 40px;
   display: flex;
   align-items: center;
-}
-
-.medplum-observation-table {
-  border-collapse: collapse;
-  border-top: 0.1px solid var(--medplum-gray-500);
-  border-left: 0.1px solid var(--medplum-gray-500);
-}
-
-.medplum-observation-table td,
-.medplum-observation-table th {
-  border-bottom: 0.1px solid var(--medplum-gray-500);
-  border-right: 0.1px solid var(--medplum-gray-500);
-  padding: 4px 8px;
+  margin: 0;
 }

@@ -12,7 +12,7 @@ export interface TimelineProps {
 }
 
 export function Timeline(props: TimelineProps): JSX.Element {
-  return <main className="medplum-timeline">{props.children}</main>;
+  return <main className="medplum-document medplum-timeline">{props.children}</main>;
 }
 
 export interface TimelineItemProps {
