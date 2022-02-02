@@ -1,6 +1,7 @@
 import { Attachment } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
 import { AttachmentDisplay } from './AttachmentDisplay';
+import { Button } from './Button';
 import { UploadButton } from './UploadButton';
 import { killEvent } from './utils/dom';
 
@@ -37,8 +38,7 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Elem
               <AttachmentDisplay value={v} maxWidth={200} />
             </td>
             <td className="right">
-              <button
-                className="btn"
+              <Button
                 onClick={(e) => {
                   killEvent(e);
                   const copy = values.slice();
@@ -47,7 +47,7 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Elem
                 }}
               >
                 Remove
-              </button>
+              </Button>
             </td>
           </tr>
         ))}

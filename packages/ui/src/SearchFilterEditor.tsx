@@ -1,6 +1,7 @@
 import { Filter, IndexedStructureDefinition, Operator, SearchRequest, stringify } from '@medplum/core';
 import { Reference, SearchParameter } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
+import { Button } from './Button';
 import { Dialog } from './Dialog';
 import { useMedplum } from './MedplumProvider';
 import { ReferenceInput } from './ReferenceInput';
@@ -122,12 +123,12 @@ function FilterRowDisplay(props: FilterRowDisplayProps): JSX.Element | null {
         <SearchFilterValueDisplay resourceType={props.resourceType} filter={filter} />
       </td>
       <td>
-        <button className="btn btn-small" onClick={props.onEdit}>
+        <Button size="small" onClick={props.onEdit}>
           Edit
-        </button>
-        <button className="btn btn-small" onClick={props.onDelete}>
+        </Button>
+        <Button size="small" onClick={props.onDelete}>
           Delete
-        </button>
+        </Button>
       </td>
     </tr>
   );
@@ -200,20 +201,20 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
       </td>
       <td>
         {value.code && value.operator && value.value && (
-          <button
-            className="btn btn-small"
+          <Button
+            size="small"
             onClick={() => {
               props.onOk(valueRef.current);
               setValue({} as Filter);
             }}
           >
             {props.okText}
-          </button>
+          </Button>
         )}
         {props.onCancel && (
-          <button className="btn btn-small" onClick={props.onCancel}>
+          <Button size="small" onClick={props.onCancel}>
             Cancel
-          </button>
+          </Button>
         )}
       </td>
     </tr>

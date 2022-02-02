@@ -14,11 +14,11 @@ export interface ButtonProps {
 
 export function Button(props: ButtonProps): JSX.Element {
   const className =
-    'btn' +
-    (props.primary || props.type === 'submit' ? ' btn-primary' : '') +
-    (props.danger ? ' btn-danger' : '') +
-    (props.borderless ? ' btn-borderless' : '') +
-    (props.size ? ' btn-' + props.size : '');
+    'medplum-button' +
+    (props.primary || props.type === 'submit' ? ' medplum-button-primary' : '') +
+    (props.danger ? ' medplum-button-danger' : '') +
+    (props.borderless ? ' medplum-button-borderless' : '') +
+    (props.size ? ' medplum-button-' + props.size : '');
   return (
     <button type={props.type || 'button'} className={className} onClick={props.onClick} data-testid={props.testid}>
       {props.children}
