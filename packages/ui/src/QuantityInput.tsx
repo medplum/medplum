@@ -1,7 +1,7 @@
 import { Quantity } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
+import { Input } from './Input';
 import { InputRow } from './InputRow';
-import { TextField } from './TextField';
 
 export interface QuantityInputProps {
   name: string;
@@ -21,26 +21,26 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
 
   return (
     <InputRow>
-      <TextField
+      <Input
         name={props.name}
         type="number"
         step={0.01}
         placeholder="Value"
         defaultValue={value?.value?.toString()}
-        onChange={(e) =>
+        onChange={(newValue) =>
           setValueWrapper({
             ...value,
-            value: tryParseNumber((e.currentTarget as HTMLInputElement).value),
+            value: tryParseNumber(newValue),
           })
         }
       />
-      <TextField
+      <Input
         placeholder="Unit"
         defaultValue={value?.unit}
-        onChange={(e) =>
+        onChange={(newValue) =>
           setValueWrapper({
             ...value,
-            unit: (e.currentTarget as HTMLInputElement).value,
+            unit: newValue,
           })
         }
       />

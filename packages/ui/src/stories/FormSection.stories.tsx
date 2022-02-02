@@ -2,7 +2,7 @@ import { Meta } from '@storybook/react';
 import React from 'react';
 import { Document } from '../Document';
 import { FormSection } from '../FormSection';
-import { TextField } from '../TextField';
+import { Input } from '../Input';
 
 export default {
   title: 'Medplum/FormSection',
@@ -12,7 +12,7 @@ export default {
 export const Basic = (): JSX.Element => (
   <Document>
     <FormSection title="Name" description="Friendly name description">
-      <TextField name="name" defaultValue="John Smith" />
+      <Input name="name" defaultValue="John Smith" />
     </FormSection>
   </Document>
 );
@@ -20,7 +20,7 @@ export const Basic = (): JSX.Element => (
 export const DefaultValue = (): JSX.Element => (
   <Document>
     <FormSection title="Name" description="Friendly name description">
-      <TextField name="name" defaultValue="John Smith" />
+      <Input name="name" defaultValue="John Smith" />
     </FormSection>
   </Document>
 );

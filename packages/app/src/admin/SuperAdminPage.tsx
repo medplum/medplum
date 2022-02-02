@@ -1,4 +1,4 @@
-import { Button, Document, Form, FormSection, TextField, useMedplum } from '@medplum/ui';
+import { Button, Document, Form, FormSection, Input, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
 
 export function SuperAdminPage(): JSX.Element {
@@ -47,11 +47,11 @@ export function SuperAdminPage(): JSX.Element {
       </p>
       <Form>
         <FormSection title="Resource Type">
-          <TextField
+          <Input
             name="resourceType"
             placeholder="Resource Type"
             defaultValue={resourceType}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setResourceType(e.target.value)}
+            onChange={setResourceType}
           />
         </FormSection>
         <Button onClick={reindexResourceType}>Reindex</Button>

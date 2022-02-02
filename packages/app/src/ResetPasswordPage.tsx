@@ -1,5 +1,5 @@
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Logo, MedplumLink, TextField, useMedplum } from '@medplum/ui';
+import { Button, Document, Form, FormSection, Logo, MedplumLink, Input, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { getRecaptcha, initRecaptcha } from './utils';
 
@@ -32,7 +32,7 @@ export function ResetPasswordPage(): JSX.Element {
         {!success && (
           <>
             <FormSection title="Email" htmlFor="email" outcome={outcome}>
-              <TextField name="email" type="email" testid="email" required={true} autoFocus={true} outcome={outcome} />
+              <Input name="email" type="email" testid="email" required={true} autoFocus={true} outcome={outcome} />
             </FormSection>
             <div className="medplum-signin-buttons">
               <div>

@@ -3,12 +3,15 @@ import { Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption, Refere
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Form } from './Form';
+import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
 import './QuestionnaireBuilder.css';
 import { QuestionnaireFormItem } from './QuestionnaireForm';
 import { isChoiceQuestion, QuestionnaireItemType } from './QuestionnaireUtils';
 import { getValueAndType } from './ResourcePropertyDisplay';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
+import { Select } from './Select';
+import { TextArea } from './TextArea';
 import { useResource } from './useResource';
 import { killEvent } from './utils/dom';
 
@@ -140,16 +143,12 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
         <>
           {isResource && (
             <div>
-              <input
-                type="text"
-                defaultValue={resource.title}
-                onChange={(e) => changeProperty('title', e.target.value)}
-              />
+              <Input defaultValue={resource.title} onChange={(newValue) => changeProperty('title', newValue)} />
             </div>
           )}
           {!isContainer && (
             <div>
-              <select defaultValue={item.type} onChange={(e) => changeProperty('type', e.target.value)}>
+              <Select defaultValue={item.type} onChange={(newValue) => changeProperty('type', newValue)}>
                 <option value="display">Display</option>
                 <optgroup label="Question">
                   <option value="boolean">Boolean</option>
@@ -167,14 +166,14 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
                   <option value="reference">Reference</option>
                   <option value="quantity">Quantity</option>
                 </optgroup>
-              </select>
+              </Select>
             </div>
           )}
           {!isResource && (
-            <textarea
+            <TextArea
               style={{ width: '95%', height: '100px', minHeight: '100px', margin: '8px 4px 4px 4px' }}
               defaultValue={item.text}
-              onChange={(e) => changeProperty('text', e.target.value)}
+              onChange={(newValue) => changeProperty('text', newValue)}
             />
           )}
           {isChoiceQuestion(item) && (
@@ -210,12 +209,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
       {!isContainer && (
         <div className="top-actions">
           {editing ? (
-            <input
-              type="text"
-              defaultValue={item.linkId}
-              onChange={(e) => changeProperty('linkId', e.target.value)}
-              size={4}
-            />
+            <Input defaultValue={item.linkId} onChange={(newValue) => changeProperty('linkId', newValue)} size={4} />
           ) : (
             <div>{linkId}</div>
           )}

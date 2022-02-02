@@ -1,8 +1,8 @@
 import { createReference } from '@medplum/core';
 import { Annotation } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
+import { Input } from './Input';
 import { useMedplumProfile } from './MedplumProvider';
-import { TextField } from './TextField';
 
 export interface AnnotationInputProps {
   name: string;
@@ -33,12 +33,6 @@ export function AnnotationInput(props: AnnotationInputProps): JSX.Element {
   }
 
   return (
-    <TextField
-      name={props.name}
-      type="text"
-      placeholder="Annotation text"
-      defaultValue={value.text}
-      onChange={(e) => setText(e.currentTarget.value)}
-    />
+    <Input name={props.name} type="text" placeholder="Annotation text" defaultValue={value.text} onChange={setText} />
   );
 }

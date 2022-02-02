@@ -1,6 +1,8 @@
 import { HumanName } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
+import { Input } from './Input';
 import { InputRow } from './InputRow';
+import { Select } from './Select';
 
 export interface HumanNameInputProps {
   name: string;
@@ -55,7 +57,7 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
 
   return (
     <InputRow>
-      <select defaultValue={value?.use} onChange={(e) => setUse(e.currentTarget.value)} data-testid="use">
+      <Select defaultValue={value?.use} onChange={setUse} testid="use">
         <option></option>
         <option>usual</option>
         <option>official</option>
@@ -64,31 +66,11 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
         <option>anonymous</option>
         <option>old</option>
         <option>maiden</option>
-      </select>
-      <input
-        type="text"
-        placeholder="Prefix"
-        defaultValue={value?.prefix?.join(' ')}
-        onChange={(e) => setPrefix(e.currentTarget.value)}
-      />
-      <input
-        type="text"
-        placeholder="Given"
-        defaultValue={value?.given?.join(' ')}
-        onChange={(e) => setGiven(e.currentTarget.value)}
-      />
-      <input
-        type="text"
-        placeholder="Family"
-        defaultValue={value?.family}
-        onChange={(e) => setFamily(e.currentTarget.value)}
-      />
-      <input
-        type="text"
-        placeholder="Suffix"
-        defaultValue={value?.suffix?.join(' ')}
-        onChange={(e) => setSuffix(e.currentTarget.value)}
-      />
+      </Select>
+      <Input placeholder="Prefix" defaultValue={value?.prefix?.join(' ')} onChange={setPrefix} />
+      <Input placeholder="Given" defaultValue={value?.given?.join(' ')} onChange={setGiven} />
+      <Input placeholder="Family" defaultValue={value?.family} onChange={setFamily} />
+      <Input placeholder="Suffix" defaultValue={value?.suffix?.join(' ')} onChange={setSuffix} />
     </InputRow>
   );
 }

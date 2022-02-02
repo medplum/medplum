@@ -1,6 +1,6 @@
 import { badRequest } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Logo, MedplumLink, TextField, useMedplum } from '@medplum/ui';
+import { Button, Document, Form, FormSection, Logo, MedplumLink, Input, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -38,10 +38,10 @@ export function SetPasswordPage(): JSX.Element {
         {!success && (
           <>
             <FormSection title="New password" htmlFor="password" outcome={outcome}>
-              <TextField name="password" type="password" testid="password" required={true} outcome={outcome} />
+              <Input name="password" type="password" testid="password" required={true} outcome={outcome} />
             </FormSection>
             <FormSection title="Confirm new password" htmlFor="confirmPassword" outcome={outcome}>
-              <TextField
+              <Input
                 name="confirmPassword"
                 type="password"
                 testid="confirmPassword"

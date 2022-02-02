@@ -1,7 +1,7 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Document } from '../Document';
-import { Select } from '../TextField';
+import { Select } from '../Select';
 
 export default {
   title: 'Medplum/Select',
@@ -22,28 +22,6 @@ export const Basic = (): JSX.Element => (
 export const DefaultValue = (): JSX.Element => (
   <Document>
     <Select defaultValue="Foo">
-      <option></option>
-      <option>Foo</option>
-      <option>Bar</option>
-      <option>Baz</option>
-    </Select>
-  </Document>
-);
-
-export const Small = (): JSX.Element => (
-  <Document>
-    <Select size="small" defaultValue="Foo">
-      <option></option>
-      <option>Foo</option>
-      <option>Bar</option>
-      <option>Baz</option>
-    </Select>
-  </Document>
-);
-
-export const Large = (): JSX.Element => (
-  <Document>
-    <Select size="large" defaultValue="Foo">
       <option></option>
       <option>Foo</option>
       <option>Bar</option>

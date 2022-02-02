@@ -1,4 +1,4 @@
-import { Button, Document, Form, useMedplum } from '@medplum/ui';
+import { Button, Document, Form, TextArea, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
 
 const DEFAULT_VALUE = `{
@@ -40,7 +40,7 @@ export function BatchPage(): JSX.Element {
           });
         }}
       >
-        <textarea name="input" data-testid="batch-input" rows={20} cols={80} defaultValue={DEFAULT_VALUE} />
+        <TextArea name="input" testid="batch-input" defaultValue={DEFAULT_VALUE} />
         <Button type="submit">Submit</Button>
       </Form>
       {output && (

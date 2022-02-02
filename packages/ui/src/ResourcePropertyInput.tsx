@@ -13,6 +13,7 @@ import { ContactPointInput } from './ContactPointInput';
 import { ExtensionInput } from './ExtensionInput';
 import { HumanNameInput } from './HumanNameInput';
 import { IdentifierInput } from './IdentifierInput';
+import { Input } from './Input';
 import { InputRow } from './InputRow';
 import { PeriodInput } from './PeriodInput';
 import { QuantityInput } from './QuantityInput';
@@ -20,7 +21,8 @@ import { RangeInput } from './RangeInput';
 import { RatioInput } from './RatioInput';
 import { ReferenceInput } from './ReferenceInput';
 import { ResourceArrayInput } from './ResourceArrayInput';
-import { TextField } from './TextField';
+import { Select } from './Select';
+import { TextArea } from './TextArea';
 
 export interface ResourcePropertyInputProps {
   schema: IndexedStructureDefinition;
@@ -77,14 +79,12 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
   const [selectedType, setSelectedType] = useState(initialPropertyType);
   return (
     <InputRow>
-      <select
+      <Select
         style={{ width: '200px' }}
         defaultValue={selectedType.code}
-        onChange={(e: React.ChangeEvent) => {
+        onChange={(newValue) => {
           setSelectedType(
-            propertyTypes.find(
-              (type: ElementDefinitionType) => type.code === (e.target as HTMLSelectElement).value
-            ) as ElementDefinitionType
+            propertyTypes.find((type: ElementDefinitionType) => type.code === newValue) as ElementDefinitionType
           );
         }}
       >
@@ -93,7 +93,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
             {type.code}
           </option>
         ))}
-      </select>
+      </Select>
       <ElementDefinitionTypeInput
         {...props}
         elementDefinitionType={selectedType}
@@ -128,35 +128,35 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.uri:
     case PropertyType.url:
       return (
-        <TextField
+        <Input
           type="text"
           name={name}
           testid={name}
           defaultValue={value}
-          onChange={(e: React.ChangeEvent) => props.onChange && props.onChange((e.target as HTMLInputElement).value)}
+          onChange={props.onChange}
           outcome={props.outcome}
         />
       );
     case PropertyType.date:
       return (
-        <TextField
+        <Input
           type="date"
           name={name}
           testid={name}
           defaultValue={value}
-          onChange={(e: React.ChangeEvent) => props.onChange && props.onChange((e.target as HTMLInputElement).value)}
+          onChange={props.onChange}
           outcome={props.outcome}
         />
       );
     case PropertyType.dateTime:
     case PropertyType.instant:
       return (
-        <TextField
+        <Input
           type="datetime-local"
           name={name}
           testid={name}
           defaultValue={value}
-          onChange={(e: React.ChangeEvent) => props.onChange && props.onChange((e.target as HTMLInputElement).value)}
+          onChange={props.onChange}
           outcome={props.outcome}
         />
       );
@@ -165,15 +165,15 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.positiveInt:
     case PropertyType.unsignedInt:
       return (
-        <TextField
+        <Input
           type="number"
           step={propertyType === PropertyType.decimal ? 0.01 : 1}
           name={name}
           testid={name}
           defaultValue={value}
-          onChange={(e: React.ChangeEvent) => {
+          onChange={(newValue) => {
             if (props.onChange) {
-              props.onChange(parseFloat((e.target as HTMLInputElement).value));
+              props.onChange(parseFloat(newValue));
             }
           }}
           outcome={props.outcome}
@@ -195,14 +195,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
         />
       );
     case PropertyType.markdown:
-      return (
-        <textarea
-          name={name}
-          data-testid={name}
-          defaultValue={value}
-          onChange={(e: React.ChangeEvent) => props.onChange && props.onChange((e.target as HTMLInputElement).value)}
-        />
-      );
+      return <TextArea name={name} testid={name} defaultValue={value} onChange={props.onChange} />;
 
     // 2.24.0.2 Complex Types
     // https://www.hl7.org/fhir/datatypes.html#complex

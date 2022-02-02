@@ -3,6 +3,7 @@ import { Reference, SearchParameter } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Dialog } from './Dialog';
+import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
 import { ReferenceInput } from './ReferenceInput';
 import { SearchFilterValueDisplay } from './SearchFilterValueDisplay';
@@ -14,6 +15,7 @@ import {
   getSearchOperators,
   setFilters,
 } from './SearchUtils';
+import { Select } from './Select';
 
 export interface SearchFilterEditorProps {
   schema: IndexedStructureDefinition;
@@ -165,25 +167,21 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
   return (
     <tr>
       <td>
-        <select
-          data-testid="filter-field"
-          value={valueRef.current.code}
-          onChange={(e) => setFilterCode(e.target.value)}
-        >
+        <Select testid="filter-field" defaultValue={valueRef.current.code} onChange={setFilterCode}>
           <option value=""></option>
           {Object.keys(props.searchParams).map((param) => (
             <option key={param} value={param}>
               {param}
             </option>
           ))}
-        </select>
+        </Select>
       </td>
       <td>
         {operators && (
-          <select
-            data-testid="filter-operation"
+          <Select
+            testid="filter-operation"
             defaultValue={value.operator}
-            onChange={(e) => setFilterOperator(e.target.value as Operator)}
+            onChange={setFilterOperator as (newOperator: string) => void}
           >
             <option value=""></option>
             {operators.map((operator) => (
@@ -191,7 +189,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
                 {getOpString(operator)}
               </option>
             ))}
-          </select>
+          </Select>
         )}
       </td>
       <td>
@@ -251,12 +249,5 @@ function FilterValueInput(props: FilterValueInputProps): JSX.Element | null {
   };
 
   const inputType = inputTypes[props.searchParam.type as string] ?? 'text';
-  return (
-    <input
-      data-testid="filter-value"
-      type={inputType}
-      defaultValue={props.defaultValue}
-      onChange={(e) => props.onChange(e.target.value)}
-    />
-  );
+  return <Input testid="filter-value" type={inputType} defaultValue={props.defaultValue} onChange={props.onChange} />;
 }

@@ -21,6 +21,7 @@ import {
   TabList,
   TabPanel,
   TabSwitch,
+  TextArea,
   useMedplum,
 } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
@@ -239,12 +240,7 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
             props.onSubmit(JSON.parse(formData.resource));
           }}
         >
-          <textarea
-            id="resource"
-            data-testid="resource-json"
-            name="resource"
-            defaultValue={stringify(props.resource, true)}
-          />
+          <TextArea testid="resource-json" name="resource" defaultValue={stringify(props.resource, true)} />
           <Button type="submit">OK</Button>
         </Form>
       );
@@ -277,7 +273,7 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
             });
           }}
         >
-          <textarea id="code" data-testid="resource-code" name="code" defaultValue={(props.resource as Bot).code} />
+          <TextArea testid="resource-code" name="code" defaultValue={(props.resource as Bot).code} />
           <Button type="submit">OK</Button>
         </Form>
       );

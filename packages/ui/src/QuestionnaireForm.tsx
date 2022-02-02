@@ -13,13 +13,15 @@ import { AttachmentInput } from './AttachmentInput';
 import { Button } from './Button';
 import { Form } from './Form';
 import { FormSection } from './FormSection';
+import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
 import { QuantityInput } from './QuantityInput';
+import './QuestionnaireForm.css';
 import { QuestionnaireItemType } from './QuestionnaireUtils';
 import { ReferenceInput } from './ReferenceInput';
 import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
+import { TextArea } from './TextArea';
 import { useResource } from './useResource';
-import './QuestionnaireForm.css';
 
 export interface QuestionnaireFormProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;
@@ -131,21 +133,21 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     case QuestionnaireItemType.boolean:
       return <input type="checkbox" id={name} name={name} value="true" defaultChecked={initial?.valueBoolean} />;
     case QuestionnaireItemType.decimal:
-      return <input type="number" step={0.01} id={name} name={name} defaultValue={initial?.valueDecimal} />;
+      return <Input type="number" step={0.01} name={name} defaultValue={initial?.valueDecimal} />;
     case QuestionnaireItemType.integer:
-      return <input type="number" step={1} id={name} name={name} defaultValue={initial?.valueInteger} />;
+      return <Input type="number" step={1} name={name} defaultValue={initial?.valueInteger} />;
     case QuestionnaireItemType.date:
-      return <input type="date" id={name} name={name} defaultValue={initial?.valueDate} />;
+      return <Input type="date" name={name} defaultValue={initial?.valueDate} />;
     case QuestionnaireItemType.dateTime:
-      return <input type="datetime-local" id={name} name={name} step="1" defaultValue={initial?.valueDateTime} />;
+      return <Input type="datetime-local" name={name} step={1} defaultValue={initial?.valueDateTime} />;
     case QuestionnaireItemType.time:
-      return <input type="time" id={name} name={name} defaultValue={initial?.valueTime} />;
+      return <Input type="time" name={name} defaultValue={initial?.valueTime} />;
     case QuestionnaireItemType.string:
-      return <input type="text" id={name} name={name} defaultValue={initial?.valueString} />;
+      return <Input type="text" name={name} defaultValue={initial?.valueString} />;
     case QuestionnaireItemType.text:
-      return <textarea id={name} name={name} defaultValue={initial?.valueString} />;
+      return <TextArea name={name} defaultValue={initial?.valueString} />;
     case QuestionnaireItemType.url:
-      return <input type="url" id={name} name={name} defaultValue={initial?.valueUri} />;
+      return <Input type="url" name={name} defaultValue={initial?.valueUri} />;
     case QuestionnaireItemType.choice:
     case QuestionnaireItemType.openChoice:
       return (

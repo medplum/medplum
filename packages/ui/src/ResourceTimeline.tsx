@@ -19,7 +19,7 @@ import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { ResourceDiff } from './ResourceDiff';
 import { ResourceTable } from './ResourceTable';
-import { TextField } from './TextField';
+import { Input } from './Input';
 import { Timeline, TimelineItem } from './Timeline';
 import { UploadButton } from './UploadButton';
 import { useResource } from './useResource';
@@ -155,7 +155,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
                 }
               }}
             >
-              <TextField name="text" testid="timeline-input" inputRef={inputRef} />
+              <Input name="text" testid="timeline-input" inputRef={inputRef} />
               <Button type="submit">Comment</Button>
               <UploadButton onUpload={createMedia} />
             </Form>

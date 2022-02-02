@@ -1,6 +1,7 @@
 import { capitalize, getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/core';
 import { ElementDefinition, ElementDefinitionType, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
+import { Input } from '.';
 import { Button } from './Button';
 import { DEFAULT_IGNORED_PROPERTIES } from './constants';
 import { FormSection } from './FormSection';
@@ -45,10 +46,10 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
       }}
     >
       <FormSection title="Resource Type">
-        <input name="resourceType" type="text" defaultValue={value.resourceType} disabled={true} />
+        <Input name="resourceType" defaultValue={value.resourceType} disabled={true} />
       </FormSection>
       <FormSection title="ID">
-        <input name="id" type="text" defaultValue={value.id} disabled={true} />
+        <Input name="id" defaultValue={value.id} disabled={true} />
       </FormSection>
       {Object.entries(typeSchema.properties).map((entry) => {
         const key = entry[0];

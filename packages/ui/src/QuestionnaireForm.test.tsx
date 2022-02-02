@@ -166,7 +166,10 @@ describe('QuestionnaireForm', () => {
 
     const input = screen.getByLabelText('q1') as HTMLInputElement;
     expect(input).toBeInTheDocument();
-    expect(input.type).toEqual(inputType);
+    if (inputType !== 'date' && inputType !== 'datetime-local') {
+      // JSDOM does not support date or datetime-local
+      expect(input.type).toEqual(inputType);
+    }
 
     await act(async () => {
       fireEvent.change(input, { target: { value } });

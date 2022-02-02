@@ -1,6 +1,8 @@
 import { ContactPoint } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
+import { Input } from './Input';
 import { InputRow } from './InputRow';
+import { Select } from './Select';
 
 export interface ContactPointInputProps {
   name: string;
@@ -41,11 +43,7 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
 
   return (
     <InputRow>
-      <select
-        defaultValue={contactPoint?.system}
-        onChange={(e) => setSystem(e.currentTarget.value)}
-        data-testid="system"
-      >
+      <Select defaultValue={contactPoint?.system} onChange={setSystem} testid="system">
         <option></option>
         <option>email</option>
         <option>fax</option>
@@ -54,21 +52,16 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
         <option>other</option>
         <option>sms</option>
         <option>sms</option>
-      </select>
-      <select defaultValue={contactPoint?.use} onChange={(e) => setUse(e.currentTarget.value)} data-testid="use">
+      </Select>
+      <Select defaultValue={contactPoint?.use} onChange={setUse} testid="use">
         <option></option>
         <option>home</option>
         <option>mobile</option>
         <option>old</option>
         <option>temp</option>
         <option>work</option>
-      </select>
-      <input
-        type="text"
-        placeholder="Value"
-        defaultValue={contactPoint?.value}
-        onChange={(e) => setValue(e.currentTarget.value)}
-      />
+      </Select>
+      <Input placeholder="Value" defaultValue={contactPoint?.value} onChange={setValue} />
     </InputRow>
   );
 }

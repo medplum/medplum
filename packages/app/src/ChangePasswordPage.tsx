@@ -1,5 +1,5 @@
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Logo, TextField, useMedplum } from '@medplum/ui';
+import { Button, Document, Form, FormSection, Logo, Input, useMedplum } from '@medplum/ui';
 import React, { useState } from 'react';
 
 export function ChangePasswordPage(): JSX.Element {
@@ -26,7 +26,7 @@ export function ChangePasswordPage(): JSX.Element {
         {!success && (
           <>
             <FormSection title="Old password" htmlFor="oldPassword" outcome={outcome}>
-              <TextField
+              <Input
                 name="oldPassword"
                 type="password"
                 testid="oldPassword"
@@ -36,10 +36,10 @@ export function ChangePasswordPage(): JSX.Element {
               />
             </FormSection>
             <FormSection title="New password" htmlFor="newPassword" outcome={outcome}>
-              <TextField name="newPassword" type="password" testid="newPassword" required={true} outcome={outcome} />
+              <Input name="newPassword" type="password" testid="newPassword" required={true} outcome={outcome} />
             </FormSection>
             <FormSection title="Confirm new password" htmlFor="confirmPassword" outcome={outcome}>
-              <TextField
+              <Input
                 name="confirmPassword"
                 type="password"
                 testid="confirmPassword"
