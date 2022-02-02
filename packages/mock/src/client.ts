@@ -229,6 +229,9 @@ const routes: Record<string, Record<string, any>> = {
   'fhir/R4/Observation?_fields=value[x]': {
     GET: HomerObservationSearchBundle,
   },
+  'fhir/R4/Observation?_fields=value[x]&_total=accurate': {
+    GET: HomerObservationSearchBundle,
+  },
   'fhir/R4/Observation/1': {
     GET: HomerObservation1,
   },
@@ -256,25 +259,55 @@ const routes: Record<string, Record<string, any>> = {
   'fhir/R4/Organization/456': {
     GET: DifferentOrganization,
   },
+  'fhir/R4/Patient?_total=accurate': {
+    GET: SimpsonSearchBundle,
+  },
   'fhir/R4/Patient?name=Simpson': {
+    GET: SimpsonSearchBundle,
+  },
+  'fhir/R4/Patient?_total=accurate&name=Simpson': {
+    GET: SimpsonSearchBundle,
+  },
+  'fhir/R4/Patient?_fields=id,name&_total=accurate': {
+    GET: SimpsonSearchBundle,
+  },
+  'fhir/R4/Patient?_fields=id,name&_total=accurate&name=Simpson': {
     GET: SimpsonSearchBundle,
   },
   'fhir/R4/Patient?_fields=id,_lastUpdated,name': {
     GET: SimpsonSearchBundle,
   },
+  'fhir/R4/Patient?_fields=id,_lastUpdated,name&_total=accurate': {
+    GET: SimpsonSearchBundle,
+  },
   'fhir/R4/Patient?_fields=id,_lastUpdated,name,birthDate': {
+    GET: SimpsonSearchBundle,
+  },
+  'fhir/R4/Patient?_fields=id,_lastUpdated,name,birthDate&_total=accurate': {
     GET: SimpsonSearchBundle,
   },
   'fhir/R4/Patient?_fields=id,_lastUpdated,name&name=Simpson': {
     GET: SimpsonSearchBundle,
   },
+  'fhir/R4/Patient?_fields=id,_lastUpdated,name&_total=accurate&name=Simpson': {
+    GET: SimpsonSearchBundle,
+  },
   'fhir/R4/Patient?_count=20&_fields=id,_lastUpdated,name,birthDate,gender&_sort=-_lastUpdated': {
+    GET: SimpsonSearchBundle,
+  },
+  'fhir/R4/Patient?_count=20&_fields=id,_lastUpdated,name,birthDate,gender&_sort=-_lastUpdated&_total=accurate': {
     GET: SimpsonSearchBundle,
   },
   'fhir/R4/Patient?_fields=id,_lastUpdated,name&_lastUpdated=ge2021-12-01T00%3A00%3A00.000Z': {
     GET: SimpsonSearchBundle,
   },
+  'fhir/R4/Patient?_fields=id,_lastUpdated,name&_lastUpdated=ge2021-12-01T00%3A00%3A00.000Z&_total=accurate': {
+    GET: SimpsonSearchBundle,
+  },
   'fhir/R4/Patient?name=Bob': {
+    GET: EmptySearchBundle,
+  },
+  'fhir/R4/Patient?_total=accurate&name=Bob': {
     GET: EmptySearchBundle,
   },
   'fhir/R4/Patient/123': {

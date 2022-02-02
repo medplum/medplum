@@ -6,6 +6,7 @@ export interface SearchRequest {
   readonly count?: number;
   readonly fields?: string[];
   readonly name?: string;
+  readonly total?: 'none' | 'estimate' | 'accurate';
 }
 
 export interface Filter {
@@ -92,6 +93,7 @@ export function parseSearchDefinition(location: { pathname: string; search?: str
   let fields;
   let page = 0;
   let count = 10;
+  let total = undefined;
 
   params.forEach((value, key) => {
     if (key === '_fields') {
@@ -100,6 +102,8 @@ export function parseSearchDefinition(location: { pathname: string; search?: str
       page = parseInt(value);
     } else if (key === '_count') {
       count = parseInt(value);
+    } else if (key === '_total') {
+      total = value;
     } else if (key === '_sort') {
       sortRules.push(parseSortRule(value));
     } else {
@@ -113,6 +117,7 @@ export function parseSearchDefinition(location: { pathname: string; search?: str
     fields,
     page,
     count,
+    total,
     sortRules,
   };
 }
@@ -205,6 +210,10 @@ export function formatSearchQuery(definition: SearchRequest): string {
 
   if (definition.count && definition.count > 0) {
     params.push('_count=' + definition.count);
+  }
+
+  if (definition.total) {
+    params.push('_total=' + encodeURIComponent(definition.total));
   }
 
   if (params.length === 0) {

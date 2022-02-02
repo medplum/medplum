@@ -49,6 +49,15 @@ describe('Search Utils', () => {
     expect(result.sortRules).toEqual([{ code: 'birthDate', descending: true }]);
   });
 
+  test('Parse Patient search total', () => {
+    const result = parseSearchDefinition({
+      pathname: 'Patient',
+      search: '_total=accurate',
+    });
+    expect(result.resourceType).toBe('Patient');
+    expect(result.total).toBe('accurate');
+  });
+
   test('Parse modifier operator', () => {
     const result = parseSearchDefinition({
       pathname: 'Patient',
@@ -144,6 +153,14 @@ describe('Search Utils', () => {
       ],
     });
     expect(result).toEqual('?_fields=id,name&_sort=-name');
+  });
+
+  test('Format Patient search total', () => {
+    const result = formatSearchQuery({
+      resourceType: 'Patient',
+      total: 'accurate',
+    });
+    expect(result).toEqual('?_total=accurate');
   });
 
   test('Format number not equals', () => {

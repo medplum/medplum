@@ -44,6 +44,21 @@ describe('FHIR Search Utils', () => {
     });
   });
 
+  test('Parse total', () => {
+    expect(parseSearchRequest('Patient', { _total: 'none' })).toMatchObject({
+      resourceType: 'Patient',
+      total: 'none',
+    });
+    expect(parseSearchRequest('Patient', { _total: 'accurate' })).toMatchObject({
+      resourceType: 'Patient',
+      total: 'accurate',
+    });
+    expect(parseSearchRequest('Patient', { _total: 'estimate' })).toMatchObject({
+      resourceType: 'Patient',
+      total: 'estimate',
+    });
+  });
+
   test('Patient has birthdate param', () => {
     const params = getSearchParameters('Patient');
     expect(params?.['birthdate']).toBeDefined();
