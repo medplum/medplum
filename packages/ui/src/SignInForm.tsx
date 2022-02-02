@@ -9,9 +9,9 @@ import { FormSection } from './FormSection';
 import { Logo } from './Logo';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
-import './SignInForm.css';
 import { TextField } from './TextField';
 import { getIssuesForExpression } from './utils/outcomes';
+import './SignInForm.css';
 
 export interface SignInFormProps {
   scopes?: string;
@@ -20,6 +20,7 @@ export interface SignInFormProps {
   onSuccess?: () => void;
   onForgotPassword?: () => void;
   onRegister?: () => void;
+  children?: React.ReactNode;
 }
 
 export function SignInForm(props: SignInFormProps): JSX.Element {
@@ -58,7 +59,9 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
               onForgotPassword={props.onForgotPassword}
               onRegister={props.onRegister}
               handleAuthResponse={handleAuthResponse}
-            />
+            >
+              {props.children}
+            </AuthenticationForm>
           );
         } else if (memberships) {
           return <ProfileForm login={login} memberships={memberships} handleAuthResponse={handleAuthResponse} />;
@@ -75,6 +78,7 @@ interface AuthenticationFormProps {
   onForgotPassword?: () => void;
   onRegister?: () => void;
   handleAuthResponse: (response: any) => void;
+  children?: React.ReactNode;
 }
 
 function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
@@ -92,10 +96,7 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
           .catch(setOutcome);
       }}
     >
-      <div className="center">
-        <Logo size={32} />
-        <h1>Sign in to Medplum</h1>
-      </div>
+      <div className="center">{props.children}</div>
       {issues && (
         <div className="medplum-input-error">
           {issues.map((issue) => (
