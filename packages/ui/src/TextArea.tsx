@@ -1,7 +1,7 @@
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { RefObject } from 'react';
-import './TextArea.css';
 import { getIssuesForExpression } from './utils/outcomes';
+import './TextArea.css';
 
 export interface TextAreaProps {
   name?: string;
@@ -11,12 +11,11 @@ export interface TextAreaProps {
   autoComplete?: string;
   autoFocus?: boolean;
   inputRef?: RefObject<HTMLTextAreaElement>;
-  // onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  onChange?: (newValue: string) => void;
   outcome?: OperationOutcome;
   placeholder?: string;
   testid?: string;
   style?: React.CSSProperties;
+  onChange?: (newValue: string) => void;
 }
 
 export function TextArea(props: TextAreaProps): JSX.Element {

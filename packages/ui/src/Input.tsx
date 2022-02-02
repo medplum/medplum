@@ -1,7 +1,7 @@
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { RefObject } from 'react';
-import './Input.css';
 import { getIssuesForExpression } from './utils/outcomes';
+import './Input.css';
 
 export interface InputProps {
   name?: string;
@@ -14,7 +14,6 @@ export interface InputProps {
   autoComplete?: string;
   autoFocus?: boolean;
   inputRef?: RefObject<HTMLInputElement>;
-  // onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   outcome?: OperationOutcome;
   placeholder?: string;
   testid?: string;

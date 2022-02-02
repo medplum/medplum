@@ -9,11 +9,11 @@ export interface SelectProps {
   required?: boolean;
   autoFocus?: boolean;
   inputRef?: RefObject<HTMLSelectElement>;
-  onChange?: (newValue: string) => void;
   children: React.ReactNode;
   outcome?: OperationOutcome;
   testid?: string;
   style?: React.CSSProperties;
+  onChange?: (newValue: string) => void;
 }
 
 export function Select(props: SelectProps): JSX.Element {
