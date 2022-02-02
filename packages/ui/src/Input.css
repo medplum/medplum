@@ -2,7 +2,7 @@
   border: 0.1px solid var(--medplum-gray-300);
   border-radius: 3px;
   background: var(--medplum-surface);
-  box-shadow: 0 1px 1px 0 var(--medplum-gray-200);
+  box-shadow: 0 1px 1px 0 var(--medplum-shadow);
   color: var(--medplum-gray-800);
   font-size: var(--medplum-font-normal);
   height: 34px;

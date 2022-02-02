@@ -4,8 +4,8 @@ import { InputRow } from './InputRow';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
 import { ResourceBadge } from './ResourceBadge';
-import './ResourceBlame.css';
 import { blame } from './utils/blame';
+import './ResourceBlame.css';
 
 export interface ResourceBlameProps {
   history?: Bundle;

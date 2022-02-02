@@ -2,7 +2,7 @@
   position: relative;
   margin: 4px;
   padding: 16px 12px 16px 4px;
-  background-color: white;
+  background-color: var(--medplum-surface);
   border: 1px solid var(--medplum-gray-300);
   border-radius: 8px;
 }
