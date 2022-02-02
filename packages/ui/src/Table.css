@@ -1,9 +1,6 @@
 table.medplum-table {
-  width: 100%;
-}
-
-table.medplum-table {
   border-collapse: collapse;
+  width: 100%;
 }
 
 table.medplum-table th,

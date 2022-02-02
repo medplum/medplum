@@ -97,7 +97,8 @@
 
 html {
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji,
+    Segoe UI Emoji;
   position: relative;
 }
 
@@ -121,10 +122,13 @@ input[type='text'],
 input[type='time'],
 input[type='url'],
 select {
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji,
+    Segoe UI Emoji;
 }
 
-code, pre, textarea {
+code,
+pre,
+textarea {
   font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
 }
 
