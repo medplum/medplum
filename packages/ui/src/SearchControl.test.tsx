@@ -303,6 +303,27 @@ describe('SearchControl', () => {
     expect(onNew).toBeCalled();
   });
 
+  test('Export button', async () => {
+    const onExport = jest.fn();
+
+    setup({
+      search: {
+        resourceType: 'Patient',
+      },
+      onExport,
+    });
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Export...'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Export...'));
+    });
+
+    expect(onExport).toBeCalled();
+  });
+
   test('Delete button', async () => {
     const onDelete = jest.fn();
 

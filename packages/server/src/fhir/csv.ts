@@ -13,6 +13,7 @@ const resourceTypeColumns: Record<string, Record<string, string>> = {
     Name: 'name',
     'Birth Date': 'birthDate',
     Gender: 'gender',
+    Address: 'address',
     Phone: "telecom.where(system='phone')",
     Email: "telecom.where(system='email')",
   },

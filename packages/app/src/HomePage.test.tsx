@@ -129,6 +129,25 @@ describe('HomePage', () => {
     });
   });
 
+  test('Export button', async () => {
+    // window.confirm = jest.fn(() => false);
+    window.URL.createObjectURL = jest.fn(() => 'blob:http://localhost/blob');
+    window.open = jest.fn();
+
+    setup();
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Export...'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Export...'));
+    });
+
+    expect(window.URL.createObjectURL).toHaveBeenCalled();
+    expect(window.open).toHaveBeenCalled();
+  });
+
   test('Default search fields', () => {
     expect(getDefaultSearchForResourceType('AccessPolicy').fields).toEqual(['id', '_lastUpdated', 'name']);
     expect(getDefaultSearchForResourceType('ClientApplication').fields).toEqual(['id', '_lastUpdated', 'name']);
