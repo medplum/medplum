@@ -1,6 +1,6 @@
 {
   "name": "@medplum/graphiql",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Medplum GraphiQL",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -16,9 +16,9 @@
     "build": "npm run clean && cross-env NODE_ENV=production webpack --mode production"
   },
   "devDependencies": {
-    "@medplum/core": "0.4.0",
-    "@medplum/fhirtypes": "0.4.0",
-    "@medplum/ui": "0.4.0",
+    "@medplum/core": "0.4.1",
+    "@medplum/fhirtypes": "0.4.1",
+    "@medplum/ui": "0.4.1",
     "babel-loader": "8.2.3",
     "css-loader": "6.6.0",
     "dotenv-webpack": "7.1.0",
