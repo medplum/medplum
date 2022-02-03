@@ -4,6 +4,8 @@ import {
   Communication,
   Encounter,
   Patient,
+  Questionnaire,
+  QuestionnaireResponse,
   Resource,
   SearchParameter,
   ServiceRequest,
@@ -687,6 +689,39 @@ describe('FHIR Repo', () => {
     expect(searchOutcome.id).toEqual('ok');
     expect(searchResult?.entry?.length).toEqual(1);
     expect(searchResult?.entry?.[0]?.resource?.id).toEqual(comm1?.id);
+  });
+
+  test('Search for QuestionnaireResponse by Questionnaire', async () => {
+    const [outcome1, questionnaire] = await systemRepo.createResource<Questionnaire>({
+      resourceType: 'Questionnaire',
+    });
+    assertOk(outcome1, questionnaire);
+
+    const [outcome2, response1] = await systemRepo.createResource<QuestionnaireResponse>({
+      resourceType: 'QuestionnaireResponse',
+      questionnaire: getReferenceString(questionnaire),
+    });
+    assertOk(outcome2, response1);
+
+    const [outcome3, response2] = await systemRepo.createResource<QuestionnaireResponse>({
+      resourceType: 'QuestionnaireResponse',
+      questionnaire: `Questionnaire/${randomUUID()}`,
+    });
+    assertOk(outcome3, response2);
+
+    const [outcome4, bundle] = await systemRepo.search({
+      resourceType: 'QuestionnaireResponse',
+      filters: [
+        {
+          code: 'questionnaire',
+          operator: Operator.EQUALS,
+          value: getReferenceString(questionnaire),
+        },
+      ],
+    });
+    assertOk(outcome4, bundle);
+    expect(bundle.entry?.length).toEqual(1);
+    expect(bundle.entry?.[0]?.resource?.id).toEqual(response1.id);
   });
 
   test('Search for token in array', async () => {
