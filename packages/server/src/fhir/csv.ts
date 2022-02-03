@@ -55,7 +55,7 @@ export async function csvHandler(req: Request, res: Response): Promise<void> {
 
     // For each column...
     for (const [_, column] of columnEntries) {
-      const values = evalFhirPath(column as string, resource);
+      const values = evalFhirPath(column, resource);
       if (values.length > 0) {
         row.push(csvEscape(values[0]));
       } else {

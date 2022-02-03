@@ -48,12 +48,9 @@ export function HomePage(): JSX.Element {
         navigate(`/${search.resourceType}/new`);
       }}
       onExport={() => {
-        console.log('export');
         const url = medplum.fhirUrl(search.resourceType) + '/$csv' + formatSearchQuery(search);
         medplum.download(url).then((blob) => {
-          const objectUrl = window.URL.createObjectURL(blob);
-          // window.location.assign(file);
-          window.open(objectUrl, '_blank');
+          window.open(window.URL.createObjectURL(blob), '_blank');
         });
       }}
       onDelete={(ids: string[]) => {
