@@ -1,5 +1,6 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
+import { Logo } from '..';
 import { FooterLinks } from '../FooterLinks';
 import { SignInForm } from '../SignInForm';
 
@@ -9,7 +10,12 @@ export default {
 } as Meta;
 
 export function Basic(): JSX.Element {
-  return <SignInForm onSuccess={() => alert('Signed in!')} />;
+  return (
+    <SignInForm onSuccess={() => alert('Signed in!')}>
+      <Logo size={32} />
+      <h1>Sign in to Medplum</h1>
+    </SignInForm>
+  );
 }
 
 export function WithLinks(): JSX.Element {
@@ -18,7 +24,10 @@ export function WithLinks(): JSX.Element {
       onSuccess={() => alert('Signed in!')}
       onForgotPassword={() => alert('Forgot password')}
       onRegister={() => alert('Register')}
-    />
+    >
+      <Logo size={32} />
+      <h1>Sign in to Medplum</h1>
+    </SignInForm>
   );
 }
 
@@ -29,7 +38,10 @@ export function WithFooter(): JSX.Element {
         onSuccess={() => alert('Signed in!')}
         onForgotPassword={() => alert('Forgot password')}
         onRegister={() => alert('Register')}
-      />
+      >
+        <Logo size={32} />
+        <h1>Sign in to Medplum</h1>
+      </SignInForm>
       <FooterLinks>
         <a href="#">Help</a>
         <a href="#">Terms</a>
@@ -47,7 +59,10 @@ export function WithGoogle(): JSX.Element {
         onForgotPassword={() => alert('Forgot password')}
         onRegister={() => alert('Register')}
         googleClientId="xyz"
-      />
+      >
+        <Logo size={32} />
+        <h1>Sign in to Medplum</h1>
+      </SignInForm>
       <FooterLinks>
         <a href="#">Help</a>
         <a href="#">Terms</a>

@@ -44,8 +44,8 @@ export function ProjectPage(): JSX.Element {
         <thead>
           <tr>
             <th>Name</th>
-            <th className="center">Role</th>
-            <th className="center">Actions</th>
+            <th className="medplum-center">Role</th>
+            <th className="medplum-center">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -56,19 +56,19 @@ export function ProjectPage(): JSX.Element {
                 <td>
                   <ResourceBadge value={member.profile} link={true} />
                 </td>
-                <td className="center">{member.role}</td>
-                <td className="center">
+                <td className="medplum-center">{member.role}</td>
+                <td className="medplum-center">
                   <MedplumLink to={`/admin/projects/${id}/members/${member.id}`}>Access</MedplumLink>
                 </td>
               </tr>
             ))}
         </tbody>
       </table>
-      <div className="p2 right">
+      <div className="medplum-right">
         <MedplumLink to={`/admin/projects/${result.project.id}/invite`}>Invite new user</MedplumLink>
       </div>
       <h3>Clients</h3>
-      <table className="table">
+      <table className="medplum-table">
         <colgroup>
           <col style={{ width: '80%' }} />
           <col style={{ width: '20%' }} />
@@ -76,7 +76,7 @@ export function ProjectPage(): JSX.Element {
         <thead>
           <tr>
             <th>Name</th>
-            <th className="center">Actions</th>
+            <th className="medplum-center">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -87,15 +87,14 @@ export function ProjectPage(): JSX.Element {
                 <td>
                   <ResourceBadge value={member.profile} link={true} />
                 </td>
-                <td className="center">
-                  <MedplumLink to={`/admin/projects/${id}/client/${resolveId(member.profile)}`}>Edit</MedplumLink>
+                <td className="medplum-center">
                   <MedplumLink to={`/admin/projects/${id}/members/${member.id}`}>Access</MedplumLink>
                 </td>
               </tr>
             ))}
         </tbody>
       </table>
-      <div className="p2 right">
+      <div className="medplum-right">
         <MedplumLink to={`/admin/projects/${result.project.id}/client`}>Create new client</MedplumLink>
       </div>
     </Document>

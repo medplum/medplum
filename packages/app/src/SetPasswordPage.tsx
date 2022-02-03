@@ -31,7 +31,7 @@ export function SetPasswordPage(): JSX.Element {
             .catch(setOutcome);
         }}
       >
-        <div className="center">
+        <div className="medplum-center">
           <Logo size={32} />
           <h1>Set password</h1>
         </div>
