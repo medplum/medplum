@@ -565,6 +565,21 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Downloads the URL as a blob.
+   * @param url The URL to request.
+   * @returns Promise to the response body as a blob.
+   */
+  async download(url: string): Promise<Blob> {
+    if (this.#refreshPromise) {
+      await this.#refreshPromise;
+    }
+
+    const options = this.#buildFetchOptions('GET');
+    const response = await this.#fetch(url, options);
+    return response.blob();
+  }
+
+  /**
    * Makes an HTTP request.
    * @param {string} method
    * @param {string} url
@@ -580,6 +595,26 @@ export class MedplumClient extends EventTarget {
       url = this.#baseUrl + url;
     }
 
+    const options = this.#buildFetchOptions(method, contentType, body);
+    const response = await this.#fetch(url, options);
+    if (response.status === 401) {
+      // Refresh and try again
+      return this.#handleUnauthenticated(method, url, contentType, body);
+    }
+
+    if (response.status === 204 || response.status === 304) {
+      // No content or change
+      return undefined;
+    }
+
+    const obj = await response.json();
+    if (obj.resourceType === 'OperationOutcome' && !isOk(obj)) {
+      return Promise.reject(obj);
+    }
+    return obj;
+  }
+
+  #buildFetchOptions(method: string, contentType?: string, body?: any): RequestInit {
     const headers: Record<string, string> = {
       'Content-Type': contentType || FHIR_CONTENT_TYPE,
     };
@@ -603,22 +638,7 @@ export class MedplumClient extends EventTarget {
       }
     }
 
-    const response = await this.#fetch(url, options);
-    if (response.status === 401) {
-      // Refresh and try again
-      return this.#handleUnauthenticated(method, url, contentType, body);
-    }
-
-    if (response.status === 204 || response.status === 304) {
-      // No content or change
-      return undefined;
-    }
-
-    const obj = await response.json();
-    if (obj.resourceType === 'OperationOutcome' && !isOk(obj)) {
-      return Promise.reject(obj);
-    }
-    return obj;
+    return options;
   }
 
   /**
