@@ -7,7 +7,7 @@ header {
   align-items: center;
   justify-content: space-between;
   background-color: var(--medplum-navbar);
-  box-shadow: 0 1px 2px 0 var(--medplum-gray-200);
+  box-shadow: 0 1px 2px 0 var(--medplum-shadow);
   color: white;
 }
 
@@ -70,6 +70,7 @@ div.medplum-nav-search-container {
 
 .medplum-nav-search-container > ul {
   margin: 0;
+  padding: 0;
   list-style-type: none;
   overflow: hidden;
   cursor: text;
@@ -111,6 +112,7 @@ div.medplum-nav-search-container {
   box-shadow: none;
   background: transparent;
   height: 28px;
+  color: var(--medplum-navbar-placeholder);
 }
 
 .medplum-nav-search-container > ul > li > input::placeholder {
@@ -222,12 +224,14 @@ div.medplum-nav-menu-container {
 .medplum-sidebar > h5 {
   margin: 32px 0 4px 6px;
   font-size: 9px;
+  font-weight: normal;
   text-transform: uppercase;
   letter-spacing: 2px;
 }
 
 .medplum-sidebar > ul {
   list-style: none;
+  padding-left: 0;
 }
 
 .medplum-sidebar > ul > li {

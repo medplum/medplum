@@ -1,6 +1,7 @@
 import React from 'react';
 import { Scrollable } from './Scrollable';
 import { Tab, TabClickHandler } from './Tab';
+import './Surface.css';
 import './TabList.css';
 
 export interface TabListProps {
@@ -11,7 +12,7 @@ export interface TabListProps {
 
 export function TabList(props: TabListProps): JSX.Element {
   return (
-    <Scrollable className="surface" height={50}>
+    <Scrollable className="medplum-surface" height={50}>
       <div role="tablist" className="medplum-tablist">
         <div className="medplum-tablist-foreground">
           {React.Children.map(props.children, (child, tabIndex) => {

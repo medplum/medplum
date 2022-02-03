@@ -9,7 +9,7 @@ import { FormSection } from './FormSection';
 import { Logo } from './Logo';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
-import { TextField } from './TextField';
+import { Input } from './Input';
 import { getIssuesForExpression } from './utils/outcomes';
 import './SignInForm.css';
 
@@ -107,17 +107,10 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
         </div>
       )}
       <FormSection title="Email" htmlFor="email" outcome={outcome}>
-        <TextField name="email" type="email" testid="email" required={true} autoFocus={true} outcome={outcome} />
+        <Input name="email" type="email" testid="email" required={true} autoFocus={true} outcome={outcome} />
       </FormSection>
       <FormSection title="Password" htmlFor="password" outcome={outcome}>
-        <TextField
-          name="password"
-          type="password"
-          testid="password"
-          autoComplete="off"
-          required={true}
-          outcome={outcome}
-        />
+        <Input name="password" type="password" testid="password" autoComplete="off" required={true} outcome={outcome} />
       </FormSection>
       <div className="medplum-signin-buttons">
         {(props.onForgotPassword || props.onRegister) && (

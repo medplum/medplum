@@ -1,8 +1,10 @@
 import { createReference } from '@medplum/core';
 import { ElementDefinition, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
+import { Input } from './Input';
 import { InputRow } from './InputRow';
 import { ResourceInput } from './ResourceInput';
+import { Select } from './Select';
 
 export interface ReferenceInputProps {
   property?: ElementDefinition;
@@ -33,26 +35,15 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
   return (
     <InputRow>
       {targetTypes ? (
-        <select
-          data-testid="reference-input-resource-type-select"
-          defaultValue={resourceType}
-          onChange={(e) => setResourceType(e.currentTarget.value)}
-        >
+        <Select testid="reference-input-resource-type-select" defaultValue={resourceType} onChange={setResourceType}>
           {targetTypes.map((targetType) => (
             <option key={targetType} value={targetType}>
               {targetType}
             </option>
           ))}
-        </select>
+        </Select>
       ) : (
-        <input
-          type="text"
-          data-testid="reference-input-resource-type-input"
-          defaultValue={resourceType}
-          onChange={(e) => {
-            setResourceType(e.currentTarget.value);
-          }}
-        />
+        <Input testid="reference-input-resource-type-input" defaultValue={resourceType} onChange={setResourceType} />
       )}
       {resourceType && (
         <ResourceInput

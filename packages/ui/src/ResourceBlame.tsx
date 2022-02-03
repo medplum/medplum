@@ -4,8 +4,8 @@ import { InputRow } from './InputRow';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
 import { ResourceBadge } from './ResourceBadge';
-import './ResourceBlame.css';
 import { blame } from './utils/blame';
+import './ResourceBlame.css';
 
 export interface ResourceBlameProps {
   history?: Bundle;
@@ -30,28 +30,30 @@ export function ResourceBlame(props: ResourceBlameProps): JSX.Element {
   const resource = value.entry?.[0]?.resource as Resource;
   const table = blame(value);
   return (
-    <table className="medplum-blame">
-      <tbody>
-        {table.map((row, index) => (
-          <tr key={'row-' + index} className={row.span > 0 ? 'start-row' : 'normal-row'}>
-            {row.span > 0 && (
-              <td className="details" rowSpan={row.span}>
-                <InputRow justifyContent="space-between">
-                  <ResourceBadge value={row.meta.author} size="xsmall" link={true} />
-                  <MedplumLink to={getVersionUrl(resource, row.meta.versionId as string)}>
-                    {getTimeString(row.meta.lastUpdated as string)}
-                  </MedplumLink>
-                </InputRow>
+    <div className="medplum-blame-container">
+      <table className="medplum-blame">
+        <tbody>
+          {table.map((row, index) => (
+            <tr key={'row-' + index} className={row.span > 0 ? 'start-row' : 'normal-row'}>
+              {row.span > 0 && (
+                <td className="details" rowSpan={row.span}>
+                  <InputRow justifyContent="space-between">
+                    <ResourceBadge value={row.meta.author} size="xsmall" link={true} />
+                    <MedplumLink to={getVersionUrl(resource, row.meta.versionId as string)}>
+                      {getTimeString(row.meta.lastUpdated as string)}
+                    </MedplumLink>
+                  </InputRow>
+                </td>
+              )}
+              <td className="line-number">{index + 1}</td>
+              <td className="line">
+                <pre className="line-pre">{row.value}</pre>
               </td>
-            )}
-            <td className="line-number">{index + 1}</td>
-            <td className="line">
-              <pre className="line-pre">{row.value}</pre>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

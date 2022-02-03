@@ -1,7 +1,7 @@
 import { Period } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
+import { Input } from './Input';
 import { InputRow } from './InputRow';
-import { TextField } from './TextField';
 
 export interface PeriodInputProps {
   name: string;
@@ -21,27 +21,17 @@ export function PeriodInput(props: PeriodInputProps): JSX.Element {
 
   return (
     <InputRow>
-      <TextField
+      <Input
         type="datetime-local"
         placeholder="Start"
         defaultValue={value?.start}
-        onChange={(e) =>
-          setValueWrapper({
-            ...value,
-            start: (e.currentTarget as HTMLInputElement).value,
-          })
-        }
+        onChange={(newValue) => setValueWrapper({ ...value, start: newValue })}
       />
-      <TextField
+      <Input
         type="datetime-local"
         placeholder="End"
         defaultValue={value?.end}
-        onChange={(e) =>
-          setValueWrapper({
-            ...value,
-            end: (e.currentTarget as HTMLInputElement).value,
-          })
-        }
+        onChange={(newValue) => setValueWrapper({ ...value, end: newValue })}
       />
     </InputRow>
   );

@@ -2,7 +2,7 @@
   border: 0.1px solid var(--medplum-gray-300);
   border-radius: 3px;
   background: var(--medplum-surface);
-  box-shadow: 0 1px 1px 0 var(--medplum-gray-200);
+  box-shadow: 0 1px 1px 0 var(--medplum-shadow);
   outline: 2px var(--medplum-surface);
   position: relative;
   cursor: text;
@@ -15,19 +15,20 @@
 .medplum-autocomplete-container.focused {
   background: var(--medplum-surface);
   color: var(--medplum-gray-900);
-  border: 0.1px solid var(--medplum-blue-300);
-  box-shadow: 0 0 0 2px var(--medplum-blue-200);
+  border: 0.1px solid var(--medplum-blue-500);
+  box-shadow: 0 0 0 2px var(--medplum-blue-400);
 }
 
 .medplum-autocomplete-container > ul {
   margin: 0;
+  padding: 0;
   list-style-type: none;
   overflow: hidden;
   cursor: text;
   height: 34px;
 }
 
-.medplum-autocomplete-container > ul > li {
+.medplum-autocomplete-container li.medplum-autocomplete-item {
   margin: 0;
   padding: 0;
   display: inline-block;
@@ -36,7 +37,7 @@
   user-select: none;
 }
 
-.medplum-autocomplete-container > ul > li.choice {
+.medplum-autocomplete-container li.medplum-autocomplete-item.choice {
   margin: 1px 0 1px 4px;
   padding: 0 6px;
   border: 0.1px solid var(--medplum-orange-200);
@@ -46,16 +47,17 @@
   line-height: 22px;
 }
 
-.medplum-autocomplete-container > ul > li.unstructured {
+.medplum-autocomplete-container li.medplum-autocomplete-item.unstructured {
   border: 0.1px dashed var(--medplum-red-700) !important;
 }
 
-.medplum-autocomplete-container > ul > li > input {
+.medplum-autocomplete-container li.medplum-autocomplete-item input {
+  color: var(--medplum-gray-800);
   display: inline-block;
   width: 80px;
   height: 28px;
   line-height: 26px;
-  padding: 0 0 0 6px;
+  padding: 0 0 0 4px;
   margin: 3px 0 0 2px;
   outline: none;
   border: none;
@@ -63,11 +65,11 @@
   background: transparent;
 }
 
-.medplum-autocomplete-container > ul > li > input::-moz-focus-inner {
+.medplum-autocomplete-container li.medplum-autocomplete-item input::-moz-focus-inner {
   border: 0px;
 }
 
-.medplum-autocomplete-container > ul > li > input:focus {
+.medplum-autocomplete-container li.medplum-autocomplete-item input:focus {
   border: none;
   box-shadow: none;
   outline: none;

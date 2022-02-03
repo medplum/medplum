@@ -1,5 +1,6 @@
 import { IndexedStructureDefinition, SearchRequest, stringify } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
+import { Button } from './Button';
 import { Dialog } from './Dialog';
 import { buildFieldNameString } from './SearchUtils';
 
@@ -221,24 +222,24 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
           <tfoot>
             <tr>
               <td align="center">
-                <button className="btn btn-small" tabIndex={2} onClick={() => onAddField()}>
+                <Button size="small" onClick={onAddField}>
                   Add
-                </button>
+                </Button>
               </td>
               <td align="center">
-                <button className="btn btn-small" tabIndex={3} onClick={() => onRemoveField()}>
+                <Button size="small" onClick={onRemoveField}>
                   Remove
-                </button>
+                </Button>
               </td>
               <td align="center">
-                <button className="btn btn-small" tabIndex={5} onClick={() => onMoveUp()}>
+                <Button size="small" onClick={onMoveUp}>
                   Up
-                </button>
+                </Button>
               </td>
               <td align="center">
-                <button className="btn btn-small" tabIndex={6} onClick={() => onMoveDown()}>
+                <Button size="small" onClick={onMoveDown}>
                   Down
-                </button>
+                </Button>
               </td>
             </tr>
           </tfoot>

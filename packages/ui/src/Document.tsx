@@ -8,7 +8,7 @@ export interface DocumentProps {
 
 export function Document(props: DocumentProps): JSX.Element {
   return (
-    <main>
+    <main className="medplum-document">
       <article style={{ maxWidth: props.width }}>{props.children}</article>
     </main>
   );

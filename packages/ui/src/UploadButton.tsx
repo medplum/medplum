@@ -1,5 +1,6 @@
 import { Attachment, Binary, OperationOutcome } from '@medplum/fhirtypes';
 import React, { useRef } from 'react';
+import { Button } from './Button';
 import { useMedplum } from './MedplumProvider';
 import { killEvent } from './utils/dom';
 
@@ -59,16 +60,15 @@ export function UploadButton(props: UploadButtonProps): JSX.Element {
         ref={fileInputRef}
         onChange={(e) => onFileChange(e)}
       />
-      <button
-        data-testid="upload-button"
-        className="btn"
+      <Button
+        testid="upload-button"
         onClick={(e) => {
           killEvent(e);
           fileInputRef.current?.click();
         }}
       >
         Upload...
-      </button>
+      </Button>
     </>
   );
 }

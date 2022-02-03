@@ -1,38 +1,7 @@
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
-import { Select, TextField } from './TextField';
-
-describe('TextField', () => {
-  test('Renders', () => {
-    expect(render(<TextField name="test" />)).toBeDefined();
-  });
-
-  test('Renders default value', () => {
-    render(<TextField name="test" defaultValue="hello" />);
-    expect(screen.getByDisplayValue('hello')).toBeDefined();
-  });
-
-  test('Renders aria invalid', () => {
-    const outcome: OperationOutcome = {
-      resourceType: 'OperationOutcome',
-      issue: [
-        {
-          details: {
-            text: 'Bad',
-          },
-          expression: ['test'],
-        },
-      ],
-    };
-
-    render(<TextField name="test" defaultValue="hello" outcome={outcome} />);
-    const input = screen.getByDisplayValue('hello');
-    expect(input).toBeDefined();
-    expect(input.getAttribute('aria-invalid')).toEqual('true');
-    expect(input.getAttribute('aria-describedby')).toEqual('test-errors');
-  });
-});
+import { Select } from './Select';
 
 describe('Select', () => {
   test('Renders', () => {

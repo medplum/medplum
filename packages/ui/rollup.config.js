@@ -1,5 +1,6 @@
 import resolve from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
+import copy from 'rollup-plugin-copy';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
 import postcss from 'rollup-plugin-postcss';
 import { terser } from 'rollup-plugin-terser';
@@ -44,6 +45,17 @@ export default {
       globals,
     },
   ],
-  plugins: [peerDepsExternal(), postcss({ extract: 'styles.css' }), resolve({ extensions }), typescript()],
+  plugins: [
+    peerDepsExternal(),
+    postcss({ extract: 'styles.css' }),
+    resolve({ extensions }),
+    typescript(),
+    copy({
+      targets: [
+        { src: 'src/defaulttheme.css', dest: 'dist/esm/' },
+        { src: 'src/defaulttheme.css', dest: 'dist/cjs/' },
+      ],
+    }),
+  ],
   external: Object.keys(globals),
 };

@@ -266,11 +266,11 @@ export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
     >
       <ul onClick={() => handleClick()}>
         {values.map((value) => (
-          <li key={props.getId(value)} data-testid="selected" className="choice">
+          <li key={props.getId(value)} data-testid="selected" className="medplum-autocomplete-item choice">
             {props.getDisplay(value)}
           </li>
         ))}
-        <li>
+        <li className="medplum-autocomplete-item">
           <input
             type="text"
             autoFocus={props.autofocus}

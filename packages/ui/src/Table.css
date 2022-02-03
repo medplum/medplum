@@ -1,0 +1,10 @@
+table.medplum-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+table.medplum-table th,
+table.medplum-table td {
+  border: 0.1px solid var(--medplum-gray-400);
+  padding: 4px 6px;
+}

@@ -1,6 +1,6 @@
 import { RegisterRequest } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Logo, TextField, useMedplum } from '@medplum/ui';
+import { Button, Document, Form, FormSection, Logo, Input, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { getRecaptcha, initRecaptcha } from './utils';
 
@@ -36,7 +36,7 @@ export function RegisterPage(): JSX.Element {
         {!success && (
           <>
             <FormSection title="First Name" htmlFor="firstName" outcome={outcome}>
-              <TextField
+              <Input
                 name="firstName"
                 type="text"
                 testid="firstName"
@@ -46,16 +46,16 @@ export function RegisterPage(): JSX.Element {
               />
             </FormSection>
             <FormSection title="Last Name" htmlFor="lastName" outcome={outcome}>
-              <TextField name="lastName" type="text" testid="lastName" required={true} outcome={outcome} />
+              <Input name="lastName" type="text" testid="lastName" required={true} outcome={outcome} />
             </FormSection>
             <FormSection title="Project Name" htmlFor="projectName" outcome={outcome}>
-              <TextField name="projectName" type="text" testid="projectName" required={true} outcome={outcome} />
+              <Input name="projectName" type="text" testid="projectName" required={true} outcome={outcome} />
             </FormSection>
             <FormSection title="Email" htmlFor="email" outcome={outcome}>
-              <TextField name="email" type="email" testid="email" required={true} outcome={outcome} />
+              <Input name="email" type="email" testid="email" required={true} outcome={outcome} />
             </FormSection>
             <FormSection title="Password" htmlFor="password" outcome={outcome}>
-              <TextField name="password" type="password" testid="password" required={true} outcome={outcome} />
+              <Input name="password" type="password" testid="password" required={true} outcome={outcome} />
             </FormSection>
             <p style={{ fontSize: '12px', color: '#888' }}>
               By clicking submit you agree to the Medplum

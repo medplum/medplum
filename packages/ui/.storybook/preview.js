@@ -2,8 +2,7 @@ import { MockClient } from '@medplum/mock';
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { MedplumProvider } from '../src/MedplumProvider';
-import '../src/CssBaseline.css';
-import '../src/DefaultTheme.css';
+import '../src/defaulttheme.css';
 
 export const parameters = {
   layout: 'fullscreen',

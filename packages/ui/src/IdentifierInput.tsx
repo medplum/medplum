@@ -1,7 +1,7 @@
 import { Identifier } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
+import { Input } from './Input';
 import { InputRow } from './InputRow';
-import { TextField } from './TextField';
 
 export interface IdentifierInputProps {
   name: string;
@@ -21,25 +21,15 @@ export function IdentifierInput(props: IdentifierInputProps): JSX.Element {
 
   return (
     <InputRow>
-      <TextField
+      <Input
         placeholder="System"
         defaultValue={value?.system}
-        onChange={(e) =>
-          setValueWrapper({
-            ...value,
-            system: (e.currentTarget as HTMLInputElement).value,
-          })
-        }
+        onChange={(newValue) => setValueWrapper({ ...value, system: newValue })}
       />
-      <TextField
+      <Input
         placeholder="Value"
         defaultValue={value?.value}
-        onChange={(e) =>
-          setValueWrapper({
-            ...value,
-            value: (e.currentTarget as HTMLInputElement).value,
-          })
-        }
+        onChange={(newValue) => setValueWrapper({ ...value, value: newValue })}
       />
     </InputRow>
   );

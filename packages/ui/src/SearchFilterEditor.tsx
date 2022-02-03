@@ -1,7 +1,9 @@
 import { Filter, IndexedStructureDefinition, Operator, SearchRequest, stringify } from '@medplum/core';
 import { Reference, SearchParameter } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
+import { Button } from './Button';
 import { Dialog } from './Dialog';
+import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
 import { ReferenceInput } from './ReferenceInput';
 import { SearchFilterValueDisplay } from './SearchFilterValueDisplay';
@@ -13,6 +15,7 @@ import {
   getSearchOperators,
   setFilters,
 } from './SearchUtils';
+import { Select } from './Select';
 
 export interface SearchFilterEditorProps {
   schema: IndexedStructureDefinition;
@@ -122,12 +125,12 @@ function FilterRowDisplay(props: FilterRowDisplayProps): JSX.Element | null {
         <SearchFilterValueDisplay resourceType={props.resourceType} filter={filter} />
       </td>
       <td>
-        <button className="btn btn-small" onClick={props.onEdit}>
+        <Button size="small" onClick={props.onEdit}>
           Edit
-        </button>
-        <button className="btn btn-small" onClick={props.onDelete}>
+        </Button>
+        <Button size="small" onClick={props.onDelete}>
           Delete
-        </button>
+        </Button>
       </td>
     </tr>
   );
@@ -164,25 +167,21 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
   return (
     <tr>
       <td>
-        <select
-          data-testid="filter-field"
-          value={valueRef.current.code}
-          onChange={(e) => setFilterCode(e.target.value)}
-        >
+        <Select testid="filter-field" defaultValue={valueRef.current.code} onChange={setFilterCode}>
           <option value=""></option>
           {Object.keys(props.searchParams).map((param) => (
             <option key={param} value={param}>
               {param}
             </option>
           ))}
-        </select>
+        </Select>
       </td>
       <td>
         {operators && (
-          <select
-            data-testid="filter-operation"
+          <Select
+            testid="filter-operation"
             defaultValue={value.operator}
-            onChange={(e) => setFilterOperator(e.target.value as Operator)}
+            onChange={setFilterOperator as (newOperator: string) => void}
           >
             <option value=""></option>
             {operators.map((operator) => (
@@ -190,7 +189,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
                 {getOpString(operator)}
               </option>
             ))}
-          </select>
+          </Select>
         )}
       </td>
       <td>
@@ -200,20 +199,20 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
       </td>
       <td>
         {value.code && value.operator && value.value && (
-          <button
-            className="btn btn-small"
+          <Button
+            size="small"
             onClick={() => {
               props.onOk(valueRef.current);
               setValue({} as Filter);
             }}
           >
             {props.okText}
-          </button>
+          </Button>
         )}
         {props.onCancel && (
-          <button className="btn btn-small" onClick={props.onCancel}>
+          <Button size="small" onClick={props.onCancel}>
             Cancel
-          </button>
+          </Button>
         )}
       </td>
     </tr>
@@ -250,12 +249,5 @@ function FilterValueInput(props: FilterValueInputProps): JSX.Element | null {
   };
 
   const inputType = inputTypes[props.searchParam.type as string] ?? 'text';
-  return (
-    <input
-      data-testid="filter-value"
-      type={inputType}
-      defaultValue={props.defaultValue}
-      onChange={(e) => props.onChange(e.target.value)}
-    />
-  );
+  return <Input testid="filter-value" type={inputType} defaultValue={props.defaultValue} onChange={props.onChange} />;
 }

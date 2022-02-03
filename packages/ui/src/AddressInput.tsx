@@ -1,6 +1,8 @@
 import { Address } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
+import { Input } from './Input';
 import { InputRow } from './InputRow';
+import { Select } from './Select';
 
 function getLine(address: Address, index: number): string {
   return address && address.line && address.line.length > index ? address.line[index] : '';
@@ -64,50 +66,25 @@ export function AddressInput(props: AddressInputProps): JSX.Element {
 
   return (
     <InputRow>
-      <select data-testid="address-use" defaultValue={value?.use} onChange={(e) => setUse(e.currentTarget.value)}>
+      <Select testid="address-use" defaultValue={value?.use} onChange={setUse}>
         <option></option>
         <option>home</option>
         <option>mobile</option>
         <option>old</option>
         <option>temp</option>
         <option>work</option>
-      </select>
-      <select data-testid="address-type" defaultValue={value?.type} onChange={(e) => setType(e.currentTarget.value)}>
+      </Select>
+      <Select testid="address-type" defaultValue={value?.type} onChange={setType}>
         <option></option>
         <option>postal</option>
         <option>physical</option>
         <option>both</option>
-      </select>
-      <input
-        type="text"
-        placeholder="Line 1"
-        defaultValue={getLine(value, 0)}
-        onChange={(e) => setLine1(e.currentTarget.value)}
-      />
-      <input
-        type="text"
-        placeholder="Line 2"
-        defaultValue={getLine(value, 1)}
-        onChange={(e) => setLine2(e.currentTarget.value)}
-      />
-      <input
-        type="text"
-        placeholder="City"
-        defaultValue={value.city}
-        onChange={(e) => setCity(e.currentTarget.value)}
-      />
-      <input
-        type="text"
-        placeholder="State"
-        defaultValue={value.state}
-        onChange={(e) => setState(e.currentTarget.value)}
-      />
-      <input
-        type="text"
-        placeholder="Postal Code"
-        defaultValue={value.postalCode}
-        onChange={(e) => setPostalCode(e.currentTarget.value)}
-      />
+      </Select>
+      <Input placeholder="Line 1" defaultValue={getLine(value, 0)} onChange={setLine1} />
+      <Input placeholder="Line 2" defaultValue={getLine(value, 1)} onChange={setLine2} />
+      <Input placeholder="City" defaultValue={value.city} onChange={setCity} />
+      <Input placeholder="State" defaultValue={value.state} onChange={setState} />
+      <Input placeholder="Postal Code" defaultValue={value.postalCode} onChange={setPostalCode} />
     </InputRow>
   );
 }

@@ -1,11 +1,11 @@
-main {
+.medplum-document {
   margin: 20px auto 6px auto;
   padding: 10px;
   clear: both;
   text-align: center;
 }
 
-article {
+.medplum-document article {
   background-color: var(--medplum-surface);
   max-width: 900px;
   margin: 8px auto 16px auto;
@@ -13,28 +13,41 @@ article {
   text-align: left;
   border: 0.1px solid var(--medplum-gray-300);
   border-radius: 8px;
-  box-shadow: 0 1px 3px 0 var(--medplum-gray-300);
+  box-shadow: 0 1px 3px 0 var(--medplum-shadow);
 }
 
-article h1,
-article h2,
-article h3 {
+.medplum-document h1,
+.medplum-document h2,
+.medplum-document h3 {
   margin: 12px 0;
 }
 
-article p,
-article li {
+.medplum-document p,
+.medplum-document li {
   line-height: 175%;
   margin: 8px 0 16px 0;
 }
 
 @media (max-width: 700px) {
-  main {
+  .medplum-document {
     margin: 10px auto 6px auto;
     padding: 6px;
   }
 
-  article {
+  .medplum-document article {
     padding: 6px 12px;
   }
+}
+
+.medplum-document img,
+.medplum-document video {
+  width: 100%;
+}
+
+.medplum-document textarea {
+  line-height: 18px;
+  margin: 0;
+  min-height: 300px;
+  padding: 2px 4px;
+  width: 100%;
 }

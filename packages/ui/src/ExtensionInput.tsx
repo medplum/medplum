@@ -1,6 +1,7 @@
 import { stringify } from '@medplum/core';
 import { Extension } from '@medplum/fhirtypes';
 import React from 'react';
+import { TextArea } from './TextArea';
 
 export interface ExtensionInputProps {
   name: string;
@@ -10,13 +11,13 @@ export interface ExtensionInputProps {
 
 export function ExtensionInput(props: ExtensionInputProps): JSX.Element {
   return (
-    <textarea
-      data-testid="extension-input"
+    <TextArea
+      testid="extension-input"
       name={props.name}
       defaultValue={stringify(props.defaultValue)}
-      onChange={(e: React.ChangeEvent) => {
+      onChange={(newValue: string) => {
         if (props.onChange) {
-          props.onChange(JSON.parse((e.target as HTMLTextAreaElement).value));
+          props.onChange(JSON.parse(newValue));
         }
       }}
     />
