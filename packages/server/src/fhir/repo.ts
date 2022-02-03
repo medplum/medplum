@@ -854,6 +854,11 @@ export class Repository {
    * @param value The property value of the reference.
    */
   #buildReferenceColumns(searchParam: SearchParameter, value: any): string | undefined {
+    // Handle "canonical"
+    if (typeof value === 'string') {
+      return value;
+    }
+
     const refStr = (value as Reference).reference;
     if (!refStr) {
       return undefined;
