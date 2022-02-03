@@ -52,9 +52,20 @@ function matchesBooleanFilter(resource: Resource, filter: Filter, searchParam: S
 }
 
 function matchesReferenceFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
-  const values = evalFhirPath(searchParam.expression as string, resource).map(
-    (value) => (value as Reference | undefined)?.reference
-  );
+  const values = evalFhirPath(searchParam.expression as string, resource).map((value) => {
+    if (value) {
+      if (typeof value === 'string') {
+        // Handle "canonical" properties such as QuestionnaireResponse.questionnaire
+        // This is a reference string that is not a FHIR reference
+        return value;
+      }
+      if (typeof value === 'object') {
+        // Handle normal "reference" properties
+        return (value as Reference).reference;
+      }
+    }
+    return undefined;
+  });
   const result = values.includes(filter.value);
   return filter.operator === Operator.NOT_EQUALS ? !result : result;
 }
