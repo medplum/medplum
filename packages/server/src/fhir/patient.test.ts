@@ -1,16 +1,10 @@
 import { Account, Observation, Patient, Reference } from '@medplum/fhirtypes';
-import { getPatientCompartmentProperties, getPatientCompartmentResourceTypes, getPatientId } from './patient';
+import { getPatientCompartmentProperties, getPatientId } from './patient';
 
 describe('FHIR Patient utils', () => {
   test('getPatientCompartmentProperties', () => {
     expect(getPatientCompartmentProperties('Observation')).toEqual(['subject', 'performer']);
     expect(getPatientCompartmentProperties('xxx')).toBeUndefined();
-  });
-
-  test('getPatientCompartmentResourceTypes', () => {
-    const resourceTypes = getPatientCompartmentResourceTypes();
-    expect(resourceTypes).toContain('Patient');
-    expect(resourceTypes).toContain('Observation');
   });
 
   test('getPatientId', () => {
