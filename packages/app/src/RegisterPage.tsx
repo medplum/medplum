@@ -29,7 +29,7 @@ export function RegisterPage(): JSX.Element {
           });
         }}
       >
-        <div className="center">
+        <div className="medplum-center">
           <Logo size={32} />
           <h1>Register new account</h1>
         </div>

@@ -19,7 +19,7 @@ export function ChangePasswordPage(): JSX.Element {
             .catch(setOutcome);
         }}
       >
-        <div className="center">
+        <div className="medplum-center">
           <Logo size={32} />
           <h1>Change password</h1>
         </div>

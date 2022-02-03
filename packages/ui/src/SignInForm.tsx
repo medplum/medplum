@@ -12,6 +12,7 @@ import { useMedplum } from './MedplumProvider';
 import { Input } from './Input';
 import { getIssuesForExpression } from './utils/outcomes';
 import './SignInForm.css';
+import './util.css';
 
 export interface SignInFormProps {
   scopes?: string;
@@ -96,7 +97,7 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
           .catch(setOutcome);
       }}
     >
-      <div className="center">{props.children}</div>
+      <div className="medplum-center">{props.children}</div>
       {issues && (
         <div className="medplum-input-error">
           {issues.map((issue) => (
@@ -192,7 +193,7 @@ function ProfileForm(props: ProfileFormProps): JSX.Element {
   const medplum = useMedplum();
   return (
     <div>
-      <div className="center">
+      <div className="medplum-center">
         <Logo size={32} />
         <h1>Choose profile</h1>
       </div>

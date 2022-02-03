@@ -37,7 +37,7 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Elem
             <td>
               <AttachmentDisplay value={v} maxWidth={200} />
             </td>
-            <td className="right">
+            <td className="medplum-right">
               <Button
                 onClick={(e) => {
                   killEvent(e);
@@ -53,7 +53,7 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Elem
         ))}
         <tr>
           <td></td>
-          <td className="right">
+          <td className="medplum-right">
             <UploadButton
               onUpload={(attachment: Attachment) => {
                 setValuesWrapper([...(valuesRef.current as Attachment[]), attachment]);

@@ -60,7 +60,7 @@ export function CreateClientPage(): JSX.Element {
             <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={outcome}>
               <AccessPolicyInput name="accessPolicy" onChange={setAccessPolicy} />
             </FormSection>
-            <div className="right">
+            <div className="medplum-right">
               <div></div>
               <div>
                 <Button type="submit" testid="submit">

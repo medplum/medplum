@@ -25,7 +25,7 @@ export function ResetPasswordPage(): JSX.Element {
           });
         }}
       >
-        <div className="center">
+        <div className="medplum-center">
           <Logo size={32} />
           <h1>Medplum Password Reset</h1>
         </div>
