@@ -1,10 +1,14 @@
 import { assertOk, createReference, isOk } from '@medplum/core';
-import { ClientApplication, Login, Project } from '@medplum/fhirtypes';
+import { ClientApplication, Login, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { systemRepo } from './fhir';
 import { generateAccessToken } from './oauth';
 
-export async function createTestClient(): Promise<ClientApplication> {
+export async function createTestProject(): Promise<{
+  project: Project;
+  client: ClientApplication;
+  membership: ProjectMembership;
+}> {
   const [projectOutcome, project] = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: 'Test Project',
@@ -23,17 +27,34 @@ export async function createTestClient(): Promise<ClientApplication> {
     },
   });
   assertOk(clientOutcome, client);
-  return client;
+
+  const [membershipOutcome, membership] = await systemRepo.createResource<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    user: createReference(client),
+    profile: createReference(client),
+    project: createReference(project),
+  });
+  assertOk(membershipOutcome, membership);
+
+  return {
+    project,
+    client,
+    membership,
+  };
+}
+
+export async function createTestClient(): Promise<ClientApplication> {
+  return (await createTestProject()).client;
 }
 
 export async function initTestAuth(): Promise<string> {
-  const client = await createTestClient();
+  const { client, membership } = await createTestProject();
   const scope = 'openid';
 
   const [loginOutcome, login] = await systemRepo.createResource<Login>({
     resourceType: 'Login',
     client: createReference(client),
-    profile: createReference(client),
+    membership: createReference(membership),
     authTime: new Date().toISOString(),
     scope,
   });

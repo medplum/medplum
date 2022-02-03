@@ -10,6 +10,7 @@ import {
   Resource,
   SearchParameter,
   StructureDefinition,
+  UserConfiguration,
   ValueSet,
 } from '@medplum/fhirtypes';
 import { LRUCache } from './cache';
@@ -157,8 +158,12 @@ export class MedplumClient extends EventTarget {
   readonly #tokenUrl: string;
   readonly #logoutUrl: string;
   readonly #onUnauthenticated?: () => void;
+  #accessToken?: string;
+  #refreshToken?: string;
   #refreshPromise?: Promise<any>;
-  #loading: boolean;
+  #profilePromise?: Promise<any>;
+  #profile?: ProfileResource;
+  #config?: UserConfiguration;
 
   constructor(options?: MedplumClientOptions) {
     super();
@@ -182,8 +187,14 @@ export class MedplumClient extends EventTarget {
     this.#tokenUrl = options?.tokenUrl || this.#baseUrl + 'oauth2/token';
     this.#logoutUrl = options?.logoutUrl || this.#baseUrl + 'oauth2/logout';
     this.#onUnauthenticated = options?.onUnauthenticated;
-    this.#loading = false;
-    this.#refreshProfile().catch(console.log);
+
+    const activeLogin = this.getActiveLogin();
+    if (activeLogin) {
+      this.#accessToken = activeLogin.accessToken;
+      this.#refreshToken = activeLogin.refreshToken;
+      this.#refreshProfile().catch(console.log);
+    }
+
     this.#setupStorageListener();
   }
 
@@ -193,6 +204,10 @@ export class MedplumClient extends EventTarget {
   clear(): void {
     this.#storage.clear();
     this.#resourceCache.clear();
+    this.#accessToken = undefined;
+    this.#refreshToken = undefined;
+    this.#profile = undefined;
+    this.#config = undefined;
     this.dispatchEvent({ type: 'change' });
   }
 
@@ -493,6 +508,10 @@ export class MedplumClient extends EventTarget {
   }
 
   async setActiveLogin(login: LoginState): Promise<void> {
+    this.#accessToken = login.accessToken;
+    this.#refreshToken = login.refreshToken;
+    this.#profile = undefined;
+    this.#config = undefined;
     this.#storage.setObject('activeLogin', login);
     this.#addLogin(login);
     this.#resourceCache.clear();
@@ -511,22 +530,38 @@ export class MedplumClient extends EventTarget {
   }
 
   async #refreshProfile(): Promise<ProfileResource | undefined> {
-    const reference = this.getActiveLogin()?.profile;
-    if (reference?.reference) {
-      this.#loading = true;
-      this.#storage.setObject('profile', await this.readCachedReference(reference));
-      this.#loading = false;
-      this.dispatchEvent({ type: 'change' });
+    this.#profilePromise = new Promise((resolve, reject) => {
+      this.get('auth/me')
+        .then((result) => {
+          this.#profilePromise = undefined;
+          this.#profile = result.profile;
+          this.#config = result.config;
+          this.dispatchEvent({ type: 'change' });
+          resolve(this.#profile);
+        })
+        .catch(reject);
+    });
+
+    return this.#profilePromise;
+  }
+
+  isLoading(): boolean {
+    return !!this.#profilePromise;
+  }
+
+  getProfile(): ProfileResource | undefined {
+    return this.#profile;
+  }
+
+  async getProfileAsync(): Promise<ProfileResource | undefined> {
+    if (this.#profilePromise) {
+      await this.#profilePromise;
     }
     return this.getProfile();
   }
 
-  getProfile(): ProfileResource | undefined {
-    return this.#storage.getObject('profile');
-  }
-
-  isLoading(): boolean {
-    return this.#loading;
+  getUserConfiguration(): UserConfiguration | undefined {
+    return this.#config;
   }
 
   /**
@@ -549,9 +584,8 @@ export class MedplumClient extends EventTarget {
       'Content-Type': contentType || FHIR_CONTENT_TYPE,
     };
 
-    const accessToken = this.getActiveLogin()?.accessToken;
-    if (accessToken) {
-      headers['Authorization'] = 'Bearer ' + accessToken;
+    if (this.#accessToken) {
+      headers['Authorization'] = 'Bearer ' + this.#accessToken;
     }
 
     const options: RequestInit = {
@@ -692,8 +726,7 @@ export class MedplumClient extends EventTarget {
       return this.#refreshPromise;
     }
 
-    const refreshToken = this.getActiveLogin()?.refreshToken;
-    if (!refreshToken) {
+    if (!this.#refreshToken) {
       this.clear();
       return Promise.reject('Invalid refresh token');
     }
@@ -703,7 +736,7 @@ export class MedplumClient extends EventTarget {
         '&client_id=' +
         encodeURIComponent(this.#clientId) +
         '&refresh_token=' +
-        encodeURIComponent(refreshToken)
+        encodeURIComponent(this.#refreshToken)
     );
 
     await this.#refreshPromise;

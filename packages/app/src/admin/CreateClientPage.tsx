@@ -1,16 +1,16 @@
 import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Loading, MedplumLink, Input, useMedplum } from '@medplum/ui';
+import { Button, Document, Form, FormSection, Input, Loading, MedplumLink, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AccessPolicyInput } from './AccessPolicyInput';
 
-export function InvitePage(): JSX.Element {
+export function CreateClientPage(): JSX.Element {
   const { projectId } = useParams() as { projectId: string };
   const medplum = useMedplum();
   const [result, setResult] = useState<any>();
-  const [firstName, setFirstName] = useState<string>('');
-  const [lastName, setLastName] = useState<string>('');
-  const [email, setEmail] = useState<string>('');
+  const [name, setName] = useState<string>('');
+  const [description, setDescription] = useState<string>('');
+  const [redirectUri, setRedirectUri] = useState<string>('');
   const [accessPolicy, setAccessPolicy] = useState<Reference<AccessPolicy>>();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [success, setSuccess] = useState(false);
@@ -31,55 +31,40 @@ export function InvitePage(): JSX.Element {
   return (
     <Document width={600}>
       <h1>Admin / Projects / {result.project.name}</h1>
-      <h3>Invite new member</h3>
+      <h3>Create new Client</h3>
       <Form
         onSubmit={() => {
           const body = {
-            firstName,
-            lastName,
-            email,
+            name,
+            description,
+            redirectUri,
             accessPolicy,
           };
           medplum
-            .post('admin/projects/' + projectId + '/invite', body)
+            .post('admin/projects/' + projectId + '/client', body)
             .then(() => setSuccess(true))
             .catch(setOutcome);
         }}
       >
         {!success && (
           <>
-            <FormSection title="First Name" htmlFor="firstName" outcome={outcome}>
-              <Input
-                name="firstName"
-                type="text"
-                testid="firstName"
-                required={true}
-                autoFocus={true}
-                onChange={setFirstName}
-                outcome={outcome}
-              />
+            <FormSection title="Name" htmlFor="name" outcome={outcome}>
+              <Input name="name" testid="name" required={true} autoFocus={true} onChange={setName} outcome={outcome} />
             </FormSection>
-            <FormSection title="Last Name" htmlFor="lastName" outcome={outcome}>
-              <Input
-                name="lastName"
-                type="text"
-                testid="lastName"
-                required={true}
-                onChange={setLastName}
-                outcome={outcome}
-              />
+            <FormSection title="Description" htmlFor="description" outcome={outcome}>
+              <Input name="description" testid="description" onChange={setDescription} outcome={outcome} />
             </FormSection>
-            <FormSection title="Email" htmlFor="email" outcome={outcome}>
-              <Input name="email" type="email" testid="email" required={true} onChange={setEmail} outcome={outcome} />
+            <FormSection title="Redirect URI" htmlFor="redirectUri" outcome={outcome}>
+              <Input name="redirectUri" testid="redirectUri" onChange={setRedirectUri} outcome={outcome} />
             </FormSection>
             <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={outcome}>
               <AccessPolicyInput name="accessPolicy" onChange={setAccessPolicy} />
             </FormSection>
-            <div className="medplum-signin-buttons">
+            <div className="right">
               <div></div>
               <div>
                 <Button type="submit" testid="submit">
-                  Invite
+                  Create Client
                 </Button>
               </div>
             </div>
@@ -87,8 +72,7 @@ export function InvitePage(): JSX.Element {
         )}
         {success && (
           <div data-testid="success">
-            <p>User created</p>
-            <p>Email sent</p>
+            <p>Client created</p>
             <p>
               Click <MedplumLink to="/admin/project">here</MedplumLink> to return to the project admin page.
             </p>

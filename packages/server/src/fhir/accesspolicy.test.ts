@@ -342,15 +342,20 @@ describe('AccessPolicy', () => {
     assertOk(outcome1, clientApplication);
     expect(clientApplication).toBeDefined();
 
-    // Create a systemRepo for the ClientApplication
+    // Create a repo for the ClientApplication
     // Use getRepoForLogin to generate the synthetic access policy
-    const clientRepo = await getRepoForLogin({
-      resourceType: 'Login',
-      project: {
-        reference: 'Project/' + project,
+    const clientRepo = await getRepoForLogin(
+      {
+        resourceType: 'Login',
       },
-      profile: createReference(clientApplication as ClientApplication),
-    });
+      {
+        resourceType: 'ProjectMembership',
+        project: {
+          reference: 'Project/' + project,
+        },
+        profile: createReference(clientApplication as ClientApplication),
+      }
+    );
 
     // Create a Patient using the ClientApplication
     const [outcome2, patient] = await clientRepo.createResource<Patient>({
@@ -407,6 +412,74 @@ describe('AccessPolicy', () => {
     // The ClientApplication should not be able to access it
     const [outcome7] = await clientRepo.readResource<Observation>('Observation', observation2?.id as string);
     expect(outcome7.id).toEqual('not-found');
+  });
+
+  test('ClientApplication with access policy', async () => {
+    const project = randomUUID();
+    const account = 'Organization/' + randomUUID();
+
+    // Create the access policy
+    const [accessPolicyOutcome, accessPolicy] = await systemRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Patient',
+        },
+      ],
+    });
+    assertOk(accessPolicyOutcome, accessPolicy);
+
+    // Create a ClientApplication with an account value
+    const [outcome1, clientApplication] = await systemRepo.createResource<ClientApplication>({
+      resourceType: 'ClientApplication',
+      secret: 'foo',
+      redirectUri: 'https://example.com/',
+      meta: {
+        account: {
+          reference: account,
+        },
+      },
+    });
+    assertOk(outcome1, clientApplication);
+    expect(clientApplication).toBeDefined();
+
+    // Create a repo for the ClientApplication
+    const clientRepo = await getRepoForLogin(
+      {
+        resourceType: 'Login',
+      },
+      {
+        resourceType: 'ProjectMembership',
+        project: {
+          reference: 'Project/' + project,
+        },
+        profile: createReference(clientApplication as ClientApplication),
+        accessPolicy: createReference(accessPolicy),
+      }
+    );
+
+    // Create a Patient using the ClientApplication
+    const [outcome2, patient] = await clientRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Al'], family: 'Bundy' }],
+      birthDate: '1975-12-12',
+    });
+    assertOk(outcome2, patient);
+    expect(patient).toBeDefined();
+
+    // Create an Observation using the ClientApplication
+    // Observation is not in the AccessPolicy
+    // So this should fail
+    const [outcome3, observation] = await clientRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      subject: createReference(patient as Patient),
+      code: {
+        text: 'test',
+      },
+      valueString: 'positive',
+    });
+    expect(outcome3.id).toEqual('access-denied');
+    expect(observation).toBeUndefined();
   });
 
   test('Readonly fields on write', async () => {

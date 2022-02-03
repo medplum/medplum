@@ -1,3 +1,4 @@
+import { resolveId } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { CompartmentDefinition, CompartmentDefinitionResource, Reference, Resource } from '@medplum/fhirtypes';
 
@@ -123,15 +124,4 @@ function getPatientIdFromReference(reference: Reference): string | undefined {
     return resolveId(reference);
   }
   return undefined;
-}
-
-/**
- * Returns the ID portion of a reference.
- * For now, assumes the common convention of resourceType/id.
- * In the future, detect and handle searches (i.e., "Patient?identifier=123").
- * @param reference A FHIR reference.
- * @returns The ID portion of a reference.
- */
-function resolveId(reference: Reference | undefined): string | undefined {
-  return reference?.reference?.split('/')[1];
 }

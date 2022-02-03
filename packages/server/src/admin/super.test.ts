@@ -1,5 +1,5 @@
 import { assertOk, createReference, getReferenceString } from '@medplum/core';
-import { ClientApplication, Login, Practitioner, User } from '@medplum/fhirtypes';
+import { ClientApplication, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -7,11 +7,12 @@ import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { systemRepo } from '../fhir';
-import { createTestClient } from '../jest.setup';
+import { createTestProject } from '../jest.setup';
 import { generateAccessToken, initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 
 const app = express();
+let project: Project;
 let client: ClientApplication;
 let adminAccessToken: string;
 let nonAdminAccessToken: string;
@@ -24,7 +25,7 @@ describe('Super Admin routes', () => {
     await initApp(app);
     await initKeys(config);
 
-    client = await createTestClient();
+    ({ project, client } = await createTestProject());
 
     const [outcome1, practitioner1] = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
     assertOk(outcome1, practitioner1);
@@ -48,21 +49,41 @@ describe('Super Admin routes', () => {
     });
     assertOk(outcome4, user2);
 
+    const [membershipOutcome1, membership1] = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      project: createReference(project),
+      user: createReference(user1),
+      profile: createReference(practitioner1),
+    });
+    assertOk(membershipOutcome1, membership1);
+
+    const [membershipOutcome2, membership2] = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      project: createReference(project),
+      user: createReference(user2),
+      profile: createReference(practitioner2),
+    });
+    assertOk(membershipOutcome2, membership2);
+
     const [outcome5, login1] = await systemRepo.createResource<Login>({
       resourceType: 'Login',
       client: createReference(client),
-      profile: createReference(practitioner1 as Practitioner),
+      user: createReference(user1),
+      membership: createReference(membership1),
       authTime: new Date().toISOString(),
       scope: 'openid',
+      admin: true,
     });
     assertOk(outcome5, login1);
 
     const [outcome6, login2] = await systemRepo.createResource<Login>({
       resourceType: 'Login',
       client: createReference(client),
-      profile: createReference(practitioner2 as Practitioner),
+      user: createReference(user2),
+      membership: createReference(membership2),
       authTime: new Date().toISOString(),
       scope: 'openid',
+      admin: false,
     });
     assertOk(outcome6, login2);
 

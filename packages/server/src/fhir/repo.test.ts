@@ -3,7 +3,6 @@ import {
   Bundle,
   Communication,
   Encounter,
-  Login,
   Patient,
   Resource,
   SearchParameter,
@@ -14,7 +13,6 @@ import { randomUUID } from 'crypto';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { tryLogin } from '../oauth';
 import { seedDatabase } from '../seed';
 import { processBatch } from './batch';
 import { getRepoForLogin, Repository, systemRepo } from './repo';
@@ -28,6 +26,12 @@ describe('FHIR Repo', () => {
 
   afterAll(async () => {
     await closeDatabase();
+  });
+
+  test('getRepoForLogin', async () => {
+    await expect(() =>
+      getRepoForLogin({ resourceType: 'Login' }, { resourceType: 'ProjectMembership' })
+    ).rejects.toEqual('Cannot create repo for login without profile');
   });
 
   test('Read resource with undefined id', async () => {
@@ -847,19 +851,7 @@ describe('FHIR Repo', () => {
     const result1 = await registerNew(registration1);
     expect(result1.profile).toBeDefined();
 
-    const [loginOutcome1, login1] = await tryLogin({
-      authMethod: 'password',
-      email: registration1.email,
-      password: registration1.password,
-      scope: 'openid',
-      nonce: randomUUID(),
-      remember: true,
-    });
-
-    assertOk(loginOutcome1, login1);
-    expect(login1).toBeDefined();
-
-    const repo1 = await getRepoForLogin(login1 as Login);
+    const repo1 = await getRepoForLogin({ resourceType: 'Login' }, result1.membership);
     const [patientOutcome1, patient1] = await repo1.createResource<Patient>({
       resourceType: 'Patient',
     });
@@ -884,19 +876,7 @@ describe('FHIR Repo', () => {
     const result2 = await registerNew(registration2);
     expect(result2.profile).toBeDefined();
 
-    const [loginOutcome2, login2] = await tryLogin({
-      authMethod: 'password',
-      email: registration2.email,
-      password: registration2.password,
-      scope: 'openid',
-      nonce: randomUUID(),
-      remember: true,
-    });
-
-    assertOk(loginOutcome2, login2);
-    expect(login2).toBeDefined();
-
-    const repo2 = await getRepoForLogin(login2 as Login);
+    const repo2 = await getRepoForLogin({ resourceType: 'Login' }, result2.membership);
     const [patientOutcome3, patient3] = await repo2.readResource('Patient', patient1?.id as string);
     expect(patientOutcome3.id).toEqual('not-found');
     expect(patient3).toBeUndefined();

@@ -3,7 +3,7 @@ import crypto, { randomUUID } from 'crypto';
 import { TextEncoder } from 'util';
 import { MedplumClient } from './client';
 import { Operator } from './search';
-import { stringify } from './utils';
+import { ProfileResource, stringify } from './utils';
 
 const defaultOptions = {
   clientId: 'xyz',
@@ -77,6 +77,28 @@ function mockFetch(url: string, options: any): Promise<any> {
       },
       profile: {
         reference: 'Practitioner/123',
+      },
+    };
+  } else if (method === 'GET' && url.endsWith('auth/me')) {
+    result = {
+      profile: {
+        resourceType: 'Practitioner',
+        id: '123',
+      },
+      config: {
+        resourceType: 'UserConfiguration',
+        id: '123',
+        menu: [
+          {
+            title: 'My Menu',
+            link: [
+              {
+                name: 'My Link',
+                target: '/my-target',
+              },
+            ],
+          },
+        ],
       },
     };
   } else if (method === 'GET' && url.endsWith('Practitioner/123')) {
@@ -210,6 +232,34 @@ describe('Client', () => {
 
     window.fetch = jest.fn();
     expect(() => new MedplumClient()).not.toThrow();
+  });
+
+  test('Restore from localStorage', async () => {
+    window.localStorage.setItem(
+      'activeLogin',
+      JSON.stringify({
+        accessToken: '123',
+        refreshToken: '456',
+        project: {
+          reference: 'Project/123',
+        },
+        profile: {
+          reference: 'Practitioner/123',
+        },
+      })
+    );
+
+    const client = new MedplumClient(defaultOptions);
+    expect(client.isLoading()).toBe(true);
+    expect(client.getProfile()).toBeUndefined();
+    expect(client.getProfileAsync()).toBeDefined();
+    expect(client.getUserConfiguration()).toBeUndefined();
+
+    const profile = (await client.getProfileAsync()) as ProfileResource;
+    expect(client.isLoading()).toBe(false);
+    expect(profile.id).toBe('123');
+    expect(client.getProfileAsync()).toBeDefined();
+    expect(client.getUserConfiguration()).toBeDefined();
   });
 
   test('Clear', () => {

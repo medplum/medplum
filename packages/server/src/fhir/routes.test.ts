@@ -1,4 +1,3 @@
-import { isOk } from '@medplum/core';
 import { Meta, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -9,7 +8,6 @@ import { closeDatabase, initDatabase } from '../database';
 import { initTestAuth } from '../jest.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
-import { systemRepo } from './repo';
 
 const app = express();
 let accessToken: string;
@@ -26,18 +24,21 @@ describe('FHIR Routes', () => {
     await initKeys(config);
     accessToken = await initTestAuth();
 
-    const [outcome, patient] = await systemRepo.createResource({
-      resourceType: 'Patient',
-      name: [
-        {
-          given: ['Alice'],
-          family: 'Smith',
-        },
-      ],
-    });
-
-    expect(isOk(outcome)).toBe(true);
-    testPatient = patient as Patient;
+    const res = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Alice'],
+            family: 'Smith',
+          },
+        ],
+      });
+    expect(res.status).toBe(201);
+    testPatient = res.body as Patient;
     patientId = testPatient.id as string;
     patientVersionId = (testPatient.meta as Meta).versionId as string;
   });

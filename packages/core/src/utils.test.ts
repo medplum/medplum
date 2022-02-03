@@ -1,3 +1,4 @@
+import { resolveId } from '.';
 import {
   arrayBufferToBase64,
   arrayBufferToHex,
@@ -44,6 +45,14 @@ describe('Core Utils', () => {
     ).toMatchObject({
       reference: 'Device/123',
     });
+  });
+
+  test('resolveId', () => {
+    expect(resolveId(undefined)).toBeUndefined();
+    expect(resolveId({})).toBeUndefined();
+    expect(resolveId({ id: '123' })).toBeUndefined();
+    expect(resolveId({ reference: 'Patient' })).toBeUndefined();
+    expect(resolveId({ reference: 'Patient/123' })).toBe('123');
   });
 
   test('isProfileResource', () => {

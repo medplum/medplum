@@ -2,6 +2,7 @@ import { getReferenceString } from '@medplum/core';
 import { FooterLinks, Header, Loading, useMedplum, useMedplumProfile } from '@medplum/ui';
 import React from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
+import { CreateClientPage } from './admin/CreateClientPage';
 import { EditMembershipPage } from './admin/EditMembershipPage';
 import { InvitePage } from './admin/InvitePage';
 import { ProjectPage } from './admin/ProjectPage';
@@ -40,47 +41,7 @@ export function App(): JSX.Element {
             medplum.signOut();
             navigate('/signin');
           }}
-          sidebarLinks={[
-            {
-              title: 'Favorites',
-              links: [
-                { label: 'Patients', href: '/Patient' },
-                { label: 'Practitioners', href: '/Practitioner' },
-                { label: 'Observations', href: '/Observation' },
-                { label: 'Organizations', href: '/Organization' },
-                { label: 'Service Requests', href: '/ServiceRequest' },
-                { label: 'Encounters', href: '/Encounter' },
-                { label: 'Diagnostic Reports', href: '/DiagnosticReport' },
-                { label: 'Questionnaires', href: '/Questionnaire' },
-              ],
-            },
-            {
-              title: 'Admin',
-              links: [
-                { label: 'Project', href: '/admin/project' },
-                { label: 'AccessPolicy', href: '/AccessPolicy' },
-              ],
-            },
-            {
-              title: 'Developer',
-              links: [
-                { label: 'Client Applications', href: '/ClientApplication' },
-                { label: 'Subscriptions', href: '/Subscription' },
-                { label: 'Bots', href: '/Bot' },
-                { label: 'Batch', href: '/batch' },
-              ],
-            },
-            {
-              title: 'Settings',
-              links: [
-                {
-                  label: 'Profile',
-                  href: `/${profile.resourceType}/${profile.id}`,
-                },
-                { label: 'Change Password', href: '/changepassword' },
-              ],
-            },
-          ]}
+          config={medplum.getUserConfiguration()}
         />
       )}
       <Routes>
@@ -92,7 +53,8 @@ export function App(): JSX.Element {
         <Route path="/batch" element={<BatchPage />} />
         <Route path="/forms/:id" element={<FormPage />} />
         <Route path="/admin/project" element={<ProjectPage />} />
-        <Route path="/admin/projects/:id/invite" element={<InvitePage />} />
+        <Route path="/admin/projects/:projectId/client" element={<CreateClientPage />} />
+        <Route path="/admin/projects/:projectId/invite" element={<InvitePage />} />
         <Route path="/admin/projects/:projectId/members/:membershipId" element={<EditMembershipPage />} />
         <Route path="/admin/super" element={<SuperAdminPage />} />
         <Route path="/:resourceType/:id/_history/:versionId/:tab" element={<ResourceVersionPage />} />

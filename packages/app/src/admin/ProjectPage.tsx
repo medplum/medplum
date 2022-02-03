@@ -1,9 +1,10 @@
+import { resolveId } from '@medplum/core';
 import { Document, Loading, MedplumLink, ResourceBadge, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 
 export function ProjectPage(): JSX.Element {
   const medplum = useMedplum();
-  const id = medplum.getActiveLogin()?.project?.reference?.split('/')?.[1] as string;
+  const id = resolveId(medplum.getActiveLogin()?.project) as string;
   const [loading, setLoading] = useState<boolean>(true);
   const [result, setResult] = useState<any>();
   const [error, setError] = useState();
@@ -35,29 +36,68 @@ export function ProjectPage(): JSX.Element {
       <h1>Admin / Projects / {result.project.name}</h1>
       <h3>Members</h3>
       <table className="medplum-table">
+        <colgroup>
+          <col style={{ width: '60%' }} />
+          <col style={{ width: '20%' }} />
+          <col style={{ width: '20%' }} />
+        </colgroup>
         <thead>
           <tr>
             <th>Name</th>
-            <th>Role</th>
-            <th>Actions</th>
+            <th className="center">Role</th>
+            <th className="center">Actions</th>
           </tr>
         </thead>
         <tbody>
-          {result.members.map((member: any) => (
-            <tr key={member.profile}>
-              <td>
-                <ResourceBadge value={{ reference: member.profile }} link={true} />
-              </td>
-              <td>{member.role}</td>
-              <td>
-                <MedplumLink to={`/admin/projects/${id}/members/${member.membershipId}`}>Edit</MedplumLink>
-              </td>
-            </tr>
-          ))}
+          {result.members
+            .filter((member: any) => member.role !== 'client')
+            .map((member: any) => (
+              <tr key={member.profile.reference}>
+                <td>
+                  <ResourceBadge value={member.profile} link={true} />
+                </td>
+                <td className="center">{member.role}</td>
+                <td className="center">
+                  <MedplumLink to={`/admin/projects/${id}/members/${member.id}`}>Access</MedplumLink>
+                </td>
+              </tr>
+            ))}
         </tbody>
       </table>
-      <hr />
-      <MedplumLink to={`/admin/projects/${result.project.id}/invite`}>Invite</MedplumLink>
+      <div className="p2 right">
+        <MedplumLink to={`/admin/projects/${result.project.id}/invite`}>Invite new user</MedplumLink>
+      </div>
+      <h3>Clients</h3>
+      <table className="table">
+        <colgroup>
+          <col style={{ width: '80%' }} />
+          <col style={{ width: '20%' }} />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th className="center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {result.members
+            .filter((member: any) => member.role === 'client')
+            .map((member: any) => (
+              <tr key={member.profile.reference}>
+                <td>
+                  <ResourceBadge value={member.profile} link={true} />
+                </td>
+                <td className="center">
+                  <MedplumLink to={`/admin/projects/${id}/client/${resolveId(member.profile)}`}>Edit</MedplumLink>
+                  <MedplumLink to={`/admin/projects/${id}/members/${member.id}`}>Access</MedplumLink>
+                </td>
+              </tr>
+            ))}
+        </tbody>
+      </table>
+      <div className="p2 right">
+        <MedplumLink to={`/admin/projects/${result.project.id}/client`}>Create new client</MedplumLink>
+      </div>
     </Document>
   );
 }

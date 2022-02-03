@@ -1,4 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
+import { resolveId } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -56,7 +57,7 @@ describe('Project Admin routes', () => {
     expect(res.status).toBe(200);
     expect(res.body.project).toBeDefined();
 
-    const projectId = res.body.project.reference.replace('Project/', '');
+    const projectId = resolveId(res.body.project);
 
     // Invite a new member
     const res2 = await request(app)
@@ -73,13 +74,14 @@ describe('Project Admin routes', () => {
     // Get the project details
     // Make sure the new member is in the members list
     // Get the project details and members
+    // 3 members total (1 admin, 1 client, 1 invited)
     const res3 = await request(app)
       .get('/admin/projects/' + projectId)
       .set('Authorization', 'Bearer ' + res.body.accessToken);
     expect(res3.status).toBe(200);
     expect(res3.body.project).toBeDefined();
     expect(res3.body.members).toBeDefined();
-    expect(res3.body.members.length).toEqual(2);
+    expect(res3.body.members.length).toEqual(3);
 
     const owner = res3.body.members.find((m: any) => m.role === 'owner');
     expect(owner).toBeDefined();
@@ -88,13 +90,13 @@ describe('Project Admin routes', () => {
 
     // Get the new membership details
     const res4 = await request(app)
-      .get('/admin/projects/' + projectId + '/members/' + member.membershipId)
+      .get('/admin/projects/' + projectId + '/members/' + member.id)
       .set('Authorization', 'Bearer ' + res.body.accessToken);
     expect(res4.status).toBe(200);
 
     // Try a naughty request using a different resource type
     const res5 = await request(app)
-      .post('/admin/projects/' + projectId + '/members/' + member.membershipId)
+      .post('/admin/projects/' + projectId + '/members/' + member.id)
       .set('Authorization', 'Bearer ' + res.body.accessToken)
       .type('json')
       .send({
@@ -104,7 +106,7 @@ describe('Project Admin routes', () => {
 
     // Try a naughty request using a different membership
     const res6 = await request(app)
-      .post('/admin/projects/' + projectId + '/members/' + member.membershipId)
+      .post('/admin/projects/' + projectId + '/members/' + member.id)
       .set('Authorization', 'Bearer ' + res.body.accessToken)
       .type('json')
       .send({
@@ -115,7 +117,7 @@ describe('Project Admin routes', () => {
 
     // Promote the new member to admin
     const res7 = await request(app)
-      .post('/admin/projects/' + projectId + '/members/' + member.membershipId)
+      .post('/admin/projects/' + projectId + '/members/' + member.id)
       .set('Authorization', 'Bearer ' + res.body.accessToken)
       .type('json')
       .send({
@@ -126,14 +128,14 @@ describe('Project Admin routes', () => {
 
     // Get the project details
     // Make sure the new member is an admin
+    // 3 members total (1 admin, 1 client, 1 invited)
     const res8 = await request(app)
       .get('/admin/projects/' + projectId)
       .set('Authorization', 'Bearer ' + res.body.accessToken);
-
     expect(res8.status).toBe(200);
     expect(res8.body.project).toBeDefined();
     expect(res8.body.members).toBeDefined();
-    expect(res8.body.members.length).toEqual(2);
+    expect(res8.body.members.length).toEqual(3);
 
     const admin = res8.body.members.find((m: any) => m.role === 'admin');
     expect(admin).toBeDefined();
@@ -169,8 +171,10 @@ describe('Project Admin routes', () => {
 
     expect(res2.status).toBe(200);
     expect(res2.body.project).toBeDefined();
+    expect(res2.body.client).toBeDefined();
 
-    const projectId = res.body.project.reference.replace('Project/', '');
+    const projectId = resolveId(res.body.project);
+    const clientId = resolveId(res.body.client);
 
     // Try to access Alice's project using Alices's access token
     // Should succeed
@@ -179,6 +183,10 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + res.body.accessToken);
 
     expect(res3.status).toBe(200);
+    expect(res3.body.members).toBeDefined();
+    expect(res3.body.members.length).toEqual(2);
+    expect(res3.body.members[0].id).toBeDefined();
+    expect(res3.body.members[1].id).toBeDefined();
 
     // Try to access Alice's project using Bob's access token
     // Should fail
@@ -191,7 +199,7 @@ describe('Project Admin routes', () => {
     // Try to access Alice's project members using Bob's access token
     // Should fail
     const res5 = await request(app)
-      .get('/admin/projects/' + projectId + '/members/' + res3.body.members[0].membershipId)
+      .get('/admin/projects/' + projectId + '/members/' + res3.body.members[0].id)
       .set('Authorization', 'Bearer ' + res2.body.accessToken);
 
     expect(res5.status).toBe(404);
@@ -199,11 +207,48 @@ describe('Project Admin routes', () => {
     // Try to edit Alice's project members using Bob's access token
     // Should fail
     const res6 = await request(app)
-      .post('/admin/projects/' + projectId + '/members/' + res3.body.members[0].membershipId)
+      .post('/admin/projects/' + projectId + '/members/' + res3.body.members[0].id)
       .set('Authorization', 'Bearer ' + res2.body.accessToken)
       .type('json')
       .send({ resourceType: 'ProjectMembership' });
 
     expect(res6.status).toBe(404);
+
+    // Try to read Alice's client using Alices's access token
+    // Should succeed
+    const res7 = await request(app)
+      .get('/fhir/R4/ClientApplication/' + clientId)
+      .set('Authorization', 'Bearer ' + res.body.accessToken);
+
+    expect(res7.status).toBe(200);
+
+    // Try to read Alice's client using Bob's access token
+    // Should fail
+    const res8 = await request(app)
+      .get('/fhir/R4/ClientApplication/' + clientId)
+      .set('Authorization', 'Bearer ' + res2.body.accessToken);
+
+    expect(res8.status).toBe(404);
+
+    // Try to create a new client in Alice's project using Alices's access token
+    // Should succeed
+    const res9 = await request(app)
+      .post('/admin/projects/' + projectId + '/client')
+      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .type('json')
+      .send({
+        resourceType: 'ClientApplication',
+        name: 'Test client',
+      });
+
+    expect(res9.status).toBe(201);
+
+    // Try to create a new client in Alice's project using Bob's access token
+    // Should fail
+    const res10 = await request(app)
+      .post('/admin/projects/' + projectId + '/client')
+      .set('Authorization', 'Bearer ' + res2.body.accessToken);
+
+    expect(res10.status).toBe(404);
   });
 });

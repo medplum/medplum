@@ -1,11 +1,19 @@
-import { assertOk, createReference, getReferenceString, isOk, Operator } from '@medplum/core';
-import { ClientApplication, Login } from '@medplum/fhirtypes';
-import { createHash, timingSafeEqual } from 'crypto';
+import {
+  assertOk,
+  createReference,
+  getReferenceString,
+  isOk,
+  Operator,
+  ProfileResource,
+  resolveId,
+} from '@medplum/core';
+import { ClientApplication, Login, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import { createHash } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
 import { systemRepo } from '../fhir';
 import { generateAccessToken, generateSecret, MedplumRefreshTokenClaims, verifyJwt } from './keys';
-import { getAuthTokens, getReferenceIdPart, revokeLogin } from './utils';
+import { getAuthTokens, getUserMemberships, revokeLogin, timingSafeEqualStr } from './utils';
 
 /**
  * Handles the OAuth/OpenID Token Endpoint.
@@ -72,17 +80,22 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
     return sendTokenError(res, 'invalid_request', 'Invalid secret');
   }
 
+  const memberships = await getUserMemberships(createReference(client));
+  if (!memberships || memberships.length !== 1) {
+    return sendTokenError(res, 'invalid_request', 'Invalid client');
+  }
+
+  const membership = memberships[0];
+
   const scope = req.body.scope as string;
 
   const [loginOutcome, login] = await systemRepo.createResource<Login>({
     resourceType: 'Login',
+    user: createReference(client),
     client: createReference(client),
-    profile: createReference(client),
+    membership: createReference(membership),
     authTime: new Date().toISOString(),
     granted: true,
-    project: {
-      reference: 'Project/' + client.meta?.project,
-    },
     scope,
   });
   assertOk(loginOutcome, login);
@@ -100,6 +113,8 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
     token_type: 'Bearer',
     access_token: accessToken,
     expires_in: 3600,
+    project: membership.project,
+    profile: membership.profile,
     scope,
   });
 }
@@ -138,11 +153,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
     return sendTokenError(res, 'invalid_request', 'Invalid client');
   }
 
-  if (!login.project) {
-    return sendTokenError(res, 'invalid_request', 'Invalid project');
-  }
-
-  if (!login.profile) {
+  if (!login.membership) {
     return sendTokenError(res, 'invalid_request', 'Invalid profile');
   }
 
@@ -166,7 +177,10 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
     }
   }
 
-  const [tokenOutcome, token] = await getAuthTokens(login);
+  const [membershipOutcome, membership] = await systemRepo.readReference<ProjectMembership>(login.membership);
+  assertOk(membershipOutcome, membership);
+
+  const [tokenOutcome, token] = await getAuthTokens(login, membership.profile as Reference<ProfileResource>);
   if (!isOk(tokenOutcome) || !token) {
     return sendTokenError(res, 'invalid_request', 'Invalid token');
   }
@@ -178,8 +192,8 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
     id_token: token.idToken,
     access_token: token.accessToken,
     refresh_token: token.refreshToken,
-    project: login.project,
-    profile: login.profile,
+    project: membership.project,
+    profile: membership.profile,
   });
 }
 
@@ -227,7 +241,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
     const base64Credentials = authHeader.split(' ')[1];
     const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
     const [clientId, clientSecret] = credentials.split(':');
-    if (clientId !== getReferenceIdPart(login.client)) {
+    if (clientId !== resolveId(login.client)) {
       return sendTokenError(res, 'invalid_grant', 'Incorrect client');
     }
     if (!clientSecret) {
@@ -243,7 +257,12 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
   });
   assertOk(updateOutcome, updatedLogin);
 
-  const [tokenOutcome, token] = await getAuthTokens(updatedLogin);
+  const [membershipOutcome, membership] = await systemRepo.readReference<ProjectMembership>(
+    login.membership as Reference<ProjectMembership>
+  );
+  assertOk(membershipOutcome, membership);
+
+  const [tokenOutcome, token] = await getAuthTokens(updatedLogin, membership.profile as Reference<ProfileResource>);
   if (!isOk(tokenOutcome)) {
     return sendTokenError(res, 'invalid_request', 'Invalid token');
   }
@@ -259,8 +278,8 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
     id_token: token.idToken,
     access_token: token.accessToken,
     refresh_token: token.refreshToken,
-    project: login.project,
-    profile: login.profile,
+    project: membership.project,
+    profile: membership.profile,
   });
 }
 
@@ -313,23 +332,4 @@ export function hashCode(code: string): string {
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=/g, '');
-}
-
-/**
- * Performs constant time comparison of two strings.
- * Returns true if a is equal to b, without leaking timing information
- * that would allow an attacker to guess one of the values.
- *
- * The built-in function timingSafeEqual requires that buffers are equal length.
- * Per the discussion here: https://github.com/nodejs/node/issues/17178
- * That is considered ok, and does not invalidate the protection from timing attack.
- *
- * @param a First string.
- * @param b Second string.
- * @returns True if the strings are equal.
- */
-function timingSafeEqualStr(a: string, b: string): boolean {
-  const buf1 = Buffer.from(a);
-  const buf2 = Buffer.from(b);
-  return buf1.length === buf2.length && timingSafeEqual(buf1, buf2);
 }

@@ -1,5 +1,5 @@
 import { getReferenceString, ProfileResource } from '@medplum/core';
-import { HumanName, Patient } from '@medplum/fhirtypes';
+import { HumanName, Patient, UserConfiguration } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Avatar } from './Avatar';
@@ -15,17 +15,7 @@ export interface HeaderProps {
   onLogo?: () => void;
   onProfile?: () => void;
   onSignOut?: () => void;
-  sidebarLinks?: SidebarLinkGroup[];
-}
-
-export interface SidebarLinkGroup {
-  title: string;
-  links: SidebarLink[];
-}
-
-export interface SidebarLink {
-  label: string;
-  href: string;
+  config?: UserConfiguration;
 }
 
 export function Header(props: HeaderProps): JSX.Element {
@@ -179,15 +169,24 @@ export function Header(props: HeaderProps): JSX.Element {
         inactiveClassName="medplum-sidebar"
         onClose={() => setSidebarVisible(false)}
       >
-        {props.sidebarLinks?.map((group) => (
-          <React.Fragment key={group.title}>
-            <h5>{group.title}</h5>
+        {props.config?.menu?.map((menu) => (
+          <React.Fragment key={menu.title}>
+            <h5>{menu.title}</h5>
             <ul>
-              {group.links.map((link) => (
-                <li key={link.href}>
-                  <MedplumLink to={link.href}>{link.label}</MedplumLink>
+              {menu.link?.map((link) => (
+                <li key={link.target}>
+                  <MedplumLink to={link.target}>{link.name}</MedplumLink>
                 </li>
               ))}
+            </ul>
+            <h5>Settings</h5>
+            <ul>
+              <li>
+                <MedplumLink to={context.profile}>Profile</MedplumLink>
+              </li>
+              <li>
+                <MedplumLink to="/changepassword">Change password</MedplumLink>
+              </li>
             </ul>
           </React.Fragment>
         ))}

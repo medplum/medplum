@@ -4,9 +4,6 @@
  */
 
 import { Meta } from './Meta';
-import { Project } from './Project';
-import { Reference } from './Reference';
-import { User } from './User';
 
 /**
  * User specific configuration for the Medplum application.
@@ -45,22 +42,12 @@ export interface UserConfiguration {
   readonly language?: string;
 
   /**
-   * Reference to the user for which this configuration applies.
-   */
-  readonly user?: Reference<User>;
-
-  /**
-   * Reference to the project for which this configuration applies.
-   */
-  readonly project?: Reference<Project>;
-
-  /**
-   * Optional menu of shortcuts to URLs
+   * Optional menu of shortcuts to URLs.
    */
   readonly menu?: UserConfigurationMenu[];
 
   /**
-   * Shortcut links to URLs
+   * Shortcut links to URLs.
    */
   readonly search?: UserConfigurationSearch[];
 
@@ -71,7 +58,7 @@ export interface UserConfiguration {
 }
 
 /**
- * Optional menu of shortcuts to URLs
+ * Optional menu of shortcuts to URLs.
  */
 export interface UserConfigurationMenu {
 
@@ -81,13 +68,13 @@ export interface UserConfigurationMenu {
   readonly title?: string;
 
   /**
-   * Shortcut links to URLs
+   * Shortcut links to URLs.
    */
   readonly link?: UserConfigurationMenuLink[];
 }
 
 /**
- * Shortcut links to URLs
+ * Shortcut links to URLs.
  */
 export interface UserConfigurationMenuLink {
 
@@ -97,7 +84,7 @@ export interface UserConfigurationMenuLink {
   readonly name?: string;
 
   /**
-   * The URL target of the link
+   * The URL target of the link.
    */
   readonly target?: string;
 }
@@ -144,7 +131,7 @@ export interface UserConfigurationOption {
 }
 
 /**
- * Shortcut links to URLs
+ * Shortcut links to URLs.
  */
 export interface UserConfigurationSearch {
 
@@ -154,7 +141,8 @@ export interface UserConfigurationSearch {
   readonly name?: string;
 
   /**
-   * The rules that the server should use to determine which resources to return.
+   * The rules that the server should use to determine which resources to
+   * return.
    */
   readonly criteria?: string;
 }

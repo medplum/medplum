@@ -7,6 +7,7 @@ export interface MedplumLinkProps {
   to?: Resource | Reference | string;
   label?: string;
   testid?: string;
+  className?: string;
   onClick?: () => void;
   children: React.ReactNode;
 }
@@ -30,6 +31,7 @@ export function MedplumLink(props: MedplumLinkProps): JSX.Element {
       href={href}
       aria-label={props.label}
       data-testid={props.testid || 'link'}
+      className={props.className}
       onClick={(e: React.SyntheticEvent) => {
         killEvent(e);
         if (props.onClick) {

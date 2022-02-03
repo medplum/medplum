@@ -24,6 +24,15 @@ export function getReferenceString(resource: Resource): string {
 }
 
 /**
+ * Returns the ID portion of a reference.
+ * @param reference A FHIR reference.
+ * @returns The ID portion of a reference.
+ */
+export function resolveId(reference: Reference | undefined): string | undefined {
+  return reference?.reference?.split('/')[1];
+}
+
+/**
  * Returns true if the resource is a "ProfileResource".
  * @param resource The FHIR resource.
  * @returns True if the resource is a "ProfileResource".

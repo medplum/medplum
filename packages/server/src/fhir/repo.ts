@@ -14,6 +14,7 @@ import {
   notFound,
   notModified,
   Operator as FhirOperator,
+  resolveId,
   SearchParameterDetails,
   SearchParameterType,
   SearchRequest,
@@ -28,6 +29,7 @@ import {
   Login,
   Meta,
   OperationOutcome,
+  ProjectMembership,
   Reference,
   Resource,
   SearchParameter,
@@ -394,7 +396,7 @@ export class Repository {
       id,
       lastUpdated,
       deleted: true,
-      compartments: [],
+      compartments: this.#getCompartments(resource as Resource),
       content,
     };
 
@@ -1195,17 +1197,6 @@ export class Repository {
 }
 
 /**
- * Returns the ID portion of a reference.
- * For now, assumes the common convention of resourceType/id.
- * In the future, detect and handle searches (i.e., "Patient?identifier=123").
- * @param reference A FHIR reference.
- * @returns The ID portion of a reference.
- */
-function resolveId(reference: Reference | undefined): string | undefined {
-  return reference?.reference?.split('/')[1];
-}
-
-/**
  * Converts a FHIR search operator into a SQL operator.
  * Only works for simple conversions.
  * For complex conversions, need to build custom SQL.
@@ -1239,46 +1230,42 @@ function fhirOperatorToSqlOperator(fhirOperator: FhirOperator): Operator {
  * @param login The user login.
  * @returns A repository configured for the login details.
  */
-export async function getRepoForLogin(login: Login): Promise<Repository> {
+export async function getRepoForLogin(login: Login, membership: ProjectMembership): Promise<Repository> {
   let accessPolicy: AccessPolicy | undefined = undefined;
 
-  if (!login.profile?.reference) {
-    throw new Error('Cannot create repo for login without profile');
+  if (!membership.profile?.reference) {
+    return Promise.reject('Cannot create repo for login without profile');
   }
 
-  if (login.accessPolicy) {
-    const [accessPolicyOutcome, accessPolicyResource] = await systemRepo.readReference(login.accessPolicy);
+  if (login.admin) {
+    return new Repository({
+      project: resolveId(membership.project) as string,
+      author: membership.profile as Reference,
+      admin: true,
+    });
+  }
+
+  if (membership.accessPolicy) {
+    const [accessPolicyOutcome, accessPolicyResource] = await systemRepo.readReference(membership.accessPolicy);
     assertOk(accessPolicyOutcome, accessPolicyResource);
     accessPolicy = accessPolicyResource;
-  }
-
-  // If the resource is an "actor" resource,
-  // then look it up for a synthetic access policy.
-  // Actor resources: Bot, ClientApplication, Subscription
-  // Synthetic access policy:
-  // If the profile has a profile.meta.account,
-  // Always write with account as the compartment
-  // Always read with the account as a filter
-  if (login.profile) {
-    const profileType = login.profile.reference;
-    if (
-      profileType &&
-      (profileType.startsWith('Bot') ||
-        profileType.startsWith('ClientApplication') ||
-        profileType.startsWith('Subscription'))
-    ) {
-      const [profileOutcome, profileResource] = await systemRepo.readReference(login.profile);
-      assertOk(profileOutcome, profileResource);
-      if (profileResource.meta?.account) {
-        accessPolicy = buildSyntheticAccessPolicy(profileResource.meta.account);
-      }
+  } else if (membership.profile.reference.startsWith('ClientApplication/')) {
+    // If the resource is an "actor" resource,
+    // then look it up for a synthetic access policy.
+    // Synthetic access policy:
+    // If the profile has a profile.meta.account,
+    // Always write with account as the compartment
+    // Always read with the account as a filter
+    const [profileOutcome, profileResource] = await systemRepo.readReference(membership.profile);
+    assertOk(profileOutcome, profileResource);
+    if (profileResource.meta?.account) {
+      accessPolicy = buildSyntheticAccessPolicy(profileResource.meta.account);
     }
   }
 
   return new Repository({
-    project: resolveId(login.project) as string,
-    author: login.profile as Reference,
-    admin: login.admin,
+    project: resolveId(membership.project) as string,
+    author: membership.profile as Reference,
     accessPolicy,
   });
 }

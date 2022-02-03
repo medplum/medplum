@@ -4,11 +4,13 @@ import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { systemRepo } from '../fhir';
 import { authenticateToken } from '../oauth';
+import { createClientHandler, createClientValidators } from './client';
 import { inviteHandler, inviteValidators } from './invite';
 import { verifyProjectAdmin } from './utils';
 
 export const projectAdminRouter = Router();
 projectAdminRouter.use(authenticateToken);
+projectAdminRouter.post('/:projectId/client', createClientValidators, asyncWrap(createClientHandler));
 projectAdminRouter.post('/:projectId/invite', inviteValidators, asyncWrap(inviteHandler));
 
 /**
@@ -27,10 +29,9 @@ projectAdminRouter.get(
     const members = [];
     for (const membership of memberships) {
       members.push({
-        membershipId: membership.id,
-        profile: membership.profile?.reference,
-        user: membership.user?.reference,
-        name: membership.profile?.display,
+        id: membership.id,
+        user: membership.user,
+        profile: membership.profile,
         accessPolicy: membership.accessPolicy,
         role: getRole(project, membership),
       });
@@ -94,6 +95,9 @@ projectAdminRouter.post(
  * @returns A string representing the role of the user in the project.
  */
 function getRole(project: Project, membership: ProjectMembership): string {
+  if (membership.user?.reference?.startsWith('ClientApplication/')) {
+    return 'client';
+  }
   if (membership.user?.reference === project.owner?.reference) {
     return 'owner';
   }

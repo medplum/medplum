@@ -346,7 +346,8 @@
             "max" : "1",
             "type" : [{
               "code" : "Reference",
-              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/User"]
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/ClientApplication",
+                "https://medplum.com/fhir/StructureDefinition/User"]
             }]
           },
           {
@@ -357,9 +358,10 @@
             "max" : "1",
             "type" : [{
               "code" : "Reference",
-              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/Patient",
-              "http://hl7.org/fhir/StructureDefinition/Practitioner",
-              "http://hl7.org/fhir/StructureDefinition/RelatedPerson"]
+              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/ClientApplication",
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson"]
             }]
           },
           {
@@ -381,6 +383,17 @@
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
+            }]
+          },
+          {
+            "id" : "ProjectMembership.userConfiguration",
+            "path" : "ProjectMembership.userConfiguration",
+            "definition" : "The user configuration for the user within the project memebership such as menu links, saved searches, and features.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/UserConfiguration"]
             }]
           },
           {
@@ -561,21 +574,19 @@
             "max" : "1",
             "type" : [{
               "code" : "Reference",
-              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/User"]
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/ClientApplication",
+                "https://medplum.com/fhir/StructureDefinition/User"]
             }]
           },
           {
-            "id" : "Login.profile",
-            "path" : "Login.profile",
-            "definition" : "Reference to the user's FHIR identity for this login (patient, practitioner, etc).",
+            "id" : "Login.membership",
+            "path" : "Login.membership",
+            "definition" : "Reference to the project membership which includes FHIR identity (patient, practitioner, etc), access policy, and user configuration.",
             "min" : 1,
             "max" : "1",
             "type" : [{
               "code" : "Reference",
-              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/Patient",
-              "http://hl7.org/fhir/StructureDefinition/Practitioner",
-              "http://hl7.org/fhir/StructureDefinition/RelatedPerson",
-              "https://medplum.com/fhir/StructureDefinition/ClientApplication"]
+              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/ProjectMembership"]
             }]
           },
           {
@@ -676,28 +687,6 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
-          },
-          {
-            "id" : "Login.accessPolicy",
-            "path" : "Login.accessPolicy",
-            "definition" : "Collection of compartments that the user has been granted access.  This is a flattened collection of all ProjectMembership compartments at the time of login.",
-            "min" : 0,
-            "max" : "1",
-            "type" : [{
-              "code" : "Reference",
-              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
-            }]
-          },
-          {
-            "id" : "Login.project",
-            "path" : "Login.project",
-            "definition" : "Reference to the default project for the duration of the login.",
-            "min" : 0,
-            "max" : "1",
-            "type" : [{
-              "code" : "Reference",
-              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Project"]
             }]
           },
           {

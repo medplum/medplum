@@ -9,19 +9,19 @@ import {
   notFound,
   Operator,
   ProfileResource,
+  resolveId,
 } from '@medplum/core';
 import {
-  AccessPolicy,
   BundleEntry,
   ClientApplication,
   Login,
   OperationOutcome,
-  Project,
   ProjectMembership,
   Reference,
   User,
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcrypt';
+import { timingSafeEqual } from 'crypto';
 import { JWTPayload } from 'jose';
 import { RepositoryResult, systemRepo } from '../fhir';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
@@ -112,14 +112,6 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
   // If they only have one membership, set it now
   // Otherwise the application will need to prompt the user
   const memberships = await getUserMemberships(createReference(user));
-  let project: Reference<Project> | undefined = undefined;
-  let profile: Reference<ProfileResource> | undefined = undefined;
-  let accessPolicy: Reference<AccessPolicy> | undefined = undefined;
-  if (memberships.length === 1) {
-    project = memberships[0].project;
-    profile = memberships[0].profile;
-    accessPolicy = memberships[0].accessPolicy;
-  }
 
   return systemRepo.createResource<Login>({
     resourceType: 'Login',
@@ -134,9 +126,7 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     codeChallenge: request.codeChallenge,
     codeChallengeMethod: request.codeChallengeMethod,
     admin: user.admin,
-    project,
-    profile,
-    accessPolicy,
+    membership: memberships.length === 1 ? createReference(memberships[0]) : undefined,
   });
 }
 
@@ -206,7 +196,7 @@ async function authenticate(request: LoginRequest, user: User): Promise<Operatio
  * @param user Reference to the user.
  * @returns Array of profile resources that the user has access to.
  */
-export async function getUserMemberships(user: Reference<User>): Promise<ProjectMembership[]> {
+export async function getUserMemberships(user: Reference<ClientApplication | User>): Promise<ProjectMembership[]> {
   if (!user.reference) {
     throw new Error('User reference is missing');
   }
@@ -225,9 +215,12 @@ export async function getUserMemberships(user: Reference<User>): Promise<Project
   return (memberships.entry as BundleEntry<ProjectMembership>[]).map((entry) => entry.resource as ProjectMembership);
 }
 
-export async function getAuthTokens(login: Login): Promise<[OperationOutcome, TokenResult | undefined]> {
-  const clientId = login.client && getReferenceIdPart(login.client);
-  const userId = getReferenceIdPart(login.user);
+export async function getAuthTokens(
+  login: Login,
+  profile: Reference<ProfileResource>
+): Promise<[OperationOutcome, TokenResult | undefined]> {
+  const clientId = login.client && resolveId(login.client);
+  const userId = resolveId(login.user);
   if (!userId) {
     return [badRequest('Login missing user'), undefined];
   }
@@ -242,7 +235,7 @@ export async function getAuthTokens(login: Login): Promise<[OperationOutcome, To
   const idToken = await generateIdToken({
     client_id: clientId,
     login_id: login.id as string,
-    fhirUser: login.profile?.reference,
+    fhirUser: profile.reference,
     sub: userId,
     nonce: login.nonce as string,
     auth_time: (getDateProperty(login.authTime) as Date).getTime() / 1000,
@@ -254,7 +247,7 @@ export async function getAuthTokens(login: Login): Promise<[OperationOutcome, To
     sub: userId,
     username: userId,
     scope: login.scope as string,
-    profile: login.profile?.reference as string,
+    profile: profile.reference as string,
   });
 
   const refreshToken = login.refreshSecret
@@ -283,19 +276,6 @@ export async function revokeLogin(login: Login): Promise<void> {
 }
 
 /**
- * Returns the ID portion of a FHIR reference.
- * @param reference A reference object.
- * @returns The resource ID portion of the reference.
- */
-export function getReferenceIdPart(reference: Reference | undefined): string | undefined {
-  const str = reference?.reference;
-  if (!str) {
-    return undefined;
-  }
-  return str.split('/')[1];
-}
-
-/**
  * Searches for user by email.
  * @param email
  * @return
@@ -318,4 +298,23 @@ async function getUserByEmail(email: string): RepositoryResult<User | undefined>
   }
 
   return [allOk, bundle.entry[0].resource as User];
+}
+
+/**
+ * Performs constant time comparison of two strings.
+ * Returns true if a is equal to b, without leaking timing information
+ * that would allow an attacker to guess one of the values.
+ *
+ * The built-in function timingSafeEqual requires that buffers are equal length.
+ * Per the discussion here: https://github.com/nodejs/node/issues/17178
+ * That is considered ok, and does not invalidate the protection from timing attack.
+ *
+ * @param a First string.
+ * @param b Second string.
+ * @returns True if the strings are equal.
+ */
+export function timingSafeEqualStr(a: string, b: string): boolean {
+  const buf1 = Buffer.from(a);
+  const buf2 = Buffer.from(b);
+  return buf1.length === buf2.length && timingSafeEqual(buf1, buf2);
 }

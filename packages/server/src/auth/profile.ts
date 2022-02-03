@@ -1,9 +1,14 @@
-import { assertOk, badRequest, createReference, ProfileResource } from '@medplum/core';
-import { Login, Project, Reference, User } from '@medplum/fhirtypes';
+import { assertOk, badRequest, createReference } from '@medplum/core';
+import { Login, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { getUserMemberships } from '../oauth';
+
+/*
+ * The profile handler is used during login when a user has multiple profiles.
+ * The client will submit the profile id and the server will update the login.
+ */
 
 export const profileValidators = [
   body('login').exists().withMessage('Missing login'),
@@ -30,7 +35,7 @@ export async function profileHandler(req: Request, res: Response): Promise<void>
     return;
   }
 
-  if (login.project || login.profile) {
+  if (login.membership) {
     sendOutcome(res, badRequest('Login profile already set'));
     return;
   }
@@ -43,21 +48,10 @@ export async function profileHandler(req: Request, res: Response): Promise<void>
     return;
   }
 
-  // Get up-to-date project and profile
-  const [projectOutcome, project] = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
-  assertOk(projectOutcome, project);
-
-  const [profileOutcome, profile] = await systemRepo.readReference<ProfileResource>(
-    membership.profile as Reference<ProfileResource>
-  );
-  assertOk(profileOutcome, profile);
-
   // Update the login
-  const [updateOutcome, updated] = await systemRepo.updateResource({
+  const [updateOutcome, updated] = await systemRepo.updateResource<Login>({
     ...login,
-    project: createReference(project),
-    profile: createReference(profile),
-    accessPolicy: membership.accessPolicy,
+    membership: createReference(membership),
   });
   assertOk(updateOutcome, updated);
 

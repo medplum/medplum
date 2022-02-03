@@ -61096,6 +61096,10 @@
           "description": "User that is granted access to the project.",
           "$ref": "#/definitions/Reference"
         },
+        "userConfiguration": {
+          "description": "The user configuration for the user within the project memebership such as menu links, saved searches, and features.",
+          "$ref": "#/definitions/Reference"
+        },
         "admin": {
           "description": "Whether this user is a project administrator.",
           "$ref": "#/definitions/boolean"
@@ -61157,8 +61161,7 @@
       },
       "required": [
         "resourceType",
-        "secret",
-        "redirectUri"
+        "secret"
       ]
     },
     "User": {
@@ -61249,8 +61252,8 @@
           "description": "The user requesting the code.",
           "$ref": "#/definitions/Reference"
         },
-        "profile": {
-          "description": "Reference to the user's FHIR identity for this login (patient, practitioner, etc).",
+        "membership": {
+          "description": "Reference to the project membership which includes FHIR identity (patient, practitioner, etc), access policy, and user configuration.",
           "$ref": "#/definitions/Reference"
         },
         "scope": {
@@ -61299,14 +61302,6 @@
             "$ref": "#/definitions/Reference"
           },
           "type": "array"
-        },
-        "project": {
-          "description": "Reference to the default project for the duration of the login.",
-          "$ref": "#/definitions/Reference"
-        },
-        "accessPolicy": {
-          "description": "Collection of compartments that the user has been granted access.  This is a flattened collection of all ProjectMembership compartments at the time of login.",
-          "$ref": "#/definitions/Reference"
         },
         "admin": {
           "description": "Whether this login has system administrator privileges.",

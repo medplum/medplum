@@ -44,10 +44,13 @@ describe('Header', () => {
 
   test('Renders sidebar links', async () => {
     setup({
-      sidebarLinks: [
-        { title: 'section 1', links: [{ label: 'label 1', href: 'href1' }] },
-        { title: 'section 2', links: [{ label: 'label 2', href: 'href2' }] },
-      ],
+      config: {
+        resourceType: 'UserConfiguration',
+        menu: [
+          { title: 'section 1', link: [{ name: 'label 1', target: 'href1' }] },
+          { title: 'section 2', link: [{ name: 'label 2', target: 'href2' }] },
+        ],
+      },
     });
 
     await act(async () => {

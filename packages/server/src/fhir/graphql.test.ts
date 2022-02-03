@@ -1,3 +1,6 @@
+import { createReference } from '@medplum/core';
+import { Encounter, Patient } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp } from '../app';
@@ -6,10 +9,12 @@ import { closeDatabase, initDatabase } from '../database';
 import { initTestAuth } from '../jest.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
-import { systemRepo } from './repo';
 
 const app = express();
 let accessToken: string;
+let patient: Patient;
+let encounter1: Encounter;
+let encounter2: Encounter;
 
 describe('GraphQL', () => {
   beforeAll(async () => {
@@ -21,40 +26,53 @@ describe('GraphQL', () => {
     accessToken = await initTestAuth();
 
     // Creat a simple patient
-    await systemRepo.updateResource({
-      resourceType: 'Patient',
-      id: '8a54c7db-654b-4c3d-ba85-e0909f51c12b',
-      name: [
-        {
-          given: ['Alice'],
-          family: 'Smith',
-        },
-      ],
-    });
+    const res1 = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Alice'],
+            family: 'Smith',
+          },
+        ],
+      });
+    expect(res1.status).toBe(201);
+    patient = res1.body as Patient;
 
     // Create an encounter referring to the patient
-    await systemRepo.updateResource({
-      resourceType: 'Encounter',
-      id: '1ef2b1fc-74d9-491c-8e5e-595a9d460043',
-      class: {
-        code: 'HH',
-      },
-      subject: {
-        reference: 'Patient/8a54c7db-654b-4c3d-ba85-e0909f51c12b',
-      },
-    });
+    const res2 = await request(app)
+      .post(`/fhir/R4/Encounter`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Encounter',
+        class: {
+          code: 'HH',
+        },
+        subject: createReference(patient),
+      });
+    expect(res2.status).toBe(201);
+    encounter1 = res2.body as Encounter;
 
     // Create an encounter referring to missing patient
-    await systemRepo.updateResource({
-      resourceType: 'Encounter',
-      id: '1ef2b1fc-74d9-491c-8e5e-595a9d460044',
-      class: {
-        code: 'HH',
-      },
-      subject: {
-        reference: 'Patient/8a54c7db-654b-4c3d-ba85-e0909f51c12c',
-      },
-    });
+    const res3 = await request(app)
+      .post(`/fhir/R4/Encounter`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Encounter',
+        class: {
+          code: 'HH',
+        },
+        subject: {
+          reference: 'Patient/' + randomUUID(),
+        },
+      });
+    expect(res3.status).toBe(201);
+    encounter2 = res3.body as Encounter;
   });
 
   afterAll(async () => {
@@ -170,7 +188,7 @@ describe('GraphQL', () => {
       .send({
         query: `
       {
-        Patient(id: "8a54c7db-654b-4c3d-ba85-e0909f51c12b") {
+        Patient(id: "${patient.id}") {
           id
           name { given }
         }
@@ -189,7 +207,7 @@ describe('GraphQL', () => {
       .send({
         query: `
       {
-        Patient(id: "8a54c7db-654b-4c3d-ba85-e0909f51c12c") {
+        Patient(id: "${randomUUID()}") {
           id
           name { given }
         }
@@ -228,7 +246,7 @@ describe('GraphQL', () => {
       .send({
         query: `
         {
-          Encounter(id: "1ef2b1fc-74d9-491c-8e5e-595a9d460043") {
+          Encounter(id: "${encounter1.id}") {
             id
             meta {
               lastUpdated
@@ -262,7 +280,7 @@ describe('GraphQL', () => {
       .send({
         query: `
         {
-          Encounter(id: "1ef2b1fc-74d9-491c-8e5e-595a9d460044") {
+          Encounter(id: "${encounter2.id}") {
             id
             meta {
               lastUpdated

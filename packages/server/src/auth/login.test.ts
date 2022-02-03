@@ -1,5 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { createReference } from '@medplum/core';
+import { createReference, resolveId } from '@medplum/core';
 import { ClientApplication } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -153,7 +153,7 @@ describe('Login', () => {
     expect(res.status).toBe(200);
     expect(res.body.project).toBeDefined();
 
-    const projectId = res.body.project.reference.replace('Project/', '');
+    const projectId = resolveId(res.body.project);
 
     // Create an access policy
     const resX = await request(app)
@@ -199,13 +199,14 @@ describe('Login', () => {
     // Get the project details
     // Make sure the new member is in the members list
     // Get the project details and members
+    // 3 members total (1 admin, 1 client, 1 invited)
     const res3 = await request(app)
       .get('/admin/projects/' + projectId)
       .set('Authorization', 'Bearer ' + res.body.accessToken);
     expect(res3.status).toBe(200);
     expect(res3.body.project).toBeDefined();
     expect(res3.body.members).toBeDefined();
-    expect(res3.body.members.length).toEqual(2);
+    expect(res3.body.members.length).toEqual(3);
 
     const owner = res3.body.members.find((m: any) => m.role === 'owner');
     expect(owner).toBeDefined();
@@ -214,13 +215,13 @@ describe('Login', () => {
 
     // Get the new membership details
     const res4 = await request(app)
-      .get('/admin/projects/' + projectId + '/members/' + member.membershipId)
+      .get('/admin/projects/' + projectId + '/members/' + member.id)
       .set('Authorization', 'Bearer ' + res.body.accessToken);
     expect(res4.status).toBe(200);
 
     // Set the new member's access policy
     const res5 = await request(app)
-      .post('/admin/projects/' + projectId + '/members/' + member.membershipId)
+      .post('/admin/projects/' + projectId + '/members/' + member.id)
       .set('Authorization', 'Bearer ' + res.body.accessToken)
       .type('json')
       .send({
@@ -231,14 +232,14 @@ describe('Login', () => {
 
     // Get the project details
     // Make sure the access policy is set
+    // 3 members total (1 admin, 1 client, 1 invited)
     const res6 = await request(app)
       .get('/admin/projects/' + projectId)
       .set('Authorization', 'Bearer ' + res.body.accessToken);
-
     expect(res6.status).toBe(200);
     expect(res6.body.project).toBeDefined();
     expect(res6.body.members).toBeDefined();
-    expect(res6.body.members.length).toEqual(2);
+    expect(res6.body.members.length).toEqual(3);
 
     const member2 = res6.body.members.find((m: any) => m.role === 'member');
     expect(member2).toBeDefined();

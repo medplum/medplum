@@ -8,8 +8,9 @@ import { initApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { systemRepo } from '../fhir';
+import { createTestClient } from '../jest.setup';
 import { seedDatabase } from '../seed';
-import { initKeys } from './keys';
+import { generateSecret, initKeys } from './keys';
 import { hashCode } from './token';
 
 const app = express();
@@ -23,14 +24,7 @@ describe('OAuth2 Token', () => {
     await seedDatabase();
     await initApp(app);
     await initKeys(config);
-
-    const [outcome, resource] = await systemRepo.createResource<ClientApplication>({
-      resourceType: 'ClientApplication',
-      secret: randomUUID(),
-      redirectUri: 'https://example.com/',
-    });
-    assertOk(outcome, resource);
-    client = resource;
+    client = await createTestClient();
   });
 
   afterAll(async () => {
@@ -135,6 +129,24 @@ describe('OAuth2 Token', () => {
       grant_type: 'client_credentials',
       client_id: badClient.id,
       client_secret: 'wrong-client-secret',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid client');
+  });
+
+  test('Token for client without project membership', async () => {
+    const [clientOutcome, client] = await systemRepo.createResource<ClientApplication>({
+      resourceType: 'ClientApplication',
+      name: 'Client without project membership',
+      secret: generateSecret(48),
+    });
+    assertOk(clientOutcome, client);
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: client.id,
+      client_secret: client.secret,
     });
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');

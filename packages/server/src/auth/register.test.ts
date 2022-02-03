@@ -1,5 +1,5 @@
-import { badRequest } from '@medplum/core';
-import { ClientApplication, Patient } from '@medplum/fhirtypes';
+import { badRequest, resolveId } from '@medplum/core';
+import { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -9,7 +9,7 @@ import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../jest.setup';
-import { generateSecret, initKeys } from '../oauth';
+import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 
 jest.mock('hibp');
@@ -243,47 +243,14 @@ describe('Register', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.profile).toBeDefined();
+    expect(res.body.client).toBeDefined();
 
     const res2 = await request(app)
       .get(`/fhir/R4/ClientApplication`)
       .set('Authorization', 'Bearer ' + res.body.accessToken);
 
     expect(res2.status).toBe(200);
-    expect(res2.body.entry).toHaveLength(1);
-    expect(res2.body.entry[0].resource.resourceType).toBe('ClientApplication');
-    expect(res2.body.entry[0].resource.name).toBe('Hamilton Project Default Client');
-  });
-
-  test('Can create a ClientApplication', async () => {
-    const res = await request(app)
-      .post('/auth/register')
-      .type('json')
-      .send({
-        firstName: 'Alexander',
-        lastName: 'Hamilton',
-        projectName: 'Hamilton Project',
-        email: `alex${randomUUID()}@example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.profile).toBeDefined();
-
-    const client: ClientApplication = {
-      resourceType: 'ClientApplication',
-      name: 'Test App',
-      secret: generateSecret(48),
-      redirectUri: 'https://example.com',
-    };
-
-    const res2 = await request(app)
-      .post(`/fhir/R4/ClientApplication`)
-      .set('Authorization', 'Bearer ' + res.body.accessToken)
-      .type('json')
-      .send(client);
-
-    expect(res2.status).toBe(201);
+    expect(res2.body.entry.length).toBe(1);
   });
 
   test('ClientApplication is restricted to project', async () => {
@@ -339,6 +306,8 @@ describe('Register', () => {
       });
 
     expect(res3.status).toBe(200);
+    expect(res3.body.project).toBeDefined();
+    expect(res3.body.client).toBeDefined();
     expect(res3.body.profile).toBeDefined();
 
     // Try to access User1 patient using User2 directly
@@ -348,21 +317,11 @@ describe('Register', () => {
       .set('Authorization', 'Bearer ' + res3.body.accessToken);
     expect(res4.status).toBe(404);
 
-    // Create a client application
-    const client: ClientApplication = {
-      resourceType: 'ClientApplication',
-      name: 'User2 Client',
-      secret: generateSecret(48),
-      redirectUri: 'https://example.com',
-    };
-
+    // Get the client
     const res5 = await request(app)
-      .post(`/fhir/R4/ClientApplication`)
-      .set('Authorization', 'Bearer ' + res3.body.accessToken)
-      .type('json')
-      .send(client);
-
-    expect(res5.status).toBe(201);
+      .get(`/fhir/R4/ClientApplication/${resolveId(res3.body.client)}`)
+      .set('Authorization', 'Bearer ' + res3.body.accessToken);
+    expect(res5.status).toBe(200);
 
     // Get a token using the client
     const res6 = await request(app).post('/oauth2/token').type('form').send({
