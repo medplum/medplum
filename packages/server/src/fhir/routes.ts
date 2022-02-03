@@ -7,6 +7,7 @@ import { asyncWrap } from '../async';
 import { getConfig } from '../config';
 import { authenticateToken } from '../oauth';
 import { processBatch } from './batch';
+import { csvHandler } from './csv';
 import { expandOperator } from './expand';
 import { getRootSchema } from './graphql';
 import { getCapabilityStatement } from './metadata';
@@ -94,6 +95,9 @@ fhirRouter.use(protectedRoutes);
 
 // ValueSet $expand operation
 protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
+
+// CSV Export
+protectedRoutes.get('/:resourceType/([$])csv', asyncWrap(csvHandler));
 
 // GraphQL
 protectedRoutes.use(
@@ -264,7 +268,7 @@ function isFhirJsonContentType(req: Request): boolean {
   return !!(req.is('application/json') || req.is('application/fhir+json'));
 }
 
-async function sendResponse(res: Response, outcome: OperationOutcome, body: any): Promise<void> {
+export async function sendResponse(res: Response, outcome: OperationOutcome, body: any): Promise<void> {
   const repo = res.locals.repo as Repository;
   res.status(getStatus(outcome)).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, body));
 }

@@ -47,6 +47,12 @@ export function HomePage(): JSX.Element {
       onNew={() => {
         navigate(`/${search.resourceType}/new`);
       }}
+      onExport={() => {
+        const url = medplum.fhirUrl(search.resourceType) + '/$csv' + formatSearchQuery(search);
+        medplum.download(url).then((blob) => {
+          window.open(window.URL.createObjectURL(blob), '_blank');
+        });
+      }}
       onDelete={(ids: string[]) => {
         if (window.confirm('Are you sure you want to delete these resources?')) {
           medplum

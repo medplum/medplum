@@ -50,6 +50,7 @@ export interface SearchControlProps {
   onClick?: (e: SearchClickEvent) => void;
   onAuxClick?: (e: SearchClickEvent) => void;
   onNew?: () => void;
+  onExport?: () => void;
   onDelete?: (ids: string[]) => void;
   onPatch?: (ids: string[]) => void;
 }
@@ -244,6 +245,11 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           {props.onNew && (
             <Button size="small" onClick={props.onNew}>
               New...
+            </Button>
+          )}
+          {props.onExport && (
+            <Button size="small" onClick={props.onExport}>
+              Export...
             </Button>
           )}
           {props.onDelete && (

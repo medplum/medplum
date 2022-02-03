@@ -437,6 +437,7 @@ export class MockClient extends MedplumClient {
         }
 
         return Promise.resolve({
+          blob: () => Promise.resolve(response),
           json: () => Promise.resolve(response),
         });
       },
