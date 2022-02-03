@@ -854,18 +854,18 @@ export class Repository {
    * @param value The property value of the reference.
    */
   #buildReferenceColumns(searchParam: SearchParameter, value: any): string | undefined {
-    // Handle "canonical"
-    if (typeof value === 'string') {
-      return value;
+    if (value) {
+      if (typeof value === 'string') {
+        // Handle "canonical" properties such as QuestionnaireResponse.questionnaire
+        // This is a reference string that is not a FHIR reference
+        return value;
+      }
+      if (typeof value === 'object') {
+        // Handle normal "reference" properties
+        return (value as Reference).reference;
+      }
     }
-
-    const refStr = (value as Reference).reference;
-    if (!refStr) {
-      return undefined;
-    }
-
-    // TODO: Consider normalizing reference string when known (searchParam.target.length === 1)
-    return refStr;
+    return undefined;
   }
 
   /**

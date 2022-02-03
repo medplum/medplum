@@ -102,6 +102,63 @@ describe('Search matching', () => {
     ).toBe(true);
   });
 
+  test('Canonical reference filter', () => {
+    expect(
+      matchesSearchRequest(
+        { resourceType: 'QuestionnaireResponse', questionnaire: 'Questionnaire/123' },
+        {
+          resourceType: 'QuestionnaireResponse',
+          filters: [{ code: 'questionnaire', operator: Operator.EQUALS, value: 'Questionnaire/123' }],
+        }
+      )
+    ).toBe(true);
+    expect(
+      matchesSearchRequest(
+        { resourceType: 'QuestionnaireResponse' },
+        {
+          resourceType: 'QuestionnaireResponse',
+          filters: [{ code: 'questionnaire', operator: Operator.EQUALS, value: 'Questionnaire/123' }],
+        }
+      )
+    ).toBe(false);
+    expect(
+      matchesSearchRequest(
+        { resourceType: 'QuestionnaireResponse', questionnaire: 'Questionnaire/123' },
+        {
+          resourceType: 'QuestionnaireResponse',
+          filters: [{ code: 'questionnaire', operator: Operator.EQUALS, value: 'Questionnaire/456' }],
+        }
+      )
+    ).toBe(false);
+    expect(
+      matchesSearchRequest(
+        { resourceType: 'QuestionnaireResponse', questionnaire: 'Questionnaire/123' },
+        {
+          resourceType: 'QuestionnaireResponse',
+          filters: [{ code: 'questionnaire', operator: Operator.NOT_EQUALS, value: 'Questionnaire/123' }],
+        }
+      )
+    ).toBe(false);
+    expect(
+      matchesSearchRequest(
+        { resourceType: 'QuestionnaireResponse' },
+        {
+          resourceType: 'QuestionnaireResponse',
+          filters: [{ code: 'questionnaire', operator: Operator.NOT_EQUALS, value: 'Questionnaire/123' }],
+        }
+      )
+    ).toBe(true);
+    expect(
+      matchesSearchRequest(
+        { resourceType: 'QuestionnaireResponse', questionnaire: 'Questionnaire/123' },
+        {
+          resourceType: 'QuestionnaireResponse',
+          filters: [{ code: 'questionnaire', operator: Operator.NOT_EQUALS, value: 'Questionnaire/456' }],
+        }
+      )
+    ).toBe(true);
+  });
+
   test('String equals', () => {
     expect(
       matchesSearchRequest(
