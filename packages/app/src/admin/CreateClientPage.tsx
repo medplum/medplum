@@ -1,5 +1,5 @@
 import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Loading, MedplumLink, TextField, useMedplum } from '@medplum/ui';
+import { Button, Document, Form, FormSection, Input, Loading, MedplumLink, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AccessPolicyInput } from './AccessPolicyInput';
@@ -49,30 +49,13 @@ export function CreateClientPage(): JSX.Element {
         {!success && (
           <>
             <FormSection title="Name" htmlFor="name" outcome={outcome}>
-              <TextField
-                name="name"
-                testid="name"
-                required={true}
-                autoFocus={true}
-                onChange={(e) => setName(e.target.value)}
-                outcome={outcome}
-              />
+              <Input name="name" testid="name" required={true} autoFocus={true} onChange={setName} outcome={outcome} />
             </FormSection>
             <FormSection title="Description" htmlFor="description" outcome={outcome}>
-              <TextField
-                name="description"
-                testid="description"
-                onChange={(e) => setDescription(e.target.value)}
-                outcome={outcome}
-              />
+              <Input name="description" testid="description" onChange={setDescription} outcome={outcome} />
             </FormSection>
             <FormSection title="Redirect URI" htmlFor="redirectUri" outcome={outcome}>
-              <TextField
-                name="redirectUri"
-                testid="redirectUri"
-                onChange={(e) => setRedirectUri(e.target.value)}
-                outcome={outcome}
-              />
+              <Input name="redirectUri" testid="redirectUri" onChange={setRedirectUri} outcome={outcome} />
             </FormSection>
             <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={outcome}>
               <AccessPolicyInput name="accessPolicy" onChange={setAccessPolicy} />
