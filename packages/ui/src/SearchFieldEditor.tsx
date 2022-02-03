@@ -173,17 +173,17 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
         <table style={{ margin: 'auto' }}>
           <thead>
             <tr>
-              <th colSpan={2} align="medplum-center">
+              <th colSpan={2} align="center">
                 Available
               </th>
-              <th colSpan={2} align="medplum-center">
+              <th colSpan={2} align="center">
                 Selected
               </th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td colSpan={2} align="medplum-center">
+              <td colSpan={2} align="center">
                 <select
                   ref={availableRef}
                   size={15}
@@ -200,7 +200,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
                   ))}
                 </select>
               </td>
-              <td colSpan={2} align="medplum-center">
+              <td colSpan={2} align="center">
                 <select
                   ref={selectedRef}
                   size={15}
@@ -221,22 +221,22 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
           </tbody>
           <tfoot>
             <tr>
-              <td align="medplum-center">
+              <td align="center">
                 <Button size="small" onClick={onAddField}>
                   Add
                 </Button>
               </td>
-              <td align="medplum-center">
+              <td align="center">
                 <Button size="small" onClick={onRemoveField}>
                   Remove
                 </Button>
               </td>
-              <td align="medplum-center">
+              <td align="center">
                 <Button size="small" onClick={onMoveUp}>
                   Up
                 </Button>
               </td>
-              <td align="medplum-center">
+              <td align="center">
                 <Button size="small" onClick={onMoveDown}>
                   Down
                 </Button>
