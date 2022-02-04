@@ -68,12 +68,6 @@ export interface ProjectMembership {
   readonly profile?: Reference<ClientApplication | Patient | Practitioner | RelatedPerson>;
 
   /**
-   * Optional account reference that can be used for sub-project
-   * compartments.
-   */
-  readonly account?: Reference;
-
-  /**
    * The access policy for the user within the project memebership.
    */
   readonly accessPolicy?: Reference<AccessPolicy>;

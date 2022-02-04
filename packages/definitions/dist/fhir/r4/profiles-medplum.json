@@ -365,16 +365,6 @@
             }]
           },
           {
-            "id" : "ProjectMembership.account",
-            "path" : "ProjectMembership.account",
-            "definition" : "Optional account reference that can be used for sub-project compartments.",
-            "min" : 0,
-            "max" : "1",
-            "type" : [{
-              "code" : "Reference"
-            }]
-          },
-          {
             "id" : "ProjectMembership.accessPolicy",
             "path" : "ProjectMembership.accessPolicy",
             "definition" : "The access policy for the user within the project memebership.",
