@@ -86,7 +86,10 @@ const PREFIX_OPERATORS: Operator[] = [
  * @returns Parsed search definition.
  */
 export function parseSearchDefinition(location: { pathname: string; search?: string }): SearchRequest {
-  const resourceType = location.pathname.split('/').pop() as string;
+  const resourceType = location.pathname
+    .replace(/^\/|\/$/g, '')
+    .split('/')
+    .pop() as string;
   const params = new URLSearchParams(location.search);
   const filters: Filter[] = [];
   const sortRules: SortRule[] = [];

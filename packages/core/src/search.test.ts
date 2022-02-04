@@ -7,6 +7,12 @@ describe('Search Utils', () => {
     expect(result.filters).toEqual([]);
   });
 
+  test('Parse Patient search with trailing slash', () => {
+    const result = parseSearchDefinition({ pathname: '/Patient/' });
+    expect(result.resourceType).toBe('Patient');
+    expect(result.filters).toEqual([]);
+  });
+
   test('Parse Patient search name', () => {
     const result = parseSearchDefinition({
       pathname: 'Patient',
