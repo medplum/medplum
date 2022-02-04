@@ -7,6 +7,7 @@ import { adminRouter } from './admin';
 import { asyncWrap } from './async';
 import { authRouter } from './auth';
 import { getConfig } from './config';
+import { corsOptions } from './cors';
 import { dicomRouter } from './dicom/routes';
 import { binaryRouter, fhirRouter, sendOutcome } from './fhir';
 import { healthcheckHandler } from './healthcheck';
@@ -16,26 +17,6 @@ import { openApiHandler } from './openapi';
 import { scimRouter } from './scim';
 import { storageRouter } from './storage';
 import { wellKnownRouter } from './wellknown';
-
-/**
- * CORS configuration.
- * @param req The express request.
- * @param callback The cors plugin callback.
- */
-const corsOptionsDelegate: cors.CorsOptionsDelegate<Request> = (req, callback) => {
-  const origin = req.header('Origin');
-  let allow = false;
-  if (origin) {
-    const path = req.path;
-    allow =
-      path.startsWith('/.well-known/') ||
-      path.startsWith('/admin/') ||
-      path.startsWith('/auth/') ||
-      path.startsWith('/fhir/') ||
-      path.startsWith('/oauth2/');
-  }
-  callback(null, allow ? { origin, credentials: true } : undefined);
-};
 
 /**
  * Sets standard headers for all requests.
@@ -110,7 +91,7 @@ export async function initApp(app: Express): Promise<Express> {
   app.set('trust proxy', true);
   app.set('x-powered-by', false);
   app.use(standardHeaders);
-  app.use(cors(corsOptionsDelegate));
+  app.use(cors(corsOptions));
   app.use(compression());
   app.use('/fhir/R4/Binary', [authenticateToken], binaryRouter);
   app.use(
