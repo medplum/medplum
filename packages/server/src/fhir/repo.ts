@@ -41,7 +41,7 @@ import { getConfig } from '../config';
 import { getClient } from '../database';
 import { addBackgroundJobs } from '../workers';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
-import { getPatientCompartmentResourceTypes, getPatientId } from './patient';
+import { getPatientId } from './patient';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { validateResource, validateResourceType } from './schema';
 import { InsertQuery, Operator, SelectQuery } from './sql';
@@ -1254,18 +1254,6 @@ export async function getRepoForLogin(login: Login, membership: ProjectMembershi
     const [accessPolicyOutcome, accessPolicyResource] = await systemRepo.readReference(membership.accessPolicy);
     assertOk(accessPolicyOutcome, accessPolicyResource);
     accessPolicy = accessPolicyResource;
-  } else if (membership.profile.reference.startsWith('ClientApplication/')) {
-    // If the resource is an "actor" resource,
-    // then look it up for a synthetic access policy.
-    // Synthetic access policy:
-    // If the profile has a profile.meta.account,
-    // Always write with account as the compartment
-    // Always read with the account as a filter
-    const [profileOutcome, profileResource] = await systemRepo.readReference(membership.profile);
-    assertOk(profileOutcome, profileResource);
-    if (profileResource.meta?.account) {
-      accessPolicy = buildSyntheticAccessPolicy(profileResource.meta.account);
-    }
   }
 
   return new Repository({
@@ -1273,31 +1261,6 @@ export async function getRepoForLogin(login: Login, membership: ProjectMembershi
     author: membership.profile as Reference,
     accessPolicy,
   });
-}
-
-/**
- * Builds a synthetic access policy for the specified compartment/account.
- * This is used for automated accounts, such as Bot, ClientApplication, and Subscription.
- * For any patient-related resource, the access policy is restricted to the account.
- * For any non-patient-related resource, the access policy is restricted to the project.
- * @param compartment The compartment reference.
- * @returns A synthetic access policy for the compartment.
- */
-function buildSyntheticAccessPolicy(compartment: Reference): AccessPolicy {
-  const patientResourceTypes = getPatientCompartmentResourceTypes();
-  return {
-    resourceType: 'AccessPolicy',
-    compartment,
-    resource: [
-      ...patientResourceTypes.map((t) => ({
-        resourceType: t,
-        compartment,
-      })),
-      {
-        resourceType: '*',
-      },
-    ],
-  };
 }
 
 export const systemRepo = new Repository({

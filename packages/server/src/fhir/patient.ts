@@ -37,25 +37,6 @@ export function getPatientCompartmentProperties(resourceType: string): string[] 
 }
 
 /**
- * Returns the list of patient resource types.
- * See: https://www.hl7.org/fhir/compartmentdefinition-patient.html
- * @returns List of resource types in the patient compartment.
- */
-export function getPatientCompartmentResourceTypes(): string[] {
-  const result = ['Patient'];
-  const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
-  for (const resource of resourceList) {
-    if (resource.code && resource.param) {
-      // Only add resource definitions with a 'param' value
-      // The param value defines the eligible properties
-      // If param is missing, it means the resource type is not in the compartment
-      result.push(resource.code);
-    }
-  }
-  return result;
-}
-
-/**
  * Returns the patient compartment ID for a resource.
  * If the resource is in a patient compartment (i.e., an Observation about the patient),
  * then return the patient ID.

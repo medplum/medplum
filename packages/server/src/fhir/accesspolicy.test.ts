@@ -328,6 +328,29 @@ describe('AccessPolicy', () => {
     const project = randomUUID();
     const account = 'Organization/' + randomUUID();
 
+    // Create the access policy
+    const [accessPolicyOutcome, accessPolicy] = await systemRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      compartment: {
+        reference: account,
+      },
+      resource: [
+        {
+          resourceType: 'Observation',
+          compartment: {
+            reference: account,
+          },
+        },
+        {
+          resourceType: 'Patient',
+          compartment: {
+            reference: account,
+          },
+        },
+      ],
+    });
+    assertOk(accessPolicyOutcome, accessPolicy);
+
     // Create a ClientApplication with an account value
     const [outcome1, clientApplication] = await systemRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
@@ -354,6 +377,7 @@ describe('AccessPolicy', () => {
           reference: 'Project/' + project,
         },
         profile: createReference(clientApplication as ClientApplication),
+        accessPolicy: createReference(accessPolicy),
       }
     );
 
@@ -416,7 +440,6 @@ describe('AccessPolicy', () => {
 
   test('ClientApplication with access policy', async () => {
     const project = randomUUID();
-    const account = 'Organization/' + randomUUID();
 
     // Create the access policy
     const [accessPolicyOutcome, accessPolicy] = await systemRepo.createResource<AccessPolicy>({
@@ -429,16 +452,11 @@ describe('AccessPolicy', () => {
     });
     assertOk(accessPolicyOutcome, accessPolicy);
 
-    // Create a ClientApplication with an account value
+    // Create a ClientApplication
     const [outcome1, clientApplication] = await systemRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
       secret: 'foo',
       redirectUri: 'https://example.com/',
-      meta: {
-        account: {
-          reference: account,
-        },
-      },
     });
     assertOk(outcome1, clientApplication);
     expect(clientApplication).toBeDefined();
