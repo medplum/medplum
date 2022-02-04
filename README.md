@@ -52,7 +52,7 @@ Here is a list of all the big technologies we use:
 
 - **PostgreSQL**: Data storage
 - **Redis**: Background jobs and caching
-- **Express**: API, powered by the entire Apollo toolchain
+- **Express**: API server
 - **TypeScript**: Type-safe JavaScript
 - **React**: Frontend React app
 
@@ -65,6 +65,8 @@ medplum/
 │   ├── core         # Core shared library
 │   ├── definitions  # Data definitions
 │   ├── docs         # Documentation
+│   ├── fhirpath     # FHIRPath implementation
+│   ├── fhirtypes    # FHIR TypeScript definitions
 │   ├── generator    # Code generator utilities
 │   ├── graphiql     # Preconfigured GraphiQL
 │   ├── infra        # Infra as code
@@ -75,58 +77,7 @@ medplum/
 
 ### First time setup
 
-The first step to running Medplum locally is downloading the code by cloning the repository:
-
-```sh
-git clone git@github.com:medplum/medplum.git
-```
-
-If you get `Permission denied` error using `ssh` refer [here](https://help.github.com/articles/error-permission-denied-publickey/)
-or use `https` link as a fallback.
-
-```sh
-git clone https://github.com/medplum/medplum.git
-```
-
-#### Installation
-
-Medplum has four big installation steps:
-
-1. **Install PostgreSQL**: See [the PostgreSQL documentation](https://www.postgresql.org/download/) for instructions on installing it with your OS.
-2. **Install Redis**: See [the Redis documentation](https://redis.io/download) for instructions on installing it with your OS.
-3. **Install npm**: See [the npm documentation](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) for instructions on installing it with your OS.
-4. **Install dependencies**: Our monorepo uses [npm workspaces](https://docs.npmjs.com/cli/v7/using-npm/workspaces), so installing dependencies for all projects is done using normal `npm install`:
-
-```sh
-cd medplum
-npm ci
-```
-
-You've now finished installing everything! Let's migrate the database and you'll be ready to go.
-
-### Running the app locally
-
-#### Background services
-
-First, make sure that PostgreSQL and Redis are running.
-
-#### Start the servers
-
-Start the API server:
-
-```sh
-cd packages/server
-npm run dev
-```
-
-#### Develop the web UI
-
-Start the web frontend:
-
-```sh
-cd packages/app
-npm run dev
-```
+See developer setup documentation: https://docs.medplum.com/docs/developers/intro
 
 ## License
 

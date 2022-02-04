@@ -14,6 +14,13 @@ To clone the repo, run the following command:
 git clone git@github.com:medplum/medplum.git
 ```
 
+If you get `Permission denied` error using `ssh` refer [here](https://help.github.com/articles/error-permission-denied-publickey/)
+or use `https` link as a fallback.
+
+```sh
+git clone https://github.com/medplum/medplum.git
+```
+
 That will create a complete copy of the project source code on your local machine.
 
 Next, you probably want to build and run the project.  There are two methods for running and developing locally:
