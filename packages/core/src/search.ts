@@ -87,7 +87,7 @@ const PREFIX_OPERATORS: Operator[] = [
  */
 export function parseSearchDefinition(location: { pathname: string; search?: string }): SearchRequest {
   const resourceType = location.pathname
-    .replace(/^\/|\/$/g, '')
+    .replace(/(^\/)|(\/$)/g, '') // Remove leading and trailing slashes
     .split('/')
     .pop() as string;
   const params = new URLSearchParams(location.search);
