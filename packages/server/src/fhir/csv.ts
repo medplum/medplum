@@ -1,6 +1,6 @@
 import { assertOk, badRequest, formatAddress, formatHumanName } from '@medplum/core';
 import { evalFhirPath } from '@medplum/fhirpath';
-import { Address, BundleEntry, ContactPoint, HumanName, Resource } from '@medplum/fhirtypes';
+import { Address, BundleEntry, CodeableConcept, ContactPoint, HumanName, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
@@ -20,7 +20,10 @@ const resourceTypeColumns: Record<string, Record<string, string>> = {
   ServiceRequest: {
     ID: 'id',
     'Last Updated': 'meta.lastUpdated',
-    Patient: 'subject.display',
+    Patient: 'subject',
+    Code: 'code.coding',
+    Status: 'status',
+    'Order Detail': 'orderDetail',
   },
 };
 
@@ -51,12 +54,11 @@ export async function csvHandler(req: Request, res: Response): Promise<void> {
 
   // For each resource...
   for (const entry of bundle.entry as BundleEntry[]) {
-    const resource = entry.resource as Resource;
     const row: string[] = [];
 
     // For each column...
     for (const [_, column] of columnEntries) {
-      const values = evalFhirPath(column, resource);
+      const values = evalFhirPath(column, entry.resource);
       if (values.length > 0) {
         row.push(csvEscape(values[0]));
       } else {
@@ -98,6 +100,14 @@ function csvEscape(input: unknown): string {
     if ('value' in input) {
       // ContactPoint
       return csvEscapeString((input as ContactPoint).value as string);
+    }
+    if ('display' in input) {
+      // Reference
+      return csvEscapeString((input as Reference).display as string);
+    }
+    if ('text' in input) {
+      // CodeableConcept
+      return csvEscapeString((input as CodeableConcept).text as string);
     }
   }
 
