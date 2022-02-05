@@ -1,0 +1,22 @@
+name: Coveralls
+on:
+  workflow_run:
+    workflows: [Build]
+    types: [completed]
+jobs:
+  coveralls:
+    name: Coveralls
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+      - uses: actions/download-artifact@v2
+        with:
+          name: medplum-code-coverage
+          path: coverage
+      - name: Coveralls GitHub Action
+        uses: coverallsapp/github-action@1.1.3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
