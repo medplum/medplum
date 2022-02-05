@@ -12,10 +12,28 @@ jobs:
       - uses: actions/checkout@v2
         with:
           ref: ${{ github.event.workflow_run.head_branch }}
-      - uses: actions/download-artifact@v2
+      - name: 'Download code coverage'
+        uses: actions/github-script@v5
         with:
-          name: medplum-code-coverage
-          path: coverage
+          script: |
+            let allArtifacts = await github.rest.actions.listWorkflowRunArtifacts({
+               owner: context.repo.owner,
+               repo: context.repo.repo,
+               run_id: context.payload.workflow_run.id,
+            });
+            let matchArtifact = allArtifacts.data.artifacts.filter((artifact) => {
+              return artifact.name == "medplum-code-coverage"
+            })[0];
+            let download = await github.rest.actions.downloadArtifact({
+               owner: context.repo.owner,
+               repo: context.repo.repo,
+               artifact_id: matchArtifact.id,
+               archive_format: 'zip',
+            });
+            let fs = require('fs');
+            fs.writeFileSync(`${process.env.GITHUB_WORKSPACE}/medplum-code-coverage.zip`, Buffer.from(download.data));
+      - name: 'Unzip code coverage'
+        run: unzip medplum-code-coverage.zip -d coverage
       - name: Coveralls GitHub Action
         uses: coverallsapp/github-action@1.1.3
         with:

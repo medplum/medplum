@@ -53,7 +53,10 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: medplum-dist
-          path: packages/**/dist/*
+          path: |
+            packages/**/dist/*
+            !packages/definitions/dist/fhir/r4/*
+            !packages/fhirtypes/dist/*
       - name: Upload code coverage
         uses: actions/upload-artifact@v2
         with:
