@@ -1,3 +1,5 @@
+import { ServiceRequest } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp } from '../app';
@@ -24,7 +26,7 @@ describe('CSV Export', () => {
     await closeDatabase();
   });
 
-  test('Success', async () => {
+  test('Export Patient', async () => {
     // Create a patient that we want to export
     const res1 = await request(app)
       .post(`/fhir/R4/Patient`)
@@ -79,6 +81,48 @@ describe('CSV Export', () => {
     expect(res3.text).toContain('123 Main St');
     expect(res3.text).toContain('555-555-5555');
     expect(res3.text).toContain('alice@example.com');
+  });
+
+  test('Export ServiceRequest', async () => {
+    const serviceRequest: ServiceRequest = {
+      resourceType: 'ServiceRequest',
+      status: 'active',
+      subject: {
+        reference: 'Patient/' + randomUUID(),
+        display: 'Alice Smith',
+      },
+      code: {
+        coding: [
+          {
+            system: 'https://example.com',
+            code: 'test1',
+            display: 'test1',
+          },
+        ],
+      },
+      orderDetail: [
+        {
+          text: 'Shipped',
+        },
+      ],
+    };
+
+    // Create a service requeset that we want to export
+    const res1 = await request(app)
+      .post(`/fhir/R4/ServiceRequest`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send(serviceRequest);
+    expect(res1.status).toBe(201);
+
+    const res3 = await request(app)
+      .get(`/fhir/R4/ServiceRequest/$csv`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3.status).toBe(200);
+    expect(res3.text).toContain(res1.body.id);
+    expect(res3.text).toContain('Alice Smith');
+    expect(res3.text).toContain('test1');
+    expect(res3.text).toContain('Shipped');
   });
 
   test('Invalid resource type', async () => {
