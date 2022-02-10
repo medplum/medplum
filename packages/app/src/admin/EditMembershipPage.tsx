@@ -56,7 +56,14 @@ export function EditMembershipPage(): JSX.Element {
               <AccessPolicyInput name="accessPolicy" defaultValue={accessPolicy} onChange={setAccessPolicy} />
             </FormSection>
             <FormSection title="Admin" htmlFor="admin" outcome={outcome}>
-              <input type="checkbox" name="admin" defaultChecked={admin} value="true" />
+              <input
+                data-testid="admin-checkbox"
+                type="checkbox"
+                name="admin"
+                defaultChecked={admin}
+                value="true"
+                onChange={(event) => setAdmin(event.currentTarget.value === 'true')}
+              />
             </FormSection>
             <div className="medplum-signin-buttons">
               <div></div>

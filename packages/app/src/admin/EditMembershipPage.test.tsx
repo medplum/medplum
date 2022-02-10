@@ -5,7 +5,7 @@ import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { EditMembershipPage } from './EditMembershipPage';
 
-const medplum = new MockClient();
+let medplum = new MockClient();
 
 function setup(url: string): void {
   render(
@@ -21,6 +21,8 @@ function setup(url: string): void {
 
 describe('EditMembershipPage', () => {
   beforeEach(() => {
+    medplum = new MockClient();
+
     jest.useFakeTimers();
   });
 
@@ -89,5 +91,42 @@ describe('EditMembershipPage', () => {
     });
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
+  });
+
+  test('Submit with admin', async () => {
+    const medplumPostSpy = jest.spyOn(medplum, 'post');
+
+    setup('/admin/projects/123/members/456');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Save'));
+    });
+
+    expect(screen.getByText('Save')).toBeInTheDocument();
+
+    const input = screen.getByTestId('admin-checkbox') as HTMLInputElement;
+
+    // Enter "Example Access Policy"
+    await act(async () => {
+      fireEvent.click(input);
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(screen.getByTestId('success')).toBeInTheDocument();
+
+    expect(medplumPostSpy).toHaveBeenCalledWith(
+      `admin/projects/123/members/456`,
+      expect.objectContaining({
+        admin: true,
+      })
+    );
   });
 });
