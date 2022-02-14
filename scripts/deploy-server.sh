@@ -26,6 +26,24 @@ set -e
 # Echo commands
 set -x
 
+# Build server tarball
+tar \
+  --exclude='*.js.map' \
+  --exclude='*.ts' \
+  --exclude='*.tsbuildinfo' \
+  -czf medplum-server.tar.gz \
+  package.json \
+  package-lock.json \
+  packages/core/package.json \
+  packages/core/dist \
+  packages/definitions/package.json \
+  packages/definitions/dist \
+  packages/fhirpath/package.json \
+  packages/fhirpath/dist \
+  packages/server/package.json \
+  packages/server/dist \
+  packages/server/templates
+
 # Build the Docker image
 docker build . -t $DOCKER_REPOSITORY:latest -t $DOCKER_REPOSITORY:$GITHUB_SHA
 

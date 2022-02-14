@@ -32,21 +32,3 @@ node --expose-gc --trace-uncaught --max_old_space_size=4096 ./node_modules/jest/
 
 # Lint
 npm run lint
-
-# Build server tar
-tar \
-  --exclude='*.js.map' \
-  --exclude='*.ts' \
-  --exclude='*.tsbuildinfo' \
-  -czf medplum-server.tar.gz \
-  package.json \
-  package-lock.json \
-  packages/core/package.json \
-  packages/core/dist \
-  packages/definitions/package.json \
-  packages/definitions/dist \
-  packages/fhirpath/package.json \
-  packages/fhirpath/dist \
-  packages/server/package.json \
-  packages/server/dist \
-  packages/server/templates
