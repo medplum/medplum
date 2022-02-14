@@ -80,6 +80,7 @@ describe('FHIR Repo', () => {
 
   test('Patient resource with duplicate identifiers', async () => {
     const identifier = randomUUID();
+    const other = randomUUID();
 
     const [createOutcome, patient] = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
@@ -87,10 +88,10 @@ describe('FHIR Repo', () => {
       identifier: [
         { system: 'https://www.example.com', value: identifier },
         { system: 'https://www.example.com', value: identifier },
+        { system: 'other', value: other },
       ],
     });
-
-    expect(createOutcome.id).toEqual('created');
+    assertOk(createOutcome, patient);
 
     const [searchOutcome, searchResult] = await systemRepo.search({
       resourceType: 'Patient',
@@ -102,10 +103,23 @@ describe('FHIR Repo', () => {
         },
       ],
     });
+    assertOk(searchOutcome, searchResult);
+    expect(searchResult.entry?.length).toEqual(1);
+    expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
 
-    expect(searchOutcome.id).toEqual('ok');
-    expect(searchResult?.entry?.length).toEqual(1);
-    expect(searchResult?.entry?.[0]?.resource?.id).toEqual(patient?.id);
+    const [searchOutcome2, searchResult2] = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value: other,
+        },
+      ],
+    });
+    assertOk(searchOutcome2, searchResult2);
+    expect(searchResult2.entry?.length).toEqual(1);
+    expect(searchResult2.entry?.[0]?.resource?.id).toEqual(patient.id);
   });
 
   test('Patient resource with name', async () => {
