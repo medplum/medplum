@@ -78,6 +78,36 @@ describe('FHIR Repo', () => {
     expect(searchResult?.entry?.[0]?.resource?.id).toEqual(patient?.id);
   });
 
+  test('Patient resource with duplicate identifiers', async () => {
+    const identifier = randomUUID();
+
+    const [createOutcome, patient] = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      identifier: [
+        { system: 'https://www.example.com', value: identifier },
+        { system: 'https://www.example.com', value: identifier },
+      ],
+    });
+
+    expect(createOutcome.id).toEqual('created');
+
+    const [searchOutcome, searchResult] = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value: identifier,
+        },
+      ],
+    });
+
+    expect(searchOutcome.id).toEqual('ok');
+    expect(searchResult?.entry?.length).toEqual(1);
+    expect(searchResult?.entry?.[0]?.resource?.id).toEqual(patient?.id);
+  });
+
   test('Patient resource with name', async () => {
     const familyName = randomUUID();
 

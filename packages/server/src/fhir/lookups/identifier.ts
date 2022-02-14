@@ -84,7 +84,10 @@ export class IdentifierTable implements LookupTable {
    * @param selectQuery The select query builder.
    */
   addJoin(selectQuery: SelectQuery): void {
-    selectQuery.join('Identifier', 'id', 'resourceId');
+    const subQuery = new SelectQuery('Identifier')
+      .raw('DISTINCT ON ("Identifier"."resourceId") *')
+      .orderBy('resourceId');
+    selectQuery.join('Identifier', 'id', 'resourceId', subQuery);
   }
 
   /**

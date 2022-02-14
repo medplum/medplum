@@ -36,6 +36,7 @@ export interface Condition {
 export interface Join {
   readonly left: Column;
   readonly right: Column;
+  readonly subQuery?: SelectQuery;
 }
 
 export interface OrderBy {
@@ -199,10 +200,11 @@ export class SelectQuery extends BaseQuery {
     return this;
   }
 
-  join(rightTableName: string, leftColumnName: string, rightColumnName: string): this {
+  join(rightTableName: string, leftColumnName: string, rightColumnName: string, subQuery?: SelectQuery): this {
     this.joins.push({
       left: { tableName: this.tableName, columnName: leftColumnName },
       right: { tableName: rightTableName, columnName: rightColumnName },
+      subQuery,
     });
     return this;
   }
@@ -222,8 +224,7 @@ export class SelectQuery extends BaseQuery {
     return this;
   }
 
-  async execute(conn: Pool): Promise<any[]> {
-    const sql = new SqlBuilder();
+  buildSql(sql: SqlBuilder): void {
     this.#buildSelect(sql);
     this.#buildFrom(sql);
     this.buildConditions(sql);
@@ -238,7 +239,11 @@ export class SelectQuery extends BaseQuery {
       sql.append(' OFFSET ');
       sql.append(this.offset_);
     }
+  }
 
+  async execute(conn: Pool): Promise<any[]> {
+    const sql = new SqlBuilder();
+    this.buildSql(sql);
     return sql.execute(conn);
   }
 
@@ -261,6 +266,11 @@ export class SelectQuery extends BaseQuery {
 
     for (const join of this.joins) {
       sql.append(' JOIN ');
+      if (join.subQuery) {
+        sql.append(' ( ');
+        join.subQuery.buildSql(sql);
+        sql.append(' ) ');
+      }
       sql.appendIdentifier(join.right.tableName as string);
       sql.append(' ON ');
       sql.appendColumn(join.left);
