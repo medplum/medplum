@@ -1,8 +1,8 @@
-import { Filter, formatAddress, SortRule, stringify } from '@medplum/core';
+import { formatAddress, stringify } from '@medplum/core';
 import { Address, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { getClient } from '../../database';
-import { DeleteQuery, InsertQuery, Operator, SelectQuery } from '../sql';
+import { InsertQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
@@ -10,7 +10,7 @@ import { compareArrays } from './util';
  * The AddressTable class is used to index and search "name" properties on "Person" resources.
  * Each name is represented as a separate row in the "Address" table.
  */
-export class AddressTable implements LookupTable {
+export class AddressTable extends LookupTable<Address> {
   static readonly #knownParams: Set<string> = new Set<string>([
     'individual-address',
     'individual-address-city',
@@ -42,8 +42,27 @@ export class AddressTable implements LookupTable {
    * Returns the table name.
    * @returns The table name.
    */
-  getName(): string {
+  getTableName(): string {
     return 'Address';
+  }
+
+  /**
+   * Returns the column name for the address.
+   *
+   *   Input              | Output
+   *  --------------------+-----------
+   *   address            | address
+   *   address-city       | city
+   *   address-country    | country
+   *   address-postalcode | postalcode
+   *   address-state      | state
+   *   addrses-use        | use
+   *
+   * @param code The search parameter code.
+   * @returns The column name.
+   */
+  getColumnName(code: string): string {
+    return code === 'address' ? 'address' : code.replace('address-', '');
   }
 
   /**
@@ -53,16 +72,6 @@ export class AddressTable implements LookupTable {
    */
   isIndexed(searchParam: SearchParameter): boolean {
     return AddressTable.#knownParams.has(searchParam.id as string);
-  }
-
-  /**
-   * Deletes a resource from the index.
-   * @param resource The resource to delete.
-   */
-  async deleteResource(resource: Resource): Promise<void> {
-    const resourceId = resource.id as string;
-    const client = getClient();
-    await new DeleteQuery('Address').where('resourceId', Operator.EQUALS, resourceId).execute(client);
   }
 
   /**
@@ -78,13 +87,13 @@ export class AddressTable implements LookupTable {
     }
 
     const resourceId = resource.id as string;
-    const existing = await this.#getExistingAddresses(resourceId);
+    const existing = await this.getExistingValues(resourceId);
 
     if (!compareArrays(addresses, existing)) {
       const client = getClient();
 
       if (existing.length > 0) {
-        await this.deleteResource(resource);
+        await this.deleteValuesForResource(resource);
       }
 
       for (let i = 0; i < addresses.length; i++) {
@@ -103,55 +112,6 @@ export class AddressTable implements LookupTable {
         }).execute(client);
       }
     }
-  }
-
-  /**
-   * Adds "join" expression to the select query builder.
-   * @param selectQuery The select query builder.
-   */
-  addJoin(selectQuery: SelectQuery): void {
-    selectQuery.join('Address', 'id', 'resourceId');
-  }
-
-  /**
-   * Adds "where" conditions to the select query builder.
-   * @param selectQuery The select query builder.
-   * @param filter The search filter details.
-   */
-  addWhere(selectQuery: SelectQuery, filter: Filter): void {
-    selectQuery.where(
-      { tableName: 'Address', columnName: this.#getColumnName(filter.code) },
-      Operator.LIKE,
-      '%' + filter.value + '%'
-    );
-  }
-
-  /**
-   * Adds "order by" clause to the select query builder.
-   * @param selectQuery The select query builder.
-   * @param sortRule The sort rule details.
-   */
-  addOrderBy(selectQuery: SelectQuery, sortRule: SortRule): void {
-    selectQuery.orderBy({ tableName: 'Address', columnName: this.#getColumnName(sortRule.code) }, sortRule.descending);
-  }
-
-  /**
-   * Returns the column name for the address.
-   *
-   *   Input              | Output
-   *  --------------------+-----------
-   *   address            | address
-   *   address-city       | city
-   *   address-country    | country
-   *   address-postalcode | postalcode
-   *   address-state      | state
-   *   addrses-use        | use
-   *
-   * @param code The search parameter code.
-   * @returns The column name.
-   */
-  #getColumnName(code: string): string {
-    return code === 'address' ? 'address' : code.replace('address-', '');
   }
 
   #getIncomingAddresses(resource: Resource): Address[] | undefined {
@@ -180,19 +140,5 @@ export class AddressTable implements LookupTable {
 
     // This resource does not have any address properties
     return undefined;
-  }
-
-  /**
-   * Returns the existing list of indexed addresses.
-   * @param resourceId The FHIR resource ID.
-   * @returns Promise for the list of indexed addresses.
-   */
-  async #getExistingAddresses(resourceId: string): Promise<Address[]> {
-    return new SelectQuery('Address')
-      .column('content')
-      .where('resourceId', Operator.EQUALS, resourceId)
-      .orderBy('index')
-      .execute(getClient())
-      .then((result) => result.map((row) => JSON.parse(row.content) as Address));
   }
 }
