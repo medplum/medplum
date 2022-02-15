@@ -115,7 +115,7 @@ const protectedResourceTypes = [
 /**
  * The lookup tables array includes a list of special tables for search indexing.
  */
-const lookupTables: LookupTable[] = [
+const lookupTables: LookupTable<unknown>[] = [
   new AddressTable(),
   new ContactPointTable(),
   new HumanNameTable(),
@@ -443,7 +443,6 @@ export class Repository {
 
     this.#addDeletedFilter(builder);
     this.#addCompartments(builder, resourceType);
-    this.#addJoins(builder, searchRequest);
     this.#addSearchFilters(builder, searchRequest);
     this.#addSortRules(builder, searchRequest);
 
@@ -486,7 +485,6 @@ export class Repository {
 
     this.#addDeletedFilter(builder);
     this.#addCompartments(builder, searchRequest.resourceType);
-    this.#addJoins(builder, searchRequest);
     this.#addSearchFilters(builder, searchRequest);
     const rows = await builder.execute(client);
     return rows[0].count as number;
@@ -534,33 +532,6 @@ export class Repository {
     if (compartmentIds.length > 0) {
       builder.where('compartments', Operator.ARRAY_CONTAINS, compartmentIds, 'UUID[]');
     }
-  }
-
-  /**
-   * Adds all "JOIN" expressions to the query builder.
-   * Ensures that each join is only done once.
-   * @param builder The client query builder.
-   * @param searchRequest The search request.
-   */
-  #addJoins(builder: SelectQuery, searchRequest: SearchRequest): void {
-    const { resourceType } = searchRequest;
-
-    const codes = new Set<string>();
-    searchRequest.filters?.forEach((filter) => codes.add(filter.code));
-    searchRequest.sortRules?.forEach((sortRule) => codes.add(sortRule.code));
-
-    const joinedTables = new Map<string, LookupTable>();
-    codes.forEach((code) => {
-      const param = getSearchParameter(resourceType, code);
-      if (param) {
-        const lookupTable = this.#getLookupTable(param);
-        if (lookupTable) {
-          joinedTables.set(lookupTable.getName(), lookupTable);
-        }
-      }
-    });
-
-    joinedTables.forEach((lookupTable) => lookupTable.addJoin(builder, resourceType));
   }
 
   /**
@@ -937,7 +908,7 @@ export class Repository {
 
   async #deleteFromLookupTables(resource: Resource): Promise<void> {
     for (const lookupTable of lookupTables) {
-      await lookupTable.deleteResource(resource);
+      await lookupTable.deleteValuesForResource(resource);
     }
   }
 
@@ -945,7 +916,7 @@ export class Repository {
     return !!this.#getLookupTable(searchParam);
   }
 
-  #getLookupTable(searchParam: SearchParameter): LookupTable | undefined {
+  #getLookupTable(searchParam: SearchParameter): LookupTable<unknown> | undefined {
     for (const lookupTable of lookupTables) {
       if (lookupTable.isIndexed(searchParam)) {
         return lookupTable;

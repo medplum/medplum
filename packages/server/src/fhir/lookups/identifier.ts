@@ -1,8 +1,8 @@
-import { Filter, SortRule, stringify } from '@medplum/core';
+import { stringify } from '@medplum/core';
 import { Identifier, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { getClient } from '../../database';
-import { DeleteQuery, InsertQuery, Operator, SelectQuery } from '../sql';
+import { InsertQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
@@ -11,13 +11,20 @@ import { compareArrays } from './util';
  * The common case for identifiers is a "system" and "value" key/value pair.
  * Each identifier is represented as a separate row in the "Identifier" table.
  */
-export class IdentifierTable implements LookupTable {
+export class IdentifierTable extends LookupTable<Identifier> {
   /**
    * Returns the table name.
    * @returns The table name.
    */
-  getName(): string {
+  getTableName(): string {
     return 'Identifier';
+  }
+
+  /**
+   * Returns the column name for the given search parameter.
+   */
+  getColumnName(): string {
+    return 'value';
   }
 
   /**
@@ -27,16 +34,6 @@ export class IdentifierTable implements LookupTable {
    */
   isIndexed(searchParam: SearchParameter): boolean {
     return searchParam.code === 'identifier' && searchParam.type === 'token';
-  }
-
-  /**
-   * Deletes a resource from the index.
-   * @param resource The resource to delete.
-   */
-  async deleteResource(resource: Resource): Promise<void> {
-    const resourceId = resource.id as string;
-    const client = getClient();
-    await new DeleteQuery('Identifier').where('resourceId', Operator.EQUALS, resourceId).execute(client);
   }
 
   /**
@@ -50,19 +47,15 @@ export class IdentifierTable implements LookupTable {
       return;
     }
 
-    const identifiers = resource.identifier;
-    if (!identifiers || !Array.isArray(identifiers)) {
-      return;
-    }
-
+    const identifiers = resource.identifier as Identifier[];
     const resourceId = resource.id as string;
-    const existing = await this.#getIdentifiers(resourceId);
+    const existing = await this.getExistingValues(resourceId);
 
     if (!compareArrays(identifiers, existing)) {
       const client = getClient();
 
       if (existing.length > 0) {
-        await this.deleteResource(resource);
+        await this.deleteValuesForResource(resource);
       }
 
       for (let i = 0; i < identifiers.length; i++) {
@@ -77,45 +70,5 @@ export class IdentifierTable implements LookupTable {
         }).execute(client);
       }
     }
-  }
-
-  /**
-   * Adds "join" expression to the select query builder.
-   * @param selectQuery The select query builder.
-   */
-  addJoin(selectQuery: SelectQuery): void {
-    selectQuery.join('Identifier', 'id', 'resourceId');
-  }
-
-  /**
-   * Adds "where" conditions to the select query builder.
-   * @param selectQuery The select query builder.
-   * @param filter The search filter details.
-   */
-  addWhere(selectQuery: SelectQuery, filter: Filter): void {
-    selectQuery.where({ tableName: 'Identifier', columnName: 'value' }, Operator.EQUALS, filter.value);
-  }
-
-  /**
-   * Adds "order by" clause to the select query builder.
-   * @param selectQuery The select query builder.
-   * @param sortRule The sort rule details.
-   */
-  addOrderBy(selectQuery: SelectQuery, sortRule: SortRule): void {
-    selectQuery.orderBy({ tableName: 'Identifier', columnName: 'value' }, sortRule.descending);
-  }
-
-  /**
-   * Returns the existing list of indexed identifiers.
-   * @param resourceId The FHIR resource ID.
-   * @returns Promise for the list of indexed identifiers.
-   */
-  async #getIdentifiers(resourceId: string): Promise<Identifier[]> {
-    return new SelectQuery('Identifier')
-      .column('content')
-      .where('resourceId', Operator.EQUALS, resourceId)
-      .orderBy('index')
-      .execute(getClient())
-      .then((result) => result.map((row) => JSON.parse(row.content) as Identifier));
   }
 }
