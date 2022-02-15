@@ -59,6 +59,7 @@ jobs:
           name: medplum-dist
           path: |
             packages/**/dist/*
+            packages/docs/build/**/*
             !packages/definitions/dist/fhir/r4/*
             !packages/fhirtypes/dist/*
       - name: Upload code coverage

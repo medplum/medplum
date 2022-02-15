@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+# Fail on error
+set -e
+
+# Echo commands
+set -x
+
+# Move to docs output directory
 pushd packages/docs/build
 
 # Copy all non-HTML assets
