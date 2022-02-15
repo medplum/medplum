@@ -47,11 +47,7 @@ export class IdentifierTable extends LookupTable<Identifier> {
       return;
     }
 
-    const identifiers = resource.identifier;
-    if (!identifiers || !Array.isArray(identifiers)) {
-      return;
-    }
-
+    const identifiers = resource.identifier as Identifier[];
     const resourceId = resource.id as string;
     const existing = await this.getExistingValues(resourceId);
 
