@@ -11,7 +11,6 @@ node_modules/
 
 # Output
 packages/app/dist/
-packages/calendar/dist/
 packages/core/dist/
 packages/definitions/dist/**/*.js
 packages/definitions/dist/**/*.js.map
