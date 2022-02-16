@@ -1,16 +1,16 @@
 import React from 'react';
-import './Month.css';
+import './CalendarInput.css';
 
-export interface MonthProps {
+export interface CalendarInputProps {
   year: number;
   month: number;
   onClick: (day: string) => void;
 }
 
-export function Month(props: MonthProps): JSX.Element {
+export function CalendarInput(props: CalendarInputProps): JSX.Element {
+  const d = new Date(props.year, props.month);
   const grid: string[][] = [];
   let row: string[] = [];
-  let d = new Date(props.year, props.month);
 
   // Fill leading empty days
   for (let i = 0; i < d.getDay(); i++) {

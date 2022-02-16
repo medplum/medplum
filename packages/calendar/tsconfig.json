@@ -1,9 +1,0 @@
-{
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "outDir": "dist",
-    "lib": ["esnext", "dom", "dom.iterable"],
-    "noEmit": true,
-  },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "./jest.setup.ts"]
-}
