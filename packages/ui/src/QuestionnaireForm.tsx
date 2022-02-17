@@ -154,7 +154,14 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
 
   const property: ElementDefinition = {} as ElementDefinition;
 
-  function onChangeWrapper(newResponseAnswer: QuestionnaireResponseItemAnswer): void {
+  function onChangeItem(newResponseItems: QuestionnaireResponseItem[]): void {
+    props.onChange({
+      linkId: item.linkId,
+      item: newResponseItems,
+    });
+  }
+
+  function onChangeAnswer(newResponseAnswer: QuestionnaireResponseItemAnswer): void {
     props.onChange({
       linkId: item.linkId,
       answer: [newResponseAnswer],
@@ -166,13 +173,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <div>
           <h3>{item.text}</h3>
-          {item.item && (
-            <QuestionnaireFormItemArray
-              schema={props.schema}
-              items={item.item}
-              onChange={(newValue) => onChangeWrapper({ item: newValue })}
-            />
-          )}
+          {item.item && <QuestionnaireFormItemArray schema={props.schema} items={item.item} onChange={onChangeItem} />}
         </div>
       );
     case QuestionnaireItemType.boolean:
@@ -183,7 +184,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           name={name}
           value="true"
           defaultChecked={initial?.valueBoolean}
-          onChange={(e) => onChangeWrapper({ valueBoolean: e.currentTarget.checked })}
+          onChange={(e) => onChangeAnswer({ valueBoolean: e.currentTarget.checked })}
         />
       );
     case QuestionnaireItemType.decimal:
@@ -193,7 +194,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           step={0.01}
           name={name}
           defaultValue={initial?.valueDecimal}
-          onChange={(newValue) => onChangeWrapper({ valueDecimal: parseFloat(newValue) })}
+          onChange={(newValue) => onChangeAnswer({ valueDecimal: parseFloat(newValue) })}
         />
       );
     case QuestionnaireItemType.integer:
@@ -203,7 +204,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           step={1}
           name={name}
           defaultValue={initial?.valueInteger}
-          onChange={(newValue) => onChangeWrapper({ valueInteger: parseInt(newValue) })}
+          onChange={(newValue) => onChangeAnswer({ valueInteger: parseInt(newValue) })}
         />
       );
     case QuestionnaireItemType.date:
@@ -212,7 +213,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           type="date"
           name={name}
           defaultValue={initial?.valueDate}
-          onChange={(newValue) => onChangeWrapper({ valueDate: newValue })}
+          onChange={(newValue) => onChangeAnswer({ valueDate: newValue })}
         />
       );
     case QuestionnaireItemType.dateTime:
@@ -222,7 +223,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           name={name}
           step={1}
           defaultValue={initial?.valueDateTime}
-          onChange={(newValue) => onChangeWrapper({ valueDateTime: newValue })}
+          onChange={(newValue) => onChangeAnswer({ valueDateTime: newValue })}
         />
       );
     case QuestionnaireItemType.time:
@@ -231,7 +232,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           type="time"
           name={name}
           defaultValue={initial?.valueTime}
-          onChange={(newValue) => onChangeWrapper({ valueTime: newValue })}
+          onChange={(newValue) => onChangeAnswer({ valueTime: newValue })}
         />
       );
     case QuestionnaireItemType.string:
@@ -240,7 +241,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           type="text"
           name={name}
           defaultValue={initial?.valueString}
-          onChange={(newValue) => onChangeWrapper({ valueString: newValue })}
+          onChange={(newValue) => onChangeAnswer({ valueString: newValue })}
         />
       );
     case QuestionnaireItemType.text:
@@ -248,7 +249,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <TextArea
           name={name}
           defaultValue={initial?.valueString}
-          onChange={(newValue) => onChangeWrapper({ valueString: newValue })}
+          onChange={(newValue) => onChangeAnswer({ valueString: newValue })}
         />
       );
     case QuestionnaireItemType.url:
@@ -257,7 +258,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           type="url"
           name={name}
           defaultValue={initial?.valueUri}
-          onChange={(newValue) => onChangeWrapper({ valueUri: newValue })}
+          onChange={(newValue) => onChangeAnswer({ valueUri: newValue })}
         />
       );
     case QuestionnaireItemType.choice:
@@ -278,7 +279,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
                       id={optionName}
                       name={name}
                       value={propertyValue}
-                      onChange={() => onChangeWrapper({ [propertyName]: propertyValue })}
+                      onChange={() => onChangeAnswer({ [propertyName]: propertyValue })}
                     />
                   </div>
                   <div>
@@ -301,7 +302,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <AttachmentInput
           name={name}
           defaultValue={initial?.valueAttachment}
-          onChange={(newValue) => onChangeWrapper({ valueAttachment: newValue })}
+          onChange={(newValue) => onChangeAnswer({ valueAttachment: newValue })}
         />
       );
     case QuestionnaireItemType.reference:
@@ -310,7 +311,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           property={property}
           name={name}
           defaultValue={initial?.valueReference}
-          onChange={(newValue) => onChangeWrapper({ valueReference: newValue })}
+          onChange={(newValue) => onChangeAnswer({ valueReference: newValue })}
         />
       );
     case QuestionnaireItemType.quantity:
@@ -318,7 +319,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <QuantityInput
           name={name}
           defaultValue={initial?.valueQuantity}
-          onChange={(newValue) => onChangeWrapper({ valueQuantity: newValue })}
+          onChange={(newValue) => onChangeAnswer({ valueQuantity: newValue })}
         />
       );
   }

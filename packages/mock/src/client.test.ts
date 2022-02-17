@@ -1,4 +1,4 @@
-import { allOk, LoginState, notFound } from '@medplum/core';
+import { allOk, badRequest, LoginState, notFound } from '@medplum/core';
 import { MockClient } from './client';
 import { HomerSimpson } from './mocks';
 
@@ -131,5 +131,17 @@ describe('MockClient', () => {
     const client = new MockClient({ debug: true });
     await client.get('not-found');
     expect(console.log).toHaveBeenCalledTimes(3);
+  });
+
+  test('Create binary', async () => {
+    const client = new MockClient();
+    expect(client.createBinary(null, 'test.exe', 'application/exe')).rejects.toMatchObject(
+      badRequest('Invalid file type')
+    );
+    expect(client.createBinary(null, 'test.txt', 'text/plain')).resolves.toMatchObject({
+      resourceType: 'Binary',
+      title: 'test.txt',
+      contentType: 'text/plain',
+    });
   });
 });
