@@ -1,6 +1,13 @@
 import { PropertyType } from '@medplum/core';
+import {
+  Questionnaire,
+  QuestionnaireResponse,
+  QuestionnaireResponseItem,
+  QuestionnaireResponseItemAnswer,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import { randomUUID } from 'crypto';
 import each from 'jest-each';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
@@ -30,7 +37,9 @@ describe('QuestionnaireForm', () => {
     expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
   });
 
-  test('Render groups', async () => {
+  test('Groups', async () => {
+    const onSubmit = jest.fn();
+
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
@@ -71,12 +80,40 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit,
     });
 
     expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
     expect(screen.getByText('Group 1')).toBeDefined();
     expect(screen.getByText('Group 2')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Question 1'), { target: { value: 'a1' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Question 2'), { target: { value: 'a2' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Question 3'), { target: { value: 'a3' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Question 4'), { target: { value: 'a4' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(onSubmit).toBeCalled();
+
+    const response = onSubmit.mock.calls[0][0];
+    expect(getAnswer(response, 'question1')).toMatchObject({ valueString: 'a1' });
+    expect(getAnswer(response, 'question2')).toMatchObject({ valueString: 'a2' });
+    expect(getAnswer(response, 'question3')).toMatchObject({ valueString: 'a3' });
+    expect(getAnswer(response, 'question4')).toMatchObject({ valueString: 'a4' });
   });
 
   test('Handles submit', async () => {
@@ -111,6 +148,16 @@ describe('QuestionnaireForm', () => {
             type: '', // Silently ignore missing type
             text: 'q5',
           },
+          {
+            linkId: 'q6',
+            type: QuestionnaireItemType.string,
+            text: 'q6',
+            initial: [
+              {
+                valueString: 'initial answer',
+              },
+            ],
+          },
         ],
       },
       onSubmit,
@@ -121,22 +168,28 @@ describe('QuestionnaireForm', () => {
     expect(screen.queryByLabelText('q5')).toBeFalsy();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('q1'), {
-        target: { value: 'a1' },
-      });
-      fireEvent.change(screen.getByLabelText('q2'), { target: { value: '2' } });
-      fireEvent.change(screen.getByLabelText('q3'), {
-        target: { value: '2023-03-03' },
-      });
+      fireEvent.change(screen.getByLabelText('q1'), { target: { value: 'a1' } });
     });
 
-    expect(screen.getByText('OK')).toBeDefined();
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('q2'), { target: { value: '2' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('q3'), { target: { value: '2023-03-03' } });
+    });
 
     await act(async () => {
       fireEvent.click(screen.getByText('OK'));
     });
 
     expect(onSubmit).toBeCalled();
+
+    const response = onSubmit.mock.calls[0][0];
+    expect(getAnswer(response, 'q1')).toMatchObject({ valueString: 'a1' });
+    expect(getAnswer(response, 'q2')).toMatchObject({ valueInteger: 2 });
+    expect(getAnswer(response, 'q3')).toMatchObject({ valueDate: '2023-03-03' });
+    expect(getAnswer(response, 'q6')).toMatchObject({ valueString: 'initial answer' });
   });
 
   each([
@@ -204,6 +257,8 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Choice input', async () => {
+    const onSubmit = jest.fn();
+
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
@@ -223,12 +278,34 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit,
     });
 
     expect(screen.getByText('q1')).toBeInTheDocument();
     expect(screen.getByText('a1')).toBeInTheDocument();
     expect(screen.getByText('a2')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('a1'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    const response1 = onSubmit.mock.calls[0][0];
+    expect(getAnswer(response1, 'q1')).toMatchObject({ valueString: 'a1' });
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('a2'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    const response2 = onSubmit.mock.calls[1][0];
+    expect(getAnswer(response2, 'q1')).toMatchObject({ valueString: 'a2' });
   });
 
   test('Open choice input', async () => {
@@ -260,25 +337,66 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Attachment input', async () => {
-    await setup({
-      questionnaire: {
-        resourceType: 'Questionnaire',
-        item: [
-          {
-            linkId: 'q1',
-            type: QuestionnaireItemType.attachment,
-            text: 'q1',
-          },
-        ],
+    const questionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      id: randomUUID(),
+      item: [
+        {
+          linkId: 'q1',
+          type: QuestionnaireItemType.attachment,
+          text: 'q1',
+        },
+      ],
+    };
+
+    const expectedResponse: QuestionnaireResponse = {
+      resourceType: 'QuestionnaireResponse',
+      questionnaire: 'Questionnaire/' + questionnaire.id,
+      source: {
+        reference: 'Practitioner/123',
       },
-      onSubmit: jest.fn(),
-    });
+      item: [
+        {
+          linkId: 'q1',
+          answer: [
+            {
+              valueAttachment: {
+                title: 'hello.txt',
+                contentType: 'text/plain',
+                url: 'https://example.com/binary/123',
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    const onSubmit = jest.fn();
+
+    await setup({ questionnaire, onSubmit });
 
     const input = screen.getByText('Upload...');
     expect(input).toBeInTheDocument();
+
+    await act(async () => {
+      const files = [new File(['hello'], 'hello.txt', { type: 'text/plain' })];
+      fireEvent.change(screen.getByTestId('upload-file-input'), {
+        target: { files },
+      });
+    });
+
+    expect(screen.getByText('hello.txt')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(onSubmit).toBeCalledWith(expect.objectContaining(expectedResponse));
   });
 
   test('Reference input', async () => {
+    const onSubmit = jest.fn();
+
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
@@ -290,10 +408,39 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit,
     });
 
     const input = screen.getByTestId('reference-input-resource-type-input');
     expect(input).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(onSubmit).toBeCalled();
   });
 });
+
+function getAnswer(response: QuestionnaireResponse, linkId: string): QuestionnaireResponseItemAnswer | undefined {
+  return getAnswerFromItems(response.item as QuestionnaireResponseItem[], linkId);
+}
+
+function getAnswerFromItems(
+  items: QuestionnaireResponseItem[],
+  linkId: string
+): QuestionnaireResponseItemAnswer | undefined {
+  for (const item of items) {
+    if (item.linkId === linkId) {
+      return (item.answer as QuestionnaireResponseItemAnswer[])[0];
+    }
+    if (item.item) {
+      const answer = getAnswerFromItems(item.item as QuestionnaireResponseItem[], linkId);
+      if (answer) {
+        return answer;
+      }
+    }
+  }
+
+  return undefined;
+}

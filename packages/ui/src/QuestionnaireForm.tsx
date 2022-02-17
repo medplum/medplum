@@ -1,11 +1,19 @@
-import { createReference, getReferenceString, IndexedStructureDefinition, ProfileResource } from '@medplum/core';
+import {
+  capitalize,
+  createReference,
+  getReferenceString,
+  IndexedStructureDefinition,
+  ProfileResource,
+} from '@medplum/core';
 import {
   ElementDefinition,
   Questionnaire,
   QuestionnaireItem,
   QuestionnaireItemAnswerOption,
+  QuestionnaireItemInitial,
   QuestionnaireResponse,
   QuestionnaireResponseItem,
+  QuestionnaireResponseItemAnswer,
   Reference,
 } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
@@ -16,12 +24,12 @@ import { FormSection } from './FormSection';
 import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
 import { QuantityInput } from './QuantityInput';
-import './QuestionnaireForm.css';
 import { QuestionnaireItemType } from './QuestionnaireUtils';
 import { ReferenceInput } from './ReferenceInput';
 import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 import { TextArea } from './TextArea';
 import { useResource } from './useResource';
+import './QuestionnaireForm.css';
 
 export interface QuestionnaireFormProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;
@@ -34,10 +42,22 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const source = medplum.getProfile();
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
   const questionnaire = useResource(props.questionnaire);
+  const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
 
   useEffect(() => {
     medplum.requestSchema('Questionnaire').then(setSchema);
   }, []);
+
+  useEffect(() => {
+    setResponse(questionnaire ? buildInitialResponse(questionnaire) : undefined);
+  }, [questionnaire]);
+
+  function setItems(newResponseItems: QuestionnaireResponseItem[]): void {
+    setResponse({
+      resourceType: 'QuestionnaireResponse',
+      item: newResponseItems,
+    });
+  }
 
   if (!schema || !questionnaire) {
     return null;
@@ -46,32 +66,22 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   return (
     <Form
       testid="questionnaire-form"
-      onSubmit={(formData: Record<string, string>) => {
-        const items: QuestionnaireResponseItem[] = Object.entries(formData).map(([linkId, value]) => ({
-          linkId,
-          answer: [
-            {
-              valueString: value,
-            },
-          ],
-        }));
-
-        const response: QuestionnaireResponse = {
-          resourceType: 'QuestionnaireResponse',
-          questionnaire: getReferenceString(questionnaire),
-          subject: props.subject,
-          source: createReference(source as ProfileResource),
-          authored: new Date().toISOString(),
-          item: items,
-        };
-
-        if (props.onSubmit) {
-          props.onSubmit(response);
+      onSubmit={() => {
+        if (props.onSubmit && response) {
+          props.onSubmit({
+            ...response,
+            questionnaire: getReferenceString(questionnaire),
+            subject: props.subject,
+            source: createReference(source as ProfileResource),
+            authored: new Date().toISOString(),
+          });
         }
       }}
     >
       {questionnaire.title && <h1>{questionnaire.title}</h1>}
-      {questionnaire.item && <QuestionnaireFormItemArray schema={schema} items={questionnaire.item} />}
+      {questionnaire.item && (
+        <QuestionnaireFormItemArray schema={schema} items={questionnaire.item} onChange={setItems} />
+      )}
       <Button type="submit" size="large">
         OK
       </Button>
@@ -82,17 +92,38 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 interface QuestionnaireFormItemArrayProps {
   schema: IndexedStructureDefinition;
   items: QuestionnaireItem[];
+  onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
 }
 
 function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX.Element {
+  const [responseItems, setResponseItems] = useState<QuestionnaireResponseItem[]>(
+    buildInitialResponseItems(props.items)
+  );
+
+  function setResponseItem(index: number, newResponseItem: QuestionnaireResponseItem): void {
+    const newResponseItems = responseItems.slice();
+    newResponseItems[index] = newResponseItem;
+    setResponseItems(newResponseItems);
+    props.onChange(newResponseItems);
+  }
+
   return (
     <>
-      {props.items.map((item) =>
+      {props.items.map((item, index) =>
         item.type === QuestionnaireItemType.group ? (
-          <QuestionnaireFormItem key={item.linkId} schema={props.schema} item={item} />
+          <QuestionnaireFormItem
+            key={item.linkId}
+            schema={props.schema}
+            item={item}
+            onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
+          />
         ) : (
           <FormSection key={item.linkId} htmlFor={item.linkId} title={item.text || ''}>
-            <QuestionnaireFormItem schema={props.schema} item={item} />
+            <QuestionnaireFormItem
+              schema={props.schema}
+              item={item}
+              onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
+            />
           </FormSection>
         )
       )}
@@ -103,6 +134,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
 export interface QuestionnaireFormItemProps {
   schema: IndexedStructureDefinition;
   item: QuestionnaireItem;
+  onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
 
 export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element | null {
@@ -122,32 +154,113 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
 
   const property: ElementDefinition = {} as ElementDefinition;
 
+  function onChangeItem(newResponseItems: QuestionnaireResponseItem[]): void {
+    props.onChange({
+      linkId: item.linkId,
+      item: newResponseItems,
+    });
+  }
+
+  function onChangeAnswer(newResponseAnswer: QuestionnaireResponseItemAnswer): void {
+    props.onChange({
+      linkId: item.linkId,
+      answer: [newResponseAnswer],
+    });
+  }
+
   switch (type) {
     case QuestionnaireItemType.group:
       return (
         <div>
           <h3>{item.text}</h3>
-          {item.item && <QuestionnaireFormItemArray schema={props.schema} items={item.item} />}
+          {item.item && <QuestionnaireFormItemArray schema={props.schema} items={item.item} onChange={onChangeItem} />}
         </div>
       );
     case QuestionnaireItemType.boolean:
-      return <input type="checkbox" id={name} name={name} value="true" defaultChecked={initial?.valueBoolean} />;
+      return (
+        <input
+          type="checkbox"
+          id={name}
+          name={name}
+          value="true"
+          defaultChecked={initial?.valueBoolean}
+          onChange={(e) => onChangeAnswer({ valueBoolean: e.currentTarget.checked })}
+        />
+      );
     case QuestionnaireItemType.decimal:
-      return <Input type="number" step={0.01} name={name} defaultValue={initial?.valueDecimal} />;
+      return (
+        <Input
+          type="number"
+          step={0.01}
+          name={name}
+          defaultValue={initial?.valueDecimal}
+          onChange={(newValue) => onChangeAnswer({ valueDecimal: parseFloat(newValue) })}
+        />
+      );
     case QuestionnaireItemType.integer:
-      return <Input type="number" step={1} name={name} defaultValue={initial?.valueInteger} />;
+      return (
+        <Input
+          type="number"
+          step={1}
+          name={name}
+          defaultValue={initial?.valueInteger}
+          onChange={(newValue) => onChangeAnswer({ valueInteger: parseInt(newValue) })}
+        />
+      );
     case QuestionnaireItemType.date:
-      return <Input type="date" name={name} defaultValue={initial?.valueDate} />;
+      return (
+        <Input
+          type="date"
+          name={name}
+          defaultValue={initial?.valueDate}
+          onChange={(newValue) => onChangeAnswer({ valueDate: newValue })}
+        />
+      );
     case QuestionnaireItemType.dateTime:
-      return <Input type="datetime-local" name={name} step={1} defaultValue={initial?.valueDateTime} />;
+      return (
+        <Input
+          type="datetime-local"
+          name={name}
+          step={1}
+          defaultValue={initial?.valueDateTime}
+          onChange={(newValue) => onChangeAnswer({ valueDateTime: newValue })}
+        />
+      );
     case QuestionnaireItemType.time:
-      return <Input type="time" name={name} defaultValue={initial?.valueTime} />;
+      return (
+        <Input
+          type="time"
+          name={name}
+          defaultValue={initial?.valueTime}
+          onChange={(newValue) => onChangeAnswer({ valueTime: newValue })}
+        />
+      );
     case QuestionnaireItemType.string:
-      return <Input type="text" name={name} defaultValue={initial?.valueString} />;
+      return (
+        <Input
+          type="text"
+          name={name}
+          defaultValue={initial?.valueString}
+          onChange={(newValue) => onChangeAnswer({ valueString: newValue })}
+        />
+      );
     case QuestionnaireItemType.text:
-      return <TextArea name={name} defaultValue={initial?.valueString} />;
+      return (
+        <TextArea
+          name={name}
+          defaultValue={initial?.valueString}
+          onChange={(newValue) => onChangeAnswer({ valueString: newValue })}
+        />
+      );
     case QuestionnaireItemType.url:
-      return <Input type="url" name={name} defaultValue={initial?.valueUri} />;
+      return (
+        <Input
+          type="url"
+          name={name}
+          defaultValue={initial?.valueUri}
+          onChange={(newValue) => onChangeAnswer({ valueUri: newValue })}
+        />
+      );
     case QuestionnaireItemType.choice:
     case QuestionnaireItemType.openChoice:
       return (
@@ -156,11 +269,18 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             item.answerOption.map((option: QuestionnaireItemAnswerOption, index: number) => {
               const valueProperty = props.schema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
               const [propertyValue, propertyType] = getValueAndType(option, valueProperty);
+              const propertyName = 'value' + capitalize(propertyType);
               const optionName = `${name}-option-${index}`;
               return (
                 <div key={optionName} className="medplum-questionnaire-option-row">
                   <div className="medplum-questionnaire-option-checkbox">
-                    <input type="radio" id={optionName} name={name} value={propertyValue} />
+                    <input
+                      type="radio"
+                      id={optionName}
+                      name={name}
+                      value={propertyValue}
+                      onChange={() => onChangeAnswer({ [propertyName]: propertyValue })}
+                    />
                   </div>
                   <div>
                     <label htmlFor={optionName}>
@@ -178,12 +298,59 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         </div>
       );
     case QuestionnaireItemType.attachment:
-      return <AttachmentInput name={name} defaultValue={initial?.valueAttachment} />;
+      return (
+        <AttachmentInput
+          name={name}
+          defaultValue={initial?.valueAttachment}
+          onChange={(newValue) => onChangeAnswer({ valueAttachment: newValue })}
+        />
+      );
     case QuestionnaireItemType.reference:
-      return <ReferenceInput property={property} name={name} defaultValue={initial?.valueReference} />;
+      return (
+        <ReferenceInput
+          property={property}
+          name={name}
+          defaultValue={initial?.valueReference}
+          onChange={(newValue) => onChangeAnswer({ valueReference: newValue })}
+        />
+      );
     case QuestionnaireItemType.quantity:
-      return <QuantityInput name={name} defaultValue={initial?.valueQuantity} />;
+      return (
+        <QuantityInput
+          name={name}
+          defaultValue={initial?.valueQuantity}
+          onChange={(newValue) => onChangeAnswer({ valueQuantity: newValue })}
+        />
+      );
   }
 
   return null;
+}
+
+function buildInitialResponse(questionnaire: Questionnaire): QuestionnaireResponse {
+  const response: QuestionnaireResponse = {
+    resourceType: 'QuestionnaireResponse',
+    questionnaire: getReferenceString(questionnaire),
+    item: buildInitialResponseItems(questionnaire.item),
+  };
+
+  return response;
+}
+
+function buildInitialResponseItems(items: QuestionnaireItem[] | undefined): QuestionnaireResponseItem[] {
+  return items?.map(buildInitialResponseItem) ?? [];
+}
+
+function buildInitialResponseItem(item: QuestionnaireItem): QuestionnaireResponseItem {
+  return {
+    linkId: item.linkId,
+    item: buildInitialResponseItems(item.item),
+    answer: item.initial?.map(buildInitialResponseAnswer) ?? [],
+  };
+}
+
+function buildInitialResponseAnswer(answer: QuestionnaireItemInitial): QuestionnaireResponseItemAnswer {
+  // This works because QuestionnaireItemInitial and QuestionnaireResponseItemAnswer
+  // have the same properties.
+  return { ...answer };
 }
