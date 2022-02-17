@@ -15,22 +15,19 @@ export interface SchedulerProps {
 
 export function Scheduler(props: SchedulerProps): JSX.Element | null {
   const schedule = useResource(props.schedule);
-  const [month, setMonth] = useState<Date>(new Date());
-  const [date, setDate] = useState<string>();
+  const [date, setDate] = useState<Date>();
   const [time, setTime] = useState<string>();
   const [info, setInfo] = useState<string>();
   const [form, setForm] = useState<string>();
 
-  function moveMonth(delta: number): void {
-    setMonth((currMonth) => {
-      const prevMonth = new Date(currMonth.getTime());
-      prevMonth.setMonth(currMonth.getMonth() + delta);
-      return prevMonth;
-    });
-  }
-
   if (!schedule) {
     return null;
+  }
+
+  function isAvailable(date: Date): boolean {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date.getTime() >= today.getTime() && date.getDay() !== 0 && date.getDay() !== 6;
   }
 
   const actor = schedule.actor?.[0];
@@ -44,27 +41,21 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
             <ResourceName value={actor} />
           </h1>
         )}
-        <h3>1 hour</h3>
-        {date && <p>{date}</p>}
+        <p>1 hour</p>
+        {date && <p>{date.toLocaleDateString()}</p>}
         {time && <p>{time}</p>}
       </div>
       <div className="medplum-calendar-selection-pane">
         {!date && (
           <div>
             <h3>Select date</h3>
-            <p>
-              {month.toLocaleString('default', { month: 'long' })}&nbsp;{month.getFullYear()}
-              &nbsp;
-              <button onClick={() => moveMonth(-1)}>&lt;</button>
-              <button onClick={() => moveMonth(1)}>&gt;</button>
-            </p>
-            <CalendarInput year={month.getFullYear()} month={month.getMonth()} onClick={setDate} />
+            <CalendarInput isAvailable={isAvailable} onClick={setDate} />
           </div>
         )}
         {date && !time && (
           <div>
-            <h1>Select time</h1>
-            <Button onClick={() => setTime('12:00:00')}>Time</Button>
+            <h3>Select time</h3>
+            <Button onClick={() => setTime('9:00am')}>9:00am</Button>
           </div>
         )}
         {date && time && !info && (

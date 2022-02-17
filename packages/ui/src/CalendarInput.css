@@ -27,6 +27,10 @@
   cursor: pointer;
 }
 
+.medplum-calendar-table button:hover {
+  background-color: #d9e9ff;
+}
+
 .medplum-calendar-table button:disabled {
   background-color: white;
   cursor: default;
