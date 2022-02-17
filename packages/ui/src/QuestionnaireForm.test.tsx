@@ -1,6 +1,8 @@
 import { PropertyType } from '@medplum/core';
+import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import { randomUUID } from 'crypto';
 import each from 'jest-each';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
@@ -260,22 +262,61 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Attachment input', async () => {
-    await setup({
-      questionnaire: {
-        resourceType: 'Questionnaire',
-        item: [
-          {
-            linkId: 'q1',
-            type: QuestionnaireItemType.attachment,
-            text: 'q1',
-          },
-        ],
+    const questionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      id: randomUUID(),
+      item: [
+        {
+          linkId: 'q1',
+          type: QuestionnaireItemType.attachment,
+          text: 'q1',
+        },
+      ],
+    };
+
+    const expectedResponse: QuestionnaireResponse = {
+      resourceType: 'QuestionnaireResponse',
+      questionnaire: 'Questionnaire/' + questionnaire.id,
+      source: {
+        reference: 'Practitioner/123',
       },
-      onSubmit: jest.fn(),
-    });
+      item: [
+        {
+          linkId: 'q1',
+          answer: [
+            {
+              valueAttachment: {
+                title: 'hello.txt',
+                contentType: 'text/plain',
+                url: 'https://example.com/binary/123',
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    const onSubmit = jest.fn();
+
+    await setup({ questionnaire, onSubmit });
 
     const input = screen.getByText('Upload...');
     expect(input).toBeInTheDocument();
+
+    await act(async () => {
+      const files = [new File(['hello'], 'hello.txt', { type: 'text/plain' })];
+      fireEvent.change(screen.getByTestId('upload-file-input'), {
+        target: { files },
+      });
+    });
+
+    expect(screen.getByText('hello.txt')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(onSubmit).toBeCalledWith(expect.objectContaining(expectedResponse));
   });
 
   test('Reference input', async () => {

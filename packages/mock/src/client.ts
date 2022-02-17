@@ -1,5 +1,5 @@
 import { allOk, badRequest, getStatus, LoginState, MedplumClient, notFound, ProfileResource } from '@medplum/core';
-import { Bundle, BundleEntry, Communication, Media, Practitioner } from '@medplum/fhirtypes';
+import { Binary, Bundle, BundleEntry, Communication, Media, Practitioner } from '@medplum/fhirtypes';
 import {
   DifferentOrganization,
   DrAliceSmith,
@@ -174,9 +174,6 @@ const routes: Record<string, Record<string, any>> = {
   },
   'fhir/R4/AuditEvent?entity=Subscription/123&_count=20&_sort=-_lastUpdated': {
     GET: ExampleAuditEventBundle,
-  },
-  'fhir/R4/Binary?_filename=hello.exe': {
-    POST: badRequest('Invalid file type'),
   },
   'fhir/R4/Bot/123': {
     GET: ExampleBot,
@@ -468,5 +465,18 @@ export class MockClient extends MedplumClient {
       return this.activeLoginOverride;
     }
     return super.getActiveLogin();
+  }
+
+  createBinary(data: any, filename: string, contentType: string): Promise<Binary> {
+    if (filename.endsWith('.exe')) {
+      return Promise.reject(badRequest('Invalid file type'));
+    }
+
+    return Promise.resolve({
+      resourceType: 'Binary',
+      title: filename,
+      contentType,
+      url: 'https://example.com/binary/123',
+    });
   }
 }

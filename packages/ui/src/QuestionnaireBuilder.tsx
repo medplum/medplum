@@ -188,7 +188,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
         <>
           {resource.title && <h1>{resource.title}</h1>}
           {item.text && <p>{item.text}</p>}
-          {!isContainer && <QuestionnaireFormItem schema={props.schema} item={item} />}
+          {!isContainer && <QuestionnaireFormItem schema={props.schema} item={item} onChange={() => undefined} />}
         </>
       )}
       {item.item &&
