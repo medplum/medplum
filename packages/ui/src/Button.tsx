@@ -9,6 +9,7 @@ export interface ButtonProps {
   size?: 'small' | 'medium' | 'large';
   onClick?: (e: React.MouseEvent) => void;
   children: React.ReactNode;
+  label?: string;
   testid?: string;
 }
 
@@ -20,7 +21,13 @@ export function Button(props: ButtonProps): JSX.Element {
     (props.borderless ? ' medplum-button-borderless' : '') +
     (props.size ? ' medplum-button-' + props.size : '');
   return (
-    <button type={props.type || 'button'} className={className} onClick={props.onClick} data-testid={props.testid}>
+    <button
+      type={props.type || 'button'}
+      className={className}
+      onClick={props.onClick}
+      aria-label={props.label}
+      data-testid={props.testid}
+    >
       {props.children}
     </button>
   );

@@ -1,0 +1,39 @@
+.medplum-calendar-table {
+  width: 350px;
+}
+
+.medplum-calendar-table th {
+  font-weight: normal;
+  font-size: 11px;
+  padding: 8px;
+  text-align: center;
+}
+
+.medplum-calendar-table td {
+  padding: 2px 4px;
+}
+
+.medplum-calendar-table button {
+  width: 44px;
+  height: 44px;
+  color: #0060e6;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  padding: 0;
+  background-color: #eef5ff;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.medplum-calendar-table button:hover {
+  background-color: #d9e9ff;
+}
+
+.medplum-calendar-table button:disabled {
+  background-color: white;
+  cursor: default;
+  color: #666;
+  font-weight: normal;
+}

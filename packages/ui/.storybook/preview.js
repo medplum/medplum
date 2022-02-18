@@ -15,7 +15,7 @@ export const parameters = {
   },
 };
 
-const medplum = new MockClient({ debug: true });
+const medplum = new MockClient();
 
 export const decorators = [
   (Story) => (
