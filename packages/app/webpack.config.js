@@ -68,14 +68,5 @@ module.exports = (env, argv) => ({
     innerGraph: true,
     sideEffects: true,
     runtimeChunk: 'single',
-    splitChunks: {
-      cacheGroups: {
-        vendor: {
-          test: /[\\/]node_modules[\\/]/,
-          name: 'vendors',
-          chunks: 'all',
-        },
-      },
-    },
   },
 });
