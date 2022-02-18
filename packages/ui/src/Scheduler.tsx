@@ -24,10 +24,10 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
     return null;
   }
 
-  function isAvailable(date: Date): boolean {
+  function isAvailable(d: Date): boolean {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return date.getTime() >= today.getTime() && date.getDay() !== 0 && date.getDay() !== 6;
+    return d.getTime() >= today.getTime() && d.getDay() !== 0 && d.getDay() !== 6;
   }
 
   const actor = schedule.actor?.[0];
