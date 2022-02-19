@@ -39,8 +39,12 @@ describe('Scheduler', () => {
     // Choose a date
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const todayButton = screen.getByText(today.getDate().toString());
+    expect(todayButton).toBeDefined();
+    expect((todayButton as HTMLButtonElement).disabled).toBe(false);
+
     await act(async () => {
-      fireEvent.click(screen.getByText(today.getDate().toString()));
+      fireEvent.click(todayButton);
     });
 
     // Choose a time
