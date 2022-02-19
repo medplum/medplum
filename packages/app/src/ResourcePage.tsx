@@ -26,6 +26,7 @@ import {
 } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { CodeEditor } from './CodeEditor';
 import { PatientHeader } from './PatientHeader';
 import { ResourceHeader } from './ResourceHeader';
 import { getPatient } from './utils';
@@ -217,6 +218,7 @@ interface ResourceTabProps {
 }
 
 function ResourceTab(props: ResourceTabProps): JSX.Element | null {
+  const [code, setCode] = useState<string | undefined>();
   switch (props.name) {
     case 'details':
       return <ResourceTable value={props.resource} />;
@@ -266,15 +268,17 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
     case 'editor':
       return (
         <Form
-          onSubmit={(formData: Record<string, string>) => {
+          onSubmit={() => {
             props.onSubmit({
-              ...JSON.parse(stringify(props.resource)),
-              code: formData.code,
+              ...(props.resource as Bot),
+              code,
             });
           }}
         >
-          <TextArea testid="resource-code" name="code" defaultValue={(props.resource as Bot).code} />
-          <Button type="submit">OK</Button>
+          <CodeEditor defaultValue={(props.resource as Bot).code} onChange={setCode} />
+          <div className="medplum-right">
+            <Button type="submit">OK</Button>
+          </div>
         </Form>
       );
     case 'timeline':
