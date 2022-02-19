@@ -61050,6 +61050,10 @@
             "$ref": "#/definitions/code"
           },
           "type": "array"
+        },
+        "defaultPatientAccessPolicy": {
+          "description": "The default access policy for patients using open registration.",
+          "$ref": "#/definitions/Reference"
         }
       },
       "required": [

@@ -1,6 +1,6 @@
 import { assertOk, createReference } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, Project, SearchParameter, User } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, ClientApplication, Project, SearchParameter, User } from '@medplum/fhirtypes';
 import { registerNew } from './auth/register';
 import { getConfig } from './config';
 import { systemRepo } from './fhir';
@@ -23,10 +23,8 @@ export async function seedDatabase(): Promise<void> {
     password: 'medplum_admin',
   });
 
-  await systemRepo.updateResource({
-    ...registerResponse.client,
-    redirectUri: getConfig().appBaseUrl,
-  });
+  const client = registerResponse.client as ClientApplication;
+  await systemRepo.updateResource({ ...client, redirectUri: getConfig().appBaseUrl });
 
   await createPublicProject(registerResponse.user);
   await createValueSetElements();

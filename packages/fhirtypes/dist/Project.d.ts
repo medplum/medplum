@@ -3,6 +3,7 @@
  * Do not edit manually.
  */
 
+import { AccessPolicy } from './AccessPolicy';
 import { Meta } from './Meta';
 import { Reference } from './Reference';
 import { User } from './User';
@@ -59,4 +60,9 @@ export interface Project {
    * A list of optional features that are enabled for the project.
    */
   readonly features?: string[];
+
+  /**
+   * The default access policy for patients using open registration.
+   */
+  readonly defaultPatientAccessPolicy?: Reference<AccessPolicy>;
 }
