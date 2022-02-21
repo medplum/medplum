@@ -139,7 +139,6 @@ async function registerNewProject(request: RegisterRequest): Promise<RegisterRes
 }
 
 async function registerExistingProject(request: RegisterRequest): Promise<RegisterResponse> {
-  const user = await getOrCreateUser(request);
   const [projectOutcome, project] = await systemRepo.readResource<Project>('Project', request.projectId as string);
   assertOk(projectOutcome, project);
 
@@ -147,6 +146,7 @@ async function registerExistingProject(request: RegisterRequest): Promise<Regist
     return Promise.reject(badRequest('Project does not allow open registration'));
   }
 
+  const user = await getOrCreateUser(request);
   const profile = await createPatient(request, project);
   const membership = await createProjectMembership(user, project, profile, project.defaultPatientAccessPolicy);
   return {
@@ -160,7 +160,6 @@ async function registerExistingProject(request: RegisterRequest): Promise<Regist
 async function getOrCreateUser(request: RegisterRequest): Promise<User> {
   const existingUser = await searchForExistingUser(request.email);
   if (existingUser) {
-    // TODO: Verify user password
     return existingUser;
   }
 
