@@ -94,6 +94,17 @@
             "type" : [{
               "code" : "code"
             }]
+          },
+          {
+            "id" : "Project.defaultPatientAccessPolicy",
+            "path" : "Project.defaultPatientAccessPolicy",
+            "definition" : "The default access policy for patients using open registration.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
+            }]
           }
         ]
       }

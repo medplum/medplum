@@ -1,4 +1,4 @@
-import { badRequest, resolveId } from '@medplum/core';
+import { assertOk, badRequest, createReference, resolveId } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -8,6 +8,7 @@ import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
+import { systemRepo } from '../fhir';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../jest.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
@@ -55,6 +56,42 @@ describe('Register', () => {
     expect(res.body.idToken).toBeDefined();
     expect(res.body.accessToken).toBeDefined();
     expect(res.body.refreshToken).toBeDefined();
+  });
+
+  test('Both project ID and project name', async () => {
+    const res = await request(app)
+      .post('/auth/register')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectId: randomUUID(),
+        projectName: 'Hamilton Project',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Cannot specify both projectId and projectName');
+  });
+
+  test('Neither project ID nor project name', async () => {
+    const res = await request(app)
+      .post('/auth/register')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectId: '',
+        projectName: '',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Must provide either projectId or projectName');
   });
 
   test('Missing recaptcha', async () => {
@@ -123,15 +160,16 @@ describe('Register', () => {
     };
 
     const res = await request(app).post('/auth/register').type('json').send(registerRequest);
-
     expect(res.status).toBe(200);
-    expect(res.body.profile).toBeDefined();
+    expect(res.body.project.reference).toBeDefined();
+    expect(res.body.profile.reference).toBeDefined();
 
     const res2 = await request(app).post('/auth/register').type('json').send(registerRequest);
-
-    expect(res2.status).toBe(400);
-    expect(res2.body.issue[0].details.text).toBe('Email already registered');
-    expect(res2.body.issue[0].expression[0]).toBe('email');
+    expect(res2.status).toBe(200);
+    expect(res2.body.project.reference).toBeDefined();
+    expect(res2.body.project.reference).not.toEqual(res.body.project.reference);
+    expect(res2.body.profile.reference).toBeDefined();
+    expect(res2.body.profile.reference).not.toEqual(res.body.profile.reference);
   });
 
   test('Cannot access Project resource', async () => {
@@ -429,5 +467,75 @@ describe('Register', () => {
     expect(res5.body.data).toBeDefined();
     expect(res5.body.data.PatientList).toBeDefined();
     expect(res5.body.data.PatientList.length).toEqual(0);
+  });
+
+  test('Patient registration', async () => {
+    // Register as Christina
+    const res1 = await request(app)
+      .post('/auth/register')
+      .type('json')
+      .send({
+        firstName: 'Christina',
+        lastName: 'Smith',
+        projectName: 'Christina Project',
+        email: `christina${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+      });
+    expect(res1.status).toBe(200);
+    expect(res1.body.project.reference).toBeDefined();
+
+    const projectId = res1.body.project.reference.replace('Project/', '');
+
+    // Try to register as a patient in the new project
+    // (This should fail)
+    const res2 = await request(app)
+      .post('/auth/register')
+      .type('json')
+      .send({
+        firstName: 'Peggy',
+        lastName: 'Patient',
+        projectId,
+        email: `peggy${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+      });
+    expect(res2.status).toBe(400);
+
+    // As Christina, create a default access policy for new patients
+    const res3 = await request(app)
+      .post(`/fhir/R4/AccessPolicy`)
+      .set('Authorization', 'Bearer ' + res1.body.accessToken)
+      .type('json')
+      .send({
+        resourceType: 'AccessPolicy',
+        name: 'Default Patient Policy',
+      });
+    expect(res3.status).toBe(201);
+
+    // As a super admin, enable patient registration
+    const [updateOutcome, updatedProject] = await systemRepo.patchResource('Project', projectId, [
+      {
+        op: 'add',
+        path: '/defaultPatientAccessPolicy',
+        value: createReference(res3.body),
+      },
+    ]);
+    assertOk(updateOutcome, updatedProject);
+
+    // Try to register as a patient in the new project
+    // (This should succeed)
+    const res4 = await request(app)
+      .post('/auth/register')
+      .type('json')
+      .send({
+        firstName: 'Peggy',
+        lastName: 'Patient',
+        projectId,
+        email: `peggy${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+      });
+    expect(res4.status).toBe(200);
   });
 });

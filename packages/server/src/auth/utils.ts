@@ -1,5 +1,15 @@
 import { assertOk, createReference } from '@medplum/core';
-import { AccessPolicy, Login, Practitioner, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import {
+  AccessPolicy,
+  Login,
+  Patient,
+  Practitioner,
+  Project,
+  ProjectMembership,
+  Reference,
+  Resource,
+  User,
+} from '@medplum/fhirtypes';
 import { Response } from 'express';
 import fetch from 'node-fetch';
 import { getConfig } from '../config';
@@ -15,9 +25,21 @@ export interface NewAccountRequest {
 }
 
 export async function createPractitioner(request: NewAccountRequest, project: Project): Promise<Practitioner> {
-  logger.info(`Create practitioner: ${request.firstName} ${request.lastName}`);
-  const [outcome, result] = await systemRepo.createResource<Practitioner>({
-    resourceType: 'Practitioner',
+  return createProfile(request, project, 'Practitioner') as Promise<Practitioner>;
+}
+
+export async function createPatient(request: NewAccountRequest, project: Project): Promise<Patient> {
+  return createProfile(request, project, 'Patient') as Promise<Patient>;
+}
+
+async function createProfile(
+  request: NewAccountRequest,
+  project: Project,
+  resourceType: 'Patient' | 'Practitioner'
+): Promise<Resource> {
+  logger.info(`Create ${resourceType}: ${request.firstName} ${request.lastName}`);
+  const [outcome, result] = await systemRepo.createResource<Resource>({
+    resourceType,
     meta: {
       project: project.id,
     },
@@ -43,7 +65,7 @@ export async function createPractitioner(request: NewAccountRequest, project: Pr
 export async function createProjectMembership(
   user: User,
   project: Project,
-  practitioner: Practitioner,
+  profile: Patient | Practitioner,
   accessPolicy?: Reference<AccessPolicy>,
   admin?: boolean
 ): Promise<ProjectMembership> {
@@ -52,7 +74,7 @@ export async function createProjectMembership(
     resourceType: 'ProjectMembership',
     project: createReference(project),
     user: createReference(user),
-    profile: createReference(practitioner),
+    profile: createReference(profile),
     accessPolicy,
     admin,
   });
