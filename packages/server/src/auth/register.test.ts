@@ -58,6 +58,42 @@ describe('Register', () => {
     expect(res.body.refreshToken).toBeDefined();
   });
 
+  test('Both project ID and project name', async () => {
+    const res = await request(app)
+      .post('/auth/register')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectId: randomUUID(),
+        projectName: 'Hamilton Project',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Cannot specify both projectId and projectName');
+  });
+
+  test('Neither project ID nor project name', async () => {
+    const res = await request(app)
+      .post('/auth/register')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectId: '',
+        projectName: '',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Must provide either projectId or projectName');
+  });
+
   test('Missing recaptcha', async () => {
     const res = await request(app)
       .post('/auth/register')
