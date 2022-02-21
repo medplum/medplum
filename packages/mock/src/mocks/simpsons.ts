@@ -1,5 +1,4 @@
 import {
-  Bundle,
   Communication,
   DiagnosticReport,
   Encounter,
@@ -60,37 +59,26 @@ export const HomerSimpson: Patient = {
   ],
 };
 
-export const HomerSimpsonHistory: Bundle<Patient> = {
-  resourceType: 'Bundle',
-  type: 'history',
-  entry: [
-    {
-      resource: HomerSimpson,
+export const HomerSimpsonPreviousVersion: Patient = {
+  resourceType: 'Patient',
+  id: '123',
+  meta: {
+    versionId: '1',
+    lastUpdated: '2020-01-01T00:00:00.000Z',
+    author: {
+      reference: 'Practitioner/123',
     },
+  },
+  name: [
     {
-      resource: {
-        resourceType: 'Patient',
-        id: '123',
-        meta: {
-          versionId: '1',
-          lastUpdated: '2020-01-01T00:00:00.000Z',
-          author: {
-            reference: 'Practitioner/123',
-          },
-        },
-        name: [
-          {
-            given: ['Homer'],
-            family: 'Simpson',
-          },
-        ],
-        photo: [
-          {
-            contentType: 'image/png',
-            url: 'https://docs.medplum.com/img/homer-simpson.png',
-          },
-        ],
-      },
+      given: ['Homer'],
+      family: 'Simpson',
+    },
+  ],
+  photo: [
+    {
+      contentType: 'image/png',
+      url: 'https://docs.medplum.com/img/homer-simpson.png',
     },
   ],
 };
@@ -107,59 +95,35 @@ export const HomerEncounter: Encounter = {
   },
 };
 
-export const HomerEncounterHistory: Bundle<Encounter> = {
-  resourceType: 'Bundle',
-  type: 'history',
-  entry: [
+export const HomerCommunication: Communication = {
+  resourceType: 'Communication',
+  id: '123',
+  meta: {
+    lastUpdated: '2020-01-01T12:00:00Z',
+    author: {
+      reference: 'Practitioner/123',
+    },
+  },
+  payload: [
     {
-      resource: HomerEncounter,
+      contentString: 'Hello world',
     },
   ],
 };
 
-export const HomerCommunications: Bundle<Communication> = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: {
-        resourceType: 'Communication',
-        id: '123',
-        meta: {
-          lastUpdated: '2020-01-01T12:00:00Z',
-          author: {
-            reference: 'Practitioner/123',
-          },
-        },
-        payload: [
-          {
-            contentString: 'Hello world',
-          },
-        ],
-      },
+export const HomerMedia: Media = {
+  resourceType: 'Media',
+  id: '123',
+  meta: {
+    lastUpdated: '2020-01-01T12:00:00Z',
+    author: {
+      reference: 'Practitioner/123',
     },
-  ],
-};
-
-export const HomerMedia: Bundle<Media> = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: {
-        resourceType: 'Media',
-        id: '123',
-        meta: {
-          lastUpdated: '2020-01-01T12:00:00Z',
-          author: {
-            reference: 'Practitioner/123',
-          },
-        },
-        content: {
-          contentType: 'text/plain',
-          url: 'https://example.com/test.txt',
-        },
-      },
-    },
-  ],
+  },
+  content: {
+    contentType: 'text/plain',
+    url: 'https://example.com/test.txt',
+  },
 };
 
 export const HomerDiagnosticReport: DiagnosticReport = {
@@ -189,16 +153,6 @@ export const HomerDiagnosticReport: DiagnosticReport = {
     { reference: 'Observation/4' },
     { reference: 'Observation/5' },
     { reference: 'Observation/6' },
-  ],
-};
-
-export const HomerDiagnosticReportBundle: Bundle<DiagnosticReport> = {
-  resourceType: 'Bundle',
-  type: 'searchset',
-  entry: [
-    {
-      resource: HomerDiagnosticReport,
-    },
   ],
 };
 
@@ -292,6 +246,7 @@ export const HomerObservation5: Observation = {
 
 export const HomerObservation6: Observation = {
   resourceType: 'Observation',
+  id: '6',
   code: {
     text: 'Test 6',
   },
@@ -309,16 +264,6 @@ export const HomerObservation6: Observation = {
         unit: 'mmHg',
         system: 'http://unitsofmeasure.org',
       },
-    },
-  ],
-};
-
-export const HomerObservationSearchBundle: Bundle<Observation> = {
-  resourceType: 'Bundle',
-  total: 1,
-  entry: [
-    {
-      resource: HomerObservation3,
     },
   ],
 };
@@ -349,26 +294,6 @@ export const HomerServiceRequest: ServiceRequest = {
   orderDetail: [
     {
       text: 'Test 1',
-    },
-  ],
-};
-
-export const HomerServiceRequestHistoryBundle: Bundle<ServiceRequest> = {
-  resourceType: 'Bundle',
-  type: 'history',
-  entry: [
-    {
-      resource: HomerServiceRequest,
-    },
-  ],
-};
-
-export const HomerServiceRequestSearchBundle: Bundle<ServiceRequest> = {
-  resourceType: 'Bundle',
-  type: 'searchset',
-  entry: [
-    {
-      resource: HomerServiceRequest,
     },
   ],
 };
@@ -406,20 +331,6 @@ export const BartSimpson: Patient = {
       system: 'email',
       use: 'home',
       value: 'bart@thesimpsons.com',
-    },
-  ],
-};
-
-export const SimpsonSearchBundle: Bundle<Patient> = {
-  resourceType: 'Bundle',
-  type: 'searchset',
-  total: 2,
-  entry: [
-    {
-      resource: HomerSimpson,
-    },
-    {
-      resource: BartSimpson,
     },
   ],
 };

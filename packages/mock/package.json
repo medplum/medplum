@@ -17,10 +17,14 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/core": "0.4.1"
+    "@medplum/core": "0.4.1",
+    "@medplum/fhirpath": "0.4.1",
+    "@medplum/fhirtypes": "0.4.1"
   },
   "peerDependencies": {
-    "@medplum/core": "0.4.1"
+    "@medplum/core": "0.4.1",
+    "@medplum/fhirpath": "0.4.1",
+    "@medplum/fhirtypes": "0.4.1"
   },
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",

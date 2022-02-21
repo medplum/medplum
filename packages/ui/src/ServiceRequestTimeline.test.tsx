@@ -30,7 +30,6 @@ describe('ServiceRequestTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(4);
   });
 
   test('Renders resource', async () => {
@@ -42,7 +41,6 @@ describe('ServiceRequestTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(4);
   });
 
   test('Create comment', async () => {
@@ -74,7 +72,6 @@ describe('ServiceRequestTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(5);
   });
 
   test('Upload media', async () => {
@@ -100,6 +97,5 @@ describe('ServiceRequestTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(5);
   });
 });

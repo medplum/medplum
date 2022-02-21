@@ -59,7 +59,6 @@ describe('ResourceTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(3);
   });
 
   test('Renders resource', async () => {
@@ -74,7 +73,6 @@ describe('ResourceTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(3);
   });
 
   test('Create comment', async () => {
@@ -116,7 +114,6 @@ describe('ResourceTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(4);
   });
 
   test('Upload media', async () => {
@@ -153,6 +150,5 @@ describe('ResourceTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(4);
   });
 });
