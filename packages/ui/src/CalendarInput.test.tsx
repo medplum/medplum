@@ -1,29 +1,27 @@
+import { Slot } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { CalendarInput, getMonthString } from './CalendarInput';
 
 describe('CalendarInput', () => {
   test('Renders', () => {
-    const isAvailable = (): boolean => true;
     const onClick = jest.fn();
-    render(<CalendarInput isAvailable={isAvailable} onClick={onClick} />);
+    render(<CalendarInput slots={[]} onClick={onClick} />);
     expect(screen.getByText(getMonthString(new Date()))).toBeDefined();
     expect(screen.getByText('SUN')).toBeDefined();
     expect(screen.getByText('1')).toBeDefined();
   });
 
   test('Disabled days', () => {
-    const isAvailable = (date: Date): boolean => date.getDate() !== 4;
     const onClick = jest.fn();
-    render(<CalendarInput isAvailable={isAvailable} onClick={onClick} />);
+    render(<CalendarInput slots={[]} onClick={onClick} />);
     expect(screen.getByText('4')).toBeDefined();
     expect((screen.queryByText('4') as HTMLButtonElement).disabled).toBe(true);
   });
 
   test('Change months', async () => {
-    const isAvailable = (): boolean => true;
     const onClick = jest.fn();
-    render(<CalendarInput isAvailable={isAvailable} onClick={onClick} />);
+    render(<CalendarInput slots={[]} onClick={onClick} />);
 
     const nextMonth = new Date();
     nextMonth.setMonth(nextMonth.getMonth() + 1);
@@ -42,12 +40,36 @@ describe('CalendarInput', () => {
   });
 
   test('Click day', async () => {
-    const isAvailable = (): boolean => true;
+    // Add a slot on the 15th of next month
+    const startTime = new Date();
+    startTime.setMonth(startTime.getMonth() + 1);
+    startTime.setDate(15);
+    startTime.setHours(12, 0, 0, 0);
+    const slots: Slot[] = [
+      {
+        resourceType: 'Slot',
+        start: startTime.toISOString(),
+      },
+    ];
+
     const onClick = jest.fn();
-    render(<CalendarInput isAvailable={isAvailable} onClick={onClick} />);
+    render(<CalendarInput slots={slots} onClick={onClick} />);
+
+    const nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+    // Move forward one month
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Next month'));
+    });
+    expect(screen.getByText(getMonthString(nextMonth))).toBeDefined();
+
+    // Expect the 15th to be available
+    const dayButton = screen.getByText('15');
+    expect((dayButton as HTMLButtonElement).disabled).toBe(false);
 
     await act(async () => {
-      fireEvent.click(screen.getByText('15'));
+      fireEvent.click(dayButton);
     });
 
     expect(onClick).toHaveBeenCalled();

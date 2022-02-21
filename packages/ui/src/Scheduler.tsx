@@ -1,33 +1,56 @@
-import { Reference, Schedule } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import { getReferenceString, Operator } from '@medplum/core';
+import { BundleEntry, Reference, Schedule, Slot } from '@medplum/fhirtypes';
+import React, { useEffect, useRef, useState } from 'react';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
 import { CalendarInput } from './CalendarInput';
 import { FormSection } from './FormSection';
 import { Input } from './Input';
+import { useMedplum } from './MedplumProvider';
 import { ResourceName } from './ResourceName';
-import { useResource } from './useResource';
 import './Scheduler.css';
+import { useResource } from './useResource';
 
 export interface SchedulerProps {
   schedule: Schedule | Reference<Schedule>;
 }
 
 export function Scheduler(props: SchedulerProps): JSX.Element | null {
+  const medplum = useMedplum();
   const schedule = useResource(props.schedule);
+
+  const [slots, setSlots] = useState<Slot[]>();
+  const slotsRef = useRef<Slot[]>();
+  slotsRef.current = slots;
+
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState<string>();
   const [info, setInfo] = useState<string>();
   const [form, setForm] = useState<string>();
 
-  if (!schedule) {
-    return null;
-  }
+  useEffect(() => {
+    if (schedule) {
+      medplum
+        .search({
+          resourceType: 'Slot',
+          filters: [
+            {
+              code: 'schedule',
+              operator: Operator.EQUALS,
+              value: getReferenceString(schedule),
+            },
+          ],
+        })
+        .then((bundle) => {
+          setSlots((bundle.entry as BundleEntry<Slot>[]).map((entry) => entry.resource as Slot));
+        });
+    } else {
+      setSlots(undefined);
+    }
+  }, [schedule]);
 
-  function isAvailable(d: Date): boolean {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return d.getTime() >= today.getTime() && d.getDay() !== 0 && d.getDay() !== 6;
+  if (!schedule || !slots) {
+    return null;
   }
 
   const actor = schedule.actor?.[0];
@@ -49,7 +72,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
         {!date && (
           <div>
             <h3>Select date</h3>
-            <CalendarInput isAvailable={isAvailable} onClick={setDate} />
+            <CalendarInput slots={slots} onClick={setDate} />
           </div>
         )}
         {date && !time && (

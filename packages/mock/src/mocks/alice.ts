@@ -1,4 +1,4 @@
-import { Bundle, Organization, Practitioner } from '@medplum/fhirtypes';
+import { Bundle, Organization, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 
 export const TestOrganization: Organization = {
   resourceType: 'Organization',
@@ -71,6 +71,38 @@ export const DrAliceSmithHistoryBundle: Bundle<Practitioner> = {
           },
         },
         name: [{ given: ['Medplum'], family: 'Admin' }],
+      },
+    },
+  ],
+};
+
+export const DrAliceSmithSchedule: Schedule = {
+  resourceType: 'Schedule',
+  id: '123',
+  actor: [
+    {
+      reference: 'Practitioner/123',
+      display: 'Dr. Alice Smith',
+    },
+  ],
+};
+
+export const DrAliceSmithSlots: Bundle<Slot> = {
+  resourceType: 'Bundle',
+  type: 'searchset',
+  entry: [
+    {
+      resource: {
+        resourceType: 'Slot',
+        start: (() => {
+          // Generate start time for "15th of next month"
+          // Add a slot on the 15th of next month
+          const startTime = new Date();
+          startTime.setMonth(startTime.getMonth() + 1);
+          startTime.setDate(15);
+          startTime.setHours(12, 0, 0, 0);
+          return startTime.toISOString();
+        })(),
       },
     },
   ],

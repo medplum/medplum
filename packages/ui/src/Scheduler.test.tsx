@@ -1,6 +1,6 @@
 import { createReference } from '@medplum/core';
 import { Reference, Schedule } from '@medplum/fhirtypes';
-import { DrAliceSmith, MockClient } from '@medplum/mock';
+import { DrAliceSmithSchedule, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -20,14 +20,20 @@ function setup(schedule: Schedule | Reference<Schedule>): void {
 }
 
 describe('Scheduler', () => {
-  test('Handle bad reference', async () => {
+  test('Renders by reference', async () => {
     await act(async () => {
-      setup({ reference: 'Schedule/123' });
+      setup(createReference(DrAliceSmithSchedule));
     });
   });
 
-  test('Renders', async () => {
-    setup({ resourceType: 'Schedule', actor: [createReference(DrAliceSmith)] });
+  test('Renders resources', async () => {
+    await act(async () => {
+      setup(DrAliceSmithSchedule);
+    });
+  });
+
+  test('Success', async () => {
+    setup(DrAliceSmithSchedule);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('scheduler'));
@@ -36,15 +42,16 @@ describe('Scheduler', () => {
     const control = screen.getByTestId('scheduler');
     expect(control).toBeDefined();
 
-    // Choose a date
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayButton = screen.getByText(today.getDate().toString());
-    expect(todayButton).toBeDefined();
-    expect((todayButton as HTMLButtonElement).disabled).toBe(false);
-
+    // Move forward one month
     await act(async () => {
-      fireEvent.click(todayButton);
+      fireEvent.click(screen.getByLabelText('Next month'));
+    });
+
+    // Expect the 15th to be available
+    const dayButton = screen.getByText('15');
+    expect((dayButton as HTMLButtonElement).disabled).toBe(false);
+    await act(async () => {
+      fireEvent.click(dayButton);
     });
 
     // Choose a time

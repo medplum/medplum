@@ -4,6 +4,8 @@ import {
   DifferentOrganization,
   DrAliceSmith,
   DrAliceSmithHistoryBundle,
+  DrAliceSmithSchedule,
+  DrAliceSmithSlots,
   EmptySearchBundle,
   ExampleAuditEventBundle,
   ExampleBot,
@@ -346,6 +348,9 @@ const routes: Record<string, Record<string, any>> = {
   'fhir/R4/QuestionnaireResponse/123': {
     GET: ExampleQuestionnaireResponse,
   },
+  'fhir/R4/Schedule/123': {
+    GET: DrAliceSmithSchedule,
+  },
   'fhir/R4/ServiceRequest/123': {
     GET: HomerServiceRequest,
   },
@@ -357,6 +362,9 @@ const routes: Record<string, Record<string, any>> = {
   },
   'fhir/R4/ServiceRequest?_fields=id,_lastUpdated,subject,code,status,orderDetail': {
     GET: HomerServiceRequestSearchBundle,
+  },
+  'fhir/R4/Slot?schedule=Schedule%2F123': {
+    GET: DrAliceSmithSlots,
   },
   'fhir/R4/Subscription/123': {
     GET: ExampleSubscription,
