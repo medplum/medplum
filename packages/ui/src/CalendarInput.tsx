@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { Button } from './Button';
 import { InputRow } from './InputRow';
+import { Slot } from '@medplum/fhirtypes';
 import './CalendarInput.css';
 
 export interface CalendarInputProps {
-  isAvailable: (date: Date) => boolean;
+  slots: Slot[];
   onClick: (date: Date) => void;
 }
 
@@ -24,45 +25,8 @@ interface CalendarCell {
 
 type OptionalCalendarCell = CalendarCell | undefined;
 
-function buildGrid(startDate: Date, isAvailable: (date: Date) => boolean): OptionalCalendarCell[][] {
-  const d = new Date(startDate.getFullYear(), startDate.getMonth());
-  const grid: OptionalCalendarCell[][] = [];
-  let row: OptionalCalendarCell[] = [];
-
-  // Fill leading empty days
-  for (let i = 0; i < d.getDay(); i++) {
-    row.push(undefined);
-  }
-
-  while (d.getMonth() === startDate.getMonth()) {
-    row.push({
-      date: new Date(d.getTime()),
-      available: isAvailable(d),
-    });
-
-    if (d.getDay() === 6) {
-      grid.push(row);
-      row = [];
-    }
-
-    d.setDate(d.getDate() + 1);
-  }
-
-  // Fill trailing empty days
-  if (d.getDay() !== 0) {
-    for (let i = d.getDay(); i < 7; i++) {
-      row.push(undefined);
-    }
-    grid.push(row);
-  }
-
-  return grid;
-}
-
 export function CalendarInput(props: CalendarInputProps): JSX.Element {
-  const now = new Date();
-  const startMonth = new Date(now.getFullYear(), now.getMonth());
-  const [month, setMonth] = useState<Date>(startMonth);
+  const [month, setMonth] = useState<Date>(getStartMonth);
 
   function moveMonth(delta: number): void {
     setMonth((currMonth) => {
@@ -72,7 +36,7 @@ export function CalendarInput(props: CalendarInputProps): JSX.Element {
     });
   }
 
-  const grid = useMemo(() => buildGrid(month, props.isAvailable), [month]);
+  const grid = useMemo(() => buildGrid(month, props.slots), [month]);
 
   return (
     <div>
@@ -117,4 +81,69 @@ export function CalendarInput(props: CalendarInputProps): JSX.Element {
       </table>
     </div>
   );
+}
+
+function getStartMonth(): Date {
+  const result = new Date();
+  result.setDate(1);
+  result.setHours(0, 0, 0, 0);
+  return result;
+}
+
+function buildGrid(startDate: Date, slots: Slot[]): OptionalCalendarCell[][] {
+  const d = new Date(startDate.getFullYear(), startDate.getMonth());
+  const grid: OptionalCalendarCell[][] = [];
+  let row: OptionalCalendarCell[] = [];
+
+  // Fill leading empty days
+  for (let i = 0; i < d.getDay(); i++) {
+    row.push(undefined);
+  }
+
+  while (d.getMonth() === startDate.getMonth()) {
+    row.push({
+      date: new Date(d.getTime()),
+      // available: isAvailable(d),
+      available: isDayAvailable(d, slots),
+    });
+
+    if (d.getDay() === 6) {
+      grid.push(row);
+      row = [];
+    }
+
+    d.setDate(d.getDate() + 1);
+  }
+
+  // Fill trailing empty days
+  if (d.getDay() !== 0) {
+    for (let i = d.getDay(); i < 7; i++) {
+      row.push(undefined);
+    }
+    grid.push(row);
+  }
+
+  return grid;
+}
+
+/**
+ * Returns true if the given date is available for booking.
+ * @param day The day to check.
+ * @param slots The list of available slots.
+ * @returns True if there are any available slots for the day.
+ */
+function isDayAvailable(day: Date, slots: Slot[]): boolean {
+  // Note that slot start and end time may or may not be in UTC.
+  for (const slot of slots) {
+    const slotStart = new Date(slot.start as string);
+    if (
+      slotStart.getFullYear() === day.getFullYear() &&
+      slotStart.getMonth() === day.getMonth() &&
+      slotStart.getDate() === day.getDate()
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }
