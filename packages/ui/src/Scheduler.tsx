@@ -24,7 +24,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
   slotsRef.current = slots;
 
   const [date, setDate] = useState<Date>();
-  const [time, setTime] = useState<string>();
+  const [slot, setSlot] = useState<Slot>();
   const [info, setInfo] = useState<string>();
   const [form, setForm] = useState<string>();
 
@@ -66,7 +66,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
         )}
         <p>1 hour</p>
         {date && <p>{date.toLocaleDateString()}</p>}
-        {time && <p>{time}</p>}
+        {slot && <p>{formatTime(new Date(slot.start as string))}</p>}
       </div>
       <div className="medplum-calendar-selection-pane">
         {!date && (
@@ -75,13 +75,25 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
             <CalendarInput slots={slots} onClick={setDate} />
           </div>
         )}
-        {date && !time && (
+        {date && !slot && (
           <div>
             <h3>Select time</h3>
-            <Button onClick={() => setTime('9:00am')}>9:00am</Button>
+            {slots.map((s) => {
+              const slotStart = new Date(s.start as string);
+              return (
+                slotStart.getTime() > date.getTime() &&
+                slotStart.getTime() < date.getTime() + 24 * 3600 * 1000 && (
+                  <div key={s.id}>
+                    <Button style={{ width: 150 }} onClick={() => setSlot(s)}>
+                      {formatTime(slotStart)}
+                    </Button>
+                  </div>
+                )
+              );
+            })}
           </div>
         )}
-        {date && time && !info && (
+        {date && slot && !info && (
           <div>
             <h3>Enter your info</h3>
             <FormSection title="Name" htmlFor="name">
@@ -95,7 +107,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
             </Button>
           </div>
         )}
-        {date && time && info && !form && (
+        {date && slot && info && !form && (
           <div>
             <h3>Custom questions</h3>
             <FormSection title="Question 1" htmlFor="q1">
@@ -112,7 +124,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
             </Button>
           </div>
         )}
-        {date && time && info && form && (
+        {date && slot && info && form && (
           <div>
             <h3>You're all set!</h3>
             <p>Check your email for a calendar invite.</p>
@@ -121,4 +133,8 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
       </div>
     </div>
   );
+}
+
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }

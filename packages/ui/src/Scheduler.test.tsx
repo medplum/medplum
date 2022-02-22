@@ -56,7 +56,7 @@ describe('Scheduler', () => {
 
     // Choose a time
     await act(async () => {
-      fireEvent.click(screen.getByText('9:00am'));
+      fireEvent.click(screen.getByText('9:00 AM'));
     });
 
     // Click next
