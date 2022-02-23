@@ -98,6 +98,12 @@ export class Condition implements Expression {
       sql.append(')');
       sql.append(this.operator);
       sql.param((this.parameter as string).toLowerCase());
+    } else if (this.operator === Operator.EQUALS && this.parameter === null) {
+      sql.appendColumn(this.column);
+      sql.append(' IS NULL');
+    } else if (this.operator === Operator.NOT_EQUALS && this.parameter === null) {
+      sql.appendColumn(this.column);
+      sql.append(' IS NOT NULL');
     } else {
       sql.appendColumn(this.column);
       sql.append(this.operator);
@@ -131,6 +137,15 @@ export class Conjunction extends Connective {
   constructor(expressions: Expression[]) {
     super(' AND ', expressions);
   }
+
+  whereExpr(expression: Expression): this {
+    this.expressions.push(expression);
+    return this;
+  }
+
+  where(column: Column | string, operator?: Operator, value?: any, type?: string): this {
+    return this.whereExpr(new Condition(column, operator as Operator, value, type));
+  }
 }
 
 export class Disjunction extends Connective {
@@ -145,6 +160,10 @@ export class Join {
 
 export class OrderBy {
   constructor(readonly column: Column, readonly descending?: boolean) {}
+}
+
+export interface Expression {
+  buildSql(sql: SqlBuilder): void;
 }
 
 export class SqlBuilder {
@@ -198,31 +217,27 @@ export class SqlBuilder {
 
 export abstract class BaseQuery {
   readonly tableName: string;
-  condition: Expression | undefined;
+  readonly predicate: Conjunction;
 
   constructor(tableName: string) {
     this.tableName = tableName;
+    this.predicate = new Conjunction([]);
   }
 
   whereExpr(expression: Expression): this {
-    if (this.condition && this.condition instanceof Conjunction) {
-      this.condition.expressions.push(expression);
-    } else if (this.condition) {
-      this.condition = new Conjunction([this.condition, expression]);
-    } else {
-      this.condition = expression;
-    }
+    this.predicate.whereExpr(expression);
     return this;
   }
 
   where(column: Column | string, operator?: Operator, value?: any, type?: string): this {
-    return this.whereExpr(new Condition(column, operator as Operator, value, type));
+    this.predicate.where(column, operator, value, type);
+    return this;
   }
 
   protected buildConditions(sql: SqlBuilder): void {
-    if (this.condition) {
+    if (this.predicate.expressions.length > 0) {
       sql.append(' WHERE ');
-      this.condition.buildSql(sql);
+      this.predicate.buildSql(sql);
     }
   }
 }
@@ -316,7 +331,7 @@ export class SelectQuery extends BaseQuery {
     sql.appendIdentifier(this.tableName);
 
     for (const join of this.joins) {
-      sql.append(' JOIN ');
+      sql.append(' LEFT JOIN ');
       if (join.subQuery) {
         sql.append(' ( ');
         join.subQuery.buildSql(sql);
