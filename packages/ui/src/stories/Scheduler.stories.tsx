@@ -1,5 +1,4 @@
-import { createReference } from '@medplum/core';
-import { DrAliceSmith } from '@medplum/mock';
+import { DrAliceSmithSchedule } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Document } from '../Document';
@@ -12,6 +11,6 @@ export default {
 
 export const Basic = (): JSX.Element => (
   <Document>
-    <Scheduler schedule={{ resourceType: 'Schedule', actor: [createReference(DrAliceSmith)] }} />
+    <Scheduler schedule={DrAliceSmithSchedule} />
   </Document>
 );

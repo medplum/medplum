@@ -3,6 +3,7 @@ import './Button.css';
 
 export interface ButtonProps {
   type?: 'button' | 'submit';
+  style?: React.CSSProperties;
   primary?: boolean;
   danger?: boolean;
   borderless?: boolean;
@@ -24,6 +25,7 @@ export function Button(props: ButtonProps): JSX.Element {
     <button
       type={props.type || 'button'}
       className={className}
+      style={props.style}
       onClick={props.onClick}
       aria-label={props.label}
       data-testid={props.testid}

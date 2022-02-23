@@ -1,4 +1,4 @@
-import { Bundle, Organization, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Organization, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 
 export const TestOrganization: Organization = {
   resourceType: 'Organization',
@@ -90,20 +90,22 @@ export const DrAliceSmithSchedule: Schedule = {
 export const DrAliceSmithSlots: Bundle<Slot> = {
   resourceType: 'Bundle',
   type: 'searchset',
-  entry: [
-    {
-      resource: {
-        resourceType: 'Slot',
-        start: (() => {
-          // Generate start time for "15th of next month"
-          // Add a slot on the 15th of next month
-          const startTime = new Date();
-          startTime.setMonth(startTime.getMonth() + 1);
-          startTime.setDate(15);
-          startTime.setHours(12, 0, 0, 0);
-          return startTime.toISOString();
-        })(),
-      },
-    },
-  ],
+  entry: (() => {
+    const result: BundleEntry<Slot>[] = [];
+    const slotDate = new Date();
+    for (let day = 0; day < 45; day++) {
+      for (const hour of [9, 10, 11, 13, 14, 15]) {
+        slotDate.setHours(hour, 0, 0, 0);
+        result.push({
+          resource: {
+            resourceType: 'Slot',
+            id: `slot-${day}-${hour}`,
+            start: slotDate.toISOString(),
+          },
+        });
+      }
+      slotDate.setDate(slotDate.getDate() + 1);
+    }
+    return result;
+  })(),
 };
