@@ -85,7 +85,7 @@ See developer setup documentation: https://docs.medplum.com/docs/developers/intr
 
 [Apache 2.0](LICENSE.txt)
 
-Copyright &copy; Medplum 2021
+Copyright &copy; Medplum 2022
 
 FHIR &reg; is a registered trademark of HL7.
 

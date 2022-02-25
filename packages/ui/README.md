@@ -84,4 +84,4 @@ export function ChatPage() {
 
 ## License
 
-Apache 2.0. Copyright &copy; Medplum 2021
+Apache 2.0. Copyright &copy; Medplum 2022
