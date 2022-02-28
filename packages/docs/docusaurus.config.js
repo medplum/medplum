@@ -86,7 +86,7 @@ const config = {
               },
               {
                 label: 'Discord',
-                href: 'https://discord.gg/4YTE7A5Q',
+                href: 'https://discord.gg/UBAWwvrVeN',
               },
               {
                 label: 'Storybook',
