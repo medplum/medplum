@@ -25,7 +25,7 @@ services:
     volumes:
       - ./packages/server:/usr/src/medplum/packages/server
     ports:
-      - '5000:5000'
+      - '5001:5000'
   postgres:
     image: postgres:12
     restart: always
