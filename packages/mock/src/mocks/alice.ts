@@ -93,7 +93,7 @@ export const DrAliceSmithSlots: Bundle<Slot> = {
   entry: (() => {
     const result: BundleEntry<Slot>[] = [];
     const slotDate = new Date();
-    for (let day = 0; day < 45; day++) {
+    for (let day = 0; day < 60; day++) {
       for (const hour of [9, 10, 11, 13, 14, 15]) {
         slotDate.setHours(hour, 0, 0, 0);
         result.push({
