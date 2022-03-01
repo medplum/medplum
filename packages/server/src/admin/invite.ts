@@ -1,6 +1,6 @@
 import { assertOk, Operator } from '@medplum/core';
 import { AccessPolicy, Practitioner, Project, Reference, User } from '@medplum/fhirtypes';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { resetPassword } from '../auth/resetpassword';

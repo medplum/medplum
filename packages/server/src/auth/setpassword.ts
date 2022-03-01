@@ -1,6 +1,6 @@
 import { allOk, assertOk, badRequest } from '@medplum/core';
 import { PasswordChangeRequest, Reference, User } from '@medplum/fhirtypes';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { pwnedPassword } from 'hibp';

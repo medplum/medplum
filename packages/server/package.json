@@ -27,7 +27,7 @@
     "@medplum/core": "0.4.1",
     "@medplum/definitions": "0.4.1",
     "@medplum/fhirpath": "0.4.1",
-    "bcrypt": "5.0.1",
+    "bcryptjs": "2.4.3",
     "body-parser": "1.19.2",
     "bullmq": "1.74.1",
     "compression": "1.7.4",
@@ -51,7 +51,7 @@
   "devDependencies": {
     "@jest/test-sequencer": "27.5.1",
     "@medplum/fhirtypes": "0.4.1",
-    "@types/bcrypt": "5.0.0",
+    "@types/bcryptjs": "2.4.2",
     "@types/body-parser": "1.19.2",
     "@types/cookie-parser": "1.4.2",
     "@types/cors": "2.8.12",
