@@ -22,7 +22,7 @@
           "max": "1",
           "type": [
             {
-              "code": "https://hl7.org/fhirpath/System.String"
+              "code": "http://hl7.org/fhirpath/System.String"
             }
           ]
         },
@@ -354,7 +354,7 @@
           "max": "1",
           "type": [
             {
-              "code": "https://hl7.org/fhirpath/System.String"
+              "code": "http://hl7.org/fhirpath/System.String"
             }
           ]
         },
@@ -475,7 +475,7 @@
           "max": "1",
           "type": [
             {
-              "code": "https://hl7.org/fhirpath/System.String"
+              "code": "http://hl7.org/fhirpath/System.String"
             }
           ]
         },
@@ -937,7 +937,7 @@
           "max": "1",
           "type": [
             {
-              "code": "https://hl7.org/fhirpath/System.String"
+              "code": "http://hl7.org/fhirpath/System.String"
             }
           ]
         },
@@ -1102,7 +1102,7 @@
           "max": "1",
           "type": [
             {
-              "code": "https://hl7.org/fhirpath/System.String"
+              "code": "http://hl7.org/fhirpath/System.String"
             }
           ]
         },
@@ -1253,7 +1253,7 @@
           "max": "1",
           "type": [
             {
-              "code": "https://hl7.org/fhirpath/System.String"
+              "code": "http://hl7.org/fhirpath/System.String"
             }
           ]
         },
@@ -1468,7 +1468,7 @@
           "max": "1",
           "type": [
             {
-              "code": "https://hl7.org/fhirpath/System.String"
+              "code": "http://hl7.org/fhirpath/System.String"
             }
           ]
         },
@@ -1589,7 +1589,7 @@
           "max": "1",
           "type": [
             {
-              "code": "https://hl7.org/fhirpath/System.String"
+              "code": "http://hl7.org/fhirpath/System.String"
             }
           ]
         },
@@ -1847,7 +1847,7 @@
           "max": "1",
           "type": [
             {
-              "code": "https://hl7.org/fhirpath/System.String"
+              "code": "http://hl7.org/fhirpath/System.String"
             }
           ]
         },
@@ -1990,7 +1990,7 @@
           "max": "1",
           "type": [
             {
-              "code": "https://hl7.org/fhirpath/System.String"
+              "code": "http://hl7.org/fhirpath/System.String"
             }
           ]
         },
@@ -2098,7 +2098,7 @@
           "max": "1",
           "type": [
             {
-              "code": "https://hl7.org/fhirpath/System.String"
+              "code": "http://hl7.org/fhirpath/System.String"
             }
           ]
         },
@@ -2184,7 +2184,7 @@
           "max": "1",
           "type": [
             {
-              "code": "https://hl7.org/fhirpath/System.String"
+              "code": "http://hl7.org/fhirpath/System.String"
             }
           ]
         },
@@ -2396,7 +2396,7 @@
           "max": "1",
           "type": [
             {
-              "code": "https://hl7.org/fhirpath/System.String"
+              "code": "http://hl7.org/fhirpath/System.String"
             }
           ]
         },
@@ -2521,7 +2521,7 @@
           "max": "1",
           "type": [
             {
-              "code": "https://hl7.org/fhirpath/System.String"
+              "code": "http://hl7.org/fhirpath/System.String"
             }
           ]
         },
@@ -2904,7 +2904,7 @@
           "max": "1",
           "type": [
             {
-              "code": "https://hl7.org/fhirpath/System.String"
+              "code": "http://hl7.org/fhirpath/System.String"
             }
           ]
         },
@@ -3032,7 +3032,7 @@
           "max": "1",
           "type": [
             {
-              "code": "https://hl7.org/fhirpath/System.String"
+              "code": "http://hl7.org/fhirpath/System.String"
             }
           ]
         },
@@ -3233,7 +3233,7 @@
           "max": "1",
           "type": [
             {
-              "code": "https://hl7.org/fhirpath/System.String"
+              "code": "http://hl7.org/fhirpath/System.String"
             }
           ]
         },
@@ -3327,7 +3327,7 @@
           "max": "1",
           "type": [
             {
-              "code": "https://hl7.org/fhirpath/System.String"
+              "code": "http://hl7.org/fhirpath/System.String"
             }
           ]
         },
@@ -3440,7 +3440,7 @@
           "max": "1",
           "type": [
             {
-              "code": "https://hl7.org/fhirpath/System.String"
+              "code": "http://hl7.org/fhirpath/System.String"
             }
           ]
         },

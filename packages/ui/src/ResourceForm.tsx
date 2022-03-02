@@ -53,7 +53,7 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
       </FormSection>
       {Object.entries(typeSchema.properties).map((entry) => {
         const key = entry[0];
-        if (DEFAULT_IGNORED_PROPERTIES.indexOf(key) >= 0) {
+        if (key === 'id' || DEFAULT_IGNORED_PROPERTIES.indexOf(key) >= 0) {
           return null;
         }
         const property = entry[1];

@@ -233,6 +233,11 @@ export function getPropertyDisplayName(property: ElementDefinition): string {
   // the property name is "birthDate"
   const propertyName = (property.path as string).replaceAll('[x]', '').split('.').pop() as string;
 
+  // Special case for ID
+  if (propertyName === 'id') {
+    return 'ID';
+  }
+
   // Split by capital letters
   // Capitalize the first letter of each word
   // Join together with spaces in between
