@@ -44,7 +44,7 @@
     "ioredis": "4.28.5",
     "jose": "4.5.1",
     "mustache": "4.2.0",
-    "node-fetch": "3.2.1",
+    "node-fetch": "2.6.7",
     "pg": "8.7.3",
     "validator": "13.7.0"
   },
