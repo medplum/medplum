@@ -182,7 +182,6 @@ describe('ResourcePage', () => {
 
     // Expect identifiers
     expect(screen.getByText('abc')).toBeInTheDocument();
-    expect(screen.getByText('123')).toBeInTheDocument();
     expect(screen.getByText('def')).toBeInTheDocument();
     expect(screen.getByText('456')).toBeInTheDocument();
   });
