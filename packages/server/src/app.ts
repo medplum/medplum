@@ -2,7 +2,7 @@ import { badRequest } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
-import { Express, json, NextFunction, Request, Response, urlencoded } from 'express';
+import { Express, json, NextFunction, Request, Response, urlencoded, text } from 'express';
 import { adminRouter } from './admin';
 import { asyncWrap } from './async';
 import { authRouter } from './auth';
@@ -11,6 +11,7 @@ import { corsOptions } from './cors';
 import { dicomRouter } from './dicom/routes';
 import { binaryRouter, fhirRouter, sendOutcome } from './fhir';
 import { healthcheckHandler } from './healthcheck';
+import { hl7Router } from './hl7';
 import { logger } from './logger';
 import { authenticateToken, oauthRouter } from './oauth';
 import { openApiHandler } from './openapi';
@@ -100,6 +101,11 @@ export async function initApp(app: Express): Promise<Express> {
     })
   );
   app.use(
+    text({
+      type: ['text/plain', 'x-application/hl7-v2+er7'],
+    })
+  );
+  app.use(
     json({
       type: ['application/json', 'application/fhir+json', 'application/json-patch+json'],
       limit: config.maxJsonSize,
@@ -113,6 +119,7 @@ export async function initApp(app: Express): Promise<Express> {
   app.use('/auth/', authRouter);
   app.use('/dicom/PS3/', dicomRouter);
   app.use('/fhir/R4/', fhirRouter);
+  app.use('/hl7/v2/', hl7Router);
   app.use('/oauth2/', oauthRouter);
   app.use('/scim/v2/', scimRouter);
   app.use('/storage/', storageRouter);
