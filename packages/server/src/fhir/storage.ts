@@ -142,7 +142,7 @@ class S3Storage implements BinaryStorage {
         CacheControl: 'max-age=3600, s-maxage=86400',
         ContentDisposition: filename ? `attachment; filename="${encodeURIComponent(filename)}"` : undefined,
         ContentType: contentType || 'application/octet-stream',
-        Body: (stream as internal.Readable | ReadableStream<any>),
+        Body: stream as internal.Readable | ReadableStream<any>,
       },
       client: this.#client,
       queueSize: 3,
