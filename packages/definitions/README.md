@@ -8,4 +8,4 @@ This package contains raw data definitions for a number of healthcare standards.
 
 ## License
 
-Apache 2.0. Copyright &copy; Medplum 2021
+Apache 2.0. Copyright &copy; Medplum 2022
