@@ -26,6 +26,7 @@ describe('ResourceTable', () => {
       await waitFor(() => screen.getByText('Name'));
     });
 
+    expect(screen.getByText('ID')).toBeInTheDocument();
     expect(screen.getByText('Name')).toBeInTheDocument();
   });
 
