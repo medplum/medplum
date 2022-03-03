@@ -2,7 +2,7 @@ import { assertOk } from '@medplum/core';
 import { Media } from '@medplum/fhirtypes';
 import { Job, Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
-import { mkdtempSync } from 'fs';
+import { mkdtempSync, rmSync } from 'fs';
 import fetch from 'node-fetch';
 import { sep } from 'path';
 import { Readable } from 'stream';
@@ -39,6 +39,7 @@ describe('Download Worker', () => {
     await closeDatabase();
     await closeDownloadWorker();
     await closeDownloadWorker(); // Double close to ensure quite ignore
+    rmSync(binaryDir, { recursive: true, force: true });
   });
 
   beforeEach(async () => {
