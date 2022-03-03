@@ -132,6 +132,6 @@ export async function verifyRecaptcha(recaptchaToken: string): Promise<boolean> 
     encodeURIComponent(recaptchaToken);
 
   const response = await fetch(url, { method: 'POST' });
-  const json = await response.json();
+  const json = (await response.json()) as { success: boolean };
   return json.success;
 }

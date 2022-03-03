@@ -1,6 +1,6 @@
 import { assertOk, badRequest, createReference, Operator, ProfileResource } from '@medplum/core';
 import { BundleEntry, ClientApplication, OperationOutcome, Project, ProjectMembership, User } from '@medplum/fhirtypes';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';

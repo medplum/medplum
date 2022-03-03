@@ -20,7 +20,7 @@ import {
   Reference,
   User,
 } from '@medplum/fhirtypes';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { timingSafeEqual } from 'crypto';
 import { JWTPayload } from 'jose';
 import { RepositoryResult, systemRepo } from '../fhir';
