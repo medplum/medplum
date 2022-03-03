@@ -100,7 +100,11 @@ export async function initApp(app: Express): Promise<Express> {
       extended: false,
     })
   );
-  app.use(text());
+  app.use(
+    text({
+      type: ['text/plain', 'x-application/hl7-v2+er7'],
+    })
+  );
   app.use(
     json({
       type: ['application/json', 'application/fhir+json', 'application/json-patch+json'],

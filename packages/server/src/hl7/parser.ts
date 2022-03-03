@@ -60,7 +60,7 @@ export class Message {
 
   static parse(text: string): Message {
     if (!text.startsWith('MSH|^~\\&')) {
-      throw new Error('Invalid input');
+      throw new Error('Invalid message');
     }
     return new Message(text.split(/[\r\n]+/).map((line) => Segment.parse(line)));
   }

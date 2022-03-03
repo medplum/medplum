@@ -18,7 +18,6 @@ packages/definitions/dist/**/*.d.ts
 packages/fhirpath/dist/
 packages/generator/dist/
 packages/graphiql/dist/
-packages/hl7/dist/
 packages/infra/dist/
 packages/mock/dist/
 packages/seeder/dist/
