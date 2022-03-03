@@ -181,6 +181,9 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
       },
     });
     assertOk(createBinaryOutcome, binary);
+    if (response.body === null) {
+      throw new Error('Received null response body');
+    }
     await getBinaryStorage().writeBinary(binary, contentDisposition, contentType, response.body);
 
     const updated = JSON.parse(JSON.stringify(resource).replace(url, `Binary/${binary?.id}`)) as Resource;
