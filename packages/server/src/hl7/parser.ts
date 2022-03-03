@@ -2,61 +2,16 @@ export const SEGMENT_SEPARATOR = '\r';
 export const FIELD_SEPARATOR = '|';
 export const COMPONENT_SEPARATOR = '^';
 
-export class Field {
-  readonly components: string[];
-
-  constructor(components?: string[]) {
-    this.components = components || [];
-  }
-
-  get(index: number): string {
-    return this.components[index];
-  }
-
-  toString(): string {
-    return this.components.join(COMPONENT_SEPARATOR);
-  }
-
-  static parse(text: string): Field {
-    return new Field(text.split(COMPONENT_SEPARATOR));
-  }
-}
-
-export class Segment {
-  readonly name: string;
-  readonly fields: Field[];
-
-  constructor(fields?: Field[] | string[]) {
-    if (fields) {
-      if (isStringArray(fields)) {
-        this.fields = fields.map((f) => Field.parse(f));
-      } else {
-        this.fields = fields;
-      }
-    } else {
-      this.fields = [];
-    }
-    this.name = this.fields[0].components[0];
-  }
-
-  get(index: number): Field {
-    return this.fields[index];
-  }
-
-  toString(): string {
-    return this.fields.map((f) => f.toString()).join(FIELD_SEPARATOR);
-  }
-
-  static parse(text: string): Segment {
-    return new Segment(text.split(FIELD_SEPARATOR).map((f) => Field.parse(f)));
-  }
-}
-
+/**
+ * The Message class represents one HL7 message.
+ * A message is a collection of segments.
+ * Note that we do not strictly parse messages, and only use default delimeters.
+ */
 export class Message {
   readonly segments: Segment[];
 
-  constructor(segments?: Segment[]) {
-    this.segments = segments || [];
+  constructor(segments: Segment[]) {
+    this.segments = segments;
   }
 
   get(index: number | string): Segment | undefined {
@@ -104,13 +59,75 @@ export class Message {
   }
 
   static parse(text: string): Message {
-    if (!text.startsWith('MSH|^~\\&|')) {
+    if (!text.startsWith('MSH|^~\\&')) {
       throw new Error('Invalid input');
     }
     return new Message(text.split(/[\r\n]+/).map((line) => Segment.parse(line)));
   }
 }
 
+/**
+ * The Segment class represents one HL7 segment.
+ * A segment is a collection of fields.
+ * The name field is the first field.
+ * Note that we do not strictly parse messages, and only use default delimeters.
+ */
+export class Segment {
+  readonly name: string;
+  readonly fields: Field[];
+
+  constructor(fields: Field[] | string[]) {
+    if (isStringArray(fields)) {
+      this.fields = fields.map((f) => Field.parse(f));
+    } else {
+      this.fields = fields;
+    }
+    this.name = this.fields[0].components[0];
+  }
+
+  get(index: number): Field {
+    return this.fields[index];
+  }
+
+  toString(): string {
+    return this.fields.map((f) => f.toString()).join(FIELD_SEPARATOR);
+  }
+
+  static parse(text: string): Segment {
+    return new Segment(text.split(FIELD_SEPARATOR).map((f) => Field.parse(f)));
+  }
+}
+
+/**
+ * The Field class represents one HL7 field.
+ * A field is a collection of components.
+ * Note that we do not strictly parse messages, and only use default delimeters.
+ */
+export class Field {
+  readonly components: string[];
+
+  constructor(components: string[]) {
+    this.components = components;
+  }
+
+  get(index: number): string {
+    return this.components[index];
+  }
+
+  toString(): string {
+    return this.components.join(COMPONENT_SEPARATOR);
+  }
+
+  static parse(text: string): Field {
+    return new Field(text.split(COMPONENT_SEPARATOR));
+  }
+}
+
+/**
+ * Returns true if the input array is an array of strings.
+ * @param arr Input array.
+ * @returns True if the input array is an array of strings.
+ */
 function isStringArray(arr: any[]): arr is string[] {
   return arr.every((e) => typeof e === 'string');
 }

@@ -5,6 +5,20 @@ describe('HL7', () => {
     expect(() => Message.parse('MSH_^~\\&|')).toThrow();
   });
 
+  test('Minimal', () => {
+    const text = 'MSH|^~\\&';
+    const msg = Message.parse(text);
+    expect(msg).toBeDefined();
+    expect(msg.segments.length).toBe(1);
+    expect(msg.toString()).toBe(text);
+
+    const ack = msg.buildAck();
+    expect(ack).toBeDefined();
+    expect(ack.segments.length).toBe(2);
+    expect(ack.segments[0].name).toBe('MSH');
+    expect(ack.segments[1].name).toBe('MSA');
+  });
+
   test('ACK', () => {
     const text =
       'MSH|^~\\&|Main_HIS|XYZ_HOSPITAL|iFW|ABC_Lab|20160915003015||ACK|9B38584D|P|2.6.1|\r' +
