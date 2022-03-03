@@ -81,6 +81,18 @@ medplum/
 
 See developer setup documentation: https://docs.medplum.com/docs/developers/intro
 
+Start the dev docker image:
+
+```bash
+docker-compose up -d
+```
+
+Shell into the docker image:
+
+```bash
+docker exec -it medplum_dev /bin/bash
+```
+
 ## License
 
 [Apache 2.0](LICENSE.txt)

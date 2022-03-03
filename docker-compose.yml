@@ -7,38 +7,13 @@
 # You can start all services by running "docker-compose up"
 version: '3.7'
 services:
-  app:
+  dev:
+    container_name: medplum_dev
     build:
       context: .
-      dockerfile: Dockerfile.app
+      dockerfile: Dockerfile.dev
     volumes:
-      - ./packages/app:/usr/src/medplum/packages/app
+      - .:/usr/src/medplum
     ports:
       - '3000:3000'
-  server:
-    build:
-      context: .
-      dockerfile: Dockerfile.server
-    depends_on:
-      - postgres
-      - redis
-    volumes:
-      - ./packages/server:/usr/src/medplum/packages/server
-    ports:
-      - '5000:5000'
-  postgres:
-    image: postgres:12
-    restart: always
-    environment:
-      - POSTGRES_USER=medplum
-      - POSTGRES_PASSWORD=medplum
-    volumes:
-      - ./postgres.conf:/usr/local/etc/postgres/postgres.conf
-    command: postgres -c config_file=/usr/local/etc/postgres/postgres.conf
-    ports:
-      - '5432:5432'
-  redis:
-    image: redis:6
-    command: redis-server --requirepass medplum
-    ports:
-      - '6379:6379'
+      - '5001:5001'

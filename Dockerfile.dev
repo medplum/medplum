@@ -1,0 +1,28 @@
+# syntax=docker/dockerfile:1
+
+# This is a development Dockerfile.
+# It will run Postgres, Redis, the API server, and the front end server.
+# This should be launched using docker-compose.
+
+# Start with Debian Buster slim.
+# Our production Docker image is "node:16-slim" which is based on "debian:buster-slim"
+FROM debian:buster-slim
+
+# Initialize the image
+COPY ./scripts/docker-init-dev.sh docker-init-dev.sh
+RUN sh docker-init-dev.sh
+
+# Set the working directory to the root of the project.
+WORKDIR /usr/src/medplum
+
+# Expose ports
+# 3000 for the front end server
+# 5001 for the back end API server
+EXPOSE 3000
+EXPOSE 5001
+
+# This will keep your container alive until it is told to stop.
+# Using trap and wait will make your container react immediately to a stop request.
+# Without trap/wait stopping will take a few seconds.
+# See: https://stackoverflow.com/a/35770783
+CMD exec /bin/bash -c "trap : TERM INT; sleep infinity & wait"
