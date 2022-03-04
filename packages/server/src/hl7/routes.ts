@@ -1,4 +1,5 @@
 import { Request, Response, Router } from 'express';
+import { logger } from '../logger';
 import { authenticateToken } from '../oauth';
 import { Message } from './parser';
 
@@ -8,6 +9,7 @@ export const hl7Router = Router();
 hl7Router.use(authenticateToken);
 
 hl7Router.post('/', (req: Request, res: Response) => {
+  logger.info('Received HL7: ' + req.body);
   try {
     const input = Message.parse(req.body);
     const result = input.buildAck();

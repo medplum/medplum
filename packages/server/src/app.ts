@@ -2,8 +2,9 @@ import { badRequest } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
-import { Express, json, NextFunction, Request, Response, urlencoded, text } from 'express';
+import { Express, json, NextFunction, Request, Response, text, urlencoded } from 'express';
 import { adminRouter } from './admin';
+import { astmRouter } from './astm';
 import { asyncWrap } from './async';
 import { authRouter } from './auth';
 import { getConfig } from './config';
@@ -116,6 +117,7 @@ export async function initApp(app: Express): Promise<Express> {
   app.get('/openapi.json', openApiHandler);
   app.use('/.well-known/', wellKnownRouter);
   app.use('/admin/', adminRouter);
+  app.use('/astm/', astmRouter);
   app.use('/auth/', authRouter);
   app.use('/dicom/PS3/', dicomRouter);
   app.use('/fhir/R4/', fhirRouter);
