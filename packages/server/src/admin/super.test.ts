@@ -150,6 +150,26 @@ describe('Super Admin routes', () => {
     expect(res.status).toBe(403);
   });
 
+  test('Rebuild SearchParameters as super admin', async () => {
+    const res = await request(app)
+      .post('/admin/super/searchparameters')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .type('json')
+      .send({});
+
+    expect(res.status).toEqual(200);
+  });
+
+  test('Rebuild SearchParameters access denied', async () => {
+    const res = await request(app)
+      .post('/admin/super/searchparameters')
+      .set('Authorization', 'Bearer ' + nonAdminAccessToken)
+      .type('json')
+      .send({});
+
+    expect(res.status).toBe(403);
+  });
+
   test('Reindex access denied', async () => {
     const res = await request(app)
       .post('/admin/super/reindex')
