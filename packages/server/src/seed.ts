@@ -1,10 +1,10 @@
 import { assertOk, createReference } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, ClientApplication, Project, SearchParameter, User } from '@medplum/fhirtypes';
+import { ClientApplication, Project, User } from '@medplum/fhirtypes';
 import { registerNew } from './auth/register';
 import { getConfig } from './config';
 import { systemRepo } from './fhir';
 import { logger } from './logger';
+import { createSearchParameters } from './seeds/searchparameters';
 import { createStructureDefinitions } from './seeds/structuredefinitions';
 import { createValueSetElements } from './seeds/valuesets';
 
@@ -59,23 +59,4 @@ async function createPublicProject(owner: User): Promise<void> {
   });
   assertOk(outcome, result);
   logger.info('Created: ' + result.id);
-}
-
-/**
- * Creates all SearchParameter resources.
- */
-async function createSearchParameters(): Promise<void> {
-  const searchParams = readJson('fhir/r4/search-parameters.json') as Bundle;
-
-  for (const entry of searchParams.entry as BundleEntry[]) {
-    const searchParam = entry.resource as SearchParameter;
-
-    logger.debug('SearchParameter: ' + searchParam.name);
-    const [outcome, result] = await systemRepo.createResource<SearchParameter>({
-      ...searchParam,
-      text: undefined,
-    });
-    assertOk(outcome, result);
-    logger.debug('Created: ' + result.id);
-  }
 }

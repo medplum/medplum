@@ -32,6 +32,18 @@ describe('SuperAdminPage', () => {
     expect(window.alert).toHaveBeenCalledWith('Done');
   });
 
+  test('Rebuild SearchParameters', async () => {
+    window.alert = jest.fn();
+
+    setup();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Rebuild SearchParameters'));
+    });
+
+    expect(window.alert).toHaveBeenCalledWith('Done');
+  });
+
   test('Rebuild ValueSets', async () => {
     window.alert = jest.fn();
 

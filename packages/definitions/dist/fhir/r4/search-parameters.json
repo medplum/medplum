@@ -60424,6 +60424,43 @@
     }
   },
   {
+    "fullUrl" : "http://hl7.org/fhir/SearchParameter/ServiceRequest-order-details",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "ServiceRequest-order-details",
+      "extension" : [{
+        "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
+        "valueCode" : "trial-use"
+      }],
+      "url" : "http://hl7.org/fhir/SearchParameter/ServiceRequest-order-detail",
+      "version" : "4.0.1",
+      "name" : "order-details",
+      "status" : "draft",
+      "experimental" : false,
+      "date" : "2019-11-01T09:29:23+11:00",
+      "publisher" : "Health Level Seven International (Orders and Observations)",
+      "contact" : [{
+        "telecom" : [{
+          "system" : "url",
+          "value" : "http://hl7.org/fhir"
+        }]
+      },
+      {
+        "telecom" : [{
+          "system" : "url",
+          "value" : "http://www.hl7.org/Special/committees/orders/index.cfm"
+        }]
+      }],
+      "description" : "Order detail",
+      "code" : "order-detail",
+      "base" : ["ServiceRequest"],
+      "type" : "token",
+      "expression" : "ServiceRequest.orderDetail",
+      "xpath" : "f:ServiceRequest/f:orderDetail",
+      "xpathUsage" : "normal"
+    }
+  },
+  {
     "fullUrl" : "http://hl7.org/fhir/SearchParameter/ServiceRequest-performer",
     "resource" : {
       "resourceType" : "SearchParameter",

@@ -9,6 +9,10 @@ export function SuperAdminPage(): JSX.Element {
     medplum.post('admin/super/structuredefinitions', {}).then(() => alert('Done'));
   }
 
+  function rebuildSearchParameters(): void {
+    medplum.post('admin/super/searchparameters', {}).then(() => alert('Done'));
+  }
+
   function rebuildValueSets(): void {
     medplum.post('admin/super/valuesets', {}).then(() => alert('Done'));
   }
@@ -29,6 +33,16 @@ export function SuperAdminPage(): JSX.Element {
       </p>
       <Form>
         <Button onClick={rebuildStructureDefinitions}>Rebuild StructureDefinitions</Button>
+      </Form>
+      <hr />
+      <h2>Search Parameters</h2>
+      <p>
+        SearchParameter resources contain the metadata about filters and sorting. They are provided with the FHIR
+        specification. Medplum also includes some custom SearchParameter resources for internal data types. Press this
+        button to update the database SearchParameters from the FHIR specification.
+      </p>
+      <Form>
+        <Button onClick={rebuildSearchParameters}>Rebuild SearchParameters</Button>
       </Form>
       <hr />
       <h2>Value Sets</h2>
