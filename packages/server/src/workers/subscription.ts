@@ -1,12 +1,12 @@
 import { assertOk, createReference, isGone, Operator, stringify } from '@medplum/core';
-import { AuditEvent, Bot, BundleEntry, Extension, Project, Resource, Subscription } from '@medplum/fhirtypes';
+import { AuditEvent, Bot, BundleEntry, Extension, Resource, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
 import { URL } from 'url';
-import vm from 'vm';
 import { MedplumRedisConfig } from '../config';
 import { Repository, systemRepo } from '../fhir';
+import { executeBot } from '../fhir/operations/execute';
 import { matchesSearchRequest, parseSearchUrl } from '../fhir/search';
 import { logger } from '../logger';
 
@@ -364,22 +364,6 @@ export async function execBot(
   const [botOutcome, bot] = await systemRepo.readReference<Bot>({ reference: url });
   assertOk(botOutcome, bot);
 
-  const code = bot.code;
-  if (!code) {
-    logger.debug('Ignore action subscription missing code');
-    return;
-  }
-
-  // Get the bot project
-  const [projectOutcome, project] = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
-  assertOk(projectOutcome, project);
-
-  // Make sure that the "bots" feature is enabled
-  if (!project.features?.includes('bots')) {
-    logger.debug('Ignore action subscription missing code');
-    return;
-  }
-
   const botLog = [];
 
   const botConsole = {
@@ -396,25 +380,22 @@ export async function execBot(
     resource,
     console: botConsole,
     repo: botRepo,
-    assertOk,
-    createReference,
-  };
-
-  const options: vm.RunningScriptOptions = {
-    timeout: 100,
   };
 
   let outcome: AuditEventOutcome = AuditEventOutcome.Success;
 
   try {
-    const result = (await vm.runInNewContext('(async () => {' + code + '})();', sandbox, options)) as Promise<any>;
-    botLog.push('Success:', result);
+    const result = await executeBot(bot, sandbox);
+    botLog.push('Success');
+    if (result !== undefined) {
+      botLog.push(JSON.stringify(result, undefined, 2));
+    }
   } catch (error) {
     outcome = AuditEventOutcome.MinorFailure;
     botLog.push('Error:', (error as Error).message);
   }
 
-  await createSubscriptionEvent(subscription, resource, outcome, JSON.stringify(botLog, undefined, 2));
+  await createSubscriptionEvent(subscription, resource, outcome, botLog.join('\n'));
 }
 
 /**
