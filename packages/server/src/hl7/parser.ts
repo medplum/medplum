@@ -1,6 +1,26 @@
+import { NextFunction, Request, RequestHandler, Response } from 'express';
+
 export const SEGMENT_SEPARATOR = '\r';
 export const FIELD_SEPARATOR = '|';
 export const COMPONENT_SEPARATOR = '^';
+
+export interface HL7BodyParserOptions {
+  type: string[];
+}
+
+/**
+ * Returns an Express middleware handler for parsing HL7 messages.
+ * @param options HL7 parser options to specify content types.
+ * @returns Express middleware request handler.
+ */
+export function hl7BodyParser(options: HL7BodyParserOptions): RequestHandler {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (req.is(options.type)) {
+      req.body = Message.parse(req.body);
+    }
+    next();
+  };
+}
 
 /**
  * The Message class represents one HL7 message.
@@ -60,7 +80,9 @@ export class Message {
 
   static parse(text: string): Message {
     if (!text.startsWith('MSH|^~\\&')) {
-      throw new Error('Invalid message');
+      const err = new Error('Invalid HL7 message');
+      (err as any).type = 'entity.parse.failed';
+      throw err;
     }
     return new Message(text.split(/[\r\n]+/).map((line) => Segment.parse(line)));
   }

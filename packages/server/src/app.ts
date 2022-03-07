@@ -13,6 +13,7 @@ import { dicomRouter } from './dicom/routes';
 import { binaryRouter, fhirRouter, sendOutcome } from './fhir';
 import { healthcheckHandler } from './healthcheck';
 import { hl7Router } from './hl7';
+import { hl7BodyParser } from './hl7/parser';
 import { logger } from './logger';
 import { authenticateToken, oauthRouter } from './oauth';
 import { openApiHandler } from './openapi';
@@ -110,6 +111,11 @@ export async function initApp(app: Express): Promise<Express> {
     json({
       type: ['application/json', 'application/fhir+json', 'application/json-patch+json'],
       limit: config.maxJsonSize,
+    })
+  );
+  app.use(
+    hl7BodyParser({
+      type: ['x-application/hl7-v2+er7'],
     })
   );
   app.get('/', (req: Request, res: Response) => res.sendStatus(200));
