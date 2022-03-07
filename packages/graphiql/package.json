@@ -20,7 +20,7 @@
     "@medplum/fhirtypes": "0.4.1",
     "@medplum/ui": "0.4.1",
     "babel-loader": "8.2.3",
-    "css-loader": "6.6.0",
+    "css-loader": "6.7.0",
     "dotenv-webpack": "7.1.0",
     "graphiql": "1.6.0",
     "graphql": "16.3.0",

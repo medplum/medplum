@@ -35,6 +35,6 @@
     "@aws-cdk/aws-ssm": "1.147.0",
     "@aws-cdk/core": "1.147.0",
     "aws-cdk": "2.15.0",
-    "constructs": "10.0.76"
+    "constructs": "10.0.81"
   }
 }
