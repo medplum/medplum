@@ -4,6 +4,7 @@ import { Request, Response } from 'express';
 import vm from 'vm';
 import { asyncWrap } from '../../async';
 import { logger } from '../../logger';
+import { MockConsole } from '../../util/console';
 import { Repository, systemRepo } from '../repo';
 
 export const EXECUTE_CONTENT_TYPES = [
@@ -26,9 +27,9 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   const [outcome, bot] = await repo.readResource<Bot>('Bot', id);
   assertOk(outcome, bot);
 
-  const body = req.body;
   const context = {
-    body,
+    input: req.body,
+    console: new MockConsole(),
     repo,
   };
 

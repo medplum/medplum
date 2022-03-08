@@ -15,6 +15,7 @@ export async function createTestProject(): Promise<{
     owner: {
       reference: 'User/' + randomUUID(),
     },
+    features: ['bots'],
   });
   assertOk(projectOutcome, project);
 
