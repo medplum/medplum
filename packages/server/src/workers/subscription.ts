@@ -9,6 +9,7 @@ import { Repository, systemRepo } from '../fhir';
 import { executeBot } from '../fhir/operations/execute';
 import { matchesSearchRequest, parseSearchUrl } from '../fhir/search';
 import { logger } from '../logger';
+import { AuditEventOutcome } from '../util/auditevent';
 import { MockConsole } from '../util/console';
 
 /*
@@ -24,17 +25,6 @@ export interface SubscriptionJobData {
   readonly resourceType: string;
   readonly id: string;
   readonly versionId: string;
-}
-
-/**
- * AuditEvent outcome code.
- * See: https://www.hl7.org/fhir/valueset-audit-event-outcome.html
- */
-enum AuditEventOutcome {
-  Success = '0',
-  MinorFailure = '4',
-  SeriousFailure = '8',
-  MajorFailure = '12',
 }
 
 const queueName = 'SubscriptionQueue';
