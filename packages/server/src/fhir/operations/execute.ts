@@ -1,10 +1,11 @@
 import { assertOk, createReference } from '@medplum/core';
-import { Bot, Project } from '@medplum/fhirtypes';
+import { AuditEvent, Bot, Project } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import fetch from 'node-fetch';
 import vm from 'vm';
 import { asyncWrap } from '../../async';
 import { logger } from '../../logger';
+import { AuditEventOutcome } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
 import { Repository, systemRepo } from '../repo';
 
@@ -28,18 +29,23 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   const [outcome, bot] = await repo.readResource<Bot>('Bot', id);
   assertOk(outcome, bot);
 
+  const botConsole = new MockConsole();
+
   const context = {
     input: req.body,
-    console: new MockConsole(),
+    console: botConsole,
     fetch,
     repo,
   };
 
   try {
     const result = await executeBot(bot, context);
+    createAuditEvent(bot, AuditEventOutcome.Success, botConsole.toString());
     res.status(200).type(getResponseContentType(req)).send(result);
   } catch (err) {
-    res.status(400).send(err);
+    botConsole.log('Error', (err as Error).message);
+    createAuditEvent(bot, AuditEventOutcome.MinorFailure, botConsole.toString());
+    res.status(400).send((err as Error).message);
   }
 });
 
@@ -92,4 +98,44 @@ function getResponseContentType(req: Request): string {
 
   // Default to FHIR
   return 'application/fhir+json';
+}
+
+/**
+ * Creates an AuditEvent for a subscription attempt.
+ * @param subscription The rest-hook subscription.
+ * @param resource The resource that triggered the subscription.
+ * @param outcome The outcome code.
+ * @param outcomeDesc The outcome description text.
+ */
+async function createAuditEvent(bot: Bot, outcome: AuditEventOutcome, outcomeDesc: string): Promise<void> {
+  await systemRepo.createResource<AuditEvent>({
+    resourceType: 'AuditEvent',
+    meta: {
+      project: bot.meta?.project,
+      account: bot.meta?.account,
+    },
+    recorded: new Date().toISOString(),
+    type: {
+      code: 'execute',
+    },
+    agent: [
+      {
+        type: {
+          text: 'bot',
+        },
+        requestor: false,
+      },
+    ],
+    source: {
+      // Observer cannot be a Bot resource
+      // observer: createReference(bot)
+    },
+    entity: [
+      {
+        what: createReference(bot),
+      },
+    ],
+    outcome,
+    outcomeDesc,
+  });
 }
