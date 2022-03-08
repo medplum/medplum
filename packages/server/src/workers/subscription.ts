@@ -365,13 +365,6 @@ export async function execBot(
   const [botOutcome, bot] = await systemRepo.readReference<Bot>({ reference: url });
   assertOk(botOutcome, bot);
 
-  // const botLog = [];
-
-  // const botConsole = {
-  //   ...console,
-  //   log: (...params: any[]) => botLog.push(params),
-  // };
-
   const botConsole = new MockConsole();
 
   const botRepo = new Repository({
