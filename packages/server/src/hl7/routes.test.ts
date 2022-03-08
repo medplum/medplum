@@ -81,6 +81,6 @@ describe('HL7 Routes', () => {
       .set('Content-Type', HL7_V2_ER7_CONTENT_TYPE)
       .send(msg);
     expect(res.status).toBe(400);
-    expect(res.text).toBe('Invalid message');
+    expect(res.text).toMatch(/Content could not be parsed/);
   });
 });

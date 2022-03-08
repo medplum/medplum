@@ -11,6 +11,7 @@ import { csvHandler } from './csv';
 import { expandOperator } from './expand';
 import { getRootSchema } from './graphql';
 import { getCapabilityStatement } from './metadata';
+import { executeHandler } from './operations/execute';
 import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
@@ -98,6 +99,9 @@ protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
 
 // CSV Export
 protectedRoutes.get('/:resourceType/([$])csv', asyncWrap(csvHandler));
+
+// Bot $execute operation
+protectedRoutes.post('/Bot/:id/([$]|%24)execute', executeHandler);
 
 // GraphQL
 protectedRoutes.use(

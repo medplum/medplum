@@ -539,9 +539,7 @@ describe('Subscription Worker', () => {
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-
-    expect(patientOutcome.id).toEqual('created');
-    expect(patient).toBeDefined();
+    assertOk(patientOutcome, patient);
     expect(queue.add).toHaveBeenCalled();
 
     (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
@@ -561,7 +559,10 @@ describe('Subscription Worker', () => {
       ],
     });
     assertOk(searchOutcome, bundle);
-    expect(bundle.entry?.length).toEqual(0);
+    expect(bundle.entry?.length).toEqual(1);
+
+    const auditEvent = bundle.entry?.[0]?.resource as AuditEvent;
+    expect(auditEvent.outcomeDesc).toEqual('Success');
   });
 
   test('Execute bot subscriptions', async () => {
