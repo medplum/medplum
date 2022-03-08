@@ -1,6 +1,7 @@
 import { assertOk, createReference } from '@medplum/core';
 import { Bot, Project } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
+import fetch from 'node-fetch';
 import vm from 'vm';
 import { asyncWrap } from '../../async';
 import { logger } from '../../logger';
@@ -30,6 +31,7 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   const context = {
     input: req.body,
     console: new MockConsole(),
+    fetch,
     repo,
   };
 
