@@ -37,6 +37,8 @@ export interface LoginRequest {
   readonly codeChallenge?: string;
   readonly codeChallengeMethod?: string;
   readonly googleCredentials?: GoogleCredentialClaims;
+  readonly remoteAddress?: string;
+  readonly userAgent?: string;
 }
 
 export interface TokenResult {
@@ -127,6 +129,8 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     codeChallengeMethod: request.codeChallengeMethod,
     admin: user.admin,
     membership: memberships.length === 1 ? createReference(memberships[0]) : undefined,
+    remoteAddress: request.remoteAddress,
+    userAgent: request.userAgent,
   });
 }
 

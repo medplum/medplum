@@ -127,4 +127,15 @@ export interface Login {
    * Whether this login has system administrator privileges.
    */
   readonly admin?: boolean;
+
+  /**
+   * The Internet Protocol (IP) address of the client or last proxy that
+   * sent the request.
+   */
+  readonly remoteAddress?: string;
+
+  /**
+   * The User-Agent request header as sent by the client.
+   */
+  readonly userAgent?: string;
 }

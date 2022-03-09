@@ -699,6 +699,26 @@
             "type" : [{
               "code" : "boolean"
             }]
+          },
+          {
+            "id" : "Login.remoteAddress",
+            "path" : "Login.remoteAddress",
+            "definition" : "The Internet Protocol (IP) address of the client or last proxy that sent the request.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "Login.userAgent",
+            "path" : "Login.userAgent",
+            "definition" : "The User-Agent request header as sent by the client.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
           }
         ]
       }
