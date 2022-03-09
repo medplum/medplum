@@ -254,6 +254,8 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
   const [updateOutcome, updatedLogin] = await systemRepo.updateResource<Login>({
     ...login,
     refreshSecret: generateSecret(48),
+    remoteAddress: req.ip,
+    userAgent: req.get('User-Agent'),
   });
   assertOk(updateOutcome, updatedLogin);
 

@@ -61310,6 +61310,14 @@
         "admin": {
           "description": "Whether this login has system administrator privileges.",
           "$ref": "#/definitions/boolean"
+        },
+        "remoteAddress": {
+          "description": "The Internet Protocol (IP) address of the client or last proxy that sent the request.",
+          "$ref": "#/definitions/string"
+        },
+        "userAgent": {
+          "description": "The User-Agent request header as sent by the client.",
+          "$ref": "#/definitions/string"
         }
       }
     },

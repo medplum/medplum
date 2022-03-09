@@ -45,6 +45,8 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
     email: req.body.email as string,
     password: req.body.password as string,
     remember: req.body.remember === 'true',
+    remoteAddress: req.ip,
+    userAgent: req.get('User-Agent'),
   });
 
   if (!isOk(outcome)) {

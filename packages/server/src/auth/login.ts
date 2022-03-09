@@ -28,6 +28,8 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
     password: req.body.password,
     nonce: randomUUID(),
     remember: req.body.remember,
+    remoteAddress: req.ip,
+    userAgent: req.get('User-Agent'),
   });
   assertOk(loginOutcome, login);
   await sendLoginResult(res, login);
