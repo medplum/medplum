@@ -330,5 +330,39 @@ describe('Project Admin routes', () => {
     expect(res6.body.project).toBeDefined();
     expect(res6.body.members).toBeDefined();
     expect(res6.body.members.length).toEqual(2);
+
+    // Alice try to delete her own membership
+    // This should fail
+    const res7 = await request(app)
+      .delete('/admin/projects/' + projectId + '/members/' + owner.id)
+      .set('Authorization', 'Bearer ' + res.body.accessToken);
+    expect(res7.status).toBe(400);
+    expect(res7.body).toMatchObject({
+      issue: [
+        {
+          code: 'invalid',
+          details: {
+            text: 'Cannot delete the owner of the project',
+          },
+        },
+      ],
+    });
+
+    // Alice try to delete a non-existent membership
+    // This should fail
+    const res8 = await request(app)
+      .delete('/admin/projects/' + projectId + '/members/' + randomUUID())
+      .set('Authorization', 'Bearer ' + res.body.accessToken);
+    expect(res8.status).toBe(404);
+    expect(res8.body).toMatchObject({
+      issue: [
+        {
+          code: 'not-found',
+          details: {
+            text: 'Not found',
+          },
+        },
+      ],
+    });
   });
 });

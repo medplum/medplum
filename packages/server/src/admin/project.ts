@@ -1,4 +1,4 @@
-import { assertOk, getStatus } from '@medplum/core';
+import { assertOk, badRequest, getStatus } from '@medplum/core';
 import { Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
@@ -90,6 +90,18 @@ projectAdminRouter.delete(
     const projectDetails = await verifyProjectAdmin(req, res);
     if (!projectDetails) {
       res.sendStatus(404);
+      return;
+    }
+
+    const { membershipId } = req.params;
+    const [readOutcome, membership] = await systemRepo.readResource<ProjectMembership>(
+      'ProjectMembership',
+      membershipId
+    );
+    assertOk(readOutcome, membership);
+
+    if (projectDetails.project.owner?.reference === membership.user?.reference) {
+      sendOutcome(res, badRequest('Cannot delete the owner of the project'));
       return;
     }
 
