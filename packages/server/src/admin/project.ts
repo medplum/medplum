@@ -1,8 +1,8 @@
-import { assertOk, getStatus } from '@medplum/core';
+import { assertOk, badRequest, getStatus } from '@medplum/core';
 import { Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
-import { systemRepo } from '../fhir';
+import { sendOutcome, systemRepo } from '../fhir';
 import { authenticateToken } from '../oauth';
 import { createClientHandler, createClientValidators } from './client';
 import { inviteHandler, inviteValidators } from './invite';
@@ -81,6 +81,33 @@ projectAdminRouter.post(
     const [outcome, result] = await systemRepo.updateResource(resource);
     assertOk(outcome, result);
     res.status(getStatus(outcome)).json(result);
+  })
+);
+
+projectAdminRouter.delete(
+  '/:projectId/members/:membershipId',
+  asyncWrap(async (req: Request, res: Response) => {
+    const projectDetails = await verifyProjectAdmin(req, res);
+    if (!projectDetails) {
+      res.sendStatus(404);
+      return;
+    }
+
+    const { membershipId } = req.params;
+    const [readOutcome, membership] = await systemRepo.readResource<ProjectMembership>(
+      'ProjectMembership',
+      membershipId
+    );
+    assertOk(readOutcome, membership);
+
+    if (projectDetails.project.owner?.reference === membership.user?.reference) {
+      sendOutcome(res, badRequest('Cannot delete the owner of the project'));
+      return;
+    }
+
+    const [outcome] = await systemRepo.deleteResource('ProjectMembership', req.params.membershipId);
+    assertOk(outcome, outcome);
+    sendOutcome(res, outcome);
   })
 );
 

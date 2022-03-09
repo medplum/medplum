@@ -129,4 +129,38 @@ describe('EditMembershipPage', () => {
       })
     );
   });
+
+  test('Remove user accept confirm', async () => {
+    setup('/admin/projects/123/members/456');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Save'));
+    });
+
+    expect(screen.getByText('Remove user')).toBeInTheDocument();
+
+    await act(async () => {
+      window.confirm = jest.fn(() => true);
+      fireEvent.click(screen.getByText('Remove user'));
+    });
+
+    expect(screen.getByTestId('success')).toBeInTheDocument();
+  });
+
+  test('Remove user reject confirm', async () => {
+    setup('/admin/projects/123/members/456');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Save'));
+    });
+
+    expect(screen.getByText('Remove user')).toBeInTheDocument();
+
+    await act(async () => {
+      window.confirm = jest.fn(() => false);
+      fireEvent.click(screen.getByText('Remove user'));
+    });
+
+    expect(screen.queryByTestId('success')).toBeNull();
+  });
 });

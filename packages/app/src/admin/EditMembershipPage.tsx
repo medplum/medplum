@@ -26,6 +26,15 @@ export function EditMembershipPage(): JSX.Element {
       .catch(setOutcome);
   }, [projectId, membershipId]);
 
+  function deleteMembership(): void {
+    if (window.confirm('Are you sure?')) {
+      medplum
+        .delete(`admin/projects/${projectId}/members/${membershipId}`)
+        .then(() => setSuccess(true))
+        .catch(setOutcome);
+    }
+  }
+
   if (loading || !membership) {
     return <Loading />;
   }
@@ -75,7 +84,7 @@ export function EditMembershipPage(): JSX.Element {
             </div>
             <hr />
             <div style={{ textAlign: 'right' }}>
-              <Button type="button" testid="remove-user" danger={true}>
+              <Button type="button" testid="remove-user" danger={true} onClick={deleteMembership}>
                 Remove user
               </Button>
             </div>

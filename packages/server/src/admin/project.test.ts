@@ -250,5 +250,119 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + res2.body.accessToken);
 
     expect(res10.status).toBe(404);
+
+    // Try to delete Alice's project members using Bob's access token
+    // Should fail
+    const res11 = await request(app)
+      .delete('/admin/projects/' + projectId + '/members/' + res3.body.members[0].id)
+      .set('Authorization', 'Bearer ' + res2.body.accessToken);
+
+    expect(res11.status).toBe(404);
+  });
+
+  test('Delete membership', async () => {
+    // Register and create a project
+    const res = await request(app)
+      .post('/auth/register')
+      .type('json')
+      .send({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Delete membership project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.project).toBeDefined();
+
+    const projectId = resolveId(res.body.project);
+
+    // Invite a new member
+    const res2 = await request(app)
+      .post('/admin/projects/' + projectId + '/invite')
+      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .send({
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: `bob${randomUUID()}@example.com`,
+      });
+    expect(res2.status).toBe(200);
+
+    // Get the project details
+    // Make sure the new member is in the members list
+    // Get the project details and members
+    // 3 members total (1 admin, 1 client, 1 invited)
+    const res3 = await request(app)
+      .get('/admin/projects/' + projectId)
+      .set('Authorization', 'Bearer ' + res.body.accessToken);
+    expect(res3.status).toBe(200);
+    expect(res3.body.project).toBeDefined();
+    expect(res3.body.members).toBeDefined();
+    expect(res3.body.members.length).toEqual(3);
+
+    const owner = res3.body.members.find((m: any) => m.role === 'owner');
+    expect(owner).toBeDefined();
+    const member = res3.body.members.find((m: any) => m.role === 'member');
+    expect(member).toBeDefined();
+
+    // Get the new membership details as Alice
+    const res4 = await request(app)
+      .get('/admin/projects/' + projectId + '/members/' + member.id)
+      .set('Authorization', 'Bearer ' + res.body.accessToken);
+    expect(res4.status).toBe(200);
+
+    // Now remove Bob as Alice
+    // This should succeed
+    const res5 = await request(app)
+      .delete('/admin/projects/' + projectId + '/members/' + member.id)
+      .set('Authorization', 'Bearer ' + res.body.accessToken);
+    expect(res5.status).toBe(200);
+
+    // Get the project details
+    // Make sure the new member is an admin
+    // 2 members total (1 admin, 1 client)
+    const res6 = await request(app)
+      .get('/admin/projects/' + projectId)
+      .set('Authorization', 'Bearer ' + res.body.accessToken);
+    expect(res6.status).toBe(200);
+    expect(res6.body.project).toBeDefined();
+    expect(res6.body.members).toBeDefined();
+    expect(res6.body.members.length).toEqual(2);
+
+    // Alice try to delete her own membership
+    // This should fail
+    const res7 = await request(app)
+      .delete('/admin/projects/' + projectId + '/members/' + owner.id)
+      .set('Authorization', 'Bearer ' + res.body.accessToken);
+    expect(res7.status).toBe(400);
+    expect(res7.body).toMatchObject({
+      issue: [
+        {
+          code: 'invalid',
+          details: {
+            text: 'Cannot delete the owner of the project',
+          },
+        },
+      ],
+    });
+
+    // Alice try to delete a non-existent membership
+    // This should fail
+    const res8 = await request(app)
+      .delete('/admin/projects/' + projectId + '/members/' + randomUUID())
+      .set('Authorization', 'Bearer ' + res.body.accessToken);
+    expect(res8.status).toBe(404);
+    expect(res8.body).toMatchObject({
+      issue: [
+        {
+          code: 'not-found',
+          details: {
+            text: 'Not found',
+          },
+        },
+      ],
+    });
   });
 });
