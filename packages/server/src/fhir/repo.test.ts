@@ -1,5 +1,6 @@
 import { assertOk, createReference, getReferenceString, isOk, Operator } from '@medplum/core';
 import {
+  AuditEvent,
   Bundle,
   Communication,
   Encounter,
@@ -1177,6 +1178,39 @@ describe('FHIR Repo', () => {
     expect(outcome.id).toEqual('created');
     expect(resource).toBeDefined();
     expect(resource?.id).toBeDefined();
+  });
+
+  test('Filter by Coding', async () => {
+    const auditEvents = [] as AuditEvent[];
+
+    for (let i = 0; i < 3; i++) {
+      const [outcome, resource] = await systemRepo.createResource<AuditEvent>({
+        resourceType: 'AuditEvent',
+        type: {
+          code: randomUUID(),
+        },
+        agent: [],
+        source: {},
+      });
+      assertOk(outcome, resource);
+      auditEvents.push(resource);
+    }
+
+    for (let i = 0; i < 3; i++) {
+      const [outcome, bundle] = await systemRepo.search({
+        resourceType: 'AuditEvent',
+        filters: [
+          {
+            code: 'type',
+            operator: Operator.CONTAINS,
+            value: auditEvents[i].type?.code as string,
+          },
+        ],
+      });
+      assertOk(outcome, bundle);
+      expect(bundle.entry?.length).toEqual(1);
+      expect(bundle.entry?.[0]?.resource?.id).toEqual(auditEvents[i].id);
+    }
   });
 
   test('Filter by CodeableConcept', async () => {

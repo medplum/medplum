@@ -571,7 +571,7 @@ export class Repository {
     if (param.type === 'string') {
       this.#addStringSearchFilter(builder, details, filter);
     } else if (param.type === 'token') {
-      this.#addTokenSearchFilter(builder, details, filter.value);
+      this.#addTokenSearchFilter(builder, details, filter);
     } else if (param.type === 'reference') {
       this.#addReferenceSearchFilter(builder, details, filter);
     } else {
@@ -616,10 +616,13 @@ export class Repository {
     }
   }
 
-  #addTokenSearchFilter(builder: SelectQuery, details: SearchParameterDetails, query: string): void {
+  #addTokenSearchFilter(builder: SelectQuery, details: SearchParameterDetails, filter: Filter): void {
+    const query = filter.value;
     const value = details.type === SearchParameterType.BOOLEAN ? query === 'true' : query;
     if (details.array) {
       builder.where(details.columnName, Operator.ARRAY_CONTAINS, value);
+    } else if (filter.operator === FhirOperator.CONTAINS) {
+      builder.where(details.columnName, Operator.LIKE, '%' + value + '%');
     } else {
       builder.where(details.columnName, Operator.EQUALS, value);
     }
