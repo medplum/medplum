@@ -34,6 +34,7 @@
     "identity-obj-proxy": "3.0.0",
     "jest": "27.5.1",
     "npm-check-updates": "12.5.2",
+    "nyc": "15.1.0",
     "prettier": "2.5.1",
     "rimraf": "3.0.2",
     "rollup": "2.70.0",
