@@ -67,6 +67,12 @@ export interface Login {
   readonly scope?: string;
 
   /**
+   * The authentication method used to obtain the code (password or
+   * google).
+   */
+  readonly authMethod?: string;
+
+  /**
    * Time when the End-User authentication occurred.
    */
   readonly authTime?: string;

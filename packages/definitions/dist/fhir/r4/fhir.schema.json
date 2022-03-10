@@ -61264,6 +61264,10 @@
           "description": "OAuth scope or scopes.",
           "$ref": "#/definitions/string"
         },
+        "authMethod": {
+          "description": "The authentication method used to obtain the code (password or google).",
+          "$ref": "#/definitions/string"
+        },
         "authTime": {
           "description": "Time when the End-User authentication occurred.",
           "$ref": "#/definitions/instant"

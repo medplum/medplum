@@ -16,6 +16,7 @@ import {
   ClientApplication,
   Login,
   OperationOutcome,
+  Project,
   ProjectMembership,
   Reference,
   User,
@@ -110,15 +111,11 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
 
   const refreshSecret = request.remember ? generateSecret(48) : undefined;
 
-  // Try to get user memberships
-  // If they only have one membership, set it now
-  // Otherwise the application will need to prompt the user
-  const memberships = await getUserMemberships(createReference(user));
-
-  return systemRepo.createResource<Login>({
+  const [loginOutcome, login] = await systemRepo.createResource<Login>({
     resourceType: 'Login',
     client: client && createReference(client),
     user: createReference(user),
+    authMethod: request.authMethod,
     authTime: new Date().toISOString(),
     code: generateSecret(16),
     cookie: generateSecret(16),
@@ -128,10 +125,20 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     codeChallenge: request.codeChallenge,
     codeChallengeMethod: request.codeChallengeMethod,
     admin: user.admin,
-    membership: memberships.length === 1 ? createReference(memberships[0]) : undefined,
     remoteAddress: request.remoteAddress,
     userAgent: request.userAgent,
   });
+  assertOk(loginOutcome, login);
+
+  // Try to get user memberships
+  // If they only have one membership, set it now
+  // Otherwise the application will need to prompt the user
+  const memberships = await getUserMemberships(createReference(user));
+  if (memberships.length === 1) {
+    return setLoginMembership(login, memberships[0].id as string);
+  } else {
+    return [loginOutcome, login];
+  }
 }
 
 export function validateLoginRequest(request: LoginRequest): OperationOutcome | undefined {
@@ -217,6 +224,51 @@ export async function getUserMemberships(user: Reference<ClientApplication | Use
   });
   assertOk(membershipsOutcome, memberships);
   return (memberships.entry as BundleEntry<ProjectMembership>[]).map((entry) => entry.resource as ProjectMembership);
+}
+
+/**
+ * Sets the login membership.
+ * Ensures that the login satisfies the project requirements.
+ * Most users will only have one membership, so this happens immediately after login.
+ * Some users have multiple memberships, so this happens after choosing a profile.
+ * @param login The login before the membership is set.
+ * @param membership The membership to set.
+ * @returns The updated login.
+ */
+export async function setLoginMembership(
+  login: Login,
+  membershipId: string
+): Promise<[OperationOutcome, Login | undefined]> {
+  if (login.revoked) {
+    return [badRequest('Login revoked'), undefined];
+  }
+
+  if (login.granted) {
+    return [badRequest('Login granted'), undefined];
+  }
+
+  if (login.membership) {
+    return [badRequest('Login profile already set'), undefined];
+  }
+
+  // Find the membership for the user
+  const memberships = await getUserMemberships(login?.user as Reference<User>);
+  const membership = memberships.find((m) => m.id === membershipId);
+  if (!membership) {
+    return [badRequest('Profile not found'), undefined];
+  }
+
+  // Get the project
+  const [projectOutcome, project] = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
+  assertOk(projectOutcome, project);
+
+  // Make sure the membership satisfies the project requirements
+  if (project.features?.includes('google-auth-required') && login.authMethod !== 'google') {
+    return [badRequest('Google authentication is required'), undefined];
+  }
+
+  // Everything checks out, update the login
+  return systemRepo.updateResource<Login>({ ...login, membership: createReference(membership) });
 }
 
 export async function getAuthTokens(

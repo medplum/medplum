@@ -1,5 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { createReference, resolveId } from '@medplum/core';
+import { assertOk, createReference, resolveId } from '@medplum/core';
 import { ClientApplication } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -9,6 +9,7 @@ import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
+import { systemRepo } from '../fhir';
 import { createTestClient, setupPwnedPasswordMock, setupRecaptchaMock } from '../jest.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
@@ -315,5 +316,56 @@ describe('Login', () => {
         subject: createReference(res10.body),
       });
     expect(res11.status).toBe(403);
+  });
+
+  test('Require Google auth', async () => {
+    const email = `google${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    // Register and create a project
+    const res = await request(app).post('/auth/register').type('json').send({
+      firstName: 'Google',
+      lastName: 'Google',
+      projectName: 'Require Google Auth',
+      email,
+      password,
+      recaptchaToken: 'xyz',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.project).toBeDefined();
+
+    // As a super admin, update the project to require Google auth
+    const projectId = resolveId(res.body.project) as string;
+    const [updateOutcome, updated] = await systemRepo.patchResource('Project', projectId, [
+      {
+        op: 'add',
+        path: '/features',
+        value: ['google-auth-required'],
+      },
+    ]);
+    assertOk(updateOutcome, updated);
+
+    // Then try to login
+    // This should fail with error message that google auth is required
+    const res8 = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email,
+      password,
+      scope: 'openid',
+      remember: true,
+    });
+    expect(res8.status).toBe(400);
+    expect(res8.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          severity: 'error',
+          code: 'invalid',
+          details: {
+            text: 'Google authentication is required',
+          },
+        },
+      ],
+    });
   });
 });
