@@ -1,4 +1,4 @@
-import { getSearchParameterDetails, IndexedStructureDefinition, SearchRequest, TypeSchema } from '@medplum/core';
+import { getSearchParameterDetails, IndexedStructureDefinition, SearchRequest } from '@medplum/core';
 import { ElementDefinition, SearchParameter } from '@medplum/fhirtypes';
 
 /**
@@ -91,7 +91,7 @@ function getFieldDefinition(
     };
   }
 
-  const typeSchema = schema.types[resourceType] as TypeSchema;
+  const typeSchema = schema.types[resourceType];
 
   // Get the element definition
   // If there is an exact match, use that

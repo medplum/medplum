@@ -79,12 +79,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
    * @return {SubMenu} The new submenu.
    */
   function renderSubMenu(): JSX.Element {
-    switch (paramType) {
-      case 'date':
-        return renderDateTimeSubMenu();
-      default:
-        return renderTextSubMenu();
-    }
+    return paramType === 'date' ? renderDateTimeSubMenu() : renderTextSubMenu();
   }
 
   /**

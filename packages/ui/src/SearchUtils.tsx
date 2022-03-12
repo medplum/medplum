@@ -500,7 +500,7 @@ export function renderValue(
   resource: Resource,
   field: SearchControlField
 ): string | JSX.Element | null | undefined {
-  const key = field.name as string;
+  const key = field.name;
   if (key === 'id') {
     return resource.id;
   }

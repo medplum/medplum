@@ -301,7 +301,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             )}
             {fields.map((field) => (
               <th key={field.name} onClick={(e) => handleSortClick(e, field.searchParam)}>
-                {buildFieldNameString(schema, resourceType, field.name as string)}
+                {buildFieldNameString(schema, resourceType, field.name)}
               </th>
             ))}
           </tr>
