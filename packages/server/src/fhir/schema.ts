@@ -85,8 +85,16 @@ function checkProperty(
 ): void {
   const value = (resource as any)[propertyName];
 
-  if (propertyDetails.type === 'array' && !Array.isArray(value)) {
-    issues.push(createIssue(propertyName, `Expected array for property "${propertyName}"`));
+  if (value === null) {
+    issues.push(createIssue(propertyName, `Invalid null value in "${propertyName}"`));
+  }
+
+  if (propertyDetails.type === 'array') {
+    if (!Array.isArray(value)) {
+      issues.push(createIssue(propertyName, `Expected array for property "${propertyName}"`));
+    } else if (value.findIndex((e) => e === null) !== -1) {
+      issues.push(createIssue(propertyName, `Invalid null value in "${propertyName}"`));
+    }
   }
 }
 
