@@ -1,4 +1,4 @@
-import { Resource } from '@medplum/fhirtypes';
+import { Patient, Resource } from '@medplum/fhirtypes';
 import { validateResource, validateResourceType } from './schema';
 
 describe('FHIR schema', () => {
@@ -54,5 +54,23 @@ describe('FHIR schema', () => {
     const outcome = validateResource({ resourceType: 'DiagnosticReport' });
     expect(outcome.issue?.[0]?.severity).toEqual('error');
     expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code');
+  });
+
+  test('Null value', () => {
+    const outcome = validateResource({
+      resourceType: 'Patient',
+      name: null,
+    } as unknown as Patient);
+    expect(outcome.issue?.[0]?.severity).toEqual('error');
+    expect(outcome.issue?.[0]?.expression?.[0]).toEqual('name');
+  });
+
+  test('Null array element', () => {
+    const outcome = validateResource({
+      resourceType: 'Patient',
+      name: [null],
+    } as unknown as Patient);
+    expect(outcome.issue?.[0]?.severity).toEqual('error');
+    expect(outcome.issue?.[0]?.expression?.[0]).toEqual('name');
   });
 });
