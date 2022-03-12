@@ -23,6 +23,7 @@ export const HomerSimpson: Patient = {
     { system: 'abc', value: '123' },
     { system: 'def', value: '456' },
   ],
+  active: true,
   birthDate: '1956-05-12',
   name: [
     {
@@ -34,6 +35,18 @@ export const HomerSimpson: Patient = {
     {
       contentType: 'image/png',
       url: 'https://docs.medplum.com/img/homer-simpson.png',
+    },
+  ],
+  telecom: [
+    {
+      system: 'phone',
+      use: 'home',
+      value: '555-7334',
+    },
+    {
+      system: 'email',
+      use: 'home',
+      value: 'chunkylover53@aol.com',
     },
   ],
 };
@@ -372,6 +385,18 @@ export const BartSimpson: Patient = {
     {
       contentType: 'image/jpeg',
       url: 'https://example.com/picture.jpg',
+    },
+  ],
+  telecom: [
+    {
+      system: 'phone',
+      use: 'home',
+      value: '555-1239',
+    },
+    {
+      system: 'email',
+      use: 'home',
+      value: 'bart@thesimpsons.com',
     },
   ],
 };

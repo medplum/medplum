@@ -288,6 +288,9 @@ const routes: Record<string, Record<string, any>> = {
   'fhir/R4/Patient?_fields=id,_lastUpdated,name,birthDate&_total=accurate': {
     GET: SimpsonSearchBundle,
   },
+  'fhir/R4/Patient?_fields=id,_lastUpdated,name,birthDate,active,telecom,email,phone&_total=accurate': {
+    GET: SimpsonSearchBundle,
+  },
   'fhir/R4/Patient?_fields=id,_lastUpdated,name&name=Simpson': {
     GET: SimpsonSearchBundle,
   },
