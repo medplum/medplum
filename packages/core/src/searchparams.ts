@@ -1,4 +1,4 @@
-import { SearchParameter } from '@medplum/fhirtypes';
+import { ElementDefinition, SearchParameter } from '@medplum/fhirtypes';
 import { IndexedStructureDefinition } from './types';
 import { capitalize } from './utils';
 
@@ -16,6 +16,7 @@ export enum SearchParameterType {
 export interface SearchParameterDetails {
   readonly columnName: string;
   readonly type: SearchParameterType;
+  readonly elementDefinition?: ElementDefinition;
   readonly array?: boolean;
 }
 
@@ -48,23 +49,24 @@ export function getSearchParameterDetails(
   }
 
   let baseType = resourceType;
+  let elementDefinition = undefined;
   let propertyType = undefined;
   let array = false;
 
   for (let i = 1; i < expression.length; i++) {
     const propertyName = expression[i];
-    const propertyDef = structureDefinitions.types[baseType]?.properties?.[propertyName];
-    if (!propertyDef) {
+    elementDefinition = structureDefinitions.types[baseType]?.properties?.[propertyName];
+    if (!elementDefinition) {
       // This happens on complex properties such as "collected[x]"/"collectedDateTime"/"collectedPeriod"
       // In the future, explore returning multiple column definitions
       return { columnName, type: SearchParameterType.TEXT, array };
     }
 
-    if (propertyDef.max === '*') {
+    if (elementDefinition.max === '*') {
       array = true;
     }
 
-    propertyType = propertyDef.type?.[0].code;
+    propertyType = elementDefinition.type?.[0].code;
     if (!propertyType) {
       // This happens when one of parent properties uses contentReference
       // In the future, explore following the reference
@@ -81,7 +83,7 @@ export function getSearchParameterDetails(
   }
 
   const type = getSearchParameterType(searchParam, propertyType as string);
-  return { columnName, type, array };
+  return { columnName, type, elementDefinition, array };
 }
 
 /**

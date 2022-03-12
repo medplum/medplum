@@ -1,9 +1,10 @@
 import { Filter, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
-import { MockClient } from '@medplum/mock';
+import { MockClient, PatientSearchParameters } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
+import { getFieldDefinitions } from './SearchControlField';
 import { SearchPopupMenu, SearchPopupMenuProps } from './SearchPopupMenu';
 
 const schema: IndexedStructureDefinition = {
@@ -30,6 +31,7 @@ const schema: IndexedStructureDefinition = {
           ],
         },
       },
+      searchParams: Object.fromEntries(PatientSearchParameters.map((p) => [p.code, p])),
     },
     Observation: {
       display: 'Observation',
@@ -42,6 +44,13 @@ const schema: IndexedStructureDefinition = {
               code: 'integer',
             },
           ],
+        },
+      },
+      searchParams: {
+        'value-quantity': {
+          resourceType: 'SearchParameter',
+          code: 'value-quantity',
+          type: 'quantity',
         },
       },
     },
@@ -68,7 +77,6 @@ describe('SearchPopupMenu', () => {
       visible: true,
       x: 0,
       y: 0,
-      property: 'name',
       onClose: jest.fn(),
     });
   });
@@ -80,7 +88,6 @@ describe('SearchPopupMenu', () => {
       visible: true,
       x: 0,
       y: 0,
-      property: 'xyz',
       onClose: jest.fn(),
     });
   });
@@ -94,7 +101,7 @@ describe('SearchPopupMenu', () => {
       visible: true,
       x: 0,
       y: 0,
-      property: 'name',
+      searchParam: schema.types['Patient']?.searchParams?.['name'],
       onClose: jest.fn(),
     });
 
@@ -110,7 +117,7 @@ describe('SearchPopupMenu', () => {
       visible: true,
       x: 0,
       y: 0,
-      property: 'birthDate',
+      searchParam: schema.types['Patient']?.searchParams?.['birthdate'],
       onClose: jest.fn(),
     });
 
@@ -127,7 +134,7 @@ describe('SearchPopupMenu', () => {
       visible: true,
       x: 0,
       y: 0,
-      property: 'birthDate',
+      searchParam: schema.types['Patient']?.searchParams?.['birthdate'],
       onClose: jest.fn(),
     });
 
@@ -154,7 +161,7 @@ describe('SearchPopupMenu', () => {
       visible: true,
       x: 0,
       y: 0,
-      property: 'valueInteger',
+      searchParam: schema.types['Observation']?.searchParams?.['value-quantity'],
       onClose: jest.fn(),
     });
 
@@ -173,7 +180,7 @@ describe('SearchPopupMenu', () => {
       visible: true,
       x: 0,
       y: 0,
-      property: 'birthDate',
+      searchParam: schema.types['Patient']?.searchParams?.['birthdate'],
       onChange: (e) => (currSearch = e),
       onClose: jest.fn(),
     });
@@ -184,7 +191,7 @@ describe('SearchPopupMenu', () => {
 
     expect(currSearch.sortRules).toBeDefined();
     expect(currSearch.sortRules?.length).toEqual(1);
-    expect(currSearch.sortRules?.[0].code).toEqual('birthDate');
+    expect(currSearch.sortRules?.[0].code).toEqual('birthdate');
     expect(currSearch.sortRules?.[0].descending).toEqual(false);
 
     await act(async () => {
@@ -193,7 +200,7 @@ describe('SearchPopupMenu', () => {
 
     expect(currSearch.sortRules).toBeDefined();
     expect(currSearch.sortRules?.length).toEqual(1);
-    expect(currSearch.sortRules?.[0].code).toEqual('birthDate');
+    expect(currSearch.sortRules?.[0].code).toEqual('birthdate');
     expect(currSearch.sortRules?.[0].descending).toEqual(true);
   });
 
@@ -215,7 +222,7 @@ describe('SearchPopupMenu', () => {
       visible: true,
       x: 0,
       y: 0,
-      property: 'name',
+      searchParam: schema.types['Patient']?.searchParams?.['name'],
       onChange: (e) => (currSearch = e),
       onClose: jest.fn(),
     });
@@ -240,7 +247,7 @@ describe('SearchPopupMenu', () => {
       visible: true,
       x: 0,
       y: 0,
-      property: 'name',
+      searchParam: schema.types['Patient']?.searchParams?.['name'],
       onChange: (e) => (currSearch = e),
       onClose: jest.fn(),
     });
@@ -267,6 +274,37 @@ describe('SearchPopupMenu', () => {
     }
   });
 
+  test('Text search prompt', async () => {
+    window.prompt = jest.fn().mockImplementation(() => 'xyz');
+
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+    };
+
+    setup({
+      schema,
+      search: currSearch,
+      visible: true,
+      x: 0,
+      y: 0,
+      searchParam: schema.types['Patient']?.searchParams?.['name'],
+      onChange: (e) => (currSearch = e),
+      onClose: jest.fn(),
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Search'));
+    });
+
+    expect(currSearch.filters).toBeDefined();
+    expect(currSearch.filters?.length).toEqual(1);
+    expect(currSearch.filters?.[0]).toMatchObject({
+      code: 'name',
+      operator: Operator.CONTAINS,
+      value: 'xyz',
+    } as Filter);
+  });
+
   test('Date submenu prompt', async () => {
     window.prompt = jest.fn().mockImplementation(() => 'xyz');
 
@@ -280,7 +318,7 @@ describe('SearchPopupMenu', () => {
       visible: true,
       x: 0,
       y: 0,
-      property: 'birthDate',
+      searchParam: schema.types['Patient']?.searchParams?.['birthdate'],
       onChange: (e) => (currSearch = e),
       onClose: jest.fn(),
     });
@@ -303,7 +341,7 @@ describe('SearchPopupMenu', () => {
       expect(currSearch.filters).toBeDefined();
       expect(currSearch.filters?.length).toEqual(1);
       expect(currSearch.filters?.[0]).toMatchObject({
-        code: 'birthDate',
+        code: 'birthdate',
         operator: option.operator,
         value: 'xyz',
       } as Filter);
@@ -323,7 +361,7 @@ describe('SearchPopupMenu', () => {
       visible: true,
       x: 0,
       y: 0,
-      property: 'birthDate',
+      searchParam: schema.types['Patient']?.searchParams?.['birthdate'],
       onChange: (e) => (currSearch = e),
       onClose: jest.fn(),
     });
@@ -338,11 +376,11 @@ describe('SearchPopupMenu', () => {
       expect(currSearch.filters?.length).toEqual(2);
       expect(currSearch.filters).toMatchObject([
         {
-          code: 'birthDate',
+          code: 'birthdate',
           operator: Operator.GREATER_THAN_OR_EQUALS,
         },
         {
-          code: 'birthDate',
+          code: 'birthdate',
           operator: Operator.LESS_THAN_OR_EQUALS,
         },
       ]);
@@ -350,15 +388,20 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Renders meta.versionId', () => {
+    const search = {
+      resourceType: 'Patient',
+      fields: ['meta.versionId'],
+    };
+
+    const fields = getFieldDefinitions(schema, search);
+
     setup({
       schema,
-      search: {
-        resourceType: 'Patient',
-      },
+      search,
       visible: true,
       x: 0,
       y: 0,
-      property: 'meta.versionId',
+      searchParam: fields[0].searchParam,
       onClose: jest.fn(),
     });
 
@@ -366,6 +409,13 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Renders _lastUpdated', () => {
+    const search = {
+      resourceType: 'Patient',
+      fields: ['_lastUpdated'],
+    };
+
+    const fields = getFieldDefinitions(schema, search);
+
     setup({
       schema,
       search: {
@@ -374,7 +424,7 @@ describe('SearchPopupMenu', () => {
       visible: true,
       x: 0,
       y: 0,
-      property: '_lastUpdated',
+      searchParam: fields[0].searchParam,
       onClose: jest.fn(),
     });
 

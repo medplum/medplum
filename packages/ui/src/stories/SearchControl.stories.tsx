@@ -50,7 +50,7 @@ export const NoCheckboxes = (): JSX.Element => {
 export const ExtraFields = (): JSX.Element => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Patient',
-    fields: ['id', '_lastUpdated', 'name', 'birthDate'],
+    fields: ['id', '_lastUpdated', 'name', 'birthDate', 'active', 'telecom', 'email', 'phone'],
   });
 
   return (

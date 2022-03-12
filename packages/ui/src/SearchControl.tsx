@@ -1,9 +1,10 @@
 import { Filter, IndexedStructureDefinition, SearchRequest } from '@medplum/core';
-import { Bundle, OperationOutcome, Resource } from '@medplum/fhirtypes';
+import { Bundle, OperationOutcome, Resource, SearchParameter } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
+import { getFieldDefinitions } from './SearchControlField';
 import { SearchFieldEditor } from './SearchFieldEditor';
 import { SearchFilterEditor } from './SearchFilterEditor';
 import { SearchFilterValueDisplay } from './SearchFilterValueDisplay';
@@ -61,7 +62,7 @@ interface SearchControlState {
   popupVisible: boolean;
   popupX: number;
   popupY: number;
-  popupField: string;
+  popupSearchParam?: SearchParameter;
   fieldEditorVisible: boolean;
   filterEditorVisible: boolean;
 }
@@ -81,7 +82,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     popupVisible: false,
     popupX: 0,
     popupY: 0,
-    popupField: '',
+    popupSearchParam: undefined,
     fieldEditorVisible: false,
     filterEditorVisible: false,
   });
@@ -154,13 +155,13 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
    * @param e The click event.
    * @param key The field key.
    */
-  function handleSortClick(e: React.MouseEvent, key: string): void {
+  function handleSortClick(e: React.MouseEvent, searchParam: SearchParameter | undefined): void {
     setState({
       ...stateRef.current,
       popupVisible: true,
       popupX: e.clientX,
       popupY: e.clientY,
-      popupField: key,
+      popupSearchParam: searchParam,
     });
   }
 
@@ -207,13 +208,14 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
 
   useEffect(() => requestResources(), [props.search]);
 
-  if (!schema?.types?.[props.search.resourceType]) {
+  const typeSchema = schema?.types?.[props.search.resourceType];
+  if (!typeSchema) {
     return <Loading />;
   }
 
   const checkboxColumn = props.checkboxesEnabled;
   const search = props.search;
-  const fields = search.fields || ['id', '_lastUpdated'];
+  const fields = getFieldDefinitions(schema, search);
   const resourceType = search.resourceType;
   const lastResult = state.searchResponse;
   const entries = lastResult?.entry;
@@ -298,16 +300,22 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               </th>
             )}
             {fields.map((field) => (
-              <th key={field} onClick={(e) => handleSortClick(e, field)}>
-                {buildFieldNameString(schema, resourceType, field)}
+              <th key={field.name} onClick={(e) => handleSortClick(e, field.searchParam)}>
+                {buildFieldNameString(schema, resourceType, field.name)}
               </th>
             ))}
           </tr>
           <tr>
             {checkboxColumn && <th className="filters medplum-search-icon-cell" />}
             {fields.map((field) => (
-              <th key={field} className="filters">
-                <FilterDescription resourceType={resourceType} field={field} filters={props.search.filters} />
+              <th key={field.name} className="filters">
+                {field.searchParam && (
+                  <FilterDescription
+                    resourceType={resourceType}
+                    searchParam={field.searchParam}
+                    filters={props.search.filters}
+                  />
+                )}
               </th>
             ))}
           </tr>
@@ -335,7 +343,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                     </td>
                   )}
                   {fields.map((field) => (
-                    <td key={field}>{renderValue(schema, resource, field)}</td>
+                    <td key={field.name}>{renderValue(schema, resource, field)}</td>
                   ))}
                 </tr>
               )
@@ -358,20 +366,20 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         visible={state.popupVisible}
         x={state.popupX}
         y={state.popupY}
-        property={state.popupField}
+        searchParam={state.popupSearchParam}
         onChange={(result) => {
           emitSearchChange(result);
           setState({
             ...stateRef.current,
             popupVisible: false,
-            popupField: '',
+            popupSearchParam: undefined,
           });
         }}
         onClose={() => {
           setState({
             ...stateRef.current,
             popupVisible: false,
-            popupField: '',
+            popupSearchParam: undefined,
           });
         }}
       />
@@ -419,12 +427,12 @@ export const MemoizedSearchControl = React.memo(SearchControl);
 
 interface FilterDescriptionProps {
   readonly resourceType: string;
-  readonly field: string;
+  readonly searchParam: SearchParameter;
   readonly filters?: Filter[];
 }
 
 function FilterDescription(props: FilterDescriptionProps): JSX.Element {
-  const filters = (props.filters ?? []).filter((f) => f.code === props.field);
+  const filters = (props.filters ?? []).filter((f) => f.code === props.searchParam.code);
   if (filters.length === 0) {
     return <span>no filters</span>;
   }

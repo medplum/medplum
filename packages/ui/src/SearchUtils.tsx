@@ -1,8 +1,17 @@
-import { Filter, getPropertyDisplayName, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
+import {
+  Filter,
+  getPropertyDisplayName,
+  IndexedStructureDefinition,
+  Operator,
+  PropertyType,
+  SearchRequest,
+} from '@medplum/core';
+import { evalFhirPath } from '@medplum/fhirpath';
 import { Resource, SearchParameter } from '@medplum/fhirtypes';
 import React from 'react';
 import { DateTimeDisplay } from './DateTimeDisplay';
 import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
+import { SearchControlField } from './SearchControlField';
 
 const searchParamToOperators: Record<string, Operator[]> = {
   string: [Operator.EQUALS, Operator.NOT_EQUALS, Operator.CONTAINS, Operator.EXACT],
@@ -489,8 +498,9 @@ export function buildFieldNameString(
 export function renderValue(
   schema: IndexedStructureDefinition,
   resource: Resource,
-  key: string
+  field: SearchControlField
 ): string | JSX.Element | null | undefined {
+  const key = field.name;
   if (key === 'id') {
     return resource.id;
   }
@@ -503,24 +513,46 @@ export function renderValue(
     return <DateTimeDisplay value={resource.meta?.lastUpdated} />;
   }
 
-  const property = schema.types[resource.resourceType]?.properties?.[key];
-  if (!property) {
-    return null;
+  if (field.elementDefinition && `${resource.resourceType}.${field.name}` === field.elementDefinition.path) {
+    const [value, propertyType] = getValueAndType(resource, field.elementDefinition);
+    if (!value) {
+      return null;
+    }
+
+    return (
+      <ResourcePropertyDisplay
+        schema={schema}
+        property={field.elementDefinition}
+        propertyType={propertyType}
+        value={value}
+        maxWidth={200}
+        ignoreMissingValues={true}
+      />
+    );
   }
 
-  const [value, propertyType] = getValueAndType(resource, property);
-  if (!value) {
-    return null;
+  if (field.searchParam && field.name === field.searchParam.code) {
+    const value = evalFhirPath(field.searchParam.expression as string, resource);
+    if (!value) {
+      return null;
+    }
+
+    if (field.elementDefinition) {
+      return (
+        <ResourcePropertyDisplay
+          schema={schema}
+          property={field.elementDefinition}
+          propertyType={field.elementDefinition.type?.[0]?.code as PropertyType}
+          value={value}
+          maxWidth={200}
+          ignoreMissingValues={true}
+        />
+      );
+    }
+
+    return JSON.stringify(value, undefined, 2);
   }
 
-  return (
-    <ResourcePropertyDisplay
-      schema={schema}
-      property={property}
-      propertyType={propertyType}
-      value={value}
-      maxWidth={200}
-      ignoreMissingValues={true}
-    />
-  );
+  // We don't know how to render this field definition
+  return null;
 }

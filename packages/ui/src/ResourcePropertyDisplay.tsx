@@ -101,6 +101,16 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
   }
 }
 
+/**
+ * Returns the value of the property and the property type.
+ * Some property definitions support multiple types.
+ * For example, "Observation.value[x]" can be "valueString", "valueInteger", "valueQuantity", etc.
+ * According to the spec, there can only be one property for a given element definition.
+ * This function returns the value and the type.
+ * @param context The base context (usually a FHIR resource).
+ * @param property The property definition.
+ * @returns The value of the property and the property type.
+ */
 export function getValueAndType(context: any, property: ElementDefinition): [any, PropertyType] {
   if (!context) {
     return [undefined, PropertyType.string];
