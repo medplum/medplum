@@ -274,6 +274,37 @@ describe('SearchPopupMenu', () => {
     }
   });
 
+  test('Text search prompt', async () => {
+    window.prompt = jest.fn().mockImplementation(() => 'xyz');
+
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+    };
+
+    setup({
+      schema,
+      search: currSearch,
+      visible: true,
+      x: 0,
+      y: 0,
+      searchParam: schema.types['Patient']?.searchParams?.['name'],
+      onChange: (e) => (currSearch = e),
+      onClose: jest.fn(),
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Search'));
+    });
+
+    expect(currSearch.filters).toBeDefined();
+    expect(currSearch.filters?.length).toEqual(1);
+    expect(currSearch.filters?.[0]).toMatchObject({
+      code: 'name',
+      operator: Operator.CONTAINS,
+      value: 'xyz',
+    } as Filter);
+  });
+
   test('Date submenu prompt', async () => {
     window.prompt = jest.fn().mockImplementation(() => 'xyz');
 

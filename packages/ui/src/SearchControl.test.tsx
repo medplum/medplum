@@ -174,6 +174,29 @@ describe('SearchControl', () => {
     expect(props.onLoad).toBeCalled();
   });
 
+  test('Renders search parameter columns', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        fields: ['id', '_lastUpdated', 'name', 'birthDate', 'active', 'telecom', 'email', 'phone'],
+      },
+      onLoad: jest.fn(),
+    };
+
+    setup(props);
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    const control = screen.getByTestId('search-control');
+    expect(control).toBeDefined();
+    expect(props.onLoad).toBeCalled();
+
+    expect(screen.getByText('chunkylover53@aol.com [home email]')).toBeInTheDocument();
+    expect(screen.getByText('555-7334 [home phone]')).toBeInTheDocument();
+  });
+
   test('Renders filters', async () => {
     const props = {
       search: {
@@ -627,5 +650,59 @@ describe('SearchControl', () => {
     expect(rowCheckboxes.length).toEqual(2);
     expect((rowCheckboxes[0] as HTMLInputElement).checked).toEqual(true);
     expect((rowCheckboxes[1] as HTMLInputElement).checked).toEqual(true);
+  });
+
+  test('Activate popup menu', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        fields: ['id', 'name'],
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Simpson',
+          },
+        ],
+      },
+      onLoad: jest.fn(),
+      checkboxesEnabled: true,
+    };
+
+    setup(props);
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    const control = screen.getByTestId('search-control');
+    expect(control).toBeDefined();
+    expect(props.onLoad).toBeCalled();
+
+    // Click on the column header to activate the popup menu
+    await act(async () => {
+      fireEvent.click(screen.getByText('Name'));
+    });
+
+    // Expect the popup menu to be open now
+    expect(screen.getByText('Sort A to Z')).toBeInTheDocument();
+
+    // Click on a sort operation
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sort A to Z'));
+    });
+
+    // Click on the column header to activate the popup menu
+    await act(async () => {
+      fireEvent.click(screen.getByText('Name'));
+    });
+
+    // Click outside the popup to dismiss it
+    await act(async () => {
+      fireEvent.click(document.body);
+    });
+
+    // Expect the popup menu to be closed now
+    expect(screen.queryByText('Sort A to Z')).toBeNull();
   });
 });

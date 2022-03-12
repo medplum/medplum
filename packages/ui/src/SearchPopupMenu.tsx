@@ -178,7 +178,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
       {paramType === 'string' && (
         <>
           <MenuSeparator />
-          <MenuItem onClick={() => console.log('search')}>Search</MenuItem>
+          <MenuItem onClick={() => prompt(Operator.CONTAINS)}>Search</MenuItem>
         </>
       )}
     </Popup>
