@@ -1,5 +1,5 @@
-import { evalFhirPath } from '.';
 import { LiteralAtom } from './atoms';
+import { evalFhirPath } from './parse';
 
 describe('Atoms', () => {
   test('LiteralAtom', () => {

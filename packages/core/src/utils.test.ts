@@ -1,4 +1,3 @@
-import { resolveId } from '.';
 import {
   arrayBufferToBase64,
   arrayBufferToHex,
@@ -10,6 +9,7 @@ import {
   getImageSrc,
   isLowerCase,
   isProfileResource,
+  resolveId,
   stringify,
 } from './utils';
 

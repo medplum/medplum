@@ -1,7 +1,7 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
-import { Logo } from '..';
 import { FooterLinks } from '../FooterLinks';
+import { Logo } from '../Logo';
 import { SignInForm } from '../SignInForm';
 
 export default {
