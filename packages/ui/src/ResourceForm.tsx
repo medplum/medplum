@@ -1,10 +1,10 @@
 import { capitalize, getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/core';
 import { ElementDefinition, ElementDefinitionType, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
-import { Input } from '.';
 import { Button } from './Button';
 import { DEFAULT_IGNORED_PROPERTIES } from './constants';
 import { FormSection } from './FormSection';
+import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 import { useResource } from './useResource';

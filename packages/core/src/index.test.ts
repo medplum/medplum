@@ -1,4 +1,4 @@
-import { MedplumClient } from '.';
+import { MedplumClient } from './client';
 
 describe('Index', () => {
   test('MedplumClient import', () => {

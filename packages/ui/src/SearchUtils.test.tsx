@@ -1,5 +1,4 @@
 import { Filter, Operator, SearchRequest, TypeSchema } from '@medplum/core';
-import { buildFieldNameString } from '.';
 import {
   addField,
   addFilter,
@@ -10,6 +9,7 @@ import {
   addTomorrowFilter,
   addYearToDateFilter,
   addYesterdayFilter,
+  buildFieldNameString,
   clearFilters,
   clearFiltersOnField,
   deleteFilter,

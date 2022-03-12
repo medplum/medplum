@@ -1,5 +1,4 @@
-import { indexSearchParameter, indexStructureDefinition } from '.';
-import { createSchema, getPropertyDisplayName } from './types';
+import { createSchema, getPropertyDisplayName, indexSearchParameter, indexStructureDefinition } from './types';
 
 describe('Type Utils', () => {
   test('indexStructureDefinition', () => {
