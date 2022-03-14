@@ -25,6 +25,7 @@ describe('SearchUtils', () => {
   test('Set filters', () => {
     const original: SearchRequest = {
       resourceType: 'Patient',
+      page: 2,
       filters: [
         {
           code: 'name',
@@ -43,6 +44,7 @@ describe('SearchUtils', () => {
     const result = setFilters(original, filters);
     expect(result.filters?.length).toBe(1);
     expect(result.filters?.[0].value).toBe('alice');
+    expect(result.page).toBe(0);
   });
 
   test('Clear filters', () => {
