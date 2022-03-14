@@ -237,7 +237,10 @@ describe('Core Utils', () => {
   });
 
   test('Capitalize', () => {
+    expect(capitalize('id')).toEqual('ID');
+    expect(capitalize('Id')).toEqual('ID');
     expect(capitalize('foo')).toEqual('Foo');
+    expect(capitalize('FOO')).toEqual('FOO');
   });
 
   test('isLowerCase', () => {

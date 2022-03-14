@@ -1,4 +1,4 @@
-import { IndexedStructureDefinition, SearchRequest, stringify } from '@medplum/core';
+import { IndexedStructureDefinition, SearchRequest, stringify, TypeSchema } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Dialog } from './Dialog';
@@ -163,7 +163,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
   const typeDef = props.schema.types[resourceType];
 
   const selected = state.search.fields ?? [];
-  const available = Object.keys(typeDef.properties)
+  const available = getFieldsList(typeDef)
     .filter((field) => !selected?.includes(field))
     .sort();
 
@@ -195,7 +195,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
                 >
                   {available.map((key) => (
                     <option key={key} value={key}>
-                      {buildFieldNameString(props.schema, resourceType, key)}
+                      {buildFieldNameString(key)}
                     </option>
                   ))}
                 </select>
@@ -212,7 +212,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
                 >
                   {selected.map((key) => (
                     <option key={key} value={key}>
-                      {buildFieldNameString(props.schema, resourceType, key)}
+                      {buildFieldNameString(key)}
                     </option>
                   ))}
                 </select>
@@ -247,4 +247,33 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
       </div>
     </Dialog>
   );
+}
+
+/**
+ * Returns a list of fields/columns available for a type.
+ * The result is the union of properties and search parameters.
+ * @param typeSchema The type definition.
+ */
+function getFieldsList(typeSchema: TypeSchema): string[] {
+  let keys = Object.keys(typeSchema.properties);
+
+  if (typeSchema.searchParams) {
+    // Combine the arrays and de-dupe
+    keys = [...new Set([...keys, ...Object.keys(typeSchema.searchParams)])];
+  }
+
+  const result = [] as string[];
+  const names = [] as string[];
+
+  for (const key of keys) {
+    // Dedupe by display name
+    // Many properties and search parameters have the same name
+    const name = buildFieldNameString(key);
+    if (!names.includes(name)) {
+      result.push(key);
+      names.push(name);
+    }
+  }
+
+  return result;
 }

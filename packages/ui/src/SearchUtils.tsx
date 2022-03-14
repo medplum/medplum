@@ -1,11 +1,4 @@
-import {
-  Filter,
-  getPropertyDisplayName,
-  IndexedStructureDefinition,
-  Operator,
-  PropertyType,
-  SearchRequest,
-} from '@medplum/core';
+import { capitalize, Filter, IndexedStructureDefinition, Operator, PropertyType, SearchRequest } from '@medplum/core';
 import { evalFhirPath } from '@medplum/fhirpath';
 import { Resource, SearchParameter } from '@medplum/fhirtypes';
 import React from 'react';
@@ -458,34 +451,34 @@ export function getOpString(op: Operator): string {
 
 /**
  * Returns a field display name.
- * @param schema The schema if available.
- * @param resourceType The FHIR resource type.
  * @param key The field key.
  * @returns The field display name.
  */
-export function buildFieldNameString(
-  schema: IndexedStructureDefinition | undefined,
-  resourceType: string,
-  key: string
-): string {
-  if (key === 'id') {
-    return 'ID';
+export function buildFieldNameString(key: string): string {
+  let tmp = key;
+
+  // If dot separated, only the last part
+  if (tmp.includes('.')) {
+    tmp = tmp.split('.').pop() as string;
   }
 
-  if (key === 'meta.versionId') {
-    return 'Version ID';
-  }
+  // Remove choice of type
+  tmp = tmp.replace('[x]', '');
 
-  if (key === '_lastUpdated') {
-    return 'Last Updated';
-  }
+  // Convert camel case to space separated
+  tmp = tmp.replace(/([A-Z])/g, ' $1');
 
-  const property = schema?.types?.[resourceType]?.properties?.[key];
-  if (!property) {
-    return key;
-  }
+  // Convert dashes and underscores to spaces
+  tmp = tmp.replace(/[-_]/g, ' ');
 
-  return getPropertyDisplayName(property);
+  // Normalize whitespace to single space character
+  tmp = tmp.replace(/\s+/g, ' ');
+
+  // Trim
+  tmp = tmp.trim();
+
+  // Capitalize the first letter of each word
+  return tmp.split(/\s/).map(capitalize).join(' ');
 }
 
 /**
@@ -533,7 +526,7 @@ export function renderValue(
 
   if (field.searchParam && field.name === field.searchParam.code) {
     const value = evalFhirPath(field.searchParam.expression as string, resource);
-    if (!value) {
+    if (!value || value.length === 0) {
       return null;
     }
 
@@ -550,7 +543,15 @@ export function renderValue(
       );
     }
 
-    return JSON.stringify(value, undefined, 2);
+    return (
+      <>
+        {value.map((v, index) => (
+          <span key={`${index}-${value.length}`}>
+            {typeof v === 'object' ? JSON.stringify(v) : (v as string | number)}
+          </span>
+        ))}
+      </>
+    );
   }
 
   // We don't know how to render this field definition

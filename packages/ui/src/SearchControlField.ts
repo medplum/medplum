@@ -111,7 +111,7 @@ function getFieldDefinition(
     searchParam = Object.values(typeSchema.searchParams).find((p) => p.expression?.includes(path));
   }
 
-  if (!elementDefinition && searchParam) {
+  if (!elementDefinition && searchParam?.expression) {
     // Try to find an element definition based on the search parameter
     // For example, name="email", try to find elementDefinition="telecom"
     const details = getSearchParameterDetails(schema, resourceType, searchParam);
