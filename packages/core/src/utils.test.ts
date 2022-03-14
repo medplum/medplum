@@ -241,6 +241,8 @@ describe('Core Utils', () => {
     expect(capitalize('Id')).toEqual('ID');
     expect(capitalize('foo')).toEqual('Foo');
     expect(capitalize('FOO')).toEqual('FOO');
+    expect(capitalize('你好')).toEqual('你好');
+    expect(capitalize('dinç')).toEqual('Dinç');
   });
 
   test('isLowerCase', () => {
