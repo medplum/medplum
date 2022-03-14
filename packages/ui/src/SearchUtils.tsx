@@ -79,6 +79,7 @@ export function setFilters(definition: SearchRequest, filters: Filter[]): Search
   return {
     ...definition,
     filters: filters,
+    page: 0,
     name: undefined,
   };
 }
