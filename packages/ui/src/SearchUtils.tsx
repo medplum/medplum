@@ -1,6 +1,6 @@
 import { capitalize, Filter, IndexedStructureDefinition, Operator, PropertyType, SearchRequest } from '@medplum/core';
 import { evalFhirPath } from '@medplum/fhirpath';
-import { Resource, SearchParameter } from '@medplum/fhirtypes';
+import { ElementDefinition, Resource, SearchParameter } from '@medplum/fhirtypes';
 import React from 'react';
 import { DateTimeDisplay } from './DateTimeDisplay';
 import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
@@ -507,16 +507,71 @@ export function renderValue(
   }
 
   if (field.elementDefinition && `${resource.resourceType}.${field.name}` === field.elementDefinition.path) {
-    const [value, propertyType] = getValueAndType(resource, field.elementDefinition);
-    if (!value) {
-      return null;
-    }
+    return renderPropertyValue(schema, resource, field.elementDefinition);
+  }
 
+  if (field.searchParam && field.name === field.searchParam.code) {
+    return renderSearchParameterValue(schema, resource, field.searchParam, field.elementDefinition);
+  }
+
+  // We don't know how to render this field definition
+  return null;
+}
+
+/**
+ * Returns a fragment to be displayed in the search table for a resource property.
+ * @param schema The currently indexed schema.
+ * @param resource The parent resource.
+ * @param elementDefinition The property element definition.
+ * @returns A React element or null.
+ */
+function renderPropertyValue(
+  schema: IndexedStructureDefinition,
+  resource: Resource,
+  elementDefinition: ElementDefinition
+): JSX.Element | null {
+  const [value, propertyType] = getValueAndType(resource, elementDefinition);
+  if (!value) {
+    return null;
+  }
+
+  return (
+    <ResourcePropertyDisplay
+      schema={schema}
+      property={elementDefinition}
+      propertyType={propertyType}
+      value={value}
+      maxWidth={200}
+      ignoreMissingValues={true}
+    />
+  );
+}
+
+/**
+ * Returns a fragment to be displayed in the search table for a search parameter.
+ * @param schema The currently indexed schema.
+ * @param resource The parent resource.
+ * @param searchParam The search parameter.
+ * @param elementDefinition Optional element definition.
+ * @returns A React element or null.
+ */
+function renderSearchParameterValue(
+  schema: IndexedStructureDefinition,
+  resource: Resource,
+  searchParam: SearchParameter,
+  elementDefinition: ElementDefinition | undefined
+): JSX.Element | null {
+  const value = evalFhirPath(searchParam.expression as string, resource);
+  if (!value || value.length === 0) {
+    return null;
+  }
+
+  if (elementDefinition) {
     return (
       <ResourcePropertyDisplay
         schema={schema}
-        property={field.elementDefinition}
-        propertyType={propertyType}
+        property={elementDefinition}
+        propertyType={elementDefinition.type?.[0]?.code as PropertyType}
         value={value}
         maxWidth={200}
         ignoreMissingValues={true}
@@ -524,36 +579,13 @@ export function renderValue(
     );
   }
 
-  if (field.searchParam && field.name === field.searchParam.code) {
-    const value = evalFhirPath(field.searchParam.expression as string, resource);
-    if (!value || value.length === 0) {
-      return null;
-    }
-
-    if (field.elementDefinition) {
-      return (
-        <ResourcePropertyDisplay
-          schema={schema}
-          property={field.elementDefinition}
-          propertyType={field.elementDefinition.type?.[0]?.code as PropertyType}
-          value={value}
-          maxWidth={200}
-          ignoreMissingValues={true}
-        />
-      );
-    }
-
-    return (
-      <>
-        {value.map((v, index) => (
-          <span key={`${index}-${value.length}`}>
-            {typeof v === 'object' ? JSON.stringify(v) : (v as string | number)}
-          </span>
-        ))}
-      </>
-    );
-  }
-
-  // We don't know how to render this field definition
-  return null;
+  return (
+    <>
+      {value.map((v, index) => (
+        <span key={`${index}-${value.length}`}>
+          {typeof v === 'object' ? JSON.stringify(v) : (v as string | number)}
+        </span>
+      ))}
+    </>
+  );
 }

@@ -49,6 +49,15 @@ export const HomerSimpson: Patient = {
       value: 'chunkylover53@aol.com',
     },
   ],
+  address: [
+    {
+      use: 'home',
+      line: ['742 Evergreen Terrace'],
+      city: 'Springfield',
+      state: 'IL',
+      postalCode: '12345',
+    },
+  ],
 };
 
 export const HomerSimpsonHistory: Bundle<Patient> = {
