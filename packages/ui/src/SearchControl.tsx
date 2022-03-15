@@ -235,9 +235,10 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           </h1>
           {savedSearches && (
             <Select
+              testid="saved-search-select"
               style={{ width: 80 }}
               onChange={(newValue) => {
-                emitSearchChange(parseSearchDefinition(new URL(newValue as string, 'https://example.com')));
+                emitSearchChange(parseSearchDefinition(new URL(newValue, 'https://example.com')));
               }}
             >
               <option></option>

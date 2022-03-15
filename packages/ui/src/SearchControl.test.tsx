@@ -728,4 +728,39 @@ describe('SearchControl', () => {
     // Expect the popup menu to be closed now
     expect(screen.queryByText('Sort A to Z')).toBeNull();
   });
+
+  test('Saved searches', async () => {
+    const onChange = jest.fn();
+
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Patient',
+        fields: ['id', 'name'],
+      },
+      userConfig: {
+        resourceType: 'UserConfiguration',
+        search: [
+          {
+            name: 'Simpsons',
+            criteria: 'Patient?name=Simpson',
+          },
+        ],
+      },
+      onChange,
+    };
+
+    setup(props);
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('saved-search-select'));
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('saved-search-select'), {
+        target: { value: 'Patient?name=Simpson' },
+      });
+    });
+
+    expect(onChange).toBeCalled();
+  });
 });

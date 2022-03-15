@@ -91,9 +91,9 @@ export function parseSearchDefinition(location: { pathname: string; search?: str
     .split('/')
     .pop() as string;
   const params = new URLSearchParams(location.search);
-  const filters: Filter[] = [];
-  const sortRules: SortRule[] = [];
-  let fields;
+  let filters: Filter[] | undefined = undefined;
+  let sortRules: SortRule[] | undefined = undefined;
+  let fields: string[] | undefined = undefined;
   let page = undefined;
   let count = undefined;
   let total = undefined;
@@ -108,8 +108,10 @@ export function parseSearchDefinition(location: { pathname: string; search?: str
     } else if (key === '_total') {
       total = value;
     } else if (key === '_sort') {
+      sortRules = sortRules || [];
       sortRules.push(parseSortRule(value));
     } else {
+      filters = filters || [];
       filters.push(parseSearchFilter(key, value));
     }
   });
@@ -195,12 +197,8 @@ export function formatSearchQuery(definition: SearchRequest): string {
     params.push('_fields=' + definition.fields.join(','));
   }
 
-  if (definition.filters && definition.filters.length > 0) {
-    definition.filters.forEach((filter) => {
-      const modifier = MODIFIER_OPERATORS.includes(filter.operator) ? ':' + filter.operator : '';
-      const prefix = PREFIX_OPERATORS.includes(filter.operator) ? filter.operator : '';
-      params.push(`${filter.code}${modifier}=${prefix}${encodeURIComponent(filter.value)}`);
-    });
+  if (definition.filters) {
+    definition.filters.forEach((filter) => params.push(formatFilter(filter)));
   }
 
   if (definition.sortRules && definition.sortRules.length > 0) {
@@ -225,6 +223,12 @@ export function formatSearchQuery(definition: SearchRequest): string {
 
   params.sort();
   return '?' + params.join('&');
+}
+
+function formatFilter(filter: Filter): string {
+  const modifier = MODIFIER_OPERATORS.includes(filter.operator) ? ':' + filter.operator : '';
+  const prefix = PREFIX_OPERATORS.includes(filter.operator) ? filter.operator : '';
+  return `${filter.code}${modifier}=${prefix}${encodeURIComponent(filter.value)}`;
 }
 
 function formatSortRules(sortRules: SortRule[] | undefined): string {
