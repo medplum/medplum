@@ -94,8 +94,8 @@ export function parseSearchDefinition(location: { pathname: string; search?: str
   const filters: Filter[] = [];
   const sortRules: SortRule[] = [];
   let fields;
-  let page = 0;
-  let count = 10;
+  let page = undefined;
+  let count = undefined;
   let total = undefined;
 
   params.forEach((value, key) => {
