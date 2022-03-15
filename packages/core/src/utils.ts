@@ -242,9 +242,6 @@ export function arrayBufferToBase64(arrayBuffer: ArrayBuffer): string {
 }
 
 export function capitalize(word: string): string {
-  if (word.toLowerCase() === 'id') {
-    return 'ID';
-  }
   return word.charAt(0).toUpperCase() + word.substr(1);
 }
 

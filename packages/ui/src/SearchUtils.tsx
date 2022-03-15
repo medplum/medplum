@@ -462,6 +462,16 @@ export function buildFieldNameString(key: string): string {
     tmp = tmp.split('.').pop() as string;
   }
 
+  // Special case for ID
+  if (tmp === 'id') {
+    return 'ID';
+  }
+
+  // Special case for Version ID
+  if (tmp === 'versionId') {
+    return 'Version ID';
+  }
+
   // Remove choice of type
   tmp = tmp.replace('[x]', '');
 
