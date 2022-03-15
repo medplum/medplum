@@ -1,4 +1,4 @@
-import { formatSearchQuery, parseSearchDefinition, SearchRequest } from '@medplum/core';
+import { formatSearchQuery, parseSearchDefinition, SearchRequest, SortRule } from '@medplum/core';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -10,22 +10,22 @@ export function HomePage(): JSX.Element {
   const [search, setSearch] = useState<SearchRequest>(parseSearchDefinition(location));
 
   useEffect(() => {
+    // Parse the search from the URL
     const parsedSearch = parseSearchDefinition(location);
 
-    if (parsedSearch.resourceType && parsedSearch.fields && parsedSearch.fields.length > 0) {
-      // If the URL has a resourceType and fields,
-      // use that
-      setDefaultResourceType(parsedSearch.resourceType);
-      setDefaultSearchForResourceType(parsedSearch);
-      setSearch(parsedSearch);
-    } else if (parsedSearch.resourceType) {
-      // If the URL has a resourceType but no fields,
-      // use the default search for that resourceType
-      setDefaultResourceType(parsedSearch.resourceType);
-      setSearch(getDefaultSearchForResourceType(parsedSearch.resourceType));
+    // Fill in the search with default values
+    const populatedSearch = addDefaultSearchValues(parsedSearch);
+
+    if (
+      location.pathname === `/${populatedSearch.resourceType}` &&
+      location.search === formatSearchQuery(populatedSearch)
+    ) {
+      // If the URL matches the parsed search, then save it and execute it
+      saveLastSearch(populatedSearch);
+      setSearch(populatedSearch);
     } else {
-      // Otherwise, use the default search
-      setSearch(getDefaultSearch());
+      // Otherwise, navigate to the desired URL
+      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
     }
   }, [location]);
 
@@ -37,12 +37,11 @@ export function HomePage(): JSX.Element {
     <MemoizedSearchControl
       checkboxesEnabled={true}
       search={search}
+      userConfig={medplum.getUserConfiguration()}
       onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
       onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
       onChange={(e) => {
-        if (e.definition.resourceType && e.definition.fields && e.definition.fields.length > 0) {
-          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
-        }
+        navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
       }}
       onNew={() => {
         navigate(`/${search.resourceType}/new`);
@@ -73,24 +72,31 @@ export function HomePage(): JSX.Element {
   );
 }
 
-function getDefaultSearch(): SearchRequest {
-  return getDefaultSearchForResourceType(getDefaultResourceType());
+function addDefaultSearchValues(search: SearchRequest): SearchRequest {
+  const resourceType = search.resourceType || getDefaultResourceType();
+  const fields = search.fields ?? getDefaultFields(resourceType);
+  const sortRules = search.sortRules ?? getDefaultSortRules(resourceType);
+  const page = search.page ?? 0;
+  const count = search.count ?? 20;
+
+  return {
+    ...search,
+    resourceType,
+    fields,
+    sortRules,
+    page,
+    count,
+  };
 }
 
 function getDefaultResourceType(): string {
   return localStorage.getItem('defaultResourceType') || 'Patient';
 }
 
-function setDefaultResourceType(resourceType: string): void {
-  if (resourceType) {
-    localStorage.setItem('defaultResourceType', resourceType);
-  }
-}
-
-export function getDefaultSearchForResourceType(resourceType: string): SearchRequest {
-  const value = localStorage.getItem(resourceType + '-defaultSearch');
-  if (value) {
-    return JSON.parse(value) as SearchRequest;
+export function getDefaultFields(resourceType: string): string[] {
+  const lastSearch = getLastSearch(resourceType);
+  if (lastSearch?.fields) {
+    return lastSearch.fields;
   }
   const fields = ['id', '_lastUpdated'];
   switch (resourceType) {
@@ -138,20 +144,23 @@ export function getDefaultSearchForResourceType(resourceType: string): SearchReq
       fields.push('email');
       break;
   }
-  return {
-    resourceType,
-    fields,
-    sortRules: [
-      {
-        code: '_lastUpdated',
-        descending: true,
-      },
-    ],
-    page: 0,
-    count: 20,
-  };
+  return fields;
 }
 
-function setDefaultSearchForResourceType(search: SearchRequest): void {
+function getDefaultSortRules(resourceType: string): SortRule[] {
+  const lastSearch = getLastSearch(resourceType);
+  if (lastSearch?.sortRules) {
+    return lastSearch.sortRules;
+  }
+  return [{ code: '_lastUpdated', descending: true }];
+}
+
+function getLastSearch(resourceType: string): SearchRequest | undefined {
+  const value = localStorage.getItem(resourceType + '-defaultSearch');
+  return value ? (JSON.parse(value) as SearchRequest) : undefined;
+}
+
+function saveLastSearch(search: SearchRequest): void {
+  localStorage.setItem('defaultResourceType', search.resourceType);
   localStorage.setItem(search.resourceType + '-defaultSearch', JSON.stringify(search));
 }

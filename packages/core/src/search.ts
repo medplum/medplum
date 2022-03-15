@@ -195,7 +195,7 @@ export function formatSearchQuery(definition: SearchRequest): string {
     params.push('_fields=' + definition.fields.join(','));
   }
 
-  if (definition.filters) {
+  if (definition.filters && definition.filters.length > 0) {
     definition.filters.forEach((filter) => {
       const modifier = MODIFIER_OPERATORS.includes(filter.operator) ? ':' + filter.operator : '';
       const prefix = PREFIX_OPERATORS.includes(filter.operator) ? filter.operator : '';
@@ -203,7 +203,7 @@ export function formatSearchQuery(definition: SearchRequest): string {
     });
   }
 
-  if (definition.sortRules) {
+  if (definition.sortRules && definition.sortRules.length > 0) {
     params.push(formatSortRules(definition.sortRules));
   }
 
