@@ -308,7 +308,7 @@ describe('SearchFilterEditor', () => {
       />
     );
 
-    expect(screen.getByText('not-a-code')).toBeInTheDocument();
+    expect(screen.getByText('Not A Code')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Edit'));

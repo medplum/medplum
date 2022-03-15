@@ -73,6 +73,24 @@ export const PatientSearchParameters: SearchParameter[] = [
     type: 'token',
     expression: "Patient.telecom.where(system='phone') | Practitioner.telecom.where(system='phone')",
   },
+  {
+    resourceType: 'SearchParameter',
+    id: 'individual-address-city',
+    base: ['Patient', 'Practitioner'],
+    code: 'address-city',
+    name: 'address-city',
+    type: 'token',
+    expression: 'Patient.address.city | Practitioner.address.city',
+  },
+  {
+    resourceType: 'SearchParameter',
+    id: 'individual-address-state',
+    base: ['Patient', 'Practitioner'],
+    code: 'address-state',
+    name: 'address-state',
+    type: 'token',
+    expression: 'Patient.address.state | Practitioner.address.state',
+  },
 ];
 
 export const GraphQLSchemaResponse = {

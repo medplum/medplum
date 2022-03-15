@@ -445,7 +445,8 @@ export class MedplumClient extends EventTarget {
       SearchParameterList(base: "${encodeURIComponent(resourceType)}") {
         base,
         code,
-        type
+        type,
+        expression
       }
     }`.replace(/\s+/g, ' ');
 

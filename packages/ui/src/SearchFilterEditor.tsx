@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Dialog } from './Dialog';
 import { Input } from './Input';
-import { useMedplum } from './MedplumProvider';
 import { ReferenceInput } from './ReferenceInput';
 import { SearchFilterValueDisplay } from './SearchFilterValueDisplay';
 import {
@@ -114,12 +113,10 @@ interface FilterRowDisplayProps {
 }
 
 function FilterRowDisplay(props: FilterRowDisplayProps): JSX.Element | null {
-  const { resourceType, filter } = props;
-  const medplum = useMedplum();
-  const schema = medplum.getSchema();
+  const { filter } = props;
   return (
     <tr>
-      <td>{buildFieldNameString(schema, resourceType, filter.code)}</td>
+      <td>{buildFieldNameString(filter.code)}</td>
       <td>{getOpString(filter.operator)}</td>
       <td>
         <SearchFilterValueDisplay resourceType={props.resourceType} filter={filter} />
@@ -171,7 +168,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
           <option value=""></option>
           {Object.keys(props.searchParams).map((param) => (
             <option key={param} value={param}>
-              {param}
+              {buildFieldNameString(param)}
             </option>
           ))}
         </Select>

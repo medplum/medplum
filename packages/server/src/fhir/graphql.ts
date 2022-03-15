@@ -229,6 +229,7 @@ async function resolveBySearch(
   const repo = ctx.res.locals.repo as Repository;
   const [outcome, bundle] = await repo.search({
     resourceType,
+    count: 100,
     filters: Object.entries(args).map(
       (e) =>
         ({

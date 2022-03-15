@@ -1,13 +1,6 @@
-import {
-  Filter,
-  getPropertyDisplayName,
-  IndexedStructureDefinition,
-  Operator,
-  PropertyType,
-  SearchRequest,
-} from '@medplum/core';
+import { capitalize, Filter, IndexedStructureDefinition, Operator, PropertyType, SearchRequest } from '@medplum/core';
 import { evalFhirPath } from '@medplum/fhirpath';
-import { Resource, SearchParameter } from '@medplum/fhirtypes';
+import { ElementDefinition, Resource, SearchParameter } from '@medplum/fhirtypes';
 import React from 'react';
 import { DateTimeDisplay } from './DateTimeDisplay';
 import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
@@ -459,34 +452,44 @@ export function getOpString(op: Operator): string {
 
 /**
  * Returns a field display name.
- * @param schema The schema if available.
- * @param resourceType The FHIR resource type.
  * @param key The field key.
  * @returns The field display name.
  */
-export function buildFieldNameString(
-  schema: IndexedStructureDefinition | undefined,
-  resourceType: string,
-  key: string
-): string {
-  if (key === 'id') {
+export function buildFieldNameString(key: string): string {
+  let tmp = key;
+
+  // If dot separated, only the last part
+  if (tmp.includes('.')) {
+    tmp = tmp.split('.').pop() as string;
+  }
+
+  // Special case for ID
+  if (tmp === 'id') {
     return 'ID';
   }
 
-  if (key === 'meta.versionId') {
+  // Special case for Version ID
+  if (tmp === 'versionId') {
     return 'Version ID';
   }
 
-  if (key === '_lastUpdated') {
-    return 'Last Updated';
-  }
+  // Remove choice of type
+  tmp = tmp.replace('[x]', '');
 
-  const property = schema?.types?.[resourceType]?.properties?.[key];
-  if (!property) {
-    return key;
-  }
+  // Convert camel case to space separated
+  tmp = tmp.replace(/([A-Z])/g, ' $1');
 
-  return getPropertyDisplayName(property);
+  // Convert dashes and underscores to spaces
+  tmp = tmp.replace(/[-_]/g, ' ');
+
+  // Normalize whitespace to single space character
+  tmp = tmp.replace(/\s+/g, ' ');
+
+  // Trim
+  tmp = tmp.trim();
+
+  // Capitalize the first letter of each word
+  return tmp.split(/\s/).map(capitalize).join(' ');
 }
 
 /**
@@ -515,16 +518,71 @@ export function renderValue(
   }
 
   if (field.elementDefinition && `${resource.resourceType}.${field.name}` === field.elementDefinition.path) {
-    const [value, propertyType] = getValueAndType(resource, field.elementDefinition);
-    if (!value) {
-      return null;
-    }
+    return renderPropertyValue(schema, resource, field.elementDefinition);
+  }
 
+  if (field.searchParam && field.name === field.searchParam.code) {
+    return renderSearchParameterValue(schema, resource, field.searchParam, field.elementDefinition);
+  }
+
+  // We don't know how to render this field definition
+  return null;
+}
+
+/**
+ * Returns a fragment to be displayed in the search table for a resource property.
+ * @param schema The currently indexed schema.
+ * @param resource The parent resource.
+ * @param elementDefinition The property element definition.
+ * @returns A React element or null.
+ */
+function renderPropertyValue(
+  schema: IndexedStructureDefinition,
+  resource: Resource,
+  elementDefinition: ElementDefinition
+): JSX.Element | null {
+  const [value, propertyType] = getValueAndType(resource, elementDefinition);
+  if (!value) {
+    return null;
+  }
+
+  return (
+    <ResourcePropertyDisplay
+      schema={schema}
+      property={elementDefinition}
+      propertyType={propertyType}
+      value={value}
+      maxWidth={200}
+      ignoreMissingValues={true}
+    />
+  );
+}
+
+/**
+ * Returns a fragment to be displayed in the search table for a search parameter.
+ * @param schema The currently indexed schema.
+ * @param resource The parent resource.
+ * @param searchParam The search parameter.
+ * @param elementDefinition Optional element definition.
+ * @returns A React element or null.
+ */
+function renderSearchParameterValue(
+  schema: IndexedStructureDefinition,
+  resource: Resource,
+  searchParam: SearchParameter,
+  elementDefinition: ElementDefinition | undefined
+): JSX.Element | null {
+  const value = evalFhirPath(searchParam.expression as string, resource);
+  if (!value || value.length === 0) {
+    return null;
+  }
+
+  if (elementDefinition) {
     return (
       <ResourcePropertyDisplay
         schema={schema}
-        property={field.elementDefinition}
-        propertyType={propertyType}
+        property={elementDefinition}
+        propertyType={elementDefinition.type?.[0]?.code as PropertyType}
         value={value}
         maxWidth={200}
         ignoreMissingValues={true}
@@ -532,28 +590,13 @@ export function renderValue(
     );
   }
 
-  if (field.searchParam && field.name === field.searchParam.code) {
-    const value = evalFhirPath(field.searchParam.expression as string, resource);
-    if (!value) {
-      return null;
-    }
-
-    if (field.elementDefinition) {
-      return (
-        <ResourcePropertyDisplay
-          schema={schema}
-          property={field.elementDefinition}
-          propertyType={field.elementDefinition.type?.[0]?.code as PropertyType}
-          value={value}
-          maxWidth={200}
-          ignoreMissingValues={true}
-        />
-      );
-    }
-
-    return JSON.stringify(value, undefined, 2);
-  }
-
-  // We don't know how to render this field definition
-  return null;
+  return (
+    <>
+      {value.map((v, index) => (
+        <span key={`${index}-${value.length}`}>
+          {typeof v === 'object' ? JSON.stringify(v) : (v as string | number)}
+        </span>
+      ))}
+    </>
+  );
 }

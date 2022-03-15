@@ -144,8 +144,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
    * @param {Operator} op The filter operation.
    */
   function prompt(op: Operator): void {
-    const caption = buildFieldNameString(props.schema, props.search.resourceType, code) + ' ' + getOpString(op) + '...';
-
+    const caption = buildFieldNameString(code) + ' ' + getOpString(op) + '...';
     const retVal = window.prompt(caption, '');
     if (retVal !== null) {
       onChange(addFilter(props.search, code, op, retVal, true));
@@ -170,12 +169,8 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
       <MenuSeparator />
       <MenuItem onClick={() => clearFilters()}>Clear filters</MenuItem>
       {renderSubMenu()}
-      {paramType === 'string' && (
-        <>
-          <MenuSeparator />
-          <MenuItem onClick={() => prompt(Operator.CONTAINS)}>Search</MenuItem>
-        </>
-      )}
+      <MenuSeparator />
+      <MenuItem onClick={() => prompt(Operator.CONTAINS)}>Search</MenuItem>
     </Popup>
   );
 }

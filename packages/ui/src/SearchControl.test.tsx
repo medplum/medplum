@@ -197,6 +197,29 @@ describe('SearchControl', () => {
     expect(screen.getByText('555-7334 [home phone]')).toBeInTheDocument();
   });
 
+  test('Renders nested properties', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        fields: ['id', '_lastUpdated', 'name', 'address-city', 'address-state'],
+      },
+      onLoad: jest.fn(),
+    };
+
+    setup(props);
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    const control = screen.getByTestId('search-control');
+    expect(control).toBeDefined();
+    expect(props.onLoad).toBeCalled();
+
+    expect(screen.getByText('Springfield')).toBeInTheDocument();
+    expect(screen.getByText('IL')).toBeInTheDocument();
+  });
+
   test('Renders filters', async () => {
     const props = {
       search: {

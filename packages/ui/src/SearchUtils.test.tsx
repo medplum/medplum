@@ -1,4 +1,4 @@
-import { Filter, Operator, SearchRequest, TypeSchema } from '@medplum/core';
+import { Filter, Operator, SearchRequest } from '@medplum/core';
 import {
   addField,
   addFilter,
@@ -480,21 +480,11 @@ describe('SearchUtils', () => {
   });
 
   test('buildFieldName', () => {
-    expect(buildFieldNameString(undefined, 'Patient', 'id')).toBe('ID');
-    expect(buildFieldNameString(undefined, 'Patient', 'meta.versionId')).toBe('Version ID');
-    expect(buildFieldNameString(undefined, 'Patient', '_lastUpdated')).toBe('Last Updated');
-    expect(buildFieldNameString(undefined, 'Patient', 'name')).toBe('name');
-    expect(buildFieldNameString({ types: {} }, 'Patient', 'name')).toBe('name');
-    expect(buildFieldNameString({ types: { Patient: {} as TypeSchema } }, 'Patient', 'name')).toBe('name');
-    expect(
-      buildFieldNameString({ types: { Patient: { display: 'Patient', properties: {} } } }, 'Patient', 'name')
-    ).toBe('name');
-    expect(
-      buildFieldNameString(
-        { types: { Patient: { display: 'Patient', properties: { name: { path: 'Patient.name' } } } } },
-        'Patient',
-        'name'
-      )
-    ).toBe('Name');
+    expect(buildFieldNameString('id')).toBe('ID');
+    expect(buildFieldNameString('meta.versionId')).toBe('Version ID');
+    expect(buildFieldNameString('_lastUpdated')).toBe('Last Updated');
+    expect(buildFieldNameString('name')).toBe('Name');
+    expect(buildFieldNameString('birthDate')).toBe('Birth Date');
+    expect(buildFieldNameString('order-detail')).toBe('Order Detail');
   });
 });
