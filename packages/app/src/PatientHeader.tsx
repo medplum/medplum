@@ -43,9 +43,9 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
           </dl>
         )}
         {patient.identifier?.map((identifier) => (
-          <dl key={identifier.system}>
-            <dt>{identifier.system}</dt>
-            <dd>{identifier.value}</dd>
+          <dl key={identifier?.system}>
+            <dt>{identifier?.system}</dt>
+            <dd>{identifier?.value}</dd>
           </dl>
         ))}
       </div>

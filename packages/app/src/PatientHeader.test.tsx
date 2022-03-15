@@ -1,4 +1,4 @@
-import { Patient } from '@medplum/fhirtypes';
+import { Identifier, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/ui';
 import { render, screen } from '@testing-library/react';
@@ -50,6 +50,29 @@ describe('PatientHeader', () => {
 
     expect(screen.getByText('abc')).toBeInTheDocument();
     expect(screen.getByText('123')).toBeInTheDocument();
+    expect(screen.getByText('def')).toBeInTheDocument();
+    expect(screen.getByText('456')).toBeInTheDocument();
+  });
+
+  test('Handles null identifiers', async () => {
+    setup({
+      resourceType: 'Patient',
+      name: [
+        {
+          given: ['Alice'],
+          family: 'Smith',
+        },
+      ],
+      identifier: [
+        null,
+        { system: 'system-with-null-value', value: null },
+        { system: null, value: 'value-with-null-system' },
+        { system: 'def', value: '456' },
+      ] as unknown as Identifier[],
+    });
+
+    expect(screen.getByText('system-with-null-value')).toBeInTheDocument();
+    expect(screen.getByText('value-with-null-system')).toBeInTheDocument();
     expect(screen.getByText('def')).toBeInTheDocument();
     expect(screen.getByText('456')).toBeInTheDocument();
   });
