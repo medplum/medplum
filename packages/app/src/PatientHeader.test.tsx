@@ -63,9 +63,16 @@ describe('PatientHeader', () => {
           family: 'Smith',
         },
       ],
-      identifier: [null, { system: 'def', value: '456' }] as unknown as Identifier[],
+      identifier: [
+        null,
+        { system: 'system-with-null-value', value: null },
+        { system: null, value: 'value-with-null-system' },
+        { system: 'def', value: '456' },
+      ] as unknown as Identifier[],
     });
 
+    expect(screen.getByText('system-with-null-value')).toBeInTheDocument();
+    expect(screen.getByText('value-with-null-system')).toBeInTheDocument();
     expect(screen.getByText('def')).toBeInTheDocument();
     expect(screen.getByText('456')).toBeInTheDocument();
   });
