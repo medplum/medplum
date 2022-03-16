@@ -3,7 +3,7 @@ import { MedplumProvider } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { getDefaultSearchForResourceType, HomePage } from './HomePage';
+import { getDefaultFields, HomePage } from './HomePage';
 
 function setup(url = '/Patient'): void {
   const medplum = new MockClient();
@@ -149,68 +149,22 @@ describe('HomePage', () => {
   });
 
   test('Default search fields', () => {
-    expect(getDefaultSearchForResourceType('AccessPolicy').fields).toEqual(['id', '_lastUpdated', 'name']);
-    expect(getDefaultSearchForResourceType('ClientApplication').fields).toEqual(['id', '_lastUpdated', 'name']);
-    expect(getDefaultSearchForResourceType('CodeSystem').fields).toEqual([
-      'id',
-      '_lastUpdated',
-      'name',
-      'title',
-      'status',
-    ]);
-    expect(getDefaultSearchForResourceType('Condition').fields).toEqual([
-      'id',
-      '_lastUpdated',
-      'subject',
-      'code',
-      'clinicalStatus',
-    ]);
-    expect(getDefaultSearchForResourceType('Device').fields).toEqual([
-      'id',
-      '_lastUpdated',
-      'manufacturer',
-      'deviceName',
-      'patient',
-    ]);
-    expect(getDefaultSearchForResourceType('DeviceDefinition').fields).toEqual([
-      'id',
-      '_lastUpdated',
-      'manufacturer[x]',
-      'deviceName',
-    ]);
-    expect(getDefaultSearchForResourceType('DeviceRequest').fields).toEqual([
-      'id',
-      '_lastUpdated',
-      'code[x]',
-      'subject',
-    ]);
-    expect(getDefaultSearchForResourceType('DiagnosticReport').fields).toEqual([
-      'id',
-      '_lastUpdated',
-      'subject',
-      'code',
-      'status',
-    ]);
-    expect(getDefaultSearchForResourceType('Encounter').fields).toEqual(['id', '_lastUpdated', 'subject']);
-    expect(getDefaultSearchForResourceType('Observation').fields).toEqual([
-      'id',
-      '_lastUpdated',
-      'subject',
-      'code',
-      'status',
-    ]);
-    expect(getDefaultSearchForResourceType('Organization').fields).toEqual(['id', '_lastUpdated', 'name']);
-    expect(getDefaultSearchForResourceType('Patient').fields).toEqual([
-      'id',
-      '_lastUpdated',
-      'name',
-      'birthDate',
-      'gender',
-    ]);
-    expect(getDefaultSearchForResourceType('Practitioner').fields).toEqual(['id', '_lastUpdated', 'name']);
-    expect(getDefaultSearchForResourceType('Project').fields).toEqual(['id', '_lastUpdated', 'name']);
-    expect(getDefaultSearchForResourceType('Questionnaire').fields).toEqual(['id', '_lastUpdated', 'name']);
-    expect(getDefaultSearchForResourceType('ServiceRequest').fields).toEqual([
+    expect(getDefaultFields('AccessPolicy')).toEqual(['id', '_lastUpdated', 'name']);
+    expect(getDefaultFields('ClientApplication')).toEqual(['id', '_lastUpdated', 'name']);
+    expect(getDefaultFields('CodeSystem')).toEqual(['id', '_lastUpdated', 'name', 'title', 'status']);
+    expect(getDefaultFields('Condition')).toEqual(['id', '_lastUpdated', 'subject', 'code', 'clinicalStatus']);
+    expect(getDefaultFields('Device')).toEqual(['id', '_lastUpdated', 'manufacturer', 'deviceName', 'patient']);
+    expect(getDefaultFields('DeviceDefinition')).toEqual(['id', '_lastUpdated', 'manufacturer[x]', 'deviceName']);
+    expect(getDefaultFields('DeviceRequest')).toEqual(['id', '_lastUpdated', 'code[x]', 'subject']);
+    expect(getDefaultFields('DiagnosticReport')).toEqual(['id', '_lastUpdated', 'subject', 'code', 'status']);
+    expect(getDefaultFields('Encounter')).toEqual(['id', '_lastUpdated', 'subject']);
+    expect(getDefaultFields('Observation')).toEqual(['id', '_lastUpdated', 'subject', 'code', 'status']);
+    expect(getDefaultFields('Organization')).toEqual(['id', '_lastUpdated', 'name']);
+    expect(getDefaultFields('Patient')).toEqual(['id', '_lastUpdated', 'name', 'birthDate', 'gender']);
+    expect(getDefaultFields('Practitioner')).toEqual(['id', '_lastUpdated', 'name']);
+    expect(getDefaultFields('Project')).toEqual(['id', '_lastUpdated', 'name']);
+    expect(getDefaultFields('Questionnaire')).toEqual(['id', '_lastUpdated', 'name']);
+    expect(getDefaultFields('ServiceRequest')).toEqual([
       'id',
       '_lastUpdated',
       'subject',
@@ -218,15 +172,9 @@ describe('HomePage', () => {
       'status',
       'orderDetail',
     ]);
-    expect(getDefaultSearchForResourceType('Subscription').fields).toEqual(['id', '_lastUpdated', 'criteria']);
-    expect(getDefaultSearchForResourceType('User').fields).toEqual(['id', '_lastUpdated', 'email']);
-    expect(getDefaultSearchForResourceType('ValueSet').fields).toEqual([
-      'id',
-      '_lastUpdated',
-      'name',
-      'title',
-      'status',
-    ]);
+    expect(getDefaultFields('Subscription')).toEqual(['id', '_lastUpdated', 'criteria']);
+    expect(getDefaultFields('User')).toEqual(['id', '_lastUpdated', 'email']);
+    expect(getDefaultFields('ValueSet')).toEqual(['id', '_lastUpdated', 'name', 'title', 'status']);
   });
 
   test('Left click on row', async () => {

@@ -4,13 +4,13 @@ describe('Search Utils', () => {
   test('Parse Patient search', () => {
     const result = parseSearchDefinition({ pathname: '/x/y/z/Patient' });
     expect(result.resourceType).toBe('Patient');
-    expect(result.filters).toEqual([]);
+    expect(result.filters).toBeUndefined();
   });
 
   test('Parse Patient search with trailing slash', () => {
     const result = parseSearchDefinition({ pathname: '/Patient/' });
     expect(result.resourceType).toBe('Patient');
-    expect(result.filters).toEqual([]);
+    expect(result.filters).toBeUndefined();
   });
 
   test('Parse Patient search name', () => {

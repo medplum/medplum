@@ -1,5 +1,5 @@
-import { Filter, IndexedStructureDefinition, SearchRequest } from '@medplum/core';
-import { Bundle, OperationOutcome, Resource, SearchParameter } from '@medplum/fhirtypes';
+import { Filter, IndexedStructureDefinition, parseSearchDefinition, SearchRequest } from '@medplum/core';
+import { Bundle, OperationOutcome, Resource, SearchParameter, UserConfiguration } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Loading } from './Loading';
@@ -10,6 +10,7 @@ import { SearchFilterEditor } from './SearchFilterEditor';
 import { SearchFilterValueDisplay } from './SearchFilterValueDisplay';
 import { SearchPopupMenu } from './SearchPopupMenu';
 import { buildFieldNameString, getOpString, movePage, renderValue } from './SearchUtils';
+import { Select } from './Select';
 import { TitleBar } from './TitleBar';
 import { killEvent } from './utils/dom';
 import './SearchControl.css';
@@ -45,6 +46,7 @@ export class SearchClickEvent extends Event {
 
 export interface SearchControlProps {
   search: SearchRequest;
+  userConfig?: UserConfiguration;
   checkboxesEnabled?: boolean;
   onLoad?: (e: SearchLoadEvent) => void;
   onChange?: (e: SearchChangeEvent) => void;
@@ -220,6 +222,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const lastResult = state.searchResponse;
   const entries = lastResult?.entry;
   const resources = entries?.map((e) => e.resource);
+  const savedSearches = props.userConfig?.search?.filter((s) => s.criteria?.startsWith(resourceType));
 
   return (
     <div className="medplum-search-control" onContextMenu={(e) => killEvent(e)} data-testid="search-control">
@@ -230,6 +233,22 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               {resourceType}
             </a>
           </h1>
+          {savedSearches && (
+            <Select
+              testid="saved-search-select"
+              style={{ width: 80 }}
+              onChange={(newValue) => {
+                emitSearchChange(parseSearchDefinition(new URL(newValue, 'https://example.com')));
+              }}
+            >
+              <option></option>
+              {savedSearches.map((s, index) => (
+                <option key={`${index}-${savedSearches.length}`} value={s.criteria}>
+                  {s.name}
+                </option>
+              ))}
+            </Select>
+          )}
           <Button
             testid="fields-button"
             size="small"
