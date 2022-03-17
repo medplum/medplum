@@ -1,7 +1,6 @@
 import { Filter, Operator, SearchRequest } from '@medplum/core';
 import { evalFhirPath } from '@medplum/fhirpath';
 import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 
 export class MemoryRepository {
   readonly #resources: Record<string, Record<string, Resource>>;
@@ -16,7 +15,7 @@ export class MemoryRepository {
     const result = resource;
 
     if (!result.id) {
-      (result as any).id = randomUUID();
+      (result as any).id = this.generateId();
     }
 
     if (!result.meta) {
@@ -24,7 +23,7 @@ export class MemoryRepository {
     }
 
     if (!result.meta?.versionId) {
-      (result as any).meta.versionId = randomUUID();
+      (result as any).meta.versionId = this.generateId();
     }
 
     const { resourceType, id } = resource as { resourceType: string; id: string };
@@ -77,6 +76,10 @@ export class MemoryRepository {
       entry: result.map((resource) => ({ resource })) as BundleEntry<T>[],
       total: result.length,
     };
+  }
+
+  private generateId(): string {
+    return Date.now().toString(36);
   }
 }
 
