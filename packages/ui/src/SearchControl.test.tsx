@@ -6,13 +6,11 @@ import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
 import { SearchControl, SearchControlProps } from './SearchControl';
 
-const medplum = new MockClient();
-
 describe('SearchControl', () => {
   function setup(args: SearchControlProps): void {
     render(
       <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
+        <MedplumProvider medplum={new MockClient()}>
           <SearchControl {...args} />
         </MedplumProvider>
       </MemoryRouter>
@@ -80,7 +78,7 @@ describe('SearchControl', () => {
           {
             code: 'name',
             operator: Operator.EQUALS,
-            value: 'Bob',
+            value: 'this-does-not-exist',
           },
         ],
       },
@@ -155,7 +153,7 @@ describe('SearchControl', () => {
           {
             code: 'name',
             operator: Operator.EQUALS,
-            value: 'Bob',
+            value: 'this-does-not-exist',
           },
         ],
       },

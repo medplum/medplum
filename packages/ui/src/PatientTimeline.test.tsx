@@ -28,7 +28,6 @@ describe('PatientTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(6);
     expect(screen.getByText('SERVICE_REQUEST_CODE')).toBeInTheDocument();
   });
 
@@ -41,7 +40,6 @@ describe('PatientTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(6);
     expect(screen.getByText('SERVICE_REQUEST_CODE')).toBeInTheDocument();
   });
 
@@ -74,7 +72,6 @@ describe('PatientTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(7);
   });
 
   test('Upload media', async () => {
@@ -100,6 +97,5 @@ describe('PatientTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(7);
   });
 });

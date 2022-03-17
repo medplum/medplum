@@ -14,6 +14,12 @@ describe('MockClient', () => {
     expect(client.getProfile()).toMatchObject({ resourceType: 'Practitioner' });
   });
 
+  test('Login', () => {
+    const client = new MockClient();
+    expect(client.post('auth/login', '{"password":"password"}')).resolves.toBeDefined();
+    expect(client.post('auth/login', '{"password":"wrong"}')).rejects.toBeDefined();
+  });
+
   test('Login override', () => {
     const client = new MockClient();
     expect(client.getActiveLogin()).toBeUndefined();
@@ -53,9 +59,9 @@ describe('MockClient', () => {
     ).rejects.toBeDefined();
   });
 
-  test('Batch request', () => {
+  test('Batch request', async () => {
     const client = new MockClient();
-    expect(
+    await expect(
       client.post(
         'fhir/R4',
         JSON.stringify({
@@ -70,13 +76,7 @@ describe('MockClient', () => {
             {
               request: {
                 method: 'GET',
-                url: 'fhir/R4/Questionnaire/not-found',
-              },
-            },
-            {
-              request: {
-                method: 'GET',
-                url: 'this-url-does-not-exist',
+                url: 'Questionnaire/not-found',
               },
             },
           ],
@@ -90,12 +90,6 @@ describe('MockClient', () => {
           resource: HomerSimpson,
           response: {
             status: '200',
-          },
-        },
-        {
-          resource: notFound,
-          response: {
-            status: '404',
           },
         },
         {

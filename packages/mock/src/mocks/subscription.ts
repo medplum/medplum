@@ -1,4 +1,4 @@
-import { AuditEvent, Bundle, Subscription } from '@medplum/fhirtypes';
+import { AuditEvent, Subscription } from '@medplum/fhirtypes';
 
 export const ExampleSubscription: Subscription = {
   resourceType: 'Subscription',
@@ -6,16 +6,6 @@ export const ExampleSubscription: Subscription = {
   meta: {
     versionId: '456',
   },
-};
-
-export const ExampleSubscriptionHistory: Bundle<Subscription> = {
-  resourceType: 'Bundle',
-  type: 'history',
-  entry: [
-    {
-      resource: ExampleSubscription,
-    },
-  ],
 };
 
 export const ExampleAuditEvent: AuditEvent = {
@@ -28,13 +18,4 @@ export const ExampleAuditEvent: AuditEvent = {
       reference: 'Practitioner/123',
     },
   },
-};
-
-export const ExampleAuditEventBundle: Bundle<AuditEvent> = {
-  resourceType: 'Bundle',
-  entry: [
-    {
-      resource: ExampleAuditEvent,
-    },
-  ],
 };

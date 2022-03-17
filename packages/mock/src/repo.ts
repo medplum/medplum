@@ -1,0 +1,114 @@
+import { Filter, Operator, SearchRequest } from '@medplum/core';
+import { evalFhirPath } from '@medplum/fhirpath';
+import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
+
+export class MemoryRepository {
+  readonly #resources: Record<string, Record<string, Resource>>;
+  readonly #history: Record<string, Record<string, Resource[]>>;
+
+  constructor() {
+    this.#resources = {};
+    this.#history = {};
+  }
+
+  createResource<T extends Resource>(resource: T): T {
+    const result = resource;
+
+    if (!result.id) {
+      (result as any).id = randomUUID();
+    }
+
+    if (!result.meta) {
+      (result as any).meta = {};
+    }
+
+    if (!result.meta?.versionId) {
+      (result as any).meta.versionId = randomUUID();
+    }
+
+    const { resourceType, id } = resource as { resourceType: string; id: string };
+
+    if (!(resourceType in this.#resources)) {
+      this.#resources[resourceType] = {};
+    }
+
+    if (!(resourceType in this.#history)) {
+      this.#history[resourceType] = {};
+    }
+
+    if (!(id in this.#history[resourceType])) {
+      this.#history[resourceType][id] = [];
+    }
+
+    this.#resources[resourceType][id] = resource;
+    this.#history[resourceType][id].push(result);
+    return result;
+  }
+
+  readResource<T extends Resource>(resourceType: string, id: string): T | undefined {
+    return this.#resources?.[resourceType]?.[id] as T | undefined;
+  }
+
+  readHistory<T extends Resource>(resourceType: string, id: string): Bundle<T> {
+    return {
+      resourceType: 'Bundle',
+      type: 'history',
+      entry: ((this.#history?.[resourceType]?.[id] ?? []) as T[])
+        .sort(
+          (version1, version2) =>
+            -(version1.meta?.lastUpdated?.localeCompare(version2.meta?.lastUpdated as string) as number)
+        )
+        .map((version) => ({ resource: version })),
+    };
+  }
+
+  readVersion<T extends Resource>(resourceType: string, id: string, versionId: string): T | undefined {
+    return this.#history?.[resourceType]?.[id]?.find((v) => v.meta?.versionId === versionId) as T | undefined;
+  }
+
+  search<T extends Resource>(searchRequest: SearchRequest): Bundle<T> {
+    const { resourceType } = searchRequest;
+    const resources = this.#resources[resourceType] ?? {};
+    const result = Object.values(resources).filter((resource) => matchesSearchRequest(resource, searchRequest));
+    return {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: result.map((resource) => ({ resource })) as BundleEntry<T>[],
+      total: result.length,
+    };
+  }
+}
+
+/**
+ * Determines if the resource matches the search request.
+ * @param resource The resource that was created or updated.
+ * @param searchRequest The subscription criteria as a search request.
+ * @returns True if the resource satisfies the search request.
+ */
+export function matchesSearchRequest(resource: Resource, searchRequest: SearchRequest): boolean {
+  if (searchRequest.resourceType !== resource.resourceType) {
+    return false;
+  }
+  if (searchRequest.filters) {
+    for (const filter of searchRequest.filters) {
+      if (!matchesSearchFilter(resource, searchRequest, filter)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+/**
+ * Determines if the resource matches the search filter.
+ * @param resource The resource that was created or updated.
+ * @param filter One of the filters of a subscription criteria.
+ * @returns True if the resource satisfies the search filter.
+ */
+function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, filter: Filter): boolean {
+  const expression = filter.code.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+  const values = evalFhirPath(expression as string, resource);
+  const result = values.some((value) => JSON.stringify(value).includes(filter.value));
+  return filter.operator === Operator.NOT_EQUALS ? !result : result;
+}

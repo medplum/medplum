@@ -1,12 +1,5 @@
-import { Bundle, SearchParameter } from '@medplum/fhirtypes';
+import { SearchParameter } from '@medplum/fhirtypes';
 import StructureDefinitionList from './structuredefinitions.json';
-
-export const EmptySearchBundle: Bundle = {
-  resourceType: 'Bundle',
-  type: 'searchset',
-  total: 0,
-  entry: [],
-};
 
 export const PatientSearchParameters: SearchParameter[] = [
   {

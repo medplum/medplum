@@ -1,4 +1,5 @@
-import { Bundle, BundleEntry, Organization, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+import { createReference } from '@medplum/core';
+import { Organization, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 
 export const TestOrganization: Organization = {
   resourceType: 'Organization',
@@ -16,16 +17,6 @@ export const DifferentOrganization: Organization = {
     versionId: '1',
   },
   name: 'Different',
-};
-
-export const OrganizationSearchBundle: Bundle<Organization> = {
-  resourceType: 'Bundle',
-  type: 'searchset',
-  entry: [
-    {
-      resource: DifferentOrganization,
-    },
-  ],
 };
 
 export const DrAliceSmith: Practitioner = {
@@ -52,28 +43,17 @@ export const DrAliceSmith: Practitioner = {
   ],
 };
 
-export const DrAliceSmithHistoryBundle: Bundle<Practitioner> = {
-  resourceType: 'Bundle',
-  type: 'history',
-  entry: [
-    {
-      resource: DrAliceSmith,
+export const DrAliceSmithPreviousVersion: Practitioner = {
+  resourceType: 'Practitioner',
+  id: '123',
+  meta: {
+    versionId: '1',
+    lastUpdated: '2021-01-01T12:00:00Z',
+    author: {
+      reference: 'Practitioner/123',
     },
-    {
-      resource: {
-        resourceType: 'Practitioner',
-        id: '123',
-        meta: {
-          versionId: '1',
-          lastUpdated: '2021-01-01T12:00:00Z',
-          author: {
-            reference: 'Practitioner/123',
-          },
-        },
-        name: [{ given: ['Medplum'], family: 'Admin' }],
-      },
-    },
-  ],
+  },
+  name: [{ given: ['Medplum'], family: 'Admin' }],
 };
 
 export const DrAliceSmithSchedule: Schedule = {
@@ -87,25 +67,21 @@ export const DrAliceSmithSchedule: Schedule = {
   ],
 };
 
-export const DrAliceSmithSlots: Bundle<Slot> = {
-  resourceType: 'Bundle',
-  type: 'searchset',
-  entry: (() => {
-    const result: BundleEntry<Slot>[] = [];
-    const slotDate = new Date();
-    for (let day = 0; day < 60; day++) {
-      for (const hour of [9, 10, 11, 13, 14, 15]) {
-        slotDate.setHours(hour, 0, 0, 0);
-        result.push({
-          resource: {
-            resourceType: 'Slot',
-            id: `slot-${day}-${hour}`,
-            start: slotDate.toISOString(),
-          },
-        });
-      }
-      slotDate.setDate(slotDate.getDate() + 1);
+export const DrAliceSmithSlots: Slot[] = (() => {
+  const schedule = createReference(DrAliceSmithSchedule);
+  const result: Slot[] = [];
+  const slotDate = new Date();
+  for (let day = 0; day < 60; day++) {
+    for (const hour of [9, 10, 11, 13, 14, 15]) {
+      slotDate.setHours(hour, 0, 0, 0);
+      result.push({
+        resourceType: 'Slot',
+        id: `slot-${day}-${hour}`,
+        start: slotDate.toISOString(),
+        schedule,
+      });
     }
-    return result;
-  })(),
-};
+    slotDate.setDate(slotDate.getDate() + 1);
+  }
+  return result;
+})();

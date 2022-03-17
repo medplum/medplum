@@ -28,7 +28,6 @@ describe('DefaultResourceTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(2);
   });
 
   test('Renders resource', async () => {
@@ -40,6 +39,5 @@ describe('DefaultResourceTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
-    expect(items.length).toEqual(2);
   });
 });

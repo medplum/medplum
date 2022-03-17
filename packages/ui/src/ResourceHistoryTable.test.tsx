@@ -1,4 +1,4 @@
-import { HomerSimpsonHistory, MockClient } from '@medplum/mock';
+import { MockClient } from '@medplum/mock';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -29,8 +29,9 @@ describe('ResourceHistoryTable', () => {
   });
 
   test('Renders preloaded history', async () => {
+    const history = await medplum.readHistory('Patient', '123');
     setup({
-      history: HomerSimpsonHistory,
+      history,
     });
 
     const el = await screen.findByText('1');
