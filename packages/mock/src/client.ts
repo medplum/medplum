@@ -9,7 +9,6 @@ import {
   ProfileResource,
 } from '@medplum/core';
 import { Binary, Bundle, BundleEntry, Practitioner } from '@medplum/fhirtypes';
-import { URL } from 'url';
 import {
   BartSimpson,
   DifferentOrganization,
