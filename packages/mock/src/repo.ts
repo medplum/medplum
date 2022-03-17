@@ -54,7 +54,12 @@ export class MemoryRepository {
     return {
       resourceType: 'Bundle',
       type: 'history',
-      entry: ((this.#history?.[resourceType]?.[id] ?? []) as T[]).map((version) => ({ resource: version })),
+      entry: ((this.#history?.[resourceType]?.[id] ?? []) as T[])
+        .sort(
+          (version1, version2) =>
+            -(version1.meta?.lastUpdated?.localeCompare(version2.meta?.lastUpdated as string) as number)
+        )
+        .map((version) => ({ resource: version })),
     };
   }
 

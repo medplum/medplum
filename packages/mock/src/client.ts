@@ -156,91 +156,127 @@ function mockAdminHandler(method: string, path: string): any {
 
 function mockAuthHandler(method: string, path: string, options: any): any {
   if (path.startsWith('auth/changepassword')) {
-    const { body } = options;
-    const { oldPassword } = JSON.parse(body);
-    if (oldPassword === 'orange') {
-      return allOk;
-    } else {
-      return {
-        resourceType: 'OperationOutcome',
-        issue: [
-          {
-            expression: ['oldPassword'],
-            details: {
-              text: 'Incorrect password',
-            },
-          },
-        ],
-      };
-    }
+    return mockChangePasswordHandler(method, path, options);
   }
 
   if (path.startsWith('auth/login')) {
-    return {
-      profile: { reference: 'Practitioner/123' },
-    };
+    return mockLoginHandler(method, path, options);
   }
 
   if (path.startsWith('auth/setpassword')) {
-    const { body } = options;
-    const { password } = JSON.parse(body);
-    if (password === 'orange') {
-      return allOk;
-    } else {
-      return {
-        resourceType: 'OperationOutcome',
-        issue: [
-          {
-            expression: ['password'],
-            details: {
-              text: 'Invalid password',
-            },
-          },
-        ],
-      };
-    }
+    return mockSetPasswordHandler(method, path, options);
   }
 
   if (path.startsWith('auth/register')) {
-    const { body } = options;
-    const { email, password } = JSON.parse(body);
-    if (email === 'george@example.com' && password === 'password') {
-      return allOk;
-    } else {
-      return {
-        resourceType: 'OperationOutcome',
-        issue: [
-          {
-            details: {
-              text: 'Invalid',
-            },
-          },
-        ],
-      };
-    }
+    return mockRegisterHandler(method, path, options);
   }
 
   if (path.startsWith('auth/resetpassword')) {
-    const { body } = options;
-    const { email } = JSON.parse(body);
-    if (email === 'admin@example.com') {
-      return allOk;
-    } else {
-      return {
-        resourceType: 'OperationOutcome',
-        issue: [
-          {
-            expression: ['email'],
-            details: {
-              text: 'Email not found',
-            },
-          },
-        ],
-      };
-    }
+    return mockResetPasswordHandler(method, path, options);
   }
 
   return null;
+}
+
+function mockChangePasswordHandler(method: string, path: string, options: any): any {
+  const { body } = options;
+  const { oldPassword } = JSON.parse(body);
+  if (oldPassword === 'orange') {
+    return allOk;
+  } else {
+    return {
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          expression: ['oldPassword'],
+          details: {
+            text: 'Incorrect password',
+          },
+        },
+      ],
+    };
+  }
+}
+
+function mockLoginHandler(method: string, path: string, options: any): any {
+  const { body } = options;
+  const { password } = JSON.parse(body);
+  if (password === 'password') {
+    return {
+      profile: { reference: 'Practitioner/123' },
+    };
+  } else {
+    return {
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          expression: ['password'],
+          details: {
+            text: 'Invalid password',
+          },
+        },
+      ],
+    };
+  }
+}
+
+function mockSetPasswordHandler(method: string, path: string, options: any): any {
+  const { body } = options;
+  const { password } = JSON.parse(body);
+  if (password === 'orange') {
+    return allOk;
+  } else {
+    return {
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          expression: ['password'],
+          details: {
+            text: 'Invalid password',
+          },
+        },
+      ],
+    };
+  }
+}
+
+function mockRegisterHandler(method: string, path: string, options: any): any {
+  const { body } = options;
+  const { email, password } = JSON.parse(body);
+  if (email === 'george@example.com' && password === 'password') {
+    return allOk;
+  } else {
+    return {
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          details: {
+            text: 'Invalid',
+          },
+        },
+      ],
+    };
+  }
+}
+
+function mockResetPasswordHandler(method: string, path: string, options: any): any {
+  const { body } = options;
+  const { email } = JSON.parse(body);
+  if (email === 'admin@example.com') {
+    return allOk;
+  } else {
+    return {
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          expression: ['email'],
+          details: {
+            text: 'Email not found',
+          },
+        },
+      ],
+    };
+  }
 }
 
 const mockRepo = new MemoryRepository();

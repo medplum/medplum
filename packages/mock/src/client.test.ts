@@ -14,6 +14,12 @@ describe('MockClient', () => {
     expect(client.getProfile()).toMatchObject({ resourceType: 'Practitioner' });
   });
 
+  test('Login', () => {
+    const client = new MockClient();
+    expect(client.post('auth/login', '{"password":"password"}')).resolves.toBeDefined();
+    expect(client.post('auth/login', '{"password":"wrong"}')).rejects.toBeDefined();
+  });
+
   test('Login override', () => {
     const client = new MockClient();
     expect(client.getActiveLogin()).toBeUndefined();
