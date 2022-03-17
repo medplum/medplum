@@ -60424,10 +60424,10 @@
     }
   },
   {
-    "fullUrl" : "http://hl7.org/fhir/SearchParameter/ServiceRequest-order-details",
+    "fullUrl" : "http://hl7.org/fhir/SearchParameter/ServiceRequest-order-detail",
     "resource" : {
       "resourceType" : "SearchParameter",
-      "id" : "ServiceRequest-order-details",
+      "id" : "ServiceRequest-order-detail",
       "extension" : [{
         "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
         "valueCode" : "trial-use"
@@ -60455,8 +60455,8 @@
       "code" : "order-detail",
       "base" : ["ServiceRequest"],
       "type" : "token",
-      "expression" : "ServiceRequest.orderDetail",
-      "xpath" : "f:ServiceRequest/f:orderDetail",
+      "expression" : "ServiceRequest.orderDetail.text",
+      "xpath" : "f:ServiceRequest/f:orderDetail/f:text",
       "xpathUsage" : "normal"
     }
   },

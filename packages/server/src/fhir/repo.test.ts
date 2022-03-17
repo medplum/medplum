@@ -1345,6 +1345,50 @@ describe('FHIR Repo', () => {
     const [reindexOutcome] = await systemRepo.reindexResourceType('Practitioner');
     expect(isOk(reindexOutcome)).toBe(true);
   });
+
+  test('ServiceRequest.orderDetail search', async () => {
+    const orderDetailText = randomUUID();
+    const orderDetailCode = randomUUID();
+
+    const [outcome1, serviceRequest] = await systemRepo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      subject: {
+        reference: 'Patient/' + randomUUID(),
+      },
+      code: {
+        coding: [
+          {
+            code: 'order-type',
+          },
+        ],
+      },
+      orderDetail: [
+        {
+          text: orderDetailText,
+          coding: [
+            {
+              system: 'custom-order-system',
+              code: orderDetailCode,
+            },
+          ],
+        },
+      ],
+    });
+    assertOk(outcome1, serviceRequest);
+
+    const [outcome2, bundle1] = await systemRepo.search({
+      resourceType: 'ServiceRequest',
+      filters: [
+        {
+          code: 'order-detail',
+          operator: Operator.CONTAINS,
+          value: orderDetailText,
+        },
+      ],
+    });
+    assertOk(outcome2, bundle1);
+    expect(bundle1.entry?.length).toEqual(1);
+  });
 });
 
 function bundleContains(bundle: Bundle, resource: Resource): boolean {
