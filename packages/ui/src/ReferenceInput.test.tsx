@@ -29,7 +29,6 @@ describe('ReferenceInput', () => {
   test('Renders empty property', () => {
     setup({
       name: 'foo',
-      property: {},
     });
     expect(screen.getByTestId('reference-input-resource-type-input')).toBeInTheDocument();
   });
@@ -38,7 +37,6 @@ describe('ReferenceInput', () => {
     await act(async () => {
       setup({
         name: 'foo',
-        property: {},
         defaultValue: {
           reference: 'Patient/123',
         },
@@ -51,13 +49,6 @@ describe('ReferenceInput', () => {
   test('Change resource type without target types', async () => {
     setup({
       name: 'foo',
-      property: {
-        type: [
-          {
-            code: 'subject',
-          },
-        ],
-      },
     });
 
     await act(async () => {
@@ -72,14 +63,7 @@ describe('ReferenceInput', () => {
   test('Renders property with target types', () => {
     setup({
       name: 'foo',
-      property: {
-        type: [
-          {
-            code: 'subject',
-            targetProfile: ['Patient', 'Practitioner'],
-          },
-        ],
-      },
+      targetTypes: ['Patient', 'Practitioner'],
     });
     expect(screen.getByTestId('reference-input-resource-type-select')).toBeInTheDocument();
   });
@@ -87,14 +71,7 @@ describe('ReferenceInput', () => {
   test('Change resource type with target types', async () => {
     setup({
       name: 'foo',
-      property: {
-        type: [
-          {
-            code: 'subject',
-            targetProfile: ['Patient', 'Practitioner'],
-          },
-        ],
-      },
+      targetTypes: ['Patient', 'Practitioner'],
     });
 
     await act(async () => {
@@ -109,14 +86,7 @@ describe('ReferenceInput', () => {
   test('Use autocomplete', async () => {
     setup({
       name: 'foo',
-      property: {
-        type: [
-          {
-            code: 'subject',
-            targetProfile: ['Patient', 'Practitioner'],
-          },
-        ],
-      },
+      targetTypes: ['Patient', 'Practitioner'],
     });
 
     // Select "Patient" resource type
@@ -150,14 +120,7 @@ describe('ReferenceInput', () => {
 
     setup({
       name: 'foo',
-      property: {
-        type: [
-          {
-            code: 'subject',
-            targetProfile: ['Patient', 'Practitioner'],
-          },
-        ],
-      },
+      targetTypes: ['Patient', 'Practitioner'],
       onChange,
     });
 

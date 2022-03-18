@@ -446,7 +446,8 @@ export class MedplumClient extends EventTarget {
         base,
         code,
         type,
-        expression
+        expression,
+        target
       }
     }`.replace(/\s+/g, ' ');
 

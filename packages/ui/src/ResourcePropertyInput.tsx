@@ -227,7 +227,14 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.Ratio:
       return <RatioInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Reference:
-      return <ReferenceInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
+      return (
+        <ReferenceInput
+          name={name}
+          defaultValue={value}
+          targetTypes={getTargetTypes(property)}
+          onChange={props.onChange}
+        />
+      );
     default:
       return (
         <BackboneElementInput
@@ -240,4 +247,8 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
         />
       );
   }
+}
+
+function getTargetTypes(property?: ElementDefinition): string[] | undefined {
+  return property?.type?.[0]?.targetProfile?.map((p) => p.split('/').pop() as string);
 }

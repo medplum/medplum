@@ -60,7 +60,18 @@ const schema: IndexedStructureDefinition = {
 const medplum = new MockClient();
 
 describe('SearchPopupMenu', () => {
-  function setup(props: SearchPopupMenuProps): void {
+  function setup(partialProps: Partial<SearchPopupMenuProps>): void {
+    const props = {
+      schema,
+      visible: true,
+      x: 0,
+      y: 0,
+      onPrompt: jest.fn(),
+      onChange: jest.fn(),
+      onClose: jest.fn(),
+      ...partialProps,
+    } as SearchPopupMenuProps;
+
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
@@ -72,37 +83,22 @@ describe('SearchPopupMenu', () => {
 
   test('Invalid resource', () => {
     setup({
-      schema,
       search: { resourceType: 'xyz' },
-      visible: true,
-      x: 0,
-      y: 0,
-      onClose: jest.fn(),
     });
   });
 
   test('Invalid property', () => {
     setup({
-      schema,
       search: { resourceType: 'Patient' },
-      visible: true,
-      x: 0,
-      y: 0,
-      onClose: jest.fn(),
     });
   });
 
   test('Renders name field', () => {
     setup({
-      schema,
       search: {
         resourceType: 'Patient',
       },
-      visible: true,
-      x: 0,
-      y: 0,
       searchParam: schema.types['Patient']?.searchParams?.['name'],
-      onClose: jest.fn(),
     });
 
     expect(screen.getByText('Equals...')).toBeDefined();
@@ -110,15 +106,10 @@ describe('SearchPopupMenu', () => {
 
   test('Renders date field', () => {
     setup({
-      schema,
       search: {
         resourceType: 'Patient',
       },
-      visible: true,
-      x: 0,
-      y: 0,
       searchParam: schema.types['Patient']?.searchParams?.['birthdate'],
-      onClose: jest.fn(),
     });
 
     expect(screen.getByText('Before...')).toBeDefined();
@@ -127,15 +118,10 @@ describe('SearchPopupMenu', () => {
 
   test('Renders date field submenu', async () => {
     setup({
-      schema,
       search: {
         resourceType: 'Patient',
       },
-      visible: true,
-      x: 0,
-      y: 0,
       searchParam: schema.types['Patient']?.searchParams?.['birthdate'],
-      onClose: jest.fn(),
     });
 
     expect(screen.getByText('Before...')).toBeDefined();
@@ -154,15 +140,10 @@ describe('SearchPopupMenu', () => {
 
   test('Renders numeric field', () => {
     setup({
-      schema,
       search: {
         resourceType: 'Observation',
       },
-      visible: true,
-      x: 0,
-      y: 0,
       searchParam: schema.types['Observation']?.searchParams?.['value-quantity'],
-      onClose: jest.fn(),
     });
 
     expect(screen.getByText('Sort Largest to Smallest')).toBeDefined();
@@ -175,14 +156,9 @@ describe('SearchPopupMenu', () => {
     };
 
     setup({
-      schema,
       search: currSearch,
-      visible: true,
-      x: 0,
-      y: 0,
       searchParam: schema.types['Patient']?.searchParams?.['birthdate'],
       onChange: (e) => (currSearch = e),
-      onClose: jest.fn(),
     });
 
     await act(async () => {
@@ -217,14 +193,9 @@ describe('SearchPopupMenu', () => {
     };
 
     setup({
-      schema,
       search: currSearch,
-      visible: true,
-      x: 0,
-      y: 0,
       searchParam: schema.types['Patient']?.searchParams?.['name'],
       onChange: (e) => (currSearch = e),
-      onClose: jest.fn(),
     });
 
     await act(async () => {
@@ -235,21 +206,14 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Text submenu prompt', async () => {
-    window.prompt = jest.fn().mockImplementation(() => 'xyz');
-
-    let currSearch: SearchRequest = {
-      resourceType: 'Patient',
-    };
+    const onPrompt = jest.fn();
 
     setup({
-      schema,
-      search: currSearch,
-      visible: true,
-      x: 0,
-      y: 0,
+      search: {
+        resourceType: 'Patient',
+      },
       searchParam: schema.types['Patient']?.searchParams?.['name'],
-      onChange: (e) => (currSearch = e),
-      onClose: jest.fn(),
+      onPrompt,
     });
 
     const options = [
@@ -260,67 +224,51 @@ describe('SearchPopupMenu', () => {
     ];
 
     for (const option of options) {
+      onPrompt.mockClear();
+
       await act(async () => {
         fireEvent.click(screen.getByText(option.text));
       });
 
-      expect(currSearch.filters).toBeDefined();
-      expect(currSearch.filters?.length).toEqual(1);
-      expect(currSearch.filters?.[0]).toMatchObject({
+      expect(onPrompt).toBeCalledWith({
         code: 'name',
         operator: option.operator,
-        value: 'xyz',
+        value: '',
       } as Filter);
     }
   });
 
   test('Text search prompt', async () => {
-    window.prompt = jest.fn().mockImplementation(() => 'xyz');
-
-    let currSearch: SearchRequest = {
-      resourceType: 'Patient',
-    };
+    const onPrompt = jest.fn();
 
     setup({
-      schema,
-      search: currSearch,
-      visible: true,
-      x: 0,
-      y: 0,
+      search: {
+        resourceType: 'Patient',
+      },
       searchParam: schema.types['Patient']?.searchParams?.['name'],
-      onChange: (e) => (currSearch = e),
-      onClose: jest.fn(),
+      onPrompt,
     });
 
     await act(async () => {
       fireEvent.click(screen.getByText('Search'));
     });
 
-    expect(currSearch.filters).toBeDefined();
-    expect(currSearch.filters?.length).toEqual(1);
-    expect(currSearch.filters?.[0]).toMatchObject({
+    expect(onPrompt).toBeCalledWith({
       code: 'name',
       operator: Operator.CONTAINS,
-      value: 'xyz',
+      value: '',
     } as Filter);
   });
 
   test('Date submenu prompt', async () => {
-    window.prompt = jest.fn().mockImplementation(() => 'xyz');
-
-    let currSearch: SearchRequest = {
-      resourceType: 'Patient',
-    };
+    const onPrompt = jest.fn();
 
     setup({
-      schema,
-      search: currSearch,
-      visible: true,
-      x: 0,
-      y: 0,
+      search: {
+        resourceType: 'Patient',
+      },
       searchParam: schema.types['Patient']?.searchParams?.['birthdate'],
-      onChange: (e) => (currSearch = e),
-      onClose: jest.fn(),
+      onPrompt,
     });
 
     const options = [
@@ -334,36 +282,29 @@ describe('SearchPopupMenu', () => {
     ];
 
     for (const option of options) {
+      onPrompt.mockClear();
+
       await act(async () => {
         fireEvent.click(screen.getByText(option.text));
       });
 
-      expect(currSearch.filters).toBeDefined();
-      expect(currSearch.filters?.length).toEqual(1);
-      expect(currSearch.filters?.[0]).toMatchObject({
+      expect(onPrompt).toBeCalledWith({
         code: 'birthdate',
         operator: option.operator,
-        value: 'xyz',
+        value: '',
       } as Filter);
     }
   });
 
   test('Date shortcuts', async () => {
-    window.prompt = jest.fn().mockImplementation(() => 'xyz');
-
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
     };
 
     setup({
-      schema,
       search: currSearch,
-      visible: true,
-      x: 0,
-      y: 0,
       searchParam: schema.types['Patient']?.searchParams?.['birthdate'],
       onChange: (e) => (currSearch = e),
-      onClose: jest.fn(),
     });
 
     const options = ['Tomorrow', 'Today', 'Yesterday', 'Next Month', 'This Month', 'Last Month', 'Year to date'];
@@ -396,13 +337,8 @@ describe('SearchPopupMenu', () => {
     const fields = getFieldDefinitions(schema, search);
 
     setup({
-      schema,
       search,
-      visible: true,
-      x: 0,
-      y: 0,
       searchParam: fields[0].searchParam,
-      onClose: jest.fn(),
     });
 
     expect(screen.getByText('Equals...')).toBeDefined();
@@ -417,15 +353,10 @@ describe('SearchPopupMenu', () => {
     const fields = getFieldDefinitions(schema, search);
 
     setup({
-      schema,
       search: {
         resourceType: 'Patient',
       },
-      visible: true,
-      x: 0,
-      y: 0,
       searchParam: fields[0].searchParam,
-      onClose: jest.fn(),
     });
 
     expect(screen.getByText('Before...')).toBeDefined();

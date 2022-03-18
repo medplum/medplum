@@ -7,9 +7,10 @@ import { useMedplum } from './MedplumProvider';
 import { getFieldDefinitions } from './SearchControlField';
 import { SearchFieldEditor } from './SearchFieldEditor';
 import { SearchFilterEditor } from './SearchFilterEditor';
+import { SearchFilterValueDialog } from './SearchFilterValueDialog';
 import { SearchFilterValueDisplay } from './SearchFilterValueDisplay';
 import { SearchPopupMenu } from './SearchPopupMenu';
-import { buildFieldNameString, getOpString, movePage, renderValue } from './SearchUtils';
+import { addFilter, buildFieldNameString, getOpString, movePage, renderValue } from './SearchUtils';
 import { Select } from './Select';
 import { TitleBar } from './TitleBar';
 import { killEvent } from './utils/dom';
@@ -67,6 +68,8 @@ interface SearchControlState {
   popupSearchParam?: SearchParameter;
   fieldEditorVisible: boolean;
   filterEditorVisible: boolean;
+  filterDialogVisible: boolean;
+  filterDialogFilter?: Filter;
 }
 
 /**
@@ -87,6 +90,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     popupSearchParam: undefined,
     fieldEditorVisible: false,
     filterEditorVisible: false,
+    filterDialogVisible: false,
   });
 
   const stateRef = useRef<SearchControlState>(state);
@@ -321,6 +325,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             {fields.map((field) => (
               <th key={field.name} onClick={(e) => handleSortClick(e, field.searchParam)}>
                 {buildFieldNameString(field.name)}
+                {field.searchParam && <FilterIcon />}
               </th>
             ))}
           </tr>
@@ -386,6 +391,14 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         x={state.popupX}
         y={state.popupY}
         searchParam={state.popupSearchParam}
+        onPrompt={(filter) => {
+          setState({
+            ...stateRef.current,
+            popupVisible: false,
+            filterDialogVisible: true,
+            filterDialogFilter: filter,
+          });
+        }}
         onChange={(result) => {
           emitSearchChange(result);
           setState({
@@ -438,6 +451,26 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           });
         }}
       />
+      <SearchFilterValueDialog
+        visible={stateRef.current.filterDialogVisible}
+        title={'Input'}
+        searchParam={state.popupSearchParam}
+        filter={state.filterDialogFilter}
+        defaultValue={''}
+        onOk={(filter) => {
+          emitSearchChange(addFilter(props.search, filter.code, filter.operator, filter.value));
+          setState({
+            ...stateRef.current,
+            filterDialogVisible: false,
+          });
+        }}
+        onCancel={() => {
+          setState({
+            ...stateRef.current,
+            filterDialogVisible: false,
+          });
+        }}
+      />
     </div>
   );
 }
@@ -466,6 +499,22 @@ function FilterDescription(props: FilterDescriptionProps): JSX.Element {
         </div>
       ))}
     </>
+  );
+}
+
+function FilterIcon(): JSX.Element {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-6 w-6"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      style={{ width: 14, height: 14, float: 'right', verticalAlign: 'text-top' }}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16m-7 6h7" />
+    </svg>
   );
 }
 

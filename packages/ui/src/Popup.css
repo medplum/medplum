@@ -4,7 +4,7 @@
   cursor: default;
   margin: 0;
   outline: none;
-  z-index: 20000;
+  z-index: 11;
   border-radius: 0;
   box-shadow: 0 2px 4px var(--medplum-shadow);
   transition: opacity 0.2s;
@@ -14,7 +14,7 @@
 .medplum-backdrop {
   position: absolute;
   overflow: hidden;
-  z-index: 30;
+  z-index: 10;
   top: 50px;
   left: 0;
   bottom: 0;

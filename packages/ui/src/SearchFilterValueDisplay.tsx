@@ -2,7 +2,7 @@ import { Filter } from '@medplum/core';
 import React from 'react';
 import { DateTimeDisplay } from './DateTimeDisplay';
 import { useMedplum } from './MedplumProvider';
-import { ResourceBadge } from './ResourceBadge';
+import { ResourceName } from './ResourceName';
 
 export interface SearchFilterValueDisplayProps {
   readonly resourceType: string;
@@ -16,7 +16,7 @@ export function SearchFilterValueDisplay(props: SearchFilterValueDisplayProps): 
 
   const filter = props.filter;
   if (searchParam?.type === 'reference') {
-    return <ResourceBadge value={{ reference: filter.value }} />;
+    return <ResourceName value={{ reference: filter.value }} />;
   }
 
   if (props.filter.code === '_lastUpdated' || searchParam?.type === 'datetime') {
