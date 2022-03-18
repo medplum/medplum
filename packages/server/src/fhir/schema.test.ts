@@ -71,6 +71,32 @@ describe('FHIR schema', () => {
       name: [null],
     } as unknown as Patient);
     expect(outcome.issue?.[0]?.severity).toEqual('error');
-    expect(outcome.issue?.[0]?.expression?.[0]).toEqual('name');
+    expect(outcome.issue?.[0]?.expression?.[0]).toEqual('name[0]');
+  });
+
+  test('Nested null array element', () => {
+    const outcome = validateResource({
+      resourceType: 'Patient',
+      identifier: [
+        {
+          system: null,
+        },
+      ],
+      name: [
+        {
+          given: ['Alice'],
+          family: 'Smith',
+        },
+        {
+          given: ['Alice', null],
+          family: 'Smith',
+        },
+      ],
+    } as unknown as Patient);
+    expect(outcome.issue?.length).toBe(2);
+    expect(outcome.issue?.[0]?.severity).toEqual('error');
+    expect(outcome.issue?.[0]?.expression?.[0]).toEqual('identifier[0].system');
+    expect(outcome.issue?.[1]?.severity).toEqual('error');
+    expect(outcome.issue?.[1]?.expression?.[0]).toEqual('name[1].given[1]');
   });
 });
