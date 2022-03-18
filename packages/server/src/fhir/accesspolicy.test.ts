@@ -548,6 +548,90 @@ describe('AccessPolicy', () => {
     });
   });
 
+  test('Try to create with readonly property', async () => {
+    const value = randomUUID();
+
+    // AccessPolicy with Patient.identifier readonly
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Patient',
+          readonlyFields: ['identifier'],
+        },
+      ],
+    };
+
+    const repo = new Repository({
+      author: {
+        reference: 'Practitioner/123',
+      },
+      accessPolicy,
+    });
+
+    // Create a patient with an identifier
+    const [outcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Identifier'], family: 'Test' }],
+      identifier: [{ system: 'https://example.com/', value }],
+    });
+    assertOk(outcome, patient);
+    expect(patient.identifier).toBeUndefined();
+  });
+
+  test('Try to add readonly property', async () => {
+    const value = randomUUID();
+
+    // Create a patient
+    const [outcome1, patient1] = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Identifier'], family: 'Test' }],
+    });
+    assertOk(outcome1, patient1);
+
+    // AccessPolicy with Patient.identifier readonly
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Patient',
+          readonlyFields: ['identifier'],
+        },
+      ],
+    };
+
+    const repo = new Repository({
+      author: {
+        reference: 'Practitioner/123',
+      },
+      accessPolicy,
+    });
+
+    // Try to add an identifier
+    // This returns success, but the result should not have an identifier
+    const [outcome3, patient2] = await repo.updateResource<Patient>({
+      ...patient1,
+      identifier: [{ system: 'https://example.com/', value }],
+    });
+    assertOk(outcome3, patient2);
+    expect(patient2.identifier).toBeUndefined();
+
+    // Try to search for the identifier
+    // This should still return the result succeed
+    const [outcome4, bundle2] = await repo.search<Patient>({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value,
+        },
+      ],
+    });
+    assertOk(outcome4, bundle2);
+    expect(bundle2.entry?.length).toEqual(0);
+  });
+
   test('Try to remove readonly property', async () => {
     const value = randomUUID();
 
@@ -574,7 +658,7 @@ describe('AccessPolicy', () => {
     assertOk(outcome2, bundle1);
     expect(bundle1.entry?.length).toEqual(1);
 
-    // Create AccessPolicy with Patient.identifier readonly
+    // AccessPolicy with Patient.identifier readonly
     const accessPolicy: AccessPolicy = {
       resourceType: 'AccessPolicy',
       resource: [
@@ -585,7 +669,7 @@ describe('AccessPolicy', () => {
       ],
     };
 
-    const repo2 = new Repository({
+    const repo = new Repository({
       author: {
         reference: 'Practitioner/123',
       },
@@ -599,14 +683,14 @@ describe('AccessPolicy', () => {
     // Try to update the patient without the identifier
     // Effectively, try to remove the identifier
     // This returns success, but the identifier should still be there
-    const [outcome3, patient2] = await repo2.updateResource<Patient>(rest);
+    const [outcome3, patient2] = await repo.updateResource<Patient>(rest);
     assertOk(outcome3, patient2);
     expect(patient2.identifier).toBeDefined();
     expect(patient2.identifier?.[0]?.value).toEqual(value);
 
     // Try to search for the identifier
     // This should still return the result succeed
-    const [outcome4, bundle2] = await repo2.search<Patient>({
+    const [outcome4, bundle2] = await repo.search<Patient>({
       resourceType: 'Patient',
       filters: [
         {
