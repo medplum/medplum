@@ -36,7 +36,7 @@ export function validateResourceType(resourceType: string): OperationOutcome {
   return isResourceType(resourceType) ? allOk : validationError('Unknown resource type');
 }
 
-export function validateResource(resource: Resource): OperationOutcome {
+export function validateResource<T extends Resource>(resource: T): OperationOutcome {
   if (!resource) {
     return validationError('Resource is null');
   }
@@ -70,7 +70,7 @@ export function validateResource(resource: Resource): OperationOutcome {
   };
 }
 
-function checkForNull(value: any, path: string, issues: OperationOutcomeIssue[]): void {
+function checkForNull(value: unknown, path: string, issues: OperationOutcomeIssue[]): void {
   if (value === null) {
     issues.push(createIssue(path, `Invalid null value`));
   } else if (Array.isArray(value)) {
@@ -80,13 +80,13 @@ function checkForNull(value: any, path: string, issues: OperationOutcomeIssue[])
   }
 }
 
-function checkArrayForNull(array: any[], path: string, issues: OperationOutcomeIssue[]): void {
+function checkArrayForNull(array: unknown[], path: string, issues: OperationOutcomeIssue[]): void {
   for (let i = 0; i < array.length; i++) {
     checkForNull(array[i], `${path}[${i}]`, issues);
   }
 }
 
-function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: OperationOutcomeIssue[]): void {
+function checkObjectForNull(obj: object, path: string, issues: OperationOutcomeIssue[]): void {
   for (const [key, value] of Object.entries(obj)) {
     checkForNull(value, `${path}${path ? '.' : ''}${key}`, issues);
   }
