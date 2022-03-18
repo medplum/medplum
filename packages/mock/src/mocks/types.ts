@@ -84,6 +84,15 @@ export const PatientSearchParameters: SearchParameter[] = [
     type: 'token',
     expression: 'Patient.address.state | Practitioner.address.state',
   },
+  {
+    resourceType: 'SearchParameter',
+    id: 'ServiceRequest-subject',
+    code: 'subject',
+    base: ['ServiceRequest'],
+    type: 'reference',
+    expression: 'ServiceRequest.subject',
+    target: ['Group', 'Device', 'Patient', 'Location'],
+  },
 ];
 
 export const GraphQLSchemaResponse = {

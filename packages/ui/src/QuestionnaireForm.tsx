@@ -6,7 +6,6 @@ import {
   ProfileResource,
 } from '@medplum/core';
 import {
-  ElementDefinition,
   Questionnaire,
   QuestionnaireItem,
   QuestionnaireItemAnswerOption,
@@ -151,8 +150,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
   }
 
   const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
-
-  const property: ElementDefinition = {} as ElementDefinition;
 
   function onChangeItem(newResponseItems: QuestionnaireResponseItem[]): void {
     props.onChange({
@@ -308,7 +305,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     case QuestionnaireItemType.reference:
       return (
         <ReferenceInput
-          property={property}
           name={name}
           defaultValue={initial?.valueReference}
           onChange={(newValue) => onChangeAnswer({ valueReference: newValue })}

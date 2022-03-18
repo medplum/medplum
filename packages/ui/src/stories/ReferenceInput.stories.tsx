@@ -10,31 +10,12 @@ export default {
 
 export const TargetProfile = (): JSX.Element => (
   <Document>
-    <ReferenceInput
-      name="foo"
-      property={{
-        type: [
-          {
-            code: 'reference',
-            targetProfile: ['Practitioner', 'Patient'],
-          },
-        ],
-      }}
-    />
+    <ReferenceInput name="foo" targetTypes={['Practitioner', 'Patient']} />
   </Document>
 );
 
 export const FreeText = (): JSX.Element => (
   <Document>
-    <ReferenceInput
-      name="foo"
-      property={{
-        type: [
-          {
-            code: 'reference',
-          },
-        ],
-      }}
-    />
+    <ReferenceInput name="foo" />
   </Document>
 );

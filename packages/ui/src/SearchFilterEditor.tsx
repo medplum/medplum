@@ -1,11 +1,10 @@
 import { Filter, IndexedStructureDefinition, Operator, SearchRequest, stringify } from '@medplum/core';
-import { Reference, SearchParameter } from '@medplum/fhirtypes';
+import { SearchParameter } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Dialog } from './Dialog';
-import { Input } from './Input';
-import { ReferenceInput } from './ReferenceInput';
 import { SearchFilterValueDisplay } from './SearchFilterValueDisplay';
+import { SearchFilterValueInput } from './SearchFilterValueInput';
 import {
   addFilter,
   buildFieldNameString,
@@ -191,7 +190,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
       </td>
       <td>
         {searchParam && value.operator && (
-          <FilterValueInput searchParam={searchParam} defaultValue={value.value} onChange={setFilterValue} />
+          <SearchFilterValueInput searchParam={searchParam} defaultValue={value.value} onChange={setFilterValue} />
         )}
       </td>
       <td>
@@ -214,37 +213,4 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
       </td>
     </tr>
   );
-}
-
-interface FilterValueInputProps {
-  searchParam: SearchParameter;
-  defaultValue: string;
-  onChange: (value: string) => void;
-}
-
-function FilterValueInput(props: FilterValueInputProps): JSX.Element | null {
-  if (props.searchParam.type === 'reference') {
-    return (
-      <ReferenceInput
-        name="reference"
-        defaultValue={{ reference: props.defaultValue }}
-        onChange={(newReference: Reference | undefined) => {
-          if (newReference) {
-            props.onChange(newReference.reference as string);
-          } else {
-            props.onChange('');
-          }
-        }}
-      />
-    );
-  }
-
-  const inputTypes: Record<string, React.HTMLInputTypeAttribute> = {
-    numeric: 'number',
-    date: 'date',
-    datetime: 'datetime-local',
-  };
-
-  const inputType = inputTypes[props.searchParam.type as string] ?? 'text';
-  return <Input testid="filter-value" type={inputType} defaultValue={props.defaultValue} onChange={props.onChange} />;
 }

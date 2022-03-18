@@ -1,5 +1,5 @@
 import { createReference } from '@medplum/core';
-import { ElementDefinition, Reference, Resource } from '@medplum/fhirtypes';
+import { Reference, Resource } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
 import { Input } from './Input';
 import { InputRow } from './InputRow';
@@ -7,14 +7,14 @@ import { ResourceInput } from './ResourceInput';
 import { Select } from './Select';
 
 export interface ReferenceInputProps {
-  property?: ElementDefinition;
   name: string;
   defaultValue?: Reference;
+  targetTypes?: string[];
   onChange?: (value: Reference | undefined) => void;
 }
 
 export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
-  const targetTypes = getTargetTypes(props.property);
+  const targetTypes = props.targetTypes;
   const initialResourceType = getInitialResourceType(props.defaultValue, targetTypes);
   const [value, setValue] = useState<Reference | undefined>(props.defaultValue);
   const [resourceType, setResourceType] = useState<string | undefined>(initialResourceType);
@@ -45,22 +45,16 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
       ) : (
         <Input testid="reference-input-resource-type-input" defaultValue={resourceType} onChange={setResourceType} />
       )}
-      {resourceType && (
-        <ResourceInput
-          resourceType={resourceType}
-          name={props.name + '-id'}
-          defaultValue={value}
-          onChange={(item: Resource | undefined) => {
-            setValueHelper(item ? createReference(item) : undefined);
-          }}
-        />
-      )}
+      <ResourceInput
+        resourceType={resourceType as string}
+        name={props.name + '-id'}
+        defaultValue={value}
+        onChange={(item: Resource | undefined) => {
+          setValueHelper(item ? createReference(item) : undefined);
+        }}
+      />
     </InputRow>
   );
-}
-
-function getTargetTypes(property?: ElementDefinition): string[] | undefined {
-  return property?.type?.[0]?.targetProfile?.map((p) => p.split('/').pop() as string);
 }
 
 function getInitialResourceType(

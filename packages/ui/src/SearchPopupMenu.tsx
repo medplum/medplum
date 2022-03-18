@@ -1,11 +1,10 @@
-import { IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
+import { Filter, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import React from 'react';
 import { MenuItem } from './MenuItem';
 import { MenuSeparator } from './MenuSeparator';
 import { Popup } from './Popup';
 import {
-  addFilter,
   addLastMonthFilter,
   addNextMonthFilter,
   addThisMonthFilter,
@@ -13,9 +12,7 @@ import {
   addTomorrowFilter,
   addYearToDateFilter,
   addYesterdayFilter,
-  buildFieldNameString,
   clearFiltersOnField,
-  getOpString,
   setSort,
 } from './SearchUtils';
 import { SubMenu } from './SubMenu';
@@ -27,7 +24,8 @@ export interface SearchPopupMenuProps {
   x: number;
   y: number;
   searchParam?: SearchParameter;
-  onChange?: (definition: SearchRequest) => void;
+  onPrompt: (filter: Filter) => void;
+  onChange: (definition: SearchRequest) => void;
   onClose: () => void;
 }
 
@@ -143,12 +141,8 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
    *
    * @param {Operator} op The filter operation.
    */
-  function prompt(op: Operator): void {
-    const caption = buildFieldNameString(code) + ' ' + getOpString(op) + '...';
-    const retVal = window.prompt(caption, '');
-    if (retVal !== null) {
-      onChange(addFilter(props.search, code, op, retVal, true));
-    }
+  function prompt(operator: Operator): void {
+    props.onPrompt({ code, operator, value: '' });
   }
 
   function onChange(definition: SearchRequest): void {
@@ -170,7 +164,9 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
       <MenuItem onClick={() => clearFilters()}>Clear filters</MenuItem>
       {renderSubMenu()}
       <MenuSeparator />
-      <MenuItem onClick={() => prompt(Operator.CONTAINS)}>Search</MenuItem>
+      <MenuItem onClick={() => prompt(props.searchParam?.type === 'reference' ? Operator.EQUALS : Operator.CONTAINS)}>
+        Search
+      </MenuItem>
     </Popup>
   );
 }
