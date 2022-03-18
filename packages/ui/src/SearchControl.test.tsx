@@ -459,36 +459,6 @@ describe('SearchControl', () => {
     expect(props.onAuxClick).toBeCalled();
   });
 
-  test('Open field editor', async () => {
-    const props = {
-      search: {
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: 'Simpson',
-          },
-        ],
-      },
-      onLoad: jest.fn(),
-    };
-
-    setup(props);
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('fields-button'));
-    });
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
-    expect(props.onLoad).toBeCalled();
-  });
-
   test('Field editor onOk', async () => {
     const props = {
       search: {
@@ -557,7 +527,7 @@ describe('SearchControl', () => {
     });
   });
 
-  test('Open filter editor', async () => {
+  test('Filter editor onOk', async () => {
     const props = {
       search: {
         resourceType: 'Patient',
@@ -582,9 +552,88 @@ describe('SearchControl', () => {
       fireEvent.click(screen.getByTestId('filters-button'));
     });
 
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
-    expect(props.onLoad).toBeCalled();
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('dialog-ok'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('dialog-ok'));
+    });
+  });
+
+  test('Filter editor onCancel', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Simpson',
+          },
+        ],
+      },
+      onLoad: jest.fn(),
+    };
+
+    setup(props);
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('filters-button'));
+    });
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('dialog-cancel'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('dialog-cancel'));
+    });
+  });
+
+  test('Popup menu and prompt', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Simpson',
+          },
+        ],
+        fields: ['id', 'name'],
+      },
+      onLoad: jest.fn(),
+    };
+
+    setup(props);
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Name'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Search'));
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('filter-value'), {
+        target: { value: 'Washington' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('dialog-ok'));
+    });
   });
 
   test('Click all checkbox', async () => {
