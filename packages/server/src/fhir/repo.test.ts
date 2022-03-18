@@ -1346,6 +1346,56 @@ describe('FHIR Repo', () => {
     expect(isOk(reindexOutcome)).toBe(true);
   });
 
+  test('Remove property', async () => {
+    const value = randomUUID();
+
+    // Create a patient with an identifier
+    const [outcome1, patient1] = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Identifier'], family: 'Test' }],
+      identifier: [{ system: 'https://example.com/', value }],
+    });
+    assertOk(outcome1, patient1);
+
+    // Search for patient by identifier
+    // This should succeed
+    const [outcome2, bundle1] = await systemRepo.search<Patient>({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value,
+        },
+      ],
+    });
+    assertOk(outcome2, bundle1);
+    expect(bundle1.entry?.length).toEqual(1);
+
+    const { identifier, ...rest } = patient1;
+    expect(identifier).toBeDefined();
+    expect((rest as Patient).identifier).toBeUndefined();
+
+    const [outcome3, patient2] = await systemRepo.updateResource<Patient>(rest);
+    assertOk(outcome3, patient2);
+    expect(patient2.identifier).toBeUndefined();
+
+    // Try to search for the identifier
+    // This should return empty result
+    const [outcome4, bundle2] = await systemRepo.search<Patient>({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value,
+        },
+      ],
+    });
+    assertOk(outcome4, bundle2);
+    expect(bundle2.entry?.length).toEqual(0);
+  });
+
   test('ServiceRequest.orderDetail search', async () => {
     const orderDetailText = randomUUID();
     const orderDetailCode = randomUUID();

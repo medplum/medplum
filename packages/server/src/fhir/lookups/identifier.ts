@@ -43,11 +43,7 @@ export class IdentifierTable extends LookupTable<Identifier> {
    * @returns Promise on completion.
    */
   async indexResource(resource: Resource): Promise<void> {
-    if (!('identifier' in resource)) {
-      return;
-    }
-
-    const identifiers = resource.identifier as Identifier[];
+    const identifiers = (resource as any).identifier ?? [];
     const resourceId = resource.id as string;
     const existing = await this.getExistingValues(resourceId);
 

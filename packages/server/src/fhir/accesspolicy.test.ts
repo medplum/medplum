@@ -1,4 +1,4 @@
-import { assertOk, createReference } from '@medplum/core';
+import { assertOk, createReference, Operator } from '@medplum/core';
 import { AccessPolicy, ClientApplication, Observation, Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../config';
@@ -546,6 +546,78 @@ describe('AccessPolicy', () => {
       birthDate: '1970-01-01',
       active: true,
     });
+  });
+
+  test('Try to remove readonly property', async () => {
+    const value = randomUUID();
+
+    // Create a patient with an identifier
+    const [outcome1, patient1] = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Identifier'], family: 'Test' }],
+      identifier: [{ system: 'https://example.com/', value }],
+    });
+    assertOk(outcome1, patient1);
+
+    // Search for patient by identifier
+    // This should succeed
+    const [outcome2, bundle1] = await systemRepo.search<Patient>({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value,
+        },
+      ],
+    });
+    assertOk(outcome2, bundle1);
+    expect(bundle1.entry?.length).toEqual(1);
+
+    // Create AccessPolicy with Patient.identifier readonly
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Patient',
+          readonlyFields: ['identifier'],
+        },
+      ],
+    };
+
+    const repo2 = new Repository({
+      author: {
+        reference: 'Practitioner/123',
+      },
+      accessPolicy,
+    });
+
+    const { identifier, ...rest } = patient1;
+    expect(identifier).toBeDefined();
+    expect((rest as Patient).identifier).toBeUndefined();
+
+    // Try to update the patient without the identifier
+    // Effectively, try to remove the identifier
+    // This returns success, but the identifier should still be there
+    const [outcome3, patient2] = await repo2.updateResource<Patient>(rest);
+    assertOk(outcome3, patient2);
+    expect(patient2.identifier).toBeDefined();
+    expect(patient2.identifier?.[0]?.value).toEqual(value);
+
+    // Try to search for the identifier
+    // This should still return the result succeed
+    const [outcome4, bundle2] = await repo2.search<Patient>({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value,
+        },
+      ],
+    });
+    assertOk(outcome4, bundle2);
+    expect(bundle2.entry?.length).toEqual(1);
   });
 
   test('Hidden fields on read', async () => {

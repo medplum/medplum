@@ -257,8 +257,6 @@ export class Repository {
   }
 
   async #updateResourceImpl<T extends Resource>(resource: T, create: boolean): RepositoryResult<T> {
-    this.#removeReadonlyFields(resource);
-
     const validateOutcome = validateResource(resource);
     if (!isOk(validateOutcome)) {
       return [validateOutcome, undefined];
@@ -283,8 +281,7 @@ export class Repository {
     }
 
     const updated = await rewriteAttachments<T>(RewriteMode.REFERENCE, this, {
-      ...existing,
-      ...resource,
+      ...this.#restoreReadonlyFields(resource, existing),
       meta: {
         ...existing?.meta,
         ...resource.meta,
@@ -1124,15 +1121,23 @@ export class Repository {
   }
 
   /**
-   * Removes readonly fields from a resource as defined by the access policy.
+   * Overwrites readonly fields from a resource as defined by the access policy.
+   * If no original (i.e., this is the first version), then blank them out.
    * This should be called for any "write" operation.
    * @param input The input resource.
+   * @param original The previous version, if it exists.
    */
-  #removeReadonlyFields<T extends Resource>(input: T): T {
+  #restoreReadonlyFields<T extends Resource>(input: T, original: T | undefined): T {
     const policy = this.#getResourceAccessPolicy(input.resourceType);
     if (policy?.readonlyFields) {
       for (const field of policy.readonlyFields) {
         this.#removeField(input, field);
+        if (original) {
+          const value = original[field as keyof T];
+          if (value) {
+            input[field as keyof T] = value;
+          }
+        }
       }
     }
     return input;
