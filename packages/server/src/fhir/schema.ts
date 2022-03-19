@@ -36,7 +36,7 @@ export function validateResourceType(resourceType: string): OperationOutcome {
   return isResourceType(resourceType) ? allOk : validationError('Unknown resource type');
 }
 
-export function validateResource(resource: Resource): OperationOutcome {
+export function validateResource<T extends Resource>(resource: T): OperationOutcome {
   if (!resource) {
     return validationError('Resource is null');
   }
@@ -54,6 +54,7 @@ export function validateResource(resource: Resource): OperationOutcome {
   const issues: OperationOutcomeIssue[] = [];
   const propertyDefinitions = definition.properties;
 
+  checkForNull(resource, '', issues);
   checkProperties(resource, propertyDefinitions, issues);
   checkAdditionalProperties(resource, propertyDefinitions, issues);
   checkRequiredProperties(resource, definition, issues);
@@ -67,6 +68,28 @@ export function validateResource(resource: Resource): OperationOutcome {
     id: randomUUID(),
     issue: issues,
   };
+}
+
+function checkForNull(value: unknown, path: string, issues: OperationOutcomeIssue[]): void {
+  if (value === null) {
+    issues.push(createIssue(path, `Invalid null value`));
+  } else if (Array.isArray(value)) {
+    checkArrayForNull(value, path, issues);
+  } else if (typeof value === 'object') {
+    checkObjectForNull(value as Record<string, unknown>, path, issues);
+  }
+}
+
+function checkArrayForNull(array: unknown[], path: string, issues: OperationOutcomeIssue[]): void {
+  for (let i = 0; i < array.length; i++) {
+    checkForNull(array[i], `${path}[${i}]`, issues);
+  }
+}
+
+function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: OperationOutcomeIssue[]): void {
+  for (const [key, value] of Object.entries(obj)) {
+    checkForNull(value, `${path}${path ? '.' : ''}${key}`, issues);
+  }
 }
 
 function checkProperties(resource: Resource, propertyDefinitions: any, issues: OperationOutcomeIssue[]): void {
@@ -84,16 +107,9 @@ function checkProperty(
   issues: OperationOutcomeIssue[]
 ): void {
   const value = (resource as any)[propertyName];
-
-  if (value === null) {
-    issues.push(createIssue(propertyName, `Invalid null value in "${propertyName}"`));
-  }
-
   if (propertyDetails.type === 'array') {
     if (!Array.isArray(value)) {
       issues.push(createIssue(propertyName, `Expected array for property "${propertyName}"`));
-    } else if (value.findIndex((e) => e === null) !== -1) {
-      issues.push(createIssue(propertyName, `Invalid null value in "${propertyName}"`));
     }
   }
 }

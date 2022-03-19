@@ -1,4 +1,4 @@
-import { Patient, Resource } from '@medplum/fhirtypes';
+import { Patient, Questionnaire, Resource } from '@medplum/fhirtypes';
 import { validateResource, validateResourceType } from './schema';
 
 describe('FHIR schema', () => {
@@ -71,6 +71,57 @@ describe('FHIR schema', () => {
       name: [null],
     } as unknown as Patient);
     expect(outcome.issue?.[0]?.severity).toEqual('error');
-    expect(outcome.issue?.[0]?.expression?.[0]).toEqual('name');
+    expect(outcome.issue?.[0]?.expression?.[0]).toEqual('name[0]');
+  });
+
+  test('Nested null array element', () => {
+    const outcome = validateResource({
+      resourceType: 'Patient',
+      identifier: [
+        {
+          system: null,
+        },
+      ],
+      name: [
+        {
+          given: ['Alice'],
+          family: 'Smith',
+        },
+        {
+          given: ['Alice', null],
+          family: 'Smith',
+        },
+      ],
+    } as unknown as Patient);
+    expect(outcome.issue?.length).toBe(2);
+    expect(outcome.issue?.[0]?.severity).toEqual('error');
+    expect(outcome.issue?.[0]?.expression?.[0]).toEqual('identifier[0].system');
+    expect(outcome.issue?.[1]?.severity).toEqual('error');
+    expect(outcome.issue?.[1]?.expression?.[0]).toEqual('name[1].given[1]');
+  });
+
+  test('Deep nested null array element', () => {
+    const outcome = validateResource({
+      resourceType: 'Questionnaire',
+      item: [
+        {
+          item: [
+            {
+              item: [
+                {
+                  item: [
+                    {
+                      item: null,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    } as unknown as Questionnaire);
+    expect(outcome.issue?.[0]?.severity).toEqual('error');
+    expect(outcome.issue?.[0]?.expression?.[0]).toEqual('item[0].item[0].item[0].item[0].item');
   });
 });
