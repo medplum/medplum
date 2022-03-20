@@ -105,8 +105,6 @@ export function getDefaultFields(resourceType: string): string[] {
       break;
     case 'AccessPolicy':
     case 'Bot':
-      fields.push('name');
-      break;
     case 'ClientApplication':
     case 'Practitioner':
     case 'Project':
