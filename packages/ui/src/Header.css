@@ -131,6 +131,7 @@ div.medplum-nav-search-container {
   border: none;
   box-shadow: none;
   outline: none;
+  color: var(--medplum-gray-800);
 }
 
 div.medplum-nav-menu-container {
