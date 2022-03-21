@@ -59,6 +59,26 @@ describe('Header', () => {
 
     expect(screen.getByText('section 1')).toBeDefined();
     expect(screen.getByText('label 1')).toBeDefined();
+
+    // Settings should only appear once
+    expect(screen.queryAllByText('Settings')).toHaveLength(1);
+  });
+
+  test('Empty sidebar links', async () => {
+    // Settings should always be visible,
+    // even if there are no links in the menu
+    setup({
+      config: {
+        resourceType: 'UserConfiguration',
+      },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('header-menu-button'));
+    });
+
+    // Settings should only appear once
+    expect(screen.queryAllByText('Settings')).toHaveLength(1);
   });
 
   test('Search', async () => {
