@@ -70,6 +70,8 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
                 return (
                   <FilterRowInput
                     key={`filter-${index}-${filters.length}-input`}
+                    schema={schema}
+                    resourceType={resourceType}
                     searchParams={searchParams}
                     defaultValue={filter}
                     okText="Save"
@@ -95,7 +97,13 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
                 );
               }
             })}
-            <FilterRowInput searchParams={searchParams} okText="Add" onOk={onAddFilter} />
+            <FilterRowInput
+              schema={schema}
+              resourceType={resourceType}
+              searchParams={searchParams}
+              okText="Add"
+              onOk={onAddFilter}
+            />
           </tbody>
         </table>
       </div>
@@ -133,6 +141,8 @@ function FilterRowDisplay(props: FilterRowDisplayProps): JSX.Element | null {
 }
 
 interface FilterRowInputProps {
+  schema: IndexedStructureDefinition;
+  resourceType: string;
   searchParams: Record<string, SearchParameter>;
   defaultValue?: Filter;
   okText: string;
@@ -190,7 +200,13 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
       </td>
       <td>
         {searchParam && value.operator && (
-          <SearchFilterValueInput searchParam={searchParam} defaultValue={value.value} onChange={setFilterValue} />
+          <SearchFilterValueInput
+            schema={props.schema}
+            resourceType={props.resourceType}
+            searchParam={searchParam}
+            defaultValue={value.value}
+            onChange={setFilterValue}
+          />
         )}
       </td>
       <td>

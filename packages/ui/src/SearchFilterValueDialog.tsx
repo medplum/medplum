@@ -1,4 +1,4 @@
-import { Filter } from '@medplum/core';
+import { Filter, IndexedStructureDefinition } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { Dialog } from './Dialog';
@@ -7,6 +7,8 @@ import { SearchFilterValueInput } from './SearchFilterValueInput';
 export interface SearchFilterValueDialogProps {
   title: string;
   visible: boolean;
+  schema: IndexedStructureDefinition;
+  resourceType: string;
   searchParam?: SearchParameter;
   filter?: Filter;
   defaultValue?: string;
@@ -29,7 +31,13 @@ export function SearchFilterValueDialog(props: SearchFilterValueDialogProps): JS
       onCancel={props.onCancel}
     >
       <div style={{ width: 500 }}>
-        <SearchFilterValueInput searchParam={props.searchParam} defaultValue={value} onChange={setValue} />
+        <SearchFilterValueInput
+          schema={props.schema}
+          resourceType={props.resourceType}
+          searchParam={props.searchParam}
+          defaultValue={value}
+          onChange={setValue}
+        />
       </div>
     </Dialog>
   );

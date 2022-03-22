@@ -27,7 +27,7 @@ export const PatientSearchParameters: SearchParameter[] = [
     code: 'organization',
     name: 'organization',
     type: 'reference',
-    expression: 'Patient.organization',
+    expression: 'Patient.managingOrganization',
     target: ['Organization'],
   },
   {

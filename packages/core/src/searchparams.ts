@@ -40,6 +40,10 @@ export function getSearchParameterDetails(
   resourceType: string,
   searchParam: SearchParameter
 ): SearchParameterDetails {
+  if (searchParam.code === '_lastUpdated') {
+    return { columnName: 'lastUpdated', type: SearchParameterType.DATETIME };
+  }
+
   const columnName = convertCodeToColumnName(searchParam.code as string);
   const expression = getExpressionForResourceType(resourceType, searchParam.expression as string)?.split('.');
   if (!expression) {

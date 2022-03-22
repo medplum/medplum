@@ -122,6 +122,22 @@ export function createSchema(): IndexedStructureDefinition {
   return { types: {} };
 }
 
+export function createTypeSchema(typeName: string, description: string | undefined): TypeSchema {
+  return {
+    display: typeName,
+    description,
+    properties: {},
+    searchParams: {
+      _lastUpdated: {
+        base: [typeName],
+        code: '_lastUpdated',
+        type: 'date',
+        expression: typeName + '.meta.lastUpdated',
+      } as SearchParameter,
+    },
+  };
+}
+
 /**
  * Indexes a StructureDefinition for fast lookup.
  * See comments on IndexedStructureDefinition for more details.
@@ -137,11 +153,7 @@ export function indexStructureDefinition(
     return;
   }
 
-  schema.types[typeName] = {
-    display: typeName,
-    description: structureDefinition.description,
-    properties: {},
-  };
+  schema.types[typeName] = createTypeSchema(typeName, structureDefinition.description);
 
   const elements = structureDefinition.snapshot?.element;
   if (elements) {
@@ -172,12 +184,7 @@ function indexType(schema: IndexedStructureDefinition, element: ElementDefinitio
   const parts = path.split('.');
   const typeName = buildTypeName(parts);
   if (!(typeName in schema.types)) {
-    schema.types[typeName] = {
-      display: typeName,
-      description: element.definition,
-      parentType: buildTypeName(parts.slice(0, parts.length - 1)),
-      properties: {},
-    };
+    schema.types[typeName] = createTypeSchema(typeName, element.definition);
   }
 }
 
