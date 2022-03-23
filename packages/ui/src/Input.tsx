@@ -61,5 +61,5 @@ export function Input(props: InputProps): JSX.Element {
  */
 function getInputType(requestedType: string | undefined): string {
   const result = requestedType || 'text';
-  return process.env.NODE_ENV === 'test' ? result.replace(/date|datetime-local/, 'text') : result;
+  return process.env.NODE_ENV === 'test' ? result.replace(/datetime-local|date/, 'text') : result;
 }

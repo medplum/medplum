@@ -756,7 +756,7 @@ export class Repository {
    * @param searchParam The search parameter definition.
    */
   #buildColumn(resource: Resource, columns: Record<string, any>, searchParam: SearchParameter): void {
-    if (this.#isIndexTable(searchParam)) {
+    if (searchParam.code?.startsWith('_') || this.#isIndexTable(searchParam)) {
       return;
     }
 

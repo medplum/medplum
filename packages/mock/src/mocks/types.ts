@@ -27,7 +27,7 @@ export const PatientSearchParameters: SearchParameter[] = [
     code: 'organization',
     name: 'organization',
     type: 'reference',
-    expression: 'Patient.organization',
+    expression: 'Patient.managingOrganization',
     target: ['Organization'],
   },
   {
@@ -92,6 +92,22 @@ export const PatientSearchParameters: SearchParameter[] = [
     type: 'reference',
     expression: 'ServiceRequest.subject',
     target: ['Group', 'Device', 'Patient', 'Location'],
+  },
+  {
+    resourceType: 'SearchParameter',
+    id: 'Observation-value-quantity',
+    code: 'value-quantity',
+    base: ['Observation'],
+    type: 'quantity',
+    expression: '(Observation.value as Quantity) | (Observation.value as SampledData)',
+  },
+  {
+    resourceType: 'SearchParameter',
+    id: 'Encounter-length',
+    code: 'length',
+    base: ['Encounter'],
+    type: 'quantity',
+    expression: 'Encounter.length',
   },
 ];
 

@@ -316,4 +316,40 @@ describe('SearchFilterEditor', () => {
 
     expect(screen.queryByDisplayValue('not-a-code')).not.toBeInTheDocument();
   });
+
+  test('_lastUpdated filter', async () => {
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+      fields: ['id', 'name'],
+      filters: [
+        {
+          code: '_lastUpdated',
+          operator: Operator.GREATER_THAN_OR_EQUALS,
+          value: '2022-01-01T00:00:00.000Z',
+        },
+      ],
+    };
+
+    setup(
+      <SearchFilterEditor
+        schema={schema}
+        search={currSearch}
+        visible={true}
+        onOk={(e) => (currSearch = e)}
+        onCancel={() => console.log('onCancel')}
+      />
+    );
+
+    // Wait for the resource to load
+    await act(async () => {
+      await waitFor(() => screen.queryAllByText('Last Updated').length > 0);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Edit'));
+    });
+
+    const input = screen.getByTestId('filter-value') as HTMLInputElement;
+    expect(input.value).toMatch(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
+  });
 });

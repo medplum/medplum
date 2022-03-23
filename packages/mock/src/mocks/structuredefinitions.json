@@ -63,7 +63,7 @@
           ],
           "binding": {
             "description": "A human language.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/languages"
+            "valueSet": "http://hl7.org/fhir/ValueSet/languages"
           }
         },
         {
@@ -136,11 +136,11 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/CarePlan",
-                "https://hl7.org/fhir/StructureDefinition/ImmunizationRecommendation",
-                "https://hl7.org/fhir/StructureDefinition/MedicationRequest",
-                "https://hl7.org/fhir/StructureDefinition/NutritionOrder",
-                "https://hl7.org/fhir/StructureDefinition/ServiceRequest"
+                "http://hl7.org/fhir/StructureDefinition/CarePlan",
+                "http://hl7.org/fhir/StructureDefinition/ImmunizationRecommendation",
+                "http://hl7.org/fhir/StructureDefinition/MedicationRequest",
+                "http://hl7.org/fhir/StructureDefinition/NutritionOrder",
+                "http://hl7.org/fhir/StructureDefinition/ServiceRequest"
               ]
             }
           ]
@@ -158,7 +158,7 @@
           ],
           "binding": {
             "description": "The status of the diagnostic report.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/diagnostic-report-status|4.0.1"
+            "valueSet": "http://hl7.org/fhir/ValueSet/diagnostic-report-status|4.0.1"
           }
         },
         {
@@ -174,7 +174,7 @@
           ],
           "binding": {
             "description": "Codes for diagnostic service sections.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/diagnostic-service-sections"
+            "valueSet": "http://hl7.org/fhir/ValueSet/diagnostic-service-sections"
           }
         },
         {
@@ -190,7 +190,7 @@
           ],
           "binding": {
             "description": "Codes that describe Diagnostic Reports.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/report-codes"
+            "valueSet": "http://hl7.org/fhir/ValueSet/report-codes"
           }
         },
         {
@@ -203,10 +203,10 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Patient",
-                "https://hl7.org/fhir/StructureDefinition/Group",
-                "https://hl7.org/fhir/StructureDefinition/Device",
-                "https://hl7.org/fhir/StructureDefinition/Location"
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Group",
+                "http://hl7.org/fhir/StructureDefinition/Device",
+                "http://hl7.org/fhir/StructureDefinition/Location"
               ]
             }
           ]
@@ -221,7 +221,7 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Encounter"
+                "http://hl7.org/fhir/StructureDefinition/Encounter"
               ]
             }
           ]
@@ -263,10 +263,10 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Practitioner",
-                "https://hl7.org/fhir/StructureDefinition/PractitionerRole",
-                "https://hl7.org/fhir/StructureDefinition/Organization",
-                "https://hl7.org/fhir/StructureDefinition/CareTeam"
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/Organization",
+                "http://hl7.org/fhir/StructureDefinition/CareTeam"
               ]
             }
           ]
@@ -281,10 +281,10 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Practitioner",
-                "https://hl7.org/fhir/StructureDefinition/PractitionerRole",
-                "https://hl7.org/fhir/StructureDefinition/Organization",
-                "https://hl7.org/fhir/StructureDefinition/CareTeam"
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/Organization",
+                "http://hl7.org/fhir/StructureDefinition/CareTeam"
               ]
             }
           ]
@@ -299,7 +299,7 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Specimen"
+                "http://hl7.org/fhir/StructureDefinition/Specimen"
               ]
             }
           ]
@@ -314,7 +314,7 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Observation"
+                "http://hl7.org/fhir/StructureDefinition/Observation"
               ]
             }
           ]
@@ -329,7 +329,7 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/ImagingStudy"
+                "http://hl7.org/fhir/StructureDefinition/ImagingStudy"
               ]
             }
           ]
@@ -404,7 +404,7 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Media"
+                "http://hl7.org/fhir/StructureDefinition/Media"
               ]
             }
           ]
@@ -434,7 +434,7 @@
           ],
           "binding": {
             "description": "Diagnosis codes provided as adjuncts to the report.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/clinical-findings"
+            "valueSet": "http://hl7.org/fhir/ValueSet/clinical-findings"
           }
         },
         {
@@ -446,6 +446,1012 @@
           "type": [
             {
               "code": "Attachment"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
+    "id": "Encounter",
+    "name": "Encounter",
+    "description": "An interaction between a patient and healthcare provider(s) for the purpose of providing healthcare service(s) or assessing the health status of a patient.",
+    "type": "Encounter",
+    "snapshot": {
+      "element": [
+        {
+          "id": "Encounter",
+          "path": "Encounter",
+          "definition": "An interaction between a patient and healthcare provider(s) for the purpose of providing healthcare service(s) or assessing the health status of a patient.",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "Encounter.id",
+          "path": "Encounter.id",
+          "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.meta",
+          "path": "Encounter.meta",
+          "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.implicitRules",
+          "path": "Encounter.implicitRules",
+          "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.language",
+          "path": "Encounter.language",
+          "definition": "The base language in which the resource is written.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "A human language.",
+            "valueSet": "http://hl7.org/fhir/ValueSet/languages"
+          }
+        },
+        {
+          "id": "Encounter.text",
+          "path": "Encounter.text",
+          "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.contained",
+          "path": "Encounter.contained",
+          "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.extension",
+          "path": "Encounter.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.modifierExtension",
+          "path": "Encounter.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.identifier",
+          "path": "Encounter.identifier",
+          "definition": "Identifier(s) by which this encounter is known.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.status",
+          "path": "Encounter.status",
+          "definition": "planned | arrived | triaged | in-progress | onleave | finished | cancelled +.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "Current state of the encounter.",
+            "valueSet": "http://hl7.org/fhir/ValueSet/encounter-status|4.0.1"
+          }
+        },
+        {
+          "id": "Encounter.statusHistory",
+          "path": "Encounter.statusHistory",
+          "definition": "The status history permits the encounter resource to contain the status history without needing to read through the historical versions of the resource, or even have the server store them.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.statusHistory.id",
+          "path": "Encounter.statusHistory.id",
+          "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.statusHistory.extension",
+          "path": "Encounter.statusHistory.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.statusHistory.modifierExtension",
+          "path": "Encounter.statusHistory.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.statusHistory.status",
+          "path": "Encounter.statusHistory.status",
+          "definition": "planned | arrived | triaged | in-progress | onleave | finished | cancelled +.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "Current state of the encounter.",
+            "valueSet": "http://hl7.org/fhir/ValueSet/encounter-status|4.0.1"
+          }
+        },
+        {
+          "id": "Encounter.statusHistory.period",
+          "path": "Encounter.statusHistory.period",
+          "definition": "The time that the episode was in the specified status.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.class",
+          "path": "Encounter.class",
+          "definition": "Concepts representing classification of patient encounter such as ambulatory (outpatient), inpatient, emergency, home health or others due to local variations.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Coding"
+            }
+          ],
+          "binding": {
+            "description": "Classification of the encounter.",
+            "valueSet": "http://terminology.hl7.org/ValueSet/v3-ActEncounterCode"
+          }
+        },
+        {
+          "id": "Encounter.classHistory",
+          "path": "Encounter.classHistory",
+          "definition": "The class history permits the tracking of the encounters transitions without needing to go  through the resource history.  This would be used for a case where an admission starts of as an emergency encounter, then transitions into an inpatient scenario. Doing this and not restarting a new encounter ensures that any lab/diagnostic results can more easily follow the patient and not require re-processing and not get lost or cancelled during a kind of discharge from emergency to inpatient.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.classHistory.id",
+          "path": "Encounter.classHistory.id",
+          "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.classHistory.extension",
+          "path": "Encounter.classHistory.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.classHistory.modifierExtension",
+          "path": "Encounter.classHistory.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.classHistory.class",
+          "path": "Encounter.classHistory.class",
+          "definition": "inpatient | outpatient | ambulatory | emergency +.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Coding"
+            }
+          ],
+          "binding": {
+            "description": "Classification of the encounter.",
+            "valueSet": "http://terminology.hl7.org/ValueSet/v3-ActEncounterCode"
+          }
+        },
+        {
+          "id": "Encounter.classHistory.period",
+          "path": "Encounter.classHistory.period",
+          "definition": "The time that the episode was in the specified class.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.type",
+          "path": "Encounter.type",
+          "definition": "Specific type of encounter (e.g. e-mail consultation, surgical day-care, skilled nursing, rehabilitation).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "The type of encounter.",
+            "valueSet": "http://hl7.org/fhir/ValueSet/encounter-type"
+          }
+        },
+        {
+          "id": "Encounter.serviceType",
+          "path": "Encounter.serviceType",
+          "definition": "Broad categorization of the service that is to be provided (e.g. cardiology).",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Broad categorization of the service that is to be provided.",
+            "valueSet": "http://hl7.org/fhir/ValueSet/service-type"
+          }
+        },
+        {
+          "id": "Encounter.priority",
+          "path": "Encounter.priority",
+          "definition": "Indicates the urgency of the encounter.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Indicates the urgency of the encounter.",
+            "valueSet": "http://terminology.hl7.org/ValueSet/v3-ActPriority"
+          }
+        },
+        {
+          "id": "Encounter.subject",
+          "path": "Encounter.subject",
+          "definition": "The patient or group present at the encounter.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Group"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Encounter.episodeOfCare",
+          "path": "Encounter.episodeOfCare",
+          "definition": "Where a specific encounter should be classified as a part of a specific episode(s) of care this field should be used. This association can facilitate grouping of related encounters together for a specific purpose, such as government reporting, issue tracking, association via a common problem.  The association is recorded on the encounter as these are typically created after the episode of care and grouped on entry rather than editing the episode of care to append another encounter to it (the episode of care could span years).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/EpisodeOfCare"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Encounter.basedOn",
+          "path": "Encounter.basedOn",
+          "definition": "The request this encounter satisfies (e.g. incoming referral or procedure request).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/ServiceRequest"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Encounter.participant",
+          "path": "Encounter.participant",
+          "definition": "The list of people responsible for providing the service.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.participant.id",
+          "path": "Encounter.participant.id",
+          "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.participant.extension",
+          "path": "Encounter.participant.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.participant.modifierExtension",
+          "path": "Encounter.participant.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.participant.type",
+          "path": "Encounter.participant.type",
+          "definition": "Role of participant in encounter.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Role of participant in encounter.",
+            "valueSet": "http://hl7.org/fhir/ValueSet/encounter-participant-type"
+          }
+        },
+        {
+          "id": "Encounter.participant.period",
+          "path": "Encounter.participant.period",
+          "definition": "The period of time that the specified participant participated in the encounter. These can overlap or be sub-sets of the overall encounter's period.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.participant.individual",
+          "path": "Encounter.participant.individual",
+          "definition": "Persons involved in the encounter other than the patient.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Encounter.appointment",
+          "path": "Encounter.appointment",
+          "definition": "The appointment that scheduled this encounter.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Appointment"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Encounter.period",
+          "path": "Encounter.period",
+          "definition": "The start and end time of the encounter.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.length",
+          "path": "Encounter.length",
+          "definition": "Quantity of time the encounter lasted. This excludes the time during leaves of absence.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Duration"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.reasonCode",
+          "path": "Encounter.reasonCode",
+          "definition": "Reason the encounter takes place, expressed as a code. For admissions, this can be used for a coded admission diagnosis.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Reason why the encounter takes place.",
+            "valueSet": "http://hl7.org/fhir/ValueSet/encounter-reason"
+          }
+        },
+        {
+          "id": "Encounter.reasonReference",
+          "path": "Encounter.reasonReference",
+          "definition": "Reason the encounter takes place, expressed as a code. For admissions, this can be used for a coded admission diagnosis.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Condition",
+                "http://hl7.org/fhir/StructureDefinition/Procedure",
+                "http://hl7.org/fhir/StructureDefinition/Observation",
+                "http://hl7.org/fhir/StructureDefinition/ImmunizationRecommendation"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Encounter.diagnosis",
+          "path": "Encounter.diagnosis",
+          "definition": "The list of diagnosis relevant to this encounter.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.diagnosis.id",
+          "path": "Encounter.diagnosis.id",
+          "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.diagnosis.extension",
+          "path": "Encounter.diagnosis.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.diagnosis.modifierExtension",
+          "path": "Encounter.diagnosis.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.diagnosis.condition",
+          "path": "Encounter.diagnosis.condition",
+          "definition": "Reason the encounter takes place, as specified using information from another resource. For admissions, this is the admission diagnosis. The indication will typically be a Condition (with other resources referenced in the evidence.detail), or a Procedure.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Condition",
+                "http://hl7.org/fhir/StructureDefinition/Procedure"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Encounter.diagnosis.use",
+          "path": "Encounter.diagnosis.use",
+          "definition": "Role that this diagnosis has within the encounter (e.g. admission, billing, discharge …).",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "The type of diagnosis this condition represents.",
+            "valueSet": "http://hl7.org/fhir/ValueSet/diagnosis-role"
+          }
+        },
+        {
+          "id": "Encounter.diagnosis.rank",
+          "path": "Encounter.diagnosis.rank",
+          "definition": "Ranking of the diagnosis (for each role type).",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "positiveInt"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.account",
+          "path": "Encounter.account",
+          "definition": "The set of accounts that may be used for billing for this Encounter.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Account"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Encounter.hospitalization",
+          "path": "Encounter.hospitalization",
+          "definition": "Details about the admission to a healthcare service.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.hospitalization.id",
+          "path": "Encounter.hospitalization.id",
+          "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.hospitalization.extension",
+          "path": "Encounter.hospitalization.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.hospitalization.modifierExtension",
+          "path": "Encounter.hospitalization.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.hospitalization.preAdmissionIdentifier",
+          "path": "Encounter.hospitalization.preAdmissionIdentifier",
+          "definition": "Pre-admission identifier.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.hospitalization.origin",
+          "path": "Encounter.hospitalization.origin",
+          "definition": "The location/organization from which the patient came before admission.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Location",
+                "http://hl7.org/fhir/StructureDefinition/Organization"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Encounter.hospitalization.admitSource",
+          "path": "Encounter.hospitalization.admitSource",
+          "definition": "From where patient was admitted (physician referral, transfer).",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "From where the patient was admitted.",
+            "valueSet": "http://hl7.org/fhir/ValueSet/encounter-admit-source"
+          }
+        },
+        {
+          "id": "Encounter.hospitalization.reAdmission",
+          "path": "Encounter.hospitalization.reAdmission",
+          "definition": "Whether this hospitalization is a readmission and why if known.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "The reason for re-admission of this hospitalization encounter.",
+            "valueSet": "http://terminology.hl7.org/ValueSet/v2-0092"
+          }
+        },
+        {
+          "id": "Encounter.hospitalization.dietPreference",
+          "path": "Encounter.hospitalization.dietPreference",
+          "definition": "Diet preferences reported by the patient.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Medical, cultural or ethical food preferences to help with catering requirements.",
+            "valueSet": "http://hl7.org/fhir/ValueSet/encounter-diet"
+          }
+        },
+        {
+          "id": "Encounter.hospitalization.specialCourtesy",
+          "path": "Encounter.hospitalization.specialCourtesy",
+          "definition": "Special courtesies (VIP, board member).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Special courtesies.",
+            "valueSet": "http://hl7.org/fhir/ValueSet/encounter-special-courtesy"
+          }
+        },
+        {
+          "id": "Encounter.hospitalization.specialArrangement",
+          "path": "Encounter.hospitalization.specialArrangement",
+          "definition": "Any special requests that have been made for this hospitalization encounter, such as the provision of specific equipment or other things.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Special arrangements.",
+            "valueSet": "http://hl7.org/fhir/ValueSet/encounter-special-arrangements"
+          }
+        },
+        {
+          "id": "Encounter.hospitalization.destination",
+          "path": "Encounter.hospitalization.destination",
+          "definition": "Location/organization to which the patient is discharged.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Location",
+                "http://hl7.org/fhir/StructureDefinition/Organization"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Encounter.hospitalization.dischargeDisposition",
+          "path": "Encounter.hospitalization.dischargeDisposition",
+          "definition": "Category or kind of location after discharge.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Discharge Disposition.",
+            "valueSet": "http://hl7.org/fhir/ValueSet/encounter-discharge-disposition"
+          }
+        },
+        {
+          "id": "Encounter.location",
+          "path": "Encounter.location",
+          "definition": "List of locations where  the patient has been during this encounter.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.location.id",
+          "path": "Encounter.location.id",
+          "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.location.extension",
+          "path": "Encounter.location.extension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.location.modifierExtension",
+          "path": "Encounter.location.modifierExtension",
+          "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.location.location",
+          "path": "Encounter.location.location",
+          "definition": "The location where the encounter takes place.",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Location"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Encounter.location.status",
+          "path": "Encounter.location.status",
+          "definition": "The status of the participants' presence at the specified location during the period specified. If the participant is no longer at the location, then the period will have an end date/time.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ],
+          "binding": {
+            "description": "The status of the location.",
+            "valueSet": "http://hl7.org/fhir/ValueSet/encounter-location-status|4.0.1"
+          }
+        },
+        {
+          "id": "Encounter.location.physicalType",
+          "path": "Encounter.location.physicalType",
+          "definition": "This will be used to specify the required levels (bed/ward/room/etc.) desired to be recorded to simplify either messaging or query.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ],
+          "binding": {
+            "description": "Physical form of the location.",
+            "valueSet": "http://hl7.org/fhir/ValueSet/location-physical-type"
+          }
+        },
+        {
+          "id": "Encounter.location.period",
+          "path": "Encounter.location.period",
+          "definition": "Time period during which the patient was present at the location.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        {
+          "id": "Encounter.serviceProvider",
+          "path": "Encounter.serviceProvider",
+          "definition": "The organization that is primarily responsible for this Encounter's services. This MAY be the same as the organization on the Patient record, however it could be different, such as if the actor performing the services was from an external organization (which may be billed seperately) for an external consultation.  Refer to the example bundle showing an abbreviated set of Encounters for a colonoscopy.",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Organization"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Encounter.partOf",
+          "path": "Encounter.partOf",
+          "definition": "Another Encounter of which this encounter is a part of (administratively or in time).",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Encounter"
+              ]
             }
           ]
         }
@@ -516,7 +1522,7 @@
           ],
           "binding": {
             "description": "A human language.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/languages"
+            "valueSet": "http://hl7.org/fhir/ValueSet/languages"
           }
         },
         {
@@ -589,12 +1595,12 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/CarePlan",
-                "https://hl7.org/fhir/StructureDefinition/DeviceRequest",
-                "https://hl7.org/fhir/StructureDefinition/ImmunizationRecommendation",
-                "https://hl7.org/fhir/StructureDefinition/MedicationRequest",
-                "https://hl7.org/fhir/StructureDefinition/NutritionOrder",
-                "https://hl7.org/fhir/StructureDefinition/ServiceRequest"
+                "http://hl7.org/fhir/StructureDefinition/CarePlan",
+                "http://hl7.org/fhir/StructureDefinition/DeviceRequest",
+                "http://hl7.org/fhir/StructureDefinition/ImmunizationRecommendation",
+                "http://hl7.org/fhir/StructureDefinition/MedicationRequest",
+                "http://hl7.org/fhir/StructureDefinition/NutritionOrder",
+                "http://hl7.org/fhir/StructureDefinition/ServiceRequest"
               ]
             }
           ]
@@ -609,12 +1615,12 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/MedicationAdministration",
-                "https://hl7.org/fhir/StructureDefinition/MedicationDispense",
-                "https://hl7.org/fhir/StructureDefinition/MedicationStatement",
-                "https://hl7.org/fhir/StructureDefinition/Procedure",
-                "https://hl7.org/fhir/StructureDefinition/Immunization",
-                "https://hl7.org/fhir/StructureDefinition/ImagingStudy"
+                "http://hl7.org/fhir/StructureDefinition/MedicationAdministration",
+                "http://hl7.org/fhir/StructureDefinition/MedicationDispense",
+                "http://hl7.org/fhir/StructureDefinition/MedicationStatement",
+                "http://hl7.org/fhir/StructureDefinition/Procedure",
+                "http://hl7.org/fhir/StructureDefinition/Immunization",
+                "http://hl7.org/fhir/StructureDefinition/ImagingStudy"
               ]
             }
           ]
@@ -632,7 +1638,7 @@
           ],
           "binding": {
             "description": "Codes providing the status of an observation.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/observation-status|4.0.1"
+            "valueSet": "http://hl7.org/fhir/ValueSet/observation-status|4.0.1"
           }
         },
         {
@@ -648,7 +1654,7 @@
           ],
           "binding": {
             "description": "Codes for high level observation categories.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/observation-category"
+            "valueSet": "http://hl7.org/fhir/ValueSet/observation-category"
           }
         },
         {
@@ -664,7 +1670,7 @@
           ],
           "binding": {
             "description": "Codes identifying names of simple observations.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/observation-codes"
+            "valueSet": "http://hl7.org/fhir/ValueSet/observation-codes"
           }
         },
         {
@@ -677,10 +1683,10 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Patient",
-                "https://hl7.org/fhir/StructureDefinition/Group",
-                "https://hl7.org/fhir/StructureDefinition/Device",
-                "https://hl7.org/fhir/StructureDefinition/Location"
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Group",
+                "http://hl7.org/fhir/StructureDefinition/Device",
+                "http://hl7.org/fhir/StructureDefinition/Location"
               ]
             }
           ]
@@ -695,7 +1701,7 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Resource"
+                "http://hl7.org/fhir/StructureDefinition/Resource"
               ]
             }
           ]
@@ -710,7 +1716,7 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Encounter"
+                "http://hl7.org/fhir/StructureDefinition/Encounter"
               ]
             }
           ]
@@ -758,12 +1764,12 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Practitioner",
-                "https://hl7.org/fhir/StructureDefinition/PractitionerRole",
-                "https://hl7.org/fhir/StructureDefinition/Organization",
-                "https://hl7.org/fhir/StructureDefinition/CareTeam",
-                "https://hl7.org/fhir/StructureDefinition/Patient",
-                "https://hl7.org/fhir/StructureDefinition/RelatedPerson"
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/Organization",
+                "http://hl7.org/fhir/StructureDefinition/CareTeam",
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson"
               ]
             }
           ]
@@ -823,7 +1829,7 @@
           ],
           "binding": {
             "description": "Codes specifying why the result (`Observation.value[x]`) is missing.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/data-absent-reason"
+            "valueSet": "http://hl7.org/fhir/ValueSet/data-absent-reason"
           }
         },
         {
@@ -839,7 +1845,7 @@
           ],
           "binding": {
             "description": "Codes identifying interpretations of observations.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/observation-interpretation"
+            "valueSet": "http://hl7.org/fhir/ValueSet/observation-interpretation"
           }
         },
         {
@@ -867,7 +1873,7 @@
           ],
           "binding": {
             "description": "Codes describing anatomical locations. May include laterality.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/body-site"
+            "valueSet": "http://hl7.org/fhir/ValueSet/body-site"
           }
         },
         {
@@ -883,7 +1889,7 @@
           ],
           "binding": {
             "description": "Methods for simple observations.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/observation-methods"
+            "valueSet": "http://hl7.org/fhir/ValueSet/observation-methods"
           }
         },
         {
@@ -896,7 +1902,7 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Specimen"
+                "http://hl7.org/fhir/StructureDefinition/Specimen"
               ]
             }
           ]
@@ -911,8 +1917,8 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Device",
-                "https://hl7.org/fhir/StructureDefinition/DeviceMetric"
+                "http://hl7.org/fhir/StructureDefinition/Device",
+                "http://hl7.org/fhir/StructureDefinition/DeviceMetric"
               ]
             }
           ]
@@ -1002,7 +2008,7 @@
           ],
           "binding": {
             "description": "Code for the meaning of a reference range.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/referencerange-meaning"
+            "valueSet": "http://hl7.org/fhir/ValueSet/referencerange-meaning"
           }
         },
         {
@@ -1018,7 +2024,7 @@
           ],
           "binding": {
             "description": "Codes identifying the population the reference range applies to.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/referencerange-appliesto"
+            "valueSet": "http://hl7.org/fhir/ValueSet/referencerange-appliesto"
           }
         },
         {
@@ -1055,9 +2061,9 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Observation",
-                "https://hl7.org/fhir/StructureDefinition/QuestionnaireResponse",
-                "https://hl7.org/fhir/StructureDefinition/MolecularSequence"
+                "http://hl7.org/fhir/StructureDefinition/Observation",
+                "http://hl7.org/fhir/StructureDefinition/QuestionnaireResponse",
+                "http://hl7.org/fhir/StructureDefinition/MolecularSequence"
               ]
             }
           ]
@@ -1072,12 +2078,12 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/DocumentReference",
-                "https://hl7.org/fhir/StructureDefinition/ImagingStudy",
-                "https://hl7.org/fhir/StructureDefinition/Media",
-                "https://hl7.org/fhir/StructureDefinition/QuestionnaireResponse",
-                "https://hl7.org/fhir/StructureDefinition/Observation",
-                "https://hl7.org/fhir/StructureDefinition/MolecularSequence"
+                "http://hl7.org/fhir/StructureDefinition/DocumentReference",
+                "http://hl7.org/fhir/StructureDefinition/ImagingStudy",
+                "http://hl7.org/fhir/StructureDefinition/Media",
+                "http://hl7.org/fhir/StructureDefinition/QuestionnaireResponse",
+                "http://hl7.org/fhir/StructureDefinition/Observation",
+                "http://hl7.org/fhir/StructureDefinition/MolecularSequence"
               ]
             }
           ]
@@ -1143,7 +2149,7 @@
           ],
           "binding": {
             "description": "Codes identifying names of simple observations.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/observation-codes"
+            "valueSet": "http://hl7.org/fhir/ValueSet/observation-codes"
           }
         },
         {
@@ -1201,7 +2207,7 @@
           ],
           "binding": {
             "description": "Codes specifying why the result (`Observation.value[x]`) is missing.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/data-absent-reason"
+            "valueSet": "http://hl7.org/fhir/ValueSet/data-absent-reason"
           }
         },
         {
@@ -1217,7 +2223,7 @@
           ],
           "binding": {
             "description": "Codes identifying interpretations of observations.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/observation-interpretation"
+            "valueSet": "http://hl7.org/fhir/ValueSet/observation-interpretation"
           }
         },
         {
@@ -1294,7 +2300,7 @@
           ],
           "binding": {
             "description": "A human language.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/languages"
+            "valueSet": "http://hl7.org/fhir/ValueSet/languages"
           }
         },
         {
@@ -1382,7 +2388,7 @@
           ],
           "binding": {
             "description": "Used to categorize the organization.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/organization-type"
+            "valueSet": "http://hl7.org/fhir/ValueSet/organization-type"
           }
         },
         {
@@ -1443,7 +2449,7 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Organization"
+                "http://hl7.org/fhir/StructureDefinition/Organization"
               ]
             }
           ]
@@ -1509,7 +2515,7 @@
           ],
           "binding": {
             "description": "The purpose for which you would contact a contact party.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/contactentity-type"
+            "valueSet": "http://hl7.org/fhir/ValueSet/contactentity-type"
           }
         },
         {
@@ -1558,7 +2564,7 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Endpoint"
+                "http://hl7.org/fhir/StructureDefinition/Endpoint"
               ]
             }
           ]
@@ -1630,7 +2636,7 @@
           ],
           "binding": {
             "description": "A human language.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/languages"
+            "valueSet": "http://hl7.org/fhir/ValueSet/languages"
           }
         },
         {
@@ -1742,7 +2748,7 @@
           ],
           "binding": {
             "description": "The gender of a person used for administrative purposes.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/administrative-gender|4.0.1"
+            "valueSet": "http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1"
           }
         },
         {
@@ -1797,7 +2803,7 @@
           ],
           "binding": {
             "description": "The domestic partnership status of a person.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/marital-status"
+            "valueSet": "http://hl7.org/fhir/ValueSet/marital-status"
           }
         },
         {
@@ -1888,7 +2894,7 @@
           ],
           "binding": {
             "description": "The nature of the relationship between a patient and a contact person for that patient.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/patient-contactrelationship"
+            "valueSet": "http://hl7.org/fhir/ValueSet/patient-contactrelationship"
           }
         },
         {
@@ -1940,7 +2946,7 @@
           ],
           "binding": {
             "description": "The gender of a person used for administrative purposes.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/administrative-gender|4.0.1"
+            "valueSet": "http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1"
           }
         },
         {
@@ -1953,7 +2959,7 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Organization"
+                "http://hl7.org/fhir/StructureDefinition/Organization"
               ]
             }
           ]
@@ -2031,7 +3037,7 @@
           ],
           "binding": {
             "description": "A human language.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/languages"
+            "valueSet": "http://hl7.org/fhir/ValueSet/languages"
           }
         },
         {
@@ -2056,9 +3062,9 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Organization",
-                "https://hl7.org/fhir/StructureDefinition/Practitioner",
-                "https://hl7.org/fhir/StructureDefinition/PractitionerRole"
+                "http://hl7.org/fhir/StructureDefinition/Organization",
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole"
               ]
             }
           ]
@@ -2073,7 +3079,7 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Organization"
+                "http://hl7.org/fhir/StructureDefinition/Organization"
               ]
             }
           ]
@@ -2136,8 +3142,8 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Patient",
-                "https://hl7.org/fhir/StructureDefinition/RelatedPerson"
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson"
               ]
             }
           ]
@@ -2155,7 +3161,7 @@
           ],
           "binding": {
             "description": "The type of link between this patient resource and another patient resource.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/link-type|4.0.1"
+            "valueSet": "http://hl7.org/fhir/ValueSet/link-type|4.0.1"
           }
         }
       ]
@@ -2225,7 +3231,7 @@
           ],
           "binding": {
             "description": "A human language.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/languages"
+            "valueSet": "http://hl7.org/fhir/ValueSet/languages"
           }
         },
         {
@@ -2349,7 +3355,7 @@
           ],
           "binding": {
             "description": "The gender of a person used for administrative purposes.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/administrative-gender|4.0.1"
+            "valueSet": "http://hl7.org/fhir/ValueSet/administrative-gender|4.0.1"
           }
         },
         {
@@ -2449,7 +3455,7 @@
           ],
           "binding": {
             "description": "Specific qualification the practitioner has to provide a service.",
-            "valueSet": "https://terminology.hl7.org/ValueSet/v2-2.7-0360"
+            "valueSet": "http://terminology.hl7.org/ValueSet/v2-2.7-0360"
           }
         },
         {
@@ -2474,7 +3480,7 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Organization"
+                "http://hl7.org/fhir/StructureDefinition/Organization"
               ]
             }
           ]
@@ -2492,7 +3498,7 @@
           ],
           "binding": {
             "description": "A human language.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/languages"
+            "valueSet": "http://hl7.org/fhir/ValueSet/languages"
           }
         }
       ]
@@ -2562,7 +3568,7 @@
           ],
           "binding": {
             "description": "A human language.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/languages"
+            "valueSet": "http://hl7.org/fhir/ValueSet/languages"
           }
         },
         {
@@ -2683,7 +3689,7 @@
             {
               "code": "canonical",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Questionnaire"
+                "http://hl7.org/fhir/StructureDefinition/Questionnaire"
               ]
             }
           ]
@@ -2701,7 +3707,7 @@
           ],
           "binding": {
             "description": "The lifecycle status of an artifact.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/publication-status|4.0.1"
+            "valueSet": "http://hl7.org/fhir/ValueSet/publication-status|4.0.1"
           }
         },
         {
@@ -2729,7 +3735,7 @@
           ],
           "binding": {
             "description": "One of the resource types defined as part of this version of FHIR.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/resource-types|4.0.1"
+            "valueSet": "http://hl7.org/fhir/ValueSet/resource-types|4.0.1"
           }
         },
         {
@@ -2805,7 +3811,7 @@
           ],
           "binding": {
             "description": "Countries and regions within which this artifact is targeted for use.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/jurisdiction"
+            "valueSet": "http://hl7.org/fhir/ValueSet/jurisdiction"
           }
         },
         {
@@ -2881,7 +3887,7 @@
           ],
           "binding": {
             "description": "Codes for questionnaires, groups and individual questions.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/questionnaire-questions"
+            "valueSet": "http://hl7.org/fhir/ValueSet/questionnaire-questions"
           }
         },
         {
@@ -2969,7 +3975,7 @@
           ],
           "binding": {
             "description": "Codes for questionnaires, groups and individual questions.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/questionnaire-questions"
+            "valueSet": "http://hl7.org/fhir/ValueSet/questionnaire-questions"
           }
         },
         {
@@ -3009,7 +4015,7 @@
           ],
           "binding": {
             "description": "Distinguishes groups from questions and display text and indicates data type for questions.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/item-type|4.0.1"
+            "valueSet": "http://hl7.org/fhir/ValueSet/item-type|4.0.1"
           }
         },
         {
@@ -3085,7 +4091,7 @@
           ],
           "binding": {
             "description": "The criteria by which a question is enabled.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/questionnaire-enable-operator|4.0.1"
+            "valueSet": "http://hl7.org/fhir/ValueSet/questionnaire-enable-operator|4.0.1"
           }
         },
         {
@@ -3125,13 +4131,13 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Resource"
+                "http://hl7.org/fhir/StructureDefinition/Resource"
               ]
             }
           ],
           "binding": {
             "description": "Allowed values to answer questions.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/questionnaire-answers"
+            "valueSet": "http://hl7.org/fhir/ValueSet/questionnaire-answers"
           }
         },
         {
@@ -3147,7 +4153,7 @@
           ],
           "binding": {
             "description": "Controls how multiple enableWhen values are interpreted -  whether all or any must be true.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/questionnaire-enable-behavior|4.0.1"
+            "valueSet": "http://hl7.org/fhir/ValueSet/questionnaire-enable-behavior|4.0.1"
           }
         },
         {
@@ -3208,7 +4214,7 @@
             {
               "code": "canonical",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/ValueSet"
+                "http://hl7.org/fhir/StructureDefinition/ValueSet"
               ]
             }
           ]
@@ -3286,13 +4292,13 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Resource"
+                "http://hl7.org/fhir/StructureDefinition/Resource"
               ]
             }
           ],
           "binding": {
             "description": "Allowed values to answer questions.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/questionnaire-answers"
+            "valueSet": "http://hl7.org/fhir/ValueSet/questionnaire-answers"
           }
         },
         {
@@ -3398,13 +4404,13 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Resource"
+                "http://hl7.org/fhir/StructureDefinition/Resource"
               ]
             }
           ],
           "binding": {
             "description": "Allowed values to answer questions.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/questionnaire-answers"
+            "valueSet": "http://hl7.org/fhir/ValueSet/questionnaire-answers"
           }
         },
         {
@@ -3481,7 +4487,7 @@
           ],
           "binding": {
             "description": "A human language.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/languages"
+            "valueSet": "http://hl7.org/fhir/ValueSet/languages"
           }
         },
         {
@@ -3554,8 +4560,8 @@
             {
               "code": "canonical",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/ActivityDefinition",
-                "https://hl7.org/fhir/StructureDefinition/PlanDefinition"
+                "http://hl7.org/fhir/StructureDefinition/ActivityDefinition",
+                "http://hl7.org/fhir/StructureDefinition/PlanDefinition"
               ]
             }
           ]
@@ -3582,9 +4588,9 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/CarePlan",
-                "https://hl7.org/fhir/StructureDefinition/ServiceRequest",
-                "https://hl7.org/fhir/StructureDefinition/MedicationRequest"
+                "http://hl7.org/fhir/StructureDefinition/CarePlan",
+                "http://hl7.org/fhir/StructureDefinition/ServiceRequest",
+                "http://hl7.org/fhir/StructureDefinition/MedicationRequest"
               ]
             }
           ]
@@ -3599,7 +4605,7 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/ServiceRequest"
+                "http://hl7.org/fhir/StructureDefinition/ServiceRequest"
               ]
             }
           ]
@@ -3629,7 +4635,7 @@
           ],
           "binding": {
             "description": "The status of a service order.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/request-status|4.0.1"
+            "valueSet": "http://hl7.org/fhir/ValueSet/request-status|4.0.1"
           }
         },
         {
@@ -3645,7 +4651,7 @@
           ],
           "binding": {
             "description": "The kind of service request.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/request-intent|4.0.1"
+            "valueSet": "http://hl7.org/fhir/ValueSet/request-intent|4.0.1"
           }
         },
         {
@@ -3661,7 +4667,7 @@
           ],
           "binding": {
             "description": "Classification of the requested service.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/servicerequest-category"
+            "valueSet": "http://hl7.org/fhir/ValueSet/servicerequest-category"
           }
         },
         {
@@ -3677,7 +4683,7 @@
           ],
           "binding": {
             "description": "Identifies the level of importance to be assigned to actioning the request.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/request-priority|4.0.1"
+            "valueSet": "http://hl7.org/fhir/ValueSet/request-priority|4.0.1"
           }
         },
         {
@@ -3705,7 +4711,7 @@
           ],
           "binding": {
             "description": "Codes for tests or services that can be carried out by a designated individual, organization or healthcare service.  For laboratory, LOINC is  (preferred)[http://build.fhir.org/terminologies.html#preferred] and a valueset using LOINC Order codes is available [here](valueset-diagnostic-requests.html).",
-            "valueSet": "https://hl7.org/fhir/ValueSet/procedure-code"
+            "valueSet": "http://hl7.org/fhir/ValueSet/procedure-code"
           }
         },
         {
@@ -3721,7 +4727,7 @@
           ],
           "binding": {
             "description": "Codified order entry details which are based on order context.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/servicerequest-orderdetail"
+            "valueSet": "http://hl7.org/fhir/ValueSet/servicerequest-orderdetail"
           }
         },
         {
@@ -3752,10 +4758,10 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Patient",
-                "https://hl7.org/fhir/StructureDefinition/Group",
-                "https://hl7.org/fhir/StructureDefinition/Location",
-                "https://hl7.org/fhir/StructureDefinition/Device"
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Group",
+                "http://hl7.org/fhir/StructureDefinition/Location",
+                "http://hl7.org/fhir/StructureDefinition/Device"
               ]
             }
           ]
@@ -3770,7 +4776,7 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Encounter"
+                "http://hl7.org/fhir/StructureDefinition/Encounter"
               ]
             }
           ]
@@ -3809,7 +4815,7 @@
           ],
           "binding": {
             "description": "A coded concept identifying the pre-condition that should hold prior to performing a procedure.  For example \"pain\", \"on flare-up\", etc.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/medication-as-needed-reason"
+            "valueSet": "http://hl7.org/fhir/ValueSet/medication-as-needed-reason"
           }
         },
         {
@@ -3834,12 +4840,12 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Practitioner",
-                "https://hl7.org/fhir/StructureDefinition/PractitionerRole",
-                "https://hl7.org/fhir/StructureDefinition/Organization",
-                "https://hl7.org/fhir/StructureDefinition/Patient",
-                "https://hl7.org/fhir/StructureDefinition/RelatedPerson",
-                "https://hl7.org/fhir/StructureDefinition/Device"
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/Organization",
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson",
+                "http://hl7.org/fhir/StructureDefinition/Device"
               ]
             }
           ]
@@ -3857,7 +4863,7 @@
           ],
           "binding": {
             "description": "Indicates specific responsibility of an individual within the care team, such as \"Primary physician\", \"Team coordinator\", \"Caregiver\", etc.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/participant-role"
+            "valueSet": "http://hl7.org/fhir/ValueSet/participant-role"
           }
         },
         {
@@ -3870,14 +4876,14 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Practitioner",
-                "https://hl7.org/fhir/StructureDefinition/PractitionerRole",
-                "https://hl7.org/fhir/StructureDefinition/Organization",
-                "https://hl7.org/fhir/StructureDefinition/CareTeam",
-                "https://hl7.org/fhir/StructureDefinition/HealthcareService",
-                "https://hl7.org/fhir/StructureDefinition/Patient",
-                "https://hl7.org/fhir/StructureDefinition/Device",
-                "https://hl7.org/fhir/StructureDefinition/RelatedPerson"
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/Organization",
+                "http://hl7.org/fhir/StructureDefinition/CareTeam",
+                "http://hl7.org/fhir/StructureDefinition/HealthcareService",
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Device",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson"
               ]
             }
           ]
@@ -3895,7 +4901,7 @@
           ],
           "binding": {
             "description": "A location type where services are delivered.",
-            "valueSet": "https://terminology.hl7.org/ValueSet/v3-ServiceDeliveryLocationRoleType"
+            "valueSet": "http://terminology.hl7.org/ValueSet/v3-ServiceDeliveryLocationRoleType"
           }
         },
         {
@@ -3908,7 +4914,7 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Location"
+                "http://hl7.org/fhir/StructureDefinition/Location"
               ]
             }
           ]
@@ -3926,7 +4932,7 @@
           ],
           "binding": {
             "description": "Diagnosis or problem codes justifying the reason for requesting the service investigation.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/procedure-reason"
+            "valueSet": "http://hl7.org/fhir/ValueSet/procedure-reason"
           }
         },
         {
@@ -3939,10 +4945,10 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Condition",
-                "https://hl7.org/fhir/StructureDefinition/Observation",
-                "https://hl7.org/fhir/StructureDefinition/DiagnosticReport",
-                "https://hl7.org/fhir/StructureDefinition/DocumentReference"
+                "http://hl7.org/fhir/StructureDefinition/Condition",
+                "http://hl7.org/fhir/StructureDefinition/Observation",
+                "http://hl7.org/fhir/StructureDefinition/DiagnosticReport",
+                "http://hl7.org/fhir/StructureDefinition/DocumentReference"
               ]
             }
           ]
@@ -3957,8 +4963,8 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Coverage",
-                "https://hl7.org/fhir/StructureDefinition/ClaimResponse"
+                "http://hl7.org/fhir/StructureDefinition/Coverage",
+                "http://hl7.org/fhir/StructureDefinition/ClaimResponse"
               ]
             }
           ]
@@ -3973,7 +4979,7 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Resource"
+                "http://hl7.org/fhir/StructureDefinition/Resource"
               ]
             }
           ]
@@ -3988,7 +4994,7 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Specimen"
+                "http://hl7.org/fhir/StructureDefinition/Specimen"
               ]
             }
           ]
@@ -4006,7 +5012,7 @@
           ],
           "binding": {
             "description": "Codes describing anatomical locations. May include laterality.",
-            "valueSet": "https://hl7.org/fhir/ValueSet/body-site"
+            "valueSet": "http://hl7.org/fhir/ValueSet/body-site"
           }
         },
         {
@@ -4043,7 +5049,7 @@
             {
               "code": "Reference",
               "targetProfile": [
-                "https://hl7.org/fhir/StructureDefinition/Provenance"
+                "http://hl7.org/fhir/StructureDefinition/Provenance"
               ]
             }
           ]

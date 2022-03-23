@@ -1,10 +1,13 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, Resource, StructureDefinition } from '@medplum/fhirtypes';
+import { writeFileSync } from 'fs';
+import { resolve } from 'path';
 
 const resourceTypes = [
   'Patient',
   'Organization',
   'Practitioner',
+  'Encounter',
   'DiagnosticReport',
   'Observation',
   'Questionnaire',
@@ -38,14 +41,16 @@ export function main(): void {
     }
   }
   console.log(JSON.stringify(output, keyReplacer, 2));
+  writeFileSync(
+    resolve(__dirname, '../../mock/src/mocks/structuredefinitions.json'),
+    JSON.stringify(output, keyReplacer, 2),
+    'utf8'
+  );
 }
 
 function keyReplacer(key: string, value: any): any {
   if (key !== '' && !key.match(/\d+/) && !properties.includes(key)) {
     return undefined;
-  }
-  if (value && typeof value === 'string' && value.startsWith('http://')) {
-    return value.replace('http://', 'https://');
   }
   return value;
 }

@@ -454,6 +454,8 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       <SearchFilterValueDialog
         visible={stateRef.current.filterDialogVisible}
         title={'Input'}
+        schema={schema}
+        resourceType={resourceType}
         searchParam={state.popupSearchParam}
         filter={state.filterDialogFilter}
         defaultValue={''}
