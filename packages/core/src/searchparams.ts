@@ -59,7 +59,7 @@ export function getSearchParameterDetails(
 
   for (let i = 1; i < expression.length; i++) {
     const propertyName = expression[i];
-    elementDefinition = structureDefinitions.types[baseType]?.properties?.[propertyName];
+    elementDefinition = getElementDefinitionByName(structureDefinitions, baseType, propertyName);
     if (!elementDefinition) {
       // This happens on complex properties such as "collected[x]"/"collectedDateTime"/"collectedPeriod"
       // In the future, explore returning multiple column definitions
@@ -97,6 +97,37 @@ export function getSearchParameterDetails(
  */
 function convertCodeToColumnName(code: string): string {
   return code.split('-').reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
+}
+
+/**
+ * Tries to find an element definition by name.
+ * Also handles "choice of type" properties such as Observation.value[x].
+ * @param schema The indexed schema.
+ * @param baseType The base type of the element definition.
+ * @param propertyName The property name of the element definition.
+ * @returns The element definition if found.
+ */
+function getElementDefinitionByName(
+  schema: IndexedStructureDefinition,
+  baseType: string,
+  propertyName: string
+): ElementDefinition | undefined {
+  const typeSchema = schema.types[baseType];
+  if (!typeSchema) {
+    return undefined;
+  }
+
+  const properties = typeSchema.properties;
+  if (propertyName in properties) {
+    return properties[propertyName];
+  }
+
+  const propertyName2 = Object.keys(properties).find((k) => k.startsWith(propertyName));
+  if (propertyName2) {
+    return properties[propertyName2];
+  }
+
+  return undefined;
 }
 
 function getSearchParameterType(searchParam: SearchParameter, propertyType: string): SearchParameterType {

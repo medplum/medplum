@@ -1,6 +1,5 @@
 import React from 'react';
 import { Input, InputProps } from './Input';
-import './Input.css';
 
 /**
  * The DateTimeInput component is a wrapper around the HTML5 input type="datetime-local".
@@ -25,35 +24,50 @@ export function DateTimeInput(props: InputProps): JSX.Element {
   );
 }
 
-function convertIsoToLocal(isoString: string | undefined): string {
+/**
+ * Converts an ISO-8601 date/time string to a local date/time string.
+ * @param isoString The ISO-8601 date/time string to convert.
+ * @returns The local date/time string.
+ */
+export function convertIsoToLocal(isoString: string | undefined): string {
   if (!isoString) {
     return '';
   }
 
-  try {
-    // Convert the ISO-8601 date to a local datetime-local value.
-    // See: https://developer.mozilla.org/en-US/docs/Web/HTML/Date_and_time_formats#local_date_and_time_strings
-    // See: https://stackoverflow.com/a/60368477
-    const date = new Date(isoString);
-    return date.toLocaleDateString('sv') + 'T' + date.toLocaleTimeString('sv');
-  } catch (err) {
+  // Convert the ISO-8601 date to a local datetime-local value.
+  // See: https://developer.mozilla.org/en-US/docs/Web/HTML/Date_and_time_formats#local_date_and_time_strings
+  // See: https://stackoverflow.com/a/60368477
+  const date = new Date(isoString);
+  if (!isValidDate(date)) {
     // If the input string was malformed, return an empty string.
     return '';
   }
+
+  return date.toLocaleDateString('sv') + 'T' + date.toLocaleTimeString('sv');
 }
 
-function convertLocalToIso(localString: string | undefined): string {
+/**
+ * Converts a local date/time string to an ISO-8601 date/time string.
+ * @param localString The local date/time string to convert.
+ * @returns The ISO-8601 date/time string.
+ */
+export function convertLocalToIso(localString: string | undefined): string {
   if (!localString) {
     return '';
   }
 
-  try {
-    // Try to parse the local string as a Date
-    // JavaScript's Date() constructor defaults to the local time zone.
-    // The Date() constructor will throw if the value is malformed.
-    return new Date(localString).toISOString();
-  } catch (err) {
+  // Try to parse the local string as a Date
+  // JavaScript's Date() constructor defaults to the local time zone.
+  // The Date() constructor will throw if the value is malformed.
+  const date = new Date(localString);
+  if (!isValidDate(date)) {
     // If the input string was malformed, return an empty string.
     return '';
   }
+
+  return date.toISOString();
+}
+
+function isValidDate(date: Date): boolean {
+  return date instanceof Date && !isNaN(date.getTime());
 }

@@ -40,6 +40,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
         <input
           type="checkbox"
           name={name}
+          data-testid={name}
           defaultChecked={props.defaultValue === 'true'}
           value="true"
           onChange={(e: React.ChangeEvent) => props.onChange((e.target as HTMLInputElement).checked ? 'true' : 'false')}
@@ -47,7 +48,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
       );
 
     case SearchParameterType.DATE:
-      return <Input type="date" defaultValue={props.defaultValue} onChange={props.onChange} />;
+      return <Input type="date" testid={name} defaultValue={props.defaultValue} onChange={props.onChange} />;
 
     case SearchParameterType.DATETIME:
       return <DateTimeInput testid={name} defaultValue={props.defaultValue} onChange={props.onChange} />;

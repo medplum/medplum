@@ -59,6 +59,23 @@ describe('SearchParameterDetails', () => {
     expect(details.array).toEqual(false);
   });
 
+  test('Quantity param', () => {
+    const valueQuantityParam: SearchParameter = {
+      resourceType: 'SearchParameter',
+      id: 'Observation-value-quantity',
+      code: 'value-quantity',
+      base: ['Observation'],
+      type: 'quantity',
+      expression: '(Observation.value as Quantity) | (Observation.value as SampledData)',
+    };
+
+    const details = getSearchParameterDetails(structureDefinitions, 'Observation', valueQuantityParam);
+    expect(details).toBeDefined();
+    expect(details.columnName).toEqual('valueQuantity');
+    expect(details.type).toEqual(SearchParameterType.QUANTITY);
+    expect(details.array).toEqual(false);
+  });
+
   test('Get nested details', () => {
     const missingExpressionParam: SearchParameter = {
       resourceType: 'SearchParameter',

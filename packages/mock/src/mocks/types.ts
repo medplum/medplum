@@ -93,6 +93,14 @@ export const PatientSearchParameters: SearchParameter[] = [
     expression: 'ServiceRequest.subject',
     target: ['Group', 'Device', 'Patient', 'Location'],
   },
+  {
+    resourceType: 'SearchParameter',
+    id: 'Observation-value-quantity',
+    code: 'value-quantity',
+    base: ['Observation'],
+    type: 'quantity',
+    expression: '(Observation.value as Quantity) | (Observation.value as SampledData)',
+  },
 ];
 
 export const GraphQLSchemaResponse = {
