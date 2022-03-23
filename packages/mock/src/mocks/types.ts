@@ -101,6 +101,14 @@ export const PatientSearchParameters: SearchParameter[] = [
     type: 'quantity',
     expression: '(Observation.value as Quantity) | (Observation.value as SampledData)',
   },
+  {
+    resourceType: 'SearchParameter',
+    id: 'Encounter-length',
+    code: 'length',
+    base: ['Encounter'],
+    type: 'quantity',
+    expression: 'Encounter.length',
+  },
 ];
 
 export const GraphQLSchemaResponse = {

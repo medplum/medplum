@@ -5,7 +5,6 @@ import { InputRow } from './InputRow';
 
 export interface QuantityInputProps {
   name: string;
-  testid?: string;
   defaultValue?: Quantity;
   onChange?: (value: Quantity) => void;
 }
