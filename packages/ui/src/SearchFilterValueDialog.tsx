@@ -2,6 +2,7 @@ import { Filter, IndexedStructureDefinition } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { Dialog } from './Dialog';
+import { Form } from './Form';
 import { SearchFilterValueInput } from './SearchFilterValueInput';
 
 export interface SearchFilterValueDialogProps {
@@ -23,21 +24,23 @@ export function SearchFilterValueDialog(props: SearchFilterValueDialogProps): JS
     return null;
   }
 
+  function onOk(): void {
+    props.onOk({ ...(props.filter as Filter), value });
+  }
+
   return (
-    <Dialog
-      title={props.title}
-      visible={props.visible}
-      onOk={() => props.onOk({ ...(props.filter as Filter), value })}
-      onCancel={props.onCancel}
-    >
+    <Dialog title={props.title} visible={props.visible} onOk={onOk} onCancel={props.onCancel}>
       <div style={{ width: 500 }}>
-        <SearchFilterValueInput
-          schema={props.schema}
-          resourceType={props.resourceType}
-          searchParam={props.searchParam}
-          defaultValue={value}
-          onChange={setValue}
-        />
+        <Form onSubmit={onOk}>
+          <SearchFilterValueInput
+            schema={props.schema}
+            resourceType={props.resourceType}
+            searchParam={props.searchParam}
+            defaultValue={value}
+            autoFocus={true}
+            onChange={setValue}
+          />
+        </Form>
       </div>
     </Dialog>
   );
