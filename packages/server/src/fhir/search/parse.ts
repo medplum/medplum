@@ -75,6 +75,7 @@ class SearchParser implements SearchRequest {
   readonly sortRules: SortRule[];
   page: number;
   count: number;
+  offset: number;
   total?: 'none' | 'estimate' | 'accurate';
 
   constructor(resourceType: string, query: Record<string, string[] | string | undefined>) {
@@ -83,6 +84,7 @@ class SearchParser implements SearchRequest {
     this.sortRules = [];
     this.page = 0;
     this.count = 0;
+    this.offset = 0;
 
     for (const [key, value] of Object.entries(query)) {
       if (Array.isArray(value)) {
@@ -90,6 +92,17 @@ class SearchParser implements SearchRequest {
       } else {
         this.#parseKeyValue(key, value ?? '');
       }
+    }
+
+    if (this.offset > 0) {
+      // TODO: Reconcile "page" and "offset"
+      // In normal FHIR search, the notion of "page" and "offset" is unspecified:
+      // https://www.hl7.org/fhir/search.html
+      // In the absence of a spec, we used "page"
+      // In GraphQL, "offset" is specified:
+      // https://www.hl7.org/fhir/graphql.html
+      // It would be nice to migrate everything to the specified behavior.
+      this.page = Math.floor(this.offset / this.count);
     }
   }
 
@@ -137,6 +150,10 @@ class SearchParser implements SearchRequest {
 
       case '_count':
         this.count = parseInt(value);
+        break;
+
+      case '_offset':
+        this.offset = parseInt(value);
         break;
 
       case '_total':
