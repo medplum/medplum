@@ -11,6 +11,7 @@ export interface SearchFilterValueInputProps {
   resourceType: string;
   searchParam: SearchParameter;
   defaultValue?: string;
+  autoFocus?: boolean;
   onChange: (value: string) => void;
 }
 
@@ -72,6 +73,8 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
       );
 
     default:
-      return <Input testid={name} defaultValue={props.defaultValue} onChange={props.onChange} />;
+      return (
+        <Input testid={name} defaultValue={props.defaultValue} autoFocus={props.autoFocus} onChange={props.onChange} />
+      );
   }
 }
