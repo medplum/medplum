@@ -1,4 +1,4 @@
-import { assertOk, Filter, Operator } from '@medplum/core';
+import { assertOk } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import {
   GraphQLBoolean,
@@ -7,6 +7,7 @@ import {
   GraphQLFieldConfigMap,
   GraphQLFloat,
   GraphQLID,
+  GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
@@ -19,6 +20,7 @@ import {
 import { JSONSchema4 } from 'json-schema';
 import { Repository } from './repo';
 import { getResourceTypes, getSchemaDefinition } from './schema';
+import { parseSearchRequest } from './search';
 import { getSearchParameters } from './structure';
 
 const typeCache: Record<string, GraphQLOutputType> = {
@@ -73,7 +75,24 @@ function buildRootSchema(): GraphQLSchema {
     };
 
     // Search resource by search parameters
-    const args: GraphQLFieldConfigArgumentMap = {};
+    const args: GraphQLFieldConfigArgumentMap = {
+      _count: {
+        type: GraphQLInt,
+        description: 'Specify how many elements to return from a repeating list.',
+      },
+      _offset: {
+        type: GraphQLInt,
+        description: 'Specify the offset to start at for a repeating element.',
+      },
+      _sort: {
+        type: GraphQLString,
+        description: 'Specify the sort order by comma-separated list of sort rules in priority order.',
+      },
+      _lastUpdated: {
+        type: GraphQLString,
+        description: 'Select resources based on the last time they were changed.',
+      },
+    };
     const searchParams = getSearchParameters(resourceType);
     if (searchParams) {
       for (const [name, searchParam] of Object.entries(searchParams)) {
@@ -220,25 +239,14 @@ function getRefString(property: any): string | undefined {
  */
 async function resolveBySearch(
   source: any,
-  args: any,
+  args: Record<string, string>,
   ctx: any,
   info: GraphQLResolveInfo
 ): Promise<Resource[] | undefined> {
   const fieldName = info.fieldName;
-  const resourceType = fieldName.substr(0, fieldName.length - 4);
+  const resourceType = fieldName.substring(0, fieldName.length - 4); // Remove "List"
   const repo = ctx.res.locals.repo as Repository;
-  const [outcome, bundle] = await repo.search({
-    resourceType,
-    count: 100,
-    filters: Object.entries(args).map(
-      (e) =>
-        ({
-          code: e[0],
-          operator: Operator.EQUALS,
-          value: e[1] as string,
-        } as Filter)
-    ),
-  });
+  const [outcome, bundle] = await repo.search(parseSearchRequest(resourceType, args));
   assertOk(outcome, bundle);
   return bundle.entry?.map((e) => e.resource as Resource);
 }
