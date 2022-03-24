@@ -78,7 +78,7 @@ function buildRootSchema(): GraphQLSchema {
     const args: GraphQLFieldConfigArgumentMap = {
       _count: {
         type: GraphQLInt,
-        description: 'Specify how many to elements to return from a repeating list.',
+        description: 'Specify how many elements to return from a repeating list.',
       },
       _offset: {
         type: GraphQLInt,
