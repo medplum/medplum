@@ -260,6 +260,54 @@ describe('GraphQL', () => {
     expect(res.body.data.EncounterList.length).toBe(1);
   });
 
+  test('Sort by _lastUpdated asc', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
+      {
+        EncounterList(_sort: "_lastUpdated") {
+          id
+          meta { lastUpdated }
+        }
+      }
+    `,
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.data.EncounterList).toBeDefined();
+    expect(res.body.data.EncounterList.length >= 2).toBe(true);
+
+    const e1 = res.body.data.EncounterList[0];
+    const e2 = res.body.data.EncounterList[1];
+    expect(e1.meta.lastUpdated.localeCompare(e2.meta.lastUpdated)).toBeLessThanOrEqual(0);
+  });
+
+  test('Sort by _lastUpdated desc', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
+      {
+        EncounterList(_sort: "-_lastUpdated") {
+          id
+          meta { lastUpdated }
+        }
+      }
+    `,
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.data.EncounterList).toBeDefined();
+    expect(res.body.data.EncounterList.length >= 2).toBe(true);
+
+    const e1 = res.body.data.EncounterList[0];
+    const e2 = res.body.data.EncounterList[1];
+    expect(e1.meta.lastUpdated.localeCompare(e2.meta.lastUpdated)).toBeGreaterThanOrEqual(0);
+  });
+
   test('Read resource by reference', async () => {
     const res = await request(app)
       .post('/fhir/R4/$graphql')

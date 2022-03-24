@@ -239,29 +239,14 @@ function getRefString(property: any): string | undefined {
  */
 async function resolveBySearch(
   source: any,
-  args: any,
+  args: Record<string, string>,
   ctx: any,
   info: GraphQLResolveInfo
 ): Promise<Resource[] | undefined> {
   const fieldName = info.fieldName;
-  const resourceType = fieldName.substr(0, fieldName.length - 4);
+  const resourceType = fieldName.substring(0, fieldName.length - 4); // Remove "List"
   const repo = ctx.res.locals.repo as Repository;
-
-  const entries: Record<string, string[]> = {};
-  Object.entries(args).forEach(([key, value]) => {
-    let values = entries[key];
-    if (!values) {
-      values = [];
-      entries[key] = values;
-    }
-    if (typeof value === 'string') {
-      values.push(value);
-    } else if (typeof value === 'number') {
-      values.push(value.toString());
-    }
-  });
-
-  const [outcome, bundle] = await repo.search(parseSearchRequest(resourceType, entries));
+  const [outcome, bundle] = await repo.search(parseSearchRequest(resourceType, args));
   assertOk(outcome, bundle);
   return bundle.entry?.map((e) => e.resource as Resource);
 }
