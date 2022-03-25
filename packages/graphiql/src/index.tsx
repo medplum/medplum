@@ -4,6 +4,8 @@ import GraphiQL from 'graphiql';
 import React from 'react';
 import { render } from 'react-dom';
 import 'regenerator-runtime/runtime.js';
+import '@medplum/ui/defaulttheme.css';
+import '@medplum/ui/styles.css';
 import 'graphiql/graphiql.css';
 
 const HELP_TEXT = `# Welcome to Medplum GraphiQL
@@ -40,7 +42,7 @@ const medplum = new MedplumClient({
 function App(): JSX.Element {
   const profile = useMedplumProfile();
   return profile ? (
-    <GraphiQL fetcher={async (graphQLParams) => medplum.graphql(graphQLParams)} defaultQuery={HELP_TEXT} />
+    <GraphiQL fetcher={async (graphQLParams) => medplum.graphql(graphQLParams.query)} defaultQuery={HELP_TEXT} />
   ) : (
     <SignInForm onSuccess={() => undefined} />
   );
