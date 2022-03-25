@@ -11,7 +11,7 @@ export interface HeaderSearchInputProps {
   readonly name: string;
   readonly className?: string;
   readonly placeholder?: string;
-  readonly onChange: (value: HeaderSearchTypes | undefined) => void;
+  readonly onChange: (value: HeaderSearchTypes) => void;
 }
 
 interface SearchGraphQLResponse {
@@ -49,13 +49,18 @@ export function HeaderSearchInput(props: HeaderSearchInputProps): JSX.Element {
         if (item.resourceType === 'Patient' && item.birthDate) {
           return 'DoB: ' + item.birthDate;
         }
+        if (item.resourceType === 'ServiceRequest' && item.subject) {
+          return item.subject.display;
+        }
         return undefined;
       }}
       name={props.name}
       className={props.className}
       placeholder={props.placeholder}
       onChange={(items: HeaderSearchTypes[]) => {
-        props.onChange(items.length > 0 ? items[0] : undefined);
+        if (items.length > 0) {
+          props.onChange(items[0]);
+        }
       }}
     />
   );

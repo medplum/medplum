@@ -1,11 +1,23 @@
-import { HomerSimpson, MockClient } from '@medplum/mock';
+import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { HeaderSearchInput, HeaderSearchInputProps } from './HeaderSearchInput';
 import { MedplumProvider } from './MedplumProvider';
 
 const medplum = new MockClient();
-medplum.graphql = jest.fn(() => Promise.resolve({ data: { Patients1: [HomerSimpson] } }));
+medplum.graphql = jest.fn((query: string) => {
+  const data: Record<string, unknown> = {};
+  if (query.includes('"Simpson"')) {
+    data.Patients1 = [HomerSimpson];
+  }
+  if (query.includes('"abc"')) {
+    data.Patients2 = [HomerSimpson];
+  }
+  if (query.includes('"9001"')) {
+    data.ServiceRequestList = [HomerServiceRequest];
+  }
+  return Promise.resolve({ data });
+});
 
 function setup(args: HeaderSearchInputProps): void {
   render(
@@ -62,7 +74,7 @@ describe('HeaderSearchInput', () => {
     expect(screen.getByText('Homer Simpson')).toBeDefined();
   });
 
-  test('Call onChange', async () => {
+  test.each(['Simpson', 'abc', '9001'])('onChange with %s', async (query) => {
     const onChange = jest.fn();
 
     setup({
@@ -72,9 +84,10 @@ describe('HeaderSearchInput', () => {
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
 
-    // Enter "Simpson"
+    // Enter the search term
+    // Can be patient name, patient identifier, or service request identifier
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Simpson' } });
+      fireEvent.change(input, { target: { value: query } });
     });
 
     // Wait for the drop down
@@ -88,7 +101,6 @@ describe('HeaderSearchInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Homer Simpson')).toBeDefined();
     expect(onChange).toHaveBeenCalled();
   });
 });

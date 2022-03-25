@@ -58,11 +58,7 @@ export function Header(props: HeaderProps): JSX.Element {
               name="search"
               className="medplum-nav-search-container"
               placeholder="Search"
-              onChange={(resource: HeaderSearchTypes | undefined) => {
-                if (resource) {
-                  navigate(`/${resource.resourceType}/${resource.id}`);
-                }
-              }}
+              onChange={(resource: HeaderSearchTypes) => navigate(`/${resource.resourceType}/${resource.id}`)}
             />
           )}
         </div>
