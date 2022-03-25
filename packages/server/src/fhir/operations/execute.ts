@@ -7,6 +7,7 @@ import { asyncWrap } from '../../async';
 import { logger } from '../../logger';
 import { AuditEventOutcome } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
+import { createPdf } from '../../util/pdf';
 import { Repository, systemRepo } from '../repo';
 
 export const EXECUTE_CONTENT_TYPES = [
@@ -71,6 +72,7 @@ export async function executeBot(bot: Bot, context: any): Promise<any> {
     ...context,
     assertOk,
     createReference,
+    createPdf,
   };
 
   const options: vm.RunningScriptOptions = {
