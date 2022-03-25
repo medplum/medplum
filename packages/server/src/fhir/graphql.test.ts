@@ -1,5 +1,5 @@
-import { createReference } from '@medplum/core';
-import { Encounter, Patient } from '@medplum/fhirtypes';
+import { createReference, getReferenceString } from '@medplum/core';
+import { Encounter, Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -13,6 +13,7 @@ import { seedDatabase } from '../seed';
 const app = express();
 let accessToken: string;
 let patient: Patient;
+let serviceRequest: ServiceRequest;
 let encounter1: Encounter;
 let encounter2: Encounter;
 
@@ -42,8 +43,23 @@ describe('GraphQL', () => {
     expect(res1.status).toBe(201);
     patient = res1.body as Patient;
 
-    // Create an encounter referring to the patient
+    // Create a service request
     const res2 = await request(app)
+      .post(`/fhir/R4/ServiceRequest`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'ServiceRequest',
+        code: {
+          text: 'Chest CT',
+        },
+        subject: createReference(patient),
+      } as ServiceRequest);
+    expect(res2.status).toBe(201);
+    serviceRequest = res2.body as ServiceRequest;
+
+    // Create an encounter referring to the patient
+    const res3 = await request(app)
       .post(`/fhir/R4/Encounter`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
@@ -53,12 +69,13 @@ describe('GraphQL', () => {
           code: 'HH',
         },
         subject: createReference(patient),
+        basedOn: [createReference(serviceRequest)],
       });
-    expect(res2.status).toBe(201);
-    encounter1 = res2.body as Encounter;
+    expect(res3.status).toBe(201);
+    encounter1 = res3.body as Encounter;
 
     // Create an encounter referring to missing patient
-    const res3 = await request(app)
+    const res4 = await request(app)
       .post(`/fhir/R4/Encounter`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
@@ -71,8 +88,8 @@ describe('GraphQL', () => {
           reference: 'Patient/' + randomUUID(),
         },
       });
-    expect(res3.status).toBe(201);
-    encounter2 = res3.body as Encounter;
+    expect(res4.status).toBe(201);
+    encounter2 = res4.body as Encounter;
   });
 
   afterAll(async () => {
@@ -250,6 +267,25 @@ describe('GraphQL', () => {
         query: `
       {
         EncounterList(_count: 1) {
+          id
+        }
+      }
+    `,
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.data.EncounterList).toBeDefined();
+    expect(res.body.data.EncounterList.length).toBe(1);
+  });
+
+  test('Search with based-on', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
+      {
+        EncounterList(based_on: "${getReferenceString(serviceRequest)}") {
           id
         }
       }
