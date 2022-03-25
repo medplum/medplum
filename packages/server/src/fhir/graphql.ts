@@ -95,8 +95,10 @@ function buildRootSchema(): GraphQLSchema {
     };
     const searchParams = getSearchParameters(resourceType);
     if (searchParams) {
-      for (const [name, searchParam] of Object.entries(searchParams)) {
-        args[name.replaceAll('-', '_')] = {
+      for (const [code, searchParam] of Object.entries(searchParams)) {
+        // GraphQL does not support dashes in argument names
+        // So convert dashes to underscores
+        args[fhirParamToGraphQLField(code)] = {
           type: GraphQLString,
           description: searchParam.description,
         };
@@ -246,6 +248,8 @@ async function resolveBySearch(
   const fieldName = info.fieldName;
   const resourceType = fieldName.substring(0, fieldName.length - 4); // Remove "List"
   const repo = ctx.res.locals.repo as Repository;
+  // Reverse the transform of dashes to underscores, back to dashes
+  args = Object.fromEntries(Object.entries(args).map(([key, value]) => [graphQLFieldToFhirParam(key), value]));
   const [outcome, bundle] = await repo.search(parseSearchRequest(resourceType, args));
   assertOk(outcome, bundle);
   return bundle.entry?.map((e) => e.resource as Resource);
@@ -305,4 +309,12 @@ function resolveTypeByReference(resource: Resource | undefined): string | undefi
   }
 
   return (graphQLType as GraphQLObjectType).name;
+}
+
+function fhirParamToGraphQLField(code: string): string {
+  return code.replaceAll('-', '_');
+}
+
+function graphQLFieldToFhirParam(code: string): string {
+  return code.startsWith('_') ? code : code.replaceAll('_', '-');
 }
