@@ -61636,6 +61636,10 @@
           "description": "Extensions for language",
           "$ref": "#/definitions/Element"
         },
+        "name": {
+          "description": "A name associated with the UserConfiguration.",
+          "$ref": "#/definitions/string"
+        },
         "menu": {
           "description": "Optional menu of shortcuts to URLs for quick access.",
           "items": {

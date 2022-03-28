@@ -65615,5 +65615,22 @@
       "xpath" : "f:Bot/f:name",
       "xpathUsage" : "normal"
     }
+  },
+  {
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/UserConfiguration-name",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "UserConfiguration-name",
+      "url" : "https://medplum.com/fhir/SearchParameter/UserConfiguration-name",
+      "version" : "4.0.1",
+      "name" : "name",
+      "publisher" : "Medplum",
+      "code" : "name",
+      "base" : ["UserConfiguration"],
+      "type" : "string",
+      "expression" : "UserConfiguration.name",
+      "xpath" : "f:UserConfiguration/f:name",
+      "xpathUsage" : "normal"
+    }
   }]
 }

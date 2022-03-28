@@ -110,6 +110,7 @@ export function getDefaultFields(resourceType: string): string[] {
     case 'Project':
     case 'Organization':
     case 'Questionnaire':
+    case 'UserConfiguration':
       fields.push('name');
       break;
     case 'CodeSystem':
