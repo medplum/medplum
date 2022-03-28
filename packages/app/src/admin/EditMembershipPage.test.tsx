@@ -68,11 +68,47 @@ describe('EditMembershipPage', () => {
 
     expect(screen.getByText('Save')).toBeInTheDocument();
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    // There are 2 autocompletes.  Access policy is the first.
+    const input = screen.getAllByTestId('input-element')[0] as HTMLInputElement;
 
     // Enter "Example Access Policy"
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Example Access Policy' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+      await waitFor(() => screen.getByTestId('dropdown'));
+    });
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(screen.getByTestId('success')).toBeInTheDocument();
+  });
+
+  test('Submit with user configuration', async () => {
+    setup('/admin/projects/123/members/456');
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Save'));
+    });
+
+    expect(screen.getByText('Save')).toBeInTheDocument();
+
+    // There are 2 autocompletes.  User configuration is the second.
+    const input = screen.getAllByTestId('input-element')[1] as HTMLInputElement;
+
+    // Enter "Example Access Policy"
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Example User Configuration' } });
     });
 
     // Wait for the drop down

@@ -1260,6 +1260,16 @@
             }]
           },
           {
+            "id" : "UserConfiguration.name",
+            "path" : "UserConfiguration.name",
+            "definition" : "A name associated with the UserConfiguration.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
             "id" : "UserConfiguration.menu",
             "path" : "UserConfiguration.menu",
             "definition" : "Optional menu of shortcuts to URLs.",
