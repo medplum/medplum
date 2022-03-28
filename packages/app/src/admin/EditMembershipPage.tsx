@@ -22,6 +22,7 @@ export function EditMembershipPage(): JSX.Element {
       .then((response) => {
         setMembership(response);
         setAccessPolicy(response.accessPolicy);
+        setUserConfiguration(response.userConfiguration);
         setAdmin(response.admin);
         setLoading(false);
       })
@@ -52,6 +53,7 @@ export function EditMembershipPage(): JSX.Element {
           const updated: ProjectMembership = {
             ...membership,
             accessPolicy,
+            userConfiguration,
             admin,
           };
 
