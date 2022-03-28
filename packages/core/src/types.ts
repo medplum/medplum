@@ -185,6 +185,7 @@ function indexType(schema: IndexedStructureDefinition, element: ElementDefinitio
   const typeName = buildTypeName(parts);
   if (!(typeName in schema.types)) {
     schema.types[typeName] = createTypeSchema(typeName, element.definition);
+    schema.types[typeName].parentType = buildTypeName(parts.slice(0, parts.length - 1));
   }
 }
 
