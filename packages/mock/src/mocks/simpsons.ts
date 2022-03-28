@@ -278,6 +278,12 @@ export const HomerServiceRequest: ServiceRequest = {
       reference: 'Practitioner/123',
     },
   },
+  identifier: [
+    {
+      system: 'https://example.com',
+      value: '9001',
+    },
+  ],
   code: {
     coding: [
       {

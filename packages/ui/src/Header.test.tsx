@@ -1,4 +1,4 @@
-import { MockClient } from '@medplum/mock';
+import { HomerSimpson, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -13,6 +13,7 @@ jest.mock('react-router-dom', () => ({
 }));
 
 const medplum = new MockClient();
+medplum.graphql = jest.fn(() => Promise.resolve({ data: { Patients1: [HomerSimpson] } }));
 
 function setup(props?: HeaderProps): void {
   render(

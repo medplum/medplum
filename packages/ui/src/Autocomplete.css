@@ -80,7 +80,7 @@
   position: absolute;
   background: var(--medplum-surface);
   width: 300px;
-  z-index: 1;
+  z-index: 5;
   cursor: pointer;
   border: 0.1px solid var(--medplum-gray-300);
   border-radius: 2px;
@@ -96,6 +96,8 @@
   margin: 0;
   padding: 0;
   cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .medplum-autocomplete-active {
@@ -115,10 +117,14 @@
   padding: 0 0 0 8px;
   cursor: pointer;
   user-select: none;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .medplum-autocomplete-label div {
   line-height: 18px;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .medplum-autocomplete-label .medplum-autocomplete-help-text {

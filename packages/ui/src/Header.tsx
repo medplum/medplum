@@ -1,14 +1,14 @@
 import { getReferenceString, ProfileResource } from '@medplum/core';
-import { HumanName, Patient, UserConfiguration } from '@medplum/fhirtypes';
+import { HumanName, UserConfiguration } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
+import { HeaderSearchInput, HeaderSearchTypes } from './HeaderSearchInput';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { MedplumLink } from './MedplumLink';
 import { useMedplumContext } from './MedplumProvider';
 import { Popup } from './Popup';
-import { ResourceInput } from './ResourceInput';
 import './Header.css';
 
 export interface HeaderProps {
@@ -53,17 +53,12 @@ export function Header(props: HeaderProps): JSX.Element {
             Medplum
           </MedplumLink>
           {context.profile && (
-            <ResourceInput
+            <HeaderSearchInput
               key={`header-input-${location.pathname}`}
-              resourceType="Patient"
               name="search"
               className="medplum-nav-search-container"
               placeholder="Search"
-              onChange={(patient: Patient | undefined) => {
-                if (patient) {
-                  navigate(`/${patient.resourceType}/${patient.id}`);
-                }
-              }}
+              onChange={(resource: HeaderSearchTypes) => navigate(`/${resource.resourceType}/${resource.id}`)}
             />
           )}
         </div>

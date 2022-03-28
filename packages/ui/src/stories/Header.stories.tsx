@@ -16,6 +16,38 @@ const manyLinks: UserConfigurationMenuLink[] = new Array(50).fill(0).map((el, in
 
 export const Basic = (args: HeaderProps): JSX.Element => {
   const ctx = useMedplumContext();
+  const medplum = ctx.medplum;
+
+  medplum.graphql = async () => {
+    return {
+      data: {
+        Patients1: [
+          {
+            resourceType: 'Patient',
+            id: '1',
+            name: [{ given: ['Homer'], family: 'Simpson' }],
+            birthDate: '1950-01-01',
+          },
+        ],
+        ServiceRequestList: [
+          {
+            resourceType: 'ServiceRequest',
+            id: '000000-0000-0000-0000-000000000000',
+            identifier: [
+              {
+                system: 'barcode',
+                value: '9001',
+              },
+            ],
+            subject: {
+              display: 'Patient 1',
+            },
+          },
+        ],
+      },
+    };
+  };
+
   return (
     <Header
       onLogo={() => alert('Logo!')}
