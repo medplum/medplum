@@ -1,5 +1,6 @@
 import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { randomUUID } from 'crypto';
 import React from 'react';
 import { HeaderSearchInput, HeaderSearchInputProps } from './HeaderSearchInput';
 import { MedplumProvider } from './MedplumProvider';
@@ -15,6 +16,29 @@ medplum.graphql = jest.fn((query: string) => {
   }
   if (query.includes('"9001"')) {
     data.ServiceRequestList = [HomerServiceRequest];
+  }
+  if (query.includes('"alpha"')) {
+    const names = ['___alpha', '__alpha', '_alpha', 'alpha'];
+    data.ServiceRequestList = names.map((name) => ({
+      resourceType: 'Patient',
+      id: randomUUID(),
+      name: [
+        {
+          given: [name],
+        },
+      ],
+    }));
+  }
+  if (query.includes('"many"')) {
+    data.Patients1 = new Array(10).fill(0).map(() => ({
+      resourceType: 'Patient',
+      id: randomUUID(),
+      name: [
+        {
+          family: '__Many__',
+        },
+      ],
+    }));
   }
   return Promise.resolve({ data });
 });
@@ -102,5 +126,53 @@ describe('HeaderSearchInput', () => {
     });
 
     expect(onChange).toHaveBeenCalled();
+  });
+
+  test('Sort by relevance', async () => {
+    setup({
+      name: 'foo',
+      onChange: jest.fn(),
+    });
+
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+
+    // Enter "Simpson"
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'many' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+      await waitFor(() => screen.getByTestId('dropdown'));
+    });
+
+    // There should only be 5 results displayed
+    const elements = screen.getAllByText('__Many__');
+    expect(elements.length).toBe(5);
+  });
+
+  test('Max results', async () => {
+    setup({
+      name: 'foo',
+      onChange: jest.fn(),
+    });
+
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+
+    // Enter "many"
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'many' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+      await waitFor(() => screen.getByTestId('dropdown'));
+    });
+
+    // There should only be 5 results displayed
+    const elements = screen.getAllByText('__Many__');
+    expect(elements.length).toBe(5);
   });
 });
