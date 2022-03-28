@@ -54,7 +54,7 @@ export function HeaderSearchInput(props: HeaderSearchInputProps): JSX.Element {
 
 function buildGraphQLQuery(input: string): string {
   return `{
-    Patients1: PatientList(name: "${encodeURIComponent(input)}") {
+    Patients1: PatientList(name: "${encodeURIComponent(input)}", _count: 5) {
       resourceType
       id
       identifier {
@@ -67,7 +67,7 @@ function buildGraphQLQuery(input: string): string {
       }
       birthDate
     }
-    Patients2: PatientList(identifier: "${encodeURIComponent(input)}") {
+    Patients2: PatientList(identifier: "${encodeURIComponent(input)}", _count: 5) {
       resourceType
       id
       identifier {
@@ -80,7 +80,7 @@ function buildGraphQLQuery(input: string): string {
       }
       birthDate
     }
-    ServiceRequestList(identifier: "${encodeURIComponent(input)}") {
+    ServiceRequestList(identifier: "${encodeURIComponent(input)}", _count: 5) {
       resourceType
       id
       identifier {
@@ -94,6 +94,14 @@ function buildGraphQLQuery(input: string): string {
   }`.replace(/\s+/g, ' ');
 }
 
+/**
+ * Returns a de-duped and sorted list of resources from the search response.
+ * The search request is actually 3+ separate searches, which can include duplicates.
+ * This function combines the results, de-dupes, and sorts by relevance.
+ * @param response The response from a search query.
+ * @param query The user entered search query.
+ * @returns The resources to display in the autocomplete.
+ */
 function getResourcesFromResponse(response: SearchGraphQLResponse, query: string): HeaderSearchTypes[] {
   const resources = [];
   if (response.data.Patients1) {
@@ -108,6 +116,11 @@ function getResourcesFromResponse(response: SearchGraphQLResponse, query: string
   return sortByRelevance(dedupeResources(resources), query).slice(0, 5);
 }
 
+/**
+ * Removes duplicate resources from an array by ID.
+ * @param resources The array of resources with possible duplicates.
+ * @returns The array of resources with no duplicates.
+ */
 function dedupeResources(resources: HeaderSearchTypes[]): HeaderSearchTypes[] {
   const ids = new Set<string>();
   const result = [];
@@ -122,12 +135,25 @@ function dedupeResources(resources: HeaderSearchTypes[]): HeaderSearchTypes[] {
   return result;
 }
 
+/**
+ * Sorts an array of resources by relevance.
+ * @param resources The candidate resources.
+ * @param query The user entered search string.
+ * @returns The sorted array of resources.
+ */
 function sortByRelevance(resources: HeaderSearchTypes[], query: string): HeaderSearchTypes[] {
   return resources.sort((a: HeaderSearchTypes, b: HeaderSearchTypes) => {
-    return getResourceScore(a, query) - getResourceScore(b, query);
+    return getResourceScore(b, query) - getResourceScore(a, query);
   });
 }
 
+/**
+ * Calculates a relevance score of a candidate resource.
+ * Higher scores are better.
+ * @param resource The candidate resource.
+ * @param query The user entered search string.
+ * @returns The relevance score of the candidate resource.
+ */
 function getResourceScore(resource: HeaderSearchTypes, query: string): number {
   let bestScore = 0;
 
@@ -146,6 +172,13 @@ function getResourceScore(resource: HeaderSearchTypes, query: string): number {
   return bestScore;
 }
 
+/**
+ * Calculates a relevance score of a candidate display string.
+ * Higher scores are better.
+ * @param str The candidate display string.
+ * @param query The user entered search string.
+ * @returns The relevance score of the candidate string.
+ */
 function getStringScore(str: string | undefined, query: string): number {
   if (!str) {
     return 0;
