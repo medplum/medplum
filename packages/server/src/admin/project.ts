@@ -33,6 +33,7 @@ projectAdminRouter.get(
         user: membership.user,
         profile: membership.profile,
         accessPolicy: membership.accessPolicy,
+        userConfiguration: membership.userConfiguration,
         role: getRole(project, membership),
       });
     }
