@@ -42,6 +42,11 @@ export interface UserConfiguration {
   readonly language?: string;
 
   /**
+   * A name associated with the UserConfiguration.
+   */
+  readonly name?: string;
+
+  /**
    * Optional menu of shortcuts to URLs.
    */
   readonly menu?: UserConfigurationMenu[];
