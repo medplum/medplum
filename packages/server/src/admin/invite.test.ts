@@ -148,6 +148,54 @@ describe('Admin Invite', () => {
     });
   });
 
+  test('Existing practitioner to project', async () => {
+    // First, Alice creates a project
+    const res = await request(app)
+      .post('/auth/register')
+      .type('json')
+      .send({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.project).toBeDefined();
+
+    // Second, Alice creates a Practitioner resource
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res2 = await request(app)
+      .post('/fhir/R4/Practitioner')
+      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .type('json')
+      .send({
+        resourceType: 'Practitioner',
+        name: [{ given: ['Bob'], family: 'Jones' }],
+        telecom: [{ system: 'email', value: bobEmail }],
+      });
+    expect(res2.status).toBe(201);
+    expect(res2.body.id).toBeDefined();
+
+    // Third, Alice invites Bob to the project
+    // Because there is already a practitioner with the same email,
+    // we should reuse the existing Practitioner resource
+    const res3 = await request(app)
+      .post('/admin/projects/' + resolveId(res.body.project) + '/invite')
+      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .send({
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+      });
+
+    expect(res3.status).toBe(200);
+    expect(res3.body.profile.resourceType).toBe('Practitioner');
+    expect(res3.body.profile.id).toBe(res2.body.id);
+  });
+
   test('Access denied', async () => {
     // First, Alice creates a project
     const res = await request(app)

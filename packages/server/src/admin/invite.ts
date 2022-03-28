@@ -50,7 +50,7 @@ export interface InviteRequest {
 
 export async function inviteUser(request: InviteRequest): Promise<Practitioner> {
   const project = request.project;
-  let user = await searchForExisting(request.email);
+  let user = await searchForExistingUser(request.email);
 
   if (user) {
     // Existing user
@@ -89,12 +89,15 @@ export async function inviteUser(request: InviteRequest): Promise<Practitioner> 
       ].join('\n')
     );
   }
-  const practitioner = await createPractitioner(request, project);
+  let practitioner = await searchForExistingPractitioner(project, request.email);
+  if (!practitioner) {
+    practitioner = await createPractitioner(request, project);
+  }
   await createProjectMembership(user, project, practitioner, request.accessPolicy);
   return practitioner;
 }
 
-async function searchForExisting(email: string): Promise<User | undefined> {
+async function searchForExistingUser(email: string): Promise<User | undefined> {
   const [outcome, bundle] = await systemRepo.search<User>({
     resourceType: 'User',
     filters: [
@@ -125,4 +128,27 @@ async function createUser(request: InviteRequest): Promise<User> {
   assertOk(outcome, result);
   logger.info('Created: ' + result.id);
   return result;
+}
+
+async function searchForExistingPractitioner(project: Project, email: string): Promise<Practitioner | undefined> {
+  const [outcome, bundle] = await systemRepo.search<Practitioner>({
+    resourceType: 'Practitioner',
+    filters: [
+      {
+        code: '_project',
+        operator: Operator.EQUALS,
+        value: project.id as string,
+      },
+      {
+        code: 'email',
+        operator: Operator.EQUALS,
+        value: email,
+      },
+    ],
+  });
+  assertOk(outcome, bundle);
+  if (bundle.entry && bundle.entry.length > 0) {
+    return bundle.entry[0].resource as Practitioner;
+  }
+  return undefined;
 }
