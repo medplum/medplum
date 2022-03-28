@@ -40,6 +40,32 @@ medplum.graphql = jest.fn((query: string) => {
       ],
     }));
   }
+  if (query.includes('"empty"')) {
+    data.Patients1 = [
+      {
+        resourceType: 'Patient',
+        id: 'emptyPatient',
+        identifier: [
+          {
+            system: '',
+            value: '',
+          },
+        ],
+      },
+    ];
+    data.ServiceRequestList = [
+      {
+        resourceType: 'ServiceRequest',
+        id: 'emptyServiceRequest',
+        identifier: [
+          {
+            system: '',
+            value: '',
+          },
+        ],
+      },
+    ];
+  }
   return Promise.resolve({ data });
 });
 
@@ -174,5 +200,28 @@ describe('HeaderSearchInput', () => {
     // There should only be 5 results displayed
     const elements = screen.getAllByText('__Many__');
     expect(elements.length).toBe(5);
+  });
+
+  test('Empty strings', async () => {
+    setup({
+      name: 'foo',
+      onChange: jest.fn(),
+    });
+
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+
+    // Enter "empty"
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'empty' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+      await waitFor(() => screen.getByTestId('dropdown'));
+    });
+
+    expect(screen.getByText('Patient/emptyPatient')).toBeInTheDocument();
+    expect(screen.getByText('ServiceRequest/emptyServiceRequest')).toBeInTheDocument();
   });
 });
