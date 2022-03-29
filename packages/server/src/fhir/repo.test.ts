@@ -1441,7 +1441,7 @@ describe('FHIR Repo', () => {
     expect(bundle1.entry?.length).toEqual(1);
   });
 
-  test('ServiceRequest.code not equals', async () => {
+  test('Token not equals', async () => {
     const category = randomUUID();
     const code1 = randomUUID();
     const code2 = randomUUID();
@@ -1464,6 +1464,36 @@ describe('FHIR Repo', () => {
 
     const [outcome3, bundle1] = await systemRepo.search(
       parseSearchRequest('ServiceRequest', { category, 'code:not': code1 })
+    );
+    assertOk(outcome3, bundle1);
+    expect(bundle1.entry?.length).toEqual(1);
+    expect(bundleContains(bundle1, serviceRequest1)).toEqual(false);
+    expect(bundleContains(bundle1, serviceRequest2)).toEqual(true);
+  });
+
+  test('Token array not equals', async () => {
+    const category1 = randomUUID();
+    const category2 = randomUUID();
+    const code = randomUUID();
+
+    const [outcome1, serviceRequest1] = await systemRepo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      subject: { reference: 'Patient/' + randomUUID() },
+      category: [{ coding: [{ code: category1 }] }],
+      code: { coding: [{ code }] },
+    });
+    assertOk(outcome1, serviceRequest1);
+
+    const [outcome2, serviceRequest2] = await systemRepo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      subject: { reference: 'Patient/' + randomUUID() },
+      category: [{ coding: [{ code: category2 }] }],
+      code: { coding: [{ code }] },
+    });
+    assertOk(outcome2, serviceRequest2);
+
+    const [outcome3, bundle1] = await systemRepo.search(
+      parseSearchRequest('ServiceRequest', { code, 'category:not': category1 })
     );
     assertOk(outcome3, bundle1);
     expect(bundle1.entry?.length).toEqual(1);

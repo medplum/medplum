@@ -18,6 +18,7 @@ export enum Operator {
   GREATER_THAN = '>',
   GREATER_THAN_OR_EQUALS = '>=',
   ARRAY_CONTAINS = 'ARRAY_CONTAINS',
+  ARRAY_NOT_CONTAINS = 'ARRAY_NOT_CONTAINS',
 }
 
 export interface Column {
@@ -122,14 +123,24 @@ export abstract class BaseQuery {
   }
 
   protected buildCondition(sql: SqlBuilder, condition: Condition): void {
-    if (condition.operator === Operator.ARRAY_CONTAINS) {
-      if (Array.isArray(condition.parameter)) {
-        this.buildArrayContainsArray(sql, condition);
-      } else {
-        this.buildArrayContainsValue(sql, condition);
-      }
+    if (condition.operator === Operator.ARRAY_CONTAINS || condition.operator === Operator.ARRAY_NOT_CONTAINS) {
+      this.buildArrayCondition(sql, condition);
     } else {
       this.buildSimpleCondition(sql, condition);
+    }
+  }
+
+  protected buildArrayCondition(sql: SqlBuilder, condition: Condition): void {
+    if (condition.operator === Operator.ARRAY_NOT_CONTAINS) {
+      sql.append('NOT (');
+    }
+    if (Array.isArray(condition.parameter)) {
+      this.buildArrayContainsArray(sql, condition);
+    } else {
+      this.buildArrayContainsValue(sql, condition);
+    }
+    if (condition.operator === Operator.ARRAY_NOT_CONTAINS) {
+      sql.append(')');
     }
   }
 
