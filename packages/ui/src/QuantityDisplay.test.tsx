@@ -11,4 +11,9 @@ describe('QuantityDisplay', () => {
   test('Renders undefined value', () => {
     render(<QuantityDisplay />);
   });
+
+  test('Renders comparator', () => {
+    render(<QuantityDisplay value={{ comparator: '<', value: 1, unit: 'mg' }} />);
+    expect(screen.getByText('< 1 mg')).toBeInTheDocument();
+  });
 });

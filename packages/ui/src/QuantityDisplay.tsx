@@ -13,7 +13,7 @@ export function QuantityDisplay(props: QuantityDisplayProps): JSX.Element | null
 
   return (
     <span>
-      {value.value} {value.unit}
+      {value.comparator} {value.value} {value.unit}
     </span>
   );
 }
