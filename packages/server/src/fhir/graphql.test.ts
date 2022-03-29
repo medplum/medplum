@@ -412,4 +412,54 @@ describe('GraphQL', () => {
     expect(res.body.data.Encounter).toBeDefined();
     expect(res.body.data.Encounter.subject.resource).toBeNull();
   });
+
+  test('Reverse lookup with _reference', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
+      {
+        PatientList(_count: 1) {
+          id
+          ObservationList(_reference: subject) {
+            id
+            status
+            code {
+              text
+            }
+          }
+        }
+      }
+    `,
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.data.PatientList).toBeDefined();
+    expect(res.body.data.PatientList[0].ObservationList).toBeDefined();
+  });
+
+  test('Reverse lookup without _reference', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
+      {
+        PatientList(_count: 1) {
+          id
+          ObservationList(subject: "xyz") {
+            id
+            status
+            code {
+              text
+            }
+          }
+        }
+      }
+    `,
+      });
+    expect(res.status).toBe(400);
+  });
 });
