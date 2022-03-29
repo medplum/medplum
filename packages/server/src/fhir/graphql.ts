@@ -70,9 +70,6 @@ function buildRootSchema(): GraphQLSchema {
   const fields: GraphQLFieldConfigMap<any, any> = {};
   for (const resourceType of getResourceTypes()) {
     const graphQLType = getGraphQLType(resourceType);
-    if (!graphQLType) {
-      continue;
-    }
 
     // Get resource by ID
     fields[resourceType] = {
@@ -102,7 +99,7 @@ function buildRootSchema(): GraphQLSchema {
   });
 }
 
-function getGraphQLType(resourceType: string): GraphQLOutputType | undefined {
+function getGraphQLType(resourceType: string): GraphQLOutputType {
   let result = typeCache[resourceType];
   if (!result) {
     result = buildGraphQLType(resourceType);
@@ -114,7 +111,7 @@ function getGraphQLType(resourceType: string): GraphQLOutputType | undefined {
   return result;
 }
 
-function buildGraphQLType(resourceType: string): GraphQLOutputType | undefined {
+function buildGraphQLType(resourceType: string): GraphQLOutputType {
   if (resourceType === 'ResourceList') {
     return new GraphQLUnionType({
       name: 'ResourceList',
@@ -147,10 +144,6 @@ function buildPropertyFields(resourceType: string, fields: GraphQLFieldConfigMap
 
   for (const [propertyName, property] of Object.entries(properties)) {
     const propertyType = getPropertyType(resourceType, property);
-    if (!propertyType) {
-      continue;
-    }
-
     const fieldConfig: GraphQLFieldConfig<any, any> = {
       type: propertyType,
       description: property.description,
@@ -195,10 +188,6 @@ function buildPropertyFields(resourceType: string, fields: GraphQLFieldConfigMap
 function buildReverseLookupFields(resourceType: string, fields: GraphQLFieldConfigMap<any, any>): void {
   for (const childResourceType of getResourceTypes()) {
     const childGraphQLType = getGraphQLType(childResourceType);
-    if (!childGraphQLType) {
-      continue;
-    }
-
     const childSearchParams = getSearchParameters(childResourceType);
     const enumValues: GraphQLEnumValueConfigMap = {};
     let count = 0;
@@ -263,7 +252,7 @@ function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
   return args;
 }
 
-function getPropertyType(parentType: string, property: JSONSchema4): GraphQLOutputType | undefined {
+function getPropertyType(parentType: string, property: JSONSchema4): GraphQLOutputType {
   const refStr = getRefString(property);
   if (refStr) {
     return getGraphQLType(refStr);
@@ -272,20 +261,12 @@ function getPropertyType(parentType: string, property: JSONSchema4): GraphQLOutp
   const typeStr = property.type;
   if (typeStr) {
     if (typeStr === 'array') {
-      const itemType = getPropertyType(parentType, property.items as JSONSchema4);
-      if (!itemType) {
-        return undefined;
-      }
-      return new GraphQLList(itemType);
+      return new GraphQLList(getPropertyType(parentType, property.items as JSONSchema4));
     }
     return getGraphQLType(typeStr as string);
   }
 
-  if (property.enum || property.const) {
-    return GraphQLString;
-  }
-
-  return undefined;
+  return GraphQLString;
 }
 
 function getRefString(property: any): string | undefined {
@@ -369,12 +350,7 @@ function resolveTypeByReference(resource: Resource | undefined): string | undefi
     return undefined;
   }
 
-  const graphQLType = getGraphQLType(resourceType);
-  if (!graphQLType) {
-    return undefined;
-  }
-
-  return (graphQLType as GraphQLObjectType).name;
+  return (getGraphQLType(resourceType) as GraphQLObjectType).name;
 }
 
 function parseSearchArgs(resourceType: string, source: any, args: Record<string, string>): SearchRequest {
