@@ -620,6 +620,8 @@ export class Repository {
       builder.where(details.columnName, Operator.ARRAY_CONTAINS, value);
     } else if (filter.operator === FhirOperator.CONTAINS) {
       builder.where(details.columnName, Operator.LIKE, '%' + value + '%');
+    } else if (filter.operator === FhirOperator.NOT_EQUALS) {
+      builder.where(details.columnName, Operator.NOT_EQUALS, value);
     } else {
       builder.where(details.columnName, Operator.EQUALS, value);
     }

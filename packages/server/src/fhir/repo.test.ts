@@ -19,6 +19,7 @@ import { closeDatabase, initDatabase } from '../database';
 import { seedDatabase } from '../seed';
 import { processBatch } from './batch';
 import { getRepoForLogin, Repository, systemRepo } from './repo';
+import { parseSearchRequest } from './search';
 
 describe('FHIR Repo', () => {
   beforeAll(async () => {
@@ -1438,6 +1439,36 @@ describe('FHIR Repo', () => {
     });
     assertOk(outcome2, bundle1);
     expect(bundle1.entry?.length).toEqual(1);
+  });
+
+  test('ServiceRequest.code not equals', async () => {
+    const category = randomUUID();
+    const code1 = randomUUID();
+    const code2 = randomUUID();
+
+    const [outcome1, serviceRequest1] = await systemRepo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      subject: { reference: 'Patient/' + randomUUID() },
+      category: [{ coding: [{ code: category }] }],
+      code: { coding: [{ code: code1 }] },
+    });
+    assertOk(outcome1, serviceRequest1);
+
+    const [outcome2, serviceRequest2] = await systemRepo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      subject: { reference: 'Patient/' + randomUUID() },
+      category: [{ coding: [{ code: category }] }],
+      code: { coding: [{ code: code2 }] },
+    });
+    assertOk(outcome2, serviceRequest2);
+
+    const [outcome3, bundle1] = await systemRepo.search(
+      parseSearchRequest('ServiceRequest', { category, 'code:not': code1 })
+    );
+    assertOk(outcome3, bundle1);
+    expect(bundle1.entry?.length).toEqual(1);
+    expect(bundleContains(bundle1, serviceRequest1)).toEqual(false);
+    expect(bundleContains(bundle1, serviceRequest2)).toEqual(true);
   });
 });
 
