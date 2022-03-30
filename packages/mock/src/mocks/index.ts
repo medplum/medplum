@@ -1,3 +1,4 @@
+export * from './accesspolicy';
 export * from './alice';
 export * from './bot';
 export * from './questionnaire';

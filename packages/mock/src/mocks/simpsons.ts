@@ -296,10 +296,10 @@ export const HomerServiceRequest: ServiceRequest = {
     reference: 'Patient/123',
     display: 'Homer Simpson',
   },
-  status: 'completed',
+  status: 'active',
   orderDetail: [
     {
-      text: 'Test 1',
+      text: 'ORDERED',
     },
   ],
 };
