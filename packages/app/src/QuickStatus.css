@@ -1,0 +1,10 @@
+.medplum-quick-status {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  width: 200px;
+  height: 50px;
+  z-index: 15;
+  text-align: right;
+  padding: 4px 8px;
+}

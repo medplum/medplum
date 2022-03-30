@@ -1,5 +1,13 @@
 import { getReferenceString, stringify } from '@medplum/core';
-import { Bot, Bundle, DiagnosticReport, OperationOutcome, Questionnaire, Resource } from '@medplum/fhirtypes';
+import {
+  Bot,
+  Bundle,
+  DiagnosticReport,
+  OperationOutcome,
+  Questionnaire,
+  Resource,
+  ServiceRequest,
+} from '@medplum/fhirtypes';
 import {
   Button,
   DefaultResourceTimeline,
@@ -28,6 +36,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CodeEditor } from './CodeEditor';
 import { PatientHeader } from './PatientHeader';
+import { QuickStatus } from './QuickStatus';
 import { ResourceHeader } from './ResourceHeader';
 import { getPatient } from './utils';
 
@@ -146,6 +155,22 @@ export function ResourcePage(): JSX.Element {
     }
   }
 
+  function onSubmit(newResource: Resource): void {
+    medplum.update(cleanResource(newResource)).then(loadResource).catch(setError);
+  }
+
+  function onStatusChange(status: string): void {
+    const serviceRequest = value as ServiceRequest;
+    const orderDetail = serviceRequest.orderDetail || [];
+    if (orderDetail.length === 0) {
+      orderDetail.push({});
+    }
+    if (orderDetail[0].text !== status) {
+      (orderDetail[0] as any).text = status;
+      onSubmit({ ...serviceRequest, orderDetail });
+    }
+  }
+
   useEffect(() => {
     loadResource();
   }, [resourceType, id]);
@@ -166,9 +191,17 @@ export function ResourcePage(): JSX.Element {
   const tabs = getTabs(resourceType, questionnaires);
   const defaultTab = tabs[0].toLowerCase();
   const patient = getPatient(value);
+  const statusValueSet = medplum.getUserConfiguration()?.option?.find((o) => o.id === 'statusValueSet')?.valueString;
 
   return (
     <>
+      {value?.resourceType === 'ServiceRequest' && statusValueSet && (
+        <QuickStatus
+          valueSet={{ reference: statusValueSet }}
+          defaultValue={(value as ServiceRequest | undefined)?.orderDetail?.[0]?.text}
+          onChange={onStatusChange}
+        />
+      )}
       {patient && <PatientHeader patient={patient} />}
       {resourceType !== 'Patient' && <ResourceHeader resource={value} />}
       <TabList value={tab || defaultTab} onChange={onTabChange}>
@@ -186,9 +219,7 @@ export function ResourcePage(): JSX.Element {
                 resource={value}
                 resourceHistory={historyBundle}
                 questionnaires={questionnaires as Bundle<Questionnaire>}
-                onSubmit={(resource: Resource) => {
-                  medplum.update(cleanResource(resource)).then(loadResource).catch(setError);
-                }}
+                onSubmit={onSubmit}
                 onDelete={() => {
                   if (window.confirm('Are you sure you want to delete this resource?')) {
                     medplum
