@@ -617,7 +617,11 @@ export class Repository {
     const query = filter.value;
     const value = details.type === SearchParameterType.BOOLEAN ? query === 'true' : query;
     if (details.array) {
-      builder.where(details.columnName, Operator.ARRAY_CONTAINS, value);
+      if (filter.operator === FhirOperator.NOT_EQUALS) {
+        builder.where(details.columnName, Operator.ARRAY_NOT_CONTAINS, value);
+      } else {
+        builder.where(details.columnName, Operator.ARRAY_CONTAINS, value);
+      }
     } else if (filter.operator === FhirOperator.CONTAINS) {
       builder.where(details.columnName, Operator.LIKE, '%' + value + '%');
     } else if (filter.operator === FhirOperator.NOT_EQUALS) {
