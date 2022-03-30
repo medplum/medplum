@@ -198,7 +198,7 @@ function HistoryTimelineItem(props: HistoryTimelineItemProps): JSX.Element {
   if (previous) {
     return (
       <TimelineItem resource={props.version} padding={true}>
-        <ResourceDiff original={previous} revised={props.version} />
+        <ResourceDiff original={previous} revised={props.version} ignoreMeta={true} />
       </TimelineItem>
     );
   } else {

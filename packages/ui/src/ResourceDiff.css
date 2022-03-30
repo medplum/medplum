@@ -1,0 +1,8 @@
+.medplum-diff-removed {
+  color: red;
+  text-decoration: line-through;
+}
+
+.medplum-diff-added {
+  color: green;
+}

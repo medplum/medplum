@@ -37,7 +37,7 @@ import {
   HomerSimpsonPreviousVersion,
   TestOrganization,
 } from './mocks';
-import { ExampleAccessPolicy, ExampleUserConfiguration } from './mocks/accesspolicy';
+import { ExampleAccessPolicy, ExampleStatusValueSet, ExampleUserConfiguration } from './mocks/accesspolicy';
 import { MemoryRepository } from './repo';
 
 export interface MockClientOptions {
@@ -282,6 +282,7 @@ const mockRepo = new MemoryRepository();
 mockRepo.createResource(HomerSimpsonPreviousVersion);
 mockRepo.createResource(HomerSimpson);
 mockRepo.createResource(ExampleAccessPolicy);
+mockRepo.createResource(ExampleStatusValueSet);
 mockRepo.createResource(ExampleUserConfiguration);
 mockRepo.createResource(ExampleBot);
 mockRepo.createResource(HomerDiagnosticReport);
