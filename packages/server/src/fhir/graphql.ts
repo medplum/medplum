@@ -1,7 +1,9 @@
-import { assertOk } from '@medplum/core';
+import { assertOk, Filter, getReferenceString, Operator, SearchRequest } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import {
   GraphQLBoolean,
+  GraphQLEnumType,
+  GraphQLEnumValueConfigMap,
   GraphQLFieldConfig,
   GraphQLFieldConfigArgumentMap,
   GraphQLFieldConfigMap,
@@ -23,7 +25,7 @@ import { getResourceTypes, getSchemaDefinition } from './schema';
 import { parseSearchRequest } from './search';
 import { getSearchParameters } from './structure';
 
-const typeCache: Record<string, GraphQLOutputType> = {
+const typeCache: Record<string, GraphQLOutputType | undefined> = {
   base64Binary: GraphQLString,
   boolean: GraphQLBoolean,
   canonical: GraphQLString,
@@ -55,12 +57,19 @@ export function getRootSchema(): GraphQLSchema {
 }
 
 function buildRootSchema(): GraphQLSchema {
+  // First, create placeholder types
+  // We need this first for circular dependencies
+  for (const resourceType of getResourceTypes()) {
+    const graphQLType = buildGraphQLType(resourceType);
+    if (graphQLType) {
+      typeCache[resourceType] = graphQLType;
+    }
+  }
+
+  // Next, fill in all of the type properties
   const fields: GraphQLFieldConfigMap<any, any> = {};
   for (const resourceType of getResourceTypes()) {
     const graphQLType = getGraphQLType(resourceType);
-    if (!graphQLType) {
-      continue;
-    }
 
     // Get resource by ID
     fields[resourceType] = {
@@ -75,38 +84,9 @@ function buildRootSchema(): GraphQLSchema {
     };
 
     // Search resource by search parameters
-    const args: GraphQLFieldConfigArgumentMap = {
-      _count: {
-        type: GraphQLInt,
-        description: 'Specify how many elements to return from a repeating list.',
-      },
-      _offset: {
-        type: GraphQLInt,
-        description: 'Specify the offset to start at for a repeating element.',
-      },
-      _sort: {
-        type: GraphQLString,
-        description: 'Specify the sort order by comma-separated list of sort rules in priority order.',
-      },
-      _lastUpdated: {
-        type: GraphQLString,
-        description: 'Select resources based on the last time they were changed.',
-      },
-    };
-    const searchParams = getSearchParameters(resourceType);
-    if (searchParams) {
-      for (const [code, searchParam] of Object.entries(searchParams)) {
-        // GraphQL does not support dashes in argument names
-        // So convert dashes to underscores
-        args[fhirParamToGraphQLField(code)] = {
-          type: GraphQLString,
-          description: searchParam.description,
-        };
-      }
-    }
     fields[resourceType + 'List'] = {
       type: new GraphQLList(graphQLType),
-      args,
+      args: buildSearchArgs(resourceType),
       resolve: resolveBySearch,
     };
   }
@@ -119,17 +99,8 @@ function buildRootSchema(): GraphQLSchema {
   });
 }
 
-function getGraphQLType(resourceType: string): GraphQLOutputType | undefined {
-  if (
-    resourceType === 'Extension' ||
-    resourceType === 'ExampleScenario' ||
-    resourceType === 'GraphDefinition' ||
-    resourceType === 'QuestionnaireResponse'
-  ) {
-    return undefined;
-  }
-
-  let result: GraphQLOutputType | undefined = typeCache[resourceType];
+function getGraphQLType(resourceType: string): GraphQLOutputType {
+  let result = typeCache[resourceType];
   if (!result) {
     result = buildGraphQLType(resourceType);
     if (result) {
@@ -140,7 +111,7 @@ function getGraphQLType(resourceType: string): GraphQLOutputType | undefined {
   return result;
 }
 
-function buildGraphQLType(resourceType: string): GraphQLOutputType | undefined {
+function buildGraphQLType(resourceType: string): GraphQLOutputType {
   if (resourceType === 'ResourceList') {
     return new GraphQLUnionType({
       name: 'ResourceList',
@@ -153,26 +124,26 @@ function buildGraphQLType(resourceType: string): GraphQLOutputType | undefined {
   }
 
   const schema = getSchemaDefinition(resourceType);
-  const properties = schema.properties as { [k: string]: JSONSchema4 };
+  return new GraphQLObjectType({
+    name: resourceType,
+    description: schema.description,
+    fields: () => buildGraphQLFields(resourceType),
+  });
+}
+
+function buildGraphQLFields(resourceType: string): GraphQLFieldConfigMap<any, any> {
   const fields: GraphQLFieldConfigMap<any, any> = {};
+  buildPropertyFields(resourceType, fields);
+  buildReverseLookupFields(resourceType, fields);
+  return fields;
+}
+
+function buildPropertyFields(resourceType: string, fields: GraphQLFieldConfigMap<any, any>): void {
+  const schema = getSchemaDefinition(resourceType);
+  const properties = schema.properties as { [k: string]: JSONSchema4 };
 
   for (const [propertyName, property] of Object.entries(properties)) {
-    if (
-      propertyName.startsWith('_') ||
-      propertyName === 'contained' ||
-      propertyName === 'extension' ||
-      propertyName === 'modifierExtension' ||
-      (resourceType === 'Reference' && propertyName === 'identifier') ||
-      (resourceType === 'Bundle_Response' && propertyName === 'outcome')
-    ) {
-      continue;
-    }
-
     const propertyType = getPropertyType(resourceType, property);
-    if (!propertyType) {
-      continue;
-    }
-
     const fieldConfig: GraphQLFieldConfig<any, any> = {
       type: propertyType,
       description: property.description,
@@ -184,41 +155,118 @@ function buildGraphQLType(resourceType: string): GraphQLOutputType | undefined {
 
     fields[propertyName] = fieldConfig;
   }
-
-  return new GraphQLObjectType({
-    name: resourceType,
-    description: schema.description,
-    fields,
-  });
 }
 
-function getPropertyType(parentType: string, property: any): GraphQLOutputType | undefined {
+/**
+ * Builds a list of reverse lookup fields for a resource type.
+ *
+ * It's also possible to use search is a special mode, doing reverse lookups -
+ * e.g. list all the resources that refer to this resource.
+ *
+ * An example of this use is to look up a patient,
+ * and also retrieve all the Condition resources for the patient.
+ *
+ * This is a special case of search, above, but with an additional mandatory parameter _reference. For example:
+ *
+ * {
+ *   name { [some fields] }
+ *   ConditionList(_reference: patient) {
+ *     [some fields from Condition]
+ *   }
+ * }
+ *
+ * There must be at least the argument "_reference" which identifies which of the search parameters
+ * for the target resource is used to match the resource that has focus.
+ * In addition, there may be other arguments as defined above in search
+ * (except that the "id" argument is prohibited here as nonsensical).
+ *
+ * See: https://www.hl7.org/fhir/graphql.html#reverse
+ *
+ * @param resourceType The resource type to build fields for.
+ * @param fields The fields object to add fields to.
+ */
+function buildReverseLookupFields(resourceType: string, fields: GraphQLFieldConfigMap<any, any>): void {
+  for (const childResourceType of getResourceTypes()) {
+    const childGraphQLType = getGraphQLType(childResourceType);
+    const childSearchParams = getSearchParameters(childResourceType);
+    const enumValues: GraphQLEnumValueConfigMap = {};
+    let count = 0;
+    if (childSearchParams) {
+      for (const [code, searchParam] of Object.entries(childSearchParams)) {
+        if (searchParam.target && searchParam.target.includes(resourceType)) {
+          enumValues[fhirParamToGraphQLField(code)] = { value: code };
+          count++;
+        }
+      }
+    }
+
+    if (count > 0) {
+      const enumType = new GraphQLEnumType({
+        name: resourceType + '_' + childResourceType + '_reference',
+        values: enumValues,
+      });
+      const args = buildSearchArgs(childResourceType);
+      args['_reference'] = {
+        type: new GraphQLNonNull(enumType),
+        description: `Specify which property to use for reverse lookup for ${childResourceType}`,
+      };
+      fields[childResourceType + 'List'] = {
+        type: new GraphQLList(childGraphQLType),
+        args,
+        resolve: resolveBySearch,
+      };
+    }
+  }
+}
+
+function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
+  const args: GraphQLFieldConfigArgumentMap = {
+    _count: {
+      type: GraphQLInt,
+      description: 'Specify how many elements to return from a repeating list.',
+    },
+    _offset: {
+      type: GraphQLInt,
+      description: 'Specify the offset to start at for a repeating element.',
+    },
+    _sort: {
+      type: GraphQLString,
+      description: 'Specify the sort order by comma-separated list of sort rules in priority order.',
+    },
+    _lastUpdated: {
+      type: GraphQLString,
+      description: 'Select resources based on the last time they were changed.',
+    },
+  };
+  const searchParams = getSearchParameters(resourceType);
+  if (searchParams) {
+    for (const [code, searchParam] of Object.entries(searchParams)) {
+      // GraphQL does not support dashes in argument names
+      // So convert dashes to underscores
+      args[fhirParamToGraphQLField(code)] = {
+        type: GraphQLString,
+        description: searchParam.description,
+      };
+    }
+  }
+  return args;
+}
+
+function getPropertyType(parentType: string, property: JSONSchema4): GraphQLOutputType {
   const refStr = getRefString(property);
   if (refStr) {
-    if (refStr === parentType) {
-      // TODO: Self reference
-      return undefined;
-    }
     return getGraphQLType(refStr);
   }
 
   const typeStr = property.type;
   if (typeStr) {
     if (typeStr === 'array') {
-      const itemType = getPropertyType(parentType, property.items);
-      if (!itemType) {
-        return undefined;
-      }
-      return new GraphQLList(itemType);
+      return new GraphQLList(getPropertyType(parentType, property.items as JSONSchema4));
     }
-    return getGraphQLType(typeStr);
+    return getGraphQLType(typeStr as string);
   }
 
-  if (property.enum || property.const) {
-    return GraphQLString;
-  }
-
-  return undefined;
+  return GraphQLString;
 }
 
 function getRefString(property: any): string | undefined {
@@ -248,9 +296,8 @@ async function resolveBySearch(
   const fieldName = info.fieldName;
   const resourceType = fieldName.substring(0, fieldName.length - 4); // Remove "List"
   const repo = ctx.res.locals.repo as Repository;
-  // Reverse the transform of dashes to underscores, back to dashes
-  args = Object.fromEntries(Object.entries(args).map(([key, value]) => [graphQLFieldToFhirParam(key), value]));
-  const [outcome, bundle] = await repo.search(parseSearchRequest(resourceType, args));
+  const searchRequest = parseSearchArgs(resourceType, source, args);
+  const [outcome, bundle] = await repo.search(searchRequest);
   assertOk(outcome, bundle);
   return bundle.entry?.map((e) => e.resource as Resource);
 }
@@ -303,12 +350,37 @@ function resolveTypeByReference(resource: Resource | undefined): string | undefi
     return undefined;
   }
 
-  const graphQLType = getGraphQLType(resourceType);
-  if (!graphQLType) {
-    return undefined;
+  return (getGraphQLType(resourceType) as GraphQLObjectType).name;
+}
+
+function parseSearchArgs(resourceType: string, source: any, args: Record<string, string>): SearchRequest {
+  let referenceFilter: Filter | undefined = undefined;
+  if (source) {
+    // _reference is a required field for reverse lookup searches
+    // The GraphQL parser will validate that it is there.
+    const reference = args['_reference'];
+    delete args['_reference'];
+    referenceFilter = {
+      code: reference,
+      operator: Operator.EQUALS,
+      value: getReferenceString(source as Resource),
+    };
   }
 
-  return (graphQLType as GraphQLObjectType).name;
+  // Reverse the transform of dashes to underscores, back to dashes
+  args = Object.fromEntries(Object.entries(args).map(([key, value]) => [graphQLFieldToFhirParam(key), value]));
+
+  // Parse the search request
+  const searchRequest = parseSearchRequest(resourceType, args);
+
+  // If a reverse lookup filter was specified,
+  // add it to the search request.
+  if (referenceFilter) {
+    const existingFilters = searchRequest.filters || [];
+    (searchRequest as any).filters = [referenceFilter, ...existingFilters];
+  }
+
+  return searchRequest;
 }
 
 function fhirParamToGraphQLField(code: string): string {
