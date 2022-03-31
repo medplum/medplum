@@ -41,6 +41,32 @@ describe('HumanName Lookup Table', () => {
     expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient?.id);
   });
 
+  test('Search with spaces', async () => {
+    const name1 = randomUUID();
+    const name2 = randomUUID();
+    const name3 = randomUUID();
+
+    const [createOutcome, patient] = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: [name1, name2], family: name3 }],
+    });
+    assertOk(createOutcome, patient);
+
+    const [searchOutcome, searchResult] = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: `${name1} ${name3}`,
+        },
+      ],
+    });
+    assertOk(searchOutcome, searchResult);
+    expect(searchResult.entry?.length).toEqual(1);
+    expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient?.id);
+  });
+
   test('Multiple names', async () => {
     const name = randomUUID();
     const other = randomUUID();

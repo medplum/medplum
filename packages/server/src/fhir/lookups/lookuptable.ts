@@ -47,8 +47,10 @@ export abstract class LookupTable<T> {
     const columnName = this.getColumnName(filter.code);
     const subQuery = new SelectQuery(tableName)
       .raw(`DISTINCT ON ("${tableName}"."resourceId") *`)
-      .where({ tableName, columnName }, Operator.LIKE, '%' + filter.value + '%')
       .orderBy('resourceId');
+    for (const chunk of filter.value.split(/\s+/)) {
+      subQuery.where({ tableName, columnName }, Operator.LIKE, `%${chunk}%`);
+    }
     selectQuery.join(joinName, 'id', 'resourceId', subQuery);
   }
 
