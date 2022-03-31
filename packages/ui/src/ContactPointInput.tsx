@@ -51,7 +51,6 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
         <option>phone</option>
         <option>other</option>
         <option>sms</option>
-        <option>sms</option>
       </Select>
       <Select defaultValue={contactPoint?.use} onChange={setUse} testid="use">
         <option></option>
