@@ -11,6 +11,9 @@ medplum.graphql = jest.fn((query: string) => {
   if (query.includes('"Simpson"')) {
     data.Patients1 = [HomerSimpson];
   }
+  if (query.includes('"hom sim"')) {
+    data.Patients1 = [HomerSimpson];
+  }
   if (query.includes('"abc"')) {
     data.Patients2 = [HomerSimpson];
   }
@@ -124,7 +127,7 @@ describe('HeaderSearchInput', () => {
     expect(screen.getByText('Homer Simpson')).toBeDefined();
   });
 
-  test.each(['Simpson', 'abc', '9001'])('onChange with %s', async (query) => {
+  test.each(['Simpson', 'hom sim', 'abc', '9001'])('onChange with %s', async (query) => {
     const onChange = jest.fn();
 
     setup({

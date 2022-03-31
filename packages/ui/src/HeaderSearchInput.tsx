@@ -53,8 +53,9 @@ export function HeaderSearchInput(props: HeaderSearchInputProps): JSX.Element {
 }
 
 function buildGraphQLQuery(input: string): string {
+  const escaped = JSON.stringify(input);
   return `{
-    Patients1: PatientList(name: "${encodeURIComponent(input)}", _count: 5) {
+    Patients1: PatientList(name: ${escaped}, _count: 5) {
       resourceType
       id
       identifier {
@@ -67,7 +68,7 @@ function buildGraphQLQuery(input: string): string {
       }
       birthDate
     }
-    Patients2: PatientList(identifier: "${encodeURIComponent(input)}", _count: 5) {
+    Patients2: PatientList(identifier: ${escaped}, _count: 5) {
       resourceType
       id
       identifier {
@@ -80,7 +81,7 @@ function buildGraphQLQuery(input: string): string {
       }
       birthDate
     }
-    ServiceRequestList(identifier: "${encodeURIComponent(input)}", _count: 5) {
+    ServiceRequestList(identifier: ${escaped}, _count: 5) {
       resourceType
       id
       identifier {
