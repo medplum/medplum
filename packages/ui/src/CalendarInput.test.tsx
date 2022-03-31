@@ -1,7 +1,7 @@
 import { Slot } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
-import { CalendarInput, getMonthString } from './CalendarInput';
+import { CalendarInput, getMonthString, getStartMonth } from './CalendarInput';
 
 describe('CalendarInput', () => {
   test('Renders', () => {
@@ -23,7 +23,7 @@ describe('CalendarInput', () => {
     const onClick = jest.fn();
     render(<CalendarInput slots={[]} onClick={onClick} />);
 
-    const nextMonth = new Date();
+    const nextMonth = getStartMonth();
     nextMonth.setMonth(nextMonth.getMonth() + 1);
 
     // Move forward one month
@@ -40,11 +40,14 @@ describe('CalendarInput', () => {
   });
 
   test('Click day', async () => {
+    const nextMonth = getStartMonth();
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+
     // Add a slot on the 15th of next month
-    const startTime = new Date();
-    startTime.setMonth(startTime.getMonth() + 1);
+    const startTime = new Date(nextMonth.getTime());
     startTime.setDate(15);
     startTime.setHours(12, 0, 0, 0);
+
     const slots: Slot[] = [
       {
         resourceType: 'Slot',
@@ -54,9 +57,6 @@ describe('CalendarInput', () => {
 
     const onClick = jest.fn();
     render(<CalendarInput slots={slots} onClick={onClick} />);
-
-    const nextMonth = new Date();
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
 
     // Move forward one month
     await act(async () => {

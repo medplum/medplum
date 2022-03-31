@@ -83,7 +83,7 @@ export function CalendarInput(props: CalendarInputProps): JSX.Element {
   );
 }
 
-function getStartMonth(): Date {
+export function getStartMonth(): Date {
   const result = new Date();
   result.setDate(1);
   result.setHours(0, 0, 0, 0);
