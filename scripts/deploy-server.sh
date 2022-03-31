@@ -42,6 +42,7 @@ tar \
   packages/fhirpath/dist \
   packages/server/package.json \
   packages/server/dist \
+  packages/server/fonts \
   packages/server/templates
 
 # Build the Docker image

@@ -34,4 +34,15 @@ describe('Binary', () => {
       'Missing document definition'
     );
   });
+
+  test('Custom font', async () => {
+    const custom: TDocumentDefinitions = {
+      defaultStyle: {
+        font: 'Avenir',
+      },
+      content: ['Hello world'],
+    };
+    const binary = await createPdf(systemRepo, 'custom-font.pdf', custom);
+    expect(binary).toBeDefined();
+  });
 });
