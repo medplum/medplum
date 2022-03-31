@@ -31,6 +31,9 @@ export async function createPdf(
       italics: 'Helvetica-Oblique',
       bolditalics: 'Helvetica-BoldOblique',
     },
+    Avenir: {
+      normal: 'fonts/avenir.ttf',
+    },
   };
 
   // Setup sane defaults
