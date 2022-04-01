@@ -15,11 +15,11 @@ import { AttachmentDisplay } from './AttachmentDisplay';
 import { Button } from './Button';
 import { DiagnosticReportDisplay } from './DiagnosticReportDisplay';
 import { Form } from './Form';
+import { Input } from './Input';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
-import { ResourceDiff } from './ResourceDiff';
+import { ResourceDiffTable } from './ResourceDiffTable';
 import { ResourceTable } from './ResourceTable';
-import { Input } from './Input';
 import { Timeline, TimelineItem } from './Timeline';
 import { UploadButton } from './UploadButton';
 import { useResource } from './useResource';
@@ -198,13 +198,14 @@ function HistoryTimelineItem(props: HistoryTimelineItemProps): JSX.Element {
   if (previous) {
     return (
       <TimelineItem resource={props.version} padding={true}>
-        <ResourceDiff original={previous} revised={props.version} ignoreMeta={true} />
+        <ResourceDiffTable original={previous} revised={props.version} />
       </TimelineItem>
     );
   } else {
     return (
       <TimelineItem resource={props.version} padding={true}>
-        <pre>{stringify(props.version, true)}</pre>
+        <h3>Created</h3>
+        <ResourceTable value={props.version} ignoreMissingValues={true} />
       </TimelineItem>
     );
   }
