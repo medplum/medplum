@@ -8,13 +8,15 @@ import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, Resource, SearchParameter } from '@medplum/fhirtypes';
 
 const schema = createSchema();
+let loaded = false;
 
 export function getStructureDefinitions(): IndexedStructureDefinition {
-  if (Object.keys(schema.types).length === 0) {
+  if (!loaded) {
     buildStructureDefinitions('profiles-types.json');
     buildStructureDefinitions('profiles-resources.json');
     buildStructureDefinitions('profiles-medplum.json');
     buildSearchParameters();
+    loaded = true;
   }
 
   return schema;
