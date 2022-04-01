@@ -511,6 +511,16 @@
             "type" : [{
               "code" : "string"
             }]
+          },
+          {
+            "id" : "Bot.runAsUser",
+            "path" : "Bot.runAsUser",
+            "definition" : "Optional flag to indicate that the bot should be run as the user.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
+            }]
           }
         ]
       }

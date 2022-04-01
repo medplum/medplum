@@ -1,5 +1,13 @@
 import { assertOk, getReferenceString, Operator, stringify } from '@medplum/core';
-import { AuditEvent, Bot, Observation, Patient, Project, Subscription } from '@medplum/fhirtypes';
+import {
+  AuditEvent,
+  Bot,
+  Observation,
+  Patient,
+  Project,
+  QuestionnaireResponse,
+  Subscription,
+} from '@medplum/fhirtypes';
 import { Job, Queue } from 'bullmq';
 import { createHmac, randomUUID } from 'crypto';
 import fetch from 'node-fetch';
@@ -619,6 +627,95 @@ describe('Subscription Worker', () => {
     expect(bundle.entry?.length).toEqual(1);
     expect(bundle.entry?.[0]?.resource?.outcome).toEqual('0');
     expect(bundle.entry?.[0]?.resource?.outcomeDesc).toContain(nonce);
+  });
+
+  test('Bot run as user', async () => {
+    const nonce = randomUUID();
+
+    // Create a bot
+    // This bot takes a QuestionnaireResponse as an input
+    // And creates a patient as an output
+    const [botOutcome, bot] = await botRepo.createResource<Bot>({
+      resourceType: 'Bot',
+      name: 'Test Bot',
+      description: 'Test Bot',
+      code: `
+        const [outcome, patient] = await repo.createResource({
+          resourceType: 'Patient',
+          name: [{ family: resource.item[0].answer[0].valueString }],
+        });
+        assertOk(outcome, patient);
+      `,
+      runAsUser: true,
+    });
+    assertOk(botOutcome, bot);
+
+    // Create the subscription that listens for QuestionnaireResponses
+    const [subscriptionOutcome, subscription] = await botRepo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      status: 'active',
+      criteria: 'QuestionnaireResponse',
+      channel: {
+        type: 'rest-hook',
+        endpoint: getReferenceString(bot as Bot),
+      },
+    });
+    assertOk(subscriptionOutcome, subscription);
+
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    queue.add.mockClear();
+
+    const [qrOutcome, qr] = await botRepo.createResource<QuestionnaireResponse>({
+      resourceType: 'QuestionnaireResponse',
+      item: [
+        {
+          linkId: 'q1',
+          answer: [
+            {
+              valueString: nonce,
+            },
+          ],
+        },
+      ],
+    });
+    assertOk(qrOutcome, qr);
+    expect(queue.add).toHaveBeenCalled();
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    await execSubscriptionJob(job);
+
+    const [auditEventOutcome, auditEventBundle] = await botRepo.search<AuditEvent>({
+      resourceType: 'AuditEvent',
+      filters: [
+        {
+          code: 'entity',
+          operator: Operator.EQUALS,
+          value: getReferenceString(subscription as Subscription),
+        },
+      ],
+    });
+    assertOk(auditEventOutcome, auditEventBundle);
+    expect(auditEventBundle.entry?.length).toEqual(1);
+    expect(auditEventBundle.entry?.[0]?.resource?.outcome).toEqual('0');
+    expect(auditEventBundle.entry?.[0]?.resource?.outcomeDesc).toContain('Success');
+
+    // Search for the new patient
+    // 1) This patient should exist
+    // 2) In the meta, the author should be the client, not the bot
+    const [patientOutcome, patientBundle] = await botRepo.search<Patient>({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.CONTAINS,
+          value: nonce,
+        },
+      ],
+    });
+    assertOk(patientOutcome, patientBundle);
+    expect(patientBundle.entry?.length).toEqual(1);
+    expect(patientBundle.entry?.[0]?.resource?.name?.[0]?.family).toEqual(nonce);
+    expect(patientBundle.entry?.[0]?.resource?.meta?.author?.reference?.startsWith('ClientApplication')).toBe(true);
   });
 
   test('Async Bot with await', async () => {

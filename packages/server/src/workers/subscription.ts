@@ -1,5 +1,5 @@
 import { assertOk, createReference, isGone, Operator, stringify } from '@medplum/core';
-import { AuditEvent, Bot, BundleEntry, Extension, Resource, Subscription } from '@medplum/fhirtypes';
+import { AuditEvent, Bot, BundleEntry, Extension, Reference, Resource, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
@@ -354,9 +354,16 @@ export async function execBot(
   const [botOutcome, bot] = await systemRepo.readReference<Bot>({ reference: url });
   assertOk(botOutcome, bot);
 
+  let author: Reference;
+  if (bot.runAsUser) {
+    author = resource.meta?.author as Reference;
+  } else {
+    author = createReference(bot);
+  }
+
   const botRepo = new Repository({
     project: bot?.meta?.project as string,
-    author: createReference(bot),
+    author,
   });
 
   const sandbox = {
