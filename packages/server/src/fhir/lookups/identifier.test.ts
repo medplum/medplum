@@ -3,6 +3,7 @@ import { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../../config';
 import { closeDatabase, initDatabase } from '../../database';
+import { bundleContains } from '../../jest.setup';
 import { seedDatabase } from '../../seed';
 import { systemRepo } from '../repo';
 
@@ -156,5 +157,38 @@ describe('Identifier Lookup Table', () => {
     assertOk(outcome6, bundle6);
     expect(bundle6.entry?.length).toEqual(1);
     expect(bundle6.entry?.[0]?.resource?.id).toEqual(patient1.id);
+  });
+
+  test('Search identifier exact', async () => {
+    const identifier = randomUUID();
+
+    const [createOutcome1, patient1] = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      identifier: [{ system: 'https://www.example.com', value: identifier }],
+    });
+    assertOk(createOutcome1, patient1);
+
+    const [createOutcome2, patient2] = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Jones' }],
+      identifier: [{ system: 'https://www.example.com', value: identifier + 'xyz' }],
+    });
+    assertOk(createOutcome2, patient2);
+
+    const [searchOutcome1, searchResult1] = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EXACT,
+          value: identifier,
+        },
+      ],
+    });
+    assertOk(searchOutcome1, searchResult1);
+    expect(searchResult1?.entry?.length).toEqual(1);
+    expect(bundleContains(searchResult1, patient1)).toBe(true);
+    expect(bundleContains(searchResult1, patient2)).toBe(false);
   });
 });
