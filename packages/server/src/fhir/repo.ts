@@ -1268,7 +1268,7 @@ export async function getRepoForMembership(membership: ProjectMembership): Promi
 }
 
 export async function getRepoForProjectProfile(project: string, profile: Reference): Promise<Repository> {
-  const [outcome, bundle] = await systemRepo.search({
+  const [outcome, bundle] = await systemRepo.search<ProjectMembership>({
     resourceType: 'ProjectMembership',
     count: 1,
     filters: [
@@ -1286,7 +1286,7 @@ export async function getRepoForProjectProfile(project: string, profile: Referen
   });
   assertOk(outcome, bundle);
 
-  const membership = bundle.entry?.[0]?.resource as ProjectMembership | undefined;
+  const membership = bundle.entry?.[0]?.resource;
   if (!membership) {
     return Promise.reject('Membership not found');
   }
