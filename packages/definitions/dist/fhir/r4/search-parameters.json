@@ -65514,6 +65514,24 @@
     }
   },
   {
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/ProjectMembership-profile",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "ProjectMembership-profile",
+      "url" : "https://medplum.com/fhir/SearchParameter/ProjectMembership-profile",
+      "version" : "4.0.1",
+      "name" : "profile",
+      "publisher" : "Medplum",
+      "code" : "profile",
+      "base" : ["ProjectMembership"],
+      "type" : "reference",
+      "expression" : "ProjectMembership.profile",
+      "xpath" : "f:ProjectMembership/f:profile",
+      "xpathUsage" : "normal",
+      "target" : ["ClientApplication", "Patient", "Practitioner"]
+    }
+  },
+  {
     "fullUrl" : "https://medplum.com/fhir/SearchParameter/ClientApplication-name",
     "resource" : {
       "resourceType" : "SearchParameter",

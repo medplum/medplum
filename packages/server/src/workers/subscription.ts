@@ -5,7 +5,7 @@ import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
 import { URL } from 'url';
 import { MedplumRedisConfig } from '../config';
-import { Repository, systemRepo } from '../fhir';
+import { getRepoForProjectProfile, Repository, systemRepo } from '../fhir';
 import { executeBot } from '../fhir/operations/execute';
 import { matchesSearchRequest, parseSearchUrl } from '../fhir/search';
 import { logger } from '../logger';
@@ -354,17 +354,16 @@ export async function execBot(
   const [botOutcome, bot] = await systemRepo.readReference<Bot>({ reference: url });
   assertOk(botOutcome, bot);
 
-  let author: Reference;
+  const project = bot.meta?.project as string;
+  let botRepo: Repository;
   if (bot.runAsUser) {
-    author = resource.meta?.author as Reference;
+    botRepo = await getRepoForProjectProfile(project, resource.meta?.author as Reference);
   } else {
-    author = createReference(bot);
+    botRepo = new Repository({
+      project,
+      author: createReference(bot),
+    });
   }
-
-  const botRepo = new Repository({
-    project: bot?.meta?.project as string,
-    author,
-  });
 
   const sandbox = {
     resource,

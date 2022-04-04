@@ -35,7 +35,7 @@ describe('FHIR Repo', () => {
   test('getRepoForLogin', async () => {
     await expect(() =>
       getRepoForLogin({ resourceType: 'Login' }, { resourceType: 'ProjectMembership' })
-    ).rejects.toEqual('Cannot create repo for login without profile');
+    ).rejects.toThrow('Invalid author reference');
   });
 
   test('Read resource with undefined id', async () => {
