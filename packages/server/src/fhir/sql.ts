@@ -18,31 +18,133 @@ export enum Operator {
   GREATER_THAN = '>',
   GREATER_THAN_OR_EQUALS = '>=',
   ARRAY_CONTAINS = 'ARRAY_CONTAINS',
-  ARRAY_NOT_CONTAINS = 'ARRAY_NOT_CONTAINS',
 }
 
-export interface Column {
-  readonly tableName?: string;
-  readonly columnName: string;
-  readonly raw?: boolean;
+export class Column {
+  constructor(readonly tableName: string | undefined, readonly columnName: string, readonly raw?: boolean) {}
 }
 
-export interface Condition {
+export interface Expression {
+  buildSql(builder: SqlBuilder): void;
+}
+
+export class Negation implements Expression {
+  constructor(readonly expression: Expression) {}
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append(' NOT (');
+    this.expression.buildSql(sql);
+    sql.append(')');
+  }
+}
+
+export class Condition implements Expression {
   readonly column: Column;
-  readonly operator: Operator;
-  readonly parameter: any;
-  readonly parameterType?: string;
+  constructor(
+    column: Column | string,
+    readonly operator: Operator,
+    readonly parameter: any,
+    readonly parameterType?: string
+  ) {
+    this.column = getColumn(column);
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    if (this.operator === Operator.ARRAY_CONTAINS) {
+      this.buildArrayCondition(sql);
+    } else {
+      this.buildSimpleCondition(sql);
+    }
+  }
+
+  protected buildArrayCondition(sql: SqlBuilder): void {
+    if (Array.isArray(this.parameter)) {
+      this.buildArrayContainsArray(sql);
+    } else {
+      this.buildArrayContainsValue(sql);
+    }
+  }
+
+  protected buildArrayContainsArray(sql: SqlBuilder): void {
+    sql.appendColumn(this.column);
+    sql.append('&&ARRAY[');
+
+    let first = true;
+    for (const value of this.parameter) {
+      if (!first) {
+        sql.append(',');
+      }
+      sql.param(value);
+      first = false;
+    }
+
+    sql.append(']');
+    if (this.parameterType) {
+      sql.append('::' + this.parameterType);
+    }
+  }
+
+  protected buildArrayContainsValue(sql: SqlBuilder): void {
+    sql.param(this.parameter);
+    sql.append('=ANY(');
+    sql.appendColumn(this.column);
+    sql.append(')');
+  }
+
+  protected buildSimpleCondition(sql: SqlBuilder): void {
+    if (this.operator === Operator.LIKE) {
+      sql.append('LOWER(');
+      sql.appendColumn(this.column);
+      sql.append(')');
+      sql.append(this.operator);
+      sql.param((this.parameter as string).toLowerCase());
+    } else {
+      sql.appendColumn(this.column);
+      sql.append(this.operator);
+      sql.param(this.parameter);
+    }
+  }
 }
 
-export interface Join {
-  readonly left: Column;
-  readonly right: Column;
-  readonly subQuery?: SelectQuery;
+export abstract class Connective implements Expression {
+  constructor(readonly keyword: string, readonly expressions: Expression[]) {}
+
+  buildSql(builder: SqlBuilder): void {
+    if (this.expressions.length > 1) {
+      builder.append('(');
+    }
+    let first = true;
+    for (const expr of this.expressions) {
+      if (!first) {
+        builder.append(this.keyword);
+      }
+      expr.buildSql(builder);
+      first = false;
+    }
+    if (this.expressions.length > 1) {
+      builder.append(')');
+    }
+  }
 }
 
-export interface OrderBy {
-  readonly column: Column;
-  readonly descending?: boolean;
+export class Conjunction extends Connective {
+  constructor(expressions: Expression[]) {
+    super(' AND ', expressions);
+  }
+}
+
+export class Disjunction extends Connective {
+  constructor(expressions: Expression[]) {
+    super(' OR ', expressions);
+  }
+}
+
+export class Join {
+  constructor(readonly left: Column, readonly right: Column, readonly subQuery?: SelectQuery) {}
+}
+
+export class OrderBy {
+  constructor(readonly column: Column, readonly descending?: boolean) {}
 }
 
 export class SqlBuilder {
@@ -96,91 +198,31 @@ export class SqlBuilder {
 
 export abstract class BaseQuery {
   readonly tableName: string;
-  readonly conditions: Condition[];
+  condition: Expression | undefined;
 
   constructor(tableName: string) {
     this.tableName = tableName;
-    this.conditions = [];
   }
 
-  where(column: Column | string, operator: Operator, value: any, type?: string): this {
-    this.conditions.push({
-      column: getColumn(column),
-      operator,
-      parameter: value,
-      parameterType: type,
-    });
+  whereExpr(expression: Expression): this {
+    if (this.condition && this.condition instanceof Conjunction) {
+      this.condition.expressions.push(expression);
+    } else if (this.condition) {
+      this.condition = new Conjunction([this.condition, expression]);
+    } else {
+      this.condition = expression;
+    }
     return this;
   }
 
+  where(column: Column | string, operator?: Operator, value?: any, type?: string): this {
+    return this.whereExpr(new Condition(column, operator as Operator, value, type));
+  }
+
   protected buildConditions(sql: SqlBuilder): void {
-    let first = true;
-    for (const condition of this.conditions) {
-      sql.append(first ? ' WHERE ' : ' AND ');
-      this.buildCondition(sql, condition);
-      first = false;
-    }
-  }
-
-  protected buildCondition(sql: SqlBuilder, condition: Condition): void {
-    if (condition.operator === Operator.ARRAY_CONTAINS || condition.operator === Operator.ARRAY_NOT_CONTAINS) {
-      this.buildArrayCondition(sql, condition);
-    } else {
-      this.buildSimpleCondition(sql, condition);
-    }
-  }
-
-  protected buildArrayCondition(sql: SqlBuilder, condition: Condition): void {
-    if (condition.operator === Operator.ARRAY_NOT_CONTAINS) {
-      sql.append('NOT (');
-    }
-    if (Array.isArray(condition.parameter)) {
-      this.buildArrayContainsArray(sql, condition);
-    } else {
-      this.buildArrayContainsValue(sql, condition);
-    }
-    if (condition.operator === Operator.ARRAY_NOT_CONTAINS) {
-      sql.append(')');
-    }
-  }
-
-  protected buildArrayContainsArray(sql: SqlBuilder, condition: Condition): void {
-    sql.appendColumn(condition.column);
-    sql.append('&&ARRAY[');
-
-    let first = true;
-    for (const value of condition.parameter) {
-      if (!first) {
-        sql.append(',');
-      }
-      sql.param(value);
-      first = false;
-    }
-
-    sql.append(']');
-    if (condition.parameterType) {
-      sql.append('::' + condition.parameterType);
-    }
-  }
-
-  protected buildArrayContainsValue(sql: SqlBuilder, condition: Condition): void {
-    sql.param(condition.parameter);
-    sql.append('=ANY(');
-    sql.appendColumn(condition.column);
-    sql.append(')');
-  }
-
-  protected buildSimpleCondition(sql: SqlBuilder, condition: Condition): void {
-    if (condition.operator === Operator.LIKE || condition.operator === Operator.NOT_LIKE) {
-      sql.append('LOWER(');
-      sql.appendColumn(condition.column);
-      sql.append(')');
-      sql.append(condition.operator);
-      sql.param((condition.parameter as string).toLowerCase());
-    } else {
-      sql.appendColumn(condition.column);
-      sql.append(condition.operator);
-      sql.param(condition.parameter);
+    if (this.condition) {
+      sql.append(' WHERE ');
+      this.condition.buildSql(sql);
     }
   }
 }
@@ -202,7 +244,7 @@ export class SelectQuery extends BaseQuery {
   }
 
   raw(column: string): this {
-    this.columns.push({ columnName: column, raw: true });
+    this.columns.push(new Column(undefined, column, true));
     return this;
   }
 
@@ -212,16 +254,14 @@ export class SelectQuery extends BaseQuery {
   }
 
   join(rightTableName: string, leftColumnName: string, rightColumnName: string, subQuery?: SelectQuery): this {
-    this.joins.push({
-      left: { tableName: this.tableName, columnName: leftColumnName },
-      right: { tableName: rightTableName, columnName: rightColumnName },
-      subQuery,
-    });
+    this.joins.push(
+      new Join(new Column(this.tableName, leftColumnName), new Column(rightTableName, rightColumnName), subQuery)
+    );
     return this;
   }
 
   orderBy(column: Column | string, descending?: boolean): this {
-    this.orderBys.push({ column: getColumn(column), descending });
+    this.orderBys.push(new OrderBy(getColumn(column), descending));
     return this;
   }
 
@@ -378,7 +418,7 @@ export class DeleteQuery extends BaseQuery {
 
 function getColumn(column: Column | string): Column {
   if (typeof column === 'string') {
-    return { columnName: column };
+    return new Column(undefined, column);
   } else {
     return column;
   }

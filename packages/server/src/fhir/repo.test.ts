@@ -7,7 +7,6 @@ import {
   Patient,
   Questionnaire,
   QuestionnaireResponse,
-  Resource,
   SearchParameter,
   ServiceRequest,
   StructureDefinition,
@@ -16,6 +15,7 @@ import { randomUUID } from 'crypto';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
+import { bundleContains } from '../jest.setup';
 import { seedDatabase } from '../seed';
 import { processBatch } from './batch';
 import { getRepoForLogin, Repository, systemRepo } from './repo';
@@ -1441,6 +1441,31 @@ describe('FHIR Repo', () => {
     expect(bundle1.entry?.length).toEqual(1);
   });
 
+  test('Comma separated value', async () => {
+    const category = randomUUID();
+    const codes = [randomUUID(), randomUUID(), randomUUID()];
+    const serviceRequests = [];
+
+    for (const code of codes) {
+      const [createOutcome, serviceRequest] = await systemRepo.createResource<ServiceRequest>({
+        resourceType: 'ServiceRequest',
+        subject: { reference: 'Patient/' + randomUUID() },
+        category: [{ coding: [{ code: category }] }],
+        code: { coding: [{ code: code }] },
+      });
+      assertOk(createOutcome, serviceRequest);
+      serviceRequests.push(serviceRequest);
+    }
+
+    const [outcome3, bundle1] = await systemRepo.search(
+      parseSearchRequest('ServiceRequest', { category, code: `${codes[0]},${codes[1]}` })
+    );
+    assertOk(outcome3, bundle1);
+    expect(bundle1.entry?.length).toEqual(2);
+    expect(bundleContains(bundle1, serviceRequests[0])).toEqual(true);
+    expect(bundleContains(bundle1, serviceRequests[1])).toEqual(true);
+  });
+
   test('Token not equals', async () => {
     const category = randomUUID();
     const code1 = randomUUID();
@@ -1501,7 +1526,3 @@ describe('FHIR Repo', () => {
     expect(bundleContains(bundle1, serviceRequest2)).toEqual(true);
   });
 });
-
-function bundleContains(bundle: Bundle, resource: Resource): boolean {
-  return !!bundle.entry?.some((entry) => entry.resource?.id === resource.id);
-}

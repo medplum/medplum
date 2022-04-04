@@ -3,6 +3,7 @@ import { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../../config';
 import { closeDatabase, initDatabase } from '../../database';
+import { bundleContains } from '../../jest.setup';
 import { seedDatabase } from '../../seed';
 import { systemRepo } from '../repo';
 
@@ -65,6 +66,36 @@ describe('HumanName Lookup Table', () => {
     assertOk(searchOutcome, searchResult);
     expect(searchResult.entry?.length).toEqual(1);
     expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient?.id);
+  });
+
+  test('Search with commas', async () => {
+    const names = [randomUUID(), randomUUID(), randomUUID()];
+    const patients = [];
+
+    for (const name of names) {
+      const [createOutcome, patient] = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: name }],
+      });
+      assertOk(createOutcome, patient);
+      patients.push(patient);
+    }
+
+    const [searchOutcome, searchResult] = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: `${names[0]},${names[1]}`,
+        },
+      ],
+    });
+    assertOk(searchOutcome, searchResult);
+    expect(searchResult.entry?.length).toEqual(2);
+    expect(bundleContains(searchResult, patients[0])).toBe(true);
+    expect(bundleContains(searchResult, patients[1])).toBe(true);
+    expect(bundleContains(searchResult, patients[2])).toBe(false);
   });
 
   test('Multiple names', async () => {

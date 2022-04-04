@@ -44,7 +44,7 @@ import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, Looku
 import { getPatientId } from './patient';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { validateResource, validateResourceType } from './schema';
-import { InsertQuery, Operator, SelectQuery } from './sql';
+import { Condition, Disjunction, InsertQuery, Negation, Operator, SelectQuery } from './sql';
 import { getSearchParameter, getSearchParameters, getStructureDefinitions } from './structure';
 
 /**
@@ -572,7 +572,7 @@ export class Repository {
     } else if (param.type === 'reference') {
       this.#addReferenceSearchFilter(builder, details, filter);
     } else {
-      builder.where(details.columnName, Operator.EQUALS, filter.value);
+      builder.where(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
     }
   }
 
@@ -614,21 +614,24 @@ export class Repository {
   }
 
   #addTokenSearchFilter(builder: SelectQuery, details: SearchParameterDetails, filter: Filter): void {
-    const query = filter.value;
-    const value = details.type === SearchParameterType.BOOLEAN ? query === 'true' : query;
-    if (details.array) {
-      if (filter.operator === FhirOperator.NOT_EQUALS) {
-        builder.where(details.columnName, Operator.ARRAY_NOT_CONTAINS, value);
+    const expressions = [];
+    for (const valueStr of filter.value.split(',')) {
+      const value = details.type === SearchParameterType.BOOLEAN ? valueStr === 'true' : valueStr;
+      if (details.array) {
+        if (filter.operator === FhirOperator.NOT_EQUALS) {
+          expressions.push(new Negation(new Condition(details.columnName, Operator.ARRAY_CONTAINS, value)));
+        } else {
+          expressions.push(new Condition(details.columnName, Operator.ARRAY_CONTAINS, value));
+        }
+      } else if (filter.operator === FhirOperator.CONTAINS) {
+        expressions.push(new Condition(details.columnName, Operator.LIKE, '%' + value + '%'));
+      } else if (filter.operator === FhirOperator.NOT_EQUALS) {
+        expressions.push(new Negation(new Condition(details.columnName, Operator.EQUALS, value)));
       } else {
-        builder.where(details.columnName, Operator.ARRAY_CONTAINS, value);
+        expressions.push(new Condition(details.columnName, Operator.EQUALS, value));
       }
-    } else if (filter.operator === FhirOperator.CONTAINS) {
-      builder.where(details.columnName, Operator.LIKE, '%' + value + '%');
-    } else if (filter.operator === FhirOperator.NOT_EQUALS) {
-      builder.where(details.columnName, Operator.NOT_EQUALS, value);
-    } else {
-      builder.where(details.columnName, Operator.EQUALS, value);
     }
+    builder.whereExpr(new Disjunction(expressions));
   }
 
   #addReferenceSearchFilter(builder: SelectQuery, details: SearchParameterDetails, filter: Filter): void {
