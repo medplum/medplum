@@ -9,21 +9,26 @@ CDK scripts to setup the full stack:
 
 ### Install
 
-```
-npm install -g cdk
-npm install
-```
+Medplum uses [npm workspaces](https://docs.npmjs.com/cli/v8/using-npm/workspaces) for a monorepo configuration. See [Developer Setup](https://docs.medplum.com/docs/developers/intro) for cloning the repository and installing dependencies.
 
 ### Deploy
 
+First, create a configuration file.
+
+Next, it is strongly recommended to `diff` changes before deploying.
+
+```bash
+npx cdk diff -c config=my-config.json
 ```
-cdk deploy
+
+```bash
+npx cdk deploy -c config=my-config.json
 ```
 
 ### Destroy
 
 ```
-cdk destroy
+npx cdk destroy
 ```
 
 ### Front End
