@@ -1,7 +1,7 @@
 import { Filter, SortRule } from '@medplum/core';
 import { Resource, SearchParameter } from '@medplum/fhirtypes';
 import { getClient } from '../../database';
-import { DeleteQuery, Operator, SelectQuery } from '../sql';
+import { Column, Condition, DeleteQuery, Disjunction, Operator, SelectQuery } from '../sql';
 
 /**
  * The LookupTable interface is used for search parameters that are indexed in separate tables.
@@ -48,8 +48,14 @@ export abstract class LookupTable<T> {
     const subQuery = new SelectQuery(tableName)
       .raw(`DISTINCT ON ("${tableName}"."resourceId") *`)
       .orderBy('resourceId');
-    for (const chunk of filter.value.split(/\s+/)) {
-      subQuery.where({ tableName, columnName }, Operator.LIKE, `%${chunk}%`);
+    const disjunction = new Disjunction([]);
+    for (const option of filter.value.split(',')) {
+      for (const chunk of option.split(/\s+/)) {
+        disjunction.expressions.push(
+          new Condition(new Column(tableName, columnName), Operator.LIKE, `%${chunk.trim()}%`)
+        );
+      }
+      subQuery.whereExpr(disjunction);
     }
     selectQuery.join(joinName, 'id', 'resourceId', subQuery);
   }

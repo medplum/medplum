@@ -1,5 +1,5 @@
 import { assertOk, createReference, isOk } from '@medplum/core';
-import { ClientApplication, Login, Project, ProjectMembership } from '@medplum/fhirtypes';
+import { Bundle, ClientApplication, Login, Project, ProjectMembership, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { systemRepo } from './fhir';
 import { generateAccessToken } from './oauth';
@@ -93,4 +93,14 @@ export function setupRecaptchaMock(fetch: jest.Mock, success: boolean): void {
     status: 200,
     json: () => ({ success }),
   }));
+}
+
+/**
+ * Returns true if the resource is in an entry in the bundle.
+ * @param bundle A bundle of resources.
+ * @param resource The resource to search for.
+ * @returns True if the resource is in the bundle.
+ */
+export function bundleContains(bundle: Bundle, resource: Resource): boolean {
+  return !!bundle.entry?.some((entry) => entry.resource?.id === resource.id);
 }
