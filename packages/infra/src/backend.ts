@@ -8,6 +8,7 @@ import * as logs from '@aws-cdk/aws-logs';
 import * as rds from '@aws-cdk/aws-rds';
 import * as route53 from '@aws-cdk/aws-route53';
 import * as targets from '@aws-cdk/aws-route53-targets/lib';
+import * as s3 from '@aws-cdk/aws-s3';
 import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
 import * as ssm from '@aws-cdk/aws-ssm';
 import * as cdk from '@aws-cdk/core';
@@ -207,6 +208,14 @@ export class BackEnd extends cdk.Construct {
       internetFacing: true,
       http2Enabled: true,
     });
+
+    // Load Balancer logging
+    if (config.loadBalancerLoggingBucket) {
+      loadBalancer.logAccessLogs(
+        s3.Bucket.fromBucketName(this, 'LoggingBucket', config.loadBalancerLoggingBucket),
+        config.loadBalancerLoggingPrefix
+      );
+    }
 
     // HTTPS Listener
     // Forward to the target group

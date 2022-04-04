@@ -17,4 +17,6 @@ export interface MedplumInfraConfig {
   readonly desiredServerCount: number;
   readonly serverMemory: number;
   readonly serverCpu: number;
+  readonly loadBalancerLoggingBucket?: string;
+  readonly loadBalancerLoggingPrefix?: string;
 }
