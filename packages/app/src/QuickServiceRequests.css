@@ -1,0 +1,26 @@
+.medplum-quick-service-request-container {
+  position: fixed;
+  top: 250px;
+  left: 0;
+  width: 160px;
+  z-index: 5;
+}
+
+.medplum-quick-service-request {
+  text-align: center;
+  width: 160px;
+  background-color: white;
+  border: 1px solid #e5e5e5;
+}
+
+.medplum-quick-service-request.active {
+  width: 170px;
+  background-color: #fefcb2;
+  border: 1px solid #b1b0a4;
+}
+
+@media (max-width: 700px) {
+  .medplum-quick-service-request-container {
+    display: none;
+  }
+}

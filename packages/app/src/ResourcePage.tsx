@@ -36,6 +36,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CodeEditor } from './CodeEditor';
 import { PatientHeader } from './PatientHeader';
+import { QuickServiceRequests } from './QuickServiceRequests';
 import { QuickStatus } from './QuickStatus';
 import { ResourceHeader } from './ResourceHeader';
 import { getPatient } from './utils';
@@ -202,6 +203,7 @@ export function ResourcePage(): JSX.Element {
           onChange={onStatusChange}
         />
       )}
+      <QuickServiceRequests value={value} />
       {patient && <PatientHeader patient={patient} />}
       {resourceType !== 'Patient' && <ResourceHeader resource={value} />}
       <TabList value={tab || defaultTab} onChange={onTabChange}>
