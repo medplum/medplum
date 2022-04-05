@@ -713,7 +713,110 @@ describe('Subscription Worker', () => {
     expect(patientBundle.entry?.[0]?.resource?.meta?.author?.reference?.startsWith('ClientApplication')).toBe(true);
   });
 
-  test('Bot run as user with access policy', async () => {
+  test('Bot run as user with restricted access policy', async () => {
+    const nonce = randomUUID();
+
+    // Create a practitioner profile
+    const [practitionerOutcome, practitioner] = await botRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+    });
+    assertOk(practitionerOutcome, practitioner);
+
+    // Create an access policy
+    // Can only access QuestionnaireResponse resources
+    const [accessPolicyOutcome, accessPolicy] = await botRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'QuestionnaireResponse',
+        },
+      ],
+    });
+    assertOk(accessPolicyOutcome, accessPolicy);
+
+    // Create a membership for the practitioner and the access policy
+    const [membershipOutcome, membership] = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      project: createReference(botProject),
+      profile: createReference(practitioner),
+      accessPolicy: createReference(accessPolicy),
+      user: {
+        reference: 'User/' + randomUUID(),
+      },
+    });
+    assertOk(membershipOutcome, membership);
+
+    // Create a bot
+    // This bot takes a QuestionnaireResponse as an input
+    // It just performs a patient search
+    // The new practitioner user does not have access to patients, so this will fail.
+    const [botOutcome, bot] = await botRepo.createResource<Bot>({
+      resourceType: 'Bot',
+      name: 'Test Bot',
+      description: 'Test Bot',
+      code: `
+        const [outcome, patient] = await repo.search({
+          resourceType: 'Patient',
+        });
+        assertOk(outcome, patient);
+      `,
+      runAsUser: true,
+    });
+    assertOk(botOutcome, bot);
+
+    // Create the subscription that listens for QuestionnaireResponses
+    const [subscriptionOutcome, subscription] = await botRepo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      status: 'active',
+      criteria: 'QuestionnaireResponse',
+      channel: {
+        type: 'rest-hook',
+        endpoint: getReferenceString(bot as Bot),
+      },
+    });
+    assertOk(subscriptionOutcome, subscription);
+
+    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    queue.add.mockClear();
+
+    // Start acting as the user
+    const userRepo = await getRepoForMembership(membership);
+
+    const [qrOutcome, qr] = await userRepo.createResource<QuestionnaireResponse>({
+      resourceType: 'QuestionnaireResponse',
+      item: [
+        {
+          linkId: 'q1',
+          answer: [
+            {
+              valueString: nonce,
+            },
+          ],
+        },
+      ],
+    });
+    assertOk(qrOutcome, qr);
+    expect(queue.add).toHaveBeenCalled();
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    await execSubscriptionJob(job);
+
+    const [auditEventOutcome, auditEventBundle] = await botRepo.search<AuditEvent>({
+      resourceType: 'AuditEvent',
+      filters: [
+        {
+          code: 'entity',
+          operator: Operator.EQUALS,
+          value: getReferenceString(subscription as Subscription),
+        },
+      ],
+    });
+    assertOk(auditEventOutcome, auditEventBundle);
+    expect(auditEventBundle.entry?.length).toEqual(1);
+    expect(auditEventBundle.entry?.[0]?.resource?.outcome).toEqual('4');
+  });
+
+  test('Bot run as user with readonly access policy', async () => {
     const nonce = randomUUID();
 
     // Create a practitioner profile
