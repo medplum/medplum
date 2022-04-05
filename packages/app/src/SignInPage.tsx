@@ -1,14 +1,9 @@
 import { Logo, SignInForm } from '@medplum/ui';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { initGoogleAuth } from './utils';
 
 export function SignInPage(): JSX.Element {
   const navigate = useNavigate();
-
-  useEffect(() => {
-    initGoogleAuth();
-  }, []);
 
   return (
     <SignInForm

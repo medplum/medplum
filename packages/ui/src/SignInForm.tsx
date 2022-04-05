@@ -1,15 +1,16 @@
 import { GoogleCredentialResponse } from '@medplum/core';
 import { OperationOutcome, ProjectMembership } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
 import { Document } from './Document';
 import { Form } from './Form';
 import { FormSection } from './FormSection';
+import { Input } from './Input';
 import { Logo } from './Logo';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
-import { Input } from './Input';
+import { getGoogleClientId, initGoogleAuth } from './utils';
 import { getIssuesForExpression } from './utils/outcomes';
 import './SignInForm.css';
 import './util.css';
@@ -28,6 +29,13 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
   const medplum = useMedplum();
   const [login, setLogin] = useState<string | undefined>(undefined);
   const [memberships, setMemberships] = useState<ProjectMembership[] | undefined>(undefined);
+  const googleClientId = getGoogleClientId(props.googleClientId);
+
+  useEffect(() => {
+    if (googleClientId) {
+      initGoogleAuth();
+    }
+  }, []);
 
   function handleAuthResponse(response: any): void {
     if (response.login) {
@@ -56,7 +64,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
         if (!login) {
           return (
             <AuthenticationForm
-              googleClientId={props.googleClientId}
+              googleClientId={googleClientId}
               onForgotPassword={props.onForgotPassword}
               onRegister={props.onRegister}
               handleAuthResponse={handleAuthResponse}

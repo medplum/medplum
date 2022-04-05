@@ -1,9 +1,13 @@
 import resolve from '@rollup/plugin-node-resolve';
+import replace from '@rollup/plugin-replace';
 import typescript from '@rollup/plugin-typescript';
+import dotenv from 'dotenv';
 import copy from 'rollup-plugin-copy';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
 import postcss from 'rollup-plugin-postcss';
 import { terser } from 'rollup-plugin-terser';
+
+dotenv.config();
 
 const extensions = ['.ts', '.tsx'];
 
@@ -47,6 +51,14 @@ export default {
     },
   ],
   plugins: [
+    replace({
+      preventAssignment: true,
+      values: {
+        'process.env.NODE_ENV': '"production"',
+        'process.env.GOOGLE_AUTH_ORIGINS': `"${process.env.GOOGLE_AUTH_ORIGINS}"`,
+        'process.env.GOOGLE_CLIENT_ID': `"${process.env.GOOGLE_CLIENT_ID}"`,
+      },
+    }),
     peerDepsExternal(),
     postcss({ extract: 'styles.css' }),
     resolve({ extensions }),
