@@ -137,5 +137,5 @@ export function getValueAndType(context: any, property: ElementDefinition): [any
     }
   }
 
-  return [undefined, PropertyType.string];
+  return [undefined, types[0].code as PropertyType];
 }

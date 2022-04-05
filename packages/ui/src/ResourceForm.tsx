@@ -6,6 +6,7 @@ import { DEFAULT_IGNORED_PROPERTIES } from './constants';
 import { FormSection } from './FormSection';
 import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
+import { getValueAndType } from './ResourcePropertyDisplay';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 import { useResource } from './useResource';
 
@@ -57,6 +58,7 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
           return null;
         }
         const property = entry[1];
+        const [propertyValue, propertyType] = getValueAndType(value, property);
         return (
           <FormSection
             key={key}
@@ -69,7 +71,8 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
               schema={schema}
               property={property}
               name={key}
-              defaultValue={getDefaultValue(value, key, entry[1])}
+              defaultValue={propertyValue}
+              defaultPropertyType={propertyType}
               outcome={props.outcome}
               onChange={(newValue: any, propName?: string) => {
                 setValue(setPropertyValue(value, key, propName ?? key, entry[1], newValue));
@@ -94,20 +97,6 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
       )}
     </form>
   );
-}
-
-export function getDefaultValue(obj: any, key: string, elementDefinition: ElementDefinition): any {
-  const types = elementDefinition.type as ElementDefinitionType[];
-  if (types.length === 1) {
-    return obj[key];
-  }
-  for (const type of types) {
-    const compoundKey = key.replace('[x]', capitalize(type.code as string));
-    if (compoundKey in obj) {
-      return obj[compoundKey];
-    }
-  }
-  return undefined;
 }
 
 export function setPropertyValue(
