@@ -1,9 +1,26 @@
-import { initGoogleAuth } from './utils';
+import { getGoogleClientId, initGoogleAuth } from './utils';
 
 describe('Utils', () => {
   beforeEach(() => {
     // Reset the DOM
     document.getElementsByTagName('html')[0].innerHTML = '';
+  });
+
+  test('googleClientId', () => {
+    expect(getGoogleClientId('foo')).toBeDefined();
+
+    Object.defineProperty(window, 'location', {
+      value: {
+        protocol: 'https:',
+        host: 'app.medplum.com',
+      },
+    });
+    process.env.GOOGLE_AUTH_ORIGINS = 'https://app.medplum.com';
+    process.env.GOOGLE_CLIENT_ID = 'foo';
+    expect(getGoogleClientId(undefined)).toBeDefined();
+
+    window.location.host = 'evil.com';
+    expect(getGoogleClientId(undefined)).toBeUndefined();
   });
 
   test('initGoogleAuth', () => {
