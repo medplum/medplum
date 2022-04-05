@@ -64,3 +64,4 @@ export * from './TextArea';
 export * from './Timeline';
 export * from './TitleBar';
 export * from './useResource';
+export * from './utils';

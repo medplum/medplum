@@ -1,4 +1,4 @@
-import { initRecaptcha } from './utils';
+import { initGoogleAuth } from './utils';
 
 describe('Utils', () => {
   beforeEach(() => {
@@ -6,19 +6,19 @@ describe('Utils', () => {
     document.getElementsByTagName('html')[0].innerHTML = '';
   });
 
-  test('initRecaptcha', () => {
+  test('initGoogleAuth', () => {
     expect(document.getElementsByTagName('script').length).toBe(0);
 
-    // Init Recaptcha
-    // Should create a <script> tag for the Recaptcha script.
-    initRecaptcha();
+    // Init Google Auth
+    // Should create a <script> tag for the Google Auth script.
+    initGoogleAuth();
     expect(document.getElementsByTagName('script').length).toBe(1);
 
     // Simulate loading the script
-    Object.defineProperty(global, 'grecaptcha', { value: {} });
+    Object.defineProperty(global, 'google', { value: {} });
 
     // Initializing again should not create more <script> tags
-    initRecaptcha();
+    initGoogleAuth();
     expect(document.getElementsByTagName('script').length).toBe(1);
   });
 });
