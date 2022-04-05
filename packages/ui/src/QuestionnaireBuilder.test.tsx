@@ -494,6 +494,11 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.click(screen.getByText('Add choice'));
     });
 
+    // Change the question type from "integer" (default) to "string"
+    fireEvent.change(screen.getByDisplayValue('integer'), {
+      target: { value: 'string' },
+    });
+
     // Change the text for the choice
     fireEvent.change(screen.getByTestId('value[x]'), {
       target: { value: 'foo bar' },

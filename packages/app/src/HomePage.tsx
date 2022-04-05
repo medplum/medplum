@@ -1,4 +1,5 @@
-import { formatSearchQuery, parseSearchDefinition, SearchRequest, SortRule } from '@medplum/core';
+import { Filter, formatSearchQuery, parseSearchDefinition, SearchRequest, SortRule } from '@medplum/core';
+import { UserConfiguration } from '@medplum/fhirtypes';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -7,14 +8,14 @@ export function HomePage(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
   const location = useLocation();
-  const [search, setSearch] = useState<SearchRequest>(parseSearchDefinition(location));
+  const [search, setSearch] = useState<SearchRequest>();
 
   useEffect(() => {
     // Parse the search from the URL
     const parsedSearch = parseSearchDefinition(location);
 
     // Fill in the search with default values
-    const populatedSearch = addDefaultSearchValues(parsedSearch);
+    const populatedSearch = addDefaultSearchValues(parsedSearch, medplum.getUserConfiguration());
 
     if (
       location.pathname === `/${populatedSearch.resourceType}` &&
@@ -29,7 +30,7 @@ export function HomePage(): JSX.Element {
     }
   }, [location]);
 
-  if (!search.resourceType || !search.fields || search.fields.length === 0) {
+  if (!search?.resourceType || !search.fields || search.fields.length === 0) {
     return <Loading />;
   }
 
@@ -72,9 +73,10 @@ export function HomePage(): JSX.Element {
   );
 }
 
-function addDefaultSearchValues(search: SearchRequest): SearchRequest {
-  const resourceType = search.resourceType || getDefaultResourceType();
+function addDefaultSearchValues(search: SearchRequest, config: UserConfiguration | undefined): SearchRequest {
+  const resourceType = search.resourceType || getDefaultResourceType(config);
   const fields = search.fields ?? getDefaultFields(resourceType);
+  const filters = search.filters ?? (!search.resourceType ? getDefaultFilters(resourceType) : undefined);
   const sortRules = search.sortRules ?? getDefaultSortRules(resourceType);
   const page = search.page ?? 0;
   const count = search.count ?? 20;
@@ -83,14 +85,19 @@ function addDefaultSearchValues(search: SearchRequest): SearchRequest {
     ...search,
     resourceType,
     fields,
+    filters,
     sortRules,
     page,
     count,
   };
 }
 
-function getDefaultResourceType(): string {
-  return localStorage.getItem('defaultResourceType') || 'Patient';
+function getDefaultResourceType(config: UserConfiguration | undefined): string {
+  return (
+    localStorage.getItem('defaultResourceType') ||
+    config?.option?.find((o) => o.id === 'defaultResourceType')?.valueString ||
+    'Patient'
+  );
 }
 
 export function getDefaultFields(resourceType: string): string[] {
@@ -147,6 +154,10 @@ export function getDefaultFields(resourceType: string): string[] {
       break;
   }
   return fields;
+}
+
+function getDefaultFilters(resourceType: string): Filter[] | undefined {
+  return getLastSearch(resourceType)?.filters;
 }
 
 function getDefaultSortRules(resourceType: string): SortRule[] {
