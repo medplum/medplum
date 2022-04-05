@@ -48,11 +48,11 @@ export abstract class LookupTable<T> {
     const subQuery = new SelectQuery(tableName)
       .raw(`DISTINCT ON ("${tableName}"."resourceId") *`)
       .orderBy('resourceId');
-    if (filter.operator === FhirOperator.EXACT) {
-      subQuery.whereExpr(new Condition(new Column(tableName, columnName), Operator.EQUALS, filter.value));
-    } else {
-      const disjunction = new Disjunction([]);
-      for (const option of filter.value.split(',')) {
+    const disjunction = new Disjunction([]);
+    for (const option of filter.value.split(',')) {
+      if (filter.operator === FhirOperator.EXACT) {
+        disjunction.expressions.push(new Condition(new Column(tableName, columnName), Operator.EQUALS, option));
+      } else {
         const conjunction = new Conjunction([]);
         for (const chunk of option.split(/\s+/)) {
           conjunction.expressions.push(
@@ -61,8 +61,8 @@ export abstract class LookupTable<T> {
         }
         disjunction.expressions.push(conjunction);
       }
-      subQuery.whereExpr(disjunction);
     }
+    subQuery.whereExpr(disjunction);
     selectQuery.join(joinName, 'id', 'resourceId', subQuery);
   }
 

@@ -191,4 +191,38 @@ describe('Identifier Lookup Table', () => {
     expect(bundleContains(searchResult1, patient1)).toBe(true);
     expect(bundleContains(searchResult1, patient2)).toBe(false);
   });
+
+  test('Search comma separated identifier exact', async () => {
+    const identifier1 = randomUUID();
+    const identifier2 = randomUUID();
+
+    const [createOutcome1, patient1] = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      identifier: [{ system: 'https://www.example.com', value: identifier1 }],
+    });
+    assertOk(createOutcome1, patient1);
+
+    const [createOutcome2, patient2] = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Jones' }],
+      identifier: [{ system: 'https://www.example.com', value: identifier2 }],
+    });
+    assertOk(createOutcome2, patient2);
+
+    const [searchOutcome1, searchResult1] = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EXACT,
+          value: `${identifier1},${identifier2}`,
+        },
+      ],
+    });
+    assertOk(searchOutcome1, searchResult1);
+    expect(searchResult1?.entry?.length).toEqual(2);
+    expect(bundleContains(searchResult1, patient1)).toBe(true);
+    expect(bundleContains(searchResult1, patient2)).toBe(true);
+  });
 });
