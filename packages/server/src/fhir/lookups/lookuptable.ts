@@ -1,7 +1,7 @@
-import { Filter, SortRule } from '@medplum/core';
+import { Filter, Operator as FhirOperator, SortRule } from '@medplum/core';
 import { Resource, SearchParameter } from '@medplum/fhirtypes';
 import { getClient } from '../../database';
-import { Column, Condition, DeleteQuery, Disjunction, Operator, SelectQuery } from '../sql';
+import { Column, Condition, Conjunction, DeleteQuery, Disjunction, Operator, SelectQuery } from '../sql';
 
 /**
  * The LookupTable interface is used for search parameters that are indexed in separate tables.
@@ -50,13 +50,19 @@ export abstract class LookupTable<T> {
       .orderBy('resourceId');
     const disjunction = new Disjunction([]);
     for (const option of filter.value.split(',')) {
-      for (const chunk of option.split(/\s+/)) {
-        disjunction.expressions.push(
-          new Condition(new Column(tableName, columnName), Operator.LIKE, `%${chunk.trim()}%`)
-        );
+      if (filter.operator === FhirOperator.EXACT) {
+        disjunction.expressions.push(new Condition(new Column(tableName, columnName), Operator.EQUALS, option));
+      } else {
+        const conjunction = new Conjunction([]);
+        for (const chunk of option.split(/\s+/)) {
+          conjunction.expressions.push(
+            new Condition(new Column(tableName, columnName), Operator.LIKE, `%${chunk.trim()}%`)
+          );
+        }
+        disjunction.expressions.push(conjunction);
       }
-      subQuery.whereExpr(disjunction);
     }
+    subQuery.whereExpr(disjunction);
     selectQuery.join(joinName, 'id', 'resourceId', subQuery);
   }
 
