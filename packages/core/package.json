@@ -1,6 +1,6 @@
 {
   "name": "@medplum/core",
-  "version": "0.5.0",
+  "version": "0.5.2",
   "description": "Medplum TS/JS Library",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -17,7 +17,7 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "0.5.0"
+    "@medplum/fhirtypes": "0.5.2"
   },
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
