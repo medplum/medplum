@@ -8,15 +8,11 @@ import { getBinaryStorage, Repository } from '../fhir';
 
 export async function createPdf(
   repo: Repository,
-  filename: string,
+  filename: string | undefined,
   docDefinition: TDocumentDefinitions
 ): Promise<Binary> {
   if (!repo) {
     return Promise.reject('Missing repository');
-  }
-
-  if (!filename) {
-    return Promise.reject('Missing filename');
   }
 
   if (!docDefinition) {
