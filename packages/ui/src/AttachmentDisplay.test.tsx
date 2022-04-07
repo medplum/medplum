@@ -68,6 +68,18 @@ describe('AttachmentDisplay', () => {
     });
   });
 
+  test('Renders PDF', async () => {
+    await act(async () => {
+      await setup({
+        value: {
+          contentType: 'application/pdf',
+          url: 'https://example.com/test.pdf',
+        },
+      });
+      await waitFor(() => screen.getByTestId('attachment-pdf'));
+    });
+  });
+
   test('Renders other file', async () => {
     await act(async () => {
       await setup({
