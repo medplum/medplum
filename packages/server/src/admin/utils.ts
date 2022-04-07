@@ -3,11 +3,6 @@ import { BundleEntry, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { systemRepo } from '../fhir';
 
-export interface ProjectDetails {
-  project: Project;
-  memberships: ProjectMembership[];
-}
-
 /**
  * Verifies that the current user is a project admin.
  * Assumes that "projectId" is a path parameter.
@@ -16,7 +11,7 @@ export interface ProjectDetails {
  * @param res The response.
  * @returns Project details if the current user is a project admin; undefined otherwise.
  */
-export async function verifyProjectAdmin(req: Request, res: Response): Promise<ProjectDetails | undefined> {
+export async function verifyProjectAdmin(req: Request, res: Response): Promise<Project | undefined> {
   const { projectId } = req.params;
 
   const [projectOutcome, project] = await systemRepo.readResource<Project>('Project', projectId);
@@ -24,6 +19,43 @@ export async function verifyProjectAdmin(req: Request, res: Response): Promise<P
 
   const [membershipOutcome, bundle] = await systemRepo.search<ProjectMembership>({
     resourceType: 'ProjectMembership',
+    count: 1,
+    filters: [
+      {
+        code: 'project',
+        operator: Operator.EQUALS,
+        value: 'Project/' + projectId,
+      },
+      {
+        code: 'user',
+        operator: Operator.EQUALS,
+        value: 'User/' + res.locals.user,
+      },
+    ],
+  });
+  assertOk(membershipOutcome, bundle);
+
+  if (bundle.entry?.length === 0) {
+    return undefined;
+  }
+
+  const membership = bundle.entry?.[0].resource as ProjectMembership;
+  if (!membership.admin) {
+    return undefined;
+  }
+
+  return project;
+}
+
+/**
+ * Returns the list of project memberships for the specified project.
+ * @param projectId The project ID.
+ * @returns The list of project memberships.
+ */
+export async function getProjectMemberships(projectId: string): Promise<ProjectMembership[]> {
+  const [membershipOutcome, bundle] = await systemRepo.search<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    count: 1000,
     filters: [
       {
         code: 'project',
@@ -33,17 +65,5 @@ export async function verifyProjectAdmin(req: Request, res: Response): Promise<P
     ],
   });
   assertOk(membershipOutcome, bundle);
-
-  const memberships = (bundle.entry as BundleEntry<ProjectMembership>[]).map(
-    (entry) => entry.resource as ProjectMembership
-  );
-
-  if (!memberships.find((m) => m.user?.reference === 'User/' + res.locals.user && m.admin)) {
-    return undefined;
-  }
-
-  return {
-    project,
-    memberships,
-  };
+  return (bundle.entry as BundleEntry<ProjectMembership>[]).map((entry) => entry.resource as ProjectMembership);
 }

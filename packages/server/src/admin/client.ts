@@ -9,13 +9,12 @@ import { verifyProjectAdmin } from './utils';
 export const createClientValidators = [body('name').notEmpty().withMessage('Client name is required')];
 
 export async function createClientHandler(req: Request, res: Response): Promise<void> {
-  const projectDetails = await verifyProjectAdmin(req, res);
-  if (!projectDetails) {
+  const project = await verifyProjectAdmin(req, res);
+  if (!project) {
     res.sendStatus(404);
     return;
   }
 
-  const { project } = projectDetails;
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     sendOutcome(res, invalidRequest(errors));
