@@ -1,4 +1,4 @@
-import { Device, Patient, Practitioner, Reference, RelatedPerson, Resource } from '@medplum/fhirtypes';
+import { Attachment, Device, Patient, Practitioner, Reference, RelatedPerson, Resource } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
 
 export type ProfileResource = Patient | Practitioner | RelatedPerson;
@@ -110,11 +110,25 @@ export function getImageSrc(resource: Resource): string | undefined {
     const photos = (resource as ProfileResource).photo;
     if (photos) {
       for (const photo of photos) {
-        if (photo.url && photo.contentType && photo.contentType.startsWith('image/')) {
-          return photo.url;
+        const url = getPhotoImageSrc(photo);
+        if (url) {
+          return url;
         }
       }
     }
+  }
+  if (resource.resourceType === 'Bot' && resource.photo) {
+    const url = getPhotoImageSrc(resource.photo);
+    if (url) {
+      return url;
+    }
+  }
+  return undefined;
+}
+
+function getPhotoImageSrc(photo: Attachment): string | undefined {
+  if (photo.url && photo.contentType && photo.contentType.startsWith('image/')) {
+    return photo.url;
   }
   return undefined;
 }
