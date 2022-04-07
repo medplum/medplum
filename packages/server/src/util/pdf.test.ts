@@ -29,7 +29,6 @@ describe('Binary', () => {
 
   test('Missing values', () => {
     expect(() => createPdf(null as unknown as Repository, 'test.pdf', dd)).rejects.toEqual('Missing repository');
-    expect(() => createPdf(systemRepo, null as unknown as string, dd)).rejects.toEqual('Missing filename');
     expect(() => createPdf(systemRepo, 'x', null as unknown as TDocumentDefinitions)).rejects.toEqual(
       'Missing document definition'
     );
