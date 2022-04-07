@@ -24,6 +24,7 @@ export async function verifyProjectAdmin(req: Request, res: Response): Promise<P
 
   const [membershipOutcome, bundle] = await systemRepo.search<ProjectMembership>({
     resourceType: 'ProjectMembership',
+    count: 1000,
     filters: [
       {
         code: 'project',
