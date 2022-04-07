@@ -1,5 +1,6 @@
 import { assertOk } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
+import { resolve } from 'path';
 import PdfPrinter from 'pdfmake';
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
 import { PassThrough } from 'stream';
@@ -32,7 +33,7 @@ export async function createPdf(
       bolditalics: 'Helvetica-BoldOblique',
     },
     Avenir: {
-      normal: 'fonts/avenir.ttf',
+      normal: resolve(__dirname, '../../fonts/avenir.ttf'),
     },
   };
 
