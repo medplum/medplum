@@ -10,16 +10,26 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element {
   const value = props.value;
   const { contentType, url } = value ?? {};
 
-  if (contentType?.startsWith('image/') && url) {
-    return <img data-testid="attachment-image" style={{ maxWidth: props.maxWidth }} src={url} alt={value?.title} />;
-  }
+  if (contentType && url) {
+    if (contentType.startsWith('image/')) {
+      return <img data-testid="attachment-image" style={{ maxWidth: props.maxWidth }} src={url} alt={value?.title} />;
+    }
 
-  if (contentType?.startsWith('video/') && url) {
-    return (
-      <video data-testid="attachment-video" style={{ maxWidth: props.maxWidth }} controls={true}>
-        <source type={contentType} src={url} />
-      </video>
-    );
+    if (contentType.startsWith('video/')) {
+      return (
+        <video data-testid="attachment-video" style={{ maxWidth: props.maxWidth }} controls={true}>
+          <source type={contentType} src={url} />
+        </video>
+      );
+    }
+
+    if (contentType === 'application/pdf') {
+      return (
+        <div data-testid="attachment-pdf" style={{ maxWidth: props.maxWidth, minHeight: 400 }}>
+          <iframe width="100%" height="400" src={url} allowFullScreen={true} frameBorder={0} seamless={true} />
+        </div>
+      );
+    }
   }
 
   return (

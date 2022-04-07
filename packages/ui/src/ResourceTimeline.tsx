@@ -238,7 +238,11 @@ interface MediaTimelineItemProps {
 
 function MediaTimelineItem(props: MediaTimelineItemProps): JSX.Element {
   const contentType = props.media.content?.contentType;
-  const padding = contentType && !contentType.startsWith('image/') && !contentType.startsWith('video/');
+  const padding =
+    contentType &&
+    !contentType.startsWith('image/') &&
+    !contentType.startsWith('video/') &&
+    contentType !== 'application/pdf';
   return (
     <TimelineItem resource={props.media} padding={!!padding}>
       <AttachmentDisplay value={props.media.content} />
