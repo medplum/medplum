@@ -1,6 +1,6 @@
 import { getReferenceString, Operator } from '@medplum/core';
 import { BundleEntry, Patient, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
-import { MedplumLink, useMedplum, useResource } from '@medplum/ui';
+import { MedplumLink, sortByDate, useMedplum, useResource } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import './QuickServiceRequests.css';
 import { getPatient } from './utils';
@@ -31,6 +31,7 @@ export function QuickServiceRequests(props: QuickServiceRequestsProps): JSX.Elem
       .then((bundle) => {
         const entries = bundle.entry as BundleEntry<ServiceRequest>[];
         const resources = entries.map((e) => e.resource as ServiceRequest);
+        sortByDate(resources);
         setServiceRequests(resources);
       });
   }, [resource]);
