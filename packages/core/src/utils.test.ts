@@ -123,6 +123,17 @@ describe('Core Utils', () => {
         ],
       })
     ).toEqual('http://abc/xyz.jpg');
+    expect(
+      getImageSrc({
+        resourceType: 'Bot',
+        photo: {
+          url: 'http://abc/xyz.jpg',
+          contentType: 'image/jpeg',
+        },
+      })
+    ).toEqual('http://abc/xyz.jpg');
+    expect(getImageSrc({ resourceType: 'Bot' })).toBeUndefined();
+    expect(getImageSrc({ resourceType: 'Bot', photo: {} })).toBeUndefined();
   });
 
   test('Convert ArrayBuffer to hex string', () => {
