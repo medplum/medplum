@@ -65,3 +65,4 @@ export * from './Timeline';
 export * from './TitleBar';
 export * from './useResource';
 export * from './utils';
+export * from './utils/date';
