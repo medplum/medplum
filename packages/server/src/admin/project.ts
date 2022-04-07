@@ -6,7 +6,7 @@ import { sendOutcome, systemRepo } from '../fhir';
 import { authenticateToken } from '../oauth';
 import { createClientHandler, createClientValidators } from './client';
 import { inviteHandler, inviteValidators } from './invite';
-import { verifyProjectAdmin } from './utils';
+import { getProjectMemberships, verifyProjectAdmin } from './utils';
 
 export const projectAdminRouter = Router();
 projectAdminRouter.use(authenticateToken);
@@ -20,12 +20,13 @@ projectAdminRouter.post('/:projectId/invite', inviteValidators, asyncWrap(invite
 projectAdminRouter.get(
   '/:projectId',
   asyncWrap(async (req: Request, res: Response) => {
-    const projectDetails = await verifyProjectAdmin(req, res);
-    if (!projectDetails) {
+    const project = await verifyProjectAdmin(req, res);
+    if (!project) {
       return res.sendStatus(404);
     }
 
-    const { project, memberships } = projectDetails;
+    // const { project, memberships } = projectDetails;
+    const memberships = await getProjectMemberships(project.id as string);
     const members = [];
     for (const membership of memberships) {
       members.push({
@@ -51,8 +52,8 @@ projectAdminRouter.get(
 projectAdminRouter.get(
   '/:projectId/members/:membershipId',
   asyncWrap(async (req: Request, res: Response) => {
-    const projectDetails = await verifyProjectAdmin(req, res);
-    if (!projectDetails) {
+    const project = await verifyProjectAdmin(req, res);
+    if (!project) {
       res.sendStatus(404);
       return;
     }
@@ -67,8 +68,8 @@ projectAdminRouter.get(
 projectAdminRouter.post(
   '/:projectId/members/:membershipId',
   asyncWrap(async (req: Request, res: Response) => {
-    const projectDetails = await verifyProjectAdmin(req, res);
-    if (!projectDetails) {
+    const project = await verifyProjectAdmin(req, res);
+    if (!project) {
       res.sendStatus(404);
       return;
     }
@@ -88,8 +89,8 @@ projectAdminRouter.post(
 projectAdminRouter.delete(
   '/:projectId/members/:membershipId',
   asyncWrap(async (req: Request, res: Response) => {
-    const projectDetails = await verifyProjectAdmin(req, res);
-    if (!projectDetails) {
+    const project = await verifyProjectAdmin(req, res);
+    if (!project) {
       res.sendStatus(404);
       return;
     }
@@ -101,7 +102,7 @@ projectAdminRouter.delete(
     );
     assertOk(readOutcome, membership);
 
-    if (projectDetails.project.owner?.reference === membership.user?.reference) {
+    if (project.owner?.reference === membership.user?.reference) {
       sendOutcome(res, badRequest('Cannot delete the owner of the project'));
       return;
     }
