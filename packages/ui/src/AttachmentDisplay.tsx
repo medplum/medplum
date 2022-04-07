@@ -25,7 +25,7 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element {
 
     if (contentType === 'application/pdf') {
       return (
-        <div style={{ maxWidth: props.maxWidth, minHeight: 400 }}>
+        <div data-testid="attachment-pdf" style={{ maxWidth: props.maxWidth, minHeight: 400 }}>
           <iframe width="100%" height="400" src={url} allowFullScreen={true} frameBorder={0} seamless={true} />
         </div>
       );
