@@ -158,7 +158,7 @@ function refReplacer(key: string, value: any): any {
   if (key === '$ref') {
     return (value as string).replace('#/definitions/', '#/components/schemas/');
   }
-  if (key === 'oneOf' || key === 'extension' || key === '_extension') {
+  if (key === 'oneOf' || key.startsWith('_')) {
     return undefined;
   }
   return value;
