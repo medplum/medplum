@@ -78,9 +78,43 @@ describe('AttachmentDisplay', () => {
       });
       await waitFor(() => screen.getByTestId('attachment-pdf'));
     });
+    expect(screen.getByText('Download')).toBeInTheDocument();
   });
 
-  test('Renders other file', async () => {
+  test('Does not renders PDF with filename', async () => {
+    // This is a workaround for the Content-Disposition bug.
+    // In the past, files with a filename were downloaded via Content-Disposition.
+    // Those files do not work with the PDF-in-iframe viewer.
+    // So we do not show them.
+    await act(async () => {
+      await setup({
+        value: {
+          contentType: 'application/pdf',
+          url: 'https://example.com/test.pdf',
+          title: 'test.pdf',
+        },
+      });
+      await waitFor(() => screen.getByText('test.pdf'));
+    });
+    expect(screen.getByText('test.pdf')).toBeInTheDocument();
+    expect(screen.queryByTestId('attachment-pdf')).toBeNull();
+  });
+
+  test('Renders other file with title', async () => {
+    await act(async () => {
+      await setup({
+        value: {
+          contentType: 'text/plain',
+          url: 'https://example.com/test.txt',
+          title: 'test.txt',
+        },
+      });
+      await waitFor(() => screen.getByTestId('attachment-details'));
+    });
+    expect(screen.getByText('test.txt')).toBeInTheDocument();
+  });
+
+  test('Renders other file without title', async () => {
     await act(async () => {
       await setup({
         value: {
@@ -90,5 +124,6 @@ describe('AttachmentDisplay', () => {
       });
       await waitFor(() => screen.getByTestId('attachment-details'));
     });
+    expect(screen.getByText('Download')).toBeInTheDocument();
   });
 });
