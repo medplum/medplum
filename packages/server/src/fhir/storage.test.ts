@@ -88,7 +88,6 @@ describe('Storage', () => {
         params: expect.objectContaining({
           Bucket: 'foo',
           Key: 'binary/123/456',
-          ContentDisposition: 'attachment; filename="test.txt"',
           ContentType: 'text/plain',
         }),
       })
@@ -132,7 +131,6 @@ describe('Storage', () => {
         params: expect.objectContaining({
           Bucket: 'foo',
           Key: 'binary/123/456',
-          ContentDisposition: undefined,
           ContentType: 'application/octet-stream',
         }),
       })
