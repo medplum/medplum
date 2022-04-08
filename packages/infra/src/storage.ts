@@ -40,7 +40,8 @@ export class Storage extends cdk.Construct {
     const responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, 'ResponseHeadersPolicy', {
       securityHeadersBehavior: {
         contentSecurityPolicy: {
-          contentSecurityPolicy: "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none';",
+          contentSecurityPolicy:
+            "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors *.medplum.com;",
           override: true,
         },
         contentTypeOptions: { override: true },
