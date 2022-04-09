@@ -24,5 +24,11 @@ describe('OpenAPI', () => {
     expect(res.status).toBe(200);
     expect(res.body.openapi).toBeDefined();
     expect(res.body.info).toBeDefined();
+
+    const patient = res.body.components.schemas.Patient;
+    expect(patient).toBeDefined();
+    expect(patient.properties.id).toBeDefined();
+    expect(patient.properties.language).toBeDefined();
+    expect(patient.properties._language).toBeUndefined();
   });
 });
