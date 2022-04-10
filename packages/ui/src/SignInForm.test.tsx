@@ -1,4 +1,4 @@
-import { MedplumClient } from '@medplum/core';
+import { GoogleCredentialResponse, MedplumClient } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import crypto from 'crypto';
 import React from 'react';
@@ -60,6 +60,11 @@ function mockFetch(url: string, options: any): Promise<any> {
         ],
       };
     }
+  } else if (options.method === 'POST' && url.endsWith('auth/google')) {
+    result = {
+      login: '1',
+      code: '1',
+    };
   } else if (options.method === 'POST' && url.endsWith('auth/profile')) {
     result = {
       login: '1',
@@ -326,25 +331,62 @@ describe('SignInForm', () => {
   });
 
   test('Google success', async () => {
-    (window as any).google = {
+    const clientId = '123';
+    let callback: ((response: GoogleCredentialResponse) => void) | undefined = undefined;
+
+    const google = {
       accounts: {
         id: {
-          initialize: jest.fn(),
-          prompt: jest.fn(),
+          initialize: jest.fn((args: any) => {
+            callback = args.callback;
+          }),
+          renderButton: jest.fn((parent: HTMLElement) => {
+            const button = document.createElement('div');
+            button.innerHTML = 'Sign in with Google';
+            button.addEventListener('click', () => google.accounts.id.prompt());
+            parent.appendChild(button);
+          }),
+          prompt: jest.fn(() => {
+            if (callback) {
+              callback({
+                clientId,
+                credential: '123123123',
+              });
+            }
+          }),
         },
       },
     };
 
-    setup({
-      onSuccess: jest.fn(),
-      googleClientId: '123',
+    (window as any).google = google;
+
+    const onSuccess = jest.fn();
+
+    await act(async () => {
+      setup({
+        onSuccess,
+        googleClientId: clientId,
+      });
+    });
+
+    await act(async () => {
+      await waitFor(() => expect(screen.getByText('Sign in with Google')).toBeInTheDocument());
     });
 
     await act(async () => {
       fireEvent.click(screen.getByText('Sign in with Google'));
     });
 
-    expect((window as any).google.accounts.id.initialize).toHaveBeenCalled();
-    expect((window as any).google.accounts.id.prompt).toHaveBeenCalled();
+    await act(async () => {
+      await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+    });
+
+    await act(async () => {
+      await waitFor(() => expect(screen.getByText('Success')).toBeInTheDocument());
+    });
+
+    expect(google.accounts.id.initialize).toHaveBeenCalled();
+    expect(google.accounts.id.renderButton).toHaveBeenCalled();
+    expect(google.accounts.id.prompt).toHaveBeenCalled();
   });
 });

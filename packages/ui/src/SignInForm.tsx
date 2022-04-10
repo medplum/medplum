@@ -1,16 +1,16 @@
-import { GoogleCredentialResponse } from '@medplum/core';
+import { LoginAuthenticationResponse } from '@medplum/core';
 import { OperationOutcome, ProjectMembership } from '@medplum/fhirtypes';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
 import { Document } from './Document';
 import { Form } from './Form';
 import { FormSection } from './FormSection';
+import { GoogleButton } from './GoogleButton';
 import { Input } from './Input';
 import { Logo } from './Logo';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
-import { getGoogleClientId, initGoogleAuth } from './utils';
 import { getIssuesForExpression } from './utils/outcomes';
 import './SignInForm.css';
 import './util.css';
@@ -29,15 +29,8 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
   const medplum = useMedplum();
   const [login, setLogin] = useState<string | undefined>(undefined);
   const [memberships, setMemberships] = useState<ProjectMembership[] | undefined>(undefined);
-  const googleClientId = getGoogleClientId(props.googleClientId);
 
-  useEffect(() => {
-    if (googleClientId) {
-      initGoogleAuth();
-    }
-  }, []);
-
-  function handleAuthResponse(response: any): void {
+  function handleAuthResponse(response: LoginAuthenticationResponse): void {
     if (response.login) {
       setLogin(response.login);
     }
@@ -64,7 +57,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
         if (!login) {
           return (
             <AuthenticationForm
-              googleClientId={googleClientId}
+              googleClientId={props.googleClientId}
               onForgotPassword={props.onForgotPassword}
               onRegister={props.onRegister}
               handleAuthResponse={handleAuthResponse}
@@ -86,7 +79,7 @@ interface AuthenticationFormProps {
   googleClientId?: string;
   onForgotPassword?: () => void;
   onRegister?: () => void;
-  handleAuthResponse: (response: any) => void;
+  handleAuthResponse: (response: LoginAuthenticationResponse) => void;
   children?: React.ReactNode;
 }
 
@@ -146,47 +139,9 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
           </Button>
         </div>
       </div>
-      {props.googleClientId && (
-        <div className="medplum-signin-google-container">
-          <Button
-            type="button"
-            onClick={() => {
-              // Sign In With Google JavaScript API reference
-              // https://developers.google.com/identity/gsi/web/reference/js-reference
-              const google = (window as any).google;
-              google.accounts.id.initialize({
-                client_id: props.googleClientId,
-                callback: (response: GoogleCredentialResponse) => {
-                  medplum.startGoogleLogin(response).then(props.handleAuthResponse).catch(setOutcome);
-                },
-              });
-              google.accounts.id.prompt();
-            }}
-          >
-            <span className="medplum-signin-google-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 40 40">
-                <path
-                  fill="#4285F4"
-                  d="M35 20.345c0-1.02-.084-2.045-.264-3.048H20.302v5.776h8.266c-.343 1.863-1.445 3.51-3.06 4.558v3.748h4.932c2.896-2.613 4.56-6.47 4.56-11.034z"
-                ></path>
-                <path
-                  fill="#34A853"
-                  d="M20.302 35c4.127 0 7.607-1.328 10.143-3.62l-4.93-3.749c-1.373.915-3.144 1.433-5.207 1.433-3.993 0-7.377-2.64-8.592-6.189H6.627v3.863C9.225 31.804 14.517 35 20.302 35z"
-                ></path>
-                <path
-                  fill="#FBBC04"
-                  d="M11.71 22.875c-.64-1.863-.64-3.88 0-5.743V13.27H6.629c-2.17 4.238-2.17 9.231 0 13.47l5.083-3.864z"
-                ></path>
-                <path
-                  fill="#EA4335"
-                  d="M20.302 10.937c2.181-.033 4.29.772 5.87 2.249l4.369-4.283c-2.767-2.546-6.438-3.946-10.24-3.902-5.785 0-11.076 3.197-13.674 8.267l5.083 3.864c1.21-3.555 4.6-6.195 8.592-6.195z"
-                ></path>
-              </svg>
-            </span>
-            <span>Sign in with Google</span>
-          </Button>
-        </div>
-      )}
+      <div className="medplum-signin-google-container">
+        <GoogleButton googleClientId={props.googleClientId} handleAuthResponse={props.handleAuthResponse} />
+      </div>
     </Form>
   );
 }
