@@ -341,7 +341,7 @@ describe('SignInForm', () => {
             callback = args.callback;
           }),
           renderButton: jest.fn((parent: HTMLElement) => {
-            const button = document.createElement('button');
+            const button = document.createElement('div');
             button.innerHTML = 'Sign in with Google';
             button.addEventListener('click', () => google.accounts.id.prompt());
             parent.appendChild(button);
