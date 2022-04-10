@@ -1,5 +1,5 @@
 import { getDisplayString, getReferenceString } from '@medplum/core';
-import { Identifier, Reference, Resource } from '@medplum/fhirtypes';
+import { CodeableConcept, Identifier, Reference, Resource } from '@medplum/fhirtypes';
 import { Scrollable, useResource } from '@medplum/ui';
 import React from 'react';
 import './ResourceHeader.css';
@@ -28,9 +28,27 @@ export function ResourceHeader(props: ResourceHeaderProps): JSX.Element | null {
     }
   }
 
+  function addConcept(key: string, concept: CodeableConcept[] | CodeableConcept | string[] | string | undefined): void {
+    if (Array.isArray(concept)) {
+      concept.forEach((c) => addConcept(key, c));
+    } else if (typeof concept === 'string') {
+      addEntry(key, concept);
+    } else if (concept) {
+      addEntry(key, concept?.text);
+    }
+  }
+
   const name = getDisplayString(resource);
   if (name !== getReferenceString(resource)) {
-    entries.push({ key: 'Name', value: name });
+    addEntry('Name', name);
+  }
+
+  if ('category' in resource) {
+    addConcept('Category', resource.category);
+  }
+
+  if ('code' in resource) {
+    addConcept('Code', resource.code);
   }
 
   if ('identifier' in resource) {

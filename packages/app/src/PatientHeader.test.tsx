@@ -46,12 +46,18 @@ describe('PatientHeader', () => {
         { system: 'abc', value: '123' },
         { system: 'def', value: '456' },
       ],
+      address: [
+        {
+          state: 'NY',
+        },
+      ],
     });
 
     expect(screen.getByText('abc')).toBeInTheDocument();
     expect(screen.getByText('123')).toBeInTheDocument();
     expect(screen.getByText('def')).toBeInTheDocument();
     expect(screen.getByText('456')).toBeInTheDocument();
+    expect(screen.getByText('NY')).toBeInTheDocument();
   });
 
   test('Handles null identifiers', async () => {
