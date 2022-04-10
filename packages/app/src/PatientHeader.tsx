@@ -48,6 +48,14 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
             <dd>{identifier?.value}</dd>
           </dl>
         ))}
+        {patient.address && (
+          <>
+            <dl>
+              <dt>State</dt>
+              <dd>{patient.address?.[0]?.state}</dd>
+            </dl>
+          </>
+        )}
       </div>
     </Scrollable>
   );
