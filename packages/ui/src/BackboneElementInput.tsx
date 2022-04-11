@@ -43,20 +43,19 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
         if (!property.type) {
           return null;
         }
-        const name = props.name + '.' + key;
         const [propertyValue, propertyType] = getValueAndType(value, property);
         return (
           <FormSection
             key={key}
             title={getPropertyDisplayName(property)}
             description={property.definition}
-            htmlFor={name}
+            htmlFor={key}
             outcome={props.outcome}
           >
             <ResourcePropertyInput
               schema={props.schema}
               property={property}
-              name={name}
+              name={key}
               defaultValue={propertyValue}
               defaultPropertyType={propertyType}
               outcome={props.outcome}

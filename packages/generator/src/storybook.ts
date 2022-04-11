@@ -12,6 +12,7 @@ const resourceTypes = [
   'Observation',
   'Questionnaire',
   'ServiceRequest',
+  'Specimen',
 ];
 const properties = [
   'resourceType',
