@@ -42,12 +42,6 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
             <dd>{patient.gender}</dd>
           </dl>
         )}
-        {patient.identifier?.map((identifier, index) => (
-          <dl key={`${index}-${patient.identifier?.length}`}>
-            <dt>{identifier?.system}</dt>
-            <dd>{identifier?.value}</dd>
-          </dl>
-        ))}
         {patient.address && (
           <>
             <dl>
@@ -56,6 +50,12 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
             </dl>
           </>
         )}
+        {patient.identifier?.map((identifier, index) => (
+          <dl key={`${index}-${patient.identifier?.length}`}>
+            <dt>{identifier?.system}</dt>
+            <dd>{identifier?.value}</dd>
+          </dl>
+        ))}
       </div>
     </Scrollable>
   );
