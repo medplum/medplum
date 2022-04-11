@@ -32,6 +32,7 @@ export function QuickServiceRequests(props: QuickServiceRequestsProps): JSX.Elem
         const entries = bundle.entry as BundleEntry<ServiceRequest>[];
         const resources = entries.map((e) => e.resource as ServiceRequest);
         sortByDate(resources);
+        resources.reverse();
         setServiceRequests(resources);
       });
   }, [resource]);
@@ -47,11 +48,9 @@ export function QuickServiceRequests(props: QuickServiceRequestsProps): JSX.Elem
           <p>
             <MedplumLink to={r}>{getServiceRequestIdentifier(r)}</MedplumLink>
           </p>
-          {r.category && <p>{r.category?.[0]?.text}</p>}
-          {r.code && <p>{r.code?.coding?.[0]?.code}</p>}
-          <p>
-            <small>{getServiceRequestDate(r)}</small>
-          </p>
+          {r.category?.[0]?.text && <p>{r.category?.[0]?.text}</p>}
+          {r.code?.coding?.[0]?.code && <p>{r.code?.coding?.[0]?.code}</p>}
+          <p>{getServiceRequestDate(r)}</p>
         </div>
       ))}
     </div>

@@ -1,3 +1,4 @@
+import { createReference } from '@medplum/core';
 import {
   Communication,
   DiagnosticReport,
@@ -6,6 +7,7 @@ import {
   Observation,
   Patient,
   ServiceRequest,
+  Specimen,
 } from '@medplum/fhirtypes';
 
 export const HomerSimpson: Patient = {
@@ -268,6 +270,14 @@ export const HomerObservation6: Observation = {
   ],
 };
 
+export const HomerSimpsonSpecimen: Specimen = {
+  resourceType: 'Specimen',
+  subject: createReference(HomerSimpson),
+  collection: {
+    collectedDateTime: '2020-01-01T12:00:00Z',
+  },
+};
+
 export const HomerServiceRequest: ServiceRequest = {
   resourceType: 'ServiceRequest',
   id: '123',
@@ -302,6 +312,7 @@ export const HomerServiceRequest: ServiceRequest = {
       text: 'ORDERED',
     },
   ],
+  specimen: [createReference(HomerSimpsonSpecimen)],
 };
 
 export const BartSimpson: Patient = {

@@ -39,7 +39,8 @@ import { PatientHeader } from './PatientHeader';
 import { QuickServiceRequests } from './QuickServiceRequests';
 import { QuickStatus } from './QuickStatus';
 import { ResourceHeader } from './ResourceHeader';
-import { getPatient } from './utils';
+import { SpecimenHeader } from './SpecimenHeader';
+import { getPatient, getSpecimen } from './utils';
 
 function getTabs(resourceType: string, questionnaires?: Bundle): string[] {
   const result = [];
@@ -192,6 +193,7 @@ export function ResourcePage(): JSX.Element {
   const tabs = getTabs(resourceType, questionnaires);
   const defaultTab = tabs[0].toLowerCase();
   const patient = getPatient(value);
+  const specimen = getSpecimen(value);
   const statusValueSet = medplum.getUserConfiguration()?.option?.find((o) => o.id === 'statusValueSet')?.valueString;
 
   return (
@@ -205,6 +207,7 @@ export function ResourcePage(): JSX.Element {
       )}
       <QuickServiceRequests value={value} />
       {patient && <PatientHeader patient={patient} />}
+      {specimen && <SpecimenHeader specimen={specimen} />}
       {resourceType !== 'Patient' && <ResourceHeader resource={value} />}
       <TabList value={tab || defaultTab} onChange={onTabChange}>
         {tabs.map((t) => (
