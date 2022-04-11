@@ -112,11 +112,23 @@ describe('ResourceHeader', () => {
     expect(screen.queryByText('abc')).not.toBeInTheDocument();
   });
 
-  test('Renders code and category', async () => {
+  test('Renders code and category text', async () => {
     setup({
       resourceType: 'ServiceRequest',
       id: '123',
       code: { text: 'TEST_CODE' },
+      category: [{ text: 'TEST_CATEGORY' }],
+    });
+
+    expect(screen.getByText('TEST_CODE')).toBeInTheDocument();
+    expect(screen.getByText('TEST_CATEGORY')).toBeInTheDocument();
+  });
+
+  test('Renders code and category coding', async () => {
+    setup({
+      resourceType: 'ServiceRequest',
+      id: '123',
+      code: { coding: [{ display: 'TEST_CODE' }] },
       category: [{ text: 'TEST_CATEGORY' }],
     });
 

@@ -34,7 +34,7 @@ export function ResourceHeader(props: ResourceHeaderProps): JSX.Element | null {
     } else if (typeof concept === 'string') {
       addEntry(key, concept);
     } else if (concept) {
-      addEntry(key, concept?.text);
+      addEntry(key, concept?.text || concept.coding?.[0]?.display);
     }
   }
 
