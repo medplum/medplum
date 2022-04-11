@@ -55,6 +55,7 @@ header a:focus {
   #medplum-header-logo {
     display: none;
   }
+
   .medplum-nav-search-container {
     width: 200px;
     margin-left: 16px;
