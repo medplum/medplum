@@ -37,17 +37,6 @@ header a:focus {
   outline: none;
 }
 
-div.medplum-nav-search-container {
-  position: relative;
-  margin-left: 32px;
-}
-
-@media (max-width: 700px) {
-  div.medplum-nav-search-container {
-    display: none;
-  }
-}
-
 .medplum-nav-search-container {
   border: 0;
   border-radius: 3px;
@@ -59,6 +48,18 @@ div.medplum-nav-search-container {
   height: 32px;
   width: 250px;
   line-height: 28px;
+  margin-left: 32px;
+}
+
+@media (max-width: 700px) {
+  #medplum-header-logo {
+    display: none;
+  }
+
+  .medplum-nav-search-container {
+    width: 200px;
+    margin-left: 16px;
+  }
 }
 
 .medplum-nav-search-container.focused {
