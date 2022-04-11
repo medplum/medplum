@@ -420,4 +420,20 @@ describe('FHIR Routes', () => {
       .send('hello');
     expect(res.status).toBe(400);
   });
+
+  test('Reindex resource access denied', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/${patientId}/$reindex`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res.status).toBe(403);
+  });
+
+  test('Resend subscriptions access denied', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/${patientId}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res.status).toBe(403);
+  });
 });

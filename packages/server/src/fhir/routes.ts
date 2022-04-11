@@ -268,6 +268,30 @@ protectedRoutes.post(
   })
 );
 
+// Reindex resource
+protectedRoutes.post(
+  '/:resourceType/:id/([$])reindex',
+  asyncWrap(async (req: Request, res: Response) => {
+    const { resourceType, id } = req.params;
+    const repo = res.locals.repo as Repository;
+    const [outcome, resource] = await repo.reindexResource(resourceType, id);
+    assertOk(outcome, resource);
+    sendResponse(res, outcome, resource);
+  })
+);
+
+// Resend subscriptions
+protectedRoutes.post(
+  '/:resourceType/:id/([$])resend',
+  asyncWrap(async (req: Request, res: Response) => {
+    const { resourceType, id } = req.params;
+    const repo = res.locals.repo as Repository;
+    const [outcome, resource] = await repo.resendSubscriptions(resourceType, id);
+    assertOk(outcome, resource);
+    sendResponse(res, outcome, resource);
+  })
+);
+
 function isFhirJsonContentType(req: Request): boolean {
   return !!(req.is('application/json') || req.is('application/fhir+json'));
 }
