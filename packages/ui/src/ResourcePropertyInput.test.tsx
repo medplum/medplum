@@ -17,6 +17,7 @@ import {
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
+import { convertIsoToLocal, convertLocalToIso } from './DateTimeInput';
 import { MedplumProvider } from './MedplumProvider';
 import { ResourcePropertyInput, ResourcePropertyInputProps } from './ResourcePropertyInput';
 
@@ -97,6 +98,8 @@ describe('ResourcePropertyInput', () => {
     };
 
     const onChange = jest.fn();
+    const localString = convertIsoToLocal('2021-01-01T12:00:00Z');
+    const isoString = convertLocalToIso(localString);
 
     setup({
       name: 'dateTime',
@@ -107,10 +110,10 @@ describe('ResourcePropertyInput', () => {
     expect(screen.getByTestId('dateTime')).toBeDefined();
 
     act(() => {
-      fireEvent.change(screen.getByTestId('dateTime'), { target: { value: '2021-01-01T12:00:00Z' } });
+      fireEvent.change(screen.getByTestId('dateTime'), { target: { value: localString } });
     });
 
-    expect(onChange).toHaveBeenCalledWith('2021-01-01T12:00:00Z');
+    expect(onChange).toHaveBeenCalledWith(isoString);
   });
 
   test('Markdown property', () => {

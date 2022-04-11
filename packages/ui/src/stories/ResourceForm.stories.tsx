@@ -107,3 +107,16 @@ export const Questionnaire = (): JSX.Element => (
     />
   </Document>
 );
+
+export const Specimen = (): JSX.Element => (
+  <Document>
+    <ResourceForm
+      defaultValue={{
+        resourceType: 'Specimen',
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);

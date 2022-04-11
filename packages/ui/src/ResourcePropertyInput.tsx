@@ -10,6 +10,7 @@ import { CodeableConceptInput } from './CodeableConceptInput';
 import { CodeInput } from './CodeInput';
 import { CodingInput } from './CodingInput';
 import { ContactPointInput } from './ContactPointInput';
+import { DateTimeInput } from './DateTimeInput';
 import { ExtensionInput } from './ExtensionInput';
 import { HumanNameInput } from './HumanNameInput';
 import { IdentifierInput } from './IdentifierInput';
@@ -151,7 +152,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.dateTime:
     case PropertyType.instant:
       return (
-        <Input
+        <DateTimeInput
           type="datetime-local"
           name={name}
           testid={name}

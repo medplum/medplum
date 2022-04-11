@@ -1,7 +1,9 @@
 import { createReference } from '@medplum/core';
+import { Specimen } from '@medplum/fhirtypes';
 import { HomerObservation1, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
+import { convertIsoToLocal, convertLocalToIso } from './DateTimeInput';
 import { MedplumProvider } from './MedplumProvider';
 import { ResourceForm, ResourceFormProps } from './ResourceForm';
 
@@ -182,5 +184,34 @@ describe('ResourceForm', () => {
 
     expect(onSubmit).not.toBeCalled();
     expect(onDelete).toBeCalled();
+  });
+
+  test('Change Specimen.collection.collectedDateTime', async () => {
+    const date = new Date();
+    date.setMilliseconds(0); // datetime-local does not support milliseconds
+    const localString = convertIsoToLocal(date.toISOString());
+    const isoString = convertLocalToIso(localString);
+    const onSubmit = jest.fn();
+
+    setup({ defaultValue: { resourceType: 'Specimen' }, onSubmit });
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Resource Type'));
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('collected[x]'), { target: { value: localString } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(onSubmit).toBeCalled();
+
+    const result = onSubmit.mock.calls[0][0] as Specimen;
+    expect(result.resourceType).toBe('Specimen');
+    expect(result.collection).toBeDefined();
+    expect(result.collection?.collectedDateTime).toBe(isoString);
   });
 });
