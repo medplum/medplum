@@ -11,6 +11,8 @@ export * from './CodeableConceptInput';
 export * from './CodeInput';
 export * from './ContactPointDisplay';
 export * from './ContactPointInput';
+export * from './DateTimeDisplay';
+export * from './DateTimeInput';
 export * from './DefaultResourceTimeline';
 export * from './DiagnosticReportDisplay';
 export * from './Document';

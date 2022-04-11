@@ -35,6 +35,7 @@ import {
   HomerServiceRequest,
   HomerSimpson,
   HomerSimpsonPreviousVersion,
+  HomerSimpsonSpecimen,
   TestOrganization,
 } from './mocks';
 import { ExampleAccessPolicy, ExampleStatusValueSet, ExampleUserConfiguration } from './mocks/accesspolicy';
@@ -295,6 +296,7 @@ mockRepo.createResource(HomerObservation3);
 mockRepo.createResource(HomerObservation4);
 mockRepo.createResource(HomerObservation5);
 mockRepo.createResource(HomerObservation6);
+mockRepo.createResource(HomerSimpsonSpecimen);
 mockRepo.createResource(TestOrganization);
 mockRepo.createResource(DifferentOrganization);
 mockRepo.createResource(ExampleQuestionnaire);
