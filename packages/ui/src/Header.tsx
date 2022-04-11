@@ -49,7 +49,7 @@ export function Header(props: HeaderProps): JSX.Element {
               />
             </svg>
           </MedplumLink>
-          <MedplumLink testid="header-logo" onClick={props.onLogo}>
+          <MedplumLink id="medplum-header-logo" testid="header-logo" onClick={props.onLogo}>
             Medplum
           </MedplumLink>
           {context.profile && (

@@ -6,6 +6,7 @@ import { killEvent } from './utils/dom';
 export interface MedplumLinkProps {
   to?: Resource | Reference | string;
   label?: string;
+  id?: string;
   testid?: string;
   className?: string;
   onClick?: () => void;
@@ -29,6 +30,7 @@ export function MedplumLink(props: MedplumLinkProps): JSX.Element {
   return (
     <a
       href={href}
+      id={props.id}
       aria-label={props.label}
       data-testid={props.testid || 'link'}
       className={props.className}
