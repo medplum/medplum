@@ -40,6 +40,7 @@ import validator from 'validator';
 import { getConfig } from '../config';
 import { getClient } from '../database';
 import { addBackgroundJobs } from '../workers';
+import { addSubscriptionJobs } from '../workers/subscription';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
 import { getPatientId } from './patient';
 import { rewriteAttachments, RewriteMode } from './rewrite';
@@ -351,13 +352,13 @@ export class Repository {
 
   /**
    * Reindexes the resource.
-   * This is only available to the system account.
+   * This is only available to the system and super admin accounts.
    * This should not result in any change to the resource or its history.
    * @param resourceType The resource type.
    * @param id The resource ID.
    */
   async reindexResource<T extends Resource>(resourceType: string, id: string): RepositoryResult<T> {
-    if (!this.#isSystem()) {
+    if (!this.#isSystem() && !this.#isAdmin()) {
       return [accessDenied, undefined];
     }
 
@@ -373,6 +374,24 @@ export class Repository {
       return [badRequest((error as Error).message), undefined];
     }
 
+    return [allOk, resource as T];
+  }
+
+  /**
+   * Resends subscriptions for the resource.
+   * This is only available to the system and super admin accounts.
+   * This should not result in any change to the resource or its history.
+   * @param resourceType The resource type.
+   * @param id The resource ID.
+   */
+  async resendSubscriptions<T extends Resource>(resourceType: string, id: string): RepositoryResult<T> {
+    if (!this.#isSystem() && !this.#isAdmin()) {
+      return [accessDenied, undefined];
+    }
+
+    const [readOutcome, resource] = await this.readResource<T>(resourceType, id);
+    assertOk(readOutcome, resource);
+    await addSubscriptionJobs(resource);
     return [allOk, resource as T];
   }
 
