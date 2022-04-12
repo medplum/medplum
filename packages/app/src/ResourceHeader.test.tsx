@@ -135,4 +135,15 @@ describe('ResourceHeader', () => {
     expect(screen.getByText('TEST_CODE')).toBeInTheDocument();
     expect(screen.getByText('TEST_CATEGORY')).toBeInTheDocument();
   });
+
+  test('Does not render Bot code', async () => {
+    setup({
+      resourceType: 'Bot',
+      id: '123',
+      code: 'console.log("Hello World")',
+    });
+
+    expect(screen.getByText('123')).toBeInTheDocument();
+    expect(screen.queryByText('console.log("Hello World")')).toBeNull();
+  });
 });
