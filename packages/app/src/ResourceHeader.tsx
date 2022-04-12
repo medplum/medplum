@@ -47,7 +47,7 @@ export function ResourceHeader(props: ResourceHeaderProps): JSX.Element | null {
     addConcept('Category', resource.category);
   }
 
-  if ('code' in resource) {
+  if (resource.resourceType !== 'Bot' && 'code' in resource) {
     addConcept('Code', resource.code);
   }
 
