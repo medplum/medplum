@@ -225,4 +225,54 @@ describe('Identifier Lookup Table', () => {
     expect(bundleContains(searchResult1, patient1)).toBe(true);
     expect(bundleContains(searchResult1, patient2)).toBe(true);
   });
+
+  test('Search on system', async () => {
+    const system1 = 'https://foo.com';
+    const system2 = 'https://bar.com';
+    const identifier = randomUUID();
+
+    const [createOutcome1, patient1] = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      identifier: [{ system: system1, value: identifier }],
+    });
+    assertOk(createOutcome1, patient1);
+
+    const [createOutcome2, patient2] = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Jones' }],
+      identifier: [{ system: system2, value: identifier }],
+    });
+    assertOk(createOutcome2, patient2);
+
+    const [searchOutcome1, searchResult1] = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EXACT,
+          value: system1 + '|' + identifier,
+        },
+      ],
+    });
+    assertOk(searchOutcome1, searchResult1);
+    expect(searchResult1?.entry?.length).toEqual(1);
+    expect(bundleContains(searchResult1, patient1)).toBe(true);
+    expect(bundleContains(searchResult1, patient2)).toBe(false);
+
+    const [searchOutcome2, searchResult2] = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EXACT,
+          value: system2 + '|' + identifier,
+        },
+      ],
+    });
+    assertOk(searchOutcome2, searchResult2);
+    expect(searchResult2?.entry?.length).toEqual(1);
+    expect(bundleContains(searchResult2, patient1)).toBe(false);
+    expect(bundleContains(searchResult2, patient2)).toBe(true);
+  });
 });
