@@ -477,7 +477,7 @@ export class Repository {
   async #getTotalCount(searchRequest: SearchRequest): Promise<number> {
     const client = getClient();
     const builder = new SelectQuery(searchRequest.resourceType).raw(
-      `COUNT (DISTINCT "${searchRequest.resourceType}"."id") AS "count"`
+      `COUNT (DISTINCT "${searchRequest.resourceType}"."id")::int AS "count"`
     );
 
     this.#addDeletedFilter(builder);
