@@ -43,7 +43,9 @@ export async function csvHandler(req: Request, res: Response): Promise<void> {
 
   const repo = res.locals.repo as Repository;
   const query = req.query as Record<string, string[] | string | undefined>;
-  const [outcome, bundle] = await repo.search(parseSearchRequest(resourceType, query));
+  const searchRequest = parseSearchRequest(resourceType, query);
+  (searchRequest as any).count = 10000;
+  const [outcome, bundle] = await repo.search(searchRequest);
   assertOk(outcome, bundle);
 
   const columnEntries = Object.entries(columns);
