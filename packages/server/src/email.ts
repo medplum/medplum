@@ -20,25 +20,12 @@ export async function sendEmail(options: Mail.Options): Promise<void> {
   const bccAddresses = buildAddresses(options.bcc);
   logger.info(`Sending email to ${toAddresses?.join(', ')} subject "${options.subject}"`);
 
-  const options2 = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, {
-    ...options,
-    from: fromAddress,
-    sender: fromAddress,
-  });
-
-  const msg = await buildRawMessage(options2);
-
-  console.log(
-    'sendEmail: ' +
-      JSON.stringify(
-        {
-          ...options,
-          from: fromAddress,
-          sender: fromAddress,
-        },
-        null,
-        2
-      )
+  const msg = await buildRawMessage(
+    await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, {
+      ...options,
+      from: fromAddress,
+      sender: fromAddress,
+    })
   );
 
   await sesClient.send(
