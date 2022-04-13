@@ -10,7 +10,7 @@
   "testMatch": ["**/src/**/*.test.ts"],
   "collectCoverage": true,
   "coverageDirectory": "coverage",
-  "coverageReporters": ["json"],
+  "coverageReporters": ["json", "text"],
   "collectCoverageFrom": [
     "**/src/**/*",
     "!**/src/migrations/**/*.ts"

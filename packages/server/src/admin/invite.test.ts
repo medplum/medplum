@@ -3,6 +3,7 @@ import { resolveId } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
+import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp } from '../app';
@@ -73,18 +74,10 @@ describe('Admin Invite', () => {
     expect(SendEmailCommand).toHaveBeenCalledTimes(1);
 
     const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
-    expect(args).toMatchObject({
-      Destination: {
-        ToAddresses: [bobEmail],
-      },
-      Content: {
-        Simple: {
-          Subject: {
-            Data: 'Welcome to Medplum',
-          },
-        },
-      },
-    });
+    expect(args.Destination.ToAddresses[0]).toBe(bobEmail);
+
+    const parsed = await simpleParser(args.Content.Raw.Data);
+    expect(parsed.subject).toBe('Welcome to Medplum');
   });
 
   test('Existing user to project', async () => {
@@ -134,18 +127,10 @@ describe('Admin Invite', () => {
     expect(SendEmailCommand).toHaveBeenCalledTimes(1);
 
     const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
-    expect(args).toMatchObject({
-      Destination: {
-        ToAddresses: [bobEmail],
-      },
-      Content: {
-        Simple: {
-          Subject: {
-            Data: 'Medplum: Welcome to Alice Project',
-          },
-        },
-      },
-    });
+    expect(args.Destination.ToAddresses[0]).toBe(bobEmail);
+
+    const parsed = await simpleParser(args.Content.Raw.Data);
+    expect(parsed.subject).toBe('Medplum: Welcome to Alice Project');
   });
 
   test('Existing practitioner to project', async () => {

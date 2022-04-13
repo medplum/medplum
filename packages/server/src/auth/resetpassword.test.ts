@@ -2,6 +2,7 @@ import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
+import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp } from '../app';
@@ -105,17 +106,9 @@ describe('Reset Password', () => {
     expect(SendEmailCommand).toHaveBeenCalledTimes(1);
 
     const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
-    expect(args).toMatchObject({
-      Destination: {
-        ToAddresses: [email],
-      },
-      Content: {
-        Simple: {
-          Subject: {
-            Data: 'Medplum Password Reset',
-          },
-        },
-      },
-    });
+    expect(args.Destination.ToAddresses[0]).toBe(email);
+
+    const parsed = await simpleParser(args.Content.Raw.Data);
+    expect(parsed.subject).toBe('Medplum Password Reset');
   });
 });

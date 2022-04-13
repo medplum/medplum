@@ -108,7 +108,7 @@ async function rewriteAttachmentUrl(
   repo: Repository,
   [key, value]: [string, any]
 ): Promise<string | boolean | undefined> {
-  if (key !== 'url' || typeof value !== 'string') {
+  if ((key !== 'url' && key !== 'path') || typeof value !== 'string') {
     // Not a URL property or not a string value.
     return undefined;
   }
