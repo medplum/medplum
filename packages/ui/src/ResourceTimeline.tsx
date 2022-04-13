@@ -111,7 +111,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       // Encounter not loaded yet
       return;
     }
-    medplum.create(props.createCommunication(resource, sender, contentString)).then((result) => {
+    medplum.createResource(props.createCommunication(resource, sender, contentString)).then((result) => {
       addResources([result]);
     });
   }
@@ -125,7 +125,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       // Encounter not loaded yet
       return;
     }
-    medplum.create(props.createMedia(resource, sender, attachment)).then((result) => {
+    medplum.createResource(props.createMedia(resource, sender, attachment)).then((result) => {
       addResources([result]);
     });
   }

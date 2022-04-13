@@ -378,7 +378,7 @@ describe('Client', () => {
 
   test('Read resource', async () => {
     const client = new MedplumClient(defaultOptions);
-    const result = await client.read('Patient', '123');
+    const result = await client.readResource('Patient', '123');
     expect(result).toBeDefined();
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
     expect(result.resourceType).toBe('Patient');
@@ -449,7 +449,7 @@ describe('Client', () => {
 
   test('Create resource', async () => {
     const client = new MedplumClient(defaultOptions);
-    const result = await client.create({ resourceType: 'Patient' });
+    const result = await client.createResource({ resourceType: 'Patient' });
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('POST');
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient');
@@ -457,7 +457,7 @@ describe('Client', () => {
 
   test('Update resource', async () => {
     const client = new MedplumClient(defaultOptions);
-    const result = await client.update({ resourceType: 'Patient', id: '123' });
+    const result = await client.updateResource({ resourceType: 'Patient', id: '123' });
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('PUT');
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
@@ -465,20 +465,20 @@ describe('Client', () => {
 
   test('Not modified', async () => {
     const client = new MedplumClient(defaultOptions);
-    const result = await client.update({ resourceType: 'Patient', id: '777' });
+    const result = await client.updateResource({ resourceType: 'Patient', id: '777' });
     expect(result).toBeUndefined();
   });
 
   test('Bad Request', async () => {
     const client = new MedplumClient(defaultOptions);
-    const promise = client.update({ resourceType: 'Patient', id: '888' });
+    const promise = client.updateResource({ resourceType: 'Patient', id: '888' });
     expect(promise).rejects.toMatchObject({});
   });
 
   test('Create resource', async () => {
     const client = new MedplumClient(defaultOptions);
-    expect(() => client.create({} as Patient)).toThrowError('Missing resourceType');
-    const result = await client.create({ resourceType: 'Patient', name: [{ family: 'Smith' }] });
+    expect(() => client.createResource({} as Patient)).toThrowError('Missing resourceType');
+    const result = await client.createResource({ resourceType: 'Patient', name: [{ family: 'Smith' }] });
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('POST');
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient');
@@ -494,9 +494,9 @@ describe('Client', () => {
 
   test('Update resource', async () => {
     const client = new MedplumClient(defaultOptions);
-    expect(() => client.update({} as Patient)).toThrowError('Missing resourceType');
-    expect(() => client.update({ resourceType: 'Patient' })).toThrowError('Missing id');
-    const result = await client.update({ resourceType: 'Patient', id: '123', name: [{ family: 'Smith' }] });
+    expect(() => client.updateResource({} as Patient)).toThrowError('Missing resourceType');
+    expect(() => client.updateResource({ resourceType: 'Patient' })).toThrowError('Missing id');
+    const result = await client.updateResource({ resourceType: 'Patient', id: '123', name: [{ family: 'Smith' }] });
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('PUT');
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
@@ -504,7 +504,7 @@ describe('Client', () => {
 
   test('Patch resource', async () => {
     const client = new MedplumClient(defaultOptions);
-    const result = await client.patch('Patient', '123', []);
+    const result = await client.patchResource('Patient', '123', []);
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('PATCH');
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');

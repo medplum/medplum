@@ -91,7 +91,7 @@ export function FormPage(): JSX.Element {
           questionnaire={questionnaire}
           subject={subject && createReference(subject)}
           onSubmit={(questionnaireResponse: QuestionnaireResponse) => {
-            medplum.create(questionnaireResponse).then((result) => {
+            medplum.createResource(questionnaireResponse).then((result) => {
               navigate(`/${getReferenceString(result)}`);
             });
           }}

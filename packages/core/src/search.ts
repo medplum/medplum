@@ -82,10 +82,11 @@ const PREFIX_OPERATORS: Operator[] = [
  *
  * See the FHIR search spec: http://hl7.org/fhir/r4/search.html
  *
- * @param location The URL to parse.
+ * @param url The URL to parse.
  * @returns Parsed search definition.
  */
-export function parseSearchDefinition(location: { pathname: string; search?: string }): SearchRequest {
+export function parseSearchDefinition(url: string): SearchRequest {
+  const location = new URL(url, 'https://example.com/');
   const resourceType = location.pathname
     .replace(/(^\/)|(\/$)/g, '') // Remove leading and trailing slashes
     .split('/')

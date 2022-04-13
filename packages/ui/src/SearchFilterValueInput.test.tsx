@@ -139,7 +139,7 @@ describe('SearchFilterValueInput', () => {
 
   test('Reference input', async () => {
     // Warm up the default value
-    await medplum.read('Organization', '123');
+    await medplum.readResource('Organization', '123');
 
     const onChange = jest.fn();
 
