@@ -76,8 +76,8 @@ export async function executeBot(bot: Bot, context: any): Promise<any> {
     assertOk,
     createReference,
     createPdf,
-    sendEmail: async (options: Mail.Options) => {
-      await sendEmail(await rewriteAttachments(RewriteMode.PRESIGNED_URL, context.repo, options));
+    sendEmail: async (args: Mail.Options) => {
+      await sendEmail(await rewriteAttachments(RewriteMode.PRESIGNED_URL, context.repo, args));
     },
   };
 
