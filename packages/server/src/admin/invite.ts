@@ -53,10 +53,10 @@ export async function inviteUser(request: InviteRequest): Promise<Practitioner> 
 
   if (user) {
     // Existing user
-    await sendEmail(
-      [user.email as string],
-      `Medplum: Welcome to ${request.project.name}`,
-      [
+    await sendEmail({
+      to: user.email,
+      subject: `Medplum: Welcome to ${request.project.name}`,
+      text: [
         `You were invited to ${request.project.name}`,
         '',
         `The next time you sign-in, you will see ${request.project.name} as an option.`,
@@ -66,16 +66,16 @@ export async function inviteUser(request: InviteRequest): Promise<Practitioner> 
         'Thank you,',
         'Medplum',
         '',
-      ].join('\n')
-    );
+      ].join('\n'),
+    });
   } else {
     // New user
     user = await createUser(request);
     const url = await resetPassword(user);
-    await sendEmail(
-      [user.email as string],
-      'Welcome to Medplum',
-      [
+    await sendEmail({
+      to: user.email,
+      subject: 'Welcome to Medplum',
+      text: [
         `You were invited to ${request.project.name}`,
         '',
         'Please click on the following link to create your account:',
@@ -85,8 +85,8 @@ export async function inviteUser(request: InviteRequest): Promise<Practitioner> 
         'Thank you,',
         'Medplum',
         '',
-      ].join('\n')
-    );
+      ].join('\n'),
+    });
   }
   let practitioner = await searchForExistingPractitioner(project, request.email);
   if (!practitioner) {

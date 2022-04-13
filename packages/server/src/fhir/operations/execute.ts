@@ -2,13 +2,16 @@ import { assertOk, createReference } from '@medplum/core';
 import { AuditEvent, Bot, Project } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import fetch from 'node-fetch';
+import Mail from 'nodemailer/lib/mailer';
 import vm from 'vm';
 import { asyncWrap } from '../../async';
+import { sendEmail } from '../../email';
 import { logger } from '../../logger';
 import { AuditEventOutcome } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
 import { createPdf } from '../../util/pdf';
 import { Repository, systemRepo } from '../repo';
+import { rewriteAttachments, RewriteMode } from '../rewrite';
 
 export const EXECUTE_CONTENT_TYPES = [
   'application/json',
@@ -73,6 +76,9 @@ export async function executeBot(bot: Bot, context: any): Promise<any> {
     assertOk,
     createReference,
     createPdf,
+    sendEmail: async (args: Mail.Options) => {
+      await sendEmail(await rewriteAttachments(RewriteMode.PRESIGNED_URL, context.repo, args));
+    },
   };
 
   const options: vm.RunningScriptOptions = {

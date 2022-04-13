@@ -4,6 +4,7 @@ import { ClientApplication } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
+import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp } from '../app';
@@ -191,7 +192,8 @@ describe('Login', () => {
 
     // Parse the email for the "set password" link
     const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
-    const content = args.Content.Simple.Body.Text.Data;
+    const parsed = await simpleParser(args.Content.Raw.Data);
+    const content = parsed.text as string;
     const url = /(https?:\/\/[^\s]+)/g.exec(content)?.[0] as string;
     const paths = url.split('/');
     const id = paths[paths.length - 2];
