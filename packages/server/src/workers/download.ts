@@ -1,5 +1,5 @@
 import { assertOk, isGone } from '@medplum/core';
-import { Binary, Resource } from '@medplum/fhirtypes';
+import { Binary, Meta, Resource } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { getConfig, MedplumRedisConfig } from '../config';
@@ -187,7 +187,7 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
     await getBinaryStorage().writeBinary(binary, contentDisposition, contentType, response.body);
 
     const updated = JSON.parse(JSON.stringify(resource).replace(url, `Binary/${binary?.id}`)) as Resource;
-    (updated.meta as any).author = { reference: 'system' };
+    (updated.meta as Meta).author = { reference: 'system' };
     const [updateOutcome, updatedResource] = await systemRepo.updateResource(updated);
     assertOk(updateOutcome, updatedResource);
     logger.info('Downloaded content successfully');

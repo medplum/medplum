@@ -168,7 +168,7 @@ export function ResourcePage(): JSX.Element {
       orderDetail.push({});
     }
     if (orderDetail[0].text !== status) {
-      (orderDetail[0] as any).text = status;
+      orderDetail[0].text = status;
       onSubmit({ ...serviceRequest, orderDetail });
     }
   }

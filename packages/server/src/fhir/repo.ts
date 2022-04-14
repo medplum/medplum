@@ -305,14 +305,12 @@ export class Repository {
 
     const project = this.#getProjectId(updated);
     if (project) {
-      // Need cast to overwrite a readonly property
-      (result.meta as any).project = project;
+      (result.meta as Meta).project = project;
     }
 
     const account = await this.#getAccount(existing, updated);
     if (account) {
-      // Need cast to overwrite a readonly property
-      (result.meta as any).account = account;
+      (result.meta as Meta).account = account;
     }
 
     try {

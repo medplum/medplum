@@ -1,12 +1,12 @@
 export interface SearchRequest {
   readonly resourceType: string;
-  readonly filters?: Filter[];
-  readonly sortRules?: SortRule[];
-  readonly page?: number;
-  readonly count?: number;
-  readonly fields?: string[];
-  readonly name?: string;
-  readonly total?: 'none' | 'estimate' | 'accurate';
+  filters?: Filter[];
+  sortRules?: SortRule[];
+  page?: number;
+  count?: number;
+  fields?: string[];
+  name?: string;
+  total?: 'none' | 'estimate' | 'accurate';
 }
 
 export interface Filter {

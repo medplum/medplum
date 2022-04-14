@@ -15,15 +15,15 @@ export class MemoryRepository {
     const result = resource;
 
     if (!result.id) {
-      (result as any).id = this.generateId();
+      result.id = this.generateId();
     }
 
     if (!result.meta) {
-      (result as any).meta = {};
+      result.meta = {};
     }
 
     if (!result.meta?.versionId) {
-      (result as any).meta.versionId = this.generateId();
+      result.meta.versionId = this.generateId();
     }
 
     const { resourceType, id } = resource as { resourceType: string; id: string };
