@@ -32,14 +32,14 @@ export interface PaymentReconciliation {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -47,12 +47,12 @@ export interface PaymentReconciliation {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -62,14 +62,14 @@ export interface PaymentReconciliation {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -79,7 +79,7 @@ export interface PaymentReconciliation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -97,87 +97,87 @@ export interface PaymentReconciliation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A unique identifier assigned to this payment reconciliation.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The status of the resource instance.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The period of time for which payments have been gathered into this
    * bulk payment for settlement.
    */
-  readonly period?: Period;
+  period?: Period;
 
   /**
    * The date when the resource was created.
    */
-  readonly created?: string;
+  created?: string;
 
   /**
    * The party who generated the payment.
    */
-  readonly paymentIssuer?: Reference<Organization>;
+  paymentIssuer?: Reference<Organization>;
 
   /**
    * Original request resource reference.
    */
-  readonly request?: Reference<Task>;
+  request?: Reference<Task>;
 
   /**
    * The practitioner who is responsible for the services rendered to the
    * patient.
    */
-  readonly requestor?: Reference<Practitioner | PractitionerRole | Organization>;
+  requestor?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * The outcome of a request for a reconciliation.
    */
-  readonly outcome?: string;
+  outcome?: string;
 
   /**
    * A human readable description of the status of the request for the
    * reconciliation.
    */
-  readonly disposition?: string;
+  disposition?: string;
 
   /**
    * The date of payment as indicated on the financial instrument.
    */
-  readonly paymentDate?: string;
+  paymentDate?: string;
 
   /**
    * Total payment amount as indicated on the financial instrument.
    */
-  readonly paymentAmount?: Money;
+  paymentAmount?: Money;
 
   /**
    * Issuer's unique identifier for the payment instrument.
    */
-  readonly paymentIdentifier?: Identifier;
+  paymentIdentifier?: Identifier;
 
   /**
    * Distribution of the payment amount for a previously acknowledged
    * payable.
    */
-  readonly detail?: PaymentReconciliationDetail[];
+  detail?: PaymentReconciliationDetail[];
 
   /**
    * A code for the form to be used for printing the content.
    */
-  readonly formCode?: CodeableConcept;
+  formCode?: CodeableConcept;
 
   /**
    * A note that describes or explains the processing in a human readable
    * form.
    */
-  readonly processNote?: PaymentReconciliationProcessNote[];
+  processNote?: PaymentReconciliationProcessNote[];
 }
 
 /**
@@ -190,7 +190,7 @@ export interface PaymentReconciliationDetail {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -200,7 +200,7 @@ export interface PaymentReconciliationDetail {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -219,62 +219,62 @@ export interface PaymentReconciliationDetail {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Unique identifier for the current payment item for the referenced
    * payable.
    */
-  readonly identifier?: Identifier;
+  identifier?: Identifier;
 
   /**
    * Unique identifier for the prior payment item for the referenced
    * payable.
    */
-  readonly predecessor?: Identifier;
+  predecessor?: Identifier;
 
   /**
    * Code to indicate the nature of the payment.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * A resource, such as a Claim, the evaluation of which could lead to
    * payment.
    */
-  readonly request?: Reference<Resource>;
+  request?: Reference<Resource>;
 
   /**
    * The party which submitted the claim or financial transaction.
    */
-  readonly submitter?: Reference<Practitioner | PractitionerRole | Organization>;
+  submitter?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * A resource, such as a ClaimResponse, which contains a commitment to
    * payment.
    */
-  readonly response?: Reference<Resource>;
+  response?: Reference<Resource>;
 
   /**
    * The date from the response resource containing a commitment to pay.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * A reference to the individual who is responsible for inquiries
    * regarding the response and its payment.
    */
-  readonly responsible?: Reference<PractitionerRole>;
+  responsible?: Reference<PractitionerRole>;
 
   /**
    * The party which is receiving the payment.
    */
-  readonly payee?: Reference<Practitioner | PractitionerRole | Organization>;
+  payee?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * The monetary amount allocated from the total payment to the payable.
    */
-  readonly amount?: Money;
+  amount?: Money;
 }
 
 /**
@@ -287,7 +287,7 @@ export interface PaymentReconciliationProcessNote {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -297,7 +297,7 @@ export interface PaymentReconciliationProcessNote {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -316,15 +316,15 @@ export interface PaymentReconciliationProcessNote {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The business purpose of the note text.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * The explanation or description associated with the processing.
    */
-  readonly text?: string;
+  text?: string;
 }

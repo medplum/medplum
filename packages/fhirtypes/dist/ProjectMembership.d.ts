@@ -29,14 +29,14 @@ export interface ProjectMembership {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -44,42 +44,42 @@ export interface ProjectMembership {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * Project where the memberships are available.
    */
-  readonly project?: Reference<Project>;
+  project?: Reference<Project>;
 
   /**
    * User that is granted access to the project.
    */
-  readonly user?: Reference<ClientApplication | User>;
+  user?: Reference<ClientApplication | User>;
 
   /**
    * Reference to the resource that represents the user profile within the
    * project.
    */
-  readonly profile?: Reference<ClientApplication | Patient | Practitioner | RelatedPerson>;
+  profile?: Reference<ClientApplication | Patient | Practitioner | RelatedPerson>;
 
   /**
    * The access policy for the user within the project memebership.
    */
-  readonly accessPolicy?: Reference<AccessPolicy>;
+  accessPolicy?: Reference<AccessPolicy>;
 
   /**
    * The user configuration for the user within the project memebership
    * such as menu links, saved searches, and features.
    */
-  readonly userConfiguration?: Reference<UserConfiguration>;
+  userConfiguration?: Reference<UserConfiguration>;
 
   /**
    * Whether this user is a project administrator.
    */
-  readonly admin?: boolean;
+  admin?: boolean;
 }

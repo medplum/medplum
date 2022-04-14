@@ -29,14 +29,14 @@ export interface MessageDefinition {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -44,12 +44,12 @@ export interface MessageDefinition {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -59,14 +59,14 @@ export interface MessageDefinition {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -76,7 +76,7 @@ export interface MessageDefinition {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -94,21 +94,21 @@ export interface MessageDefinition {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The business identifier that is used to reference the
    * MessageDefinition and *is* expected to be consistent from server to
    * server.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * A formal identifier that is used to identify this message definition
    * when it is represented in other formats, or referenced in a
    * specification, model, design or an instance.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The identifier that is used to identify this version of the message
@@ -119,37 +119,37 @@ export interface MessageDefinition {
    * available. There is also no expectation that versions can be placed in
    * a lexicographical sequence.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * A natural language name identifying the message definition. This name
    * should be usable as an identifier for the module by machine processing
    * applications such as code generation.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A short, descriptive, user-friendly title for the message definition.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * A MessageDefinition that is superseded by this definition.
    */
-  readonly replaces?: string[];
+  replaces?: string[];
 
   /**
    * The status of this message definition. Enables tracking the life-cycle
    * of the content.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A Boolean value to indicate that this message definition is authored
    * for testing purposes (or education/evaluation/marketing) and is not
    * intended to be used for genuine usage.
    */
-  readonly experimental?: boolean;
+  experimental?: boolean;
 
   /**
    * The date  (and optionally time) when the message definition was
@@ -157,25 +157,25 @@ export interface MessageDefinition {
    * it must change if the status code changes. In addition, it should
    * change when the substantive content of the message definition changes.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The name of the organization or individual that published the message
    * definition.
    */
-  readonly publisher?: string;
+  publisher?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * publisher.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * A free text natural language description of the message definition
    * from a consumer's perspective.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -184,72 +184,72 @@ export interface MessageDefinition {
    * (insurance plans, studies, ...) and may be used to assist with
    * indexing and searching for appropriate message definition instances.
    */
-  readonly useContext?: UsageContext[];
+  useContext?: UsageContext[];
 
   /**
    * A legal or geographic region in which the message definition is
    * intended to be used.
    */
-  readonly jurisdiction?: CodeableConcept[];
+  jurisdiction?: CodeableConcept[];
 
   /**
    * Explanation of why this message definition is needed and why it has
    * been designed as it has.
    */
-  readonly purpose?: string;
+  purpose?: string;
 
   /**
    * A copyright statement relating to the message definition and/or its
    * contents. Copyright statements are generally legal restrictions on the
    * use and publishing of the message definition.
    */
-  readonly copyright?: string;
+  copyright?: string;
 
   /**
    * The MessageDefinition that is the basis for the contents of this
    * resource.
    */
-  readonly base?: string;
+  base?: string;
 
   /**
    * Identifies a protocol or workflow that this MessageDefinition
    * represents a step in.
    */
-  readonly parent?: string[];
+  parent?: string[];
 
   /**
    * Event code or link to the EventDefinition.
    */
-  readonly eventCoding?: Coding;
+  eventCoding?: Coding;
 
   /**
    * Event code or link to the EventDefinition.
    */
-  readonly eventUri?: string;
+  eventUri?: string;
 
   /**
    * The impact of the content of the message.
    */
-  readonly category?: string;
+  category?: string;
 
   /**
    * Identifies the resource (or resources) that are being addressed by the
    * event.  For example, the Encounter for an admit message or two Account
    * records for a merge.
    */
-  readonly focus?: MessageDefinitionFocus[];
+  focus?: MessageDefinitionFocus[];
 
   /**
    * Declare at a message definition level whether a response is required
    * or only upon error or success, or never.
    */
-  readonly responseRequired?: string;
+  responseRequired?: string;
 
   /**
    * Indicates what types of messages may be sent as an application-level
    * response to this message.
    */
-  readonly allowedResponse?: MessageDefinitionAllowedResponse[];
+  allowedResponse?: MessageDefinitionAllowedResponse[];
 
   /**
    * Canonical reference to a GraphDefinition. If a URL is provided, it is
@@ -258,7 +258,7 @@ export interface MessageDefinition {
    * building the document. The GraphDefinition can also specify profiles
    * that apply to the various resources.
    */
-  readonly graph?: string[];
+  graph?: string[];
 }
 
 /**
@@ -271,7 +271,7 @@ export interface MessageDefinitionAllowedResponse {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -281,7 +281,7 @@ export interface MessageDefinitionAllowedResponse {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -300,19 +300,19 @@ export interface MessageDefinitionAllowedResponse {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A reference to the message definition that must be adhered to by this
    * supported response.
    */
-  readonly message?: string;
+  message?: string;
 
   /**
    * Provides a description of the circumstances in which this response
    * should be used (as opposed to one of the alternative responses).
    */
-  readonly situation?: string;
+  situation?: string;
 }
 
 /**
@@ -326,7 +326,7 @@ export interface MessageDefinitionFocus {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -336,7 +336,7 @@ export interface MessageDefinitionFocus {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -355,30 +355,30 @@ export interface MessageDefinitionFocus {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The kind of resource that must be the focus for this message.
    */
-  readonly code?: string;
+  code?: string;
 
   /**
    * A profile that reflects constraints for the focal resource (and
    * potentially for related resources).
    */
-  readonly profile?: string;
+  profile?: string;
 
   /**
    * Identifies the minimum number of resources of this type that must be
    * pointed to by a message in order for it to be valid against this
    * MessageDefinition.
    */
-  readonly min?: number;
+  min?: number;
 
   /**
    * Identifies the maximum number of resources of this type that must be
    * pointed to by a message in order for it to be valid against this
    * MessageDefinition.
    */
-  readonly max?: string;
+  max?: string;
 }

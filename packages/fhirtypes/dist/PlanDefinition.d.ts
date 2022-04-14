@@ -42,14 +42,14 @@ export interface PlanDefinition {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -57,12 +57,12 @@ export interface PlanDefinition {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -72,14 +72,14 @@ export interface PlanDefinition {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -89,7 +89,7 @@ export interface PlanDefinition {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -107,7 +107,7 @@ export interface PlanDefinition {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI that is used to identify this plan definition when it
@@ -118,14 +118,14 @@ export interface PlanDefinition {
    * can be the target of a canonical reference. It SHALL remain the same
    * when the plan definition is stored on different servers.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * A formal identifier that is used to identify this plan definition when
    * it is represented in other formats, or referenced in a specification,
    * model, design or an instance.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The identifier that is used to identify this version of the plan
@@ -140,56 +140,56 @@ export interface PlanDefinition {
    * knowledge assets, refer to the Decision Support Service specification.
    * Note that a version is required for non-experimental active artifacts.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * A natural language name identifying the plan definition. This name
    * should be usable as an identifier for the module by machine processing
    * applications such as code generation.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A short, descriptive, user-friendly title for the plan definition.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * An explanatory or alternate title for the plan definition giving
    * additional information about its content.
    */
-  readonly subtitle?: string;
+  subtitle?: string;
 
   /**
    * A high-level category for the plan definition that distinguishes the
    * kinds of systems that would be interested in the plan definition.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The status of this plan definition. Enables tracking the life-cycle of
    * the content.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A Boolean value to indicate that this plan definition is authored for
    * testing purposes (or education/evaluation/marketing) and is not
    * intended to be used for genuine usage.
    */
-  readonly experimental?: boolean;
+  experimental?: boolean;
 
   /**
    * A code or group definition that describes the intended subject of the
    * plan definition.
    */
-  readonly subjectCodeableConcept?: CodeableConcept;
+  subjectCodeableConcept?: CodeableConcept;
 
   /**
    * A code or group definition that describes the intended subject of the
    * plan definition.
    */
-  readonly subjectReference?: Reference<Group>;
+  subjectReference?: Reference<Group>;
 
   /**
    * The date  (and optionally time) when the plan definition was
@@ -197,25 +197,25 @@ export interface PlanDefinition {
    * it must change if the status code changes. In addition, it should
    * change when the substantive content of the plan definition changes.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The name of the organization or individual that published the plan
    * definition.
    */
-  readonly publisher?: string;
+  publisher?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * publisher.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * A free text natural language description of the plan definition from a
    * consumer's perspective.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -224,95 +224,95 @@ export interface PlanDefinition {
    * (insurance plans, studies, ...) and may be used to assist with
    * indexing and searching for appropriate plan definition instances.
    */
-  readonly useContext?: UsageContext[];
+  useContext?: UsageContext[];
 
   /**
    * A legal or geographic region in which the plan definition is intended
    * to be used.
    */
-  readonly jurisdiction?: CodeableConcept[];
+  jurisdiction?: CodeableConcept[];
 
   /**
    * Explanation of why this plan definition is needed and why it has been
    * designed as it has.
    */
-  readonly purpose?: string;
+  purpose?: string;
 
   /**
    * A detailed description of how the plan definition is used from a
    * clinical perspective.
    */
-  readonly usage?: string;
+  usage?: string;
 
   /**
    * A copyright statement relating to the plan definition and/or its
    * contents. Copyright statements are generally legal restrictions on the
    * use and publishing of the plan definition.
    */
-  readonly copyright?: string;
+  copyright?: string;
 
   /**
    * The date on which the resource content was approved by the publisher.
    * Approval happens once when the content is officially approved for
    * usage.
    */
-  readonly approvalDate?: string;
+  approvalDate?: string;
 
   /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
-  readonly lastReviewDate?: string;
+  lastReviewDate?: string;
 
   /**
    * The period during which the plan definition content was or is planned
    * to be in active use.
    */
-  readonly effectivePeriod?: Period;
+  effectivePeriod?: Period;
 
   /**
    * Descriptive topics related to the content of the plan definition.
    * Topics provide a high-level categorization of the definition that can
    * be useful for filtering and searching.
    */
-  readonly topic?: CodeableConcept[];
+  topic?: CodeableConcept[];
 
   /**
    * An individiual or organization primarily involved in the creation and
    * maintenance of the content.
    */
-  readonly author?: ContactDetail[];
+  author?: ContactDetail[];
 
   /**
    * An individual or organization primarily responsible for internal
    * coherence of the content.
    */
-  readonly editor?: ContactDetail[];
+  editor?: ContactDetail[];
 
   /**
    * An individual or organization primarily responsible for review of some
    * aspect of the content.
    */
-  readonly reviewer?: ContactDetail[];
+  reviewer?: ContactDetail[];
 
   /**
    * An individual or organization responsible for officially endorsing the
    * content for use in some setting.
    */
-  readonly endorser?: ContactDetail[];
+  endorser?: ContactDetail[];
 
   /**
    * Related artifacts such as additional documentation, justification, or
    * bibliographic references.
    */
-  readonly relatedArtifact?: RelatedArtifact[];
+  relatedArtifact?: RelatedArtifact[];
 
   /**
    * A reference to a Library resource containing any formal logic used by
    * the plan definition.
    */
-  readonly library?: string[];
+  library?: string[];
 
   /**
    * Goals that describe what the activities within the plan are intended
@@ -320,12 +320,12 @@ export interface PlanDefinition {
    * living, obtaining herd immunity via immunization, meeting a process
    * improvement objective, etc.
    */
-  readonly goal?: PlanDefinitionGoal[];
+  goal?: PlanDefinitionGoal[];
 
   /**
    * An action or group of actions to be taken as part of the plan.
    */
-  readonly action?: PlanDefinitionAction[];
+  action?: PlanDefinitionAction[];
 }
 
 /**
@@ -337,7 +337,7 @@ export interface PlanDefinitionAction {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -347,7 +347,7 @@ export interface PlanDefinitionAction {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -366,23 +366,23 @@ export interface PlanDefinitionAction {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A user-visible prefix for the action.
    */
-  readonly prefix?: string;
+  prefix?: string;
 
   /**
    * The title of the action displayed to a user.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * A brief description of the action used to provide a summary to display
    * to the user.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * A text equivalent of the action to be performed. This provides a
@@ -390,163 +390,163 @@ export interface PlanDefinitionAction {
    * consumed by a system that might not be capable of interpreting it
    * dynamically.
    */
-  readonly textEquivalent?: string;
+  textEquivalent?: string;
 
   /**
    * Indicates how quickly the action should be addressed with respect to
    * other actions.
    */
-  readonly priority?: string;
+  priority?: string;
 
   /**
    * A code that provides meaning for the action or action group. For
    * example, a section may have a LOINC code for the section of a
    * documentation template.
    */
-  readonly code?: CodeableConcept[];
+  code?: CodeableConcept[];
 
   /**
    * A description of why this action is necessary or appropriate.
    */
-  readonly reason?: CodeableConcept[];
+  reason?: CodeableConcept[];
 
   /**
    * Didactic or other informational resources associated with the action
    * that can be provided to the CDS recipient. Information resources can
    * include inline text commentary and links to web resources.
    */
-  readonly documentation?: RelatedArtifact[];
+  documentation?: RelatedArtifact[];
 
   /**
    * Identifies goals that this action supports. The reference must be to a
    * goal element defined within this plan definition.
    */
-  readonly goalId?: string[];
+  goalId?: string[];
 
   /**
    * A code or group definition that describes the intended subject of the
    * action and its children, if any.
    */
-  readonly subjectCodeableConcept?: CodeableConcept;
+  subjectCodeableConcept?: CodeableConcept;
 
   /**
    * A code or group definition that describes the intended subject of the
    * action and its children, if any.
    */
-  readonly subjectReference?: Reference<Group>;
+  subjectReference?: Reference<Group>;
 
   /**
    * A description of when the action should be triggered.
    */
-  readonly trigger?: TriggerDefinition[];
+  trigger?: TriggerDefinition[];
 
   /**
    * An expression that describes applicability criteria or start/stop
    * conditions for the action.
    */
-  readonly condition?: PlanDefinitionActionCondition[];
+  condition?: PlanDefinitionActionCondition[];
 
   /**
    * Defines input data requirements for the action.
    */
-  readonly input?: DataRequirement[];
+  input?: DataRequirement[];
 
   /**
    * Defines the outputs of the action, if any.
    */
-  readonly output?: DataRequirement[];
+  output?: DataRequirement[];
 
   /**
    * A relationship to another action such as &quot;before&quot; or &quot;30-60 minutes
    * after start of&quot;.
    */
-  readonly relatedAction?: PlanDefinitionActionRelatedAction[];
+  relatedAction?: PlanDefinitionActionRelatedAction[];
 
   /**
    * An optional value describing when the action should be performed.
    */
-  readonly timingDateTime?: string;
+  timingDateTime?: string;
 
   /**
    * An optional value describing when the action should be performed.
    */
-  readonly timingAge?: Age;
+  timingAge?: Age;
 
   /**
    * An optional value describing when the action should be performed.
    */
-  readonly timingPeriod?: Period;
+  timingPeriod?: Period;
 
   /**
    * An optional value describing when the action should be performed.
    */
-  readonly timingDuration?: Duration;
+  timingDuration?: Duration;
 
   /**
    * An optional value describing when the action should be performed.
    */
-  readonly timingRange?: Range;
+  timingRange?: Range;
 
   /**
    * An optional value describing when the action should be performed.
    */
-  readonly timingTiming?: Timing;
+  timingTiming?: Timing;
 
   /**
    * Indicates who should participate in performing the action described.
    */
-  readonly participant?: PlanDefinitionActionParticipant[];
+  participant?: PlanDefinitionActionParticipant[];
 
   /**
    * The type of action to perform (create, update, remove).
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Defines the grouping behavior for the action and its children.
    */
-  readonly groupingBehavior?: string;
+  groupingBehavior?: string;
 
   /**
    * Defines the selection behavior for the action and its children.
    */
-  readonly selectionBehavior?: string;
+  selectionBehavior?: string;
 
   /**
    * Defines the required behavior for the action.
    */
-  readonly requiredBehavior?: string;
+  requiredBehavior?: string;
 
   /**
    * Defines whether the action should usually be preselected.
    */
-  readonly precheckBehavior?: string;
+  precheckBehavior?: string;
 
   /**
    * Defines whether the action can be selected multiple times.
    */
-  readonly cardinalityBehavior?: string;
+  cardinalityBehavior?: string;
 
   /**
    * A reference to an ActivityDefinition that describes the action to be
    * taken in detail, or a PlanDefinition that describes a series of
    * actions to be taken.
    */
-  readonly definitionCanonical?: string;
+  definitionCanonical?: string;
 
   /**
    * A reference to an ActivityDefinition that describes the action to be
    * taken in detail, or a PlanDefinition that describes a series of
    * actions to be taken.
    */
-  readonly definitionUri?: string;
+  definitionUri?: string;
 
   /**
    * A reference to a StructureMap resource that defines a transform that
    * can be executed to produce the intent resource using the
    * ActivityDefinition instance as the input.
    */
-  readonly transform?: string;
+  transform?: string;
 
   /**
    * Customizations that should be applied to the statically defined
@@ -555,7 +555,7 @@ export interface PlanDefinitionAction {
    * specify an expression that calculated the weight, and the path on the
    * resource that would contain the result.
    */
-  readonly dynamicValue?: PlanDefinitionActionDynamicValue[];
+  dynamicValue?: PlanDefinitionActionDynamicValue[];
 
   /**
    * Sub actions that are contained within the action. The behavior of this
@@ -563,7 +563,7 @@ export interface PlanDefinitionAction {
    * selection behavior of at-most-one indicates that of the sub-actions,
    * at most one may be chosen as part of realizing the action definition.
    */
-  readonly action?: PlanDefinitionAction[];
+  action?: PlanDefinitionAction[];
 }
 
 /**
@@ -576,7 +576,7 @@ export interface PlanDefinitionActionCondition {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -586,7 +586,7 @@ export interface PlanDefinitionActionCondition {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -605,18 +605,18 @@ export interface PlanDefinitionActionCondition {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The kind of condition.
    */
-  readonly kind?: string;
+  kind?: string;
 
   /**
    * An expression that returns true or false, indicating whether the
    * condition is satisfied.
    */
-  readonly expression?: Expression;
+  expression?: Expression;
 }
 
 /**
@@ -632,7 +632,7 @@ export interface PlanDefinitionActionDynamicValue {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -642,7 +642,7 @@ export interface PlanDefinitionActionDynamicValue {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -661,7 +661,7 @@ export interface PlanDefinitionActionDynamicValue {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The path to the element to be customized. This is the path on the
@@ -674,12 +674,12 @@ export interface PlanDefinitionActionDynamicValue {
    * multiple-cardinality sub-elements (see the [Simple FHIRPath
    * Profile](fhirpath.html#simple) for full details).
    */
-  readonly path?: string;
+  path?: string;
 
   /**
    * An expression specifying the value of the customized element.
    */
-  readonly expression?: Expression;
+  expression?: Expression;
 }
 
 /**
@@ -691,7 +691,7 @@ export interface PlanDefinitionActionParticipant {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -701,7 +701,7 @@ export interface PlanDefinitionActionParticipant {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -720,18 +720,18 @@ export interface PlanDefinitionActionParticipant {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The type of participant in the action.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * The role the participant should play in performing the described
    * action.
    */
-  readonly role?: CodeableConcept;
+  role?: CodeableConcept;
 }
 
 /**
@@ -744,7 +744,7 @@ export interface PlanDefinitionActionRelatedAction {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -754,7 +754,7 @@ export interface PlanDefinitionActionRelatedAction {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -773,29 +773,29 @@ export interface PlanDefinitionActionRelatedAction {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The element id of the related action.
    */
-  readonly actionId?: string;
+  actionId?: string;
 
   /**
    * The relationship of this action to the related action.
    */
-  readonly relationship?: string;
+  relationship?: string;
 
   /**
    * A duration or range of durations to apply to the relationship. For
    * example, 30-60 minutes before.
    */
-  readonly offsetDuration?: Duration;
+  offsetDuration?: Duration;
 
   /**
    * A duration or range of durations to apply to the relationship. For
    * example, 30-60 minutes before.
    */
-  readonly offsetRange?: Range;
+  offsetRange?: Range;
 }
 
 /**
@@ -810,7 +810,7 @@ export interface PlanDefinitionGoal {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -820,7 +820,7 @@ export interface PlanDefinitionGoal {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -839,36 +839,36 @@ export interface PlanDefinitionGoal {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Indicates a category the goal falls within.
    */
-  readonly category?: CodeableConcept;
+  category?: CodeableConcept;
 
   /**
    * Human-readable and/or coded description of a specific desired
    * objective of care, such as &quot;control blood pressure&quot; or &quot;negotiate an
    * obstacle course&quot; or &quot;dance with child at wedding&quot;.
    */
-  readonly description?: CodeableConcept;
+  description?: CodeableConcept;
 
   /**
    * Identifies the expected level of importance associated with
    * reaching/sustaining the defined goal.
    */
-  readonly priority?: CodeableConcept;
+  priority?: CodeableConcept;
 
   /**
    * The event after which the goal should begin being pursued.
    */
-  readonly start?: CodeableConcept;
+  start?: CodeableConcept;
 
   /**
    * Identifies problems, conditions, issues, or concerns the goal is
    * intended to address.
    */
-  readonly addresses?: CodeableConcept[];
+  addresses?: CodeableConcept[];
 
   /**
    * Didactic or other informational resources associated with the goal
@@ -876,12 +876,12 @@ export interface PlanDefinitionGoal {
    * Information resources can include inline text commentary and links to
    * web resources.
    */
-  readonly documentation?: RelatedArtifact[];
+  documentation?: RelatedArtifact[];
 
   /**
    * Indicates what should be done and within what timeframe.
    */
-  readonly target?: PlanDefinitionGoalTarget[];
+  target?: PlanDefinitionGoalTarget[];
 }
 
 /**
@@ -893,7 +893,7 @@ export interface PlanDefinitionGoalTarget {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -903,7 +903,7 @@ export interface PlanDefinitionGoalTarget {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -922,13 +922,13 @@ export interface PlanDefinitionGoalTarget {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The parameter whose value is to be tracked, e.g. body weight, blood
    * pressure, or hemoglobin A1c level.
    */
-  readonly measure?: CodeableConcept;
+  measure?: CodeableConcept;
 
   /**
    * The target value of the measure to be achieved to signify fulfillment
@@ -938,7 +938,7 @@ export interface PlanDefinitionGoalTarget {
    * value. Similarly, if the high value is missing, it indicates that the
    * goal is achieved at any value at or above the low value.
    */
-  readonly detailQuantity?: Quantity;
+  detailQuantity?: Quantity;
 
   /**
    * The target value of the measure to be achieved to signify fulfillment
@@ -948,7 +948,7 @@ export interface PlanDefinitionGoalTarget {
    * value. Similarly, if the high value is missing, it indicates that the
    * goal is achieved at any value at or above the low value.
    */
-  readonly detailRange?: Range;
+  detailRange?: Range;
 
   /**
    * The target value of the measure to be achieved to signify fulfillment
@@ -958,11 +958,11 @@ export interface PlanDefinitionGoalTarget {
    * value. Similarly, if the high value is missing, it indicates that the
    * goal is achieved at any value at or above the low value.
    */
-  readonly detailCodeableConcept?: CodeableConcept;
+  detailCodeableConcept?: CodeableConcept;
 
   /**
    * Indicates the timeframe after the start of the goal in which the goal
    * should be met.
    */
-  readonly due?: Duration;
+  due?: Duration;
 }

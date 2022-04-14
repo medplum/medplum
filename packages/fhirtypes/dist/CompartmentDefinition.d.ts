@@ -25,14 +25,14 @@ export interface CompartmentDefinition {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -40,12 +40,12 @@ export interface CompartmentDefinition {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -55,14 +55,14 @@ export interface CompartmentDefinition {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -72,7 +72,7 @@ export interface CompartmentDefinition {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -90,7 +90,7 @@ export interface CompartmentDefinition {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI that is used to identify this compartment definition
@@ -102,7 +102,7 @@ export interface CompartmentDefinition {
    * SHALL remain the same when the compartment definition is stored on
    * different servers.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * The identifier that is used to identify this version of the
@@ -113,27 +113,27 @@ export interface CompartmentDefinition {
    * managed version is not available. There is also no expectation that
    * versions can be placed in a lexicographical sequence.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * A natural language name identifying the compartment definition. This
    * name should be usable as an identifier for the module by machine
    * processing applications such as code generation.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * The status of this compartment definition. Enables tracking the
    * life-cycle of the content.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A Boolean value to indicate that this compartment definition is
    * authored for testing purposes (or education/evaluation/marketing) and
    * is not intended to be used for genuine usage.
    */
-  readonly experimental?: boolean;
+  experimental?: boolean;
 
   /**
    * The date  (and optionally time) when the compartment definition was
@@ -142,25 +142,25 @@ export interface CompartmentDefinition {
    * change when the substantive content of the compartment definition
    * changes.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The name of the organization or individual that published the
    * compartment definition.
    */
-  readonly publisher?: string;
+  publisher?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * publisher.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * A free text natural language description of the compartment definition
    * from a consumer's perspective.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -170,28 +170,28 @@ export interface CompartmentDefinition {
    * indexing and searching for appropriate compartment definition
    * instances.
    */
-  readonly useContext?: UsageContext[];
+  useContext?: UsageContext[];
 
   /**
    * Explanation of why this compartment definition is needed and why it
    * has been designed as it has.
    */
-  readonly purpose?: string;
+  purpose?: string;
 
   /**
    * Which compartment this definition describes.
    */
-  readonly code?: string;
+  code?: string;
 
   /**
    * Whether the search syntax is supported,.
    */
-  readonly search?: boolean;
+  search?: boolean;
 
   /**
    * Information about how a resource is related to the compartment.
    */
-  readonly resource?: CompartmentDefinitionResource[];
+  resource?: CompartmentDefinitionResource[];
 }
 
 /**
@@ -203,7 +203,7 @@ export interface CompartmentDefinitionResource {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -213,7 +213,7 @@ export interface CompartmentDefinitionResource {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -232,22 +232,22 @@ export interface CompartmentDefinitionResource {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The name of a resource supported by the server.
    */
-  readonly code?: string;
+  code?: string;
 
   /**
    * The name of a search parameter that represents the link to the
    * compartment. More than one may be listed because a resource may be
    * linked to a compartment in more than one way,.
    */
-  readonly param?: string[];
+  param?: string[];
 
   /**
    * Additional documentation about the resource and compartment.
    */
-  readonly documentation?: string;
+  documentation?: string;
 }

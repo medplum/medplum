@@ -32,14 +32,14 @@ export interface SubstanceProtein {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -47,12 +47,12 @@ export interface SubstanceProtein {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -62,14 +62,14 @@ export interface SubstanceProtein {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -79,7 +79,7 @@ export interface SubstanceProtein {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -97,14 +97,14 @@ export interface SubstanceProtein {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The SubstanceProtein descriptive elements will only be used when a
    * complete or partial amino acid sequence is available or derivable from
    * a nucleic acid sequence.
    */
-  readonly sequenceType?: CodeableConcept;
+  sequenceType?: CodeableConcept;
 
   /**
    * Number of linear sequences of amino acids linked through peptide
@@ -112,7 +112,7 @@ export interface SubstanceProtein {
    * be described. It is possible that the number of subunits can be
    * variable.
    */
-  readonly numberOfSubunits?: number;
+  numberOfSubunits?: number;
 
   /**
    * The disulphide bond between two cysteine residues either on the same
@@ -123,7 +123,7 @@ export interface SubstanceProtein {
    * disulfide linkage positions shall actually contain the amino acid
    * Cysteine at the respective positions.
    */
-  readonly disulfideLinkage?: string[];
+  disulfideLinkage?: string[];
 
   /**
    * This subclause refers to the description of each subunit constituting
@@ -136,7 +136,7 @@ export interface SubstanceProtein {
    * subunits that have identical sequences will be repeated multiple
    * times.
    */
-  readonly subunit?: SubstanceProteinSubunit[];
+  subunit?: SubstanceProteinSubunit[];
 }
 
 /**
@@ -156,7 +156,7 @@ export interface SubstanceProteinSubunit {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -166,7 +166,7 @@ export interface SubstanceProteinSubunit {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -185,7 +185,7 @@ export interface SubstanceProteinSubunit {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Index of primary sequences of amino acids linked through peptide bonds
@@ -193,7 +193,7 @@ export interface SubstanceProteinSubunit {
    * ordered by molecular weight. Subunits that have identical sequences
    * will be repeated and have sequential subscripts.
    */
-  readonly subunit?: number;
+  subunit?: number;
 
   /**
    * The sequence information shall be provided enumerating the amino acids
@@ -205,12 +205,12 @@ export interface SubstanceProteinSubunit {
    * be used within the sequence. The modified amino acids will be
    * distinguished by their position in the sequence.
    */
-  readonly sequence?: string;
+  sequence?: string;
 
   /**
    * Length of linear sequences of amino acids contained in the subunit.
    */
-  readonly length?: number;
+  length?: number;
 
   /**
    * The sequence information shall be provided enumerating the amino acids
@@ -222,28 +222,28 @@ export interface SubstanceProteinSubunit {
    * be used within the sequence. The modified amino acids will be
    * distinguished by their position in the sequence.
    */
-  readonly sequenceAttachment?: Attachment;
+  sequenceAttachment?: Attachment;
 
   /**
    * Unique identifier for molecular fragment modification based on the ISO
    * 11238 Substance ID.
    */
-  readonly nTerminalModificationId?: Identifier;
+  nTerminalModificationId?: Identifier;
 
   /**
    * The name of the fragment modified at the N-terminal of the
    * SubstanceProtein shall be specified.
    */
-  readonly nTerminalModification?: string;
+  nTerminalModification?: string;
 
   /**
    * Unique identifier for molecular fragment modification based on the ISO
    * 11238 Substance ID.
    */
-  readonly cTerminalModificationId?: Identifier;
+  cTerminalModificationId?: Identifier;
 
   /**
    * The modification at the C-terminal shall be specified.
    */
-  readonly cTerminalModification?: string;
+  cTerminalModification?: string;
 }

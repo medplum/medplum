@@ -29,14 +29,14 @@ export interface MedicinalProductInteraction {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -44,12 +44,12 @@ export interface MedicinalProductInteraction {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -59,14 +59,14 @@ export interface MedicinalProductInteraction {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -76,7 +76,7 @@ export interface MedicinalProductInteraction {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -94,44 +94,44 @@ export interface MedicinalProductInteraction {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The medication for which this is a described interaction.
    */
-  readonly subject?: Reference<MedicinalProduct | Medication | Substance>[];
+  subject?: Reference<MedicinalProduct | Medication | Substance>[];
 
   /**
    * The interaction described.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The specific medication, food or laboratory test that interacts.
    */
-  readonly interactant?: MedicinalProductInteractionInteractant[];
+  interactant?: MedicinalProductInteractionInteractant[];
 
   /**
    * The type of the interaction e.g. drug-drug interaction, drug-food
    * interaction, drug-lab test interaction.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The effect of the interaction, for example &quot;reduced gastric absorption
    * of primary medication&quot;.
    */
-  readonly effect?: CodeableConcept;
+  effect?: CodeableConcept;
 
   /**
    * The incidence of the interaction, e.g. theoretical, observed.
    */
-  readonly incidence?: CodeableConcept;
+  incidence?: CodeableConcept;
 
   /**
    * Actions for managing the interaction.
    */
-  readonly management?: CodeableConcept;
+  management?: CodeableConcept;
 }
 
 /**
@@ -143,7 +143,7 @@ export interface MedicinalProductInteractionInteractant {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -153,7 +153,7 @@ export interface MedicinalProductInteractionInteractant {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -172,15 +172,15 @@ export interface MedicinalProductInteractionInteractant {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The specific medication, food or laboratory test that interacts.
    */
-  readonly itemReference?: Reference<MedicinalProduct | Medication | Substance | ObservationDefinition>;
+  itemReference?: Reference<MedicinalProduct | Medication | Substance | ObservationDefinition>;
 
   /**
    * The specific medication, food or laboratory test that interacts.
    */
-  readonly itemCodeableConcept?: CodeableConcept;
+  itemCodeableConcept?: CodeableConcept;
 }

@@ -18,7 +18,7 @@ export interface ParameterDefinition {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -28,45 +28,45 @@ export interface ParameterDefinition {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * The name of the parameter used to allow access to the value of the
    * parameter in evaluation contexts.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Whether the parameter is input or output for the module.
    */
-  readonly use?: string;
+  use?: string;
 
   /**
    * The minimum number of times this parameter SHALL appear in the request
    * or response.
    */
-  readonly min?: number;
+  min?: number;
 
   /**
    * The maximum number of times this element is permitted to appear in the
    * request or response.
    */
-  readonly max?: string;
+  max?: string;
 
   /**
    * A brief discussion of what the parameter is for and how it is used by
    * the module.
    */
-  readonly documentation?: string;
+  documentation?: string;
 
   /**
    * The type of the parameter.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * If specified, this indicates a profile that the input data must
    * conform to, or that the output data will conform to.
    */
-  readonly profile?: string;
+  profile?: string;
 }

@@ -19,7 +19,7 @@ export interface ProductShelfLife {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -29,7 +29,7 @@ export interface ProductShelfLife {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -48,12 +48,12 @@ export interface ProductShelfLife {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Unique identifier for the packaged Medicinal Product.
    */
-  readonly identifier?: Identifier;
+  identifier?: Identifier;
 
   /**
    * This describes the shelf life, taking into account various scenarios
@@ -63,7 +63,7 @@ export interface ProductShelfLife {
    * using an appropriate controlled vocabulary The controlled term and the
    * controlled term identifier shall be specified.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The shelf life time period can be specified using a numerical value
@@ -72,12 +72,12 @@ export interface ProductShelfLife {
    * resulting terminology The symbol and the symbol identifier shall be
    * used.
    */
-  readonly period?: Quantity;
+  period?: Quantity;
 
   /**
    * Special precautions for storage, if any, can be specified using an
    * appropriate controlled vocabulary The controlled term and the
    * controlled term identifier shall be specified.
    */
-  readonly specialPrecautionsForStorage?: CodeableConcept[];
+  specialPrecautionsForStorage?: CodeableConcept[];
 }

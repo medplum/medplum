@@ -32,14 +32,14 @@ export interface VisionPrescription {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -47,12 +47,12 @@ export interface VisionPrescription {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -62,14 +62,14 @@ export interface VisionPrescription {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -79,7 +79,7 @@ export interface VisionPrescription {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -97,52 +97,52 @@ export interface VisionPrescription {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A unique identifier assigned to this vision prescription.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The status of the resource instance.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The date this resource was created.
    */
-  readonly created?: string;
+  created?: string;
 
   /**
    * A resource reference to the person to whom the vision prescription
    * applies.
    */
-  readonly patient?: Reference<Patient>;
+  patient?: Reference<Patient>;
 
   /**
    * A reference to a resource that identifies the particular occurrence of
    * contact between patient and health care provider during which the
    * prescription was issued.
    */
-  readonly encounter?: Reference<Encounter>;
+  encounter?: Reference<Encounter>;
 
   /**
    * The date (and perhaps time) when the prescription was written.
    */
-  readonly dateWritten?: string;
+  dateWritten?: string;
 
   /**
    * The healthcare professional responsible for authorizing the
    * prescription.
    */
-  readonly prescriber?: Reference<Practitioner | PractitionerRole>;
+  prescriber?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * Contain the details of  the individual lens specifications and serves
    * as the authorization for the fullfillment by certified professionals.
    */
-  readonly lensSpecification?: VisionPrescriptionLensSpecification[];
+  lensSpecification?: VisionPrescriptionLensSpecification[];
 }
 
 /**
@@ -155,7 +155,7 @@ export interface VisionPrescriptionLensSpecification {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -165,7 +165,7 @@ export interface VisionPrescriptionLensSpecification {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -184,79 +184,79 @@ export interface VisionPrescriptionLensSpecification {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifies the type of vision correction product which is required for
    * the patient.
    */
-  readonly product?: CodeableConcept;
+  product?: CodeableConcept;
 
   /**
    * The eye for which the lens specification applies.
    */
-  readonly eye?: string;
+  eye?: string;
 
   /**
    * Lens power measured in dioptres (0.25 units).
    */
-  readonly sphere?: number;
+  sphere?: number;
 
   /**
    * Power adjustment for astigmatism measured in dioptres (0.25 units).
    */
-  readonly cylinder?: number;
+  cylinder?: number;
 
   /**
    * Adjustment for astigmatism measured in integer degrees.
    */
-  readonly axis?: number;
+  axis?: number;
 
   /**
    * Allows for adjustment on two axis.
    */
-  readonly prism?: VisionPrescriptionLensSpecificationPrism[];
+  prism?: VisionPrescriptionLensSpecificationPrism[];
 
   /**
    * Power adjustment for multifocal lenses measured in dioptres (0.25
    * units).
    */
-  readonly add?: number;
+  add?: number;
 
   /**
    * Contact lens power measured in dioptres (0.25 units).
    */
-  readonly power?: number;
+  power?: number;
 
   /**
    * Back curvature measured in millimetres.
    */
-  readonly backCurve?: number;
+  backCurve?: number;
 
   /**
    * Contact lens diameter measured in millimetres.
    */
-  readonly diameter?: number;
+  diameter?: number;
 
   /**
    * The recommended maximum wear period for the lens.
    */
-  readonly duration?: Quantity;
+  duration?: Quantity;
 
   /**
    * Special color or pattern.
    */
-  readonly color?: string;
+  color?: string;
 
   /**
    * Brand recommendations or restrictions.
    */
-  readonly brand?: string;
+  brand?: string;
 
   /**
    * Notes for special requirements such as coatings and lens materials.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 }
 
 /**
@@ -268,7 +268,7 @@ export interface VisionPrescriptionLensSpecificationPrism {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -278,7 +278,7 @@ export interface VisionPrescriptionLensSpecificationPrism {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -297,15 +297,15 @@ export interface VisionPrescriptionLensSpecificationPrism {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Amount of prism to compensate for eye alignment in fractional units.
    */
-  readonly amount?: number;
+  amount?: number;
 
   /**
    * The relative base, or reference lens edge, for the prism.
    */
-  readonly base?: string;
+  base?: string;
 }

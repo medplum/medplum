@@ -34,14 +34,14 @@ export interface EffectEvidenceSynthesis {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -49,12 +49,12 @@ export interface EffectEvidenceSynthesis {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -64,14 +64,14 @@ export interface EffectEvidenceSynthesis {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -81,7 +81,7 @@ export interface EffectEvidenceSynthesis {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -99,7 +99,7 @@ export interface EffectEvidenceSynthesis {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI that is used to identify this effect evidence
@@ -111,14 +111,14 @@ export interface EffectEvidenceSynthesis {
    * SHALL remain the same when the effect evidence synthesis is stored on
    * different servers.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * A formal identifier that is used to identify this effect evidence
    * synthesis when it is represented in other formats, or referenced in a
    * specification, model, design or an instance.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The identifier that is used to identify this version of the effect
@@ -129,26 +129,26 @@ export interface EffectEvidenceSynthesis {
    * version is not available. There is also no expectation that versions
    * can be placed in a lexicographical sequence.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * A natural language name identifying the effect evidence synthesis.
    * This name should be usable as an identifier for the module by machine
    * processing applications such as code generation.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A short, descriptive, user-friendly title for the effect evidence
    * synthesis.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * The status of this effect evidence synthesis. Enables tracking the
    * life-cycle of the content.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The date  (and optionally time) when the effect evidence synthesis was
@@ -157,31 +157,31 @@ export interface EffectEvidenceSynthesis {
    * change when the substantive content of the effect evidence synthesis
    * changes.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The name of the organization or individual that published the effect
    * evidence synthesis.
    */
-  readonly publisher?: string;
+  publisher?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * publisher.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * A free text natural language description of the effect evidence
    * synthesis from a consumer's perspective.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * A human-readable string to clarify or explain concepts about the
    * resource.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -191,40 +191,40 @@ export interface EffectEvidenceSynthesis {
    * indexing and searching for appropriate effect evidence synthesis
    * instances.
    */
-  readonly useContext?: UsageContext[];
+  useContext?: UsageContext[];
 
   /**
    * A legal or geographic region in which the effect evidence synthesis is
    * intended to be used.
    */
-  readonly jurisdiction?: CodeableConcept[];
+  jurisdiction?: CodeableConcept[];
 
   /**
    * A copyright statement relating to the effect evidence synthesis and/or
    * its contents. Copyright statements are generally legal restrictions on
    * the use and publishing of the effect evidence synthesis.
    */
-  readonly copyright?: string;
+  copyright?: string;
 
   /**
    * The date on which the resource content was approved by the publisher.
    * Approval happens once when the content is officially approved for
    * usage.
    */
-  readonly approvalDate?: string;
+  approvalDate?: string;
 
   /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
-  readonly lastReviewDate?: string;
+  lastReviewDate?: string;
 
   /**
    * The period during which the effect evidence synthesis content was or
    * is planned to be in active use.
    */
-  readonly effectivePeriod?: Period;
+  effectivePeriod?: Period;
 
   /**
    * Descriptive topics related to the content of the
@@ -232,92 +232,92 @@ export interface EffectEvidenceSynthesis {
    * grouping types of EffectEvidenceSynthesiss that can be useful for
    * filtering and searching.
    */
-  readonly topic?: CodeableConcept[];
+  topic?: CodeableConcept[];
 
   /**
    * An individiual or organization primarily involved in the creation and
    * maintenance of the content.
    */
-  readonly author?: ContactDetail[];
+  author?: ContactDetail[];
 
   /**
    * An individual or organization primarily responsible for internal
    * coherence of the content.
    */
-  readonly editor?: ContactDetail[];
+  editor?: ContactDetail[];
 
   /**
    * An individual or organization primarily responsible for review of some
    * aspect of the content.
    */
-  readonly reviewer?: ContactDetail[];
+  reviewer?: ContactDetail[];
 
   /**
    * An individual or organization responsible for officially endorsing the
    * content for use in some setting.
    */
-  readonly endorser?: ContactDetail[];
+  endorser?: ContactDetail[];
 
   /**
    * Related artifacts such as additional documentation, justification, or
    * bibliographic references.
    */
-  readonly relatedArtifact?: RelatedArtifact[];
+  relatedArtifact?: RelatedArtifact[];
 
   /**
    * Type of synthesis eg meta-analysis.
    */
-  readonly synthesisType?: CodeableConcept;
+  synthesisType?: CodeableConcept;
 
   /**
    * Type of study eg randomized trial.
    */
-  readonly studyType?: CodeableConcept;
+  studyType?: CodeableConcept;
 
   /**
    * A reference to a EvidenceVariable resource that defines the population
    * for the research.
    */
-  readonly population?: Reference<EvidenceVariable>;
+  population?: Reference<EvidenceVariable>;
 
   /**
    * A reference to a EvidenceVariable resource that defines the exposure
    * for the research.
    */
-  readonly exposure?: Reference<EvidenceVariable>;
+  exposure?: Reference<EvidenceVariable>;
 
   /**
    * A reference to a EvidenceVariable resource that defines the comparison
    * exposure for the research.
    */
-  readonly exposureAlternative?: Reference<EvidenceVariable>;
+  exposureAlternative?: Reference<EvidenceVariable>;
 
   /**
    * A reference to a EvidenceVariable resomece that defines the outcome
    * for the research.
    */
-  readonly outcome?: Reference<EvidenceVariable>;
+  outcome?: Reference<EvidenceVariable>;
 
   /**
    * A description of the size of the sample involved in the synthesis.
    */
-  readonly sampleSize?: EffectEvidenceSynthesisSampleSize;
+  sampleSize?: EffectEvidenceSynthesisSampleSize;
 
   /**
    * A description of the results for each exposure considered in the
    * effect estimate.
    */
-  readonly resultsByExposure?: EffectEvidenceSynthesisResultsByExposure[];
+  resultsByExposure?: EffectEvidenceSynthesisResultsByExposure[];
 
   /**
    * The estimated effect of the exposure variant.
    */
-  readonly effectEstimate?: EffectEvidenceSynthesisEffectEstimate[];
+  effectEstimate?: EffectEvidenceSynthesisEffectEstimate[];
 
   /**
    * A description of the certainty of the effect estimate.
    */
-  readonly certainty?: EffectEvidenceSynthesisCertainty[];
+  certainty?: EffectEvidenceSynthesisCertainty[];
 }
 
 /**
@@ -329,7 +329,7 @@ export interface EffectEvidenceSynthesisCertainty {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -339,7 +339,7 @@ export interface EffectEvidenceSynthesisCertainty {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -358,23 +358,23 @@ export interface EffectEvidenceSynthesisCertainty {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A rating of the certainty of the effect estimate.
    */
-  readonly rating?: CodeableConcept[];
+  rating?: CodeableConcept[];
 
   /**
    * A human-readable string to clarify or explain concepts about the
    * resource.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 
   /**
    * A description of a component of the overall certainty.
    */
-  readonly certaintySubcomponent?: EffectEvidenceSynthesisCertaintyCertaintySubcomponent[];
+  certaintySubcomponent?: EffectEvidenceSynthesisCertaintyCertaintySubcomponent[];
 }
 
 /**
@@ -386,7 +386,7 @@ export interface EffectEvidenceSynthesisCertaintyCertaintySubcomponent {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -396,7 +396,7 @@ export interface EffectEvidenceSynthesisCertaintyCertaintySubcomponent {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -415,23 +415,23 @@ export interface EffectEvidenceSynthesisCertaintyCertaintySubcomponent {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Type of subcomponent of certainty rating.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * A rating of a subcomponent of rating certainty.
    */
-  readonly rating?: CodeableConcept[];
+  rating?: CodeableConcept[];
 
   /**
    * A human-readable string to clarify or explain concepts about the
    * resource.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 }
 
 /**
@@ -443,7 +443,7 @@ export interface EffectEvidenceSynthesisEffectEstimate {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -453,7 +453,7 @@ export interface EffectEvidenceSynthesisEffectEstimate {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -472,37 +472,37 @@ export interface EffectEvidenceSynthesisEffectEstimate {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Human-readable summary of effect estimate.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Examples include relative risk and mean difference.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Used to define variant exposure states such as low-risk state.
    */
-  readonly variantState?: CodeableConcept;
+  variantState?: CodeableConcept;
 
   /**
    * The point estimate of the effect estimate.
    */
-  readonly value?: number;
+  value?: number;
 
   /**
    * Specifies the UCUM unit for the outcome.
    */
-  readonly unitOfMeasure?: CodeableConcept;
+  unitOfMeasure?: CodeableConcept;
 
   /**
    * A description of the precision of the estimate for the effect.
    */
-  readonly precisionEstimate?: EffectEvidenceSynthesisEffectEstimatePrecisionEstimate[];
+  precisionEstimate?: EffectEvidenceSynthesisEffectEstimatePrecisionEstimate[];
 }
 
 /**
@@ -514,7 +514,7 @@ export interface EffectEvidenceSynthesisEffectEstimatePrecisionEstimate {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -524,7 +524,7 @@ export interface EffectEvidenceSynthesisEffectEstimatePrecisionEstimate {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -543,27 +543,27 @@ export interface EffectEvidenceSynthesisEffectEstimatePrecisionEstimate {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Examples include confidence interval and interquartile range.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Use 95 for a 95% confidence interval.
    */
-  readonly level?: number;
+  level?: number;
 
   /**
    * Lower bound of confidence interval.
    */
-  readonly from?: number;
+  from?: number;
 
   /**
    * Upper bound of confidence interval.
    */
-  readonly to?: number;
+  to?: number;
 }
 
 /**
@@ -576,7 +576,7 @@ export interface EffectEvidenceSynthesisResultsByExposure {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -586,7 +586,7 @@ export interface EffectEvidenceSynthesisResultsByExposure {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -605,28 +605,28 @@ export interface EffectEvidenceSynthesisResultsByExposure {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Human-readable summary of results by exposure state.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Whether these results are for the exposure state or alternative
    * exposure state.
    */
-  readonly exposureState?: string;
+  exposureState?: string;
 
   /**
    * Used to define variant exposure states such as low-risk state.
    */
-  readonly variantState?: CodeableConcept;
+  variantState?: CodeableConcept;
 
   /**
    * Reference to a RiskEvidenceSynthesis resource.
    */
-  readonly riskEvidenceSynthesis?: Reference<RiskEvidenceSynthesis>;
+  riskEvidenceSynthesis?: Reference<RiskEvidenceSynthesis>;
 }
 
 /**
@@ -638,7 +638,7 @@ export interface EffectEvidenceSynthesisSampleSize {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -648,7 +648,7 @@ export interface EffectEvidenceSynthesisSampleSize {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -667,20 +667,20 @@ export interface EffectEvidenceSynthesisSampleSize {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Human-readable summary of sample size.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Number of studies included in this evidence synthesis.
    */
-  readonly numberOfStudies?: number;
+  numberOfStudies?: number;
 
   /**
    * Number of participants included in this evidence synthesis.
    */
-  readonly numberOfParticipants?: number;
+  numberOfParticipants?: number;
 }

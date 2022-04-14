@@ -35,14 +35,14 @@ export interface AllergyIntolerance {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -50,12 +50,12 @@ export interface AllergyIntolerance {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -65,14 +65,14 @@ export interface AllergyIntolerance {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -82,7 +82,7 @@ export interface AllergyIntolerance {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -100,43 +100,43 @@ export interface AllergyIntolerance {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Business identifiers assigned to this AllergyIntolerance by the
    * performer or other systems which remain constant as the resource is
    * updated and propagates from server to server.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The clinical status of the allergy or intolerance.
    */
-  readonly clinicalStatus?: CodeableConcept;
+  clinicalStatus?: CodeableConcept;
 
   /**
    * Assertion about certainty associated with the propensity, or potential
    * risk, of a reaction to the identified substance (including
    * pharmaceutical product).
    */
-  readonly verificationStatus?: CodeableConcept;
+  verificationStatus?: CodeableConcept;
 
   /**
    * Identification of the underlying physiological mechanism for the
    * reaction risk.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * Category of the identified substance.
    */
-  readonly category?: string[];
+  category?: string[];
 
   /**
    * Estimate of the potential clinical harm, or seriousness, of the
    * reaction to the identified substance.
    */
-  readonly criticality?: string;
+  criticality?: string;
 
   /**
    * Code for an allergy or intolerance statement (either a positive or a
@@ -157,83 +157,83 @@ export interface AllergyIntolerance {
    * of AllergyIntolerance.code, then the receiving system should ignore
    * AllergyIntolerance.reaction.substance.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * The patient who has the allergy or intolerance.
    */
-  readonly patient?: Reference<Patient>;
+  patient?: Reference<Patient>;
 
   /**
    * The encounter when the allergy or intolerance was asserted.
    */
-  readonly encounter?: Reference<Encounter>;
+  encounter?: Reference<Encounter>;
 
   /**
    * Estimated or actual date,  date-time, or age when allergy or
    * intolerance was identified.
    */
-  readonly onsetDateTime?: string;
+  onsetDateTime?: string;
 
   /**
    * Estimated or actual date,  date-time, or age when allergy or
    * intolerance was identified.
    */
-  readonly onsetAge?: Age;
+  onsetAge?: Age;
 
   /**
    * Estimated or actual date,  date-time, or age when allergy or
    * intolerance was identified.
    */
-  readonly onsetPeriod?: Period;
+  onsetPeriod?: Period;
 
   /**
    * Estimated or actual date,  date-time, or age when allergy or
    * intolerance was identified.
    */
-  readonly onsetRange?: Range;
+  onsetRange?: Range;
 
   /**
    * Estimated or actual date,  date-time, or age when allergy or
    * intolerance was identified.
    */
-  readonly onsetString?: string;
+  onsetString?: string;
 
   /**
    * The recordedDate represents when this particular AllergyIntolerance
    * record was created in the system, which is often a system-generated
    * date.
    */
-  readonly recordedDate?: string;
+  recordedDate?: string;
 
   /**
    * Individual who recorded the record and takes responsibility for its
    * content.
    */
-  readonly recorder?: Reference<Practitioner | PractitionerRole | Patient | RelatedPerson>;
+  recorder?: Reference<Practitioner | PractitionerRole | Patient | RelatedPerson>;
 
   /**
    * The source of the information about the allergy that is recorded.
    */
-  readonly asserter?: Reference<Patient | RelatedPerson | Practitioner | PractitionerRole>;
+  asserter?: Reference<Patient | RelatedPerson | Practitioner | PractitionerRole>;
 
   /**
    * Represents the date and/or time of the last known occurrence of a
    * reaction event.
    */
-  readonly lastOccurrence?: string;
+  lastOccurrence?: string;
 
   /**
    * Additional narrative about the propensity for the Adverse Reaction,
    * not captured in other fields.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 
   /**
    * Details about each adverse reaction event linked to exposure to the
    * identified substance.
    */
-  readonly reaction?: AllergyIntoleranceReaction[];
+  reaction?: AllergyIntoleranceReaction[];
 }
 
 /**
@@ -246,7 +246,7 @@ export interface AllergyIntoleranceReaction {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -256,7 +256,7 @@ export interface AllergyIntoleranceReaction {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -275,7 +275,7 @@ export interface AllergyIntoleranceReaction {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identification of the specific substance (or pharmaceutical product)
@@ -290,40 +290,40 @@ export interface AllergyIntoleranceReaction {
    * semantic scope of AllergyIntolerance.code, then the receiving system
    * should ignore AllergyIntolerance.reaction.substance.
    */
-  readonly substance?: CodeableConcept;
+  substance?: CodeableConcept;
 
   /**
    * Clinical symptoms and/or signs that are observed or associated with
    * the adverse reaction event.
    */
-  readonly manifestation?: CodeableConcept[];
+  manifestation?: CodeableConcept[];
 
   /**
    * Text description about the reaction as a whole, including details of
    * the manifestation if required.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Record of the date and/or time of the onset of the Reaction.
    */
-  readonly onset?: string;
+  onset?: string;
 
   /**
    * Clinical assessment of the severity of the reaction event as a whole,
    * potentially considering multiple different manifestations.
    */
-  readonly severity?: string;
+  severity?: string;
 
   /**
    * Identification of the route by which the subject was exposed to the
    * substance.
    */
-  readonly exposureRoute?: CodeableConcept;
+  exposureRoute?: CodeableConcept;
 
   /**
    * Additional text about the adverse reaction event not captured in other
    * fields.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 }

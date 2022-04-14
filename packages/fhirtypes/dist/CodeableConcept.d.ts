@@ -17,7 +17,7 @@ export interface CodeableConcept {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -27,17 +27,17 @@ export interface CodeableConcept {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * A reference to a code defined by a terminology system.
    */
-  readonly coding?: Coding[];
+  coding?: Coding[];
 
   /**
    * A human language representation of the concept as
    * seen/selected/uttered by the user who entered the data and/or which
    * represents the intended meaning of the user.
    */
-  readonly text?: string;
+  text?: string;
 }

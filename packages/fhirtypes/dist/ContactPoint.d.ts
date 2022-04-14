@@ -17,7 +17,7 @@ export interface ContactPoint {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -27,34 +27,34 @@ export interface ContactPoint {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * Telecommunications form for contact point - what communications system
    * is required to make use of the contact.
    */
-  readonly system?: string;
+  system?: string;
 
   /**
    * The actual contact point details, in a form that is meaningful to the
    * designated communication system (i.e. phone number or email address).
    */
-  readonly value?: string;
+  value?: string;
 
   /**
    * Identifies the purpose for the contact point.
    */
-  readonly use?: string;
+  use?: string;
 
   /**
    * Specifies a preferred order in which to use a set of contacts.
    * ContactPoints with lower rank values are more preferred than those
    * with higher rank values.
    */
-  readonly rank?: number;
+  rank?: number;
 
   /**
    * Time period when the contact point was/is in use.
    */
-  readonly period?: Period;
+  period?: Period;
 }

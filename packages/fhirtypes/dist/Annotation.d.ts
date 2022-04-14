@@ -20,7 +20,7 @@ export interface Annotation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -30,25 +30,25 @@ export interface Annotation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * The individual responsible for making the annotation.
    */
-  readonly authorReference?: Reference<Practitioner | Patient | RelatedPerson | Organization>;
+  authorReference?: Reference<Practitioner | Patient | RelatedPerson | Organization>;
 
   /**
    * The individual responsible for making the annotation.
    */
-  readonly authorString?: string;
+  authorString?: string;
 
   /**
    * Indicates when this particular annotation was made.
    */
-  readonly time?: string;
+  time?: string;
 
   /**
    * The text of the annotation in markdown format.
    */
-  readonly text?: string;
+  text?: string;
 }

@@ -27,14 +27,14 @@ export interface Linkage {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -42,12 +42,12 @@ export interface Linkage {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -57,14 +57,14 @@ export interface Linkage {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -74,7 +74,7 @@ export interface Linkage {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -92,27 +92,27 @@ export interface Linkage {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Indicates whether the asserted set of linkages are considered to be
    * &quot;in effect&quot;.
    */
-  readonly active?: boolean;
+  active?: boolean;
 
   /**
    * Identifies the user or organization responsible for asserting the
    * linkages as well as the user or organization who establishes the
    * context in which the nature of each linkage is evaluated.
    */
-  readonly author?: Reference<Practitioner | PractitionerRole | Organization>;
+  author?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * Identifies which record considered as the reference to the same
    * real-world occurrence as well as how the items should be evaluated
    * within the collection of linked items.
    */
-  readonly item?: LinkageItem[];
+  item?: LinkageItem[];
 }
 
 /**
@@ -126,7 +126,7 @@ export interface LinkageItem {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -136,7 +136,7 @@ export interface LinkageItem {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -155,16 +155,16 @@ export interface LinkageItem {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Distinguishes which item is &quot;source of truth&quot; (if any) and which items
    * are no longer considered to be current representations.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * The resource instance being linked as part of the group.
    */
-  readonly resource?: Reference<Resource>;
+  resource?: Reference<Resource>;
 }

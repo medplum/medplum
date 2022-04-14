@@ -18,7 +18,7 @@ export interface MarketingStatus {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -28,7 +28,7 @@ export interface MarketingStatus {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -47,14 +47,14 @@ export interface MarketingStatus {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The country in which the marketing authorisation has been granted
    * shall be specified It should be specified using the ISO 3166 ‑ 1
    * alpha-2 code elements.
    */
-  readonly country?: CodeableConcept;
+  country?: CodeableConcept;
 
   /**
    * Where a Medicines Regulatory Agency has granted a marketing
@@ -63,14 +63,14 @@ export interface MarketingStatus {
    * controlled terminology The controlled term and the controlled term
    * identifier shall be specified.
    */
-  readonly jurisdiction?: CodeableConcept;
+  jurisdiction?: CodeableConcept;
 
   /**
    * This attribute provides information on the status of the marketing of
    * the medicinal product See ISO/TS 20443 for more information and
    * examples.
    */
-  readonly status?: CodeableConcept;
+  status?: CodeableConcept;
 
   /**
    * The date when the Medicinal Product is placed on the market by the
@@ -81,7 +81,7 @@ export interface MarketingStatus {
    * refers to the release of the Medicinal Product into the distribution
    * chain.
    */
-  readonly dateRange?: Period;
+  dateRange?: Period;
 
   /**
    * The date when the Medicinal Product is placed on the market by the
@@ -92,5 +92,5 @@ export interface MarketingStatus {
    * refers to the release of the Medicinal Product into the distribution
    * chain.
    */
-  readonly restoreDate?: string;
+  restoreDate?: string;
 }

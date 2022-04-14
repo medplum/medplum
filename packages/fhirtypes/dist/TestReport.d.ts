@@ -26,14 +26,14 @@ export interface TestReport {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -41,12 +41,12 @@ export interface TestReport {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -56,14 +56,14 @@ export interface TestReport {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -73,7 +73,7 @@ export interface TestReport {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -91,74 +91,74 @@ export interface TestReport {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifier for the TestScript assigned for external purposes outside
    * the context of FHIR.
    */
-  readonly identifier?: Identifier;
+  identifier?: Identifier;
 
   /**
    * A free text natural language name identifying the executed TestScript.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * The current state of this test report.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * Ideally this is an absolute URL that is used to identify the
    * version-specific TestScript that was executed, matching the
    * `TestScript.url`.
    */
-  readonly testScript?: Reference<TestScript>;
+  testScript?: Reference<TestScript>;
 
   /**
    * The overall result from the execution of the TestScript.
    */
-  readonly result?: string;
+  result?: string;
 
   /**
    * The final score (percentage of tests passed) resulting from the
    * execution of the TestScript.
    */
-  readonly score?: number;
+  score?: number;
 
   /**
    * Name of the tester producing this report (Organization or individual).
    */
-  readonly tester?: string;
+  tester?: string;
 
   /**
    * When the TestScript was executed and this TestReport was generated.
    */
-  readonly issued?: string;
+  issued?: string;
 
   /**
    * A participant in the test execution, either the execution engine, a
    * client, or a server.
    */
-  readonly participant?: TestReportParticipant[];
+  participant?: TestReportParticipant[];
 
   /**
    * The results of the series of required setup operations before the
    * tests were executed.
    */
-  readonly setup?: TestReportSetup;
+  setup?: TestReportSetup;
 
   /**
    * A test executed from the test script.
    */
-  readonly test?: TestReportTest[];
+  test?: TestReportTest[];
 
   /**
    * The results of the series of operations required to clean up after all
    * the tests were executed (successfully or otherwise).
    */
-  readonly teardown?: TestReportTeardown;
+  teardown?: TestReportTeardown;
 }
 
 /**
@@ -171,7 +171,7 @@ export interface TestReportParticipant {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -181,7 +181,7 @@ export interface TestReportParticipant {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -200,22 +200,22 @@ export interface TestReportParticipant {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The type of participant.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * The uri of the participant. An absolute URL is preferred.
    */
-  readonly uri?: string;
+  uri?: string;
 
   /**
    * The display name of the participant.
    */
-  readonly display?: string;
+  display?: string;
 }
 
 /**
@@ -228,7 +228,7 @@ export interface TestReportSetup {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -238,7 +238,7 @@ export interface TestReportSetup {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -257,12 +257,12 @@ export interface TestReportSetup {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Action would contain either an operation or an assertion.
    */
-  readonly action?: TestReportSetupAction[];
+  action?: TestReportSetupAction[];
 }
 
 /**
@@ -274,7 +274,7 @@ export interface TestReportSetupAction {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -284,7 +284,7 @@ export interface TestReportSetupAction {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -303,17 +303,17 @@ export interface TestReportSetupAction {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The operation performed.
    */
-  readonly operation?: TestReportSetupActionOperation;
+  operation?: TestReportSetupActionOperation;
 
   /**
    * The results of the assertion performed on the previous operations.
    */
-  readonly assert?: TestReportSetupActionAssert;
+  assert?: TestReportSetupActionAssert;
 }
 
 /**
@@ -325,7 +325,7 @@ export interface TestReportSetupActionAssert {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -335,7 +335,7 @@ export interface TestReportSetupActionAssert {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -354,22 +354,22 @@ export interface TestReportSetupActionAssert {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The result of this assertion.
    */
-  readonly result?: string;
+  result?: string;
 
   /**
    * An explanatory message associated with the result.
    */
-  readonly message?: string;
+  message?: string;
 
   /**
    * A link to further details on the result.
    */
-  readonly detail?: string;
+  detail?: string;
 }
 
 /**
@@ -381,7 +381,7 @@ export interface TestReportSetupActionOperation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -391,7 +391,7 @@ export interface TestReportSetupActionOperation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -410,22 +410,22 @@ export interface TestReportSetupActionOperation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The result of this operation.
    */
-  readonly result?: string;
+  result?: string;
 
   /**
    * An explanatory message associated with the result.
    */
-  readonly message?: string;
+  message?: string;
 
   /**
    * A link to further details on the result.
    */
-  readonly detail?: string;
+  detail?: string;
 }
 
 /**
@@ -438,7 +438,7 @@ export interface TestReportTeardown {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -448,7 +448,7 @@ export interface TestReportTeardown {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -467,12 +467,12 @@ export interface TestReportTeardown {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The teardown action will only contain an operation.
    */
-  readonly action?: TestReportTeardownAction[];
+  action?: TestReportTeardownAction[];
 }
 
 /**
@@ -484,7 +484,7 @@ export interface TestReportTeardownAction {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -494,7 +494,7 @@ export interface TestReportTeardownAction {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -513,12 +513,12 @@ export interface TestReportTeardownAction {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An operation would involve a REST request to a server.
    */
-  readonly operation?: TestReportSetupActionOperation;
+  operation?: TestReportSetupActionOperation;
 }
 
 /**
@@ -530,7 +530,7 @@ export interface TestReportTest {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -540,7 +540,7 @@ export interface TestReportTest {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -559,24 +559,24 @@ export interface TestReportTest {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The name of this test used for tracking/logging purposes by test
    * engines.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A short description of the test used by test engines for tracking and
    * reporting purposes.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Action would contain either an operation or an assertion.
    */
-  readonly action?: TestReportTestAction[];
+  action?: TestReportTestAction[];
 }
 
 /**
@@ -588,7 +588,7 @@ export interface TestReportTestAction {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -598,7 +598,7 @@ export interface TestReportTestAction {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -617,15 +617,15 @@ export interface TestReportTestAction {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An operation would involve a REST request to a server.
    */
-  readonly operation?: TestReportSetupActionOperation;
+  operation?: TestReportSetupActionOperation;
 
   /**
    * The results of the assertion performed on the previous operations.
    */
-  readonly assert?: TestReportSetupActionAssert;
+  assert?: TestReportSetupActionAssert;
 }

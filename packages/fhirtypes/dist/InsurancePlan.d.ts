@@ -35,14 +35,14 @@ export interface InsurancePlan {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -50,12 +50,12 @@ export interface InsurancePlan {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -65,14 +65,14 @@ export interface InsurancePlan {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -82,7 +82,7 @@ export interface InsurancePlan {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -100,41 +100,41 @@ export interface InsurancePlan {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Business identifiers assigned to this health insurance product which
    * remain constant as the resource is updated and propagates from server
    * to server.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The current state of the health insurance product.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The kind of health insurance product.
    */
-  readonly type?: CodeableConcept[];
+  type?: CodeableConcept[];
 
   /**
    * Official name of the health insurance product as designated by the
    * owner.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A list of alternate names that the product is known as, or was known
    * as in the past.
    */
-  readonly alias?: string[];
+  alias?: string[];
 
   /**
    * The period of time that the health insurance product is available.
    */
-  readonly period?: Period;
+  period?: Period;
 
   /**
    * The entity that is providing  the health insurance product and
@@ -142,46 +142,46 @@ export interface InsurancePlan {
    * third-party payers, or health plan sponsors comonly referred to as
    * 'payers'.
    */
-  readonly ownedBy?: Reference<Organization>;
+  ownedBy?: Reference<Organization>;
 
   /**
    * An organization which administer other services such as underwriting,
    * customer service and/or claims processing on behalf of the health
    * insurance product owner.
    */
-  readonly administeredBy?: Reference<Organization>;
+  administeredBy?: Reference<Organization>;
 
   /**
    * The geographic region in which a health insurance product's benefits
    * apply.
    */
-  readonly coverageArea?: Reference<Location>[];
+  coverageArea?: Reference<Location>[];
 
   /**
    * The contact for the health insurance product for a certain purpose.
    */
-  readonly contact?: InsurancePlanContact[];
+  contact?: InsurancePlanContact[];
 
   /**
    * The technical endpoints providing access to services operated for the
    * health insurance product.
    */
-  readonly endpoint?: Reference<Endpoint>[];
+  endpoint?: Reference<Endpoint>[];
 
   /**
    * Reference to the network included in the health insurance product.
    */
-  readonly network?: Reference<Organization>[];
+  network?: Reference<Organization>[];
 
   /**
    * Details about the coverage offered by the insurance product.
    */
-  readonly coverage?: InsurancePlanCoverage[];
+  coverage?: InsurancePlanCoverage[];
 
   /**
    * Details about an insurance plan.
    */
-  readonly plan?: InsurancePlanPlan[];
+  plan?: InsurancePlanPlan[];
 }
 
 /**
@@ -193,7 +193,7 @@ export interface InsurancePlanContact {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -203,7 +203,7 @@ export interface InsurancePlanContact {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -222,28 +222,28 @@ export interface InsurancePlanContact {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Indicates a purpose for which the contact can be reached.
    */
-  readonly purpose?: CodeableConcept;
+  purpose?: CodeableConcept;
 
   /**
    * A name associated with the contact.
    */
-  readonly name?: HumanName;
+  name?: HumanName;
 
   /**
    * A contact detail (e.g. a telephone number or an email address) by
    * which the party may be contacted.
    */
-  readonly telecom?: ContactPoint[];
+  telecom?: ContactPoint[];
 
   /**
    * Visiting or postal addresses for the contact.
    */
-  readonly address?: Address;
+  address?: Address;
 }
 
 /**
@@ -255,7 +255,7 @@ export interface InsurancePlanCoverage {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -265,7 +265,7 @@ export interface InsurancePlanCoverage {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -284,23 +284,23 @@ export interface InsurancePlanCoverage {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Type of coverage  (Medical; Dental; Mental Health; Substance Abuse;
    * Vision; Drug; Short Term; Long Term Care; Hospice; Home Health).
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Reference to the network that providing the type of coverage.
    */
-  readonly network?: Reference<Organization>[];
+  network?: Reference<Organization>[];
 
   /**
    * Specific benefits under this type of coverage.
    */
-  readonly benefit?: InsurancePlanCoverageBenefit[];
+  benefit?: InsurancePlanCoverageBenefit[];
 }
 
 /**
@@ -312,7 +312,7 @@ export interface InsurancePlanCoverageBenefit {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -322,7 +322,7 @@ export interface InsurancePlanCoverageBenefit {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -341,23 +341,23 @@ export interface InsurancePlanCoverageBenefit {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Type of benefit (primary care; speciality care; inpatient;
    * outpatient).
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The referral requirements to have access/coverage for this benefit.
    */
-  readonly requirement?: string;
+  requirement?: string;
 
   /**
    * The specific limits on the benefit.
    */
-  readonly limit?: InsurancePlanCoverageBenefitLimit[];
+  limit?: InsurancePlanCoverageBenefitLimit[];
 }
 
 /**
@@ -369,7 +369,7 @@ export interface InsurancePlanCoverageBenefitLimit {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -379,7 +379,7 @@ export interface InsurancePlanCoverageBenefitLimit {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -398,18 +398,18 @@ export interface InsurancePlanCoverageBenefitLimit {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The maximum amount of a service item a plan will pay for a covered
    * benefit.  For examples. wellness visits, or eyeglasses.
    */
-  readonly value?: Quantity;
+  value?: Quantity;
 
   /**
    * The specific limit on the benefit.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 }
 
 /**
@@ -421,7 +421,7 @@ export interface InsurancePlanPlan {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -431,7 +431,7 @@ export interface InsurancePlanPlan {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -450,40 +450,40 @@ export interface InsurancePlanPlan {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Business identifiers assigned to this health insurance plan which
    * remain constant as the resource is updated and propagates from server
    * to server.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * Type of plan. For example, &quot;Platinum&quot; or &quot;High Deductable&quot;.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The geographic region in which a health insurance plan's benefits
    * apply.
    */
-  readonly coverageArea?: Reference<Location>[];
+  coverageArea?: Reference<Location>[];
 
   /**
    * Reference to the network that providing the type of coverage.
    */
-  readonly network?: Reference<Organization>[];
+  network?: Reference<Organization>[];
 
   /**
    * Overall costs associated with the plan.
    */
-  readonly generalCost?: InsurancePlanPlanGeneralCost[];
+  generalCost?: InsurancePlanPlanGeneralCost[];
 
   /**
    * Costs associated with the coverage provided by the product.
    */
-  readonly specificCost?: InsurancePlanPlanSpecificCost[];
+  specificCost?: InsurancePlanPlanSpecificCost[];
 }
 
 /**
@@ -495,7 +495,7 @@ export interface InsurancePlanPlanGeneralCost {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -505,7 +505,7 @@ export interface InsurancePlanPlanGeneralCost {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -524,28 +524,28 @@ export interface InsurancePlanPlanGeneralCost {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Type of cost.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Number of participants enrolled in the plan.
    */
-  readonly groupSize?: number;
+  groupSize?: number;
 
   /**
    * Value of the cost.
    */
-  readonly cost?: Money;
+  cost?: Money;
 
   /**
    * Additional information about the general costs associated with this
    * plan.
    */
-  readonly comment?: string;
+  comment?: string;
 }
 
 /**
@@ -557,7 +557,7 @@ export interface InsurancePlanPlanSpecificCost {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -567,7 +567,7 @@ export interface InsurancePlanPlanSpecificCost {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -586,18 +586,18 @@ export interface InsurancePlanPlanSpecificCost {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * General category of benefit (Medical; Dental; Vision; Drug; Mental
    * Health; Substance Abuse; Hospice, Home Health).
    */
-  readonly category?: CodeableConcept;
+  category?: CodeableConcept;
 
   /**
    * List of the specific benefits under this category of benefit.
    */
-  readonly benefit?: InsurancePlanPlanSpecificCostBenefit[];
+  benefit?: InsurancePlanPlanSpecificCostBenefit[];
 }
 
 /**
@@ -609,7 +609,7 @@ export interface InsurancePlanPlanSpecificCostBenefit {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -619,7 +619,7 @@ export interface InsurancePlanPlanSpecificCostBenefit {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -638,19 +638,19 @@ export interface InsurancePlanPlanSpecificCostBenefit {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Type of specific benefit (preventative; primary care office visit;
    * speciality office visit; hospitalization; emergency room; urgent
    * care).
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * List of the costs associated with a specific benefit.
    */
-  readonly cost?: InsurancePlanPlanSpecificCostBenefitCost[];
+  cost?: InsurancePlanPlanSpecificCostBenefitCost[];
 }
 
 /**
@@ -662,7 +662,7 @@ export interface InsurancePlanPlanSpecificCostBenefitCost {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -672,7 +672,7 @@ export interface InsurancePlanPlanSpecificCostBenefitCost {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -691,29 +691,29 @@ export interface InsurancePlanPlanSpecificCostBenefitCost {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Type of cost (copay; individual cap; family cap; coinsurance;
    * deductible).
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Whether the cost applies to in-network or out-of-network providers
    * (in-network; out-of-network; other).
    */
-  readonly applicability?: CodeableConcept;
+  applicability?: CodeableConcept;
 
   /**
    * Additional information about the cost, such as information about
    * funding sources (e.g. HSA, HRA, FSA, RRA).
    */
-  readonly qualifiers?: CodeableConcept[];
+  qualifiers?: CodeableConcept[];
 
   /**
    * The actual cost value. (some of the costs may be represented as
    * percentages rather than currency, e.g. 10% coinsurance).
    */
-  readonly value?: Quantity;
+  value?: Quantity;
 }

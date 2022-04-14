@@ -31,14 +31,14 @@ export interface MolecularSequence {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -46,12 +46,12 @@ export interface MolecularSequence {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -61,14 +61,14 @@ export interface MolecularSequence {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -78,7 +78,7 @@ export interface MolecularSequence {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -96,56 +96,56 @@ export interface MolecularSequence {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A unique identifier for this particular sequence instance. This is a
    * FHIR-defined id.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * Amino Acid Sequence/ DNA Sequence / RNA Sequence.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * Whether the sequence is numbered starting at 0 (0-based numbering or
    * coordinates, inclusive start, exclusive end) or starting at 1 (1-based
    * numbering, inclusive start and inclusive end).
    */
-  readonly coordinateSystem?: number;
+  coordinateSystem?: number;
 
   /**
    * The patient whose sequencing results are described by this resource.
    */
-  readonly patient?: Reference<Patient>;
+  patient?: Reference<Patient>;
 
   /**
    * Specimen used for sequencing.
    */
-  readonly specimen?: Reference<Specimen>;
+  specimen?: Reference<Specimen>;
 
   /**
    * The method for sequencing, for example, chip information.
    */
-  readonly device?: Reference<Device>;
+  device?: Reference<Device>;
 
   /**
    * The organization or lab that should be responsible for this result.
    */
-  readonly performer?: Reference<Organization>;
+  performer?: Reference<Organization>;
 
   /**
    * The number of copies of the sequence of interest. (RNASeq).
    */
-  readonly quantity?: Quantity;
+  quantity?: Quantity;
 
   /**
    * A sequence that is used as a reference to describe variants that are
    * present in a sequence analyzed.
    */
-  readonly referenceSeq?: MolecularSequenceReferenceSeq;
+  referenceSeq?: MolecularSequenceReferenceSeq;
 
   /**
    * The definition of variant here originates from Sequence ontology
@@ -154,43 +154,43 @@ export interface MolecularSequence {
    * change(including insertion,deletion,SNP,etc.)  It can represent some
    * complex mutation or segment variation with the assist of CIGAR string.
    */
-  readonly variant?: MolecularSequenceVariant[];
+  variant?: MolecularSequenceVariant[];
 
   /**
    * Sequence that was observed. It is the result marked by referenceSeq
    * along with variant records on referenceSeq. This shall start from
    * referenceSeq.windowStart and end by referenceSeq.windowEnd.
    */
-  readonly observedSeq?: string;
+  observedSeq?: string;
 
   /**
    * An experimental feature attribute that defines the quality of the
    * feature in a quantitative way, such as a phred quality score
    * ([SO:0001686](http://www.sequenceontology.org/browser/current_svn/term/SO:0001686)).
    */
-  readonly quality?: MolecularSequenceQuality[];
+  quality?: MolecularSequenceQuality[];
 
   /**
    * Coverage (read depth or depth) is the average number of reads
    * representing a given nucleotide in the reconstructed sequence.
    */
-  readonly readCoverage?: number;
+  readCoverage?: number;
 
   /**
    * Configurations of the external repository. The repository shall store
    * target's observedSeq or records related with target's observedSeq.
    */
-  readonly repository?: MolecularSequenceRepository[];
+  repository?: MolecularSequenceRepository[];
 
   /**
    * Pointer to next atomic sequence which at most contains one variant.
    */
-  readonly pointer?: Reference<MolecularSequence>[];
+  pointer?: Reference<MolecularSequence>[];
 
   /**
    * Information about chromosome structure variation.
    */
-  readonly structureVariant?: MolecularSequenceStructureVariant[];
+  structureVariant?: MolecularSequenceStructureVariant[];
 }
 
 /**
@@ -204,7 +204,7 @@ export interface MolecularSequenceQuality {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -214,7 +214,7 @@ export interface MolecularSequenceQuality {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -233,23 +233,23 @@ export interface MolecularSequenceQuality {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * INDEL / SNP / Undefined variant.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * Gold standard sequence used for comparing against.
    */
-  readonly standardSequence?: CodeableConcept;
+  standardSequence?: CodeableConcept;
 
   /**
    * Start position of the sequence. If the coordinate system is either
    * 0-based or 1-based, then start position is inclusive.
    */
-  readonly start?: number;
+  start?: number;
 
   /**
    * End position of the sequence. If the coordinate system is 0-based then
@@ -257,18 +257,18 @@ export interface MolecularSequenceQuality {
    * coordinate system is 1-base, then end is inclusive and includes the
    * last position.
    */
-  readonly end?: number;
+  end?: number;
 
   /**
    * The score of an experimentally derived feature such as a p-value
    * ([SO:0001685](http://www.sequenceontology.org/browser/current_svn/term/SO:0001685)).
    */
-  readonly score?: Quantity;
+  score?: Quantity;
 
   /**
    * Which method is used to get sequence quality.
    */
-  readonly method?: CodeableConcept;
+  method?: CodeableConcept;
 
   /**
    * True positives, from the perspective of the truth data, i.e. the
@@ -277,7 +277,7 @@ export interface MolecularSequenceQuality {
    * at this site, and for which there is an accurate genotype call for the
    * event.
    */
-  readonly truthTP?: number;
+  truthTP?: number;
 
   /**
    * True positives, from the perspective of the query data, i.e. the
@@ -286,7 +286,7 @@ export interface MolecularSequenceQuality {
    * at this site, and for which there is an accurate genotype call for the
    * event.
    */
-  readonly queryTP?: number;
+  queryTP?: number;
 
   /**
    * False negatives, i.e. the number of sites in the Truth Call Set for
@@ -295,7 +295,7 @@ export interface MolecularSequenceQuality {
    * inaccurate genotype call for the event. Sites with correct variant but
    * incorrect genotype are counted here.
    */
-  readonly truthFN?: number;
+  truthFN?: number;
 
   /**
    * False positives, i.e. the number of sites in the Query Call Set for
@@ -303,36 +303,36 @@ export interface MolecularSequenceQuality {
    * with this site. Sites with correct variant but incorrect genotype are
    * counted here.
    */
-  readonly queryFP?: number;
+  queryFP?: number;
 
   /**
    * The number of false positives where the non-REF alleles in the Truth
    * and Query Call Sets match (i.e. cases where the truth is 1/1 and the
    * query is 0/1 or similar).
    */
-  readonly gtFP?: number;
+  gtFP?: number;
 
   /**
    * QUERY.TP / (QUERY.TP + QUERY.FP).
    */
-  readonly precision?: number;
+  precision?: number;
 
   /**
    * TRUTH.TP / (TRUTH.TP + TRUTH.FN).
    */
-  readonly recall?: number;
+  recall?: number;
 
   /**
    * Harmonic mean of Recall and Precision, computed as: 2 * precision *
    * recall / (precision + recall).
    */
-  readonly fScore?: number;
+  fScore?: number;
 
   /**
    * Receiver Operator Characteristic (ROC) Curve  to give
    * sensitivity/specificity tradeoff.
    */
-  readonly roc?: MolecularSequenceQualityRoc;
+  roc?: MolecularSequenceQualityRoc;
 }
 
 /**
@@ -345,7 +345,7 @@ export interface MolecularSequenceQualityRoc {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -355,7 +355,7 @@ export interface MolecularSequenceQualityRoc {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -374,49 +374,49 @@ export interface MolecularSequenceQualityRoc {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Invidual data point representing the GQ (genotype quality) score
    * threshold.
    */
-  readonly score?: number[];
+  score?: number[];
 
   /**
    * The number of true positives if the GQ score threshold was set to
    * &quot;score&quot; field value.
    */
-  readonly numTP?: number[];
+  numTP?: number[];
 
   /**
    * The number of false positives if the GQ score threshold was set to
    * &quot;score&quot; field value.
    */
-  readonly numFP?: number[];
+  numFP?: number[];
 
   /**
    * The number of false negatives if the GQ score threshold was set to
    * &quot;score&quot; field value.
    */
-  readonly numFN?: number[];
+  numFN?: number[];
 
   /**
    * Calculated precision if the GQ score threshold was set to &quot;score&quot;
    * field value.
    */
-  readonly precision?: number[];
+  precision?: number[];
 
   /**
    * Calculated sensitivity if the GQ score threshold was set to &quot;score&quot;
    * field value.
    */
-  readonly sensitivity?: number[];
+  sensitivity?: number[];
 
   /**
    * Calculated fScore if the GQ score threshold was set to &quot;score&quot; field
    * value.
    */
-  readonly fMeasure?: number[];
+  fMeasure?: number[];
 }
 
 /**
@@ -429,7 +429,7 @@ export interface MolecularSequenceReferenceSeq {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -439,7 +439,7 @@ export interface MolecularSequenceReferenceSeq {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -458,7 +458,7 @@ export interface MolecularSequenceReferenceSeq {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Structural unit composed of a nucleic acid molecule which controls its
@@ -466,14 +466,14 @@ export interface MolecularSequenceReferenceSeq {
    * more origins of replication
    * ([SO:0000340](http://www.sequenceontology.org/browser/current_svn/term/SO:0000340)).
    */
-  readonly chromosome?: CodeableConcept;
+  chromosome?: CodeableConcept;
 
   /**
    * The Genome Build used for reference, following GRCh build versions
    * e.g. 'GRCh 37'.  Version number must be included if a versioned
    * release of a primary build was used.
    */
-  readonly genomeBuild?: string;
+  genomeBuild?: string;
 
   /**
    * A relative reference to a DNA strand based on gene orientation. The
@@ -481,7 +481,7 @@ export interface MolecularSequenceReferenceSeq {
    * strand, and the opposite complementary strand is the &quot;antisense&quot;
    * strand.
    */
-  readonly orientation?: string;
+  orientation?: string;
 
   /**
    * Reference identifier of reference sequence submitted to NCBI. It must
@@ -489,31 +489,31 @@ export interface MolecularSequenceReferenceSeq {
    * prefix, &ldquo;NG_&rdquo; identifies reference sequence for genes, &ldquo;NM_&rdquo; for
    * messenger RNA transcripts, and &ldquo;NP_&rdquo; for amino acid sequences.
    */
-  readonly referenceSeqId?: CodeableConcept;
+  referenceSeqId?: CodeableConcept;
 
   /**
    * A pointer to another MolecularSequence entity as reference sequence.
    */
-  readonly referenceSeqPointer?: Reference<MolecularSequence>;
+  referenceSeqPointer?: Reference<MolecularSequence>;
 
   /**
    * A string like &quot;ACGT&quot;.
    */
-  readonly referenceSeqString?: string;
+  referenceSeqString?: string;
 
   /**
    * An absolute reference to a strand. The Watson strand is the strand
    * whose 5'-end is on the short arm of the chromosome, and the Crick
    * strand as the one whose 5'-end is on the long arm.
    */
-  readonly strand?: string;
+  strand?: string;
 
   /**
    * Start position of the window on the reference sequence. If the
    * coordinate system is either 0-based or 1-based, then start position is
    * inclusive.
    */
-  readonly windowStart?: number;
+  windowStart?: number;
 
   /**
    * End position of the window on the reference sequence. If the
@@ -521,7 +521,7 @@ export interface MolecularSequenceReferenceSeq {
    * include the last position. If the coordinate system is 1-base, then
    * end is inclusive and includes the last position.
    */
-  readonly windowEnd?: number;
+  windowEnd?: number;
 }
 
 /**
@@ -534,7 +534,7 @@ export interface MolecularSequenceRepository {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -544,7 +544,7 @@ export interface MolecularSequenceRepository {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -563,44 +563,44 @@ export interface MolecularSequenceRepository {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Click and see / RESTful API / Need login to see / RESTful API with
    * authentication / Other ways to see resource.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * URI of an external repository which contains further details about the
    * genetics data.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * URI of an external repository which contains further details about the
    * genetics data.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Id of the variant in this external repository. The server will
    * understand how to use this id to call for more info about datasets in
    * external repository.
    */
-  readonly datasetId?: string;
+  datasetId?: string;
 
   /**
    * Id of the variantset in this external repository. The server will
    * understand how to use this id to call for more info about variantsets
    * in external repository.
    */
-  readonly variantsetId?: string;
+  variantsetId?: string;
 
   /**
    * Id of the read in this external repository.
    */
-  readonly readsetId?: string;
+  readsetId?: string;
 }
 
 /**
@@ -612,7 +612,7 @@ export interface MolecularSequenceStructureVariant {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -622,7 +622,7 @@ export interface MolecularSequenceStructureVariant {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -641,33 +641,33 @@ export interface MolecularSequenceStructureVariant {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Information about chromosome structure variation DNA change type.
    */
-  readonly variantType?: CodeableConcept;
+  variantType?: CodeableConcept;
 
   /**
    * Used to indicate if the outer and inner start-end values have the same
    * meaning.
    */
-  readonly exact?: boolean;
+  exact?: boolean;
 
   /**
    * Length of the variant chromosome.
    */
-  readonly length?: number;
+  length?: number;
 
   /**
    * Structural variant outer.
    */
-  readonly outer?: MolecularSequenceStructureVariantOuter;
+  outer?: MolecularSequenceStructureVariantOuter;
 
   /**
    * Structural variant inner.
    */
-  readonly inner?: MolecularSequenceStructureVariantInner;
+  inner?: MolecularSequenceStructureVariantInner;
 }
 
 /**
@@ -679,7 +679,7 @@ export interface MolecularSequenceStructureVariantInner {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -689,7 +689,7 @@ export interface MolecularSequenceStructureVariantInner {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -708,13 +708,13 @@ export interface MolecularSequenceStructureVariantInner {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Structural variant inner start. If the coordinate system is either
    * 0-based or 1-based, then start position is inclusive.
    */
-  readonly start?: number;
+  start?: number;
 
   /**
    * Structural variant inner end. If the coordinate system is 0-based then
@@ -722,7 +722,7 @@ export interface MolecularSequenceStructureVariantInner {
    * coordinate system is 1-base, then end is inclusive and includes the
    * last position.
    */
-  readonly end?: number;
+  end?: number;
 }
 
 /**
@@ -734,7 +734,7 @@ export interface MolecularSequenceStructureVariantOuter {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -744,7 +744,7 @@ export interface MolecularSequenceStructureVariantOuter {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -763,13 +763,13 @@ export interface MolecularSequenceStructureVariantOuter {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Structural variant outer start. If the coordinate system is either
    * 0-based or 1-based, then start position is inclusive.
    */
-  readonly start?: number;
+  start?: number;
 
   /**
    * Structural variant outer end. If the coordinate system is 0-based then
@@ -777,7 +777,7 @@ export interface MolecularSequenceStructureVariantOuter {
    * coordinate system is 1-base, then end is inclusive and includes the
    * last position.
    */
-  readonly end?: number;
+  end?: number;
 }
 
 /**
@@ -793,7 +793,7 @@ export interface MolecularSequenceVariant {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -803,7 +803,7 @@ export interface MolecularSequenceVariant {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -822,14 +822,14 @@ export interface MolecularSequenceVariant {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Start position of the variant on the  reference sequence. If the
    * coordinate system is either 0-based or 1-based, then start position is
    * inclusive.
    */
-  readonly start?: number;
+  start?: number;
 
   /**
    * End position of the variant on the reference sequence. If the
@@ -837,7 +837,7 @@ export interface MolecularSequenceVariant {
    * include the last position. If the coordinate system is 1-base, then
    * end is inclusive and includes the last position.
    */
-  readonly end?: number;
+  end?: number;
 
   /**
    * An allele is one of a set of coexisting sequence variants of a gene
@@ -848,7 +848,7 @@ export interface MolecularSequenceVariant {
    * the positive (+) strand. This will lay in the range between
    * variant.start and variant.end.
    */
-  readonly observedAllele?: string;
+  observedAllele?: string;
 
   /**
    * An allele is one of a set of coexisting sequence variants of a gene
@@ -859,17 +859,17 @@ export interface MolecularSequenceVariant {
    * the positive (+) strand. This will lay in the range between
    * variant.start and variant.end.
    */
-  readonly referenceAllele?: string;
+  referenceAllele?: string;
 
   /**
    * Extended CIGAR string for aligning the sequence with reference bases.
    * See detailed documentation
    * [here](http://support.illumina.com/help/SequencingAnalysisWorkflow/Content/Vault/Informatics/Sequencing_Analysis/CASAVA/swSEQ_mCA_ExtendedCIGARFormat.htm).
    */
-  readonly cigar?: string;
+  cigar?: string;
 
   /**
    * A pointer to an Observation containing variant information.
    */
-  readonly variantPointer?: Reference<Observation>;
+  variantPointer?: Reference<Observation>;
 }

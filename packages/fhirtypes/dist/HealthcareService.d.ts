@@ -31,14 +31,14 @@ export interface HealthcareService {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -46,12 +46,12 @@ export interface HealthcareService {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -61,14 +61,14 @@ export interface HealthcareService {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -78,7 +78,7 @@ export interface HealthcareService {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -96,104 +96,104 @@ export interface HealthcareService {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * External identifiers for this item.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * This flag is used to mark the record to not be used. This is not used
    * when a center is closed for maintenance, or for holidays, the
    * notAvailable period is to be used for this.
    */
-  readonly active?: boolean;
+  active?: boolean;
 
   /**
    * The organization that provides this healthcare service.
    */
-  readonly providedBy?: Reference<Organization>;
+  providedBy?: Reference<Organization>;
 
   /**
    * Identifies the broad category of service being performed or delivered.
    */
-  readonly category?: CodeableConcept[];
+  category?: CodeableConcept[];
 
   /**
    * The specific type of service that may be delivered or performed.
    */
-  readonly type?: CodeableConcept[];
+  type?: CodeableConcept[];
 
   /**
    * Collection of specialties handled by the service site. This is more of
    * a medical term.
    */
-  readonly specialty?: CodeableConcept[];
+  specialty?: CodeableConcept[];
 
   /**
    * The location(s) where this healthcare service may be provided.
    */
-  readonly location?: Reference<Location>[];
+  location?: Reference<Location>[];
 
   /**
    * Further description of the service as it would be presented to a
    * consumer while searching.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Any additional description of the service and/or any specific issues
    * not covered by the other attributes, which can be displayed as further
    * detail under the serviceName.
    */
-  readonly comment?: string;
+  comment?: string;
 
   /**
    * Extra details about the service that can't be placed in the other
    * fields.
    */
-  readonly extraDetails?: string;
+  extraDetails?: string;
 
   /**
    * If there is a photo/symbol associated with this HealthcareService, it
    * may be included here to facilitate quick identification of the service
    * in a list.
    */
-  readonly photo?: Attachment;
+  photo?: Attachment;
 
   /**
    * List of contacts related to this specific healthcare service.
    */
-  readonly telecom?: ContactPoint[];
+  telecom?: ContactPoint[];
 
   /**
    * The location(s) that this service is available to (not where the
    * service is provided).
    */
-  readonly coverageArea?: Reference<Location>[];
+  coverageArea?: Reference<Location>[];
 
   /**
    * The code(s) that detail the conditions under which the healthcare
    * service is available/offered.
    */
-  readonly serviceProvisionCode?: CodeableConcept[];
+  serviceProvisionCode?: CodeableConcept[];
 
   /**
    * Does this service have specific eligibility requirements that need to
    * be met in order to use the service?
    */
-  readonly eligibility?: HealthcareServiceEligibility[];
+  eligibility?: HealthcareServiceEligibility[];
 
   /**
    * Programs that this service is applicable to.
    */
-  readonly program?: CodeableConcept[];
+  program?: CodeableConcept[];
 
   /**
    * Collection of characteristics (attributes).
    */
-  readonly characteristic?: CodeableConcept[];
+  characteristic?: CodeableConcept[];
 
   /**
    * Some services are specifically made available in multiple languages,
@@ -201,13 +201,13 @@ export interface HealthcareService {
    * offered in. Typically this is only provided where a service operates
    * in communities with mixed languages used.
    */
-  readonly communication?: CodeableConcept[];
+  communication?: CodeableConcept[];
 
   /**
    * Ways that the service accepts referrals, if this is not provided then
    * it is implied that no referral is required.
    */
-  readonly referralMethod?: CodeableConcept[];
+  referralMethod?: CodeableConcept[];
 
   /**
    * Indicates whether or not a prospective consumer will require an
@@ -215,18 +215,18 @@ export interface HealthcareService {
    * Organization. Indicates if an appointment is required for access to
    * this service.
    */
-  readonly appointmentRequired?: boolean;
+  appointmentRequired?: boolean;
 
   /**
    * A collection of times that the Service Site is available.
    */
-  readonly availableTime?: HealthcareServiceAvailableTime[];
+  availableTime?: HealthcareServiceAvailableTime[];
 
   /**
    * The HealthcareService is not available during this period of time due
    * to the provided reason.
    */
-  readonly notAvailable?: HealthcareServiceNotAvailable[];
+  notAvailable?: HealthcareServiceNotAvailable[];
 
   /**
    * A description of site availability exceptions, e.g. public holiday
@@ -234,13 +234,13 @@ export interface HealthcareService {
    * site availability as details in the available Times and not available
    * Times.
    */
-  readonly availabilityExceptions?: string;
+  availabilityExceptions?: string;
 
   /**
    * Technical endpoints providing access to services operated for the
    * specific healthcare services defined at this resource.
    */
-  readonly endpoint?: Reference<Endpoint>[];
+  endpoint?: Reference<Endpoint>[];
 }
 
 /**
@@ -252,7 +252,7 @@ export interface HealthcareServiceAvailableTime {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -262,7 +262,7 @@ export interface HealthcareServiceAvailableTime {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -281,31 +281,31 @@ export interface HealthcareServiceAvailableTime {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Indicates which days of the week are available between the start and
    * end Times.
    */
-  readonly daysOfWeek?: string[];
+  daysOfWeek?: string[];
 
   /**
    * Is this always available? (hence times are irrelevant) e.g. 24 hour
    * service.
    */
-  readonly allDay?: boolean;
+  allDay?: boolean;
 
   /**
    * The opening time of day. Note: If the AllDay flag is set, then this
    * time is ignored.
    */
-  readonly availableStartTime?: string;
+  availableStartTime?: string;
 
   /**
    * The closing time of day. Note: If the AllDay flag is set, then this
    * time is ignored.
    */
-  readonly availableEndTime?: string;
+  availableEndTime?: string;
 }
 
 /**
@@ -318,7 +318,7 @@ export interface HealthcareServiceEligibility {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -328,7 +328,7 @@ export interface HealthcareServiceEligibility {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -347,17 +347,17 @@ export interface HealthcareServiceEligibility {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Coded value for the eligibility.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * Describes the eligibility conditions for the service.
    */
-  readonly comment?: string;
+  comment?: string;
 }
 
 /**
@@ -370,7 +370,7 @@ export interface HealthcareServiceNotAvailable {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -380,7 +380,7 @@ export interface HealthcareServiceNotAvailable {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -399,17 +399,17 @@ export interface HealthcareServiceNotAvailable {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The reason that can be presented to the user as to why this time is
    * not available.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Service is not available (seasonally or for a public holiday) from
    * this date.
    */
-  readonly during?: Period;
+  during?: Period;
 }

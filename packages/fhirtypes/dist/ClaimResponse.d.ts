@@ -39,14 +39,14 @@ export interface ClaimResponse {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -54,12 +54,12 @@ export interface ClaimResponse {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -69,14 +69,14 @@ export interface ClaimResponse {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -86,7 +86,7 @@ export interface ClaimResponse {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -104,31 +104,31 @@ export interface ClaimResponse {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A unique identifier assigned to this claim response.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The status of the resource instance.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A finer grained suite of claim type codes which may convey additional
    * information such as Inpatient vs Outpatient and/or a specialty
    * service.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * A finer grained suite of claim type codes which may convey additional
    * information such as Inpatient vs Outpatient and/or a specialty
    * service.
    */
-  readonly subType?: CodeableConcept;
+  subType?: CodeableConcept;
 
   /**
    * A code to indicate whether the nature of the request is: to request
@@ -137,130 +137,130 @@ export interface ClaimResponse {
    * or requesting the non-binding adjudication of the listed products and
    * services which could be provided in the future.
    */
-  readonly use?: string;
+  use?: string;
 
   /**
    * The party to whom the professional services and/or products have been
    * supplied or are being considered and for whom actual for facast
    * reimbursement is sought.
    */
-  readonly patient?: Reference<Patient>;
+  patient?: Reference<Patient>;
 
   /**
    * The date this resource was created.
    */
-  readonly created?: string;
+  created?: string;
 
   /**
    * The party responsible for authorization, adjudication and
    * reimbursement.
    */
-  readonly insurer?: Reference<Organization>;
+  insurer?: Reference<Organization>;
 
   /**
    * The provider which is responsible for the claim, predetermination or
    * preauthorization.
    */
-  readonly requestor?: Reference<Practitioner | PractitionerRole | Organization>;
+  requestor?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * Original request resource reference.
    */
-  readonly request?: Reference<Claim>;
+  request?: Reference<Claim>;
 
   /**
    * The outcome of the claim, predetermination, or preauthorization
    * processing.
    */
-  readonly outcome?: string;
+  outcome?: string;
 
   /**
    * A human readable description of the status of the adjudication.
    */
-  readonly disposition?: string;
+  disposition?: string;
 
   /**
    * Reference from the Insurer which is used in later communications which
    * refers to this adjudication.
    */
-  readonly preAuthRef?: string;
+  preAuthRef?: string;
 
   /**
    * The time frame during which this authorization is effective.
    */
-  readonly preAuthPeriod?: Period;
+  preAuthPeriod?: Period;
 
   /**
    * Type of Party to be reimbursed: subscriber, provider, other.
    */
-  readonly payeeType?: CodeableConcept;
+  payeeType?: CodeableConcept;
 
   /**
    * A claim line. Either a simple (a product or service) or a 'group' of
    * details which can also be a simple items or groups of sub-details.
    */
-  readonly item?: ClaimResponseItem[];
+  item?: ClaimResponseItem[];
 
   /**
    * The first-tier service adjudications for payor added product or
    * service lines.
    */
-  readonly addItem?: ClaimResponseAddItem[];
+  addItem?: ClaimResponseAddItem[];
 
   /**
    * The adjudication results which are presented at the header level
    * rather than at the line-item or add-item levels.
    */
-  readonly adjudication?: ClaimResponseItemAdjudication[];
+  adjudication?: ClaimResponseItemAdjudication[];
 
   /**
    * Categorized monetary totals for the adjudication.
    */
-  readonly total?: ClaimResponseTotal[];
+  total?: ClaimResponseTotal[];
 
   /**
    * Payment details for the adjudication of the claim.
    */
-  readonly payment?: ClaimResponsePayment;
+  payment?: ClaimResponsePayment;
 
   /**
    * A code, used only on a response to a preauthorization, to indicate
    * whether the benefits payable have been reserved and for whom.
    */
-  readonly fundsReserve?: CodeableConcept;
+  fundsReserve?: CodeableConcept;
 
   /**
    * A code for the form to be used for printing the content.
    */
-  readonly formCode?: CodeableConcept;
+  formCode?: CodeableConcept;
 
   /**
    * The actual form, by reference or inclusion, for printing the content
    * or an EOB.
    */
-  readonly form?: Attachment;
+  form?: Attachment;
 
   /**
    * A note that describes or explains adjudication results in a human
    * readable form.
    */
-  readonly processNote?: ClaimResponseProcessNote[];
+  processNote?: ClaimResponseProcessNote[];
 
   /**
    * Request for additional supporting or authorizing information.
    */
-  readonly communicationRequest?: Reference<CommunicationRequest>[];
+  communicationRequest?: Reference<CommunicationRequest>[];
 
   /**
    * Financial instruments for reimbursement for the health care products
    * and services specified on the claim.
    */
-  readonly insurance?: ClaimResponseInsurance[];
+  insurance?: ClaimResponseInsurance[];
 
   /**
    * Errors encountered during the processing of the adjudication.
    */
-  readonly error?: ClaimResponseError[];
+  error?: ClaimResponseError[];
 }
 
 /**
@@ -273,7 +273,7 @@ export interface ClaimResponseAddItem {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -283,7 +283,7 @@ export interface ClaimResponseAddItem {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -302,87 +302,87 @@ export interface ClaimResponseAddItem {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Claim items which this service line is intended to replace.
    */
-  readonly itemSequence?: number[];
+  itemSequence?: number[];
 
   /**
    * The sequence number of the details within the claim item which this
    * line is intended to replace.
    */
-  readonly detailSequence?: number[];
+  detailSequence?: number[];
 
   /**
    * The sequence number of the sub-details within the details within the
    * claim item which this line is intended to replace.
    */
-  readonly subdetailSequence?: number[];
+  subdetailSequence?: number[];
 
   /**
    * The providers who are authorized for the services rendered to the
    * patient.
    */
-  readonly provider?: Reference<Practitioner | PractitionerRole | Organization>[];
+  provider?: Reference<Practitioner | PractitionerRole | Organization>[];
 
   /**
    * When the value is a group code then this item collects a set of
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  readonly productOrService?: CodeableConcept;
+  productOrService?: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
    * the product or service.
    */
-  readonly modifier?: CodeableConcept[];
+  modifier?: CodeableConcept[];
 
   /**
    * Identifies the program under which this may be recovered.
    */
-  readonly programCode?: CodeableConcept[];
+  programCode?: CodeableConcept[];
 
   /**
    * The date or dates when the service or product was supplied, performed
    * or completed.
    */
-  readonly servicedDate?: string;
+  servicedDate?: string;
 
   /**
    * The date or dates when the service or product was supplied, performed
    * or completed.
    */
-  readonly servicedPeriod?: Period;
+  servicedPeriod?: Period;
 
   /**
    * Where the product or service was provided.
    */
-  readonly locationCodeableConcept?: CodeableConcept;
+  locationCodeableConcept?: CodeableConcept;
 
   /**
    * Where the product or service was provided.
    */
-  readonly locationAddress?: Address;
+  locationAddress?: Address;
 
   /**
    * Where the product or service was provided.
    */
-  readonly locationReference?: Reference<Location>;
+  locationReference?: Reference<Location>;
 
   /**
    * The number of repetitions of a service or product.
    */
-  readonly quantity?: Quantity;
+  quantity?: Quantity;
 
   /**
    * If the item is not a group then this is the fee for the product or
    * service, otherwise this is the total of the fees for the details of
    * the group.
    */
-  readonly unitPrice?: Money;
+  unitPrice?: Money;
 
   /**
    * A real number that represents a multiplier used in determining the
@@ -390,40 +390,40 @@ export interface ClaimResponseAddItem {
    * of a Factor allows for a discount or surcharge multiplier to be
    * applied to a monetary amount.
    */
-  readonly factor?: number;
+  factor?: number;
 
   /**
    * The quantity times the unit price for an additional service or product
    * or charge.
    */
-  readonly net?: Money;
+  net?: Money;
 
   /**
    * Physical service site on the patient (limb, tooth, etc.).
    */
-  readonly bodySite?: CodeableConcept;
+  bodySite?: CodeableConcept;
 
   /**
    * A region or surface of the bodySite, e.g. limb region or tooth
    * surface(s).
    */
-  readonly subSite?: CodeableConcept[];
+  subSite?: CodeableConcept[];
 
   /**
    * The numbers associated with notes below which apply to the
    * adjudication of this item.
    */
-  readonly noteNumber?: number[];
+  noteNumber?: number[];
 
   /**
    * The adjudication results.
    */
-  readonly adjudication?: ClaimResponseItemAdjudication[];
+  adjudication?: ClaimResponseItemAdjudication[];
 
   /**
    * The second-tier service adjudications for payor added services.
    */
-  readonly detail?: ClaimResponseAddItemDetail[];
+  detail?: ClaimResponseAddItemDetail[];
 }
 
 /**
@@ -435,7 +435,7 @@ export interface ClaimResponseAddItemDetail {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -445,7 +445,7 @@ export interface ClaimResponseAddItemDetail {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -464,32 +464,32 @@ export interface ClaimResponseAddItemDetail {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * When the value is a group code then this item collects a set of
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  readonly productOrService?: CodeableConcept;
+  productOrService?: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
    * the product or service.
    */
-  readonly modifier?: CodeableConcept[];
+  modifier?: CodeableConcept[];
 
   /**
    * The number of repetitions of a service or product.
    */
-  readonly quantity?: Quantity;
+  quantity?: Quantity;
 
   /**
    * If the item is not a group then this is the fee for the product or
    * service, otherwise this is the total of the fees for the details of
    * the group.
    */
-  readonly unitPrice?: Money;
+  unitPrice?: Money;
 
   /**
    * A real number that represents a multiplier used in determining the
@@ -497,29 +497,29 @@ export interface ClaimResponseAddItemDetail {
    * of a Factor allows for a discount or surcharge multiplier to be
    * applied to a monetary amount.
    */
-  readonly factor?: number;
+  factor?: number;
 
   /**
    * The quantity times the unit price for an additional service or product
    * or charge.
    */
-  readonly net?: Money;
+  net?: Money;
 
   /**
    * The numbers associated with notes below which apply to the
    * adjudication of this item.
    */
-  readonly noteNumber?: number[];
+  noteNumber?: number[];
 
   /**
    * The adjudication results.
    */
-  readonly adjudication?: ClaimResponseItemAdjudication[];
+  adjudication?: ClaimResponseItemAdjudication[];
 
   /**
    * The third-tier service adjudications for payor added services.
    */
-  readonly subDetail?: ClaimResponseAddItemDetailSubDetail[];
+  subDetail?: ClaimResponseAddItemDetailSubDetail[];
 }
 
 /**
@@ -531,7 +531,7 @@ export interface ClaimResponseAddItemDetailSubDetail {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -541,7 +541,7 @@ export interface ClaimResponseAddItemDetailSubDetail {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -560,32 +560,32 @@ export interface ClaimResponseAddItemDetailSubDetail {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * When the value is a group code then this item collects a set of
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  readonly productOrService?: CodeableConcept;
+  productOrService?: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
    * the product or service.
    */
-  readonly modifier?: CodeableConcept[];
+  modifier?: CodeableConcept[];
 
   /**
    * The number of repetitions of a service or product.
    */
-  readonly quantity?: Quantity;
+  quantity?: Quantity;
 
   /**
    * If the item is not a group then this is the fee for the product or
    * service, otherwise this is the total of the fees for the details of
    * the group.
    */
-  readonly unitPrice?: Money;
+  unitPrice?: Money;
 
   /**
    * A real number that represents a multiplier used in determining the
@@ -593,24 +593,24 @@ export interface ClaimResponseAddItemDetailSubDetail {
    * of a Factor allows for a discount or surcharge multiplier to be
    * applied to a monetary amount.
    */
-  readonly factor?: number;
+  factor?: number;
 
   /**
    * The quantity times the unit price for an additional service or product
    * or charge.
    */
-  readonly net?: Money;
+  net?: Money;
 
   /**
    * The numbers associated with notes below which apply to the
    * adjudication of this item.
    */
-  readonly noteNumber?: number[];
+  noteNumber?: number[];
 
   /**
    * The adjudication results.
    */
-  readonly adjudication?: ClaimResponseItemAdjudication[];
+  adjudication?: ClaimResponseItemAdjudication[];
 }
 
 /**
@@ -622,7 +622,7 @@ export interface ClaimResponseError {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -632,7 +632,7 @@ export interface ClaimResponseError {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -651,34 +651,34 @@ export interface ClaimResponseError {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The sequence number of the line item submitted which contains the
    * error. This value is omitted when the error occurs outside of the item
    * structure.
    */
-  readonly itemSequence?: number;
+  itemSequence?: number;
 
   /**
    * The sequence number of the detail within the line item submitted which
    * contains the error. This value is omitted when the error occurs
    * outside of the item structure.
    */
-  readonly detailSequence?: number;
+  detailSequence?: number;
 
   /**
    * The sequence number of the sub-detail within the detail within the
    * line item submitted which contains the error. This value is omitted
    * when the error occurs outside of the item structure.
    */
-  readonly subDetailSequence?: number;
+  subDetailSequence?: number;
 
   /**
    * An error code, from a specified code system, which details why the
    * claim could not be adjudicated.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 }
 
 /**
@@ -691,7 +691,7 @@ export interface ClaimResponseInsurance {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -701,7 +701,7 @@ export interface ClaimResponseInsurance {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -720,19 +720,19 @@ export interface ClaimResponseInsurance {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A number to uniquely identify insurance entries and provide a sequence
    * of coverages to convey coordination of benefit order.
    */
-  readonly sequence?: number;
+  sequence?: number;
 
   /**
    * A flag to indicate that this Coverage is to be used for adjudication
    * of this claim when set to true.
    */
-  readonly focal?: boolean;
+  focal?: boolean;
 
   /**
    * Reference to the insurance card level information contained in the
@@ -740,19 +740,19 @@ export interface ClaimResponseInsurance {
    * to locate the patient's actual coverage within the insurer's
    * information system.
    */
-  readonly coverage?: Reference<Coverage>;
+  coverage?: Reference<Coverage>;
 
   /**
    * A business agreement number established between the provider and the
    * insurer for special business processing purposes.
    */
-  readonly businessArrangement?: string;
+  businessArrangement?: string;
 
   /**
    * The result of the adjudication of the line items for the Coverage
    * specified in this insurance.
    */
-  readonly claimResponse?: Reference<ClaimResponse>;
+  claimResponse?: Reference<ClaimResponse>;
 }
 
 /**
@@ -765,7 +765,7 @@ export interface ClaimResponseItem {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -775,7 +775,7 @@ export interface ClaimResponseItem {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -794,31 +794,31 @@ export interface ClaimResponseItem {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A number to uniquely reference the claim item entries.
    */
-  readonly itemSequence?: number;
+  itemSequence?: number;
 
   /**
    * The numbers associated with notes below which apply to the
    * adjudication of this item.
    */
-  readonly noteNumber?: number[];
+  noteNumber?: number[];
 
   /**
    * If this item is a group then the values here are a summary of the
    * adjudication of the detail items. If this item is a simple product or
    * service then this is the result of the adjudication of this item.
    */
-  readonly adjudication?: ClaimResponseItemAdjudication[];
+  adjudication?: ClaimResponseItemAdjudication[];
 
   /**
    * A claim detail. Either a simple (a product or service) or a 'group' of
    * sub-details which are simple items.
    */
-  readonly detail?: ClaimResponseItemDetail[];
+  detail?: ClaimResponseItemDetail[];
 }
 
 /**
@@ -832,7 +832,7 @@ export interface ClaimResponseItemAdjudication {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -842,7 +842,7 @@ export interface ClaimResponseItemAdjudication {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -861,7 +861,7 @@ export interface ClaimResponseItemAdjudication {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A code to indicate the information type of this adjudication record.
@@ -871,24 +871,24 @@ export interface ClaimResponseItemAdjudication {
    * amounts paid by other coverages; and, the benefit payable for this
    * item.
    */
-  readonly category?: CodeableConcept;
+  category?: CodeableConcept;
 
   /**
    * A code supporting the understanding of the adjudication result and
    * explaining variance from expected amount.
    */
-  readonly reason?: CodeableConcept;
+  reason?: CodeableConcept;
 
   /**
    * Monetary amount associated with the category.
    */
-  readonly amount?: Money;
+  amount?: Money;
 
   /**
    * A non-monetary value associated with the category. Mutually exclusive
    * to the amount element above.
    */
-  readonly value?: number;
+  value?: number;
 }
 
 /**
@@ -901,7 +901,7 @@ export interface ClaimResponseItemDetail {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -911,7 +911,7 @@ export interface ClaimResponseItemDetail {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -930,28 +930,28 @@ export interface ClaimResponseItemDetail {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A number to uniquely reference the claim detail entry.
    */
-  readonly detailSequence?: number;
+  detailSequence?: number;
 
   /**
    * The numbers associated with notes below which apply to the
    * adjudication of this item.
    */
-  readonly noteNumber?: number[];
+  noteNumber?: number[];
 
   /**
    * The adjudication results.
    */
-  readonly adjudication?: ClaimResponseItemAdjudication[];
+  adjudication?: ClaimResponseItemAdjudication[];
 
   /**
    * A sub-detail adjudication of a simple product or service.
    */
-  readonly subDetail?: ClaimResponseItemDetailSubDetail[];
+  subDetail?: ClaimResponseItemDetailSubDetail[];
 }
 
 /**
@@ -963,7 +963,7 @@ export interface ClaimResponseItemDetailSubDetail {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -973,7 +973,7 @@ export interface ClaimResponseItemDetailSubDetail {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -992,23 +992,23 @@ export interface ClaimResponseItemDetailSubDetail {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A number to uniquely reference the claim sub-detail entry.
    */
-  readonly subDetailSequence?: number;
+  subDetailSequence?: number;
 
   /**
    * The numbers associated with notes below which apply to the
    * adjudication of this item.
    */
-  readonly noteNumber?: number[];
+  noteNumber?: number[];
 
   /**
    * The adjudication results.
    */
-  readonly adjudication?: ClaimResponseItemAdjudication[];
+  adjudication?: ClaimResponseItemAdjudication[];
 }
 
 /**
@@ -1020,7 +1020,7 @@ export interface ClaimResponsePayment {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1030,7 +1030,7 @@ export interface ClaimResponsePayment {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1049,40 +1049,40 @@ export interface ClaimResponsePayment {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Whether this represents partial or complete payment of the benefits
    * payable.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Total amount of all adjustments to this payment included in this
    * transaction which are not related to this claim's adjudication.
    */
-  readonly adjustment?: Money;
+  adjustment?: Money;
 
   /**
    * Reason for the payment adjustment.
    */
-  readonly adjustmentReason?: CodeableConcept;
+  adjustmentReason?: CodeableConcept;
 
   /**
    * Estimated date the payment will be issued or the actual issue date of
    * payment.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * Benefits payable less any payment adjustment.
    */
-  readonly amount?: Money;
+  amount?: Money;
 
   /**
    * Issuer's unique identifier for the payment instrument.
    */
-  readonly identifier?: Identifier;
+  identifier?: Identifier;
 }
 
 /**
@@ -1095,7 +1095,7 @@ export interface ClaimResponseProcessNote {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1105,7 +1105,7 @@ export interface ClaimResponseProcessNote {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1124,27 +1124,27 @@ export interface ClaimResponseProcessNote {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A number to uniquely identify a note entry.
    */
-  readonly number?: number;
+  number?: number;
 
   /**
    * The business purpose of the note text.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * The explanation or description associated with the processing.
    */
-  readonly text?: string;
+  text?: string;
 
   /**
    * A code to define the language used in the text of the note.
    */
-  readonly language?: CodeableConcept;
+  language?: CodeableConcept;
 }
 
 /**
@@ -1156,7 +1156,7 @@ export interface ClaimResponseTotal {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1166,7 +1166,7 @@ export interface ClaimResponseTotal {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1185,7 +1185,7 @@ export interface ClaimResponseTotal {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A code to indicate the information type of this adjudication record.
@@ -1195,10 +1195,10 @@ export interface ClaimResponseTotal {
    * amounts paid by other coverages, and the benefit payable for this
    * item.
    */
-  readonly category?: CodeableConcept;
+  category?: CodeableConcept;
 
   /**
    * Monetary total amount associated with the category.
    */
-  readonly amount?: Money;
+  amount?: Money;
 }

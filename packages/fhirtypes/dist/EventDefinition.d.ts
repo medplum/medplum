@@ -32,14 +32,14 @@ export interface EventDefinition {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -47,12 +47,12 @@ export interface EventDefinition {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -62,14 +62,14 @@ export interface EventDefinition {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -79,7 +79,7 @@ export interface EventDefinition {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -97,7 +97,7 @@ export interface EventDefinition {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI that is used to identify this event definition when it
@@ -108,14 +108,14 @@ export interface EventDefinition {
    * can be the target of a canonical reference. It SHALL remain the same
    * when the event definition is stored on different servers.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * A formal identifier that is used to identify this event definition
    * when it is represented in other formats, or referenced in a
    * specification, model, design or an instance.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The identifier that is used to identify this version of the event
@@ -126,50 +126,50 @@ export interface EventDefinition {
    * available. There is also no expectation that versions can be placed in
    * a lexicographical sequence.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * A natural language name identifying the event definition. This name
    * should be usable as an identifier for the module by machine processing
    * applications such as code generation.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A short, descriptive, user-friendly title for the event definition.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * An explanatory or alternate title for the event definition giving
    * additional information about its content.
    */
-  readonly subtitle?: string;
+  subtitle?: string;
 
   /**
    * The status of this event definition. Enables tracking the life-cycle
    * of the content.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A Boolean value to indicate that this event definition is authored for
    * testing purposes (or education/evaluation/marketing) and is not
    * intended to be used for genuine usage.
    */
-  readonly experimental?: boolean;
+  experimental?: boolean;
 
   /**
    * A code or group definition that describes the intended subject of the
    * event definition.
    */
-  readonly subjectCodeableConcept?: CodeableConcept;
+  subjectCodeableConcept?: CodeableConcept;
 
   /**
    * A code or group definition that describes the intended subject of the
    * event definition.
    */
-  readonly subjectReference?: Reference<Group>;
+  subjectReference?: Reference<Group>;
 
   /**
    * The date  (and optionally time) when the event definition was
@@ -177,25 +177,25 @@ export interface EventDefinition {
    * it must change if the status code changes. In addition, it should
    * change when the substantive content of the event definition changes.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The name of the organization or individual that published the event
    * definition.
    */
-  readonly publisher?: string;
+  publisher?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * publisher.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * A free text natural language description of the event definition from
    * a consumer's perspective.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -204,94 +204,94 @@ export interface EventDefinition {
    * (insurance plans, studies, ...) and may be used to assist with
    * indexing and searching for appropriate event definition instances.
    */
-  readonly useContext?: UsageContext[];
+  useContext?: UsageContext[];
 
   /**
    * A legal or geographic region in which the event definition is intended
    * to be used.
    */
-  readonly jurisdiction?: CodeableConcept[];
+  jurisdiction?: CodeableConcept[];
 
   /**
    * Explanation of why this event definition is needed and why it has been
    * designed as it has.
    */
-  readonly purpose?: string;
+  purpose?: string;
 
   /**
    * A detailed description of how the event definition is used from a
    * clinical perspective.
    */
-  readonly usage?: string;
+  usage?: string;
 
   /**
    * A copyright statement relating to the event definition and/or its
    * contents. Copyright statements are generally legal restrictions on the
    * use and publishing of the event definition.
    */
-  readonly copyright?: string;
+  copyright?: string;
 
   /**
    * The date on which the resource content was approved by the publisher.
    * Approval happens once when the content is officially approved for
    * usage.
    */
-  readonly approvalDate?: string;
+  approvalDate?: string;
 
   /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
-  readonly lastReviewDate?: string;
+  lastReviewDate?: string;
 
   /**
    * The period during which the event definition content was or is planned
    * to be in active use.
    */
-  readonly effectivePeriod?: Period;
+  effectivePeriod?: Period;
 
   /**
    * Descriptive topics related to the module. Topics provide a high-level
    * categorization of the module that can be useful for filtering and
    * searching.
    */
-  readonly topic?: CodeableConcept[];
+  topic?: CodeableConcept[];
 
   /**
    * An individiual or organization primarily involved in the creation and
    * maintenance of the content.
    */
-  readonly author?: ContactDetail[];
+  author?: ContactDetail[];
 
   /**
    * An individual or organization primarily responsible for internal
    * coherence of the content.
    */
-  readonly editor?: ContactDetail[];
+  editor?: ContactDetail[];
 
   /**
    * An individual or organization primarily responsible for review of some
    * aspect of the content.
    */
-  readonly reviewer?: ContactDetail[];
+  reviewer?: ContactDetail[];
 
   /**
    * An individual or organization responsible for officially endorsing the
    * content for use in some setting.
    */
-  readonly endorser?: ContactDetail[];
+  endorser?: ContactDetail[];
 
   /**
    * Related resources such as additional documentation, justification, or
    * bibliographic references.
    */
-  readonly relatedArtifact?: RelatedArtifact[];
+  relatedArtifact?: RelatedArtifact[];
 
   /**
    * The trigger element defines when the event occurs. If more than one
    * trigger condition is specified, the event fires whenever any one of
    * the trigger conditions is met.
    */
-  readonly trigger?: TriggerDefinition[];
+  trigger?: TriggerDefinition[];
 }

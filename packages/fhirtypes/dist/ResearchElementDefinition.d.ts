@@ -35,14 +35,14 @@ export interface ResearchElementDefinition {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -50,12 +50,12 @@ export interface ResearchElementDefinition {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -65,14 +65,14 @@ export interface ResearchElementDefinition {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -82,7 +82,7 @@ export interface ResearchElementDefinition {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -100,7 +100,7 @@ export interface ResearchElementDefinition {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI that is used to identify this research element
@@ -112,14 +112,14 @@ export interface ResearchElementDefinition {
    * SHALL remain the same when the research element definition is stored
    * on different servers.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * A formal identifier that is used to identify this research element
    * definition when it is represented in other formats, or referenced in a
    * specification, model, design or an instance.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The identifier that is used to identify this version of the research
@@ -135,59 +135,59 @@ export interface ResearchElementDefinition {
    * specification. Note that a version is required for non-experimental
    * active artifacts.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * A natural language name identifying the research element definition.
    * This name should be usable as an identifier for the module by machine
    * processing applications such as code generation.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A short, descriptive, user-friendly title for the research element
    * definition.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * The short title provides an alternate title for use in informal
    * descriptive contexts where the full, formal title is not necessary.
    */
-  readonly shortTitle?: string;
+  shortTitle?: string;
 
   /**
    * An explanatory or alternate title for the ResearchElementDefinition
    * giving additional information about its content.
    */
-  readonly subtitle?: string;
+  subtitle?: string;
 
   /**
    * The status of this research element definition. Enables tracking the
    * life-cycle of the content.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A Boolean value to indicate that this research element definition is
    * authored for testing purposes (or education/evaluation/marketing) and
    * is not intended to be used for genuine usage.
    */
-  readonly experimental?: boolean;
+  experimental?: boolean;
 
   /**
    * The intended subjects for the ResearchElementDefinition. If this
    * element is not provided, a Patient subject is assumed, but the subject
    * of the ResearchElementDefinition can be anything.
    */
-  readonly subjectCodeableConcept?: CodeableConcept;
+  subjectCodeableConcept?: CodeableConcept;
 
   /**
    * The intended subjects for the ResearchElementDefinition. If this
    * element is not provided, a Patient subject is assumed, but the subject
    * of the ResearchElementDefinition can be anything.
    */
-  readonly subjectReference?: Reference<Group>;
+  subjectReference?: Reference<Group>;
 
   /**
    * The date  (and optionally time) when the research element definition
@@ -196,31 +196,31 @@ export interface ResearchElementDefinition {
    * change when the substantive content of the research element definition
    * changes.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The name of the organization or individual that published the research
    * element definition.
    */
-  readonly publisher?: string;
+  publisher?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * publisher.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * A free text natural language description of the research element
    * definition from a consumer's perspective.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * A human-readable string to clarify or explain concepts about the
    * resource.
    */
-  readonly comment?: string[];
+  comment?: string[];
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -230,25 +230,25 @@ export interface ResearchElementDefinition {
    * indexing and searching for appropriate research element definition
    * instances.
    */
-  readonly useContext?: UsageContext[];
+  useContext?: UsageContext[];
 
   /**
    * A legal or geographic region in which the research element definition
    * is intended to be used.
    */
-  readonly jurisdiction?: CodeableConcept[];
+  jurisdiction?: CodeableConcept[];
 
   /**
    * Explanation of why this research element definition is needed and why
    * it has been designed as it has.
    */
-  readonly purpose?: string;
+  purpose?: string;
 
   /**
    * A detailed description, from a clinical perspective, of how the
    * ResearchElementDefinition is used.
    */
-  readonly usage?: string;
+  usage?: string;
 
   /**
    * A copyright statement relating to the research element definition
@@ -256,27 +256,27 @@ export interface ResearchElementDefinition {
    * restrictions on the use and publishing of the research element
    * definition.
    */
-  readonly copyright?: string;
+  copyright?: string;
 
   /**
    * The date on which the resource content was approved by the publisher.
    * Approval happens once when the content is officially approved for
    * usage.
    */
-  readonly approvalDate?: string;
+  approvalDate?: string;
 
   /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
-  readonly lastReviewDate?: string;
+  lastReviewDate?: string;
 
   /**
    * The period during which the research element definition content was or
    * is planned to be in active use.
    */
-  readonly effectivePeriod?: Period;
+  effectivePeriod?: Period;
 
   /**
    * Descriptive topics related to the content of the
@@ -284,61 +284,61 @@ export interface ResearchElementDefinition {
    * grouping types of ResearchElementDefinitions that can be useful for
    * filtering and searching.
    */
-  readonly topic?: CodeableConcept[];
+  topic?: CodeableConcept[];
 
   /**
    * An individiual or organization primarily involved in the creation and
    * maintenance of the content.
    */
-  readonly author?: ContactDetail[];
+  author?: ContactDetail[];
 
   /**
    * An individual or organization primarily responsible for internal
    * coherence of the content.
    */
-  readonly editor?: ContactDetail[];
+  editor?: ContactDetail[];
 
   /**
    * An individual or organization primarily responsible for review of some
    * aspect of the content.
    */
-  readonly reviewer?: ContactDetail[];
+  reviewer?: ContactDetail[];
 
   /**
    * An individual or organization responsible for officially endorsing the
    * content for use in some setting.
    */
-  readonly endorser?: ContactDetail[];
+  endorser?: ContactDetail[];
 
   /**
    * Related artifacts such as additional documentation, justification, or
    * bibliographic references.
    */
-  readonly relatedArtifact?: RelatedArtifact[];
+  relatedArtifact?: RelatedArtifact[];
 
   /**
    * A reference to a Library resource containing the formal logic used by
    * the ResearchElementDefinition.
    */
-  readonly library?: string[];
+  library?: string[];
 
   /**
    * The type of research element, a population, an exposure, or an
    * outcome.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * The type of the outcome (e.g. Dichotomous, Continuous, or
    * Descriptive).
    */
-  readonly variableType?: string;
+  variableType?: string;
 
   /**
    * A characteristic that defines the members of the research element.
    * Multiple characteristics are applied with &quot;and&quot; semantics.
    */
-  readonly characteristic?: ResearchElementDefinitionCharacteristic[];
+  characteristic?: ResearchElementDefinitionCharacteristic[];
 }
 
 /**
@@ -351,7 +351,7 @@ export interface ResearchElementDefinitionCharacteristic {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -361,7 +361,7 @@ export interface ResearchElementDefinitionCharacteristic {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -380,7 +380,7 @@ export interface ResearchElementDefinitionCharacteristic {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Define members of the research element using Codes (such as condition,
@@ -388,7 +388,7 @@ export interface ResearchElementDefinitionCharacteristic {
    * language such as FHIRPath or CQL) or DataRequirements (such as
    * Diabetes diagnosis onset in the last year).
    */
-  readonly definitionCodeableConcept?: CodeableConcept;
+  definitionCodeableConcept?: CodeableConcept;
 
   /**
    * Define members of the research element using Codes (such as condition,
@@ -396,7 +396,7 @@ export interface ResearchElementDefinitionCharacteristic {
    * language such as FHIRPath or CQL) or DataRequirements (such as
    * Diabetes diagnosis onset in the last year).
    */
-  readonly definitionCanonical?: string;
+  definitionCanonical?: string;
 
   /**
    * Define members of the research element using Codes (such as condition,
@@ -404,7 +404,7 @@ export interface ResearchElementDefinitionCharacteristic {
    * language such as FHIRPath or CQL) or DataRequirements (such as
    * Diabetes diagnosis onset in the last year).
    */
-  readonly definitionExpression?: Expression;
+  definitionExpression?: Expression;
 
   /**
    * Define members of the research element using Codes (such as condition,
@@ -412,94 +412,94 @@ export interface ResearchElementDefinitionCharacteristic {
    * language such as FHIRPath or CQL) or DataRequirements (such as
    * Diabetes diagnosis onset in the last year).
    */
-  readonly definitionDataRequirement?: DataRequirement;
+  definitionDataRequirement?: DataRequirement;
 
   /**
    * Use UsageContext to define the members of the population, such as Age
    * Ranges, Genders, Settings.
    */
-  readonly usageContext?: UsageContext[];
+  usageContext?: UsageContext[];
 
   /**
    * When true, members with this characteristic are excluded from the
    * element.
    */
-  readonly exclude?: boolean;
+  exclude?: boolean;
 
   /**
    * Specifies the UCUM unit for the outcome.
    */
-  readonly unitOfMeasure?: CodeableConcept;
+  unitOfMeasure?: CodeableConcept;
 
   /**
    * A narrative description of the time period the study covers.
    */
-  readonly studyEffectiveDescription?: string;
+  studyEffectiveDescription?: string;
 
   /**
    * Indicates what effective period the study covers.
    */
-  readonly studyEffectiveDateTime?: string;
+  studyEffectiveDateTime?: string;
 
   /**
    * Indicates what effective period the study covers.
    */
-  readonly studyEffectivePeriod?: Period;
+  studyEffectivePeriod?: Period;
 
   /**
    * Indicates what effective period the study covers.
    */
-  readonly studyEffectiveDuration?: Duration;
+  studyEffectiveDuration?: Duration;
 
   /**
    * Indicates what effective period the study covers.
    */
-  readonly studyEffectiveTiming?: Timing;
+  studyEffectiveTiming?: Timing;
 
   /**
    * Indicates duration from the study initiation.
    */
-  readonly studyEffectiveTimeFromStart?: Duration;
+  studyEffectiveTimeFromStart?: Duration;
 
   /**
    * Indicates how elements are aggregated within the study effective
    * period.
    */
-  readonly studyEffectiveGroupMeasure?: string;
+  studyEffectiveGroupMeasure?: string;
 
   /**
    * A narrative description of the time period the study covers.
    */
-  readonly participantEffectiveDescription?: string;
+  participantEffectiveDescription?: string;
 
   /**
    * Indicates what effective period the study covers.
    */
-  readonly participantEffectiveDateTime?: string;
+  participantEffectiveDateTime?: string;
 
   /**
    * Indicates what effective period the study covers.
    */
-  readonly participantEffectivePeriod?: Period;
+  participantEffectivePeriod?: Period;
 
   /**
    * Indicates what effective period the study covers.
    */
-  readonly participantEffectiveDuration?: Duration;
+  participantEffectiveDuration?: Duration;
 
   /**
    * Indicates what effective period the study covers.
    */
-  readonly participantEffectiveTiming?: Timing;
+  participantEffectiveTiming?: Timing;
 
   /**
    * Indicates duration from the participant's study entry.
    */
-  readonly participantEffectiveTimeFromStart?: Duration;
+  participantEffectiveTimeFromStart?: Duration;
 
   /**
    * Indicates how elements are aggregated within the study effective
    * period.
    */
-  readonly participantEffectiveGroupMeasure?: string;
+  participantEffectiveGroupMeasure?: string;
 }

@@ -28,14 +28,14 @@ export interface ObservationDefinition {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -43,12 +43,12 @@ export interface ObservationDefinition {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -58,14 +58,14 @@ export interface ObservationDefinition {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -75,7 +75,7 @@ export interface ObservationDefinition {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -93,82 +93,82 @@ export interface ObservationDefinition {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A code that classifies the general type of observation.
    */
-  readonly category?: CodeableConcept[];
+  category?: CodeableConcept[];
 
   /**
    * Describes what will be observed. Sometimes this is called the
    * observation &quot;name&quot;.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * A unique identifier assigned to this ObservationDefinition artifact.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The data types allowed for the value element of the instance
    * observations conforming to this ObservationDefinition.
    */
-  readonly permittedDataType?: string[];
+  permittedDataType?: string[];
 
   /**
    * Multiple results allowed for observations conforming to this
    * ObservationDefinition.
    */
-  readonly multipleResultsAllowed?: boolean;
+  multipleResultsAllowed?: boolean;
 
   /**
    * The method or technique used to perform the observation.
    */
-  readonly method?: CodeableConcept;
+  method?: CodeableConcept;
 
   /**
    * The preferred name to be used when reporting the results of
    * observations conforming to this ObservationDefinition.
    */
-  readonly preferredReportName?: string;
+  preferredReportName?: string;
 
   /**
    * Characteristics for quantitative results of this observation.
    */
-  readonly quantitativeDetails?: ObservationDefinitionQuantitativeDetails;
+  quantitativeDetails?: ObservationDefinitionQuantitativeDetails;
 
   /**
    * Multiple  ranges of results qualified by different contexts for
    * ordinal or continuous observations conforming to this
    * ObservationDefinition.
    */
-  readonly qualifiedInterval?: ObservationDefinitionQualifiedInterval[];
+  qualifiedInterval?: ObservationDefinitionQualifiedInterval[];
 
   /**
    * The set of valid coded results for the observations  conforming to
    * this ObservationDefinition.
    */
-  readonly validCodedValueSet?: Reference<ValueSet>;
+  validCodedValueSet?: Reference<ValueSet>;
 
   /**
    * The set of normal coded results for the observations conforming to
    * this ObservationDefinition.
    */
-  readonly normalCodedValueSet?: Reference<ValueSet>;
+  normalCodedValueSet?: Reference<ValueSet>;
 
   /**
    * The set of abnormal coded results for the observation conforming to
    * this ObservationDefinition.
    */
-  readonly abnormalCodedValueSet?: Reference<ValueSet>;
+  abnormalCodedValueSet?: Reference<ValueSet>;
 
   /**
    * The set of critical coded results for the observation conforming to
    * this ObservationDefinition.
    */
-  readonly criticalCodedValueSet?: Reference<ValueSet>;
+  criticalCodedValueSet?: Reference<ValueSet>;
 }
 
 /**
@@ -182,7 +182,7 @@ export interface ObservationDefinitionQualifiedInterval {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -192,7 +192,7 @@ export interface ObservationDefinitionQualifiedInterval {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -211,53 +211,53 @@ export interface ObservationDefinitionQualifiedInterval {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The category of interval of values for continuous or ordinal
    * observations conforming to this ObservationDefinition.
    */
-  readonly category?: string;
+  category?: string;
 
   /**
    * The low and high values determining the interval. There may be only
    * one of the two.
    */
-  readonly range?: Range;
+  range?: Range;
 
   /**
    * Codes to indicate the health context the range applies to. For
    * example, the normal or therapeutic range.
    */
-  readonly context?: CodeableConcept;
+  context?: CodeableConcept;
 
   /**
    * Codes to indicate the target population this reference range applies
    * to.
    */
-  readonly appliesTo?: CodeableConcept[];
+  appliesTo?: CodeableConcept[];
 
   /**
    * Sex of the population the range applies to.
    */
-  readonly gender?: string;
+  gender?: string;
 
   /**
    * The age at which this reference range is applicable. This is a
    * neonatal age (e.g. number of weeks at term) if the meaning says so.
    */
-  readonly age?: Range;
+  age?: Range;
 
   /**
    * The gestational age to which this reference range is applicable, in
    * the context of pregnancy.
    */
-  readonly gestationalAge?: Range;
+  gestationalAge?: Range;
 
   /**
    * Text based condition for which the reference range is valid.
    */
-  readonly condition?: string;
+  condition?: string;
 }
 
 /**
@@ -269,7 +269,7 @@ export interface ObservationDefinitionQuantitativeDetails {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -279,7 +279,7 @@ export interface ObservationDefinitionQuantitativeDetails {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -298,29 +298,29 @@ export interface ObservationDefinitionQuantitativeDetails {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Customary unit used to report quantitative results of observations
    * conforming to this ObservationDefinition.
    */
-  readonly customaryUnit?: CodeableConcept;
+  customaryUnit?: CodeableConcept;
 
   /**
    * SI unit used to report quantitative results of observations conforming
    * to this ObservationDefinition.
    */
-  readonly unit?: CodeableConcept;
+  unit?: CodeableConcept;
 
   /**
    * Factor for converting value expressed with SI unit to value expressed
    * with customary unit.
    */
-  readonly conversionFactor?: number;
+  conversionFactor?: number;
 
   /**
    * Number of digits after decimal separator when the results of such
    * observations are of type Quantity.
    */
-  readonly decimalPrecision?: number;
+  decimalPrecision?: number;
 }

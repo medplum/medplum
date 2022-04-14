@@ -39,14 +39,14 @@ export interface Group {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -54,12 +54,12 @@ export interface Group {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -69,14 +69,14 @@ export interface Group {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -86,7 +86,7 @@ export interface Group {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -104,66 +104,66 @@ export interface Group {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A unique business identifier for this group.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * Indicates whether the record for the group is available for use or is
    * merely being retained for historical purposes.
    */
-  readonly active?: boolean;
+  active?: boolean;
 
   /**
    * Identifies the broad classification of the kind of resources the group
    * includes.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * If true, indicates that the resource refers to a specific group of
    * real individuals.  If false, the group defines a set of intended
    * individuals.
    */
-  readonly actual?: boolean;
+  actual?: boolean;
 
   /**
    * Provides a specific type of resource the group includes; e.g. &quot;cow&quot;,
    * &quot;syringe&quot;, etc.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * A label assigned to the group for human identification and
    * communication.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A count of the number of resource instances that are part of the
    * group.
    */
-  readonly quantity?: number;
+  quantity?: number;
 
   /**
    * Entity responsible for defining and maintaining Group characteristics
    * and/or registered members.
    */
-  readonly managingEntity?: Reference<Organization | RelatedPerson | Practitioner | PractitionerRole>;
+  managingEntity?: Reference<Organization | RelatedPerson | Practitioner | PractitionerRole>;
 
   /**
    * Identifies traits whose presence r absence is shared by members of the
    * group.
    */
-  readonly characteristic?: GroupCharacteristic[];
+  characteristic?: GroupCharacteristic[];
 
   /**
    * Identifies the resource instances that are members of the group.
    */
-  readonly member?: GroupMember[];
+  member?: GroupMember[];
 }
 
 /**
@@ -176,7 +176,7 @@ export interface GroupCharacteristic {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -186,7 +186,7 @@ export interface GroupCharacteristic {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -205,54 +205,54 @@ export interface GroupCharacteristic {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A code that identifies the kind of trait being asserted.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * The value of the trait that holds (or does not hold - see 'exclude')
    * for members of the group.
    */
-  readonly valueCodeableConcept?: CodeableConcept;
+  valueCodeableConcept?: CodeableConcept;
 
   /**
    * The value of the trait that holds (or does not hold - see 'exclude')
    * for members of the group.
    */
-  readonly valueBoolean?: boolean;
+  valueBoolean?: boolean;
 
   /**
    * The value of the trait that holds (or does not hold - see 'exclude')
    * for members of the group.
    */
-  readonly valueQuantity?: Quantity;
+  valueQuantity?: Quantity;
 
   /**
    * The value of the trait that holds (or does not hold - see 'exclude')
    * for members of the group.
    */
-  readonly valueRange?: Range;
+  valueRange?: Range;
 
   /**
    * The value of the trait that holds (or does not hold - see 'exclude')
    * for members of the group.
    */
-  readonly valueReference?: Reference;
+  valueReference?: Reference;
 
   /**
    * If true, indicates the characteristic is one that is NOT held by
    * members of the group.
    */
-  readonly exclude?: boolean;
+  exclude?: boolean;
 
   /**
    * The period over which the characteristic is tested; e.g. the patient
    * had an operation during the month of June.
    */
-  readonly period?: Period;
+  period?: Period;
 }
 
 /**
@@ -264,7 +264,7 @@ export interface GroupMember {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -274,7 +274,7 @@ export interface GroupMember {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -293,23 +293,23 @@ export interface GroupMember {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A reference to the entity that is a member of the group. Must be
    * consistent with Group.type. If the entity is another group, then the
    * type must be the same.
    */
-  readonly entity?: Reference<Patient | Practitioner | PractitionerRole | Device | Medication | Substance | Group>;
+  entity?: Reference<Patient | Practitioner | PractitionerRole | Device | Medication | Substance | Group>;
 
   /**
    * The period that the member was in the group, if known.
    */
-  readonly period?: Period;
+  period?: Period;
 
   /**
    * A flag to indicate that the member is no longer in the group, but
    * previously may have been a member.
    */
-  readonly inactive?: boolean;
+  inactive?: boolean;
 }

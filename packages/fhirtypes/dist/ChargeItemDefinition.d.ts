@@ -36,14 +36,14 @@ export interface ChargeItemDefinition {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -51,12 +51,12 @@ export interface ChargeItemDefinition {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -66,14 +66,14 @@ export interface ChargeItemDefinition {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -83,7 +83,7 @@ export interface ChargeItemDefinition {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -101,7 +101,7 @@ export interface ChargeItemDefinition {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI that is used to identify this charge item definition
@@ -113,14 +113,14 @@ export interface ChargeItemDefinition {
    * SHALL remain the same when the charge item definition is stored on
    * different servers.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * A formal identifier that is used to identify this charge item
    * definition when it is represented in other formats, or referenced in a
    * specification, model, design or an instance.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The identifier that is used to identify this version of the charge
@@ -135,43 +135,43 @@ export interface ChargeItemDefinition {
    * knowledge assets, refer to the Decision Support Service specification.
    * Note that a version is required for non-experimental active assets.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * A short, descriptive, user-friendly title for the charge item
    * definition.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * The URL pointing to an externally-defined charge item definition that
    * is adhered to in whole or in part by this definition.
    */
-  readonly derivedFromUri?: string[];
+  derivedFromUri?: string[];
 
   /**
    * A larger definition of which this particular definition is a component
    * or step.
    */
-  readonly partOf?: string[];
+  partOf?: string[];
 
   /**
    * As new versions of a protocol or guideline are defined, allows
    * identification of what versions are replaced by a new instance.
    */
-  readonly replaces?: string[];
+  replaces?: string[];
 
   /**
    * The current state of the ChargeItemDefinition.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A Boolean value to indicate that this charge item definition is
    * authored for testing purposes (or education/evaluation/marketing) and
    * is not intended to be used for genuine usage.
    */
-  readonly experimental?: boolean;
+  experimental?: boolean;
 
   /**
    * The date  (and optionally time) when the charge item definition was
@@ -180,25 +180,25 @@ export interface ChargeItemDefinition {
    * change when the substantive content of the charge item definition
    * changes.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The name of the organization or individual that published the charge
    * item definition.
    */
-  readonly publisher?: string;
+  publisher?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * publisher.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * A free text natural language description of the charge item definition
    * from a consumer's perspective.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -208,64 +208,64 @@ export interface ChargeItemDefinition {
    * indexing and searching for appropriate charge item definition
    * instances.
    */
-  readonly useContext?: UsageContext[];
+  useContext?: UsageContext[];
 
   /**
    * A legal or geographic region in which the charge item definition is
    * intended to be used.
    */
-  readonly jurisdiction?: CodeableConcept[];
+  jurisdiction?: CodeableConcept[];
 
   /**
    * A copyright statement relating to the charge item definition and/or
    * its contents. Copyright statements are generally legal restrictions on
    * the use and publishing of the charge item definition.
    */
-  readonly copyright?: string;
+  copyright?: string;
 
   /**
    * The date on which the resource content was approved by the publisher.
    * Approval happens once when the content is officially approved for
    * usage.
    */
-  readonly approvalDate?: string;
+  approvalDate?: string;
 
   /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
-  readonly lastReviewDate?: string;
+  lastReviewDate?: string;
 
   /**
    * The period during which the charge item definition content was or is
    * planned to be in active use.
    */
-  readonly effectivePeriod?: Period;
+  effectivePeriod?: Period;
 
   /**
    * The defined billing details in this resource pertain to the given
    * billing code.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * The defined billing details in this resource pertain to the given
    * product instance(s).
    */
-  readonly instance?: Reference<Medication | Substance | Device>[];
+  instance?: Reference<Medication | Substance | Device>[];
 
   /**
    * Expressions that describe applicability criteria for the billing code.
    */
-  readonly applicability?: ChargeItemDefinitionApplicability[];
+  applicability?: ChargeItemDefinitionApplicability[];
 
   /**
    * Group of properties which are applicable under the same conditions. If
    * no applicability rules are established for the group, then all
    * properties always apply.
    */
-  readonly propertyGroup?: ChargeItemDefinitionPropertyGroup[];
+  propertyGroup?: ChargeItemDefinitionPropertyGroup[];
 }
 
 /**
@@ -277,7 +277,7 @@ export interface ChargeItemDefinitionApplicability {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -287,7 +287,7 @@ export interface ChargeItemDefinitionApplicability {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -306,20 +306,20 @@ export interface ChargeItemDefinitionApplicability {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A brief, natural language description of the condition that
    * effectively communicates the intended semantics.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The media type of the language for the expression, e.g. &quot;text/cql&quot; for
    * Clinical Query Language expressions or &quot;text/fhirpath&quot; for FHIRPath
    * expressions.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * An expression that returns true or false, indicating whether the
@@ -327,7 +327,7 @@ export interface ChargeItemDefinitionApplicability {
    * environment variable must be replaced at runtime with the ChargeItem
    * resource to which this definition is applied.
    */
-  readonly expression?: string;
+  expression?: string;
 }
 
 /**
@@ -341,7 +341,7 @@ export interface ChargeItemDefinitionPropertyGroup {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -351,7 +351,7 @@ export interface ChargeItemDefinitionPropertyGroup {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -370,13 +370,13 @@ export interface ChargeItemDefinitionPropertyGroup {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Expressions that describe applicability criteria for the
    * priceComponent.
    */
-  readonly applicability?: ChargeItemDefinitionApplicability[];
+  applicability?: ChargeItemDefinitionApplicability[];
 
   /**
    * The price for a ChargeItem may be calculated as a base price with
@@ -387,7 +387,7 @@ export interface ChargeItemDefinitionPropertyGroup {
    * transparency to the recipient of the Invoice of how the prices have
    * been calculated.
    */
-  readonly priceComponent?: ChargeItemDefinitionPropertyGroupPriceComponent[];
+  priceComponent?: ChargeItemDefinitionPropertyGroupPriceComponent[];
 }
 
 /**
@@ -405,7 +405,7 @@ export interface ChargeItemDefinitionPropertyGroupPriceComponent {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -415,7 +415,7 @@ export interface ChargeItemDefinitionPropertyGroupPriceComponent {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -434,27 +434,27 @@ export interface ChargeItemDefinitionPropertyGroupPriceComponent {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * This code identifies the type of the component.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * A code that identifies the component. Codes may be used to
    * differentiate between kinds of taxes, surcharges, discounts etc.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * The factor that has been applied on the base price for calculating
    * this component.
    */
-  readonly factor?: number;
+  factor?: number;
 
   /**
    * The amount calculated for this component.
    */
-  readonly amount?: Money;
+  amount?: Money;
 }

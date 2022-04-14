@@ -17,7 +17,7 @@ export interface SampledData {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -27,45 +27,45 @@ export interface SampledData {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * The base quantity that a measured value of zero represents. In
    * addition, this provides the units of the entire measurement series.
    */
-  readonly origin?: Quantity;
+  origin?: Quantity;
 
   /**
    * The length of time between sampling times, measured in milliseconds.
    */
-  readonly period?: number;
+  period?: number;
 
   /**
    * A correction factor that is applied to the sampled data points before
    * they are added to the origin.
    */
-  readonly factor?: number;
+  factor?: number;
 
   /**
    * The lower limit of detection of the measured points. This is needed if
    * any of the data points have the value &quot;L&quot; (lower than detection
    * limit).
    */
-  readonly lowerLimit?: number;
+  lowerLimit?: number;
 
   /**
    * The upper limit of detection of the measured points. This is needed if
    * any of the data points have the value &quot;U&quot; (higher than detection
    * limit).
    */
-  readonly upperLimit?: number;
+  upperLimit?: number;
 
   /**
    * The number of sample points at each time point. If this value is
    * greater than one, then the dimensions will be interlaced - all the
    * sample points for a point in time will be recorded at once.
    */
-  readonly dimensions?: number;
+  dimensions?: number;
 
   /**
    * A series of data points which are decimal values separated by a single
@@ -73,5 +73,5 @@ export interface SampledData {
    * detection limit) and &quot;U&quot; (above detection limit) can also be used in
    * place of a decimal value.
    */
-  readonly data?: string;
+  data?: string;
 }

@@ -37,14 +37,14 @@ export interface Invoice {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -52,12 +52,12 @@ export interface Invoice {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -67,14 +67,14 @@ export interface Invoice {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -84,7 +84,7 @@ export interface Invoice {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -102,70 +102,70 @@ export interface Invoice {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifier of this Invoice, often used for reference in correspondence
    * about this invoice or for tracking of payments.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The current state of the Invoice.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * In case of Invoice cancellation a reason must be given (entered in
    * error, superseded by corrected invoice etc.).
    */
-  readonly cancelledReason?: string;
+  cancelledReason?: string;
 
   /**
    * Type of Invoice depending on domain, realm an usage (e.g.
    * internal/external, dental, preliminary).
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The individual or set of individuals receiving the goods and services
    * billed in this invoice.
    */
-  readonly subject?: Reference<Patient | Group>;
+  subject?: Reference<Patient | Group>;
 
   /**
    * The individual or Organization responsible for balancing of this
    * invoice.
    */
-  readonly recipient?: Reference<Organization | Patient | RelatedPerson>;
+  recipient?: Reference<Organization | Patient | RelatedPerson>;
 
   /**
    * Date/time(s) of when this Invoice was posted.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * Indicates who or what performed or participated in the charged
    * service.
    */
-  readonly participant?: InvoiceParticipant[];
+  participant?: InvoiceParticipant[];
 
   /**
    * The organizationissuing the Invoice.
    */
-  readonly issuer?: Reference<Organization>;
+  issuer?: Reference<Organization>;
 
   /**
    * Account which is supposed to be balanced with this Invoice.
    */
-  readonly account?: Reference<Account>;
+  account?: Reference<Account>;
 
   /**
    * Each line item represents one charge for goods and services rendered.
    * Details such as date, code and amount are found in the referenced
    * ChargeItem resource.
    */
-  readonly lineItem?: InvoiceLineItem[];
+  lineItem?: InvoiceLineItem[];
 
   /**
    * The total amount for the Invoice may be calculated as the sum of the
@@ -174,29 +174,29 @@ export interface Invoice {
    * transparency to the recipient of the Invoice of how the total price
    * was calculated.
    */
-  readonly totalPriceComponent?: InvoiceLineItemPriceComponent[];
+  totalPriceComponent?: InvoiceLineItemPriceComponent[];
 
   /**
    * Invoice total , taxes excluded.
    */
-  readonly totalNet?: Money;
+  totalNet?: Money;
 
   /**
    * Invoice total, tax included.
    */
-  readonly totalGross?: Money;
+  totalGross?: Money;
 
   /**
    * Payment details such as banking details, period of payment,
    * deductibles, methods of payment.
    */
-  readonly paymentTerms?: string;
+  paymentTerms?: string;
 
   /**
    * Comments made about the invoice by the issuer, subject, or other
    * participants.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 }
 
 /**
@@ -210,7 +210,7 @@ export interface InvoiceLineItem {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -220,7 +220,7 @@ export interface InvoiceLineItem {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -239,12 +239,12 @@ export interface InvoiceLineItem {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Sequence in which the items appear on the invoice.
    */
-  readonly sequence?: number;
+  sequence?: number;
 
   /**
    * The ChargeItem contains information such as the billing code, date,
@@ -252,7 +252,7 @@ export interface InvoiceLineItem {
    * inline billing codes can be added using the CodeableConcept data type
    * instead of the Reference.
    */
-  readonly chargeItemReference?: Reference<ChargeItem>;
+  chargeItemReference?: Reference<ChargeItem>;
 
   /**
    * The ChargeItem contains information such as the billing code, date,
@@ -260,7 +260,7 @@ export interface InvoiceLineItem {
    * inline billing codes can be added using the CodeableConcept data type
    * instead of the Reference.
    */
-  readonly chargeItemCodeableConcept?: CodeableConcept;
+  chargeItemCodeableConcept?: CodeableConcept;
 
   /**
    * The price for a ChargeItem may be calculated as a base price with
@@ -271,7 +271,7 @@ export interface InvoiceLineItem {
    * transparency to the recipient of the Invoice as to how the prices have
    * been calculated.
    */
-  readonly priceComponent?: InvoiceLineItemPriceComponent[];
+  priceComponent?: InvoiceLineItemPriceComponent[];
 }
 
 /**
@@ -289,7 +289,7 @@ export interface InvoiceLineItemPriceComponent {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -299,7 +299,7 @@ export interface InvoiceLineItemPriceComponent {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -318,29 +318,29 @@ export interface InvoiceLineItemPriceComponent {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * This code identifies the type of the component.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * A code that identifies the component. Codes may be used to
    * differentiate between kinds of taxes, surcharges, discounts etc.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * The factor that has been applied on the base price for calculating
    * this component.
    */
-  readonly factor?: number;
+  factor?: number;
 
   /**
    * The amount calculated for this component.
    */
-  readonly amount?: Money;
+  amount?: Money;
 }
 
 /**
@@ -353,7 +353,7 @@ export interface InvoiceParticipant {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -363,7 +363,7 @@ export interface InvoiceParticipant {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -382,18 +382,18 @@ export interface InvoiceParticipant {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Describes the type of involvement (e.g. transcriptionist, creator
    * etc.). If the invoice has been created automatically, the Participant
    * may be a billing engine or another kind of device.
    */
-  readonly role?: CodeableConcept;
+  role?: CodeableConcept;
 
   /**
    * The device, practitioner, etc. who performed or participated in the
    * service.
    */
-  readonly actor?: Reference<Practitioner | Organization | Patient | PractitionerRole | Device | RelatedPerson>;
+  actor?: Reference<Practitioner | Organization | Patient | PractitionerRole | Device | RelatedPerson>;
 }

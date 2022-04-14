@@ -22,7 +22,7 @@ export interface DataRequirement {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -32,32 +32,32 @@ export interface DataRequirement {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * The type of the required data, specified as the type name of a
    * resource. For profiles, this value is set to the type of the base
    * resource of the profile.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * The profile of the required data, specified as the uri of the profile
    * definition.
    */
-  readonly profile?: string[];
+  profile?: string[];
 
   /**
    * The intended subjects of the data requirement. If this element is not
    * provided, a Patient subject is assumed.
    */
-  readonly subjectCodeableConcept?: CodeableConcept;
+  subjectCodeableConcept?: CodeableConcept;
 
   /**
    * The intended subjects of the data requirement. If this element is not
    * provided, a Patient subject is assumed.
    */
-  readonly subjectReference?: Reference<Group>;
+  subjectReference?: Reference<Group>;
 
   /**
    * Indicates that specific elements of the type are referenced by the
@@ -72,7 +72,7 @@ export interface DataRequirement {
    * constant indexers, and .resolve() (see the [Simple FHIRPath
    * Profile](fhirpath.html#simple) for full details).
    */
-  readonly mustSupport?: string[];
+  mustSupport?: string[];
 
   /**
    * Code filters specify additional constraints on the data, specifying
@@ -80,7 +80,7 @@ export interface DataRequirement {
    * code filter defines an additional constraint on the data, i.e. code
    * filters are AND'ed, not OR'ed.
    */
-  readonly codeFilter?: DataRequirementCodeFilter[];
+  codeFilter?: DataRequirementCodeFilter[];
 
   /**
    * Date filters specify additional constraints on the data in terms of
@@ -88,18 +88,18 @@ export interface DataRequirement {
    * specifies an additional constraint on the data, i.e. date filters are
    * AND'ed, not OR'ed.
    */
-  readonly dateFilter?: DataRequirementDateFilter[];
+  dateFilter?: DataRequirementDateFilter[];
 
   /**
    * Specifies a maximum number of results that are required (uses the
    * _count search parameter).
    */
-  readonly limit?: number;
+  limit?: number;
 
   /**
    * Specifies the order of the results to be returned.
    */
-  readonly sort?: DataRequirementSort[];
+  sort?: DataRequirementSort[];
 }
 
 /**
@@ -114,7 +114,7 @@ export interface DataRequirementCodeFilter {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -124,7 +124,7 @@ export interface DataRequirementCodeFilter {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * The code-valued attribute of the filter. The specified path SHALL be a
@@ -137,14 +137,14 @@ export interface DataRequirementCodeFilter {
    * must be an integer constant. The path must resolve to an element of
    * type code, Coding, or CodeableConcept.
    */
-  readonly path?: string;
+  path?: string;
 
   /**
    * A token parameter that refers to a search parameter defined on the
    * specified type of the DataRequirement, and which searches on elements
    * of type code, Coding, or CodeableConcept.
    */
-  readonly searchParam?: string;
+  searchParam?: string;
 
   /**
    * The valueset for the code filter. The valueSet and code elements are
@@ -152,7 +152,7 @@ export interface DataRequirementCodeFilter {
    * data items for which the value of the code-valued element specified in
    * the path is a member of the specified valueset.
    */
-  readonly valueSet?: string;
+  valueSet?: string;
 
   /**
    * The codes for the code filter. If values are given, the filter will
@@ -161,7 +161,7 @@ export interface DataRequirementCodeFilter {
    * If codes are specified in addition to a value set, the filter returns
    * items matching a code in the value set or one of the specified codes.
    */
-  readonly code?: Coding[];
+  code?: Coding[];
 }
 
 /**
@@ -176,7 +176,7 @@ export interface DataRequirementDateFilter {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -186,7 +186,7 @@ export interface DataRequirementDateFilter {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * The date-valued attribute of the filter. The specified path SHALL be a
@@ -199,14 +199,14 @@ export interface DataRequirementDateFilter {
    * must be an integer constant. The path must resolve to an element of
    * type date, dateTime, Period, Schedule, or Timing.
    */
-  readonly path?: string;
+  path?: string;
 
   /**
    * A date parameter that refers to a search parameter defined on the
    * specified type of the DataRequirement, and which searches on elements
    * of type date, dateTime, Period, Schedule, or Timing.
    */
-  readonly searchParam?: string;
+  searchParam?: string;
 
   /**
    * The value of the filter. If period is specified, the filter will
@@ -216,7 +216,7 @@ export interface DataRequirementDateFilter {
    * to the specified dateTime. If a Duration is specified, the filter will
    * return only those data items that fall within Duration before now.
    */
-  readonly valueDateTime?: string;
+  valueDateTime?: string;
 
   /**
    * The value of the filter. If period is specified, the filter will
@@ -226,7 +226,7 @@ export interface DataRequirementDateFilter {
    * to the specified dateTime. If a Duration is specified, the filter will
    * return only those data items that fall within Duration before now.
    */
-  readonly valuePeriod?: Period;
+  valuePeriod?: Period;
 
   /**
    * The value of the filter. If period is specified, the filter will
@@ -236,7 +236,7 @@ export interface DataRequirementDateFilter {
    * to the specified dateTime. If a Duration is specified, the filter will
    * return only those data items that fall within Duration before now.
    */
-  readonly valueDuration?: Duration;
+  valueDuration?: Duration;
 }
 
 /**
@@ -248,7 +248,7 @@ export interface DataRequirementSort {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -258,7 +258,7 @@ export interface DataRequirementSort {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * The attribute of the sort. The specified path must be resolvable from
@@ -267,10 +267,10 @@ export interface DataRequirementSort {
    * traverse multiple-cardinality sub-elements. Note that the index must
    * be an integer constant.
    */
-  readonly path?: string;
+  path?: string;
 
   /**
    * The direction of the sort, ascending or descending.
    */
-  readonly direction?: string;
+  direction?: string;
 }

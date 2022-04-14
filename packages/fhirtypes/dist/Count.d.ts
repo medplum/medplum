@@ -17,7 +17,7 @@ export interface Count {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -27,13 +27,13 @@ export interface Count {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * The value of the measured amount. The value includes an implicit
    * precision in the presentation of the value.
    */
-  readonly value?: number;
+  value?: number;
 
   /**
    * How the value should be understood and represented - whether the
@@ -41,22 +41,22 @@ export interface Count {
    * measurement issues; e.g. if the comparator is &quot;&lt;&quot; , then the real
    * value is &lt; stated value.
    */
-  readonly comparator?: string;
+  comparator?: string;
 
   /**
    * A human-readable form of the unit.
    */
-  readonly unit?: string;
+  unit?: string;
 
   /**
    * The identification of the system that provides the coded form of the
    * unit.
    */
-  readonly system?: string;
+  system?: string;
 
   /**
    * A computer processable form of the unit in some unit representation
    * system.
    */
-  readonly code?: string;
+  code?: string;
 }

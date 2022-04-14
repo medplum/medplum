@@ -36,14 +36,14 @@ export interface MedicationKnowledge {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -51,12 +51,12 @@ export interface MedicationKnowledge {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -66,14 +66,14 @@ export interface MedicationKnowledge {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -83,7 +83,7 @@ export interface MedicationKnowledge {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -101,7 +101,7 @@ export interface MedicationKnowledge {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A code that specifies this medication, or a textual description if no
@@ -110,26 +110,26 @@ export interface MedicationKnowledge {
    * a national or local formulary code, optionally with translations to
    * other code systems.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * A code to indicate if the medication is in active use.  The status
    * refers to the validity about the information of the medication and not
    * to its medicinal properties.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * Describes the details of the manufacturer of the medication product.
    * This is not intended to represent the distributor of a medication
    * product.
    */
-  readonly manufacturer?: Reference<Organization>;
+  manufacturer?: Reference<Organization>;
 
   /**
    * Describes the form of the item.  Powder; tablets; capsule.
    */
-  readonly doseForm?: CodeableConcept;
+  doseForm?: CodeableConcept;
 
   /**
    * Specific amount of the drug in the packaged product.  For example,
@@ -138,19 +138,19 @@ export interface MedicationKnowledge {
    * attribute provides additional clarification of the package amount (For
    * example, 3 mL, 10mL, etc.).
    */
-  readonly amount?: Quantity;
+  amount?: Quantity;
 
   /**
    * Additional names for a medication, for example, the name(s) given to a
    * medication in different countries.  For example, acetaminophen and
    * paracetamol or salbutamol and albuterol.
    */
-  readonly synonym?: string[];
+  synonym?: string[];
 
   /**
    * Associated or related knowledge about a medication.
    */
-  readonly relatedMedicationKnowledge?: MedicationKnowledgeRelatedMedicationKnowledge[];
+  relatedMedicationKnowledge?: MedicationKnowledgeRelatedMedicationKnowledge[];
 
   /**
    * Associated or related medications.  For example, if the medication is
@@ -158,83 +158,83 @@ export interface MedicationKnowledge {
    * Rosuvastatin) or if this is a generic medication (e.g. Rosuvastatin),
    * this would link to a branded product (e.g. Crestor).
    */
-  readonly associatedMedication?: Reference<Medication>[];
+  associatedMedication?: Reference<Medication>[];
 
   /**
    * Category of the medication or product (e.g. branded product,
    * therapeutic moeity, generic product, innovator product, etc.).
    */
-  readonly productType?: CodeableConcept[];
+  productType?: CodeableConcept[];
 
   /**
    * Associated documentation about the medication.
    */
-  readonly monograph?: MedicationKnowledgeMonograph[];
+  monograph?: MedicationKnowledgeMonograph[];
 
   /**
    * Identifies a particular constituent of interest in the product.
    */
-  readonly ingredient?: MedicationKnowledgeIngredient[];
+  ingredient?: MedicationKnowledgeIngredient[];
 
   /**
    * The instructions for preparing the medication.
    */
-  readonly preparationInstruction?: string;
+  preparationInstruction?: string;
 
   /**
    * The intended or approved route of administration.
    */
-  readonly intendedRoute?: CodeableConcept[];
+  intendedRoute?: CodeableConcept[];
 
   /**
    * The price of the medication.
    */
-  readonly cost?: MedicationKnowledgeCost[];
+  cost?: MedicationKnowledgeCost[];
 
   /**
    * The program under which the medication is reviewed.
    */
-  readonly monitoringProgram?: MedicationKnowledgeMonitoringProgram[];
+  monitoringProgram?: MedicationKnowledgeMonitoringProgram[];
 
   /**
    * Guidelines for the administration of the medication.
    */
-  readonly administrationGuidelines?: MedicationKnowledgeAdministrationGuidelines[];
+  administrationGuidelines?: MedicationKnowledgeAdministrationGuidelines[];
 
   /**
    * Categorization of the medication within a formulary or classification
    * system.
    */
-  readonly medicineClassification?: MedicationKnowledgeMedicineClassification[];
+  medicineClassification?: MedicationKnowledgeMedicineClassification[];
 
   /**
    * Information that only applies to packages (not products).
    */
-  readonly packaging?: MedicationKnowledgePackaging;
+  packaging?: MedicationKnowledgePackaging;
 
   /**
    * Specifies descriptive properties of the medicine, such as color,
    * shape, imprints, etc.
    */
-  readonly drugCharacteristic?: MedicationKnowledgeDrugCharacteristic[];
+  drugCharacteristic?: MedicationKnowledgeDrugCharacteristic[];
 
   /**
    * Potential clinical issue with or between medication(s) (for example,
    * drug-drug interaction, drug-disease contraindication, drug-allergy
    * interaction, etc.).
    */
-  readonly contraindication?: Reference<DetectedIssue>[];
+  contraindication?: Reference<DetectedIssue>[];
 
   /**
    * Regulatory information about a medication.
    */
-  readonly regulatory?: MedicationKnowledgeRegulatory[];
+  regulatory?: MedicationKnowledgeRegulatory[];
 
   /**
    * The time course of drug absorption, distribution, metabolism and
    * excretion of a medication from the body.
    */
-  readonly kinetics?: MedicationKnowledgeKinetics[];
+  kinetics?: MedicationKnowledgeKinetics[];
 }
 
 /**
@@ -246,7 +246,7 @@ export interface MedicationKnowledgeAdministrationGuidelines {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -256,7 +256,7 @@ export interface MedicationKnowledgeAdministrationGuidelines {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -275,30 +275,30 @@ export interface MedicationKnowledgeAdministrationGuidelines {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Dosage for the medication for the specific guidelines.
    */
-  readonly dosage?: MedicationKnowledgeAdministrationGuidelinesDosage[];
+  dosage?: MedicationKnowledgeAdministrationGuidelinesDosage[];
 
   /**
    * Indication for use that apply to the specific administration
    * guidelines.
    */
-  readonly indicationCodeableConcept?: CodeableConcept;
+  indicationCodeableConcept?: CodeableConcept;
 
   /**
    * Indication for use that apply to the specific administration
    * guidelines.
    */
-  readonly indicationReference?: Reference<ObservationDefinition>;
+  indicationReference?: Reference<ObservationDefinition>;
 
   /**
    * Characteristics of the patient that are relevant to the administration
    * guidelines (for example, height, weight, gender, etc.).
    */
-  readonly patientCharacteristics?: MedicationKnowledgeAdministrationGuidelinesPatientCharacteristics[];
+  patientCharacteristics?: MedicationKnowledgeAdministrationGuidelinesPatientCharacteristics[];
 }
 
 /**
@@ -310,7 +310,7 @@ export interface MedicationKnowledgeAdministrationGuidelinesDosage {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -320,7 +320,7 @@ export interface MedicationKnowledgeAdministrationGuidelinesDosage {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -339,18 +339,18 @@ export interface MedicationKnowledgeAdministrationGuidelinesDosage {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The type of dosage (for example, prophylaxis, maintenance,
    * therapeutic, etc.).
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Dosage for the medication for the specific guidelines.
    */
-  readonly dosage?: Dosage[];
+  dosage?: Dosage[];
 }
 
 /**
@@ -363,7 +363,7 @@ export interface MedicationKnowledgeAdministrationGuidelinesPatientCharacteristi
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -373,7 +373,7 @@ export interface MedicationKnowledgeAdministrationGuidelinesPatientCharacteristi
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -392,24 +392,24 @@ export interface MedicationKnowledgeAdministrationGuidelinesPatientCharacteristi
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Specific characteristic that is relevant to the administration
    * guideline (e.g. height, weight, gender).
    */
-  readonly characteristicCodeableConcept?: CodeableConcept;
+  characteristicCodeableConcept?: CodeableConcept;
 
   /**
    * Specific characteristic that is relevant to the administration
    * guideline (e.g. height, weight, gender).
    */
-  readonly characteristicQuantity?: Quantity;
+  characteristicQuantity?: Quantity;
 
   /**
    * The specific characteristic (e.g. height, weight, gender, etc.).
    */
-  readonly value?: string[];
+  value?: string[];
 }
 
 /**
@@ -421,7 +421,7 @@ export interface MedicationKnowledgeCost {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -431,7 +431,7 @@ export interface MedicationKnowledgeCost {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -450,23 +450,23 @@ export interface MedicationKnowledgeCost {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The category of the cost information.  For example, manufacturers'
    * cost, patient cost, claim reimbursement cost, actual acquisition cost.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The source or owner that assigns the price to the medication.
    */
-  readonly source?: string;
+  source?: string;
 
   /**
    * The price of the medication.
    */
-  readonly cost?: Money;
+  cost?: Money;
 }
 
 /**
@@ -479,7 +479,7 @@ export interface MedicationKnowledgeDrugCharacteristic {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -489,7 +489,7 @@ export interface MedicationKnowledgeDrugCharacteristic {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -508,33 +508,33 @@ export interface MedicationKnowledgeDrugCharacteristic {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A code specifying which characteristic of the medicine is being
    * described (for example, colour, shape, imprint).
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Description of the characteristic.
    */
-  readonly valueCodeableConcept?: CodeableConcept;
+  valueCodeableConcept?: CodeableConcept;
 
   /**
    * Description of the characteristic.
    */
-  readonly valueString?: string;
+  valueString?: string;
 
   /**
    * Description of the characteristic.
    */
-  readonly valueQuantity?: Quantity;
+  valueQuantity?: Quantity;
 
   /**
    * Description of the characteristic.
    */
-  readonly valueBase64Binary?: string;
+  valueBase64Binary?: string;
 }
 
 /**
@@ -546,7 +546,7 @@ export interface MedicationKnowledgeIngredient {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -556,7 +556,7 @@ export interface MedicationKnowledgeIngredient {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -575,32 +575,32 @@ export interface MedicationKnowledgeIngredient {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The actual ingredient - either a substance (simple ingredient) or
    * another medication.
    */
-  readonly itemCodeableConcept?: CodeableConcept;
+  itemCodeableConcept?: CodeableConcept;
 
   /**
    * The actual ingredient - either a substance (simple ingredient) or
    * another medication.
    */
-  readonly itemReference?: Reference<Substance>;
+  itemReference?: Reference<Substance>;
 
   /**
    * Indication of whether this ingredient affects the therapeutic action
    * of the drug.
    */
-  readonly isActive?: boolean;
+  isActive?: boolean;
 
   /**
    * Specifies how many (or how much) of the items there are in this
    * Medication.  For example, 250 mg per tablet.  This is expressed as a
    * ratio where the numerator is 250mg and the denominator is 1 tablet.
    */
-  readonly strength?: Ratio;
+  strength?: Ratio;
 }
 
 /**
@@ -613,7 +613,7 @@ export interface MedicationKnowledgeKinetics {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -623,7 +623,7 @@ export interface MedicationKnowledgeKinetics {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -642,23 +642,23 @@ export interface MedicationKnowledgeKinetics {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The drug concentration measured at certain discrete points in time.
    */
-  readonly areaUnderCurve?: Quantity[];
+  areaUnderCurve?: Quantity[];
 
   /**
    * The median lethal dose of a drug.
    */
-  readonly lethalDose50?: Quantity[];
+  lethalDose50?: Quantity[];
 
   /**
    * The time required for any specified property (e.g., the concentration
    * of a substance in the body) to decrease by half.
    */
-  readonly halfLifePeriod?: Duration;
+  halfLifePeriod?: Duration;
 }
 
 /**
@@ -671,7 +671,7 @@ export interface MedicationKnowledgeMedicineClassification {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -681,7 +681,7 @@ export interface MedicationKnowledgeMedicineClassification {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -700,19 +700,19 @@ export interface MedicationKnowledgeMedicineClassification {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The type of category for the medication (for example, therapeutic
    * classification, therapeutic sub-classification).
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Specific category assigned to the medication (e.g. anti-infective,
    * anti-hypertensive, antibiotic, etc.).
    */
-  readonly classification?: CodeableConcept[];
+  classification?: CodeableConcept[];
 }
 
 /**
@@ -724,7 +724,7 @@ export interface MedicationKnowledgeMonitoringProgram {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -734,7 +734,7 @@ export interface MedicationKnowledgeMonitoringProgram {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -753,17 +753,17 @@ export interface MedicationKnowledgeMonitoringProgram {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Type of program under which the medication is monitored.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Name of the reviewing program.
    */
-  readonly name?: string;
+  name?: string;
 }
 
 /**
@@ -775,7 +775,7 @@ export interface MedicationKnowledgeMonograph {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -785,7 +785,7 @@ export interface MedicationKnowledgeMonograph {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -804,18 +804,18 @@ export interface MedicationKnowledgeMonograph {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The category of documentation about the medication. (e.g. professional
    * monograph, patient education monograph).
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Associated documentation about the medication.
    */
-  readonly source?: Reference<DocumentReference | Media>;
+  source?: Reference<DocumentReference | Media>;
 }
 
 /**
@@ -827,7 +827,7 @@ export interface MedicationKnowledgePackaging {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -837,7 +837,7 @@ export interface MedicationKnowledgePackaging {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -856,18 +856,18 @@ export interface MedicationKnowledgePackaging {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A code that defines the specific type of packaging that the medication
    * can be found in (e.g. blister sleeve, tube, bottle).
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The number of product units the package would contain if fully loaded.
    */
-  readonly quantity?: Quantity;
+  quantity?: Quantity;
 }
 
 /**
@@ -879,7 +879,7 @@ export interface MedicationKnowledgeRegulatory {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -889,7 +889,7 @@ export interface MedicationKnowledgeRegulatory {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -908,29 +908,29 @@ export interface MedicationKnowledgeRegulatory {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The authority that is specifying the regulations.
    */
-  readonly regulatoryAuthority?: Reference<Organization>;
+  regulatoryAuthority?: Reference<Organization>;
 
   /**
    * Specifies if changes are allowed when dispensing a medication from a
    * regulatory perspective.
    */
-  readonly substitution?: MedicationKnowledgeRegulatorySubstitution[];
+  substitution?: MedicationKnowledgeRegulatorySubstitution[];
 
   /**
    * Specifies the schedule of a medication in jurisdiction.
    */
-  readonly schedule?: MedicationKnowledgeRegulatorySchedule[];
+  schedule?: MedicationKnowledgeRegulatorySchedule[];
 
   /**
    * The maximum number of units of the medication that can be dispensed in
    * a period.
    */
-  readonly maxDispense?: MedicationKnowledgeRegulatoryMaxDispense;
+  maxDispense?: MedicationKnowledgeRegulatoryMaxDispense;
 }
 
 /**
@@ -943,7 +943,7 @@ export interface MedicationKnowledgeRegulatoryMaxDispense {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -953,7 +953,7 @@ export interface MedicationKnowledgeRegulatoryMaxDispense {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -972,17 +972,17 @@ export interface MedicationKnowledgeRegulatoryMaxDispense {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The maximum number of units of the medication that can be dispensed.
    */
-  readonly quantity?: Quantity;
+  quantity?: Quantity;
 
   /**
    * The period that applies to the maximum number of units.
    */
-  readonly period?: Duration;
+  period?: Duration;
 }
 
 /**
@@ -994,7 +994,7 @@ export interface MedicationKnowledgeRegulatorySchedule {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1004,7 +1004,7 @@ export interface MedicationKnowledgeRegulatorySchedule {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1023,12 +1023,12 @@ export interface MedicationKnowledgeRegulatorySchedule {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Specifies the specific drug schedule.
    */
-  readonly schedule?: CodeableConcept;
+  schedule?: CodeableConcept;
 }
 
 /**
@@ -1041,7 +1041,7 @@ export interface MedicationKnowledgeRegulatorySubstitution {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1051,7 +1051,7 @@ export interface MedicationKnowledgeRegulatorySubstitution {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1070,18 +1070,18 @@ export interface MedicationKnowledgeRegulatorySubstitution {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Specifies the type of substitution allowed.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Specifies if regulation allows for changes in the medication when
    * dispensing.
    */
-  readonly allowed?: boolean;
+  allowed?: boolean;
 }
 
 /**
@@ -1093,7 +1093,7 @@ export interface MedicationKnowledgeRelatedMedicationKnowledge {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1103,7 +1103,7 @@ export interface MedicationKnowledgeRelatedMedicationKnowledge {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1122,15 +1122,15 @@ export interface MedicationKnowledgeRelatedMedicationKnowledge {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The category of the associated medication knowledge reference.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Associated documentation about the associated medication knowledge.
    */
-  readonly reference?: Reference<MedicationKnowledge>[];
+  reference?: Reference<MedicationKnowledge>[];
 }

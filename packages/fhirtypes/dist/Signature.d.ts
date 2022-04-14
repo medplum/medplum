@@ -27,7 +27,7 @@ export interface Signature {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -37,7 +37,7 @@ export interface Signature {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * An indication of the reason that the entity signed this document. This
@@ -45,30 +45,30 @@ export interface Signature {
    * can be used when determining accountability for various actions
    * concerning the document.
    */
-  readonly type?: Coding[];
+  type?: Coding[];
 
   /**
    * When the digital signature was signed.
    */
-  readonly when?: string;
+  when?: string;
 
   /**
    * A reference to an application-usable description of the identity that
    * signed  (e.g. the signature used their private key).
    */
-  readonly who?: Reference<Practitioner | PractitionerRole | RelatedPerson | Patient | Device | Organization>;
+  who?: Reference<Practitioner | PractitionerRole | RelatedPerson | Patient | Device | Organization>;
 
   /**
    * A reference to an application-usable description of the identity that
    * is represented by the signature.
    */
-  readonly onBehalfOf?: Reference<Practitioner | PractitionerRole | RelatedPerson | Patient | Device | Organization>;
+  onBehalfOf?: Reference<Practitioner | PractitionerRole | RelatedPerson | Patient | Device | Organization>;
 
   /**
    * A mime type that indicates the technical format of the target
    * resources signed by the signature.
    */
-  readonly targetFormat?: string;
+  targetFormat?: string;
 
   /**
    * A mime type that indicates the technical format of the signature.
@@ -76,11 +76,11 @@ export interface Signature {
    * application/jose for JWS, and image/* for a graphical image of a
    * signature, etc.
    */
-  readonly sigFormat?: string;
+  sigFormat?: string;
 
   /**
    * The base64 encoding of the Signature content. When signature is not
    * recorded electronically this element would be empty.
    */
-  readonly data?: string;
+  data?: string;
 }

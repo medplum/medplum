@@ -44,14 +44,14 @@ export interface SupplyRequest {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -59,12 +59,12 @@ export interface SupplyRequest {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -74,14 +74,14 @@ export interface SupplyRequest {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -91,7 +91,7 @@ export interface SupplyRequest {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -109,106 +109,106 @@ export interface SupplyRequest {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Business identifiers assigned to this SupplyRequest by the author
    * and/or other systems. These identifiers remain constant as the
    * resource is updated and propagates from server to server.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * Status of the supply request.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * Category of supply, e.g.  central, non-stock, etc. This is used to
    * support work flows associated with the supply process.
    */
-  readonly category?: CodeableConcept;
+  category?: CodeableConcept;
 
   /**
    * Indicates how quickly this SupplyRequest should be addressed with
    * respect to other requests.
    */
-  readonly priority?: string;
+  priority?: string;
 
   /**
    * The item that is requested to be supplied. This is either a link to a
    * resource representing the details of the item or a code that
    * identifies the item from a known list.
    */
-  readonly itemCodeableConcept?: CodeableConcept;
+  itemCodeableConcept?: CodeableConcept;
 
   /**
    * The item that is requested to be supplied. This is either a link to a
    * resource representing the details of the item or a code that
    * identifies the item from a known list.
    */
-  readonly itemReference?: Reference<Medication | Substance | Device>;
+  itemReference?: Reference<Medication | Substance | Device>;
 
   /**
    * The amount that is being ordered of the indicated item.
    */
-  readonly quantity?: Quantity;
+  quantity?: Quantity;
 
   /**
    * Specific parameters for the ordered item.  For example, the size of
    * the indicated item.
    */
-  readonly parameter?: SupplyRequestParameter[];
+  parameter?: SupplyRequestParameter[];
 
   /**
    * When the request should be fulfilled.
    */
-  readonly occurrenceDateTime?: string;
+  occurrenceDateTime?: string;
 
   /**
    * When the request should be fulfilled.
    */
-  readonly occurrencePeriod?: Period;
+  occurrencePeriod?: Period;
 
   /**
    * When the request should be fulfilled.
    */
-  readonly occurrenceTiming?: Timing;
+  occurrenceTiming?: Timing;
 
   /**
    * When the request was made.
    */
-  readonly authoredOn?: string;
+  authoredOn?: string;
 
   /**
    * The device, practitioner, etc. who initiated the request.
    */
-  readonly requester?: Reference<Practitioner | PractitionerRole | Organization | Patient | RelatedPerson | Device>;
+  requester?: Reference<Practitioner | PractitionerRole | Organization | Patient | RelatedPerson | Device>;
 
   /**
    * Who is intended to fulfill the request.
    */
-  readonly supplier?: Reference<Organization | HealthcareService>[];
+  supplier?: Reference<Organization | HealthcareService>[];
 
   /**
    * The reason why the supply item was requested.
    */
-  readonly reasonCode?: CodeableConcept[];
+  reasonCode?: CodeableConcept[];
 
   /**
    * The reason why the supply item was requested.
    */
-  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
+  reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
 
   /**
    * Where the supply is expected to come from.
    */
-  readonly deliverFrom?: Reference<Organization | Location>;
+  deliverFrom?: Reference<Organization | Location>;
 
   /**
    * Where the supply is destined to go.
    */
-  readonly deliverTo?: Reference<Organization | Location | Patient>;
+  deliverTo?: Reference<Organization | Location | Patient>;
 }
 
 /**
@@ -221,7 +221,7 @@ export interface SupplyRequestParameter {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -231,7 +231,7 @@ export interface SupplyRequestParameter {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -250,30 +250,30 @@ export interface SupplyRequestParameter {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A code or string that identifies the device detail being asserted.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * The value of the device detail.
    */
-  readonly valueCodeableConcept?: CodeableConcept;
+  valueCodeableConcept?: CodeableConcept;
 
   /**
    * The value of the device detail.
    */
-  readonly valueQuantity?: Quantity;
+  valueQuantity?: Quantity;
 
   /**
    * The value of the device detail.
    */
-  readonly valueRange?: Range;
+  valueRange?: Range;
 
   /**
    * The value of the device detail.
    */
-  readonly valueBoolean?: boolean;
+  valueBoolean?: boolean;
 }

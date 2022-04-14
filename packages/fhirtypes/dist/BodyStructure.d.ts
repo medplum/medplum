@@ -29,14 +29,14 @@ export interface BodyStructure {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -44,12 +44,12 @@ export interface BodyStructure {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -59,14 +59,14 @@ export interface BodyStructure {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -76,7 +76,7 @@ export interface BodyStructure {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -94,49 +94,49 @@ export interface BodyStructure {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifier for this instance of the anatomical structure.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * Whether this body site is in active use.
    */
-  readonly active?: boolean;
+  active?: boolean;
 
   /**
    * The kind of structure being represented by the body structure at
    * `BodyStructure.location`.  This can define both normal and abnormal
    * morphologies.
    */
-  readonly morphology?: CodeableConcept;
+  morphology?: CodeableConcept;
 
   /**
    * The anatomical location or region of the specimen, lesion, or body
    * structure.
    */
-  readonly location?: CodeableConcept;
+  location?: CodeableConcept;
 
   /**
    * Qualifier to refine the anatomical location.  These include qualifiers
    * for laterality, relative location, directionality, number, and plane.
    */
-  readonly locationQualifier?: CodeableConcept[];
+  locationQualifier?: CodeableConcept[];
 
   /**
    * A summary, characterization or explanation of the body structure.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Image or images used to identify a location.
    */
-  readonly image?: Attachment[];
+  image?: Attachment[];
 
   /**
    * The person to which the body site belongs.
    */
-  readonly patient?: Reference<Patient>;
+  patient?: Reference<Patient>;
 }

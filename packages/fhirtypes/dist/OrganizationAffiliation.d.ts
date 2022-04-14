@@ -33,14 +33,14 @@ export interface OrganizationAffiliation {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -48,12 +48,12 @@ export interface OrganizationAffiliation {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -63,14 +63,14 @@ export interface OrganizationAffiliation {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -80,7 +80,7 @@ export interface OrganizationAffiliation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -98,75 +98,75 @@ export interface OrganizationAffiliation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Business identifiers that are specific to this role.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * Whether this organization affiliation record is in active use.
    */
-  readonly active?: boolean;
+  active?: boolean;
 
   /**
    * The period during which the participatingOrganization is affiliated
    * with the primary organization.
    */
-  readonly period?: Period;
+  period?: Period;
 
   /**
    * Organization where the role is available (primary organization/has
    * members).
    */
-  readonly organization?: Reference<Organization>;
+  organization?: Reference<Organization>;
 
   /**
    * The Participating Organization provides/performs the role(s) defined
    * by the code to the Primary Organization (e.g. providing services or is
    * a member of).
    */
-  readonly participatingOrganization?: Reference<Organization>;
+  participatingOrganization?: Reference<Organization>;
 
   /**
    * Health insurance provider network in which the
    * participatingOrganization provides the role's services (if defined) at
    * the indicated locations (if defined).
    */
-  readonly network?: Reference<Organization>[];
+  network?: Reference<Organization>[];
 
   /**
    * Definition of the role the participatingOrganization plays in the
    * association.
    */
-  readonly code?: CodeableConcept[];
+  code?: CodeableConcept[];
 
   /**
    * Specific specialty of the participatingOrganization in the context of
    * the role.
    */
-  readonly specialty?: CodeableConcept[];
+  specialty?: CodeableConcept[];
 
   /**
    * The location(s) at which the role occurs.
    */
-  readonly location?: Reference<Location>[];
+  location?: Reference<Location>[];
 
   /**
    * Healthcare services provided through the role.
    */
-  readonly healthcareService?: Reference<HealthcareService>[];
+  healthcareService?: Reference<HealthcareService>[];
 
   /**
    * Contact details at the participatingOrganization relevant to this
    * Affiliation.
    */
-  readonly telecom?: ContactPoint[];
+  telecom?: ContactPoint[];
 
   /**
    * Technical endpoints providing access to services operated for this
    * role.
    */
-  readonly endpoint?: Reference<Endpoint>[];
+  endpoint?: Reference<Endpoint>[];
 }

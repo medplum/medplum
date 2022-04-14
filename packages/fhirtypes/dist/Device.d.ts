@@ -34,14 +34,14 @@ export interface Device {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -49,12 +49,12 @@ export interface Device {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -64,14 +64,14 @@ export interface Device {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -81,7 +81,7 @@ export interface Device {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -99,18 +99,18 @@ export interface Device {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Unique instance identifiers assigned to a device by manufacturers
    * other organizations or owners.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The reference to the definition for the device.
    */
-  readonly definition?: Reference<DeviceDefinition>;
+  definition?: Reference<DeviceDefinition>;
 
   /**
    * Unique device identifier (UDI) assigned to device label or package.
@@ -118,50 +118,50 @@ export interface Device {
    * include just the udiCarrier for the jurisdiction it is sold, or for
    * multiple jurisdictions it could have been sold.
    */
-  readonly udiCarrier?: DeviceUdiCarrier[];
+  udiCarrier?: DeviceUdiCarrier[];
 
   /**
    * Status of the Device availability.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * Reason for the dtatus of the Device availability.
    */
-  readonly statusReason?: CodeableConcept[];
+  statusReason?: CodeableConcept[];
 
   /**
    * The distinct identification string as required by regulation for a
    * human cell, tissue, or cellular and tissue-based product.
    */
-  readonly distinctIdentifier?: string;
+  distinctIdentifier?: string;
 
   /**
    * A name of the manufacturer.
    */
-  readonly manufacturer?: string;
+  manufacturer?: string;
 
   /**
    * The date and time when the device was manufactured.
    */
-  readonly manufactureDate?: string;
+  manufactureDate?: string;
 
   /**
    * The date and time beyond which this device is no longer valid or
    * should not be used (if applicable).
    */
-  readonly expirationDate?: string;
+  expirationDate?: string;
 
   /**
    * Lot number assigned by the manufacturer.
    */
-  readonly lotNumber?: string;
+  lotNumber?: string;
 
   /**
    * The serial number assigned by the organization when the device was
    * manufactured.
    */
-  readonly serialNumber?: string;
+  serialNumber?: string;
 
   /**
    * This represents the manufacturer's name of the device as provided by
@@ -170,85 +170,85 @@ export interface Device {
    * when the device represents one of the names available from
    * DeviceDefinition.
    */
-  readonly deviceName?: DeviceDeviceName[];
+  deviceName?: DeviceDeviceName[];
 
   /**
    * The model number for the device.
    */
-  readonly modelNumber?: string;
+  modelNumber?: string;
 
   /**
    * The part number of the device.
    */
-  readonly partNumber?: string;
+  partNumber?: string;
 
   /**
    * The kind or type of device.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The capabilities supported on a  device, the standards to which the
    * device conforms for a particular purpose, and used for the
    * communication.
    */
-  readonly specialization?: DeviceSpecialization[];
+  specialization?: DeviceSpecialization[];
 
   /**
    * The actual design of the device or software version running on the
    * device.
    */
-  readonly version?: DeviceVersion[];
+  version?: DeviceVersion[];
 
   /**
    * The actual configuration settings of a device as it actually operates,
    * e.g., regulation status, time properties.
    */
-  readonly property?: DeviceProperty[];
+  property?: DeviceProperty[];
 
   /**
    * Patient information, If the device is affixed to a person.
    */
-  readonly patient?: Reference<Patient>;
+  patient?: Reference<Patient>;
 
   /**
    * An organization that is responsible for the provision and ongoing
    * maintenance of the device.
    */
-  readonly owner?: Reference<Organization>;
+  owner?: Reference<Organization>;
 
   /**
    * Contact details for an organization or a particular human that is
    * responsible for the device.
    */
-  readonly contact?: ContactPoint[];
+  contact?: ContactPoint[];
 
   /**
    * The place where the device can be found.
    */
-  readonly location?: Reference<Location>;
+  location?: Reference<Location>;
 
   /**
    * A network address on which the device may be contacted directly.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * Descriptive information, usage information or implantation information
    * that is not captured in an existing element.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 
   /**
    * Provides additional safety characteristics about a medical device.
    * For example devices containing latex.
    */
-  readonly safety?: CodeableConcept[];
+  safety?: CodeableConcept[];
 
   /**
    * The parent device.
    */
-  readonly parent?: Reference<Device>;
+  parent?: Reference<Device>;
 }
 
 /**
@@ -264,7 +264,7 @@ export interface DeviceDeviceName {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -274,7 +274,7 @@ export interface DeviceDeviceName {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -293,19 +293,19 @@ export interface DeviceDeviceName {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The name of the device.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * The type of deviceName.
    * UDILabelName | UserFriendlyName | PatientReportedName |
    * ManufactureDeviceName | ModelName.
    */
-  readonly type?: string;
+  type?: string;
 }
 
 /**
@@ -318,7 +318,7 @@ export interface DeviceProperty {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -328,7 +328,7 @@ export interface DeviceProperty {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -347,23 +347,23 @@ export interface DeviceProperty {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Code that specifies the property DeviceDefinitionPropetyCode
    * (Extensible).
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Property value as a quantity.
    */
-  readonly valueQuantity?: Quantity[];
+  valueQuantity?: Quantity[];
 
   /**
    * Property value as a code, e.g., NTP4 (synced to NTP).
    */
-  readonly valueCode?: CodeableConcept[];
+  valueCode?: CodeableConcept[];
 }
 
 /**
@@ -377,7 +377,7 @@ export interface DeviceSpecialization {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -387,7 +387,7 @@ export interface DeviceSpecialization {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -406,17 +406,17 @@ export interface DeviceSpecialization {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The standard that is used to operate and communicate.
    */
-  readonly systemType?: CodeableConcept;
+  systemType?: CodeableConcept;
 
   /**
    * The version of the standard that is used to operate and communicate.
    */
-  readonly version?: string;
+  version?: string;
 }
 
 /**
@@ -431,7 +431,7 @@ export interface DeviceUdiCarrier {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -441,7 +441,7 @@ export interface DeviceUdiCarrier {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -460,13 +460,13 @@ export interface DeviceUdiCarrier {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The device identifier (DI) is a mandatory, fixed portion of a UDI that
    * identifies the labeler and the specific version or model of a device.
    */
-  readonly deviceIdentifier?: string;
+  deviceIdentifier?: string;
 
   /**
    * Organization that is charged with issuing UDIs for devices.  For
@@ -480,7 +480,7 @@ export interface DeviceUdiCarrier {
    * 4) ICCBA for other devices:
    * http://hl7.org/fhir/NamingSystem/iccbba-other-di.
    */
-  readonly issuer?: string;
+  issuer?: string;
 
   /**
    * The identity of the authoritative source for UDI generation within a
@@ -489,7 +489,7 @@ export interface DeviceUdiCarrier {
    * of devices managed in the U.S. by the FDA, the value is
    * http://hl7.org/fhir/NamingSystem/fda-udi.
    */
-  readonly jurisdiction?: string;
+  jurisdiction?: string;
 
   /**
    * The full UDI carrier of the Automatic Identification and Data Capture
@@ -498,18 +498,18 @@ export interface DeviceUdiCarrier {
    * limitations on character sets in XML and the need to round-trip JSON
    * data through XML, AIDC Formats *SHALL* be base64 encoded.
    */
-  readonly carrierAIDC?: string;
+  carrierAIDC?: string;
 
   /**
    * The full UDI carrier as the human readable form (HRF) representation
    * of the barcode string as printed on the packaging of the device.
    */
-  readonly carrierHRF?: string;
+  carrierHRF?: string;
 
   /**
    * A coded entry to indicate how the data was entered.
    */
-  readonly entryType?: string;
+  entryType?: string;
 }
 
 /**
@@ -522,7 +522,7 @@ export interface DeviceVersion {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -532,7 +532,7 @@ export interface DeviceVersion {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -551,20 +551,20 @@ export interface DeviceVersion {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The type of the device version.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * A single component of the device version.
    */
-  readonly component?: Identifier;
+  component?: Identifier;
 
   /**
    * The version text.
    */
-  readonly value?: string;
+  value?: string;
 }

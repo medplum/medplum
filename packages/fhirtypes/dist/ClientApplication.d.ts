@@ -16,14 +16,14 @@ export interface ClientApplication {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -31,31 +31,31 @@ export interface ClientApplication {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A name associated with the ClientApplication.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A summary, characterization or explanation of the ClientApplication.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Client secret string used to verify the identity of a client.
    */
-  readonly secret?: string;
+  secret?: string;
 
   /**
    * Redirect URI used when redirecting a client back to the client
    * application.
    */
-  readonly redirectUri?: string;
+  redirectUri?: string;
 }

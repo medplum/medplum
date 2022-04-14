@@ -19,7 +19,7 @@ export interface Meta {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -29,19 +29,19 @@ export interface Meta {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * The version specific identifier, as it appears in the version portion
    * of the URL. This value changes when the resource is created, updated,
    * or deleted.
    */
-  readonly versionId?: string;
+  versionId?: string;
 
   /**
    * When the resource last changed - e.g. when the version changed.
    */
-  readonly lastUpdated?: string;
+  lastUpdated?: string;
 
   /**
    * A uri that identifies the source system of the resource. This provides
@@ -50,7 +50,7 @@ export interface Meta {
    * resource. The source may identify another FHIR server, document,
    * message, database, etc.
    */
-  readonly source?: string;
+  source?: string;
 
   /**
    * A list of profiles (references to
@@ -58,13 +58,13 @@ export interface Meta {
    * resource claims to conform to. The URL is a reference to
    * [StructureDefinition.url](structuredefinition-definitions.html#StructureDefinition.url).
    */
-  readonly profile?: string[];
+  profile?: string[];
 
   /**
    * Security labels applied to this resource. These tags connect specific
    * resources to the overall security policy and infrastructure.
    */
-  readonly security?: Coding[];
+  security?: Coding[];
 
   /**
    * Tags applied to this resource. Tags are intended to be used to
@@ -72,21 +72,21 @@ export interface Meta {
    * applications are not required to consider the tags when interpreting
    * the meaning of a resource.
    */
-  readonly tag?: Coding[];
+  tag?: Coding[];
 
   /**
    * The project that contains this resource.
    */
-  readonly project?: string;
+  project?: string;
 
   /**
    * The individual, device or organization who initiated the last change.
    */
-  readonly author?: Reference;
+  author?: Reference;
 
   /**
    * Optional account reference that can be used for sub-project
    * compartments.
    */
-  readonly account?: Reference;
+  account?: Reference;
 }

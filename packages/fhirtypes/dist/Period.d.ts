@@ -15,7 +15,7 @@ export interface Period {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -25,12 +25,12 @@ export interface Period {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * The start of the period. The boundary is inclusive.
    */
-  readonly start?: string;
+  start?: string;
 
   /**
    * The end of the period. If the end of the period is missing, it means
@@ -38,5 +38,5 @@ export interface Period {
    * start may be in the past, and the end date in the future, which means
    * that period is expected/planned to end at that time.
    */
-  readonly end?: string;
+  end?: string;
 }

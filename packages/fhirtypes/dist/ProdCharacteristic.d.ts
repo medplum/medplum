@@ -19,7 +19,7 @@ export interface ProdCharacteristic {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -29,7 +29,7 @@ export interface ProdCharacteristic {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -48,7 +48,7 @@ export interface ProdCharacteristic {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Where applicable, the height can be specified using a numerical value
@@ -56,7 +56,7 @@ export interface ProdCharacteristic {
    * in accordance with ISO 11240 and the resulting terminology The symbol
    * and the symbol identifier shall be used.
    */
-  readonly height?: Quantity;
+  height?: Quantity;
 
   /**
    * Where applicable, the width can be specified using a numerical value
@@ -64,7 +64,7 @@ export interface ProdCharacteristic {
    * in accordance with ISO 11240 and the resulting terminology The symbol
    * and the symbol identifier shall be used.
    */
-  readonly width?: Quantity;
+  width?: Quantity;
 
   /**
    * Where applicable, the depth can be specified using a numerical value
@@ -72,7 +72,7 @@ export interface ProdCharacteristic {
    * in accordance with ISO 11240 and the resulting terminology The symbol
    * and the symbol identifier shall be used.
    */
-  readonly depth?: Quantity;
+  depth?: Quantity;
 
   /**
    * Where applicable, the weight can be specified using a numerical value
@@ -80,7 +80,7 @@ export interface ProdCharacteristic {
    * in accordance with ISO 11240 and the resulting terminology The symbol
    * and the symbol identifier shall be used.
    */
-  readonly weight?: Quantity;
+  weight?: Quantity;
 
   /**
    * Where applicable, the nominal volume can be specified using a
@@ -88,7 +88,7 @@ export interface ProdCharacteristic {
    * shall be specified in accordance with ISO 11240 and the resulting
    * terminology The symbol and the symbol identifier shall be used.
    */
-  readonly nominalVolume?: Quantity;
+  nominalVolume?: Quantity;
 
   /**
    * Where applicable, the external diameter can be specified using a
@@ -96,37 +96,37 @@ export interface ProdCharacteristic {
    * shall be specified in accordance with ISO 11240 and the resulting
    * terminology The symbol and the symbol identifier shall be used.
    */
-  readonly externalDiameter?: Quantity;
+  externalDiameter?: Quantity;
 
   /**
    * Where applicable, the shape can be specified An appropriate controlled
    * vocabulary shall be used The term and the term identifier shall be
    * used.
    */
-  readonly shape?: string;
+  shape?: string;
 
   /**
    * Where applicable, the color can be specified An appropriate controlled
    * vocabulary shall be used The term and the term identifier shall be
    * used.
    */
-  readonly color?: string[];
+  color?: string[];
 
   /**
    * Where applicable, the imprint can be specified as text.
    */
-  readonly imprint?: string[];
+  imprint?: string[];
 
   /**
    * Where applicable, the image can be provided The format of the image
    * attachment shall be specified by regional implementations.
    */
-  readonly image?: Attachment[];
+  image?: Attachment[];
 
   /**
    * Where applicable, the scoring can be specified An appropriate
    * controlled vocabulary shall be used The term and the term identifier
    * shall be used.
    */
-  readonly scoring?: CodeableConcept;
+  scoring?: CodeableConcept;
 }

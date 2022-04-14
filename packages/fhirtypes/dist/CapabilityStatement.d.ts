@@ -31,14 +31,14 @@ export interface CapabilityStatement {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -46,12 +46,12 @@ export interface CapabilityStatement {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -61,14 +61,14 @@ export interface CapabilityStatement {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -78,7 +78,7 @@ export interface CapabilityStatement {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -96,7 +96,7 @@ export interface CapabilityStatement {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI that is used to identify this capability statement
@@ -108,7 +108,7 @@ export interface CapabilityStatement {
    * SHALL remain the same when the capability statement is stored on
    * different servers.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * The identifier that is used to identify this version of the capability
@@ -119,33 +119,33 @@ export interface CapabilityStatement {
    * is not available. There is also no expectation that versions can be
    * placed in a lexicographical sequence.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * A natural language name identifying the capability statement. This
    * name should be usable as an identifier for the module by machine
    * processing applications such as code generation.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A short, descriptive, user-friendly title for the capability
    * statement.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * The status of this capability statement. Enables tracking the
    * life-cycle of the content.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A Boolean value to indicate that this capability statement is authored
    * for testing purposes (or education/evaluation/marketing) and is not
    * intended to be used for genuine usage.
    */
-  readonly experimental?: boolean;
+  experimental?: boolean;
 
   /**
    * The date  (and optionally time) when the capability statement was
@@ -154,19 +154,19 @@ export interface CapabilityStatement {
    * change when the substantive content of the capability statement
    * changes.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The name of the organization or individual that published the
    * capability statement.
    */
-  readonly publisher?: string;
+  publisher?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * publisher.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * A free text natural language description of the capability statement
@@ -175,7 +175,7 @@ export interface CapabilityStatement {
    * solution, for example as a formal expression of requirements as part
    * of an RFP.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -184,26 +184,26 @@ export interface CapabilityStatement {
    * (insurance plans, studies, ...) and may be used to assist with
    * indexing and searching for appropriate capability statement instances.
    */
-  readonly useContext?: UsageContext[];
+  useContext?: UsageContext[];
 
   /**
    * A legal or geographic region in which the capability statement is
    * intended to be used.
    */
-  readonly jurisdiction?: CodeableConcept[];
+  jurisdiction?: CodeableConcept[];
 
   /**
    * Explanation of why this capability statement is needed and why it has
    * been designed as it has.
    */
-  readonly purpose?: string;
+  purpose?: string;
 
   /**
    * A copyright statement relating to the capability statement and/or its
    * contents. Copyright statements are generally legal restrictions on the
    * use and publishing of the capability statement.
    */
-  readonly copyright?: string;
+  copyright?: string;
 
   /**
    * The way that this statement is intended to be used, to describe an
@@ -211,7 +211,7 @@ export interface CapabilityStatement {
    * instance of software) or a class of implementation (e.g. a desired
    * purchase).
    */
-  readonly kind?: string;
+  kind?: string;
 
   /**
    * Reference to a canonical URL of another CapabilityStatement that this
@@ -221,7 +221,7 @@ export interface CapabilityStatement {
    * implement, so the capability statement must specify the full
    * capability details.
    */
-  readonly instantiates?: string[];
+  instantiates?: string[];
 
   /**
    * Reference to a canonical URL of another CapabilityStatement that this
@@ -230,61 +230,61 @@ export interface CapabilityStatement {
    * the server may repeat the same resources, interactions and operations
    * to add additional details to them.
    */
-  readonly imports?: string[];
+  imports?: string[];
 
   /**
    * Software that is covered by this capability statement.  It is used
    * when the capability statement describes the capabilities of a
    * particular software version, independent of an installation.
    */
-  readonly software?: CapabilityStatementSoftware;
+  software?: CapabilityStatementSoftware;
 
   /**
    * Identifies a specific implementation instance that is described by the
    * capability statement - i.e. a particular installation, rather than the
    * capabilities of a software program.
    */
-  readonly implementation?: CapabilityStatementImplementation;
+  implementation?: CapabilityStatementImplementation;
 
   /**
    * The version of the FHIR specification that this CapabilityStatement
    * describes (which SHALL be the same as the FHIR version of the
    * CapabilityStatement itself). There is no default value.
    */
-  readonly fhirVersion?: string;
+  fhirVersion?: string;
 
   /**
    * A list of the formats supported by this implementation using their
    * content types.
    */
-  readonly format?: string[];
+  format?: string[];
 
   /**
    * A list of the patch formats supported by this implementation using
    * their content types.
    */
-  readonly patchFormat?: string[];
+  patchFormat?: string[];
 
   /**
    * A list of implementation guides that the server does (or should)
    * support in their entirety.
    */
-  readonly implementationGuide?: string[];
+  implementationGuide?: string[];
 
   /**
    * A definition of the restful capabilities of the solution, if any.
    */
-  readonly rest?: CapabilityStatementRest[];
+  rest?: CapabilityStatementRest[];
 
   /**
    * A description of the messaging capabilities of the solution.
    */
-  readonly messaging?: CapabilityStatementMessaging[];
+  messaging?: CapabilityStatementMessaging[];
 
   /**
    * A document definition.
    */
-  readonly document?: CapabilityStatementDocument[];
+  document?: CapabilityStatementDocument[];
 }
 
 /**
@@ -296,7 +296,7 @@ export interface CapabilityStatementDocument {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -306,7 +306,7 @@ export interface CapabilityStatementDocument {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -325,26 +325,26 @@ export interface CapabilityStatementDocument {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Mode of this document declaration - whether an application is a
    * producer or consumer.
    */
-  readonly mode?: string;
+  mode?: string;
 
   /**
    * A description of how the application supports or uses the specified
    * document profile.  For example, when documents are created, what
    * action is taken with consumed documents, etc.
    */
-  readonly documentation?: string;
+  documentation?: string;
 
   /**
    * A profile on the document Bundle that constrains which resources are
    * present, and their contents.
    */
-  readonly profile?: string;
+  profile?: string;
 }
 
 /**
@@ -358,7 +358,7 @@ export interface CapabilityStatementImplementation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -368,7 +368,7 @@ export interface CapabilityStatementImplementation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -387,25 +387,25 @@ export interface CapabilityStatementImplementation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Information about the specific installation that this capability
    * statement relates to.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * An absolute base URL for the implementation.  This forms the base for
    * REST interfaces as well as the mailbox and document interfaces.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * The organization responsible for the management of the instance and
    * oversight of the data on the server at the specified URL.
    */
-  readonly custodian?: Reference<Organization>;
+  custodian?: Reference<Organization>;
 }
 
 /**
@@ -417,7 +417,7 @@ export interface CapabilityStatementMessaging {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -427,7 +427,7 @@ export interface CapabilityStatementMessaging {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -446,20 +446,20 @@ export interface CapabilityStatementMessaging {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An endpoint (network accessible address) to which messages and/or
    * replies are to be sent.
    */
-  readonly endpoint?: CapabilityStatementMessagingEndpoint[];
+  endpoint?: CapabilityStatementMessagingEndpoint[];
 
   /**
    * Length if the receiver's reliable messaging cache in minutes (if a
    * receiver) or how long the cache length on the receiver should be (if a
    * sender).
    */
-  readonly reliableCache?: number;
+  reliableCache?: number;
 
   /**
    * Documentation about the system's messaging capabilities for this
@@ -467,13 +467,13 @@ export interface CapabilityStatementMessaging {
    * example, the process for becoming an authorized messaging exchange
    * partner.
    */
-  readonly documentation?: string;
+  documentation?: string;
 
   /**
    * References to message definitions for messages this system can send or
    * receive.
    */
-  readonly supportedMessage?: CapabilityStatementMessagingSupportedMessage[];
+  supportedMessage?: CapabilityStatementMessagingSupportedMessage[];
 }
 
 /**
@@ -486,7 +486,7 @@ export interface CapabilityStatementMessagingEndpoint {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -496,7 +496,7 @@ export interface CapabilityStatementMessagingEndpoint {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -515,19 +515,19 @@ export interface CapabilityStatementMessagingEndpoint {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A list of the messaging transport protocol(s) identifiers, supported
    * by this endpoint.
    */
-  readonly protocol?: Coding;
+  protocol?: Coding;
 
   /**
    * The network address of the endpoint. For solutions that do not use
    * network addresses for routing, it can be just an identifier.
    */
-  readonly address?: string;
+  address?: string;
 }
 
 /**
@@ -540,7 +540,7 @@ export interface CapabilityStatementMessagingSupportedMessage {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -550,7 +550,7 @@ export interface CapabilityStatementMessagingSupportedMessage {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -569,19 +569,19 @@ export interface CapabilityStatementMessagingSupportedMessage {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The mode of this event declaration - whether application is sender or
    * receiver.
    */
-  readonly mode?: string;
+  mode?: string;
 
   /**
    * Points to a message definition that identifies the messaging event,
    * message structure, allowed responses, etc.
    */
-  readonly definition?: string;
+  definition?: string;
 }
 
 /**
@@ -593,7 +593,7 @@ export interface CapabilityStatementRest {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -603,7 +603,7 @@ export interface CapabilityStatementRest {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -622,36 +622,36 @@ export interface CapabilityStatementRest {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifies whether this portion of the statement is describing the
    * ability to initiate or receive restful operations.
    */
-  readonly mode?: string;
+  mode?: string;
 
   /**
    * Information about the system's restful capabilities that apply across
    * all applications, such as security.
    */
-  readonly documentation?: string;
+  documentation?: string;
 
   /**
    * Information about security implementation from an interface
    * perspective - what a client needs to know.
    */
-  readonly security?: CapabilityStatementRestSecurity;
+  security?: CapabilityStatementRestSecurity;
 
   /**
    * A specification of the restful capabilities of the solution for a
    * specific resource type.
    */
-  readonly resource?: CapabilityStatementRestResource[];
+  resource?: CapabilityStatementRestResource[];
 
   /**
    * A specification of restful operations supported by the system.
    */
-  readonly interaction?: CapabilityStatementRestInteraction[];
+  interaction?: CapabilityStatementRestInteraction[];
 
   /**
    * Search parameters that are supported for searching all resources for
@@ -659,20 +659,20 @@ export interface CapabilityStatementRest {
    * ones defined in the specification, or additional ones defined for/by
    * the implementation.
    */
-  readonly searchParam?: CapabilityStatementRestResourceSearchParam[];
+  searchParam?: CapabilityStatementRestResourceSearchParam[];
 
   /**
    * Definition of an operation or a named query together with its
    * parameters and their meaning and type.
    */
-  readonly operation?: CapabilityStatementRestResourceOperation[];
+  operation?: CapabilityStatementRestResourceOperation[];
 
   /**
    * An absolute URI which is a reference to the definition of a
    * compartment that the system supports. The reference is to a
    * CompartmentDefinition resource by its canonical URL .
    */
-  readonly compartment?: string[];
+  compartment?: string[];
 }
 
 /**
@@ -684,7 +684,7 @@ export interface CapabilityStatementRestInteraction {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -694,7 +694,7 @@ export interface CapabilityStatementRestInteraction {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -713,19 +713,19 @@ export interface CapabilityStatementRestInteraction {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A coded identifier of the operation, supported by the system.
    */
-  readonly code?: string;
+  code?: string;
 
   /**
    * Guidance specific to the implementation of this operation, such as
    * limitations on the kind of transactions allowed, or information about
    * system wide search is implemented.
    */
-  readonly documentation?: string;
+  documentation?: string;
 }
 
 /**
@@ -738,7 +738,7 @@ export interface CapabilityStatementRestResource {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -748,7 +748,7 @@ export interface CapabilityStatementRestResource {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -767,12 +767,12 @@ export interface CapabilityStatementRestResource {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A type of resource exposed via the restful interface.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * A specification of the profile that describes the solution's overall
@@ -780,7 +780,7 @@ export interface CapabilityStatementRestResource {
    * bindings, lengths or other limitations. See further discussion in
    * [Using Profiles](profiling.html#profile-uses).
    */
-  readonly profile?: string;
+  profile?: string;
 
   /**
    * A list of profiles that represent different use cases supported by the
@@ -792,17 +792,17 @@ export interface CapabilityStatementRestResource {
    * guidance implicit in the profile. See further discussion in [Using
    * Profiles](profiling.html#profile-uses).
    */
-  readonly supportedProfile?: string[];
+  supportedProfile?: string[];
 
   /**
    * Additional information about the resource type used by the system.
    */
-  readonly documentation?: string;
+  documentation?: string;
 
   /**
    * Identifies a restful operation supported by the solution.
    */
-  readonly interaction?: CapabilityStatementRestResourceInteraction[];
+  interaction?: CapabilityStatementRestResourceInteraction[];
 
   /**
    * This field is set to no-version to specify that the system does not
@@ -812,13 +812,13 @@ export interface CapabilityStatementRestResource {
    * 'versioned-update', then the server supports all the versioning
    * features, including using e-tags for version integrity in the API.
    */
-  readonly versioning?: string;
+  versioning?: string;
 
   /**
    * A flag for whether the server is able to return past versions as part
    * of the vRead operation.
    */
-  readonly readHistory?: boolean;
+  readHistory?: boolean;
 
   /**
    * A flag to indicate that the server allows or needs to allow the client
@@ -827,50 +827,50 @@ export interface CapabilityStatementRestResource {
    * means that the server allows the client to create new identities on
    * the server.
    */
-  readonly updateCreate?: boolean;
+  updateCreate?: boolean;
 
   /**
    * A flag that indicates that the server supports conditional create.
    */
-  readonly conditionalCreate?: boolean;
+  conditionalCreate?: boolean;
 
   /**
    * A code that indicates how the server supports conditional read.
    */
-  readonly conditionalRead?: string;
+  conditionalRead?: string;
 
   /**
    * A flag that indicates that the server supports conditional update.
    */
-  readonly conditionalUpdate?: boolean;
+  conditionalUpdate?: boolean;
 
   /**
    * A code that indicates how the server supports conditional delete.
    */
-  readonly conditionalDelete?: string;
+  conditionalDelete?: string;
 
   /**
    * A set of flags that defines how references are supported.
    */
-  readonly referencePolicy?: string[];
+  referencePolicy?: string[];
 
   /**
    * A list of _include values supported by the server.
    */
-  readonly searchInclude?: string[];
+  searchInclude?: string[];
 
   /**
    * A list of _revinclude (reverse include) values supported by the
    * server.
    */
-  readonly searchRevInclude?: string[];
+  searchRevInclude?: string[];
 
   /**
    * Search parameters for implementations to support and/or make use of -
    * either references to ones defined in the specification, or additional
    * ones defined for/by the implementation.
    */
-  readonly searchParam?: CapabilityStatementRestResourceSearchParam[];
+  searchParam?: CapabilityStatementRestResourceSearchParam[];
 
   /**
    * Definition of an operation or a named query together with its
@@ -878,7 +878,7 @@ export interface CapabilityStatementRestResource {
    * operation for details about how to invoke the operation, and the
    * parameters.
    */
-  readonly operation?: CapabilityStatementRestResourceOperation[];
+  operation?: CapabilityStatementRestResourceOperation[];
 }
 
 /**
@@ -890,7 +890,7 @@ export interface CapabilityStatementRestResourceInteraction {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -900,7 +900,7 @@ export interface CapabilityStatementRestResourceInteraction {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -919,19 +919,19 @@ export interface CapabilityStatementRestResourceInteraction {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Coded identifier of the operation, supported by the system resource.
    */
-  readonly code?: string;
+  code?: string;
 
   /**
    * Guidance specific to the implementation of this operation, such as
    * 'delete is a logical delete' or 'updates are only allowed with version
    * id' or 'creates permitted from pre-authorized certificates only'.
    */
-  readonly documentation?: string;
+  documentation?: string;
 }
 
 /**
@@ -946,7 +946,7 @@ export interface CapabilityStatementRestResourceOperation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -956,7 +956,7 @@ export interface CapabilityStatementRestResourceOperation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -975,14 +975,14 @@ export interface CapabilityStatementRestResourceOperation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The name of the operation or query. For an operation, this is the name
    * prefixed with $ and used in the URL. For a query, this is the name
    * used in the _query parameter when the query is called.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Where the formal definition can be found. If a server references the
@@ -995,14 +995,14 @@ export interface CapabilityStatementRestResourceOperation {
    * 'base' of the original OperationDefinition.  The custom definition
    * would describe the specific subset of functionality supported.
    */
-  readonly definition?: string;
+  definition?: string;
 
   /**
    * Documentation that describes anything special about the operation
    * behavior, possibly detailing different behavior for system, type and
    * instance-level invocation of the operation.
    */
-  readonly documentation?: string;
+  documentation?: string;
 }
 
 /**
@@ -1016,7 +1016,7 @@ export interface CapabilityStatementRestResourceSearchParam {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1026,7 +1026,7 @@ export interface CapabilityStatementRestResourceSearchParam {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1045,12 +1045,12 @@ export interface CapabilityStatementRestResourceSearchParam {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The name of the search parameter used in the interface.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * An absolute URI that is a formal reference to where this parameter was
@@ -1061,19 +1061,19 @@ export interface CapabilityStatementRestResourceSearchParam {
    * SearchParameter defined by the FHIR core specification or externally
    * defined IGs.
    */
-  readonly definition?: string;
+  definition?: string;
 
   /**
    * The type of value a search parameter refers to, and how the content is
    * interpreted.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * This allows documentation of any distinct behaviors about how the
    * search parameter is used.  For example, text matching algorithms.
    */
-  readonly documentation?: string;
+  documentation?: string;
 }
 
 /**
@@ -1086,7 +1086,7 @@ export interface CapabilityStatementRestSecurity {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1096,7 +1096,7 @@ export interface CapabilityStatementRestSecurity {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1115,23 +1115,23 @@ export interface CapabilityStatementRestSecurity {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Server adds CORS headers when responding to requests - this enables
    * Javascript applications to use the server.
    */
-  readonly cors?: boolean;
+  cors?: boolean;
 
   /**
    * Types of security services that are supported/required by the system.
    */
-  readonly service?: CodeableConcept[];
+  service?: CodeableConcept[];
 
   /**
    * General description of how security works.
    */
-  readonly description?: string;
+  description?: string;
 }
 
 /**
@@ -1145,7 +1145,7 @@ export interface CapabilityStatementSoftware {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1155,7 +1155,7 @@ export interface CapabilityStatementSoftware {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1174,20 +1174,20 @@ export interface CapabilityStatementSoftware {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Name the software is known by.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * The version identifier for the software covered by this statement.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * Date this version of the software was released.
    */
-  readonly releaseDate?: string;
+  releaseDate?: string;
 }

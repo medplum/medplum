@@ -49,14 +49,14 @@ export interface ExplanationOfBenefit {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -64,12 +64,12 @@ export interface ExplanationOfBenefit {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -79,14 +79,14 @@ export interface ExplanationOfBenefit {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -96,7 +96,7 @@ export interface ExplanationOfBenefit {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -114,30 +114,30 @@ export interface ExplanationOfBenefit {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A unique identifier assigned to this explanation of benefit.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The status of the resource instance.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The category of claim, e.g. oral, pharmacy, vision, institutional,
    * professional.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * A finer grained suite of claim type codes which may convey additional
    * information such as Inpatient vs Outpatient and/or a specialty
    * service.
    */
-  readonly subType?: CodeableConcept;
+  subType?: CodeableConcept;
 
   /**
    * A code to indicate whether the nature of the request is: to request
@@ -146,225 +146,225 @@ export interface ExplanationOfBenefit {
    * or requesting the non-binding adjudication of the listed products and
    * services which could be provided in the future.
    */
-  readonly use?: string;
+  use?: string;
 
   /**
    * The party to whom the professional services and/or products have been
    * supplied or are being considered and for whom actual for forecast
    * reimbursement is sought.
    */
-  readonly patient?: Reference<Patient>;
+  patient?: Reference<Patient>;
 
   /**
    * The period for which charges are being submitted.
    */
-  readonly billablePeriod?: Period;
+  billablePeriod?: Period;
 
   /**
    * The date this resource was created.
    */
-  readonly created?: string;
+  created?: string;
 
   /**
    * Individual who created the claim, predetermination or
    * preauthorization.
    */
-  readonly enterer?: Reference<Practitioner | PractitionerRole>;
+  enterer?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * The party responsible for authorization, adjudication and
    * reimbursement.
    */
-  readonly insurer?: Reference<Organization>;
+  insurer?: Reference<Organization>;
 
   /**
    * The provider which is responsible for the claim, predetermination or
    * preauthorization.
    */
-  readonly provider?: Reference<Practitioner | PractitionerRole | Organization>;
+  provider?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * The provider-required urgency of processing the request. Typical
    * values include: stat, routine deferred.
    */
-  readonly priority?: CodeableConcept;
+  priority?: CodeableConcept;
 
   /**
    * A code to indicate whether and for whom funds are to be reserved for
    * future claims.
    */
-  readonly fundsReserveRequested?: CodeableConcept;
+  fundsReserveRequested?: CodeableConcept;
 
   /**
    * A code, used only on a response to a preauthorization, to indicate
    * whether the benefits payable have been reserved and for whom.
    */
-  readonly fundsReserve?: CodeableConcept;
+  fundsReserve?: CodeableConcept;
 
   /**
    * Other claims which are related to this claim such as prior submissions
    * or claims for related services or for the same event.
    */
-  readonly related?: ExplanationOfBenefitRelated[];
+  related?: ExplanationOfBenefitRelated[];
 
   /**
    * Prescription to support the dispensing of pharmacy, device or vision
    * products.
    */
-  readonly prescription?: Reference<MedicationRequest | VisionPrescription>;
+  prescription?: Reference<MedicationRequest | VisionPrescription>;
 
   /**
    * Original prescription which has been superseded by this prescription
    * to support the dispensing of pharmacy services, medications or
    * products.
    */
-  readonly originalPrescription?: Reference<MedicationRequest>;
+  originalPrescription?: Reference<MedicationRequest>;
 
   /**
    * The party to be reimbursed for cost of the products and services
    * according to the terms of the policy.
    */
-  readonly payee?: ExplanationOfBenefitPayee;
+  payee?: ExplanationOfBenefitPayee;
 
   /**
    * A reference to a referral resource.
    */
-  readonly referral?: Reference<ServiceRequest>;
+  referral?: Reference<ServiceRequest>;
 
   /**
    * Facility where the services were provided.
    */
-  readonly facility?: Reference<Location>;
+  facility?: Reference<Location>;
 
   /**
    * The business identifier for the instance of the adjudication request:
    * claim predetermination or preauthorization.
    */
-  readonly claim?: Reference<Claim>;
+  claim?: Reference<Claim>;
 
   /**
    * The business identifier for the instance of the adjudication response:
    * claim, predetermination or preauthorization response.
    */
-  readonly claimResponse?: Reference<ClaimResponse>;
+  claimResponse?: Reference<ClaimResponse>;
 
   /**
    * The outcome of the claim, predetermination, or preauthorization
    * processing.
    */
-  readonly outcome?: string;
+  outcome?: string;
 
   /**
    * A human readable description of the status of the adjudication.
    */
-  readonly disposition?: string;
+  disposition?: string;
 
   /**
    * Reference from the Insurer which is used in later communications which
    * refers to this adjudication.
    */
-  readonly preAuthRef?: string[];
+  preAuthRef?: string[];
 
   /**
    * The timeframe during which the supplied preauthorization reference may
    * be quoted on claims to obtain the adjudication as provided.
    */
-  readonly preAuthRefPeriod?: Period[];
+  preAuthRefPeriod?: Period[];
 
   /**
    * The members of the team who provided the products and services.
    */
-  readonly careTeam?: ExplanationOfBenefitCareTeam[];
+  careTeam?: ExplanationOfBenefitCareTeam[];
 
   /**
    * Additional information codes regarding exceptions, special
    * considerations, the condition, situation, prior or concurrent issues.
    */
-  readonly supportingInfo?: ExplanationOfBenefitSupportingInfo[];
+  supportingInfo?: ExplanationOfBenefitSupportingInfo[];
 
   /**
    * Information about diagnoses relevant to the claim items.
    */
-  readonly diagnosis?: ExplanationOfBenefitDiagnosis[];
+  diagnosis?: ExplanationOfBenefitDiagnosis[];
 
   /**
    * Procedures performed on the patient relevant to the billing items with
    * the claim.
    */
-  readonly procedure?: ExplanationOfBenefitProcedure[];
+  procedure?: ExplanationOfBenefitProcedure[];
 
   /**
    * This indicates the relative order of a series of EOBs related to
    * different coverages for the same suite of services.
    */
-  readonly precedence?: number;
+  precedence?: number;
 
   /**
    * Financial instruments for reimbursement for the health care products
    * and services specified on the claim.
    */
-  readonly insurance?: ExplanationOfBenefitInsurance[];
+  insurance?: ExplanationOfBenefitInsurance[];
 
   /**
    * Details of a accident which resulted in injuries which required the
    * products and services listed in the claim.
    */
-  readonly accident?: ExplanationOfBenefitAccident;
+  accident?: ExplanationOfBenefitAccident;
 
   /**
    * A claim line. Either a simple (a product or service) or a 'group' of
    * details which can also be a simple items or groups of sub-details.
    */
-  readonly item?: ExplanationOfBenefitItem[];
+  item?: ExplanationOfBenefitItem[];
 
   /**
    * The first-tier service adjudications for payor added product or
    * service lines.
    */
-  readonly addItem?: ExplanationOfBenefitAddItem[];
+  addItem?: ExplanationOfBenefitAddItem[];
 
   /**
    * The adjudication results which are presented at the header level
    * rather than at the line-item or add-item levels.
    */
-  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
+  adjudication?: ExplanationOfBenefitItemAdjudication[];
 
   /**
    * Categorized monetary totals for the adjudication.
    */
-  readonly total?: ExplanationOfBenefitTotal[];
+  total?: ExplanationOfBenefitTotal[];
 
   /**
    * Payment details for the adjudication of the claim.
    */
-  readonly payment?: ExplanationOfBenefitPayment;
+  payment?: ExplanationOfBenefitPayment;
 
   /**
    * A code for the form to be used for printing the content.
    */
-  readonly formCode?: CodeableConcept;
+  formCode?: CodeableConcept;
 
   /**
    * The actual form, by reference or inclusion, for printing the content
    * or an EOB.
    */
-  readonly form?: Attachment;
+  form?: Attachment;
 
   /**
    * A note that describes or explains adjudication results in a human
    * readable form.
    */
-  readonly processNote?: ExplanationOfBenefitProcessNote[];
+  processNote?: ExplanationOfBenefitProcessNote[];
 
   /**
    * The term of the benefits documented in this response.
    */
-  readonly benefitPeriod?: Period;
+  benefitPeriod?: Period;
 
   /**
    * Balance by Benefit Category.
    */
-  readonly benefitBalance?: ExplanationOfBenefitBenefitBalance[];
+  benefitBalance?: ExplanationOfBenefitBenefitBalance[];
 }
 
 /**
@@ -377,7 +377,7 @@ export interface ExplanationOfBenefitAccident {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -387,7 +387,7 @@ export interface ExplanationOfBenefitAccident {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -406,30 +406,30 @@ export interface ExplanationOfBenefitAccident {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Date of an accident event  related to the products and services
    * contained in the claim.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The type or context of the accident event for the purposes of
    * selection of potential insurance coverages and determination of
    * coordination between insurers.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The physical location of the accident event.
    */
-  readonly locationAddress?: Address;
+  locationAddress?: Address;
 
   /**
    * The physical location of the accident event.
    */
-  readonly locationReference?: Reference<Location>;
+  locationReference?: Reference<Location>;
 }
 
 /**
@@ -442,7 +442,7 @@ export interface ExplanationOfBenefitAddItem {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -452,7 +452,7 @@ export interface ExplanationOfBenefitAddItem {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -471,87 +471,87 @@ export interface ExplanationOfBenefitAddItem {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Claim items which this service line is intended to replace.
    */
-  readonly itemSequence?: number[];
+  itemSequence?: number[];
 
   /**
    * The sequence number of the details within the claim item which this
    * line is intended to replace.
    */
-  readonly detailSequence?: number[];
+  detailSequence?: number[];
 
   /**
    * The sequence number of the sub-details woithin the details within the
    * claim item which this line is intended to replace.
    */
-  readonly subDetailSequence?: number[];
+  subDetailSequence?: number[];
 
   /**
    * The providers who are authorized for the services rendered to the
    * patient.
    */
-  readonly provider?: Reference<Practitioner | PractitionerRole | Organization>[];
+  provider?: Reference<Practitioner | PractitionerRole | Organization>[];
 
   /**
    * When the value is a group code then this item collects a set of
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  readonly productOrService?: CodeableConcept;
+  productOrService?: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
    * the product or service.
    */
-  readonly modifier?: CodeableConcept[];
+  modifier?: CodeableConcept[];
 
   /**
    * Identifies the program under which this may be recovered.
    */
-  readonly programCode?: CodeableConcept[];
+  programCode?: CodeableConcept[];
 
   /**
    * The date or dates when the service or product was supplied, performed
    * or completed.
    */
-  readonly servicedDate?: string;
+  servicedDate?: string;
 
   /**
    * The date or dates when the service or product was supplied, performed
    * or completed.
    */
-  readonly servicedPeriod?: Period;
+  servicedPeriod?: Period;
 
   /**
    * Where the product or service was provided.
    */
-  readonly locationCodeableConcept?: CodeableConcept;
+  locationCodeableConcept?: CodeableConcept;
 
   /**
    * Where the product or service was provided.
    */
-  readonly locationAddress?: Address;
+  locationAddress?: Address;
 
   /**
    * Where the product or service was provided.
    */
-  readonly locationReference?: Reference<Location>;
+  locationReference?: Reference<Location>;
 
   /**
    * The number of repetitions of a service or product.
    */
-  readonly quantity?: Quantity;
+  quantity?: Quantity;
 
   /**
    * If the item is not a group then this is the fee for the product or
    * service, otherwise this is the total of the fees for the details of
    * the group.
    */
-  readonly unitPrice?: Money;
+  unitPrice?: Money;
 
   /**
    * A real number that represents a multiplier used in determining the
@@ -559,40 +559,40 @@ export interface ExplanationOfBenefitAddItem {
    * of a Factor allows for a discount or surcharge multiplier to be
    * applied to a monetary amount.
    */
-  readonly factor?: number;
+  factor?: number;
 
   /**
    * The quantity times the unit price for an additional service or product
    * or charge.
    */
-  readonly net?: Money;
+  net?: Money;
 
   /**
    * Physical service site on the patient (limb, tooth, etc.).
    */
-  readonly bodySite?: CodeableConcept;
+  bodySite?: CodeableConcept;
 
   /**
    * A region or surface of the bodySite, e.g. limb region or tooth
    * surface(s).
    */
-  readonly subSite?: CodeableConcept[];
+  subSite?: CodeableConcept[];
 
   /**
    * The numbers associated with notes below which apply to the
    * adjudication of this item.
    */
-  readonly noteNumber?: number[];
+  noteNumber?: number[];
 
   /**
    * The adjudication results.
    */
-  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
+  adjudication?: ExplanationOfBenefitItemAdjudication[];
 
   /**
    * The second-tier service adjudications for payor added services.
    */
-  readonly detail?: ExplanationOfBenefitAddItemDetail[];
+  detail?: ExplanationOfBenefitAddItemDetail[];
 }
 
 /**
@@ -604,7 +604,7 @@ export interface ExplanationOfBenefitAddItemDetail {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -614,7 +614,7 @@ export interface ExplanationOfBenefitAddItemDetail {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -633,32 +633,32 @@ export interface ExplanationOfBenefitAddItemDetail {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * When the value is a group code then this item collects a set of
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  readonly productOrService?: CodeableConcept;
+  productOrService?: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
    * the product or service.
    */
-  readonly modifier?: CodeableConcept[];
+  modifier?: CodeableConcept[];
 
   /**
    * The number of repetitions of a service or product.
    */
-  readonly quantity?: Quantity;
+  quantity?: Quantity;
 
   /**
    * If the item is not a group then this is the fee for the product or
    * service, otherwise this is the total of the fees for the details of
    * the group.
    */
-  readonly unitPrice?: Money;
+  unitPrice?: Money;
 
   /**
    * A real number that represents a multiplier used in determining the
@@ -666,29 +666,29 @@ export interface ExplanationOfBenefitAddItemDetail {
    * of a Factor allows for a discount or surcharge multiplier to be
    * applied to a monetary amount.
    */
-  readonly factor?: number;
+  factor?: number;
 
   /**
    * The quantity times the unit price for an additional service or product
    * or charge.
    */
-  readonly net?: Money;
+  net?: Money;
 
   /**
    * The numbers associated with notes below which apply to the
    * adjudication of this item.
    */
-  readonly noteNumber?: number[];
+  noteNumber?: number[];
 
   /**
    * The adjudication results.
    */
-  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
+  adjudication?: ExplanationOfBenefitItemAdjudication[];
 
   /**
    * The third-tier service adjudications for payor added services.
    */
-  readonly subDetail?: ExplanationOfBenefitAddItemDetailSubDetail[];
+  subDetail?: ExplanationOfBenefitAddItemDetailSubDetail[];
 }
 
 /**
@@ -700,7 +700,7 @@ export interface ExplanationOfBenefitAddItemDetailSubDetail {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -710,7 +710,7 @@ export interface ExplanationOfBenefitAddItemDetailSubDetail {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -729,32 +729,32 @@ export interface ExplanationOfBenefitAddItemDetailSubDetail {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * When the value is a group code then this item collects a set of
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  readonly productOrService?: CodeableConcept;
+  productOrService?: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
    * the product or service.
    */
-  readonly modifier?: CodeableConcept[];
+  modifier?: CodeableConcept[];
 
   /**
    * The number of repetitions of a service or product.
    */
-  readonly quantity?: Quantity;
+  quantity?: Quantity;
 
   /**
    * If the item is not a group then this is the fee for the product or
    * service, otherwise this is the total of the fees for the details of
    * the group.
    */
-  readonly unitPrice?: Money;
+  unitPrice?: Money;
 
   /**
    * A real number that represents a multiplier used in determining the
@@ -762,24 +762,24 @@ export interface ExplanationOfBenefitAddItemDetailSubDetail {
    * of a Factor allows for a discount or surcharge multiplier to be
    * applied to a monetary amount.
    */
-  readonly factor?: number;
+  factor?: number;
 
   /**
    * The quantity times the unit price for an additional service or product
    * or charge.
    */
-  readonly net?: Money;
+  net?: Money;
 
   /**
    * The numbers associated with notes below which apply to the
    * adjudication of this item.
    */
-  readonly noteNumber?: number[];
+  noteNumber?: number[];
 
   /**
    * The adjudication results.
    */
-  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
+  adjudication?: ExplanationOfBenefitItemAdjudication[];
 }
 
 /**
@@ -791,7 +791,7 @@ export interface ExplanationOfBenefitBenefitBalance {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -801,7 +801,7 @@ export interface ExplanationOfBenefitBenefitBalance {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -820,52 +820,52 @@ export interface ExplanationOfBenefitBenefitBalance {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Code to identify the general type of benefits under which products and
    * services are provided.
    */
-  readonly category?: CodeableConcept;
+  category?: CodeableConcept;
 
   /**
    * True if the indicated class of service is excluded from the plan,
    * missing or False indicates the product or service is included in the
    * coverage.
    */
-  readonly excluded?: boolean;
+  excluded?: boolean;
 
   /**
    * A short name or tag for the benefit.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A richer description of the benefit or services covered.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Is a flag to indicate whether the benefits refer to in-network
    * providers or out-of-network providers.
    */
-  readonly network?: CodeableConcept;
+  network?: CodeableConcept;
 
   /**
    * Indicates if the benefits apply to an individual or to the family.
    */
-  readonly unit?: CodeableConcept;
+  unit?: CodeableConcept;
 
   /**
    * The term or period of the values such as 'maximum lifetime benefit' or
    * 'maximum annual visits'.
    */
-  readonly term?: CodeableConcept;
+  term?: CodeableConcept;
 
   /**
    * Benefits Used to date.
    */
-  readonly financial?: ExplanationOfBenefitBenefitBalanceFinancial[];
+  financial?: ExplanationOfBenefitBenefitBalanceFinancial[];
 }
 
 /**
@@ -877,7 +877,7 @@ export interface ExplanationOfBenefitBenefitBalanceFinancial {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -887,7 +887,7 @@ export interface ExplanationOfBenefitBenefitBalanceFinancial {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -906,37 +906,37 @@ export interface ExplanationOfBenefitBenefitBalanceFinancial {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Classification of benefit being provided.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The quantity of the benefit which is permitted under the coverage.
    */
-  readonly allowedUnsignedInt?: number;
+  allowedUnsignedInt?: number;
 
   /**
    * The quantity of the benefit which is permitted under the coverage.
    */
-  readonly allowedString?: string;
+  allowedString?: string;
 
   /**
    * The quantity of the benefit which is permitted under the coverage.
    */
-  readonly allowedMoney?: Money;
+  allowedMoney?: Money;
 
   /**
    * The quantity of the benefit which have been consumed to date.
    */
-  readonly usedUnsignedInt?: number;
+  usedUnsignedInt?: number;
 
   /**
    * The quantity of the benefit which have been consumed to date.
    */
-  readonly usedMoney?: Money;
+  usedMoney?: Money;
 }
 
 /**
@@ -948,7 +948,7 @@ export interface ExplanationOfBenefitCareTeam {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -958,7 +958,7 @@ export interface ExplanationOfBenefitCareTeam {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -977,35 +977,35 @@ export interface ExplanationOfBenefitCareTeam {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A number to uniquely identify care team entries.
    */
-  readonly sequence?: number;
+  sequence?: number;
 
   /**
    * Member of the team who provided the product or service.
    */
-  readonly provider?: Reference<Practitioner | PractitionerRole | Organization>;
+  provider?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * The party who is billing and/or responsible for the claimed products
    * or services.
    */
-  readonly responsible?: boolean;
+  responsible?: boolean;
 
   /**
    * The lead, assisting or supervising practitioner and their discipline
    * if a multidisciplinary team.
    */
-  readonly role?: CodeableConcept;
+  role?: CodeableConcept;
 
   /**
    * The qualification of the practitioner which is applicable for this
    * service.
    */
-  readonly qualification?: CodeableConcept;
+  qualification?: CodeableConcept;
 }
 
 /**
@@ -1017,7 +1017,7 @@ export interface ExplanationOfBenefitDiagnosis {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1027,7 +1027,7 @@ export interface ExplanationOfBenefitDiagnosis {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1046,42 +1046,42 @@ export interface ExplanationOfBenefitDiagnosis {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A number to uniquely identify diagnosis entries.
    */
-  readonly sequence?: number;
+  sequence?: number;
 
   /**
    * The nature of illness or problem in a coded form or as a reference to
    * an external defined Condition.
    */
-  readonly diagnosisCodeableConcept?: CodeableConcept;
+  diagnosisCodeableConcept?: CodeableConcept;
 
   /**
    * The nature of illness or problem in a coded form or as a reference to
    * an external defined Condition.
    */
-  readonly diagnosisReference?: Reference<Condition>;
+  diagnosisReference?: Reference<Condition>;
 
   /**
    * When the condition was observed or the relative ranking.
    */
-  readonly type?: CodeableConcept[];
+  type?: CodeableConcept[];
 
   /**
    * Indication of whether the diagnosis was present on admission to a
    * facility.
    */
-  readonly onAdmission?: CodeableConcept;
+  onAdmission?: CodeableConcept;
 
   /**
    * A package billing code or bundle code used to group products and
    * services to a particular health condition (such as heart attack) which
    * is based on a predetermined grouping code system.
    */
-  readonly packageCode?: CodeableConcept;
+  packageCode?: CodeableConcept;
 }
 
 /**
@@ -1094,7 +1094,7 @@ export interface ExplanationOfBenefitInsurance {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1104,7 +1104,7 @@ export interface ExplanationOfBenefitInsurance {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1123,13 +1123,13 @@ export interface ExplanationOfBenefitInsurance {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A flag to indicate that this Coverage is to be used for adjudication
    * of this claim when set to true.
    */
-  readonly focal?: boolean;
+  focal?: boolean;
 
   /**
    * Reference to the insurance card level information contained in the
@@ -1137,14 +1137,14 @@ export interface ExplanationOfBenefitInsurance {
    * to locate the patient's actual coverage within the insurer's
    * information system.
    */
-  readonly coverage?: Reference<Coverage>;
+  coverage?: Reference<Coverage>;
 
   /**
    * Reference numbers previously provided by the insurer to the provider
    * to be quoted on subsequent claims containing services or products
    * related to the prior authorization.
    */
-  readonly preAuthRef?: string[];
+  preAuthRef?: string[];
 }
 
 /**
@@ -1157,7 +1157,7 @@ export interface ExplanationOfBenefitItem {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1167,7 +1167,7 @@ export interface ExplanationOfBenefitItem {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1186,102 +1186,102 @@ export interface ExplanationOfBenefitItem {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A number to uniquely identify item entries.
    */
-  readonly sequence?: number;
+  sequence?: number;
 
   /**
    * Care team members related to this service or product.
    */
-  readonly careTeamSequence?: number[];
+  careTeamSequence?: number[];
 
   /**
    * Diagnoses applicable for this service or product.
    */
-  readonly diagnosisSequence?: number[];
+  diagnosisSequence?: number[];
 
   /**
    * Procedures applicable for this service or product.
    */
-  readonly procedureSequence?: number[];
+  procedureSequence?: number[];
 
   /**
    * Exceptions, special conditions and supporting information applicable
    * for this service or product.
    */
-  readonly informationSequence?: number[];
+  informationSequence?: number[];
 
   /**
    * The type of revenue or cost center providing the product and/or
    * service.
    */
-  readonly revenue?: CodeableConcept;
+  revenue?: CodeableConcept;
 
   /**
    * Code to identify the general type of benefits under which products and
    * services are provided.
    */
-  readonly category?: CodeableConcept;
+  category?: CodeableConcept;
 
   /**
    * When the value is a group code then this item collects a set of
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  readonly productOrService?: CodeableConcept;
+  productOrService?: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
    * the product or service.
    */
-  readonly modifier?: CodeableConcept[];
+  modifier?: CodeableConcept[];
 
   /**
    * Identifies the program under which this may be recovered.
    */
-  readonly programCode?: CodeableConcept[];
+  programCode?: CodeableConcept[];
 
   /**
    * The date or dates when the service or product was supplied, performed
    * or completed.
    */
-  readonly servicedDate?: string;
+  servicedDate?: string;
 
   /**
    * The date or dates when the service or product was supplied, performed
    * or completed.
    */
-  readonly servicedPeriod?: Period;
+  servicedPeriod?: Period;
 
   /**
    * Where the product or service was provided.
    */
-  readonly locationCodeableConcept?: CodeableConcept;
+  locationCodeableConcept?: CodeableConcept;
 
   /**
    * Where the product or service was provided.
    */
-  readonly locationAddress?: Address;
+  locationAddress?: Address;
 
   /**
    * Where the product or service was provided.
    */
-  readonly locationReference?: Reference<Location>;
+  locationReference?: Reference<Location>;
 
   /**
    * The number of repetitions of a service or product.
    */
-  readonly quantity?: Quantity;
+  quantity?: Quantity;
 
   /**
    * If the item is not a group then this is the fee for the product or
    * service, otherwise this is the total of the fees for the details of
    * the group.
    */
-  readonly unitPrice?: Money;
+  unitPrice?: Money;
 
   /**
    * A real number that represents a multiplier used in determining the
@@ -1289,53 +1289,53 @@ export interface ExplanationOfBenefitItem {
    * of a Factor allows for a discount or surcharge multiplier to be
    * applied to a monetary amount.
    */
-  readonly factor?: number;
+  factor?: number;
 
   /**
    * The quantity times the unit price for an additional service or product
    * or charge.
    */
-  readonly net?: Money;
+  net?: Money;
 
   /**
    * Unique Device Identifiers associated with this line item.
    */
-  readonly udi?: Reference<Device>[];
+  udi?: Reference<Device>[];
 
   /**
    * Physical service site on the patient (limb, tooth, etc.).
    */
-  readonly bodySite?: CodeableConcept;
+  bodySite?: CodeableConcept;
 
   /**
    * A region or surface of the bodySite, e.g. limb region or tooth
    * surface(s).
    */
-  readonly subSite?: CodeableConcept[];
+  subSite?: CodeableConcept[];
 
   /**
    * A billed item may include goods or services provided in multiple
    * encounters.
    */
-  readonly encounter?: Reference<Encounter>[];
+  encounter?: Reference<Encounter>[];
 
   /**
    * The numbers associated with notes below which apply to the
    * adjudication of this item.
    */
-  readonly noteNumber?: number[];
+  noteNumber?: number[];
 
   /**
    * If this item is a group then the values here are a summary of the
    * adjudication of the detail items. If this item is a simple product or
    * service then this is the result of the adjudication of this item.
    */
-  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
+  adjudication?: ExplanationOfBenefitItemAdjudication[];
 
   /**
    * Second-tier of goods and services.
    */
-  readonly detail?: ExplanationOfBenefitItemDetail[];
+  detail?: ExplanationOfBenefitItemDetail[];
 }
 
 /**
@@ -1349,7 +1349,7 @@ export interface ExplanationOfBenefitItemAdjudication {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1359,7 +1359,7 @@ export interface ExplanationOfBenefitItemAdjudication {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1378,7 +1378,7 @@ export interface ExplanationOfBenefitItemAdjudication {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A code to indicate the information type of this adjudication record.
@@ -1388,24 +1388,24 @@ export interface ExplanationOfBenefitItemAdjudication {
    * amounts paid by other coverages, and the benefit payable for this
    * item.
    */
-  readonly category?: CodeableConcept;
+  category?: CodeableConcept;
 
   /**
    * A code supporting the understanding of the adjudication result and
    * explaining variance from expected amount.
    */
-  readonly reason?: CodeableConcept;
+  reason?: CodeableConcept;
 
   /**
    * Monetary amount associated with the category.
    */
-  readonly amount?: Money;
+  amount?: Money;
 
   /**
    * A non-monetary value associated with the category. Mutually exclusive
    * to the amount element above.
    */
-  readonly value?: number;
+  value?: number;
 }
 
 /**
@@ -1417,7 +1417,7 @@ export interface ExplanationOfBenefitItemDetail {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1427,7 +1427,7 @@ export interface ExplanationOfBenefitItemDetail {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1446,55 +1446,55 @@ export interface ExplanationOfBenefitItemDetail {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A claim detail line. Either a simple (a product or service) or a
    * 'group' of sub-details which are simple items.
    */
-  readonly sequence?: number;
+  sequence?: number;
 
   /**
    * The type of revenue or cost center providing the product and/or
    * service.
    */
-  readonly revenue?: CodeableConcept;
+  revenue?: CodeableConcept;
 
   /**
    * Code to identify the general type of benefits under which products and
    * services are provided.
    */
-  readonly category?: CodeableConcept;
+  category?: CodeableConcept;
 
   /**
    * When the value is a group code then this item collects a set of
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  readonly productOrService?: CodeableConcept;
+  productOrService?: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
    * the product or service.
    */
-  readonly modifier?: CodeableConcept[];
+  modifier?: CodeableConcept[];
 
   /**
    * Identifies the program under which this may be recovered.
    */
-  readonly programCode?: CodeableConcept[];
+  programCode?: CodeableConcept[];
 
   /**
    * The number of repetitions of a service or product.
    */
-  readonly quantity?: Quantity;
+  quantity?: Quantity;
 
   /**
    * If the item is not a group then this is the fee for the product or
    * service, otherwise this is the total of the fees for the details of
    * the group.
    */
-  readonly unitPrice?: Money;
+  unitPrice?: Money;
 
   /**
    * A real number that represents a multiplier used in determining the
@@ -1502,34 +1502,34 @@ export interface ExplanationOfBenefitItemDetail {
    * of a Factor allows for a discount or surcharge multiplier to be
    * applied to a monetary amount.
    */
-  readonly factor?: number;
+  factor?: number;
 
   /**
    * The quantity times the unit price for an additional service or product
    * or charge.
    */
-  readonly net?: Money;
+  net?: Money;
 
   /**
    * Unique Device Identifiers associated with this line item.
    */
-  readonly udi?: Reference<Device>[];
+  udi?: Reference<Device>[];
 
   /**
    * The numbers associated with notes below which apply to the
    * adjudication of this item.
    */
-  readonly noteNumber?: number[];
+  noteNumber?: number[];
 
   /**
    * The adjudication results.
    */
-  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
+  adjudication?: ExplanationOfBenefitItemAdjudication[];
 
   /**
    * Third-tier of goods and services.
    */
-  readonly subDetail?: ExplanationOfBenefitItemDetailSubDetail[];
+  subDetail?: ExplanationOfBenefitItemDetailSubDetail[];
 }
 
 /**
@@ -1541,7 +1541,7 @@ export interface ExplanationOfBenefitItemDetailSubDetail {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1551,7 +1551,7 @@ export interface ExplanationOfBenefitItemDetailSubDetail {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1570,55 +1570,55 @@ export interface ExplanationOfBenefitItemDetailSubDetail {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A claim detail line. Either a simple (a product or service) or a
    * 'group' of sub-details which are simple items.
    */
-  readonly sequence?: number;
+  sequence?: number;
 
   /**
    * The type of revenue or cost center providing the product and/or
    * service.
    */
-  readonly revenue?: CodeableConcept;
+  revenue?: CodeableConcept;
 
   /**
    * Code to identify the general type of benefits under which products and
    * services are provided.
    */
-  readonly category?: CodeableConcept;
+  category?: CodeableConcept;
 
   /**
    * When the value is a group code then this item collects a set of
    * related claim details, otherwise this contains the product, service,
    * drug or other billing code for the item.
    */
-  readonly productOrService?: CodeableConcept;
+  productOrService?: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
    * the product or service.
    */
-  readonly modifier?: CodeableConcept[];
+  modifier?: CodeableConcept[];
 
   /**
    * Identifies the program under which this may be recovered.
    */
-  readonly programCode?: CodeableConcept[];
+  programCode?: CodeableConcept[];
 
   /**
    * The number of repetitions of a service or product.
    */
-  readonly quantity?: Quantity;
+  quantity?: Quantity;
 
   /**
    * If the item is not a group then this is the fee for the product or
    * service, otherwise this is the total of the fees for the details of
    * the group.
    */
-  readonly unitPrice?: Money;
+  unitPrice?: Money;
 
   /**
    * A real number that represents a multiplier used in determining the
@@ -1626,29 +1626,29 @@ export interface ExplanationOfBenefitItemDetailSubDetail {
    * of a Factor allows for a discount or surcharge multiplier to be
    * applied to a monetary amount.
    */
-  readonly factor?: number;
+  factor?: number;
 
   /**
    * The quantity times the unit price for an additional service or product
    * or charge.
    */
-  readonly net?: Money;
+  net?: Money;
 
   /**
    * Unique Device Identifiers associated with this line item.
    */
-  readonly udi?: Reference<Device>[];
+  udi?: Reference<Device>[];
 
   /**
    * The numbers associated with notes below which apply to the
    * adjudication of this item.
    */
-  readonly noteNumber?: number[];
+  noteNumber?: number[];
 
   /**
    * The adjudication results.
    */
-  readonly adjudication?: ExplanationOfBenefitItemAdjudication[];
+  adjudication?: ExplanationOfBenefitItemAdjudication[];
 }
 
 /**
@@ -1661,7 +1661,7 @@ export interface ExplanationOfBenefitPayee {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1671,7 +1671,7 @@ export interface ExplanationOfBenefitPayee {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1690,18 +1690,18 @@ export interface ExplanationOfBenefitPayee {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Type of Party to be reimbursed: Subscriber, provider, other.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Reference to the individual or organization to whom any payment will
    * be made.
    */
-  readonly party?: Reference<Practitioner | PractitionerRole | Organization | Patient | RelatedPerson>;
+  party?: Reference<Practitioner | PractitionerRole | Organization | Patient | RelatedPerson>;
 }
 
 /**
@@ -1713,7 +1713,7 @@ export interface ExplanationOfBenefitPayment {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1723,7 +1723,7 @@ export interface ExplanationOfBenefitPayment {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1742,40 +1742,40 @@ export interface ExplanationOfBenefitPayment {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Whether this represents partial or complete payment of the benefits
    * payable.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Total amount of all adjustments to this payment included in this
    * transaction which are not related to this claim's adjudication.
    */
-  readonly adjustment?: Money;
+  adjustment?: Money;
 
   /**
    * Reason for the payment adjustment.
    */
-  readonly adjustmentReason?: CodeableConcept;
+  adjustmentReason?: CodeableConcept;
 
   /**
    * Estimated date the payment will be issued or the actual issue date of
    * payment.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * Benefits payable less any payment adjustment.
    */
-  readonly amount?: Money;
+  amount?: Money;
 
   /**
    * Issuer's unique identifier for the payment instrument.
    */
-  readonly identifier?: Identifier;
+  identifier?: Identifier;
 }
 
 /**
@@ -1788,7 +1788,7 @@ export interface ExplanationOfBenefitProcedure {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1798,7 +1798,7 @@ export interface ExplanationOfBenefitProcedure {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1817,39 +1817,39 @@ export interface ExplanationOfBenefitProcedure {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A number to uniquely identify procedure entries.
    */
-  readonly sequence?: number;
+  sequence?: number;
 
   /**
    * When the condition was observed or the relative ranking.
    */
-  readonly type?: CodeableConcept[];
+  type?: CodeableConcept[];
 
   /**
    * Date and optionally time the procedure was performed.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The code or reference to a Procedure resource which identifies the
    * clinical intervention performed.
    */
-  readonly procedureCodeableConcept?: CodeableConcept;
+  procedureCodeableConcept?: CodeableConcept;
 
   /**
    * The code or reference to a Procedure resource which identifies the
    * clinical intervention performed.
    */
-  readonly procedureReference?: Reference<Procedure>;
+  procedureReference?: Reference<Procedure>;
 
   /**
    * Unique Device Identifiers associated with this line item.
    */
-  readonly udi?: Reference<Device>[];
+  udi?: Reference<Device>[];
 }
 
 /**
@@ -1862,7 +1862,7 @@ export interface ExplanationOfBenefitProcessNote {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1872,7 +1872,7 @@ export interface ExplanationOfBenefitProcessNote {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1891,27 +1891,27 @@ export interface ExplanationOfBenefitProcessNote {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A number to uniquely identify a note entry.
    */
-  readonly number?: number;
+  number?: number;
 
   /**
    * The business purpose of the note text.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * The explanation or description associated with the processing.
    */
-  readonly text?: string;
+  text?: string;
 
   /**
    * A code to define the language used in the text of the note.
    */
-  readonly language?: CodeableConcept;
+  language?: CodeableConcept;
 }
 
 /**
@@ -1924,7 +1924,7 @@ export interface ExplanationOfBenefitRelated {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1934,7 +1934,7 @@ export interface ExplanationOfBenefitRelated {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1953,23 +1953,23 @@ export interface ExplanationOfBenefitRelated {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Reference to a related claim.
    */
-  readonly claim?: Reference<Claim>;
+  claim?: Reference<Claim>;
 
   /**
    * A code to convey how the claims are related.
    */
-  readonly relationship?: CodeableConcept;
+  relationship?: CodeableConcept;
 
   /**
    * An alternate organizational reference to the case or file to which
    * this particular claim pertains.
    */
-  readonly reference?: Identifier;
+  reference?: Identifier;
 }
 
 /**
@@ -1982,7 +1982,7 @@ export interface ExplanationOfBenefitSupportingInfo {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1992,7 +1992,7 @@ export interface ExplanationOfBenefitSupportingInfo {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -2011,76 +2011,76 @@ export interface ExplanationOfBenefitSupportingInfo {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A number to uniquely identify supporting information entries.
    */
-  readonly sequence?: number;
+  sequence?: number;
 
   /**
    * The general class of the information supplied: information; exception;
    * accident, employment; onset, etc.
    */
-  readonly category?: CodeableConcept;
+  category?: CodeableConcept;
 
   /**
    * System and code pertaining to the specific information regarding
    * special conditions relating to the setting, treatment or patient  for
    * which care is sought.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * The date when or period to which this information refers.
    */
-  readonly timingDate?: string;
+  timingDate?: string;
 
   /**
    * The date when or period to which this information refers.
    */
-  readonly timingPeriod?: Period;
+  timingPeriod?: Period;
 
   /**
    * Additional data or information such as resources, documents, images
    * etc. including references to the data or the actual inclusion of the
    * data.
    */
-  readonly valueBoolean?: boolean;
+  valueBoolean?: boolean;
 
   /**
    * Additional data or information such as resources, documents, images
    * etc. including references to the data or the actual inclusion of the
    * data.
    */
-  readonly valueString?: string;
+  valueString?: string;
 
   /**
    * Additional data or information such as resources, documents, images
    * etc. including references to the data or the actual inclusion of the
    * data.
    */
-  readonly valueQuantity?: Quantity;
+  valueQuantity?: Quantity;
 
   /**
    * Additional data or information such as resources, documents, images
    * etc. including references to the data or the actual inclusion of the
    * data.
    */
-  readonly valueAttachment?: Attachment;
+  valueAttachment?: Attachment;
 
   /**
    * Additional data or information such as resources, documents, images
    * etc. including references to the data or the actual inclusion of the
    * data.
    */
-  readonly valueReference?: Reference<Resource>;
+  valueReference?: Reference<Resource>;
 
   /**
    * Provides the reason in the situation where a reason code is required
    * in addition to the content.
    */
-  readonly reason?: Coding;
+  reason?: Coding;
 }
 
 /**
@@ -2092,7 +2092,7 @@ export interface ExplanationOfBenefitTotal {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -2102,7 +2102,7 @@ export interface ExplanationOfBenefitTotal {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -2121,7 +2121,7 @@ export interface ExplanationOfBenefitTotal {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A code to indicate the information type of this adjudication record.
@@ -2131,10 +2131,10 @@ export interface ExplanationOfBenefitTotal {
    * amounts paid by other coverages, and the benefit payable for this
    * item.
    */
-  readonly category?: CodeableConcept;
+  category?: CodeableConcept;
 
   /**
    * Monetary total amount associated with the category.
    */
-  readonly amount?: Money;
+  amount?: Money;
 }

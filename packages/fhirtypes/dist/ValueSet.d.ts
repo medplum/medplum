@@ -30,14 +30,14 @@ export interface ValueSet {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -45,12 +45,12 @@ export interface ValueSet {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -60,14 +60,14 @@ export interface ValueSet {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -77,7 +77,7 @@ export interface ValueSet {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -95,7 +95,7 @@ export interface ValueSet {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI that is used to identify this value set when it is
@@ -106,14 +106,14 @@ export interface ValueSet {
    * the target of a canonical reference. It SHALL remain the same when the
    * value set is stored on different servers.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * A formal identifier that is used to identify this value set when it is
    * represented in other formats, or referenced in a specification, model,
    * design or an instance.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The identifier that is used to identify this version of the value set
@@ -124,19 +124,19 @@ export interface ValueSet {
    * no expectation that versions can be placed in a lexicographical
    * sequence.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * A natural language name identifying the value set. This name should be
    * usable as an identifier for the module by machine processing
    * applications such as code generation.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A short, descriptive, user-friendly title for the value set.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * The status of this value set. Enables tracking the life-cycle of the
@@ -144,32 +144,32 @@ export interface ValueSet {
    * definition (ValueSet.compose) and the associated ValueSet metadata.
    * Expansions do not have a state.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A Boolean value to indicate that this value set is authored for
    * testing purposes (or education/evaluation/marketing) and is not
    * intended to be used for genuine usage.
    */
-  readonly experimental?: boolean;
+  experimental?: boolean;
 
   /**
    * The date (and optionally time) when the value set was created or
    * revised (e.g. the 'content logical definition').
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The name of the organization or individual that published the value
    * set.
    */
-  readonly publisher?: string;
+  publisher?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * publisher.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * A free text natural language description of the value set from a
@@ -178,7 +178,7 @@ export interface ValueSet {
    * and also may specify the intended use and limitations of the Value
    * Set.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -187,32 +187,32 @@ export interface ValueSet {
    * (insurance plans, studies, ...) and may be used to assist with
    * indexing and searching for appropriate value set instances.
    */
-  readonly useContext?: UsageContext[];
+  useContext?: UsageContext[];
 
   /**
    * A legal or geographic region in which the value set is intended to be
    * used.
    */
-  readonly jurisdiction?: CodeableConcept[];
+  jurisdiction?: CodeableConcept[];
 
   /**
    * If this is set to 'true', then no new versions of the content logical
    * definition can be created.  Note: Other metadata might still change.
    */
-  readonly immutable?: boolean;
+  immutable?: boolean;
 
   /**
    * Explanation of why this value set is needed and why it has been
    * designed as it has.
    */
-  readonly purpose?: string;
+  purpose?: string;
 
   /**
    * A copyright statement relating to the value set and/or its contents.
    * Copyright statements are generally legal restrictions on the use and
    * publishing of the value set.
    */
-  readonly copyright?: string;
+  copyright?: string;
 
   /**
    * A set of criteria that define the contents of the value set by
@@ -220,14 +220,14 @@ export interface ValueSet {
    * system(s) that the value set draws from. This is also known as the
    * Content Logical Definition (CLD).
    */
-  readonly compose?: ValueSetCompose;
+  compose?: ValueSetCompose;
 
   /**
    * A value set can also be &quot;expanded&quot;, where the value set is turned into
    * a simple collection of enumerated codes. This element holds the
    * expansion, if it has been performed.
    */
-  readonly expansion?: ValueSetExpansion;
+  expansion?: ValueSetExpansion;
 }
 
 /**
@@ -242,7 +242,7 @@ export interface ValueSetCompose {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -252,7 +252,7 @@ export interface ValueSetCompose {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -271,7 +271,7 @@ export interface ValueSetCompose {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The Locked Date is  the effective date that is used to determine the
@@ -279,7 +279,7 @@ export interface ValueSetCompose {
    * included in the compose that are not already tied to a specific
    * version.
    */
-  readonly lockedDate?: string;
+  lockedDate?: string;
 
   /**
    * Whether inactive codes - codes that are not approved for current use -
@@ -290,18 +290,18 @@ export interface ValueSetCompose {
    * parameters (but generally, inactive codes would be expected to be
    * included).
    */
-  readonly inactive?: boolean;
+  inactive?: boolean;
 
   /**
    * Include one or more codes from a code system or other value set(s).
    */
-  readonly include?: ValueSetComposeInclude[];
+  include?: ValueSetComposeInclude[];
 
   /**
    * Exclude one or more codes from the value set based on code system
    * filters and/or other value sets.
    */
-  readonly exclude?: ValueSetComposeInclude[];
+  exclude?: ValueSetComposeInclude[];
 }
 
 /**
@@ -313,7 +313,7 @@ export interface ValueSetComposeInclude {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -323,7 +323,7 @@ export interface ValueSetComposeInclude {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -342,24 +342,24 @@ export interface ValueSetComposeInclude {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI which is the code system from which the selected codes
    * come from.
    */
-  readonly system?: string;
+  system?: string;
 
   /**
    * The version of the code system that the codes are selected from, or
    * the special version '*' for all versions.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * Specifies a concept to be included or excluded.
    */
-  readonly concept?: ValueSetComposeIncludeConcept[];
+  concept?: ValueSetComposeIncludeConcept[];
 
   /**
    * Select concepts by specify a matching criterion based on the
@@ -367,7 +367,7 @@ export interface ValueSetComposeInclude {
    * filters defined by the system. If multiple filters are specified, they
    * SHALL all be true.
    */
-  readonly filter?: ValueSetComposeIncludeFilter[];
+  filter?: ValueSetComposeIncludeFilter[];
 
   /**
    * Selects the concepts found in this value set (based on its value set
@@ -375,7 +375,7 @@ export interface ValueSetComposeInclude {
    * ValueSet.url.  If multiple value sets are specified this includes the
    * union of the contents of all of the referenced value sets.
    */
-  readonly valueSet?: string[];
+  valueSet?: string[];
 }
 
 /**
@@ -387,7 +387,7 @@ export interface ValueSetComposeIncludeConcept {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -397,7 +397,7 @@ export interface ValueSetComposeIncludeConcept {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -416,26 +416,26 @@ export interface ValueSetComposeIncludeConcept {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Specifies a code for the concept to be included or excluded.
    */
-  readonly code?: string;
+  code?: string;
 
   /**
    * The text to display to the user for this concept in the context of
    * this valueset. If no display is provided, then applications using the
    * value set use the display specified for the code by the system.
    */
-  readonly display?: string;
+  display?: string;
 
   /**
    * Additional representations for this concept when used in this value
    * set - other languages, aliases, specialized purposes, used for
    * particular purposes, etc.
    */
-  readonly designation?: ValueSetComposeIncludeConceptDesignation[];
+  designation?: ValueSetComposeIncludeConceptDesignation[];
 }
 
 /**
@@ -449,7 +449,7 @@ export interface ValueSetComposeIncludeConceptDesignation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -459,7 +459,7 @@ export interface ValueSetComposeIncludeConceptDesignation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -478,22 +478,22 @@ export interface ValueSetComposeIncludeConceptDesignation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The language this designation is defined for.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A code that represents types of uses of designations.
    */
-  readonly use?: Coding;
+  use?: Coding;
 
   /**
    * The text value for this designation.
    */
-  readonly value?: string;
+  value?: string;
 }
 
 /**
@@ -508,7 +508,7 @@ export interface ValueSetComposeIncludeFilter {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -518,7 +518,7 @@ export interface ValueSetComposeIncludeFilter {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -537,18 +537,18 @@ export interface ValueSetComposeIncludeFilter {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A code that identifies a property or a filter defined in the code
    * system.
    */
-  readonly property?: string;
+  property?: string;
 
   /**
    * The kind of operation to perform as a part of the filter criteria.
    */
-  readonly op?: string;
+  op?: string;
 
   /**
    * The match value may be either a code defined by the system, or a
@@ -558,7 +558,7 @@ export interface ValueSetComposeIncludeFilter {
    * filter defined in CodeSystem) when the operation is 'regex', or one of
    * the values (true and false), when the operation is 'exists'.
    */
-  readonly value?: string;
+  value?: string;
 }
 
 /**
@@ -572,7 +572,7 @@ export interface ValueSetExpansion {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -582,7 +582,7 @@ export interface ValueSetExpansion {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -601,7 +601,7 @@ export interface ValueSetExpansion {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An identifier that uniquely identifies this expansion of the valueset,
@@ -611,26 +611,26 @@ export interface ValueSetExpansion {
    * remain the same, and the expansion is the same, but are not required
    * to do so. This is a business identifier.
    */
-  readonly identifier?: string;
+  identifier?: string;
 
   /**
    * The time at which the expansion was produced by the expanding system.
    */
-  readonly timestamp?: string;
+  timestamp?: string;
 
   /**
    * The total number of concepts in the expansion. If the number of
    * concept nodes in this resource is less than the stated number, then
    * the server can return more using the offset parameter.
    */
-  readonly total?: number;
+  total?: number;
 
   /**
    * If paging is being used, the offset at which this resource starts.
    * I.e. this resource is a partial view into the expansion. If paging is
    * not being used, this element SHALL NOT be present.
    */
-  readonly offset?: number;
+  offset?: number;
 
   /**
    * A parameter that controlled the expansion process. These parameters
@@ -638,12 +638,12 @@ export interface ValueSetExpansion {
    * expansion is suitable for a particular purpose, or to pick the correct
    * expansion.
    */
-  readonly parameter?: ValueSetExpansionParameter[];
+  parameter?: ValueSetExpansionParameter[];
 
   /**
    * The codes that are contained in the value set expansion.
    */
-  readonly contains?: ValueSetExpansionContains[];
+  contains?: ValueSetExpansionContains[];
 }
 
 /**
@@ -655,7 +655,7 @@ export interface ValueSetExpansionContains {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -665,7 +665,7 @@ export interface ValueSetExpansionContains {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -684,20 +684,20 @@ export interface ValueSetExpansionContains {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI which is the code system in which the code for this
    * item in the expansion is defined.
    */
-  readonly system?: string;
+  system?: string;
 
   /**
    * If true, this entry is included in the expansion for navigational
    * purposes, and the user cannot select the code directly as a proper
    * value.
    */
-  readonly abstract?: boolean;
+  abstract?: boolean;
 
   /**
    * If the concept is inactive in the code system that defines it.
@@ -706,7 +706,7 @@ export interface ValueSetExpansionContains {
    * not be known or specified whether an concept is inactive (and it may
    * depend on the context of use).
    */
-  readonly inactive?: boolean;
+  inactive?: boolean;
 
   /**
    * The version of the code system from this code was taken. Note that a
@@ -715,19 +715,19 @@ export interface ValueSetExpansionContains {
    * this cannot consistently be assured, and when the meaning is not
    * guaranteed to be consistent, the version SHOULD be exchanged.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * The code for this item in the expansion hierarchy. If this code is
    * missing the entry in the hierarchy is a place holder (abstract) and
    * does not represent a valid code in the value set.
    */
-  readonly code?: string;
+  code?: string;
 
   /**
    * The recommended display for this item in the expansion.
    */
-  readonly display?: string;
+  display?: string;
 
   /**
    * Additional representations for this item - other languages, aliases,
@@ -735,12 +735,12 @@ export interface ValueSetExpansionContains {
    * relevant when the conditions of the expansion do not fix to a single
    * correct representation.
    */
-  readonly designation?: ValueSetComposeIncludeConceptDesignation[];
+  designation?: ValueSetComposeIncludeConceptDesignation[];
 
   /**
    * Other codes and entries contained under this entry in the hierarchy.
    */
-  readonly contains?: ValueSetExpansionContains[];
+  contains?: ValueSetExpansionContains[];
 }
 
 /**
@@ -755,7 +755,7 @@ export interface ValueSetExpansionParameter {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -765,7 +765,7 @@ export interface ValueSetExpansionParameter {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -784,47 +784,47 @@ export interface ValueSetExpansionParameter {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Name of the input parameter to the $expand operation; may be a
    * server-assigned name for additional default or other server-supplied
    * parameters used to control the expansion process.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * The value of the parameter.
    */
-  readonly valueString?: string;
+  valueString?: string;
 
   /**
    * The value of the parameter.
    */
-  readonly valueBoolean?: boolean;
+  valueBoolean?: boolean;
 
   /**
    * The value of the parameter.
    */
-  readonly valueInteger?: number;
+  valueInteger?: number;
 
   /**
    * The value of the parameter.
    */
-  readonly valueDecimal?: number;
+  valueDecimal?: number;
 
   /**
    * The value of the parameter.
    */
-  readonly valueUri?: string;
+  valueUri?: string;
 
   /**
    * The value of the parameter.
    */
-  readonly valueCode?: string;
+  valueCode?: string;
 
   /**
    * The value of the parameter.
    */
-  readonly valueDateTime?: string;
+  valueDateTime?: string;
 }

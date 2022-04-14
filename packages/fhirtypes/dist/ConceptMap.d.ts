@@ -28,14 +28,14 @@ export interface ConceptMap {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -43,12 +43,12 @@ export interface ConceptMap {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -58,14 +58,14 @@ export interface ConceptMap {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -75,7 +75,7 @@ export interface ConceptMap {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -93,7 +93,7 @@ export interface ConceptMap {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI that is used to identify this concept map when it is
@@ -104,14 +104,14 @@ export interface ConceptMap {
    * be the target of a canonical reference. It SHALL remain the same when
    * the concept map is stored on different servers.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * A formal identifier that is used to identify this concept map when it
    * is represented in other formats, or referenced in a specification,
    * model, design or an instance.
    */
-  readonly identifier?: Identifier;
+  identifier?: Identifier;
 
   /**
    * The identifier that is used to identify this version of the concept
@@ -122,32 +122,32 @@ export interface ConceptMap {
    * is also no expectation that versions can be placed in a
    * lexicographical sequence.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * A natural language name identifying the concept map. This name should
    * be usable as an identifier for the module by machine processing
    * applications such as code generation.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A short, descriptive, user-friendly title for the concept map.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * The status of this concept map. Enables tracking the life-cycle of the
    * content.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A Boolean value to indicate that this concept map is authored for
    * testing purposes (or education/evaluation/marketing) and is not
    * intended to be used for genuine usage.
    */
-  readonly experimental?: boolean;
+  experimental?: boolean;
 
   /**
    * The date  (and optionally time) when the concept map was published.
@@ -155,25 +155,25 @@ export interface ConceptMap {
    * change if the status code changes. In addition, it should change when
    * the substantive content of the concept map changes.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The name of the organization or individual that published the concept
    * map.
    */
-  readonly publisher?: string;
+  publisher?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * publisher.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * A free text natural language description of the concept map from a
    * consumer's perspective.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -182,38 +182,38 @@ export interface ConceptMap {
    * (insurance plans, studies, ...) and may be used to assist with
    * indexing and searching for appropriate concept map instances.
    */
-  readonly useContext?: UsageContext[];
+  useContext?: UsageContext[];
 
   /**
    * A legal or geographic region in which the concept map is intended to
    * be used.
    */
-  readonly jurisdiction?: CodeableConcept[];
+  jurisdiction?: CodeableConcept[];
 
   /**
    * Explanation of why this concept map is needed and why it has been
    * designed as it has.
    */
-  readonly purpose?: string;
+  purpose?: string;
 
   /**
    * A copyright statement relating to the concept map and/or its contents.
    * Copyright statements are generally legal restrictions on the use and
    * publishing of the concept map.
    */
-  readonly copyright?: string;
+  copyright?: string;
 
   /**
    * Identifier for the source value set that contains the concepts that
    * are being mapped and provides context for the mappings.
    */
-  readonly sourceUri?: string;
+  sourceUri?: string;
 
   /**
    * Identifier for the source value set that contains the concepts that
    * are being mapped and provides context for the mappings.
    */
-  readonly sourceCanonical?: string;
+  sourceCanonical?: string;
 
   /**
    * The target value set provides context for the mappings. Note that the
@@ -221,7 +221,7 @@ export interface ConceptMap {
    * value set provides important context about how the concept mapping
    * choices are made.
    */
-  readonly targetUri?: string;
+  targetUri?: string;
 
   /**
    * The target value set provides context for the mappings. Note that the
@@ -229,12 +229,12 @@ export interface ConceptMap {
    * value set provides important context about how the concept mapping
    * choices are made.
    */
-  readonly targetCanonical?: string;
+  targetCanonical?: string;
 
   /**
    * A group of mappings that all have the same source and target system.
    */
-  readonly group?: ConceptMapGroup[];
+  group?: ConceptMapGroup[];
 }
 
 /**
@@ -246,7 +246,7 @@ export interface ConceptMapGroup {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -256,7 +256,7 @@ export interface ConceptMapGroup {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -275,44 +275,44 @@ export interface ConceptMapGroup {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI that identifies the source system where the concepts
    * to be mapped are defined.
    */
-  readonly source?: string;
+  source?: string;
 
   /**
    * The specific version of the code system, as determined by the code
    * system authority.
    */
-  readonly sourceVersion?: string;
+  sourceVersion?: string;
 
   /**
    * An absolute URI that identifies the target system that the concepts
    * will be mapped to.
    */
-  readonly target?: string;
+  target?: string;
 
   /**
    * The specific version of the code system, as determined by the code
    * system authority.
    */
-  readonly targetVersion?: string;
+  targetVersion?: string;
 
   /**
    * Mappings for an individual concept in the source to one or more
    * concepts in the target.
    */
-  readonly element?: ConceptMapGroupElement[];
+  element?: ConceptMapGroupElement[];
 
   /**
    * What to do when there is no mapping for the source concept. &quot;Unmapped&quot;
    * does not include codes that are unmatched, and the unmapped element is
    * ignored in a code is specified to have equivalence = unmatched.
    */
-  readonly unmapped?: ConceptMapGroupUnmapped;
+  unmapped?: ConceptMapGroupUnmapped;
 }
 
 /**
@@ -325,7 +325,7 @@ export interface ConceptMapGroupElement {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -335,7 +335,7 @@ export interface ConceptMapGroupElement {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -354,23 +354,23 @@ export interface ConceptMapGroupElement {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identity (code or path) or the element/item being mapped.
    */
-  readonly code?: string;
+  code?: string;
 
   /**
    * The display for the code. The display is only provided to help editors
    * when editing the concept map.
    */
-  readonly display?: string;
+  display?: string;
 
   /**
    * A concept from the target value set that this concept maps to.
    */
-  readonly target?: ConceptMapGroupElementTarget[];
+  target?: ConceptMapGroupElementTarget[];
 }
 
 /**
@@ -382,7 +382,7 @@ export interface ConceptMapGroupElementTarget {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -392,7 +392,7 @@ export interface ConceptMapGroupElementTarget {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -411,38 +411,38 @@ export interface ConceptMapGroupElementTarget {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identity (code or path) or the element/item that the map refers to.
    */
-  readonly code?: string;
+  code?: string;
 
   /**
    * The display for the code. The display is only provided to help editors
    * when editing the concept map.
    */
-  readonly display?: string;
+  display?: string;
 
   /**
    * The equivalence between the source and target concepts (counting for
    * the dependencies and products). The equivalence is read from target to
    * source (e.g. the target is 'wider' than the source).
    */
-  readonly equivalence?: string;
+  equivalence?: string;
 
   /**
    * A description of status/issues in mapping that conveys additional
    * information not represented in  the structured data.
    */
-  readonly comment?: string;
+  comment?: string;
 
   /**
    * A set of additional dependencies for this mapping to hold. This
    * mapping is only applicable if the specified element can be resolved,
    * and it has the specified value.
    */
-  readonly dependsOn?: ConceptMapGroupElementTargetDependsOn[];
+  dependsOn?: ConceptMapGroupElementTargetDependsOn[];
 
   /**
    * A set of additional outcomes from this mapping to other elements. To
@@ -451,7 +451,7 @@ export interface ConceptMapGroupElementTarget {
    * be useful without a place for the additional data elements, but the
    * equivalence cannot be relied on.
    */
-  readonly product?: ConceptMapGroupElementTargetDependsOn[];
+  product?: ConceptMapGroupElementTargetDependsOn[];
 }
 
 /**
@@ -465,7 +465,7 @@ export interface ConceptMapGroupElementTargetDependsOn {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -475,7 +475,7 @@ export interface ConceptMapGroupElementTargetDependsOn {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -494,7 +494,7 @@ export interface ConceptMapGroupElementTargetDependsOn {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A reference to an element that holds a coded value that corresponds to
@@ -502,25 +502,25 @@ export interface ConceptMapGroupElementTargetDependsOn {
    * an element somewhere that is labeled to correspond with a code system
    * property.
    */
-  readonly property?: string;
+  property?: string;
 
   /**
    * An absolute URI that identifies the code system of the dependency code
    * (if the source/dependency is a value set that crosses code systems).
    */
-  readonly system?: string;
+  system?: string;
 
   /**
    * Identity (code or path) or the element/item/ValueSet/text that the map
    * depends on / refers to.
    */
-  readonly value?: string;
+  value?: string;
 
   /**
    * The display for the code. The display is only provided to help editors
    * when editing the concept map.
    */
-  readonly display?: string;
+  display?: string;
 }
 
 /**
@@ -534,7 +534,7 @@ export interface ConceptMapGroupUnmapped {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -544,7 +544,7 @@ export interface ConceptMapGroupUnmapped {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -563,7 +563,7 @@ export interface ConceptMapGroupUnmapped {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Defines which action to take if there is no match for the source
@@ -573,24 +573,24 @@ export interface ConceptMapGroupUnmapped {
    * fixed code (a default code), or alternatively, a reference to a
    * different concept map can be provided (by canonical URL).
    */
-  readonly mode?: string;
+  mode?: string;
 
   /**
    * The fixed code to use when the mode = 'fixed'  - all unmapped codes
    * are mapped to a single fixed code.
    */
-  readonly code?: string;
+  code?: string;
 
   /**
    * The display for the code. The display is only provided to help editors
    * when editing the concept map.
    */
-  readonly display?: string;
+  display?: string;
 
   /**
    * The canonical reference to an additional ConceptMap resource instance
    * to use for mapping if this ConceptMap resource contains no matching
    * mapping for the source concept.
    */
-  readonly url?: string;
+  url?: string;
 }

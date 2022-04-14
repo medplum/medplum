@@ -43,14 +43,14 @@ export interface Media {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -58,12 +58,12 @@ export interface Media {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -73,14 +73,14 @@ export interface Media {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -90,7 +90,7 @@ export interface Media {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -108,7 +108,7 @@ export interface Media {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifiers associated with the image - these may include identifiers
@@ -116,104 +116,104 @@ export interface Media {
    * (e.g. series ids) and context ids such as accession numbers or other
    * workflow identifiers.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * A procedure that is fulfilled in whole or in part by the creation of
    * this media.
    */
-  readonly basedOn?: Reference<ServiceRequest | CarePlan>[];
+  basedOn?: Reference<ServiceRequest | CarePlan>[];
 
   /**
    * A larger event of which this particular event is a component or step.
    */
-  readonly partOf?: Reference<Resource>[];
+  partOf?: Reference<Resource>[];
 
   /**
    * The current state of the {{title}}.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A code that classifies whether the media is an image, video or audio
    * recording or some other media category.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Details of the type of the media - usually, how it was acquired (what
    * type of device). If images sourced from a DICOM system, are wrapped in
    * a Media resource, then this is the modality.
    */
-  readonly modality?: CodeableConcept;
+  modality?: CodeableConcept;
 
   /**
    * The name of the imaging view e.g. Lateral or Antero-posterior (AP).
    */
-  readonly view?: CodeableConcept;
+  view?: CodeableConcept;
 
   /**
    * Who/What this Media is a record of.
    */
-  readonly subject?: Reference<Patient | Practitioner | PractitionerRole | Group | Device | Specimen | Location>;
+  subject?: Reference<Patient | Practitioner | PractitionerRole | Group | Device | Specimen | Location>;
 
   /**
    * The encounter that establishes the context for this media.
    */
-  readonly encounter?: Reference<Encounter>;
+  encounter?: Reference<Encounter>;
 
   /**
    * The date and time(s) at which the media was collected.
    */
-  readonly createdDateTime?: string;
+  createdDateTime?: string;
 
   /**
    * The date and time(s) at which the media was collected.
    */
-  readonly createdPeriod?: Period;
+  createdPeriod?: Period;
 
   /**
    * The date and time this version of the media was made available to
    * providers, typically after having been reviewed.
    */
-  readonly issued?: string;
+  issued?: string;
 
   /**
    * The person who administered the collection of the image.
    */
-  readonly operator?: Reference<Practitioner | PractitionerRole | Organization | CareTeam | Patient | Device | RelatedPerson>;
+  operator?: Reference<Practitioner | PractitionerRole | Organization | CareTeam | Patient | Device | RelatedPerson>;
 
   /**
    * Describes why the event occurred in coded or textual form.
    */
-  readonly reasonCode?: CodeableConcept[];
+  reasonCode?: CodeableConcept[];
 
   /**
    * Indicates the site on the subject's body where the observation was
    * made (i.e. the target site).
    */
-  readonly bodySite?: CodeableConcept;
+  bodySite?: CodeableConcept;
 
   /**
    * The name of the device / manufacturer of the device  that was used to
    * make the recording.
    */
-  readonly deviceName?: string;
+  deviceName?: string;
 
   /**
    * The device used to collect the media.
    */
-  readonly device?: Reference<Device | DeviceMetric | Device>;
+  device?: Reference<Device | DeviceMetric | Device>;
 
   /**
    * Height of the image in pixels (photo/video).
    */
-  readonly height?: number;
+  height?: number;
 
   /**
    * Width of the image in pixels (photo/video).
    */
-  readonly width?: number;
+  width?: number;
 
   /**
    * The number of frames in a photo. This is used with a multi-page fax,
@@ -222,22 +222,22 @@ export interface Media {
    * this SHALL have a value in order to alert interface software that a
    * multi-frame capable rendering widget is required.
    */
-  readonly frames?: number;
+  frames?: number;
 
   /**
    * The duration of the recording in seconds - for audio and video.
    */
-  readonly duration?: number;
+  duration?: number;
 
   /**
    * The actual content of the media - inline or by direct reference to the
    * media source file.
    */
-  readonly content?: Attachment;
+  content?: Attachment;
 
   /**
    * Comments made about the media by the performer, subject or other
    * participants.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 }

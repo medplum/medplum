@@ -30,14 +30,14 @@ export interface VerificationResult {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -45,12 +45,12 @@ export interface VerificationResult {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -60,14 +60,14 @@ export interface VerificationResult {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -77,7 +77,7 @@ export interface VerificationResult {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -95,82 +95,82 @@ export interface VerificationResult {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A resource that was validated.
    */
-  readonly target?: Reference<Resource>[];
+  target?: Reference<Resource>[];
 
   /**
    * The fhirpath location(s) within the resource that was validated.
    */
-  readonly targetLocation?: string[];
+  targetLocation?: string[];
 
   /**
    * The frequency with which the target must be validated (none; initial;
    * periodic).
    */
-  readonly need?: CodeableConcept;
+  need?: CodeableConcept;
 
   /**
    * The validation status of the target (attested; validated; in process;
    * requires revalidation; validation failed; revalidation failed).
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * When the validation status was updated.
    */
-  readonly statusDate?: string;
+  statusDate?: string;
 
   /**
    * What the target is validated against (nothing; primary source;
    * multiple sources).
    */
-  readonly validationType?: CodeableConcept;
+  validationType?: CodeableConcept;
 
   /**
    * The primary process by which the target is validated (edit check;
    * value set; primary source; multiple sources; standalone; in context).
    */
-  readonly validationProcess?: CodeableConcept[];
+  validationProcess?: CodeableConcept[];
 
   /**
    * Frequency of revalidation.
    */
-  readonly frequency?: Timing;
+  frequency?: Timing;
 
   /**
    * The date/time validation was last completed (including failed
    * validations).
    */
-  readonly lastPerformed?: string;
+  lastPerformed?: string;
 
   /**
    * The date when target is next validated, if appropriate.
    */
-  readonly nextScheduled?: string;
+  nextScheduled?: string;
 
   /**
    * The result if validation fails (fatal; warning; record only; none).
    */
-  readonly failureAction?: CodeableConcept;
+  failureAction?: CodeableConcept;
 
   /**
    * Information about the primary source(s) involved in validation.
    */
-  readonly primarySource?: VerificationResultPrimarySource[];
+  primarySource?: VerificationResultPrimarySource[];
 
   /**
    * Information about the entity attesting to information.
    */
-  readonly attestation?: VerificationResultAttestation;
+  attestation?: VerificationResultAttestation;
 
   /**
    * Information about the entity validating information.
    */
-  readonly validator?: VerificationResultValidator[];
+  validator?: VerificationResultValidator[];
 }
 
 /**
@@ -182,7 +182,7 @@ export interface VerificationResultAttestation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -192,7 +192,7 @@ export interface VerificationResultAttestation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -211,53 +211,53 @@ export interface VerificationResultAttestation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The individual or organization attesting to information.
    */
-  readonly who?: Reference<Practitioner | PractitionerRole | Organization>;
+  who?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * When the who is asserting on behalf of another (organization or
    * individual).
    */
-  readonly onBehalfOf?: Reference<Organization | Practitioner | PractitionerRole>;
+  onBehalfOf?: Reference<Organization | Practitioner | PractitionerRole>;
 
   /**
    * The method by which attested information was submitted/retrieved
    * (manual; API; Push).
    */
-  readonly communicationMethod?: CodeableConcept;
+  communicationMethod?: CodeableConcept;
 
   /**
    * The date the information was attested to.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * A digital identity certificate associated with the attestation source.
    */
-  readonly sourceIdentityCertificate?: string;
+  sourceIdentityCertificate?: string;
 
   /**
    * A digital identity certificate associated with the proxy entity
    * submitting attested information on behalf of the attestation source.
    */
-  readonly proxyIdentityCertificate?: string;
+  proxyIdentityCertificate?: string;
 
   /**
    * Signed assertion by the proxy entity indicating that they have the
    * right to submit attested information on behalf of the attestation
    * source.
    */
-  readonly proxySignature?: Signature;
+  proxySignature?: Signature;
 
   /**
    * Signed assertion by the attestation source that they have attested to
    * the information.
    */
-  readonly sourceSignature?: Signature;
+  sourceSignature?: Signature;
 }
 
 /**
@@ -269,7 +269,7 @@ export interface VerificationResultPrimarySource {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -279,7 +279,7 @@ export interface VerificationResultPrimarySource {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -298,47 +298,47 @@ export interface VerificationResultPrimarySource {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Reference to the primary source.
    */
-  readonly who?: Reference<Organization | Practitioner | PractitionerRole>;
+  who?: Reference<Organization | Practitioner | PractitionerRole>;
 
   /**
    * Type of primary source (License Board; Primary Education; Continuing
    * Education; Postal Service; Relationship owner; Registration Authority;
    * legal source; issuing source; authoritative source).
    */
-  readonly type?: CodeableConcept[];
+  type?: CodeableConcept[];
 
   /**
    * Method for communicating with the primary source (manual; API; Push).
    */
-  readonly communicationMethod?: CodeableConcept[];
+  communicationMethod?: CodeableConcept[];
 
   /**
    * Status of the validation of the target against the primary source
    * (successful; failed; unknown).
    */
-  readonly validationStatus?: CodeableConcept;
+  validationStatus?: CodeableConcept;
 
   /**
    * When the target was validated against the primary source.
    */
-  readonly validationDate?: string;
+  validationDate?: string;
 
   /**
    * Ability of the primary source to push updates/alerts (yes; no;
    * undetermined).
    */
-  readonly canPushUpdates?: CodeableConcept;
+  canPushUpdates?: CodeableConcept;
 
   /**
    * Type of alerts/updates the primary source can send (specific requested
    * changes; any changes; as defined by source).
    */
-  readonly pushTypeAvailable?: CodeableConcept[];
+  pushTypeAvailable?: CodeableConcept[];
 }
 
 /**
@@ -350,7 +350,7 @@ export interface VerificationResultValidator {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -360,7 +360,7 @@ export interface VerificationResultValidator {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -379,21 +379,21 @@ export interface VerificationResultValidator {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Reference to the organization validating information.
    */
-  readonly organization?: Reference<Organization>;
+  organization?: Reference<Organization>;
 
   /**
    * A digital identity certificate associated with the validator.
    */
-  readonly identityCertificate?: string;
+  identityCertificate?: string;
 
   /**
    * Signed assertion by the validator that they have validated the
    * information.
    */
-  readonly attestationSignature?: Signature;
+  attestationSignature?: Signature;
 }

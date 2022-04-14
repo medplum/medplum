@@ -28,14 +28,14 @@ export interface TerminologyCapabilities {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -43,12 +43,12 @@ export interface TerminologyCapabilities {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -58,14 +58,14 @@ export interface TerminologyCapabilities {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -75,7 +75,7 @@ export interface TerminologyCapabilities {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -93,7 +93,7 @@ export interface TerminologyCapabilities {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI that is used to identify this terminology capabilities
@@ -105,7 +105,7 @@ export interface TerminologyCapabilities {
    * SHALL remain the same when the terminology capabilities is stored on
    * different servers.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * The identifier that is used to identify this version of the
@@ -116,33 +116,33 @@ export interface TerminologyCapabilities {
    * managed version is not available. There is also no expectation that
    * versions can be placed in a lexicographical sequence.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * A natural language name identifying the terminology capabilities. This
    * name should be usable as an identifier for the module by machine
    * processing applications such as code generation.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A short, descriptive, user-friendly title for the terminology
    * capabilities.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * The status of this terminology capabilities. Enables tracking the
    * life-cycle of the content.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A Boolean value to indicate that this terminology capabilities is
    * authored for testing purposes (or education/evaluation/marketing) and
    * is not intended to be used for genuine usage.
    */
-  readonly experimental?: boolean;
+  experimental?: boolean;
 
   /**
    * The date  (and optionally time) when the terminology capabilities was
@@ -151,19 +151,19 @@ export interface TerminologyCapabilities {
    * change when the substantive content of the terminology capabilities
    * changes.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The name of the organization or individual that published the
    * terminology capabilities.
    */
-  readonly publisher?: string;
+  publisher?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * publisher.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * A free text natural language description of the terminology
@@ -172,7 +172,7 @@ export interface TerminologyCapabilities {
    * actual solution, for example as a formal expression of requirements as
    * part of an RFP.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -182,26 +182,26 @@ export interface TerminologyCapabilities {
    * indexing and searching for appropriate terminology capabilities
    * instances.
    */
-  readonly useContext?: UsageContext[];
+  useContext?: UsageContext[];
 
   /**
    * A legal or geographic region in which the terminology capabilities is
    * intended to be used.
    */
-  readonly jurisdiction?: CodeableConcept[];
+  jurisdiction?: CodeableConcept[];
 
   /**
    * Explanation of why this terminology capabilities is needed and why it
    * has been designed as it has.
    */
-  readonly purpose?: string;
+  purpose?: string;
 
   /**
    * A copyright statement relating to the terminology capabilities and/or
    * its contents. Copyright statements are generally legal restrictions on
    * the use and publishing of the terminology capabilities.
    */
-  readonly copyright?: string;
+  copyright?: string;
 
   /**
    * The way that this statement is intended to be used, to describe an
@@ -209,64 +209,64 @@ export interface TerminologyCapabilities {
    * instance of software) or a class of implementation (e.g. a desired
    * purchase).
    */
-  readonly kind?: string;
+  kind?: string;
 
   /**
    * Software that is covered by this terminology capability statement.  It
    * is used when the statement describes the capabilities of a particular
    * software version, independent of an installation.
    */
-  readonly software?: TerminologyCapabilitiesSoftware;
+  software?: TerminologyCapabilitiesSoftware;
 
   /**
    * Identifies a specific implementation instance that is described by the
    * terminology capability statement - i.e. a particular installation,
    * rather than the capabilities of a software program.
    */
-  readonly implementation?: TerminologyCapabilitiesImplementation;
+  implementation?: TerminologyCapabilitiesImplementation;
 
   /**
    * Whether the server supports lockedDate.
    */
-  readonly lockedDate?: boolean;
+  lockedDate?: boolean;
 
   /**
    * Identifies a code system that is supported by the server. If there is
    * a no code system URL, then this declares the general assumptions a
    * client can make about support for any CodeSystem resource.
    */
-  readonly codeSystem?: TerminologyCapabilitiesCodeSystem[];
+  codeSystem?: TerminologyCapabilitiesCodeSystem[];
 
   /**
    * Information about the
    * [ValueSet/$expand](valueset-operation-expand.html) operation.
    */
-  readonly expansion?: TerminologyCapabilitiesExpansion;
+  expansion?: TerminologyCapabilitiesExpansion;
 
   /**
    * The degree to which the server supports the code search parameter on
    * ValueSet, if it is supported.
    */
-  readonly codeSearch?: string;
+  codeSearch?: string;
 
   /**
    * Information about the
    * [ValueSet/$validate-code](valueset-operation-validate-code.html)
    * operation.
    */
-  readonly validateCode?: TerminologyCapabilitiesValidateCode;
+  validateCode?: TerminologyCapabilitiesValidateCode;
 
   /**
    * Information about the
    * [ConceptMap/$translate](conceptmap-operation-translate.html)
    * operation.
    */
-  readonly translation?: TerminologyCapabilitiesTranslation;
+  translation?: TerminologyCapabilitiesTranslation;
 
   /**
    * Whether the $closure operation is supported.
    */
-  readonly closure?: TerminologyCapabilitiesClosure;
+  closure?: TerminologyCapabilitiesClosure;
 }
 
 /**
@@ -278,7 +278,7 @@ export interface TerminologyCapabilitiesClosure {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -288,7 +288,7 @@ export interface TerminologyCapabilitiesClosure {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -307,12 +307,12 @@ export interface TerminologyCapabilitiesClosure {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * If cross-system closure is supported.
    */
-  readonly translation?: boolean;
+  translation?: boolean;
 }
 
 /**
@@ -326,7 +326,7 @@ export interface TerminologyCapabilitiesCodeSystem {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -336,7 +336,7 @@ export interface TerminologyCapabilitiesCodeSystem {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -355,23 +355,23 @@ export interface TerminologyCapabilitiesCodeSystem {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * URI for the Code System.
    */
-  readonly uri?: string;
+  uri?: string;
 
   /**
    * For the code system, a list of versions that are supported by the
    * server.
    */
-  readonly version?: TerminologyCapabilitiesCodeSystemVersion[];
+  version?: TerminologyCapabilitiesCodeSystemVersion[];
 
   /**
    * True if subsumption is supported for this version of the code system.
    */
-  readonly subsumption?: boolean;
+  subsumption?: boolean;
 }
 
 /**
@@ -384,7 +384,7 @@ export interface TerminologyCapabilitiesCodeSystemVersion {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -394,7 +394,7 @@ export interface TerminologyCapabilitiesCodeSystemVersion {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -413,38 +413,38 @@ export interface TerminologyCapabilitiesCodeSystemVersion {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * For version-less code systems, there should be a single version with
    * no identifier.
    */
-  readonly code?: string;
+  code?: string;
 
   /**
    * If this is the default version for this code system.
    */
-  readonly isDefault?: boolean;
+  isDefault?: boolean;
 
   /**
    * If the compositional grammar defined by the code system is supported.
    */
-  readonly compositional?: boolean;
+  compositional?: boolean;
 
   /**
    * Language Displays supported.
    */
-  readonly language?: string[];
+  language?: string[];
 
   /**
    * Filter Properties supported.
    */
-  readonly filter?: TerminologyCapabilitiesCodeSystemVersionFilter[];
+  filter?: TerminologyCapabilitiesCodeSystemVersionFilter[];
 
   /**
    * Properties supported for $lookup.
    */
-  readonly property?: string[];
+  property?: string[];
 }
 
 /**
@@ -456,7 +456,7 @@ export interface TerminologyCapabilitiesCodeSystemVersionFilter {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -466,7 +466,7 @@ export interface TerminologyCapabilitiesCodeSystemVersionFilter {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -485,17 +485,17 @@ export interface TerminologyCapabilitiesCodeSystemVersionFilter {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Code of the property supported.
    */
-  readonly code?: string;
+  code?: string;
 
   /**
    * Operations supported for the property.
    */
-  readonly op?: string[];
+  op?: string[];
 }
 
 /**
@@ -508,7 +508,7 @@ export interface TerminologyCapabilitiesExpansion {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -518,7 +518,7 @@ export interface TerminologyCapabilitiesExpansion {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -537,32 +537,32 @@ export interface TerminologyCapabilitiesExpansion {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Whether the server can return nested value sets.
    */
-  readonly hierarchical?: boolean;
+  hierarchical?: boolean;
 
   /**
    * Whether the server supports paging on expansion.
    */
-  readonly paging?: boolean;
+  paging?: boolean;
 
   /**
    * Allow request for incomplete expansions?
    */
-  readonly incomplete?: boolean;
+  incomplete?: boolean;
 
   /**
    * Supported expansion parameter.
    */
-  readonly parameter?: TerminologyCapabilitiesExpansionParameter[];
+  parameter?: TerminologyCapabilitiesExpansionParameter[];
 
   /**
    * Documentation about text searching works.
    */
-  readonly textFilter?: string;
+  textFilter?: string;
 }
 
 /**
@@ -574,7 +574,7 @@ export interface TerminologyCapabilitiesExpansionParameter {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -584,7 +584,7 @@ export interface TerminologyCapabilitiesExpansionParameter {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -603,17 +603,17 @@ export interface TerminologyCapabilitiesExpansionParameter {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Expansion Parameter name.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Description of support for parameter.
    */
-  readonly documentation?: string;
+  documentation?: string;
 }
 
 /**
@@ -627,7 +627,7 @@ export interface TerminologyCapabilitiesImplementation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -637,7 +637,7 @@ export interface TerminologyCapabilitiesImplementation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -656,18 +656,18 @@ export interface TerminologyCapabilitiesImplementation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Information about the specific installation that this terminology
    * capability statement relates to.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * An absolute base URL for the implementation.
    */
-  readonly url?: string;
+  url?: string;
 }
 
 /**
@@ -681,7 +681,7 @@ export interface TerminologyCapabilitiesSoftware {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -691,7 +691,7 @@ export interface TerminologyCapabilitiesSoftware {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -710,17 +710,17 @@ export interface TerminologyCapabilitiesSoftware {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Name the software is known by.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * The version identifier for the software covered by this statement.
    */
-  readonly version?: string;
+  version?: string;
 }
 
 /**
@@ -734,7 +734,7 @@ export interface TerminologyCapabilitiesTranslation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -744,7 +744,7 @@ export interface TerminologyCapabilitiesTranslation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -763,12 +763,12 @@ export interface TerminologyCapabilitiesTranslation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Whether the client must identify the map.
    */
-  readonly needsMap?: boolean;
+  needsMap?: boolean;
 }
 
 /**
@@ -782,7 +782,7 @@ export interface TerminologyCapabilitiesValidateCode {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -792,7 +792,7 @@ export interface TerminologyCapabilitiesValidateCode {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -811,10 +811,10 @@ export interface TerminologyCapabilitiesValidateCode {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Whether translations are validated.
    */
-  readonly translations?: boolean;
+  translations?: boolean;
 }

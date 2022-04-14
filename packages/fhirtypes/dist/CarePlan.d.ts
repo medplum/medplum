@@ -59,14 +59,14 @@ export interface CarePlan {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -74,12 +74,12 @@ export interface CarePlan {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -89,14 +89,14 @@ export interface CarePlan {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -106,7 +106,7 @@ export interface CarePlan {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -124,122 +124,122 @@ export interface CarePlan {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Business identifiers assigned to this care plan by the performer or
    * other systems which remain constant as the resource is updated and
    * propagates from server to server.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The URL pointing to a FHIR-defined protocol, guideline, questionnaire
    * or other definition that is adhered to in whole or in part by this
    * CarePlan.
    */
-  readonly instantiatesCanonical?: string[];
+  instantiatesCanonical?: string[];
 
   /**
    * The URL pointing to an externally maintained protocol, guideline,
    * questionnaire or other definition that is adhered to in whole or in
    * part by this CarePlan.
    */
-  readonly instantiatesUri?: string[];
+  instantiatesUri?: string[];
 
   /**
    * A care plan that is fulfilled in whole or in part by this care plan.
    */
-  readonly basedOn?: Reference<CarePlan>[];
+  basedOn?: Reference<CarePlan>[];
 
   /**
    * Completed or terminated care plan whose function is taken by this new
    * care plan.
    */
-  readonly replaces?: Reference<CarePlan>[];
+  replaces?: Reference<CarePlan>[];
 
   /**
    * A larger care plan of which this particular care plan is a component
    * or step.
    */
-  readonly partOf?: Reference<CarePlan>[];
+  partOf?: Reference<CarePlan>[];
 
   /**
    * Indicates whether the plan is currently being acted upon, represents
    * future intentions or is now a historical record.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * Indicates the level of authority/intentionality associated with the
    * care plan and where the care plan fits into the workflow chain.
    */
-  readonly intent?: string;
+  intent?: string;
 
   /**
    * Identifies what &quot;kind&quot; of plan this is to support differentiation
    * between multiple co-existing plans; e.g. &quot;Home health&quot;, &quot;psychiatric&quot;,
    * &quot;asthma&quot;, &quot;disease management&quot;, &quot;wellness plan&quot;, etc.
    */
-  readonly category?: CodeableConcept[];
+  category?: CodeableConcept[];
 
   /**
    * Human-friendly name for the care plan.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * A description of the scope and nature of the plan.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Identifies the patient or group whose intended care is described by
    * the plan.
    */
-  readonly subject?: Reference<Patient | Group>;
+  subject?: Reference<Patient | Group>;
 
   /**
    * The Encounter during which this CarePlan was created or to which the
    * creation of this record is tightly associated.
    */
-  readonly encounter?: Reference<Encounter>;
+  encounter?: Reference<Encounter>;
 
   /**
    * Indicates when the plan did (or is intended to) come into effect and
    * end.
    */
-  readonly period?: Period;
+  period?: Period;
 
   /**
    * Represents when this particular CarePlan record was created in the
    * system, which is often a system-generated date.
    */
-  readonly created?: string;
+  created?: string;
 
   /**
    * When populated, the author is responsible for the care plan.  The care
    * plan is attributed to the author.
    */
-  readonly author?: Reference<Patient | Practitioner | PractitionerRole | Device | RelatedPerson | Organization | CareTeam>;
+  author?: Reference<Patient | Practitioner | PractitionerRole | Device | RelatedPerson | Organization | CareTeam>;
 
   /**
    * Identifies the individual(s) or organization who provided the contents
    * of the care plan.
    */
-  readonly contributor?: Reference<Patient | Practitioner | PractitionerRole | Device | RelatedPerson | Organization | CareTeam>[];
+  contributor?: Reference<Patient | Practitioner | PractitionerRole | Device | RelatedPerson | Organization | CareTeam>[];
 
   /**
    * Identifies all people and organizations who are expected to be
    * involved in the care envisioned by this plan.
    */
-  readonly careTeam?: Reference<CareTeam>[];
+  careTeam?: Reference<CareTeam>[];
 
   /**
    * Identifies the conditions/problems/concerns/diagnoses/etc. whose
    * management and/or mitigation are handled by this plan.
    */
-  readonly addresses?: Reference<Condition>[];
+  addresses?: Reference<Condition>[];
 
   /**
    * Identifies portions of the patient's record that specifically
@@ -247,24 +247,24 @@ export interface CarePlan {
    * comorbidities, recent procedures, limitations, recent assessments,
    * etc.
    */
-  readonly supportingInfo?: Reference<Resource>[];
+  supportingInfo?: Reference<Resource>[];
 
   /**
    * Describes the intended objective(s) of carrying out the care plan.
    */
-  readonly goal?: Reference<Goal>[];
+  goal?: Reference<Goal>[];
 
   /**
    * Identifies a planned action to occur as part of the plan.  For
    * example, a medication to be used, lab tests to perform,
    * self-monitoring, education, etc.
    */
-  readonly activity?: CarePlanActivity[];
+  activity?: CarePlanActivity[];
 
   /**
    * General notes about the care plan not covered elsewhere.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 }
 
 /**
@@ -278,7 +278,7 @@ export interface CarePlanActivity {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -288,7 +288,7 @@ export interface CarePlanActivity {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -307,14 +307,14 @@ export interface CarePlanActivity {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifies the outcome at the point when the status of the activity is
    * assessed.  For example, the outcome of an education activity could be
    * patient understands (or not).
    */
-  readonly outcomeCodeableConcept?: CodeableConcept[];
+  outcomeCodeableConcept?: CodeableConcept[];
 
   /**
    * Details of the outcome or action resulting from the activity.  The
@@ -323,26 +323,26 @@ export interface CarePlanActivity {
    * activity can be conveyed using CarePlan.activity.detail OR using the
    * CarePlan.activity.reference (a reference to a &ldquo;request&rdquo; resource).
    */
-  readonly outcomeReference?: Reference<Resource>[];
+  outcomeReference?: Reference<Resource>[];
 
   /**
    * Notes about the adherence/status/progress of the activity.
    */
-  readonly progress?: Annotation[];
+  progress?: Annotation[];
 
   /**
    * The details of the proposed activity represented in a specific
    * resource.
    */
-  readonly reference?: Reference<Appointment | CommunicationRequest | DeviceRequest | MedicationRequest |
-      NutritionOrder | Task | ServiceRequest | VisionPrescription | RequestGroup>;
+  reference?: Reference<Appointment | CommunicationRequest | DeviceRequest | MedicationRequest | NutritionOrder | Task
+      | ServiceRequest | VisionPrescription | RequestGroup>;
 
   /**
    * A simple summary of a planned activity suitable for a general care
    * plan system (e.g. form driven) that doesn't know about specific
    * resources such as procedure etc.
    */
-  readonly detail?: CarePlanActivityDetail;
+  detail?: CarePlanActivityDetail;
 }
 
 /**
@@ -356,7 +356,7 @@ export interface CarePlanActivityDetail {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -366,7 +366,7 @@ export interface CarePlanActivityDetail {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -385,7 +385,7 @@ export interface CarePlanActivityDetail {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A description of the kind of resource the in-line definition of a care
@@ -394,58 +394,58 @@ export interface CarePlanActivityDetail {
    * CarePlan.activity.reference.  For example, a MedicationRequest, a
    * ServiceRequest, or a CommunicationRequest.
    */
-  readonly kind?: string;
+  kind?: string;
 
   /**
    * The URL pointing to a FHIR-defined protocol, guideline, questionnaire
    * or other definition that is adhered to in whole or in part by this
    * CarePlan activity.
    */
-  readonly instantiatesCanonical?: string[];
+  instantiatesCanonical?: string[];
 
   /**
    * The URL pointing to an externally maintained protocol, guideline,
    * questionnaire or other definition that is adhered to in whole or in
    * part by this CarePlan activity.
    */
-  readonly instantiatesUri?: string[];
+  instantiatesUri?: string[];
 
   /**
    * Detailed description of the type of planned activity; e.g. what lab
    * test, what procedure, what kind of encounter.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * Provides the rationale that drove the inclusion of this particular
    * activity as part of the plan or the reason why the activity was
    * prohibited.
    */
-  readonly reasonCode?: CodeableConcept[];
+  reasonCode?: CodeableConcept[];
 
   /**
    * Indicates another resource, such as the health condition(s), whose
    * existence justifies this request and drove the inclusion of this
    * particular activity as part of the plan.
    */
-  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
+  reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
 
   /**
    * Internal reference that identifies the goals that this activity is
    * intended to contribute towards meeting.
    */
-  readonly goal?: Reference<Goal>[];
+  goal?: Reference<Goal>[];
 
   /**
    * Identifies what progress is being made for the specific activity.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * Provides reason why the activity isn't yet started, is on hold, was
    * cancelled, etc.
    */
-  readonly statusReason?: CodeableConcept;
+  statusReason?: CodeableConcept;
 
   /**
    * If true, indicates that the described activity is one that must NOT be
@@ -453,59 +453,59 @@ export interface CarePlanActivityDetail {
    * that the described activity is one that should be engaged in when
    * following the plan.
    */
-  readonly doNotPerform?: boolean;
+  doNotPerform?: boolean;
 
   /**
    * The period, timing or frequency upon which the described activity is
    * to occur.
    */
-  readonly scheduledTiming?: Timing;
+  scheduledTiming?: Timing;
 
   /**
    * The period, timing or frequency upon which the described activity is
    * to occur.
    */
-  readonly scheduledPeriod?: Period;
+  scheduledPeriod?: Period;
 
   /**
    * The period, timing or frequency upon which the described activity is
    * to occur.
    */
-  readonly scheduledString?: string;
+  scheduledString?: string;
 
   /**
    * Identifies the facility where the activity will occur; e.g. home,
    * hospital, specific clinic, etc.
    */
-  readonly location?: Reference<Location>;
+  location?: Reference<Location>;
 
   /**
    * Identifies who's expected to be involved in the activity.
    */
-  readonly performer?: Reference<Practitioner | PractitionerRole | Organization | RelatedPerson | Patient | CareTeam | HealthcareService | Device>[];
+  performer?: Reference<Practitioner | PractitionerRole | Organization | RelatedPerson | Patient | CareTeam | HealthcareService | Device>[];
 
   /**
    * Identifies the food, drug or other product to be consumed or supplied
    * in the activity.
    */
-  readonly productCodeableConcept?: CodeableConcept;
+  productCodeableConcept?: CodeableConcept;
 
   /**
    * Identifies the food, drug or other product to be consumed or supplied
    * in the activity.
    */
-  readonly productReference?: Reference<Medication | Substance>;
+  productReference?: Reference<Medication | Substance>;
 
   /**
    * Identifies the quantity expected to be consumed in a given day.
    */
-  readonly dailyAmount?: Quantity;
+  dailyAmount?: Quantity;
 
   /**
    * Identifies the quantity expected to be supplied, administered or
    * consumed by the subject.
    */
-  readonly quantity?: Quantity;
+  quantity?: Quantity;
 
   /**
    * This provides a textual description of constraints on the intended
@@ -514,5 +514,5 @@ export interface CarePlanActivityDetail {
    * it may convey specifics about the activity such as body site, method,
    * route, etc.
    */
-  readonly description?: string;
+  description?: string;
 }

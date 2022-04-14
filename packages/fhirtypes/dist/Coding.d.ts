@@ -15,7 +15,7 @@ export interface Coding {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -25,13 +25,13 @@ export interface Coding {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * The identification of the code system that defines the meaning of the
    * symbol in the code.
    */
-  readonly system?: string;
+  system?: string;
 
   /**
    * The version of the code system which was used when choosing this code.
@@ -40,24 +40,24 @@ export interface Coding {
    * However this cannot consistently be assured, and when the meaning is
    * not guaranteed to be consistent, the version SHOULD be exchanged.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * A symbol in syntax defined by the system. The symbol may be a
    * predefined code or an expression in a syntax defined by the coding
    * system (e.g. post-coordination).
    */
-  readonly code?: string;
+  code?: string;
 
   /**
    * A representation of the meaning of the code in the system, following
    * the rules of the system.
    */
-  readonly display?: string;
+  display?: string;
 
   /**
    * Indicates that this coding was chosen by a user directly - e.g. off a
    * pick list of available items (codes or displays).
    */
-  readonly userSelected?: boolean;
+  userSelected?: boolean;
 }

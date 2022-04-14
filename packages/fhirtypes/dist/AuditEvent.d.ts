@@ -35,14 +35,14 @@ export interface AuditEvent {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -50,12 +50,12 @@ export interface AuditEvent {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -65,14 +65,14 @@ export interface AuditEvent {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -82,7 +82,7 @@ export interface AuditEvent {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -100,67 +100,67 @@ export interface AuditEvent {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifier for a family of the event.  For example, a menu item,
    * program, rule, policy, function code, application name or URL. It
    * identifies the performed function.
    */
-  readonly type?: Coding;
+  type?: Coding;
 
   /**
    * Identifier for the category of event.
    */
-  readonly subtype?: Coding[];
+  subtype?: Coding[];
 
   /**
    * Indicator for type of action performed during the event that generated
    * the audit.
    */
-  readonly action?: string;
+  action?: string;
 
   /**
    * The period during which the activity occurred.
    */
-  readonly period?: Period;
+  period?: Period;
 
   /**
    * The time when the event was recorded.
    */
-  readonly recorded?: string;
+  recorded?: string;
 
   /**
    * Indicates whether the event succeeded or failed.
    */
-  readonly outcome?: string;
+  outcome?: string;
 
   /**
    * A free text description of the outcome of the event.
    */
-  readonly outcomeDesc?: string;
+  outcomeDesc?: string;
 
   /**
    * The purposeOfUse (reason) that was used during the event being
    * recorded.
    */
-  readonly purposeOfEvent?: CodeableConcept[];
+  purposeOfEvent?: CodeableConcept[];
 
   /**
    * An actor taking an active role in the event or activity that is
    * logged.
    */
-  readonly agent?: AuditEventAgent[];
+  agent?: AuditEventAgent[];
 
   /**
    * The system that is reporting the event.
    */
-  readonly source?: AuditEventSource;
+  source?: AuditEventSource;
 
   /**
    * Specific instances of data or objects that have been accessed.
    */
-  readonly entity?: AuditEventEntity[];
+  entity?: AuditEventEntity[];
 }
 
 /**
@@ -173,7 +173,7 @@ export interface AuditEventAgent {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -183,7 +183,7 @@ export interface AuditEventAgent {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -202,25 +202,25 @@ export interface AuditEventAgent {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Specification of the participation type the user plays when performing
    * the event.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The security role that the user was acting under, that come from local
    * codes defined by the access control security system (e.g. RBAC, ABAC)
    * used in the local context.
    */
-  readonly role?: CodeableConcept[];
+  role?: CodeableConcept[];
 
   /**
    * Reference to who this agent is that was involved in the event.
    */
-  readonly who?: Reference<PractitionerRole | Practitioner | Organization | Device | Patient | RelatedPerson>;
+  who?: Reference<PractitionerRole | Practitioner | Organization | Device | Patient | RelatedPerson>;
 
   /**
    * Alternative agent Identifier. For a human, this should be a user
@@ -228,23 +228,23 @@ export interface AuditEventAgent {
    * would be one known to a common authentication system (e.g. single
    * sign-on), if available.
    */
-  readonly altId?: string;
+  altId?: string;
 
   /**
    * Human-meaningful name for the agent.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Indicator that the user is or is not the requestor, or initiator, for
    * the event being audited.
    */
-  readonly requestor?: boolean;
+  requestor?: boolean;
 
   /**
    * Where the event occurred.
    */
-  readonly location?: Reference<Location>;
+  location?: Reference<Location>;
 
   /**
    * The policy or plan that authorized the activity being recorded.
@@ -252,25 +252,25 @@ export interface AuditEventAgent {
    * such as patient consent, guarantor funding, etc. The policy would also
    * indicate the security token used.
    */
-  readonly policy?: string[];
+  policy?: string[];
 
   /**
    * Type of media involved. Used when the event is about
    * exporting/importing onto media.
    */
-  readonly media?: Coding;
+  media?: Coding;
 
   /**
    * Logical network location for application activity, if the activity has
    * a network location.
    */
-  readonly network?: AuditEventAgentNetwork;
+  network?: AuditEventAgentNetwork;
 
   /**
    * The reason (purpose of use), specific to this agent, that was used
    * during the event being recorded.
    */
-  readonly purposeOfUse?: CodeableConcept[];
+  purposeOfUse?: CodeableConcept[];
 }
 
 /**
@@ -283,7 +283,7 @@ export interface AuditEventAgentNetwork {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -293,7 +293,7 @@ export interface AuditEventAgentNetwork {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -312,19 +312,19 @@ export interface AuditEventAgentNetwork {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An identifier for the network access point of the user device for the
    * audit event.
    */
-  readonly address?: string;
+  address?: string;
 
   /**
    * An identifier for the type of network access point that originated the
    * audit event.
    */
-  readonly type?: string;
+  type?: string;
 }
 
 /**
@@ -336,7 +336,7 @@ export interface AuditEventEntity {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -346,7 +346,7 @@ export interface AuditEventEntity {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -365,55 +365,55 @@ export interface AuditEventEntity {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifies a specific instance of the entity. The reference should be
    * version specific.
    */
-  readonly what?: Reference<Resource>;
+  what?: Reference<Resource>;
 
   /**
    * The type of the object that was involved in this audit event.
    */
-  readonly type?: Coding;
+  type?: Coding;
 
   /**
    * Code representing the role the entity played in the event being
    * audited.
    */
-  readonly role?: Coding;
+  role?: Coding;
 
   /**
    * Identifier for the data life-cycle stage for the entity.
    */
-  readonly lifecycle?: Coding;
+  lifecycle?: Coding;
 
   /**
    * Security labels for the identified entity.
    */
-  readonly securityLabel?: Coding[];
+  securityLabel?: Coding[];
 
   /**
    * A name of the entity in the audit event.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Text that describes the entity in more detail.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The query parameters for a query-type entities.
    */
-  readonly query?: string;
+  query?: string;
 
   /**
    * Tagged value pairs for conveying additional information about the
    * entity.
    */
-  readonly detail?: AuditEventEntityDetail[];
+  detail?: AuditEventEntityDetail[];
 }
 
 /**
@@ -426,7 +426,7 @@ export interface AuditEventEntityDetail {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -436,7 +436,7 @@ export interface AuditEventEntityDetail {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -455,22 +455,22 @@ export interface AuditEventEntityDetail {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The type of extra detail provided in the value.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * The  value of the extra detail.
    */
-  readonly valueString?: string;
+  valueString?: string;
 
   /**
    * The  value of the extra detail.
    */
-  readonly valueBase64Binary?: string;
+  valueBase64Binary?: string;
 }
 
 /**
@@ -482,7 +482,7 @@ export interface AuditEventSource {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -492,7 +492,7 @@ export interface AuditEventSource {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -511,22 +511,22 @@ export interface AuditEventSource {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Logical source location within the healthcare enterprise network.  For
    * example, a hospital or other provider location within a multi-entity
    * provider group.
    */
-  readonly site?: string;
+  site?: string;
 
   /**
    * Identifier of the source where the event was detected.
    */
-  readonly observer?: Reference<PractitionerRole | Practitioner | Organization | Device | Patient | RelatedPerson>;
+  observer?: Reference<PractitionerRole | Practitioner | Organization | Device | Patient | RelatedPerson>;
 
   /**
    * Code specifying the type of source where event originated.
    */
-  readonly type?: Coding[];
+  type?: Coding[];
 }

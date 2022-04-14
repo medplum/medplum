@@ -31,14 +31,14 @@ export interface ImplementationGuide {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -46,12 +46,12 @@ export interface ImplementationGuide {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -61,14 +61,14 @@ export interface ImplementationGuide {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -78,7 +78,7 @@ export interface ImplementationGuide {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -96,7 +96,7 @@ export interface ImplementationGuide {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI that is used to identify this implementation guide
@@ -108,7 +108,7 @@ export interface ImplementationGuide {
    * SHALL remain the same when the implementation guide is stored on
    * different servers.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * The identifier that is used to identify this version of the
@@ -119,33 +119,33 @@ export interface ImplementationGuide {
    * version is not available. There is also no expectation that versions
    * can be placed in a lexicographical sequence.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * A natural language name identifying the implementation guide. This
    * name should be usable as an identifier for the module by machine
    * processing applications such as code generation.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A short, descriptive, user-friendly title for the implementation
    * guide.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * The status of this implementation guide. Enables tracking the
    * life-cycle of the content.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A Boolean value to indicate that this implementation guide is authored
    * for testing purposes (or education/evaluation/marketing) and is not
    * intended to be used for genuine usage.
    */
-  readonly experimental?: boolean;
+  experimental?: boolean;
 
   /**
    * The date  (and optionally time) when the implementation guide was
@@ -154,25 +154,25 @@ export interface ImplementationGuide {
    * change when the substantive content of the implementation guide
    * changes.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The name of the organization or individual that published the
    * implementation guide.
    */
-  readonly publisher?: string;
+  publisher?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * publisher.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * A free text natural language description of the implementation guide
    * from a consumer's perspective.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -181,20 +181,20 @@ export interface ImplementationGuide {
    * (insurance plans, studies, ...) and may be used to assist with
    * indexing and searching for appropriate implementation guide instances.
    */
-  readonly useContext?: UsageContext[];
+  useContext?: UsageContext[];
 
   /**
    * A legal or geographic region in which the implementation guide is
    * intended to be used.
    */
-  readonly jurisdiction?: CodeableConcept[];
+  jurisdiction?: CodeableConcept[];
 
   /**
    * A copyright statement relating to the implementation guide and/or its
    * contents. Copyright statements are generally legal restrictions on the
    * use and publishing of the implementation guide.
    */
-  readonly copyright?: string;
+  copyright?: string;
 
   /**
    * The NPM package name for this Implementation Guide, used in the NPM
@@ -202,13 +202,13 @@ export interface ImplementationGuide {
    * based tooling manages IG dependencies. This value must be globally
    * unique, and should be assigned with care.
    */
-  readonly packageId?: string;
+  packageId?: string;
 
   /**
    * The license that applies to this Implementation Guide, using an SPDX
    * license code, or 'not-open-source'.
    */
-  readonly license?: string;
+  license?: string;
 
   /**
    * The version(s) of the FHIR specification that this ImplementationGuide
@@ -216,32 +216,32 @@ export interface ImplementationGuide {
    * formal version of the specification, without the revision number, e.g.
    * [publication].[major].[minor], which is 4.0.1. for this version.
    */
-  readonly fhirVersion?: string[];
+  fhirVersion?: string[];
 
   /**
    * Another implementation guide that this implementation depends on.
    * Typically, an implementation guide uses value sets, profiles
    * etc.defined in other implementation guides.
    */
-  readonly dependsOn?: ImplementationGuideDependsOn[];
+  dependsOn?: ImplementationGuideDependsOn[];
 
   /**
    * A set of profiles that all resources covered by this implementation
    * guide must conform to.
    */
-  readonly global?: ImplementationGuideGlobal[];
+  global?: ImplementationGuideGlobal[];
 
   /**
    * The information needed by an IG publisher tool to publish the whole
    * implementation guide.
    */
-  readonly definition?: ImplementationGuideDefinition;
+  definition?: ImplementationGuideDefinition;
 
   /**
    * Information about an assembled implementation guide, created by the
    * publication tooling.
    */
-  readonly manifest?: ImplementationGuideManifest;
+  manifest?: ImplementationGuideManifest;
 }
 
 /**
@@ -254,7 +254,7 @@ export interface ImplementationGuideDefinition {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -264,7 +264,7 @@ export interface ImplementationGuideDefinition {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -283,13 +283,13 @@ export interface ImplementationGuideDefinition {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A logical group of resources. Logical groups can be used when building
    * pages.
    */
-  readonly grouping?: ImplementationGuideDefinitionGrouping[];
+  grouping?: ImplementationGuideDefinitionGrouping[];
 
   /**
    * A resource that is part of the implementation guide. Conformance
@@ -297,23 +297,23 @@ export interface ImplementationGuideDefinition {
    * etc.) are obvious candidates for inclusion, but any kind of resource
    * can be included as an example resource.
    */
-  readonly resource?: ImplementationGuideDefinitionResource[];
+  resource?: ImplementationGuideDefinitionResource[];
 
   /**
    * A page / section in the implementation guide. The root page is the
    * implementation guide home page.
    */
-  readonly page?: ImplementationGuideDefinitionPage;
+  page?: ImplementationGuideDefinitionPage;
 
   /**
    * Defines how IG is built by tools.
    */
-  readonly parameter?: ImplementationGuideDefinitionParameter[];
+  parameter?: ImplementationGuideDefinitionParameter[];
 
   /**
    * A template for building resources.
    */
-  readonly template?: ImplementationGuideDefinitionTemplate[];
+  template?: ImplementationGuideDefinitionTemplate[];
 }
 
 /**
@@ -326,7 +326,7 @@ export interface ImplementationGuideDefinitionGrouping {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -336,7 +336,7 @@ export interface ImplementationGuideDefinitionGrouping {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -355,18 +355,18 @@ export interface ImplementationGuideDefinitionGrouping {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The human-readable title to display for the package of resources when
    * rendering the implementation guide.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Human readable text describing the package.
    */
-  readonly description?: string;
+  description?: string;
 }
 
 /**
@@ -379,7 +379,7 @@ export interface ImplementationGuideDefinitionPage {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -389,7 +389,7 @@ export interface ImplementationGuideDefinitionPage {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -408,33 +408,33 @@ export interface ImplementationGuideDefinitionPage {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The source address for the page.
    */
-  readonly nameUrl?: string;
+  nameUrl?: string;
 
   /**
    * The source address for the page.
    */
-  readonly nameReference?: Reference<Binary>;
+  nameReference?: Reference<Binary>;
 
   /**
    * A short title used to represent this page in navigational structures
    * such as table of contents, bread crumbs, etc.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * A code that indicates how the page is generated.
    */
-  readonly generation?: string;
+  generation?: string;
 
   /**
    * Nested Pages/Sections under this page.
    */
-  readonly page?: ImplementationGuideDefinitionPage[];
+  page?: ImplementationGuideDefinitionPage[];
 }
 
 /**
@@ -446,7 +446,7 @@ export interface ImplementationGuideDefinitionParameter {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -456,7 +456,7 @@ export interface ImplementationGuideDefinitionParameter {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -475,19 +475,19 @@ export interface ImplementationGuideDefinitionParameter {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * apply | path-resource | path-pages | path-tx-cache |
    * expansion-parameter | rule-broken-links | generate-xml | generate-json
    * | generate-turtle | html-template.
    */
-  readonly code?: string;
+  code?: string;
 
   /**
    * Value for named type.
    */
-  readonly value?: string;
+  value?: string;
 }
 
 /**
@@ -502,7 +502,7 @@ export interface ImplementationGuideDefinitionResource {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -512,7 +512,7 @@ export interface ImplementationGuideDefinitionResource {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -531,51 +531,51 @@ export interface ImplementationGuideDefinitionResource {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Where this resource is found.
    */
-  readonly reference?: Reference<Resource>;
+  reference?: Reference<Resource>;
 
   /**
    * Indicates the FHIR Version(s) this artifact is intended to apply to.
    * If no versions are specified, the resource is assumed to apply to all
    * the versions stated in ImplementationGuide.fhirVersion.
    */
-  readonly fhirVersion?: string[];
+  fhirVersion?: string[];
 
   /**
    * A human assigned name for the resource. All resources SHOULD have a
    * name, but the name may be extracted from the resource (e.g.
    * ValueSet.name).
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A description of the reason that a resource has been included in the
    * implementation guide.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * If true or a reference, indicates the resource is an example instance.
    * If a reference is present, indicates that the example is an example
    * of the specified profile.
    */
-  readonly exampleBoolean?: boolean;
+  exampleBoolean?: boolean;
 
   /**
    * If true or a reference, indicates the resource is an example instance.
    * If a reference is present, indicates that the example is an example
    * of the specified profile.
    */
-  readonly exampleCanonical?: string;
+  exampleCanonical?: string;
 
   /**
    * Reference to the id of the grouping this resource appears in.
    */
-  readonly groupingId?: string;
+  groupingId?: string;
 }
 
 /**
@@ -587,7 +587,7 @@ export interface ImplementationGuideDefinitionTemplate {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -597,7 +597,7 @@ export interface ImplementationGuideDefinitionTemplate {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -616,22 +616,22 @@ export interface ImplementationGuideDefinitionTemplate {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Type of template specified.
    */
-  readonly code?: string;
+  code?: string;
 
   /**
    * The source location for the template.
    */
-  readonly source?: string;
+  source?: string;
 
   /**
    * The scope in which the template applies.
    */
-  readonly scope?: string;
+  scope?: string;
 }
 
 /**
@@ -645,7 +645,7 @@ export interface ImplementationGuideDependsOn {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -655,7 +655,7 @@ export interface ImplementationGuideDependsOn {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -674,24 +674,24 @@ export interface ImplementationGuideDependsOn {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A canonical reference to the Implementation guide for the dependency.
    */
-  readonly uri?: string;
+  uri?: string;
 
   /**
    * The NPM package name for the Implementation Guide that this IG depends
    * on.
    */
-  readonly packageId?: string;
+  packageId?: string;
 
   /**
    * The version of the IG that is depended on, when the correct version is
    * required to understand the IG correctly.
    */
-  readonly version?: string;
+  version?: string;
 }
 
 /**
@@ -704,7 +704,7 @@ export interface ImplementationGuideGlobal {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -714,7 +714,7 @@ export interface ImplementationGuideGlobal {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -733,17 +733,17 @@ export interface ImplementationGuideGlobal {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The type of resource that all instances must conform to.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * A reference to the profile that all instances must conform to.
    */
-  readonly profile?: string;
+  profile?: string;
 }
 
 /**
@@ -756,7 +756,7 @@ export interface ImplementationGuideManifest {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -766,7 +766,7 @@ export interface ImplementationGuideManifest {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -785,13 +785,13 @@ export interface ImplementationGuideManifest {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A pointer to official web page, PDF or other rendering of the
    * implementation guide.
    */
-  readonly rendering?: string;
+  rendering?: string;
 
   /**
    * A resource that is part of the implementation guide. Conformance
@@ -799,24 +799,24 @@ export interface ImplementationGuideManifest {
    * etc.) are obvious candidates for inclusion, but any kind of resource
    * can be included as an example resource.
    */
-  readonly resource?: ImplementationGuideManifestResource[];
+  resource?: ImplementationGuideManifestResource[];
 
   /**
    * Information about a page within the IG.
    */
-  readonly page?: ImplementationGuideManifestPage[];
+  page?: ImplementationGuideManifestPage[];
 
   /**
    * Indicates a relative path to an image that exists within the IG.
    */
-  readonly image?: string[];
+  image?: string[];
 
   /**
    * Indicates the relative path of an additional non-page, non-image file
    * that is part of the IG - e.g. zip, jar and similar files that could be
    * the target of a hyperlink in a derived IG.
    */
-  readonly other?: string[];
+  other?: string[];
 }
 
 /**
@@ -828,7 +828,7 @@ export interface ImplementationGuideManifestPage {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -838,7 +838,7 @@ export interface ImplementationGuideManifestPage {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -857,22 +857,22 @@ export interface ImplementationGuideManifestPage {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Relative path to the page.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Label for the page intended for human display.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * The name of an anchor available on the page.
    */
-  readonly anchor?: string[];
+  anchor?: string[];
 }
 
 /**
@@ -887,7 +887,7 @@ export interface ImplementationGuideManifestResource {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -897,7 +897,7 @@ export interface ImplementationGuideManifestResource {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -916,29 +916,29 @@ export interface ImplementationGuideManifestResource {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Where this resource is found.
    */
-  readonly reference?: Reference<Resource>;
+  reference?: Reference<Resource>;
 
   /**
    * If true or a reference, indicates the resource is an example instance.
    * If a reference is present, indicates that the example is an example
    * of the specified profile.
    */
-  readonly exampleBoolean?: boolean;
+  exampleBoolean?: boolean;
 
   /**
    * If true or a reference, indicates the resource is an example instance.
    * If a reference is present, indicates that the example is an example
    * of the specified profile.
    */
-  readonly exampleCanonical?: string;
+  exampleCanonical?: string;
 
   /**
    * The relative path for primary page for this resource within the IG.
    */
-  readonly relativePath?: string;
+  relativePath?: string;
 }

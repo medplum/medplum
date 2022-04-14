@@ -29,14 +29,14 @@ export interface EnrollmentResponse {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -44,12 +44,12 @@ export interface EnrollmentResponse {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -59,14 +59,14 @@ export interface EnrollmentResponse {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -76,7 +76,7 @@ export interface EnrollmentResponse {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -94,47 +94,47 @@ export interface EnrollmentResponse {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The Response business identifier.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The status of the resource instance.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * Original request resource reference.
    */
-  readonly request?: Reference<EnrollmentRequest>;
+  request?: Reference<EnrollmentRequest>;
 
   /**
    * Processing status: error, complete.
    */
-  readonly outcome?: string;
+  outcome?: string;
 
   /**
    * A description of the status of the adjudication.
    */
-  readonly disposition?: string;
+  disposition?: string;
 
   /**
    * The date when the enclosed suite of services were performed or
    * completed.
    */
-  readonly created?: string;
+  created?: string;
 
   /**
    * The Insurer who produced this adjudicated response.
    */
-  readonly organization?: Reference<Organization>;
+  organization?: Reference<Organization>;
 
   /**
    * The practitioner who is responsible for the services rendered to the
    * patient.
    */
-  readonly requestProvider?: Reference<Practitioner | PractitionerRole | Organization>;
+  requestProvider?: Reference<Practitioner | PractitionerRole | Organization>;
 }

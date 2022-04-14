@@ -24,7 +24,7 @@ export interface SubstanceAmount {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -34,7 +34,7 @@ export interface SubstanceAmount {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -53,7 +53,7 @@ export interface SubstanceAmount {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Used to capture quantitative values for a variety of elements. If only
@@ -61,7 +61,7 @@ export interface SubstanceAmount {
    * single definite value for a given element is given, it would be
    * captured in this field.
    */
-  readonly amountQuantity?: Quantity;
+  amountQuantity?: Quantity;
 
   /**
    * Used to capture quantitative values for a variety of elements. If only
@@ -69,7 +69,7 @@ export interface SubstanceAmount {
    * single definite value for a given element is given, it would be
    * captured in this field.
    */
-  readonly amountRange?: Range;
+  amountRange?: Range;
 
   /**
    * Used to capture quantitative values for a variety of elements. If only
@@ -77,7 +77,7 @@ export interface SubstanceAmount {
    * single definite value for a given element is given, it would be
    * captured in this field.
    */
-  readonly amountString?: string;
+  amountString?: string;
 
   /**
    * Most elements that require a quantitative value will also have a field
@@ -89,17 +89,17 @@ export interface SubstanceAmount {
    * made to use same the amount type for all related definitional
    * elements.
    */
-  readonly amountType?: CodeableConcept;
+  amountType?: CodeableConcept;
 
   /**
    * A textual comment on a numeric value.
    */
-  readonly amountText?: string;
+  amountText?: string;
 
   /**
    * Reference range of possible or expected values.
    */
-  readonly referenceRange?: SubstanceAmountReferenceRange;
+  referenceRange?: SubstanceAmountReferenceRange;
 }
 
 /**
@@ -111,7 +111,7 @@ export interface SubstanceAmountReferenceRange {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -121,15 +121,15 @@ export interface SubstanceAmountReferenceRange {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * Lower limit possible or expected.
    */
-  readonly lowLimit?: Quantity;
+  lowLimit?: Quantity;
 
   /**
    * Upper limit possible or expected.
    */
-  readonly highLimit?: Quantity;
+  highLimit?: Quantity;
 }

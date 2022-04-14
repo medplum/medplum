@@ -28,14 +28,14 @@ export interface Subscription {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -43,12 +43,12 @@ export interface Subscription {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -58,14 +58,14 @@ export interface Subscription {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -75,7 +75,7 @@ export interface Subscription {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -93,47 +93,47 @@ export interface Subscription {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The status of the subscription, which marks the server state for
    * managing the subscription.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * Contact details for a human to contact about the subscription. The
    * primary use of this for system administrator troubleshooting.
    */
-  readonly contact?: ContactPoint[];
+  contact?: ContactPoint[];
 
   /**
    * The time for the server to turn the subscription off.
    */
-  readonly end?: string;
+  end?: string;
 
   /**
    * A description of why this subscription is defined.
    */
-  readonly reason?: string;
+  reason?: string;
 
   /**
    * The rules that the server should use to determine when to generate
    * notifications for this subscription.
    */
-  readonly criteria?: string;
+  criteria?: string;
 
   /**
    * A record of the last error that occurred when the server processed a
    * notification.
    */
-  readonly error?: string;
+  error?: string;
 
   /**
    * Details where to send notifications when resources are received that
    * meet the criteria.
    */
-  readonly channel?: SubscriptionChannel;
+  channel?: SubscriptionChannel;
 }
 
 /**
@@ -146,7 +146,7 @@ export interface SubscriptionChannel {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -156,7 +156,7 @@ export interface SubscriptionChannel {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -175,17 +175,17 @@ export interface SubscriptionChannel {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The type of channel to send notifications on.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * The url that describes the actual end-point to send messages to.
    */
-  readonly endpoint?: string;
+  endpoint?: string;
 
   /**
    * The mime type to send the payload in - either application/fhir+xml, or
@@ -193,10 +193,10 @@ export interface SubscriptionChannel {
    * payload in the notification, just a notification. The mime type
    * &quot;text/plain&quot; may also be used for Email and SMS subscriptions.
    */
-  readonly payload?: string;
+  payload?: string;
 
   /**
    * Additional headers / information to send as part of the notification.
    */
-  readonly header?: string[];
+  header?: string[];
 }

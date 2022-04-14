@@ -20,7 +20,7 @@ export interface Address {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -30,64 +30,64 @@ export interface Address {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * The purpose of this address.
    */
-  readonly use?: string;
+  use?: string;
 
   /**
    * Distinguishes between physical addresses (those you can visit) and
    * mailing addresses (e.g. PO Boxes and care-of addresses). Most
    * addresses are both.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * Specifies the entire address as it should be displayed e.g. on a
    * postal label. This may be provided instead of or as well as the
    * specific parts.
    */
-  readonly text?: string;
+  text?: string;
 
   /**
    * This component contains the house number, apartment number, street
    * name, street direction,  P.O. Box number, delivery hints, and similar
    * address information.
    */
-  readonly line?: string[];
+  line?: string[];
 
   /**
    * The name of the city, town, suburb, village or other community or
    * delivery center.
    */
-  readonly city?: string;
+  city?: string;
 
   /**
    * The name of the administrative area (county).
    */
-  readonly district?: string;
+  district?: string;
 
   /**
    * Sub-unit of a country with limited sovereignty in a federally
    * organized country. A code may be used if codes are in common use (e.g.
    * US 2 letter state codes).
    */
-  readonly state?: string;
+  state?: string;
 
   /**
    * A postal code designating a region defined by the postal service.
    */
-  readonly postalCode?: string;
+  postalCode?: string;
 
   /**
    * Country - a nation as commonly understood or generally accepted.
    */
-  readonly country?: string;
+  country?: string;
 
   /**
    * Time period when address was/is in use.
    */
-  readonly period?: Period;
+  period?: Period;
 }

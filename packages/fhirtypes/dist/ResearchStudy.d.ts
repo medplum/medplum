@@ -41,14 +41,14 @@ export interface ResearchStudy {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -56,12 +56,12 @@ export interface ResearchStudy {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -71,14 +71,14 @@ export interface ResearchStudy {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -88,7 +88,7 @@ export interface ResearchStudy {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -106,61 +106,61 @@ export interface ResearchStudy {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifiers assigned to this research study by the sponsor or other
    * systems.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * A short, descriptive user-friendly label for the study.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * The set of steps expected to be performed as part of the execution of
    * the study.
    */
-  readonly protocol?: Reference<PlanDefinition>[];
+  protocol?: Reference<PlanDefinition>[];
 
   /**
    * A larger research study of which this particular study is a component
    * or step.
    */
-  readonly partOf?: Reference<ResearchStudy>[];
+  partOf?: Reference<ResearchStudy>[];
 
   /**
    * The current state of the study.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The type of study based upon the intent of the study's activities. A
    * classification of the intent of the study.
    */
-  readonly primaryPurposeType?: CodeableConcept;
+  primaryPurposeType?: CodeableConcept;
 
   /**
    * The stage in the progression of a therapy from initial experimental
    * use in humans in clinical trials to post-market evaluation.
    */
-  readonly phase?: CodeableConcept;
+  phase?: CodeableConcept;
 
   /**
    * Codes categorizing the type of study such as investigational vs.
    * observational, type of blinding, type of randomization, safety vs.
    * efficacy, etc.
    */
-  readonly category?: CodeableConcept[];
+  category?: CodeableConcept[];
 
   /**
    * The medication(s), food(s), therapy(ies), device(s) or other concerns
    * or interventions that the study is seeking to gain more information
    * about.
    */
-  readonly focus?: CodeableConcept[];
+  focus?: CodeableConcept[];
 
   /**
    * The condition that is the focus of the study.  For example, In a study
@@ -168,53 +168,53 @@ export interface ResearchStudy {
    * criterion &quot;healthy volunteer&quot;, but the target condition code would be
    * a Lupus SNOMED code.
    */
-  readonly condition?: CodeableConcept[];
+  condition?: CodeableConcept[];
 
   /**
    * Contact details to assist a user in learning more about or engaging
    * with the study.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * Citations, references and other related documents.
    */
-  readonly relatedArtifact?: RelatedArtifact[];
+  relatedArtifact?: RelatedArtifact[];
 
   /**
    * Key terms to aid in searching for or filtering the study.
    */
-  readonly keyword?: CodeableConcept[];
+  keyword?: CodeableConcept[];
 
   /**
    * Indicates a country, state or other region where the study is taking
    * place.
    */
-  readonly location?: CodeableConcept[];
+  location?: CodeableConcept[];
 
   /**
    * A full description of how the study is being conducted.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Reference to a Group that defines the criteria for and quantity of
    * subjects participating in the study.  E.g. &quot; 200 female Europeans
    * between the ages of 20 and 45 with early onset diabetes&quot;.
    */
-  readonly enrollment?: Reference<Group>[];
+  enrollment?: Reference<Group>[];
 
   /**
    * Identifies the start date and the expected (or actual, depending on
    * status) end date for the study.
    */
-  readonly period?: Period;
+  period?: Period;
 
   /**
    * An organization that initiates the investigation and is legally
    * responsible for the study.
    */
-  readonly sponsor?: Reference<Organization>;
+  sponsor?: Reference<Organization>;
 
   /**
    * A researcher in a study who oversees multiple aspects of the study,
@@ -222,38 +222,38 @@ export interface ResearchStudy {
    * IRB approval, participant recruitment, informed consent, data
    * collection, analysis, interpretation and presentation.
    */
-  readonly principalInvestigator?: Reference<Practitioner | PractitionerRole>;
+  principalInvestigator?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * A facility in which study activities are conducted.
    */
-  readonly site?: Reference<Location>[];
+  site?: Reference<Location>[];
 
   /**
    * A description and/or code explaining the premature termination of the
    * study.
    */
-  readonly reasonStopped?: CodeableConcept;
+  reasonStopped?: CodeableConcept;
 
   /**
    * Comments made about the study by the performer, subject or other
    * participants.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 
   /**
    * Describes an expected sequence of events for one of the participants
    * of a study.  E.g. Exposure to drug A, wash-out, exposure to drug B,
    * wash-out, follow-up.
    */
-  readonly arm?: ResearchStudyArm[];
+  arm?: ResearchStudyArm[];
 
   /**
    * A goal that the study is aiming to achieve in terms of a scientific
    * question to be answered by the analysis of data collected during the
    * study.
    */
-  readonly objective?: ResearchStudyObjective[];
+  objective?: ResearchStudyObjective[];
 }
 
 /**
@@ -267,7 +267,7 @@ export interface ResearchStudyArm {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -277,7 +277,7 @@ export interface ResearchStudyArm {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -296,24 +296,24 @@ export interface ResearchStudyArm {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Unique, human-readable label for this arm of the study.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Categorization of study arm, e.g. experimental, active comparator,
    * placebo comparater.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * A succinct description of the path through the study that would be
    * followed by a subject adhering to this arm.
    */
-  readonly description?: string;
+  description?: string;
 }
 
 /**
@@ -327,7 +327,7 @@ export interface ResearchStudyObjective {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -337,7 +337,7 @@ export interface ResearchStudyObjective {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -356,15 +356,15 @@ export interface ResearchStudyObjective {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Unique, human-readable label for this objective of the study.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * The kind of study objective.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 }

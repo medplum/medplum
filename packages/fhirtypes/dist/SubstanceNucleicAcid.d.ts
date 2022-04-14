@@ -28,14 +28,14 @@ export interface SubstanceNucleicAcid {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -43,12 +43,12 @@ export interface SubstanceNucleicAcid {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -58,14 +58,14 @@ export interface SubstanceNucleicAcid {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -75,7 +75,7 @@ export interface SubstanceNucleicAcid {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -93,13 +93,13 @@ export interface SubstanceNucleicAcid {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The type of the sequence shall be specified based on a controlled
    * vocabulary.
    */
-  readonly sequenceType?: CodeableConcept;
+  sequenceType?: CodeableConcept;
 
   /**
    * The number of linear sequences of nucleotides linked through
@@ -108,7 +108,7 @@ export interface SubstanceNucleicAcid {
    * Watson-Crick base pairing. NOTE: If not specified in the reference
    * source, the assumption is that there is 1 subunit.
    */
-  readonly numberOfSubunits?: number;
+  numberOfSubunits?: number;
 
   /**
    * The area of hybridisation shall be described if applicable for double
@@ -117,19 +117,19 @@ export interface SubstanceNucleicAcid {
    * increasing order. The underscore &ldquo;&rdquo; shall be used as separator as
    * follows: &ldquo;Subunitnumber Residue&rdquo;.
    */
-  readonly areaOfHybridisation?: string;
+  areaOfHybridisation?: string;
 
   /**
    * (TBC).
    */
-  readonly oligoNucleotideType?: CodeableConcept;
+  oligoNucleotideType?: CodeableConcept;
 
   /**
    * Subunits are listed in order of decreasing length; sequences of the
    * same length will be ordered by molecular weight; subunits that have
    * identical sequences will be repeated multiple times.
    */
-  readonly subunit?: SubstanceNucleicAcidSubunit[];
+  subunit?: SubstanceNucleicAcidSubunit[];
 }
 
 /**
@@ -143,7 +143,7 @@ export interface SubstanceNucleicAcidSubunit {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -153,7 +153,7 @@ export interface SubstanceNucleicAcidSubunit {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -172,7 +172,7 @@ export interface SubstanceNucleicAcidSubunit {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Index of linear sequences of nucleic acids in order of decreasing
@@ -180,24 +180,24 @@ export interface SubstanceNucleicAcidSubunit {
    * weight. Subunits that have identical sequences will be repeated and
    * have sequential subscripts.
    */
-  readonly subunit?: number;
+  subunit?: number;
 
   /**
    * Actual nucleotide sequence notation from 5' to 3' end using standard
    * single letter codes. In addition to the base sequence, sugar and type
    * of phosphate or non-phosphate linkage should also be captured.
    */
-  readonly sequence?: string;
+  sequence?: string;
 
   /**
    * The length of the sequence shall be captured.
    */
-  readonly length?: number;
+  length?: number;
 
   /**
    * (TBC).
    */
-  readonly sequenceAttachment?: Attachment;
+  sequenceAttachment?: Attachment;
 
   /**
    * The nucleotide present at the 5&rsquo; terminal shall be specified based on
@@ -206,7 +206,7 @@ export interface SubstanceNucleicAcidSubunit {
    * position in the sequence. A separate representation would be
    * redundant.
    */
-  readonly fivePrime?: CodeableConcept;
+  fivePrime?: CodeableConcept;
 
   /**
    * The nucleotide present at the 3&rsquo; terminal shall be specified based on
@@ -215,17 +215,17 @@ export interface SubstanceNucleicAcidSubunit {
    * position in the sequence. A separate representation would be
    * redundant.
    */
-  readonly threePrime?: CodeableConcept;
+  threePrime?: CodeableConcept;
 
   /**
    * The linkages between sugar residues will also be captured.
    */
-  readonly linkage?: SubstanceNucleicAcidSubunitLinkage[];
+  linkage?: SubstanceNucleicAcidSubunitLinkage[];
 
   /**
    * 5.3.6.8.1 Sugar ID (Mandatory).
    */
-  readonly sugar?: SubstanceNucleicAcidSubunitSugar[];
+  sugar?: SubstanceNucleicAcidSubunitSugar[];
 }
 
 /**
@@ -237,7 +237,7 @@ export interface SubstanceNucleicAcidSubunitLinkage {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -247,7 +247,7 @@ export interface SubstanceNucleicAcidSubunitLinkage {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -266,7 +266,7 @@ export interface SubstanceNucleicAcidSubunitLinkage {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The entity that links the sugar residues together should also be
@@ -276,23 +276,23 @@ export interface SubstanceNucleicAcidSubunitLinkage {
    * assumed to be 3&rsquo;-5&rsquo;. If the linkage is either 3&rsquo;-3&rsquo; or 5&rsquo;-5&rsquo; this
    * should be specified.
    */
-  readonly connectivity?: string;
+  connectivity?: string;
 
   /**
    * Each linkage will be registered as a fragment and have an ID.
    */
-  readonly identifier?: Identifier;
+  identifier?: Identifier;
 
   /**
    * Each linkage will be registered as a fragment and have at least one
    * name. A single name shall be assigned to each linkage.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Residues shall be captured as described in 5.3.6.8.3.
    */
-  readonly residueSite?: string;
+  residueSite?: string;
 }
 
 /**
@@ -304,7 +304,7 @@ export interface SubstanceNucleicAcidSubunitSugar {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -314,7 +314,7 @@ export interface SubstanceNucleicAcidSubunitSugar {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -333,24 +333,24 @@ export interface SubstanceNucleicAcidSubunitSugar {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The Substance ID of the sugar or sugar-like component that make up the
    * nucleotide.
    */
-  readonly identifier?: Identifier;
+  identifier?: Identifier;
 
   /**
    * The name of the sugar or sugar-like component that make up the
    * nucleotide.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * The residues that contain a given sugar will be captured. The order of
    * given residues will be captured in the 5&lsquo;-3&lsquo;direction consistent with
    * the base sequences listed above.
    */
-  readonly residueSite?: string;
+  residueSite?: string;
 }

@@ -17,7 +17,7 @@ export interface Population {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -27,7 +27,7 @@ export interface Population {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -46,31 +46,31 @@ export interface Population {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The age of the specific population.
    */
-  readonly ageRange?: Range;
+  ageRange?: Range;
 
   /**
    * The age of the specific population.
    */
-  readonly ageCodeableConcept?: CodeableConcept;
+  ageCodeableConcept?: CodeableConcept;
 
   /**
    * The gender of the specific population.
    */
-  readonly gender?: CodeableConcept;
+  gender?: CodeableConcept;
 
   /**
    * Race of the specific population.
    */
-  readonly race?: CodeableConcept;
+  race?: CodeableConcept;
 
   /**
    * The existing physiological conditions of the specific population to
    * which this applies.
    */
-  readonly physiologicalCondition?: CodeableConcept;
+  physiologicalCondition?: CodeableConcept;
 }

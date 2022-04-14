@@ -33,14 +33,14 @@ export interface Person {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -48,12 +48,12 @@ export interface Person {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -63,14 +63,14 @@ export interface Person {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -80,7 +80,7 @@ export interface Person {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -98,59 +98,59 @@ export interface Person {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifier for a person within a particular scope.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * A name associated with the person.
    */
-  readonly name?: HumanName[];
+  name?: HumanName[];
 
   /**
    * A contact detail for the person, e.g. a telephone number or an email
    * address.
    */
-  readonly telecom?: ContactPoint[];
+  telecom?: ContactPoint[];
 
   /**
    * Administrative Gender.
    */
-  readonly gender?: string;
+  gender?: string;
 
   /**
    * The birth date for the person.
    */
-  readonly birthDate?: string;
+  birthDate?: string;
 
   /**
    * One or more addresses for the person.
    */
-  readonly address?: Address[];
+  address?: Address[];
 
   /**
    * An image that can be displayed as a thumbnail of the person to enhance
    * the identification of the individual.
    */
-  readonly photo?: Attachment;
+  photo?: Attachment;
 
   /**
    * The organization that is the custodian of the person record.
    */
-  readonly managingOrganization?: Reference<Organization>;
+  managingOrganization?: Reference<Organization>;
 
   /**
    * Whether this person's record is in active use.
    */
-  readonly active?: boolean;
+  active?: boolean;
 
   /**
    * Link to a resource that concerns the same actual person.
    */
-  readonly link?: PersonLink[];
+  link?: PersonLink[];
 }
 
 /**
@@ -162,7 +162,7 @@ export interface PersonLink {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -172,7 +172,7 @@ export interface PersonLink {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -191,16 +191,16 @@ export interface PersonLink {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The resource to which this actual person is associated.
    */
-  readonly target?: Reference<Patient | Practitioner | RelatedPerson | Person>;
+  target?: Reference<Patient | Practitioner | RelatedPerson | Person>;
 
   /**
    * Level of assurance that this link is associated with the target
    * resource.
    */
-  readonly assurance?: string;
+  assurance?: string;
 }

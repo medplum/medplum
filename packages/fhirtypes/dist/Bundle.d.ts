@@ -23,14 +23,14 @@ export interface Bundle<T extends Resource = Resource> {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -38,29 +38,29 @@ export interface Bundle<T extends Resource = Resource> {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A persistent identifier for the bundle that won't change as a bundle
    * is copied from server to server.
    */
-  readonly identifier?: Identifier;
+  identifier?: Identifier;
 
   /**
    * Indicates the purpose of this bundle - how it is intended to be used.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * The date/time that the bundle was assembled - i.e. when the resources
    * were placed in the bundle.
    */
-  readonly timestamp?: string;
+  timestamp?: string;
 
   /**
    * If a set of search matches, this is the total number of entries of
@@ -68,23 +68,23 @@ export interface Bundle<T extends Resource = Resource> {
    * search.mode = 'include' or 'outcome' entries and it does not provide a
    * count of the number of entries in the Bundle.
    */
-  readonly total?: number;
+  total?: number;
 
   /**
    * A series of links that provide context to this bundle.
    */
-  readonly link?: BundleLink[];
+  link?: BundleLink[];
 
   /**
    * An entry in a bundle resource - will either contain a resource or
    * information about a resource (transactions and history only).
    */
-  readonly entry?: BundleEntry<T>[];
+  entry?: BundleEntry<T>[];
 
   /**
    * Digital Signature - base64 encoded. XML-DSig or a JWT.
    */
-  readonly signature?: Signature;
+  signature?: Signature;
 }
 
 /**
@@ -97,7 +97,7 @@ export interface BundleEntry<T extends Resource = Resource> {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -107,7 +107,7 @@ export interface BundleEntry<T extends Resource = Resource> {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -126,12 +126,12 @@ export interface BundleEntry<T extends Resource = Resource> {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A series of links that provide context to this entry.
    */
-  readonly link?: BundleLink[];
+  link?: BundleLink[];
 
   /**
    * The Absolute URL for the resource.  The fullUrl SHALL NOT disagree
@@ -144,33 +144,33 @@ export interface BundleEntry<T extends Resource = Resource> {
    * * Results from operations might involve resources that are not
    * identified.
    */
-  readonly fullUrl?: string;
+  fullUrl?: string;
 
   /**
    * The Resource for the entry. The purpose/meaning of the resource is
    * determined by the Bundle.type.
    */
-  readonly resource?: T;
+  resource?: T;
 
   /**
    * Information about the search process that lead to the creation of this
    * entry.
    */
-  readonly search?: BundleEntrySearch;
+  search?: BundleEntrySearch;
 
   /**
    * Additional information about how this entry should be processed as
    * part of a transaction or batch.  For history, it shows how the entry
    * was processed to create the version contained in the entry.
    */
-  readonly request?: BundleEntryRequest;
+  request?: BundleEntryRequest;
 
   /**
    * Indicates the results of processing the corresponding 'request' entry
    * in the batch or transaction being responded to or what the results of
    * an operation where when returning history.
    */
-  readonly response?: BundleEntryResponse;
+  response?: BundleEntryResponse;
 }
 
 /**
@@ -184,7 +184,7 @@ export interface BundleEntryRequest {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -194,7 +194,7 @@ export interface BundleEntryRequest {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -213,39 +213,39 @@ export interface BundleEntryRequest {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * In a transaction or batch, this is the HTTP action to be executed for
    * this entry. In a history bundle, this indicates the HTTP action that
    * occurred.
    */
-  readonly method?: string;
+  method?: string;
 
   /**
    * The URL for this entry, relative to the root (the address to which the
    * request is posted).
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * If the ETag values match, return a 304 Not Modified status. See the
    * API documentation for [&quot;Conditional Read&quot;](http.html#cread).
    */
-  readonly ifNoneMatch?: string;
+  ifNoneMatch?: string;
 
   /**
    * Only perform the operation if the last updated date matches. See the
    * API documentation for [&quot;Conditional Read&quot;](http.html#cread).
    */
-  readonly ifModifiedSince?: string;
+  ifModifiedSince?: string;
 
   /**
    * Only perform the operation if the Etag value matches. For more
    * information, see the API section [&quot;Managing Resource
    * Contention&quot;](http.html#concurrency).
    */
-  readonly ifMatch?: string;
+  ifMatch?: string;
 
   /**
    * Instruct the server not to perform the create if a specified resource
@@ -253,7 +253,7 @@ export interface BundleEntryRequest {
    * [&quot;Conditional Create&quot;](http.html#ccreate). This is just the query
    * portion of the URL - what follows the &quot;?&quot; (not including the &quot;?&quot;).
    */
-  readonly ifNoneExist?: string;
+  ifNoneExist?: string;
 }
 
 /**
@@ -267,7 +267,7 @@ export interface BundleEntryResponse {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -277,7 +277,7 @@ export interface BundleEntryResponse {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -296,20 +296,20 @@ export interface BundleEntryResponse {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The status code returned by processing this entry. The status SHALL
    * start with a 3 digit HTTP code (e.g. 404) and may contain the standard
    * HTTP description associated with the status code.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The location header created by processing this operation, populated if
    * the operation returns a location.
    */
-  readonly location?: string;
+  location?: string;
 
   /**
    * The Etag for the resource, if the operation for the entry produced a
@@ -317,18 +317,18 @@ export interface BundleEntryResponse {
    * Versioning](http.html#versioning) and [Managing Resource
    * Contention](http.html#concurrency)).
    */
-  readonly etag?: string;
+  etag?: string;
 
   /**
    * The date/time that the resource was modified on the server.
    */
-  readonly lastModified?: string;
+  lastModified?: string;
 
   /**
    * An OperationOutcome containing hints and warnings produced as part of
    * processing this entry in a batch or transaction.
    */
-  readonly outcome?: Resource;
+  outcome?: Resource;
 }
 
 /**
@@ -341,7 +341,7 @@ export interface BundleEntrySearch {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -351,7 +351,7 @@ export interface BundleEntrySearch {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -370,19 +370,19 @@ export interface BundleEntrySearch {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Why this entry is in the result set - whether it's included as a match
    * or because of an _include requirement, or to convey information or
    * warning information about the search process.
    */
-  readonly mode?: string;
+  mode?: string;
 
   /**
    * When searching, the server's search ranking score for the entry.
    */
-  readonly score?: number;
+  score?: number;
 }
 
 /**
@@ -394,7 +394,7 @@ export interface BundleLink {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -404,7 +404,7 @@ export interface BundleLink {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -423,16 +423,16 @@ export interface BundleLink {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A name which details the functional use for this link - see
    * [http://www.iana.org/assignments/link-relations/link-relations.xhtml#link-relations-1](http://www.iana.org/assignments/link-relations/link-relations.xhtml#link-relations-1).
    */
-  readonly relation?: string;
+  relation?: string;
 
   /**
    * The reference details for the link.
    */
-  readonly url?: string;
+  url?: string;
 }

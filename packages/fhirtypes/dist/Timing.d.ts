@@ -23,7 +23,7 @@ export interface Timing {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -33,7 +33,7 @@ export interface Timing {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -52,17 +52,17 @@ export interface Timing {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifies specific times when the event occurs.
    */
-  readonly event?: string[];
+  event?: string[];
 
   /**
    * A set of rules that describe when the event is scheduled.
    */
-  readonly repeat?: TimingRepeat;
+  repeat?: TimingRepeat;
 
   /**
    * A code for the timing schedule (or just text in code.text). Some codes
@@ -73,7 +73,7 @@ export interface Timing {
    * Timing, with the exception that .repeat.bounds still applies over the
    * code (and is not contained in the code).
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 }
 
 /**
@@ -85,7 +85,7 @@ export interface TimingRepeat {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -95,28 +95,28 @@ export interface TimingRepeat {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * Either a duration for the length of the timing schedule, a range of
    * possible length, or outer bounds for start and/or end limits of the
    * timing schedule.
    */
-  readonly boundsDuration?: Duration;
+  boundsDuration?: Duration;
 
   /**
    * Either a duration for the length of the timing schedule, a range of
    * possible length, or outer bounds for start and/or end limits of the
    * timing schedule.
    */
-  readonly boundsRange?: Range;
+  boundsRange?: Range;
 
   /**
    * Either a duration for the length of the timing schedule, a range of
    * possible length, or outer bounds for start and/or end limits of the
    * timing schedule.
    */
-  readonly boundsPeriod?: Period;
+  boundsPeriod?: Period;
 
   /**
    * A total count of the desired number of repetitions across the duration
@@ -124,45 +124,45 @@ export interface TimingRepeat {
    * element indicates the lower bound of the allowed range of count
    * values.
    */
-  readonly count?: number;
+  count?: number;
 
   /**
    * If present, indicates that the count is a range - so to perform the
    * action between [count] and [countMax] times.
    */
-  readonly countMax?: number;
+  countMax?: number;
 
   /**
    * How long this thing happens for when it happens. If durationMax is
    * present, this element indicates the lower bound of the allowed range
    * of the duration.
    */
-  readonly duration?: number;
+  duration?: number;
 
   /**
    * If present, indicates that the duration is a range - so to perform the
    * action between [duration] and [durationMax] time length.
    */
-  readonly durationMax?: number;
+  durationMax?: number;
 
   /**
    * The units of time for the duration, in UCUM units.
    */
-  readonly durationUnit?: string;
+  durationUnit?: string;
 
   /**
    * The number of times to repeat the action within the specified period.
    * If frequencyMax is present, this element indicates the lower bound of
    * the allowed range of the frequency.
    */
-  readonly frequency?: number;
+  frequency?: number;
 
   /**
    * If present, indicates that the frequency is a range - so to repeat
    * between [frequency] and [frequencyMax] times within the period or
    * period range.
    */
-  readonly frequencyMax?: number;
+  frequencyMax?: number;
 
   /**
    * Indicates the duration of time over which repetitions are to occur;
@@ -170,41 +170,41 @@ export interface TimingRepeat {
    * day&quot; would be the period. If periodMax is present, this element
    * indicates the lower bound of the allowed range of the period length.
    */
-  readonly period?: number;
+  period?: number;
 
   /**
    * If present, indicates that the period is a range from [period] to
    * [periodMax], allowing expressing concepts such as &quot;do this once every
    * 3-5 days.
    */
-  readonly periodMax?: number;
+  periodMax?: number;
 
   /**
    * The units of time for the period in UCUM units.
    */
-  readonly periodUnit?: string;
+  periodUnit?: string;
 
   /**
    * If one or more days of week is provided, then the action happens only
    * on the specified day(s).
    */
-  readonly dayOfWeek?: string[];
+  dayOfWeek?: string[];
 
   /**
    * Specified time of day for action to take place.
    */
-  readonly timeOfDay?: string[];
+  timeOfDay?: string[];
 
   /**
    * An approximate time period during the day, potentially linked to an
    * event of daily living that indicates when the action should occur.
    */
-  readonly when?: string[];
+  when?: string[];
 
   /**
    * The number of minutes from the event. If the event code does not
    * indicate whether the minutes is before or after the event, then the
    * offset is assumed to be after the event.
    */
-  readonly offset?: number;
+  offset?: number;
 }

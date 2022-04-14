@@ -33,14 +33,14 @@ export interface DocumentManifest {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -48,12 +48,12 @@ export interface DocumentManifest {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -63,14 +63,14 @@ export interface DocumentManifest {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -80,7 +80,7 @@ export interface DocumentManifest {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -98,30 +98,30 @@ export interface DocumentManifest {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A single identifier that uniquely identifies this manifest.
    * Principally used to refer to the manifest in non-FHIR contexts.
    */
-  readonly masterIdentifier?: Identifier;
+  masterIdentifier?: Identifier;
 
   /**
    * Other identifiers associated with the document manifest, including
    * version independent  identifiers.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The status of this document manifest.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The code specifying the type of clinical activity that resulted in
    * placing the associated content into the DocumentManifest.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Who or what the set of documents is about. The documents can be about
@@ -131,48 +131,48 @@ export interface DocumentManifest {
    * If the documents cross more than one subject, then more than one
    * subject is allowed here (unusual use case).
    */
-  readonly subject?: Reference<Patient | Practitioner | Group | Device>;
+  subject?: Reference<Patient | Practitioner | Group | Device>;
 
   /**
    * When the document manifest was created for submission to the server
    * (not necessarily the same thing as the actual resource last modified
    * time, since it may be modified, replicated, etc.).
    */
-  readonly created?: string;
+  created?: string;
 
   /**
    * Identifies who is the author of the manifest. Manifest author is not
    * necessarly the author of the references included.
    */
-  readonly author?: Reference<Practitioner | PractitionerRole | Organization | Device | Patient | RelatedPerson>[];
+  author?: Reference<Practitioner | PractitionerRole | Organization | Device | Patient | RelatedPerson>[];
 
   /**
    * A patient, practitioner, or organization for which this set of
    * documents is intended.
    */
-  readonly recipient?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Organization>[];
+  recipient?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Organization>[];
 
   /**
    * Identifies the source system, application, or software that produced
    * the document manifest.
    */
-  readonly source?: string;
+  source?: string;
 
   /**
    * Human-readable description of the source document. This is sometimes
    * known as the &quot;title&quot;.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The list of Resources that consist of the parts of this manifest.
    */
-  readonly content?: Reference<Resource>[];
+  content?: Reference<Resource>[];
 
   /**
    * Related identifiers or resources associated with the DocumentManifest.
    */
-  readonly related?: DocumentManifestRelated[];
+  related?: DocumentManifestRelated[];
 }
 
 /**
@@ -184,7 +184,7 @@ export interface DocumentManifestRelated {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -194,7 +194,7 @@ export interface DocumentManifestRelated {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -213,17 +213,17 @@ export interface DocumentManifestRelated {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Related identifier to this DocumentManifest.  For example, Order
    * numbers, accession numbers, XDW workflow numbers.
    */
-  readonly identifier?: Identifier;
+  identifier?: Identifier;
 
   /**
    * Related Resource to this DocumentManifest. For example, Order,
    * ServiceRequest,  Procedure, EligibilityRequest, etc.
    */
-  readonly ref?: Reference<Resource>;
+  ref?: Reference<Resource>;
 }

@@ -26,14 +26,14 @@ export interface OperationDefinition {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -41,12 +41,12 @@ export interface OperationDefinition {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -56,14 +56,14 @@ export interface OperationDefinition {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -73,7 +73,7 @@ export interface OperationDefinition {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -91,7 +91,7 @@ export interface OperationDefinition {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI that is used to identify this operation definition
@@ -103,7 +103,7 @@ export interface OperationDefinition {
    * SHALL remain the same when the operation definition is stored on
    * different servers.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * The identifier that is used to identify this version of the operation
@@ -114,38 +114,38 @@ export interface OperationDefinition {
    * is not available. There is also no expectation that versions can be
    * placed in a lexicographical sequence.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * A natural language name identifying the operation definition. This
    * name should be usable as an identifier for the module by machine
    * processing applications such as code generation.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A short, descriptive, user-friendly title for the operation
    * definition.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * The status of this operation definition. Enables tracking the
    * life-cycle of the content.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * Whether this is an operation or a named query.
    */
-  readonly kind?: string;
+  kind?: string;
 
   /**
    * A Boolean value to indicate that this operation definition is authored
    * for testing purposes (or education/evaluation/marketing) and is not
    * intended to be used for genuine usage.
    */
-  readonly experimental?: boolean;
+  experimental?: boolean;
 
   /**
    * The date  (and optionally time) when the operation definition was
@@ -154,25 +154,25 @@ export interface OperationDefinition {
    * change when the substantive content of the operation definition
    * changes.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The name of the organization or individual that published the
    * operation definition.
    */
-  readonly publisher?: string;
+  publisher?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * publisher.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * A free text natural language description of the operation definition
    * from a consumer's perspective.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -181,92 +181,92 @@ export interface OperationDefinition {
    * (insurance plans, studies, ...) and may be used to assist with
    * indexing and searching for appropriate operation definition instances.
    */
-  readonly useContext?: UsageContext[];
+  useContext?: UsageContext[];
 
   /**
    * A legal or geographic region in which the operation definition is
    * intended to be used.
    */
-  readonly jurisdiction?: CodeableConcept[];
+  jurisdiction?: CodeableConcept[];
 
   /**
    * Explanation of why this operation definition is needed and why it has
    * been designed as it has.
    */
-  readonly purpose?: string;
+  purpose?: string;
 
   /**
    * Whether the operation affects state. Side effects such as producing
    * audit trail entries do not count as 'affecting  state'.
    */
-  readonly affectsState?: boolean;
+  affectsState?: boolean;
 
   /**
    * The name used to invoke the operation.
    */
-  readonly code?: string;
+  code?: string;
 
   /**
    * Additional information about how to use this operation or named query.
    */
-  readonly comment?: string;
+  comment?: string;
 
   /**
    * Indicates that this operation definition is a constraining profile on
    * the base.
    */
-  readonly base?: string;
+  base?: string;
 
   /**
    * The types on which this operation can be executed.
    */
-  readonly resource?: string[];
+  resource?: string[];
 
   /**
    * Indicates whether this operation or named query can be invoked at the
    * system level (e.g. without needing to choose a resource type for the
    * context).
    */
-  readonly system?: boolean;
+  system?: boolean;
 
   /**
    * Indicates whether this operation or named query can be invoked at the
    * resource type level for any given resource type level (e.g. without
    * needing to choose a specific resource id for the context).
    */
-  readonly type?: boolean;
+  type?: boolean;
 
   /**
    * Indicates whether this operation can be invoked on a particular
    * instance of one of the given types.
    */
-  readonly instance?: boolean;
+  instance?: boolean;
 
   /**
    * Additional validation information for the in parameters - a single
    * profile that covers all the parameters. The profile is a constraint on
    * the parameters resource as a whole.
    */
-  readonly inputProfile?: string;
+  inputProfile?: string;
 
   /**
    * Additional validation information for the out parameters - a single
    * profile that covers all the parameters. The profile is a constraint on
    * the parameters resource.
    */
-  readonly outputProfile?: string;
+  outputProfile?: string;
 
   /**
    * The parameters for the operation/query.
    */
-  readonly parameter?: OperationDefinitionParameter[];
+  parameter?: OperationDefinitionParameter[];
 
   /**
    * Defines an appropriate combination of parameters to use when invoking
    * this operation, to help code generators when generating overloaded
    * parameter sets for this operation.
    */
-  readonly overload?: OperationDefinitionOverload[];
+  overload?: OperationDefinitionOverload[];
 }
 
 /**
@@ -280,7 +280,7 @@ export interface OperationDefinitionOverload {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -290,7 +290,7 @@ export interface OperationDefinitionOverload {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -309,17 +309,17 @@ export interface OperationDefinitionOverload {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Name of parameter to include in overload.
    */
-  readonly parameterName?: string[];
+  parameterName?: string[];
 
   /**
    * Comments to go on overload.
    */
-  readonly comment?: string;
+  comment?: string;
 }
 
 /**
@@ -331,7 +331,7 @@ export interface OperationDefinitionParameter {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -341,7 +341,7 @@ export interface OperationDefinitionParameter {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -360,39 +360,39 @@ export interface OperationDefinitionParameter {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The name of used to identify the parameter.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Whether this is an input or an output parameter.
    */
-  readonly use?: string;
+  use?: string;
 
   /**
    * The minimum number of times this parameter SHALL appear in the request
    * or response.
    */
-  readonly min?: number;
+  min?: number;
 
   /**
    * The maximum number of times this element is permitted to appear in the
    * request or response.
    */
-  readonly max?: string;
+  max?: string;
 
   /**
    * Describes the meaning or use of this parameter.
    */
-  readonly documentation?: string;
+  documentation?: string;
 
   /**
    * The type for this parameter.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * Used when the type is &quot;Reference&quot; or &quot;canonical&quot;, and identifies a
@@ -405,30 +405,30 @@ export interface OperationDefinitionParameter {
    * resource SHALL conform to at least one profile defined in the
    * implementation guide.
    */
-  readonly targetProfile?: string[];
+  targetProfile?: string[];
 
   /**
    * How the parameter is understood as a search parameter. This is only
    * used if the parameter type is 'string'.
    */
-  readonly searchType?: string;
+  searchType?: string;
 
   /**
    * Binds to a value set if this parameter is coded (code, Coding,
    * CodeableConcept).
    */
-  readonly binding?: OperationDefinitionParameterBinding;
+  binding?: OperationDefinitionParameterBinding;
 
   /**
    * Identifies other resource parameters within the operation invocation
    * that are expected to resolve to this resource.
    */
-  readonly referencedFrom?: OperationDefinitionParameterReferencedFrom[];
+  referencedFrom?: OperationDefinitionParameterReferencedFrom[];
 
   /**
    * The parts of a nested Parameter.
    */
-  readonly part?: OperationDefinitionParameter[];
+  part?: OperationDefinitionParameter[];
 }
 
 /**
@@ -441,7 +441,7 @@ export interface OperationDefinitionParameterBinding {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -451,7 +451,7 @@ export interface OperationDefinitionParameterBinding {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -470,20 +470,20 @@ export interface OperationDefinitionParameterBinding {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Indicates the degree of conformance expectations associated with this
    * binding - that is, the degree to which the provided value set must be
    * adhered to in the instances.
    */
-  readonly strength?: string;
+  strength?: string;
 
   /**
    * Points to the value set or external definition (e.g. implicit value
    * set) that identifies the set of codes to be used.
    */
-  readonly valueSet?: string;
+  valueSet?: string;
 }
 
 /**
@@ -496,7 +496,7 @@ export interface OperationDefinitionParameterReferencedFrom {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -506,7 +506,7 @@ export interface OperationDefinitionParameterReferencedFrom {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -525,18 +525,18 @@ export interface OperationDefinitionParameterReferencedFrom {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The name of the parameter or dot-separated path of parameter names
    * pointing to the resource parameter that is expected to contain a
    * reference to this resource.
    */
-  readonly source?: string;
+  source?: string;
 
   /**
    * The id of the element in the referencing resource that is expected to
    * resolve to this resource.
    */
-  readonly sourceId?: string;
+  sourceId?: string;
 }

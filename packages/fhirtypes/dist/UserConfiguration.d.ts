@@ -19,14 +19,14 @@ export interface UserConfiguration {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -34,32 +34,32 @@ export interface UserConfiguration {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A name associated with the UserConfiguration.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Optional menu of shortcuts to URLs.
    */
-  readonly menu?: UserConfigurationMenu[];
+  menu?: UserConfigurationMenu[];
 
   /**
    * Shortcut links to URLs.
    */
-  readonly search?: UserConfigurationSearch[];
+  search?: UserConfigurationSearch[];
 
   /**
    * User options that control the display of the application.
    */
-  readonly option?: UserConfigurationOption[];
+  option?: UserConfigurationOption[];
 }
 
 /**
@@ -70,12 +70,12 @@ export interface UserConfigurationMenu {
   /**
    * Title of the menu.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * Shortcut links to URLs.
    */
-  readonly link?: UserConfigurationMenuLink[];
+  link?: UserConfigurationMenuLink[];
 }
 
 /**
@@ -86,12 +86,12 @@ export interface UserConfigurationMenuLink {
   /**
    * The human friendly name of the link.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * The URL target of the link.
    */
-  readonly target?: string;
+  target?: string;
 }
 
 /**
@@ -102,37 +102,37 @@ export interface UserConfigurationOption {
   /**
    * The unique identifier of the option.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * Value of option - must be one of a constrained set of the data types
    * (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueBoolean?: boolean;
+  valueBoolean?: boolean;
 
   /**
    * Value of option - must be one of a constrained set of the data types
    * (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueCode?: string;
+  valueCode?: string;
 
   /**
    * Value of option - must be one of a constrained set of the data types
    * (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueDecimal?: number;
+  valueDecimal?: number;
 
   /**
    * Value of option - must be one of a constrained set of the data types
    * (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueInteger?: number;
+  valueInteger?: number;
 
   /**
    * Value of option - must be one of a constrained set of the data types
    * (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueString?: string;
+  valueString?: string;
 }
 
 /**
@@ -143,11 +143,11 @@ export interface UserConfigurationSearch {
   /**
    * The human friendly name of the link.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * The rules that the server should use to determine which resources to
    * return.
    */
-  readonly criteria?: string;
+  criteria?: string;
 }

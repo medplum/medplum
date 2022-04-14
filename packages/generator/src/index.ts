@@ -191,7 +191,7 @@ function writeInterface(b: FileBuilder, fhirType: FhirType): void {
   if (fhirType.outputName === 'Reference') {
     b.newLine();
     generateJavadoc(b, 'Optional Resource referred to by this reference.');
-    b.append('readonly resource?: T;');
+    b.append('resource?: T;');
   }
 
   b.indentCount--;
@@ -208,7 +208,7 @@ function writeInterfaceProperty(b: FileBuilder, fhirType: FhirType, property: Pr
   for (const typeScriptProperty of getTypeScriptProperties(property)) {
     b.newLine();
     generateJavadoc(b, property.definition.definition);
-    b.append('readonly ' + typeScriptProperty.name + '?: ' + typeScriptProperty.typeName + ';');
+    b.append(typeScriptProperty.name + '?: ' + typeScriptProperty.typeName + ';');
   }
 }
 
