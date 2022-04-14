@@ -9,7 +9,7 @@ export interface AutocompleteProps<T> {
   defaultValue?: T[];
   className?: string;
   placeholder?: string;
-  loadOptions: (input: string) => Promise<T[]>;
+  loadOptions: (input: string, signal: AbortSignal) => Promise<T[]>;
   buildUnstructured?: (input: string) => T;
   getId: (item: T) => string;
   getIcon?: (item: T) => JSX.Element;
@@ -27,12 +27,16 @@ export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
   const [values, setValues] = useState(props.defaultValue ?? []);
   const [options, setOptions] = useState<T[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [abortController, setAbortController] = useState<AbortController>();
 
   const lastValueRef = useRef<string>();
   lastValueRef.current = lastValue;
 
+  const abortControllerRef = useRef<AbortController>();
+  abortControllerRef.current = abortController;
+
   useEffect(() => {
-    const interval = setInterval(handleTimer, 150);
+    const interval = setInterval(handleTimer, 50);
     return () => clearInterval(interval);
   }, []);
 
@@ -201,13 +205,22 @@ export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
       return;
     }
 
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
     setLastValue(value);
 
+    const newAbortController = new AbortController();
+    setAbortController(newAbortController);
+
     props
-      .loadOptions(value)
+      .loadOptions(value, newAbortController.signal)
       .then((newOptions: T[]) => {
-        setDropDownVisible(newOptions.length > 0);
-        setOptions(newOptions);
+        if (!newAbortController.signal.aborted) {
+          setDropDownVisible(newOptions.length > 0);
+          setOptions(newOptions);
+        }
       })
       .catch(console.log);
   }
