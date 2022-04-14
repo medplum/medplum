@@ -145,40 +145,62 @@ export function getDateProperty(date: string | undefined): Date | undefined {
 }
 
 /**
- *
- * @param birthDate The birth date.
- * @returns
+ * Calculates the age in years from the birth date.
+ * @param birthDateStr The birth date or start date in ISO-8601 format YYYY-MM-DD.
+ * @param endDateStr Optional end date in ISO-8601 format YYYY-MM-DD. Default value is today.
+ * @returns The age in years, months, and days.
  */
-export function calculateAgeInYears(birthDateStr: string, startDateStr?: string): number {
-  const birthDate = new Date(birthDateStr);
-  birthDate.setUTCHours(0, 0, 0, 0);
+export function calculateAge(
+  birthDateStr: string,
+  endDateStr?: string
+): { years: number; months: number; days: number } {
+  const startDate = new Date(birthDateStr);
+  startDate.setUTCHours(0, 0, 0, 0);
 
-  const today = startDateStr ? new Date(startDateStr) : new Date();
-  today.setUTCHours(0, 0, 0, 0);
+  const endDate = endDateStr ? new Date(endDateStr) : new Date();
+  endDate.setUTCHours(0, 0, 0, 0);
 
-  let years = today.getUTCFullYear() - birthDate.getUTCFullYear();
-  if (
-    today.getUTCMonth() < birthDate.getUTCMonth() ||
-    (today.getUTCMonth() === birthDate.getUTCMonth() && today.getUTCDate() < birthDate.getUTCDate())
-  ) {
+  const startYear = startDate.getUTCFullYear();
+  const startMonth = startDate.getUTCMonth();
+  const startDay = startDate.getUTCDate();
+
+  const endYear = endDate.getUTCFullYear();
+  const endMonth = endDate.getUTCMonth();
+  const endDay = endDate.getUTCDate();
+
+  let years = endYear - startYear;
+  if (endMonth < startMonth || (endMonth === startMonth && endDay < startDay)) {
     years--;
   }
-  return years;
-}
 
-export function calculateAgeInMonths(birthDateStr: string, startDateStr?: string): number {
-  const birthDate = new Date(birthDateStr);
-  birthDate.setUTCHours(0, 0, 0, 0);
-
-  const today = startDateStr ? new Date(startDateStr) : new Date();
-  today.setUTCHours(0, 0, 0, 0);
-
-  let months =
-    today.getUTCFullYear() * 12 + today.getUTCMonth() - (birthDate.getUTCFullYear() * 12 + birthDate.getUTCMonth());
-  if (today.getUTCDate() < birthDate.getUTCDate()) {
+  let months = endYear * 12 + endMonth - (startYear * 12 + startMonth);
+  if (endMonth === startMonth && endDay < startDay) {
     months--;
   }
-  return months;
+
+  const days = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+
+  return { years, months, days };
+}
+
+/**
+ * Calculates the age string for display using the age appropriate units.
+ * If the age is greater than or equal to 2 years, then the age is displayed in years.
+ * If the age is greater than or equal to 1 month, then the age is displayed in months.
+ * Otherwise, the age is displayed in days.
+ * @param birthDateStr The birth date or start date in ISO-8601 format YYYY-MM-DD.
+ * @param endDateStr Optional end date in ISO-8601 format YYYY-MM-DD. Default value is today.
+ * @returns The age string.
+ */
+export function calculateAgeString(birthDateStr: string, endDateStr?: string): string | undefined {
+  const { years, months, days } = calculateAge(birthDateStr, endDateStr);
+  if (years >= 2) {
+    return years.toString().padStart(3, '0') + 'Y';
+  } else if (months >= 1) {
+    return months.toString().padStart(3, '0') + 'M';
+  } else {
+    return days.toString().padStart(3, '0') + 'D';
+  }
 }
 
 /**

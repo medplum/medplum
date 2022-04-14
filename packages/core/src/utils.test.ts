@@ -1,6 +1,8 @@
 import {
   arrayBufferToBase64,
   arrayBufferToHex,
+  calculateAge,
+  calculateAgeString,
   capitalize,
   createReference,
   deepEquals,
@@ -152,6 +154,40 @@ describe('Core Utils', () => {
     expect(getDateProperty(undefined)).toBeUndefined();
     expect(getDateProperty('')).toBeUndefined();
     expect(getDateProperty('2020-01-01')).toEqual(new Date('2020-01-01'));
+  });
+
+  test('Calculate age', () => {
+    expect(calculateAge(new Date().toISOString().substring(0, 10))).toMatchObject({ years: 0, months: 0, days: 0 });
+    expect(calculateAge('2020-01-01', '2020-01-01')).toMatchObject({ years: 0, months: 0, days: 0 });
+    expect(calculateAge('2020-01-01', '2020-01-02')).toMatchObject({ years: 0, months: 0, days: 1 });
+    expect(calculateAge('2020-01-01', '2020-02-01')).toMatchObject({ years: 0, months: 1 });
+    expect(calculateAge('2020-01-01', '2020-02-02')).toMatchObject({ years: 0, months: 1 });
+    expect(calculateAge('2020-01-01', '2020-03-01')).toMatchObject({ years: 0, months: 2 });
+    expect(calculateAge('2020-01-01', '2020-03-02')).toMatchObject({ years: 0, months: 2 });
+    expect(calculateAge('2020-01-01', '2021-01-01')).toMatchObject({ years: 1, months: 12 });
+    expect(calculateAge('2020-01-01', '2021-01-02')).toMatchObject({ years: 1, months: 12 });
+    expect(calculateAge('2020-01-01', '2021-02-01')).toMatchObject({ years: 1, months: 13 });
+    expect(calculateAge('2020-01-01', '2021-02-02')).toMatchObject({ years: 1, months: 13 });
+
+    // End month < start month
+    expect(calculateAge('2020-06-01', '2022-05-01')).toMatchObject({ years: 1, months: 23 });
+
+    // End day < start day
+    expect(calculateAge('2020-06-30', '2022-06-29')).toMatchObject({ years: 1, months: 23 });
+  });
+
+  test('Calculate age string', () => {
+    expect(calculateAgeString('2020-01-01', '2020-01-01')).toEqual('000D');
+    expect(calculateAgeString('2020-01-01', '2020-01-02')).toEqual('001D');
+    expect(calculateAgeString('2020-01-01', '2020-02-01')).toEqual('001M');
+    expect(calculateAgeString('2020-01-01', '2020-02-02')).toEqual('001M');
+    expect(calculateAgeString('2020-01-01', '2020-03-01')).toEqual('002M');
+    expect(calculateAgeString('2020-01-01', '2020-03-02')).toEqual('002M');
+    expect(calculateAgeString('2020-01-01', '2021-01-01')).toEqual('012M');
+    expect(calculateAgeString('2020-01-01', '2021-01-02')).toEqual('012M');
+    expect(calculateAgeString('2020-01-01', '2021-02-01')).toEqual('013M');
+    expect(calculateAgeString('2020-01-01', '2021-02-02')).toEqual('013M');
+    expect(calculateAgeString('2020-01-01', '2022-01-01')).toEqual('002Y');
   });
 
   test('Stringify', () => {
