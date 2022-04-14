@@ -13,6 +13,7 @@ import {
   UserConfiguration,
   ValueSet,
 } from '@medplum/fhirtypes';
+import { Operation } from 'fast-json-patch';
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
@@ -223,6 +224,10 @@ export class MedplumClient extends EventTarget {
     return this.#request('PUT', url, contentType, body);
   }
 
+  patch(url: string, operations: any): Promise<any> {
+    return this.#request('PATCH', url, PATCH_CONTENT_TYPE, operations);
+  }
+
   delete(url: string): Promise<any> {
     return this.#request('DELETE', url);
   }
@@ -366,7 +371,7 @@ export class MedplumClient extends EventTarget {
     return undefined;
   }
 
-  read<T extends Resource>(resourceType: string, id: string): Promise<T> {
+  readResource<T extends Resource>(resourceType: string, id: string): Promise<T> {
     const cacheKey = resourceType + '/' + id;
     const promise = this.get(this.fhirUrl(resourceType, id)).then((resource: T) => {
       this.#resourceCache.set(cacheKey, resource);
@@ -378,7 +383,7 @@ export class MedplumClient extends EventTarget {
 
   readCached<T extends Resource>(resourceType: string, id: string): Promise<T> {
     const cached = this.#resourceCache.get(resourceType + '/' + id) as T | Promise<T> | undefined;
-    return cached ? Promise.resolve(cached) : this.read(resourceType, id);
+    return cached ? Promise.resolve(cached) : this.readResource(resourceType, id);
   }
 
   readReference<T extends Resource>(reference: Reference<T>): Promise<T> {
@@ -387,7 +392,7 @@ export class MedplumClient extends EventTarget {
       return Promise.reject('Missing reference');
     }
     const [resourceType, id] = refString.split('/');
-    return this.read(resourceType, id);
+    return this.readResource(resourceType, id);
   }
 
   readCachedReference<T extends Resource>(reference: Reference<T>): Promise<T> {
@@ -468,11 +473,15 @@ export class MedplumClient extends EventTarget {
     return this.get(this.fhirUrl(resourceType, id, '_history'));
   }
 
+  readVersion<T extends Resource>(resourceType: string, id: string, vid: string): Promise<T> {
+    return this.get(this.fhirUrl(resourceType, id, '_history', vid));
+  }
+
   readPatientEverything(id: string): Promise<Bundle> {
     return this.get(this.fhirUrl('Patient', id, '$everything'));
   }
 
-  create<T extends Resource>(resource: T): Promise<T> {
+  createResource<T extends Resource>(resource: T): Promise<T> {
     if (!resource.resourceType) {
       throw new Error('Missing resourceType');
     }
@@ -483,7 +492,7 @@ export class MedplumClient extends EventTarget {
     return this.post(this.fhirUrl('Binary') + '?_filename=' + encodeURIComponent(filename), data, contentType);
   }
 
-  update<T extends Resource>(resource: T): Promise<T> {
+  updateResource<T extends Resource>(resource: T): Promise<T> {
     if (!resource.resourceType) {
       throw new Error('Missing resourceType');
     }
@@ -493,8 +502,8 @@ export class MedplumClient extends EventTarget {
     return this.put(this.fhirUrl(resource.resourceType, resource.id), resource);
   }
 
-  patch(resourceType: string, id: string, operations: any): Promise<any> {
-    return this.#request('PATCH', this.fhirUrl(resourceType, id), PATCH_CONTENT_TYPE, operations);
+  patchResource<T extends Resource>(resourceType: string, id: string, operations: Operation[]): Promise<T> {
+    return this.patch(this.fhirUrl(resourceType, id), operations);
   }
 
   deleteResource(resourceType: string, id: string): Promise<any> {

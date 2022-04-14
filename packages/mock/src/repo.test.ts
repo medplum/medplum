@@ -8,7 +8,7 @@ describe('Mock Repo', () => {
   test('Create resource with ID', async () => {
     const client = new MockClient();
     const id = randomUUID();
-    const result = await client.create({
+    const result = await client.createResource({
       resourceType: 'Patient',
       id,
     });
@@ -17,7 +17,7 @@ describe('Mock Repo', () => {
 
   test('Create resource without ID', async () => {
     const client = new MockClient();
-    const result = await client.create<Patient>({
+    const result = await client.createResource<Patient>({
       resourceType: 'Patient',
     });
     expect(result.id).toBeDefined();
@@ -27,7 +27,7 @@ describe('Mock Repo', () => {
     const client = new MockClient();
     const id = randomUUID();
     const versionId = randomUUID();
-    const result = await client.create({
+    const result = await client.createResource({
       resourceType: 'Patient',
       id,
       meta: {
@@ -40,7 +40,7 @@ describe('Mock Repo', () => {
 
   test('Create resource without ID', async () => {
     const client = new MockClient();
-    const result = await client.create<Patient>({
+    const result = await client.createResource<Patient>({
       resourceType: 'Patient',
     });
     expect(result.id).toBeDefined();

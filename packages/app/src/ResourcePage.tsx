@@ -158,7 +158,7 @@ export function ResourcePage(): JSX.Element {
   }
 
   function onSubmit(newResource: Resource): void {
-    medplum.update(cleanResource(newResource)).then(loadResource).catch(setError);
+    medplum.updateResource(cleanResource(newResource)).then(loadResource).catch(setError);
   }
 
   function onStatusChange(status: string): void {

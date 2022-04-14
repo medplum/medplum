@@ -20,7 +20,7 @@ export function CreateResourcePage(): JSX.Element {
           onSubmit={(formData: Resource) => {
             setError(undefined);
             medplum
-              .create(formData)
+              .createResource(formData)
               .then((result) => navigate('/' + result.resourceType + '/' + result.id))
               .catch(setError);
           }}

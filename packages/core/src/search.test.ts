@@ -2,22 +2,19 @@ import { formatSearchQuery, Operator, parseSearchDefinition } from './search';
 
 describe('Search Utils', () => {
   test('Parse Patient search', () => {
-    const result = parseSearchDefinition({ pathname: '/x/y/z/Patient' });
+    const result = parseSearchDefinition('/x/y/z/Patient');
     expect(result.resourceType).toBe('Patient');
     expect(result.filters).toBeUndefined();
   });
 
   test('Parse Patient search with trailing slash', () => {
-    const result = parseSearchDefinition({ pathname: '/Patient/' });
+    const result = parseSearchDefinition('/Patient/');
     expect(result.resourceType).toBe('Patient');
     expect(result.filters).toBeUndefined();
   });
 
   test('Parse Patient search name', () => {
-    const result = parseSearchDefinition({
-      pathname: 'Patient',
-      search: 'name=alice',
-    });
+    const result = parseSearchDefinition('Patient?name=alice');
     expect(result.resourceType).toBe('Patient');
     expect(result.filters).toEqual([
       {
@@ -29,46 +26,31 @@ describe('Search Utils', () => {
   });
 
   test('Parse Patient search fields', () => {
-    const result = parseSearchDefinition({
-      pathname: 'Patient',
-      search: '_fields=id,name,birthDate',
-    });
+    const result = parseSearchDefinition('Patient?_fields=id,name,birthDate');
     expect(result.resourceType).toBe('Patient');
     expect(result.fields).toEqual(['id', 'name', 'birthDate']);
   });
 
   test('Parse Patient search sort', () => {
-    const result = parseSearchDefinition({
-      pathname: 'Patient',
-      search: '_sort=birthDate',
-    });
+    const result = parseSearchDefinition('Patient?_sort=birthDate');
     expect(result.resourceType).toBe('Patient');
     expect(result.sortRules).toEqual([{ code: 'birthDate' }]);
   });
 
   test('Parse Patient search sort descending', () => {
-    const result = parseSearchDefinition({
-      pathname: 'Patient',
-      search: '_sort=-birthDate',
-    });
+    const result = parseSearchDefinition('Patient?_sort=-birthDate');
     expect(result.resourceType).toBe('Patient');
     expect(result.sortRules).toEqual([{ code: 'birthDate', descending: true }]);
   });
 
   test('Parse Patient search total', () => {
-    const result = parseSearchDefinition({
-      pathname: 'Patient',
-      search: '_total=accurate',
-    });
+    const result = parseSearchDefinition('Patient?_total=accurate');
     expect(result.resourceType).toBe('Patient');
     expect(result.total).toBe('accurate');
   });
 
   test('Parse modifier operator', () => {
-    const result = parseSearchDefinition({
-      pathname: 'Patient',
-      search: 'name:contains=alice',
-    });
+    const result = parseSearchDefinition('Patient?name:contains=alice');
     expect(result).toMatchObject({
       resourceType: 'Patient',
       filters: [
@@ -82,10 +64,7 @@ describe('Search Utils', () => {
   });
 
   test('Parse prefix operator', () => {
-    const result = parseSearchDefinition({
-      pathname: 'Patient',
-      search: 'birthdate=gt2000-01-01',
-    });
+    const result = parseSearchDefinition('Patient?birthdate=gt2000-01-01');
     expect(result).toMatchObject({
       resourceType: 'Patient',
       filters: [
@@ -99,10 +78,7 @@ describe('Search Utils', () => {
   });
 
   test('Parse prefix operator does not work on string', () => {
-    const result = parseSearchDefinition({
-      pathname: 'Patient',
-      search: 'name=leslie',
-    });
+    const result = parseSearchDefinition('Patient?name=leslie');
     expect(result).toMatchObject({
       resourceType: 'Patient',
       filters: [

@@ -12,7 +12,7 @@ export function HomePage(): JSX.Element {
 
   useEffect(() => {
     // Parse the search from the URL
-    const parsedSearch = parseSearchDefinition(location);
+    const parsedSearch = parseSearchDefinition(location.pathname + location.search);
 
     // Fill in the search with default values
     const populatedSearch = addDefaultSearchValues(parsedSearch, medplum.getUserConfiguration());

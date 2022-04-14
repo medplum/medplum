@@ -336,7 +336,7 @@ function mockFhirHandler(method: string, url: string, options: any): any {
     } else if (resourceType && id) {
       return mockRepo.readResource(resourceType, id);
     } else if (resourceType) {
-      return mockRepo.search(parseSearchDefinition(new URL(url, 'https://example.com/')));
+      return mockRepo.search(parseSearchDefinition(url));
     }
   } else if (method === 'PUT') {
     return mockRepo.createResource(JSON.parse(options.body));
