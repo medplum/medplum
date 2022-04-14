@@ -174,7 +174,7 @@ export function calculateAge(
   }
 
   let months = endYear * 12 + endMonth - (startYear * 12 + startMonth);
-  if (endMonth === startMonth && endDay < startDay) {
+  if (endDay < startDay) {
     months--;
   }
 
