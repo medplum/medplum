@@ -19,7 +19,7 @@ import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { parseJWTPayload } from './jwt';
 import { isOk } from './outcomes';
-import { formatSearchQuery, SearchRequest } from './search';
+import { formatSearchQuery, parseSearchDefinition, SearchRequest } from './search';
 import { ClientStorage } from './storage';
 import { createSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
 import { arrayBufferToBase64, ProfileResource, stringify } from './utils';
@@ -335,11 +335,37 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Sends a FHIR search request.
-   * @param search The search query.
+   * @param query The search query.
    * @returns Promise to the search result bundle.
    */
-  search<T extends Resource>(search: SearchRequest, options: RequestInit = {}): Promise<Bundle<T>> {
+  search<T extends Resource>(query: string | SearchRequest, options: RequestInit = {}): Promise<Bundle<T>> {
+    const search: SearchRequest = typeof query === 'string' ? parseSearchDefinition(query) : query;
     return this.get(this.fhirUrl(search.resourceType) + formatSearchQuery(search), options);
+  }
+
+  /**
+   * Sends a FHIR search request.
+   * @param query The search query.
+   * @returns Promise to the search result bundle.
+   */
+  async searchOne<T extends Resource>(
+    query: string | SearchRequest,
+    options: RequestInit = {}
+  ): Promise<T | undefined> {
+    const search: SearchRequest = typeof query === 'string' ? parseSearchDefinition(query) : query;
+    (search as any).count = 1;
+    const bundle = await this.search<T>(search, options);
+    return bundle.entry?.[0]?.resource;
+  }
+
+  /**
+   * Sends a FHIR search request.
+   * @param query The search query.
+   * @returns Promise to the search result bundle.
+   */
+  async searchResources<T extends Resource>(query: string | SearchRequest, options: RequestInit = {}): Promise<T[]> {
+    const bundle = await this.search<T>(query, options);
+    return bundle.entry?.map((entry) => entry.resource as T) ?? [];
   }
 
   /**

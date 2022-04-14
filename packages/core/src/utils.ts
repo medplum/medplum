@@ -145,6 +145,43 @@ export function getDateProperty(date: string | undefined): Date | undefined {
 }
 
 /**
+ *
+ * @param birthDate The birth date.
+ * @returns
+ */
+export function calculateAgeInYears(birthDateStr: string, startDateStr?: string): number {
+  const birthDate = new Date(birthDateStr);
+  birthDate.setUTCHours(0, 0, 0, 0);
+
+  const today = startDateStr ? new Date(startDateStr) : new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  let years = today.getUTCFullYear() - birthDate.getUTCFullYear();
+  if (
+    today.getUTCMonth() < birthDate.getUTCMonth() ||
+    (today.getUTCMonth() === birthDate.getUTCMonth() && today.getUTCDate() < birthDate.getUTCDate())
+  ) {
+    years--;
+  }
+  return years;
+}
+
+export function calculateAgeInMonths(birthDateStr: string, startDateStr?: string): number {
+  const birthDate = new Date(birthDateStr);
+  birthDate.setUTCHours(0, 0, 0, 0);
+
+  const today = startDateStr ? new Date(startDateStr) : new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  let months =
+    today.getUTCFullYear() * 12 + today.getUTCMonth() - (birthDate.getUTCFullYear() * 12 + birthDate.getUTCMonth());
+  if (today.getUTCDate() < birthDate.getUTCDate()) {
+    months--;
+  }
+  return months;
+}
+
+/**
  * FHIR JSON stringify.
  * Removes properties with empty string values.
  * Removes objects with zero properties.
