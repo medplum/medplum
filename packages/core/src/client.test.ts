@@ -477,7 +477,7 @@ describe('Client', () => {
 
   test('Create resource', async () => {
     const client = new MedplumClient(defaultOptions);
-    expect(() => client.createResource({} as Patient)).toThrowError('Missing resourceType');
+    expect(client.createResource({} as Patient)).rejects.toEqual('Missing resourceType');
     const result = await client.createResource({ resourceType: 'Patient', name: [{ family: 'Smith' }] });
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('POST');
@@ -494,8 +494,8 @@ describe('Client', () => {
 
   test('Update resource', async () => {
     const client = new MedplumClient(defaultOptions);
-    expect(() => client.updateResource({} as Patient)).toThrowError('Missing resourceType');
-    expect(() => client.updateResource({ resourceType: 'Patient' })).toThrowError('Missing id');
+    expect(client.updateResource({} as Patient)).rejects.toEqual('Missing resourceType');
+    expect(client.updateResource({ resourceType: 'Patient' })).rejects.toEqual('Missing id');
     const result = await client.updateResource({ resourceType: 'Patient', id: '123', name: [{ family: 'Smith' }] });
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('PUT');

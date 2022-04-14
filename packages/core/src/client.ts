@@ -212,24 +212,38 @@ export class MedplumClient extends EventTarget {
     this.dispatchEvent({ type: 'change' });
   }
 
-  get(url: string): Promise<any> {
-    return this.#request('GET', url);
+  get(url: string, options: RequestInit = {}): Promise<any> {
+    return this.#request('GET', url, options);
   }
 
-  post(url: string, body: any, contentType?: string): Promise<any> {
-    return this.#request('POST', url, contentType, body);
+  post(url: string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
+    if (body) {
+      this.#setRequestBody(options, body);
+    }
+    if (contentType) {
+      this.#setRequestContentType(options, contentType);
+    }
+    return this.#request('POST', url, options);
   }
 
-  put(url: string, body: any, contentType?: string): Promise<any> {
-    return this.#request('PUT', url, contentType, body);
+  put(url: string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
+    if (body) {
+      this.#setRequestBody(options, body);
+    }
+    if (contentType) {
+      this.#setRequestContentType(options, contentType);
+    }
+    return this.#request('PUT', url, options);
   }
 
-  patch(url: string, operations: any): Promise<any> {
-    return this.#request('PATCH', url, PATCH_CONTENT_TYPE, operations);
+  patch(url: string, operations: Operation[], options: RequestInit = {}): Promise<any> {
+    this.#setRequestBody(options, operations);
+    this.#setRequestContentType(options, PATCH_CONTENT_TYPE);
+    return this.#request('PATCH', url, options);
   }
 
-  delete(url: string): Promise<any> {
-    return this.#request('DELETE', url);
+  delete(url: string, options: RequestInit = {}): Promise<any> {
+    return this.#request('DELETE', url, options);
   }
 
   /**
@@ -324,8 +338,8 @@ export class MedplumClient extends EventTarget {
    * @param search The search query.
    * @returns Promise to the search result bundle.
    */
-  search<T extends Resource>(search: SearchRequest): Promise<Bundle<T>> {
-    return this.get(this.fhirUrl(search.resourceType) + formatSearchQuery(search));
+  search<T extends Resource>(search: SearchRequest, options: RequestInit = {}): Promise<Bundle<T>> {
+    return this.get(this.fhirUrl(search.resourceType) + formatSearchQuery(search), options);
   }
 
   /**
@@ -335,11 +349,12 @@ export class MedplumClient extends EventTarget {
    * @param filter The search string.
    * @returns Promise to expanded ValueSet.
    */
-  searchValueSet(system: string, filter: string): Promise<ValueSet> {
+  searchValueSet(system: string, filter: string, options: RequestInit = {}): Promise<ValueSet> {
     return this.get(
       this.fhirUrl('ValueSet', '$expand') +
         `?url=${encodeURIComponent(system)}` +
-        `&filter=${encodeURIComponent(filter)}`
+        `&filter=${encodeURIComponent(filter)}`,
+      options
     );
   }
 
@@ -483,7 +498,7 @@ export class MedplumClient extends EventTarget {
 
   createResource<T extends Resource>(resource: T): Promise<T> {
     if (!resource.resourceType) {
-      throw new Error('Missing resourceType');
+      return Promise.reject('Missing resourceType');
     }
     return this.post(this.fhirUrl(resource.resourceType), resource);
   }
@@ -494,10 +509,10 @@ export class MedplumClient extends EventTarget {
 
   updateResource<T extends Resource>(resource: T): Promise<T> {
     if (!resource.resourceType) {
-      throw new Error('Missing resourceType');
+      return Promise.reject('Missing resourceType');
     }
     if (!resource.id) {
-      throw new Error('Missing id');
+      return Promise.reject('Missing id');
     }
     return this.put(this.fhirUrl(resource.resourceType, resource.id), resource);
   }
@@ -510,8 +525,8 @@ export class MedplumClient extends EventTarget {
     return this.delete(this.fhirUrl(resourceType, id));
   }
 
-  graphql(query: string): Promise<any> {
-    return this.post(this.fhirUrl('$graphql'), { query }, JSON_CONTENT_TYPE);
+  graphql(query: string, options?: RequestInit): Promise<any> {
+    return this.post(this.fhirUrl('$graphql'), { query }, JSON_CONTENT_TYPE, options);
   }
 
   getActiveLogin(): LoginState | undefined {
@@ -580,12 +595,11 @@ export class MedplumClient extends EventTarget {
    * @param url The URL to request.
    * @returns Promise to the response body as a blob.
    */
-  async download(url: string): Promise<Blob> {
+  async download(url: string, options: RequestInit = {}): Promise<Blob> {
     if (this.#refreshPromise) {
       await this.#refreshPromise;
     }
-
-    const options = this.#buildFetchOptions('GET');
+    this.#addFetchOptionsDefaults(options);
     const response = await this.#fetch(url, options);
     return response.blob();
   }
@@ -597,7 +611,7 @@ export class MedplumClient extends EventTarget {
    * @param {string=} contentType
    * @param {Object=} body
    */
-  async #request(method: string, url: string, contentType?: string, body?: any): Promise<any> {
+  async #request(method: string, url: string, options: RequestInit = {}): Promise<any> {
     if (this.#refreshPromise) {
       await this.#refreshPromise;
     }
@@ -606,11 +620,13 @@ export class MedplumClient extends EventTarget {
       url = this.#baseUrl + url;
     }
 
-    const options = this.#buildFetchOptions(method, contentType, body);
+    options.method = method;
+    this.#addFetchOptionsDefaults(options);
+
     const response = await this.#fetch(url, options);
     if (response.status === 401) {
       // Refresh and try again
-      return this.#handleUnauthenticated(method, url, contentType, body);
+      return this.#handleUnauthenticated(method, url, options);
     }
 
     if (response.status === 204 || response.status === 304) {
@@ -625,31 +641,57 @@ export class MedplumClient extends EventTarget {
     return obj;
   }
 
-  #buildFetchOptions(method: string, contentType?: string, body?: any): RequestInit {
-    const headers: Record<string, string> = {
-      'Content-Type': contentType || FHIR_CONTENT_TYPE,
-    };
+  /**
+   * Adds default options to the fetch options.
+   * @param options The options to add defaults to.
+   */
+  #addFetchOptionsDefaults(options: RequestInit): void {
+    if (!options.headers) {
+      options.headers = {};
+    }
+
+    const headers = options.headers as Record<string, string>;
+    if (!headers['Content-Type']) {
+      headers['Content-Type'] = FHIR_CONTENT_TYPE;
+    }
 
     if (this.#accessToken) {
       headers['Authorization'] = 'Bearer ' + this.#accessToken;
     }
 
-    const options: RequestInit = {
-      method: method,
-      cache: 'no-cache',
-      credentials: 'include',
-      headers,
-    };
-
-    if (body) {
-      if (typeof body === 'string' || (typeof File !== 'undefined' && body instanceof File)) {
-        options.body = body;
-      } else {
-        options.body = stringify(body);
-      }
+    if (!options.cache) {
+      options.cache = 'no-cache';
     }
 
-    return options;
+    if (!options.credentials) {
+      options.credentials = 'include';
+    }
+  }
+
+  /**
+   * Sets the "Content-Type" header on fetch options.
+   * @param options The fetch options.
+   * @param contentType The new content type to set.
+   */
+  #setRequestContentType(options: RequestInit, contentType: string): void {
+    if (!options.headers) {
+      options.headers = {};
+    }
+    const headers = options.headers as Record<string, string>;
+    headers['Content-Type'] = contentType;
+  }
+
+  /**
+   * Sets the body on fetch options.
+   * @param options The fetch options.
+   * @param data The new content body.
+   */
+  #setRequestBody(options: RequestInit, data: any): void {
+    if (typeof data === 'string' || (typeof File !== 'undefined' && data instanceof File)) {
+      options.body = data;
+    } else if (data) {
+      options.body = stringify(data);
+    }
   }
 
   /**
@@ -661,9 +703,9 @@ export class MedplumClient extends EventTarget {
    * @param contentType The content type of the original request.
    * @param body The body of the original request.
    */
-  async #handleUnauthenticated(method: string, url: string, contentType?: string, body?: any): Promise<any> {
+  async #handleUnauthenticated(method: string, url: string, options: RequestInit): Promise<any> {
     return this.#refresh()
-      .then(() => this.#request(method, url, contentType, body))
+      .then(() => this.#request(method, url, options))
       .catch((error) => {
         this.clear();
         if (this.#onUnauthenticated) {
@@ -696,7 +738,7 @@ export class MedplumClient extends EventTarget {
    */
   async #requestAuthorization(): Promise<void> {
     if (!this.#authorizeUrl) {
-      throw new Error('Missing authorize URL');
+      return Promise.reject('Missing authorize URL');
     }
 
     this.#startPkce();
@@ -727,13 +769,13 @@ export class MedplumClient extends EventTarget {
     const pkceState = this.#storage.getString('pkceState');
     if (!pkceState) {
       this.clear();
-      throw new Error('Invalid PCKE state');
+      return Promise.reject('Invalid PCKE state');
     }
 
     const codeVerifier = this.#storage.getString('codeVerifier');
     if (!codeVerifier) {
       this.clear();
-      throw new Error('Invalid PCKE code verifier');
+      return Promise.reject('Invalid PCKE code verifier');
     }
 
     return this.#fetchTokens(
@@ -771,6 +813,16 @@ export class MedplumClient extends EventTarget {
     );
 
     await this.#refreshPromise;
+  }
+
+  async clientCredentials(clientId: string, clientSecret: string): Promise<ProfileResource> {
+    return this.#fetchTokens(
+      'grant_type=client_credentials' +
+        '&client_id=' +
+        encodeURIComponent(clientId) +
+        '&client_secret=' +
+        encodeURIComponent(clientSecret)
+    );
   }
 
   /**
