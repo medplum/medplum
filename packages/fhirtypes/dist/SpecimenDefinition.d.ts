@@ -29,14 +29,14 @@ export interface SpecimenDefinition {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -44,12 +44,12 @@ export interface SpecimenDefinition {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -59,14 +59,14 @@ export interface SpecimenDefinition {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -76,7 +76,7 @@ export interface SpecimenDefinition {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -94,38 +94,38 @@ export interface SpecimenDefinition {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A business identifier associated with the kind of specimen.
    */
-  readonly identifier?: Identifier;
+  identifier?: Identifier;
 
   /**
    * The kind of material to be collected.
    */
-  readonly typeCollected?: CodeableConcept;
+  typeCollected?: CodeableConcept;
 
   /**
    * Preparation of the patient for specimen collection.
    */
-  readonly patientPreparation?: CodeableConcept[];
+  patientPreparation?: CodeableConcept[];
 
   /**
    * Time aspect of specimen collection (duration or offset).
    */
-  readonly timeAspect?: string;
+  timeAspect?: string;
 
   /**
    * The action to be performed for collecting the specimen.
    */
-  readonly collection?: CodeableConcept[];
+  collection?: CodeableConcept[];
 
   /**
    * Specimen conditioned in a container as expected by the testing
    * laboratory.
    */
-  readonly typeTested?: SpecimenDefinitionTypeTested[];
+  typeTested?: SpecimenDefinitionTypeTested[];
 }
 
 /**
@@ -138,7 +138,7 @@ export interface SpecimenDefinitionTypeTested {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -148,7 +148,7 @@ export interface SpecimenDefinitionTypeTested {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -167,51 +167,51 @@ export interface SpecimenDefinitionTypeTested {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Primary of secondary specimen.
    */
-  readonly isDerived?: boolean;
+  isDerived?: boolean;
 
   /**
    * The kind of specimen conditioned for testing expected by lab.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The preference for this type of conditioned specimen.
    */
-  readonly preference?: string;
+  preference?: string;
 
   /**
    * The specimen's container.
    */
-  readonly container?: SpecimenDefinitionTypeTestedContainer;
+  container?: SpecimenDefinitionTypeTestedContainer;
 
   /**
    * Requirements for delivery and special handling of this kind of
    * conditioned specimen.
    */
-  readonly requirement?: string;
+  requirement?: string;
 
   /**
    * The usual time that a specimen of this kind is retained after the
    * ordered tests are completed, for the purpose of additional testing.
    */
-  readonly retentionTime?: Duration;
+  retentionTime?: Duration;
 
   /**
    * Criterion for rejection of the specimen in its container by the
    * laboratory.
    */
-  readonly rejectionCriterion?: CodeableConcept[];
+  rejectionCriterion?: CodeableConcept[];
 
   /**
    * Set of instructions for preservation/transport of the specimen at a
    * defined temperature interval, prior the testing process.
    */
-  readonly handling?: SpecimenDefinitionTypeTestedHandling[];
+  handling?: SpecimenDefinitionTypeTestedHandling[];
 }
 
 /**
@@ -223,7 +223,7 @@ export interface SpecimenDefinitionTypeTestedContainer {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -233,7 +233,7 @@ export interface SpecimenDefinitionTypeTestedContainer {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -252,54 +252,54 @@ export interface SpecimenDefinitionTypeTestedContainer {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The type of material of the container.
    */
-  readonly material?: CodeableConcept;
+  material?: CodeableConcept;
 
   /**
    * The type of container used to contain this kind of specimen.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Color of container cap.
    */
-  readonly cap?: CodeableConcept;
+  cap?: CodeableConcept;
 
   /**
    * The textual description of the kind of container.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The capacity (volume or other measure) of this kind of container.
    */
-  readonly capacity?: Quantity;
+  capacity?: Quantity;
 
   /**
    * The minimum volume to be conditioned in the container.
    */
-  readonly minimumVolumeQuantity?: Quantity;
+  minimumVolumeQuantity?: Quantity;
 
   /**
    * The minimum volume to be conditioned in the container.
    */
-  readonly minimumVolumeString?: string;
+  minimumVolumeString?: string;
 
   /**
    * Substance introduced in the kind of container to preserve, maintain or
    * enhance the specimen. Examples: Formalin, Citrate, EDTA.
    */
-  readonly additive?: SpecimenDefinitionTypeTestedContainerAdditive[];
+  additive?: SpecimenDefinitionTypeTestedContainerAdditive[];
 
   /**
    * Special processing that should be applied to the container for this
    * kind of specimen.
    */
-  readonly preparation?: string;
+  preparation?: string;
 }
 
 /**
@@ -312,7 +312,7 @@ export interface SpecimenDefinitionTypeTestedContainerAdditive {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -322,7 +322,7 @@ export interface SpecimenDefinitionTypeTestedContainerAdditive {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -341,19 +341,19 @@ export interface SpecimenDefinitionTypeTestedContainerAdditive {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Substance introduced in the kind of container to preserve, maintain or
    * enhance the specimen. Examples: Formalin, Citrate, EDTA.
    */
-  readonly additiveCodeableConcept?: CodeableConcept;
+  additiveCodeableConcept?: CodeableConcept;
 
   /**
    * Substance introduced in the kind of container to preserve, maintain or
    * enhance the specimen. Examples: Formalin, Citrate, EDTA.
    */
-  readonly additiveReference?: Reference<Substance>;
+  additiveReference?: Reference<Substance>;
 }
 
 /**
@@ -366,7 +366,7 @@ export interface SpecimenDefinitionTypeTestedHandling {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -376,7 +376,7 @@ export interface SpecimenDefinitionTypeTestedHandling {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -395,29 +395,29 @@ export interface SpecimenDefinitionTypeTestedHandling {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * It qualifies the interval of temperature, which characterizes an
    * occurrence of handling. Conditions that are not related to temperature
    * may be handled in the instruction element.
    */
-  readonly temperatureQualifier?: CodeableConcept;
+  temperatureQualifier?: CodeableConcept;
 
   /**
    * The temperature interval for this set of handling instructions.
    */
-  readonly temperatureRange?: Range;
+  temperatureRange?: Range;
 
   /**
    * The maximum time interval of preservation of the specimen with these
    * conditions.
    */
-  readonly maxDuration?: Duration;
+  maxDuration?: Duration;
 
   /**
    * Additional textual instructions for the preservation or transport of
    * the specimen. For instance, 'Protect from light exposure'.
    */
-  readonly instruction?: string;
+  instruction?: string;
 }

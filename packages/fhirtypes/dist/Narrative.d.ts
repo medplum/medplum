@@ -16,7 +16,7 @@ export interface Narrative {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -26,17 +26,17 @@ export interface Narrative {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * The status of the narrative - whether it's entirely generated (from
    * just the defined data or the extensions too), or whether a human
    * authored it and it may contain additional data.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The actual narrative content, a stripped down version of XHTML.
    */
-  readonly div?: string;
+  div?: string;
 }

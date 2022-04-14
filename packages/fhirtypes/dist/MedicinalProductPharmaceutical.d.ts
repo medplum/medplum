@@ -31,14 +31,14 @@ export interface MedicinalProductPharmaceutical {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -46,12 +46,12 @@ export interface MedicinalProductPharmaceutical {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -61,14 +61,14 @@ export interface MedicinalProductPharmaceutical {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -78,7 +78,7 @@ export interface MedicinalProductPharmaceutical {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -96,43 +96,43 @@ export interface MedicinalProductPharmaceutical {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An identifier for the pharmaceutical medicinal product.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The administrable dose form, after necessary reconstitution.
    */
-  readonly administrableDoseForm?: CodeableConcept;
+  administrableDoseForm?: CodeableConcept;
 
   /**
    * Todo.
    */
-  readonly unitOfPresentation?: CodeableConcept;
+  unitOfPresentation?: CodeableConcept;
 
   /**
    * Ingredient.
    */
-  readonly ingredient?: Reference<MedicinalProductIngredient>[];
+  ingredient?: Reference<MedicinalProductIngredient>[];
 
   /**
    * Accompanying device.
    */
-  readonly device?: Reference<DeviceDefinition>[];
+  device?: Reference<DeviceDefinition>[];
 
   /**
    * Characteristics e.g. a products onset of action.
    */
-  readonly characteristics?: MedicinalProductPharmaceuticalCharacteristics[];
+  characteristics?: MedicinalProductPharmaceuticalCharacteristics[];
 
   /**
    * The path by which the pharmaceutical product is taken into or makes
    * contact with the body.
    */
-  readonly routeOfAdministration?: MedicinalProductPharmaceuticalRouteOfAdministration[];
+  routeOfAdministration?: MedicinalProductPharmaceuticalRouteOfAdministration[];
 }
 
 /**
@@ -144,7 +144,7 @@ export interface MedicinalProductPharmaceuticalCharacteristics {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -154,7 +154,7 @@ export interface MedicinalProductPharmaceuticalCharacteristics {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -173,17 +173,17 @@ export interface MedicinalProductPharmaceuticalCharacteristics {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A coded characteristic.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * The status of characteristic e.g. assigned or pending.
    */
-  readonly status?: CodeableConcept;
+  status?: CodeableConcept;
 }
 
 /**
@@ -196,7 +196,7 @@ export interface MedicinalProductPharmaceuticalRouteOfAdministration {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -206,7 +206,7 @@ export interface MedicinalProductPharmaceuticalRouteOfAdministration {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -225,51 +225,51 @@ export interface MedicinalProductPharmaceuticalRouteOfAdministration {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Coded expression for the route.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * The first dose (dose quantity) administered in humans can be
    * specified, for a product under investigation, using a numerical value
    * and its unit of measurement.
    */
-  readonly firstDose?: Quantity;
+  firstDose?: Quantity;
 
   /**
    * The maximum single dose that can be administered as per the protocol
    * of a clinical trial can be specified using a numerical value and its
    * unit of measurement.
    */
-  readonly maxSingleDose?: Quantity;
+  maxSingleDose?: Quantity;
 
   /**
    * The maximum dose per day (maximum dose quantity to be administered in
    * any one 24-h period) that can be administered as per the protocol
    * referenced in the clinical trial authorisation.
    */
-  readonly maxDosePerDay?: Quantity;
+  maxDosePerDay?: Quantity;
 
   /**
    * The maximum dose per treatment period that can be administered as per
    * the protocol referenced in the clinical trial authorisation.
    */
-  readonly maxDosePerTreatmentPeriod?: Ratio;
+  maxDosePerTreatmentPeriod?: Ratio;
 
   /**
    * The maximum treatment period during which an Investigational Medicinal
    * Product can be administered as per the protocol referenced in the
    * clinical trial authorisation.
    */
-  readonly maxTreatmentPeriod?: Duration;
+  maxTreatmentPeriod?: Duration;
 
   /**
    * A species for which this route applies.
    */
-  readonly targetSpecies?: MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpecies[];
+  targetSpecies?: MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpecies[];
 }
 
 /**
@@ -281,7 +281,7 @@ export interface MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpecie
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -291,7 +291,7 @@ export interface MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpecie
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -310,18 +310,18 @@ export interface MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpecie
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Coded expression for the species.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * A species specific time during which consumption of animal product is
    * not appropriate.
    */
-  readonly withdrawalPeriod?: MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpeciesWithdrawalPeriod[];
+  withdrawalPeriod?: MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpeciesWithdrawalPeriod[];
 }
 
 /**
@@ -334,7 +334,7 @@ export interface MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpecie
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -344,7 +344,7 @@ export interface MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpecie
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -363,21 +363,21 @@ export interface MedicinalProductPharmaceuticalRouteOfAdministrationTargetSpecie
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Coded expression for the type of tissue for which the withdrawal
    * period applues, e.g. meat, milk.
    */
-  readonly tissue?: CodeableConcept;
+  tissue?: CodeableConcept;
 
   /**
    * A value for the time.
    */
-  readonly value?: Quantity;
+  value?: Quantity;
 
   /**
    * Extra information about the withdrawal period.
    */
-  readonly supportingInformation?: string;
+  supportingInformation?: string;
 }

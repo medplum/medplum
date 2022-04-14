@@ -377,7 +377,7 @@ function parseSearchArgs(resourceType: string, source: any, args: Record<string,
   // add it to the search request.
   if (referenceFilter) {
     const existingFilters = searchRequest.filters || [];
-    (searchRequest as any).filters = [referenceFilter, ...existingFilters];
+    searchRequest.filters = [referenceFilter, ...existingFilters];
   }
 
   return searchRequest;

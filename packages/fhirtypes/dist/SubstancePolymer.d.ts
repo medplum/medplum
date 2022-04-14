@@ -25,14 +25,14 @@ export interface SubstancePolymer {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -40,12 +40,12 @@ export interface SubstancePolymer {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -55,14 +55,14 @@ export interface SubstancePolymer {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -72,7 +72,7 @@ export interface SubstancePolymer {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -90,37 +90,37 @@ export interface SubstancePolymer {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Todo.
    */
-  readonly class?: CodeableConcept;
+  class?: CodeableConcept;
 
   /**
    * Todo.
    */
-  readonly geometry?: CodeableConcept;
+  geometry?: CodeableConcept;
 
   /**
    * Todo.
    */
-  readonly copolymerConnectivity?: CodeableConcept[];
+  copolymerConnectivity?: CodeableConcept[];
 
   /**
    * Todo.
    */
-  readonly modification?: string[];
+  modification?: string[];
 
   /**
    * Todo.
    */
-  readonly monomerSet?: SubstancePolymerMonomerSet[];
+  monomerSet?: SubstancePolymerMonomerSet[];
 
   /**
    * Todo.
    */
-  readonly repeat?: SubstancePolymerRepeat[];
+  repeat?: SubstancePolymerRepeat[];
 }
 
 /**
@@ -132,7 +132,7 @@ export interface SubstancePolymerMonomerSet {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -142,7 +142,7 @@ export interface SubstancePolymerMonomerSet {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -161,17 +161,17 @@ export interface SubstancePolymerMonomerSet {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Todo.
    */
-  readonly ratioType?: CodeableConcept;
+  ratioType?: CodeableConcept;
 
   /**
    * Todo.
    */
-  readonly startingMaterial?: SubstancePolymerMonomerSetStartingMaterial[];
+  startingMaterial?: SubstancePolymerMonomerSetStartingMaterial[];
 }
 
 /**
@@ -183,7 +183,7 @@ export interface SubstancePolymerMonomerSetStartingMaterial {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -193,7 +193,7 @@ export interface SubstancePolymerMonomerSetStartingMaterial {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -212,27 +212,27 @@ export interface SubstancePolymerMonomerSetStartingMaterial {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Todo.
    */
-  readonly material?: CodeableConcept;
+  material?: CodeableConcept;
 
   /**
    * Todo.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Todo.
    */
-  readonly isDefining?: boolean;
+  isDefining?: boolean;
 
   /**
    * Todo.
    */
-  readonly amount?: SubstanceAmount;
+  amount?: SubstanceAmount;
 }
 
 /**
@@ -244,7 +244,7 @@ export interface SubstancePolymerRepeat {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -254,7 +254,7 @@ export interface SubstancePolymerRepeat {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -273,27 +273,27 @@ export interface SubstancePolymerRepeat {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Todo.
    */
-  readonly numberOfUnits?: number;
+  numberOfUnits?: number;
 
   /**
    * Todo.
    */
-  readonly averageMolecularFormula?: string;
+  averageMolecularFormula?: string;
 
   /**
    * Todo.
    */
-  readonly repeatUnitAmountType?: CodeableConcept;
+  repeatUnitAmountType?: CodeableConcept;
 
   /**
    * Todo.
    */
-  readonly repeatUnit?: SubstancePolymerRepeatRepeatUnit[];
+  repeatUnit?: SubstancePolymerRepeatRepeatUnit[];
 }
 
 /**
@@ -305,7 +305,7 @@ export interface SubstancePolymerRepeatRepeatUnit {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -315,7 +315,7 @@ export interface SubstancePolymerRepeatRepeatUnit {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -334,32 +334,32 @@ export interface SubstancePolymerRepeatRepeatUnit {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Todo.
    */
-  readonly orientationOfPolymerisation?: CodeableConcept;
+  orientationOfPolymerisation?: CodeableConcept;
 
   /**
    * Todo.
    */
-  readonly repeatUnit?: string;
+  repeatUnit?: string;
 
   /**
    * Todo.
    */
-  readonly amount?: SubstanceAmount;
+  amount?: SubstanceAmount;
 
   /**
    * Todo.
    */
-  readonly degreeOfPolymerisation?: SubstancePolymerRepeatRepeatUnitDegreeOfPolymerisation[];
+  degreeOfPolymerisation?: SubstancePolymerRepeatRepeatUnitDegreeOfPolymerisation[];
 
   /**
    * Todo.
    */
-  readonly structuralRepresentation?: SubstancePolymerRepeatRepeatUnitStructuralRepresentation[];
+  structuralRepresentation?: SubstancePolymerRepeatRepeatUnitStructuralRepresentation[];
 }
 
 /**
@@ -371,7 +371,7 @@ export interface SubstancePolymerRepeatRepeatUnitDegreeOfPolymerisation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -381,7 +381,7 @@ export interface SubstancePolymerRepeatRepeatUnitDegreeOfPolymerisation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -400,17 +400,17 @@ export interface SubstancePolymerRepeatRepeatUnitDegreeOfPolymerisation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Todo.
    */
-  readonly degree?: CodeableConcept;
+  degree?: CodeableConcept;
 
   /**
    * Todo.
    */
-  readonly amount?: SubstanceAmount;
+  amount?: SubstanceAmount;
 }
 
 /**
@@ -422,7 +422,7 @@ export interface SubstancePolymerRepeatRepeatUnitStructuralRepresentation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -432,7 +432,7 @@ export interface SubstancePolymerRepeatRepeatUnitStructuralRepresentation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -451,20 +451,20 @@ export interface SubstancePolymerRepeatRepeatUnitStructuralRepresentation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Todo.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Todo.
    */
-  readonly representation?: string;
+  representation?: string;
 
   /**
    * Todo.
    */
-  readonly attachment?: Attachment;
+  attachment?: Attachment;
 }

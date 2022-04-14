@@ -23,14 +23,14 @@ export interface Binary {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -38,18 +38,18 @@ export interface Binary {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * MimeType of the binary content represented as a standard MimeType (BCP
    * 13).
    */
-  readonly contentType?: string;
+  contentType?: string;
 
   /**
    * This element identifies another resource that can be used as a proxy
@@ -64,15 +64,15 @@ export interface Binary {
    * patient, and access should only be granted to applications that have
    * access to the patient.
    */
-  readonly securityContext?: Reference<Resource>;
+  securityContext?: Reference<Resource>;
 
   /**
    * The actual content, base64 encoded.
    */
-  readonly data?: string;
+  data?: string;
 
   /**
    * A location where the data can be accessed.
    */
-  readonly url?: string;
+  url?: string;
 }

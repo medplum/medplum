@@ -16,7 +16,7 @@ export interface HumanName {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -26,48 +26,48 @@ export interface HumanName {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * Identifies the purpose for this name.
    */
-  readonly use?: string;
+  use?: string;
 
   /**
    * Specifies the entire name as it should be displayed e.g. on an
    * application UI. This may be provided instead of or as well as the
    * specific parts.
    */
-  readonly text?: string;
+  text?: string;
 
   /**
    * The part of a name that links to the genealogy. In some cultures (e.g.
    * Eritrea) the family name of a son is the first name of his father.
    */
-  readonly family?: string;
+  family?: string;
 
   /**
    * Given name.
    */
-  readonly given?: string[];
+  given?: string[];
 
   /**
    * Part of the name that is acquired as a title due to academic, legal,
    * employment or nobility status, etc. and that appears at the start of
    * the name.
    */
-  readonly prefix?: string[];
+  prefix?: string[];
 
   /**
    * Part of the name that is acquired as a title due to academic, legal,
    * employment or nobility status, etc. and that appears at the end of the
    * name.
    */
-  readonly suffix?: string[];
+  suffix?: string[];
 
   /**
    * Indicates the period of time when this name was valid for the named
    * person.
    */
-  readonly period?: Period;
+  period?: Period;
 }

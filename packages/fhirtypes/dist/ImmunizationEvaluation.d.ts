@@ -30,14 +30,14 @@ export interface ImmunizationEvaluation {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -45,12 +45,12 @@ export interface ImmunizationEvaluation {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -60,14 +60,14 @@ export interface ImmunizationEvaluation {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -77,7 +77,7 @@ export interface ImmunizationEvaluation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -95,85 +95,85 @@ export interface ImmunizationEvaluation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A unique identifier assigned to this immunization evaluation record.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * Indicates the current status of the evaluation of the vaccination
    * administration event.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The individual for whom the evaluation is being done.
    */
-  readonly patient?: Reference<Patient>;
+  patient?: Reference<Patient>;
 
   /**
    * The date the evaluation of the vaccine administration event was
    * performed.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * Indicates the authority who published the protocol (e.g. ACIP).
    */
-  readonly authority?: Reference<Organization>;
+  authority?: Reference<Organization>;
 
   /**
    * The vaccine preventable disease the dose is being evaluated against.
    */
-  readonly targetDisease?: CodeableConcept;
+  targetDisease?: CodeableConcept;
 
   /**
    * The vaccine administration event being evaluated.
    */
-  readonly immunizationEvent?: Reference<Immunization>;
+  immunizationEvent?: Reference<Immunization>;
 
   /**
    * Indicates if the dose is valid or not valid with respect to the
    * published recommendations.
    */
-  readonly doseStatus?: CodeableConcept;
+  doseStatus?: CodeableConcept;
 
   /**
    * Provides an explanation as to why the vaccine administration event is
    * valid or not relative to the published recommendations.
    */
-  readonly doseStatusReason?: CodeableConcept[];
+  doseStatusReason?: CodeableConcept[];
 
   /**
    * Additional information about the evaluation.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * One possible path to achieve presumed immunity against a disease -
    * within the context of an authority.
    */
-  readonly series?: string;
+  series?: string;
 
   /**
    * Nominal position in a series.
    */
-  readonly doseNumberPositiveInt?: number;
+  doseNumberPositiveInt?: number;
 
   /**
    * Nominal position in a series.
    */
-  readonly doseNumberString?: string;
+  doseNumberString?: string;
 
   /**
    * The recommended number of doses to achieve immunity.
    */
-  readonly seriesDosesPositiveInt?: number;
+  seriesDosesPositiveInt?: number;
 
   /**
    * The recommended number of doses to achieve immunity.
    */
-  readonly seriesDosesString?: string;
+  seriesDosesString?: string;
 }

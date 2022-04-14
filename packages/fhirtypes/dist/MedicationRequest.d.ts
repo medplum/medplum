@@ -54,14 +54,14 @@ export interface MedicationRequest {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -69,12 +69,12 @@ export interface MedicationRequest {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -84,14 +84,14 @@ export interface MedicationRequest {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -101,7 +101,7 @@ export interface MedicationRequest {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -119,7 +119,7 @@ export interface MedicationRequest {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifiers associated with this medication request that are defined
@@ -129,56 +129,56 @@ export interface MedicationRequest {
    * systems and remain constant as the resource is updated and propagates
    * from server to server.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * A code specifying the current state of the order.  Generally, this
    * will be active or completed state.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * Captures the reason for the current state of the MedicationRequest.
    */
-  readonly statusReason?: CodeableConcept;
+  statusReason?: CodeableConcept;
 
   /**
    * Whether the request is a proposal, plan, or an original order.
    */
-  readonly intent?: string;
+  intent?: string;
 
   /**
    * Indicates the type of medication request (for example, where the
    * medication is expected to be consumed or administered (i.e. inpatient
    * or outpatient)).
    */
-  readonly category?: CodeableConcept[];
+  category?: CodeableConcept[];
 
   /**
    * Indicates how quickly the Medication Request should be addressed with
    * respect to other requests.
    */
-  readonly priority?: string;
+  priority?: string;
 
   /**
    * If true indicates that the provider is asking for the medication
    * request not to occur.
    */
-  readonly doNotPerform?: boolean;
+  doNotPerform?: boolean;
 
   /**
    * Indicates if this record was captured as a secondary 'reported' record
    * rather than as an original primary source-of-truth record.  It may
    * also indicate the source of the report.
    */
-  readonly reportedBoolean?: boolean;
+  reportedBoolean?: boolean;
 
   /**
    * Indicates if this record was captured as a secondary 'reported' record
    * rather than as an original primary source-of-truth record.  It may
    * also indicate the source of the report.
    */
-  readonly reportedReference?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Organization>;
+  reportedReference?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Organization>;
 
   /**
    * Identifies the medication being requested. This is a link to a
@@ -186,7 +186,7 @@ export interface MedicationRequest {
    * the medication or simply an attribute carrying a code that identifies
    * the medication from a known list of medications.
    */
-  readonly medicationCodeableConcept?: CodeableConcept;
+  medicationCodeableConcept?: CodeableConcept;
 
   /**
    * Identifies the medication being requested. This is a link to a
@@ -194,117 +194,117 @@ export interface MedicationRequest {
    * the medication or simply an attribute carrying a code that identifies
    * the medication from a known list of medications.
    */
-  readonly medicationReference?: Reference<Medication>;
+  medicationReference?: Reference<Medication>;
 
   /**
    * A link to a resource representing the person or set of individuals to
    * whom the medication will be given.
    */
-  readonly subject?: Reference<Patient | Group>;
+  subject?: Reference<Patient | Group>;
 
   /**
    * The Encounter during which this [x] was created or to which the
    * creation of this record is tightly associated.
    */
-  readonly encounter?: Reference<Encounter>;
+  encounter?: Reference<Encounter>;
 
   /**
    * Include additional information (for example, patient height and
    * weight) that supports the ordering of the medication.
    */
-  readonly supportingInformation?: Reference<Resource>[];
+  supportingInformation?: Reference<Resource>[];
 
   /**
    * The date (and perhaps time) when the prescription was initially
    * written or authored on.
    */
-  readonly authoredOn?: string;
+  authoredOn?: string;
 
   /**
    * The individual, organization, or device that initiated the request and
    * has responsibility for its activation.
    */
-  readonly requester?: Reference<Practitioner | PractitionerRole | Organization | Patient | RelatedPerson | Device>;
+  requester?: Reference<Practitioner | PractitionerRole | Organization | Patient | RelatedPerson | Device>;
 
   /**
    * The specified desired performer of the medication treatment (e.g. the
    * performer of the medication administration).
    */
-  readonly performer?: Reference<Practitioner | PractitionerRole | Organization | Patient | Device | RelatedPerson | CareTeam>;
+  performer?: Reference<Practitioner | PractitionerRole | Organization | Patient | Device | RelatedPerson | CareTeam>;
 
   /**
    * Indicates the type of performer of the administration of the
    * medication.
    */
-  readonly performerType?: CodeableConcept;
+  performerType?: CodeableConcept;
 
   /**
    * The person who entered the order on behalf of another individual for
    * example in the case of a verbal or a telephone order.
    */
-  readonly recorder?: Reference<Practitioner | PractitionerRole>;
+  recorder?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * The reason or the indication for ordering or not ordering the
    * medication.
    */
-  readonly reasonCode?: CodeableConcept[];
+  reasonCode?: CodeableConcept[];
 
   /**
    * Condition or observation that supports why the medication was ordered.
    */
-  readonly reasonReference?: Reference<Condition | Observation>[];
+  reasonReference?: Reference<Condition | Observation>[];
 
   /**
    * The URL pointing to a protocol, guideline, orderset, or other
    * definition that is adhered to in whole or in part by this
    * MedicationRequest.
    */
-  readonly instantiatesCanonical?: string[];
+  instantiatesCanonical?: string[];
 
   /**
    * The URL pointing to an externally maintained protocol, guideline,
    * orderset or other definition that is adhered to in whole or in part by
    * this MedicationRequest.
    */
-  readonly instantiatesUri?: string[];
+  instantiatesUri?: string[];
 
   /**
    * A plan or request that is fulfilled in whole or in part by this
    * medication request.
    */
-  readonly basedOn?: Reference<CarePlan | MedicationRequest | ServiceRequest | ImmunizationRecommendation>[];
+  basedOn?: Reference<CarePlan | MedicationRequest | ServiceRequest | ImmunizationRecommendation>[];
 
   /**
    * A shared identifier common to all requests that were authorized more
    * or less simultaneously by a single author, representing the identifier
    * of the requisition or prescription.
    */
-  readonly groupIdentifier?: Identifier;
+  groupIdentifier?: Identifier;
 
   /**
    * The description of the overall patte3rn of the administration of the
    * medication to the patient.
    */
-  readonly courseOfTherapyType?: CodeableConcept;
+  courseOfTherapyType?: CodeableConcept;
 
   /**
    * Insurance plans, coverage extensions, pre-authorizations and/or
    * pre-determinations that may be required for delivering the requested
    * service.
    */
-  readonly insurance?: Reference<Coverage | ClaimResponse>[];
+  insurance?: Reference<Coverage | ClaimResponse>[];
 
   /**
    * Extra information about the prescription that could not be conveyed by
    * the other attributes.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 
   /**
    * Indicates how the medication is to be used by the patient.
    */
-  readonly dosageInstruction?: Dosage[];
+  dosageInstruction?: Dosage[];
 
   /**
    * Indicates the specific details for the dispense or medication supply
@@ -314,7 +314,7 @@ export interface MedicationRequest {
    * institutional or system support for completing the dispense details in
    * the pharmacy department.
    */
-  readonly dispenseRequest?: MedicationRequestDispenseRequest;
+  dispenseRequest?: MedicationRequestDispenseRequest;
 
   /**
    * Indicates whether or not substitution can or should be part of the
@@ -322,20 +322,20 @@ export interface MedicationRequest {
    * substitution must not happen. This block explains the prescriber's
    * intent. If nothing is specified substitution may be done.
    */
-  readonly substitution?: MedicationRequestSubstitution;
+  substitution?: MedicationRequestSubstitution;
 
   /**
    * A link to a resource representing an earlier order related order or
    * prescription.
    */
-  readonly priorPrescription?: Reference<MedicationRequest>;
+  priorPrescription?: Reference<MedicationRequest>;
 
   /**
    * Indicates an actual or potential clinical issue with or between one or
    * more active or proposed clinical actions for a patient; e.g. Drug-drug
    * interaction, duplicate therapy, dosage alert etc.
    */
-  readonly detectedIssue?: Reference<DetectedIssue>[];
+  detectedIssue?: Reference<DetectedIssue>[];
 
   /**
    * Links to Provenance records for past versions of this resource or
@@ -343,7 +343,7 @@ export interface MedicationRequest {
    * transitions or updates that are likely to be relevant to a user
    * looking at the current version of the resource.
    */
-  readonly eventHistory?: Reference<Provenance>[];
+  eventHistory?: Reference<Provenance>[];
 }
 
 /**
@@ -360,7 +360,7 @@ export interface MedicationRequestDispenseRequest {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -370,7 +370,7 @@ export interface MedicationRequestDispenseRequest {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -389,25 +389,25 @@ export interface MedicationRequestDispenseRequest {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Indicates the quantity or duration for the first dispense of the
    * medication.
    */
-  readonly initialFill?: MedicationRequestDispenseRequestInitialFill;
+  initialFill?: MedicationRequestDispenseRequestInitialFill;
 
   /**
    * The minimum period of time that must occur between dispenses of the
    * medication.
    */
-  readonly dispenseInterval?: Duration;
+  dispenseInterval?: Duration;
 
   /**
    * This indicates the validity period of a prescription (stale dating the
    * Prescription).
    */
-  readonly validityPeriod?: Period;
+  validityPeriod?: Period;
 
   /**
    * An integer indicating the number of times, in addition to the original
@@ -419,24 +419,24 @@ export interface MedicationRequestDispenseRequest {
    * A prescriber may explicitly say that zero refills are permitted after
    * the initial dispense.
    */
-  readonly numberOfRepeatsAllowed?: number;
+  numberOfRepeatsAllowed?: number;
 
   /**
    * The amount that is to be dispensed for one fill.
    */
-  readonly quantity?: Quantity;
+  quantity?: Quantity;
 
   /**
    * Identifies the period time over which the supplied product is expected
    * to be used, or the length of time the dispense is expected to last.
    */
-  readonly expectedSupplyDuration?: Duration;
+  expectedSupplyDuration?: Duration;
 
   /**
    * Indicates the intended dispensing Organization specified by the
    * prescriber.
    */
-  readonly performer?: Reference<Organization>;
+  performer?: Reference<Organization>;
 }
 
 /**
@@ -449,7 +449,7 @@ export interface MedicationRequestDispenseRequestInitialFill {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -459,7 +459,7 @@ export interface MedicationRequestDispenseRequestInitialFill {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -478,17 +478,17 @@ export interface MedicationRequestDispenseRequestInitialFill {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The amount or quantity to provide as part of the first dispense.
    */
-  readonly quantity?: Quantity;
+  quantity?: Quantity;
 
   /**
    * The length of time that the first dispense is expected to last.
    */
-  readonly duration?: Duration;
+  duration?: Duration;
 }
 
 /**
@@ -503,7 +503,7 @@ export interface MedicationRequestSubstitution {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -513,7 +513,7 @@ export interface MedicationRequestSubstitution {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -532,23 +532,23 @@ export interface MedicationRequestSubstitution {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * True if the prescriber allows a different drug to be dispensed from
    * what was prescribed.
    */
-  readonly allowedBoolean?: boolean;
+  allowedBoolean?: boolean;
 
   /**
    * True if the prescriber allows a different drug to be dispensed from
    * what was prescribed.
    */
-  readonly allowedCodeableConcept?: CodeableConcept;
+  allowedCodeableConcept?: CodeableConcept;
 
   /**
    * Indicates the reason for the substitution, or why substitution must or
    * must not be performed.
    */
-  readonly reason?: CodeableConcept;
+  reason?: CodeableConcept;
 }

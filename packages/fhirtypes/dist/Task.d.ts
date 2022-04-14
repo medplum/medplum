@@ -66,14 +66,14 @@ export interface Task {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -81,12 +81,12 @@ export interface Task {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -96,14 +96,14 @@ export interface Task {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -113,7 +113,7 @@ export interface Task {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -131,25 +131,25 @@ export interface Task {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The business identifier for this task.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The URL pointing to a *FHIR*-defined protocol, guideline, orderset or
    * other definition that is adhered to in whole or in part by this Task.
    */
-  readonly instantiatesCanonical?: string;
+  instantiatesCanonical?: string;
 
   /**
    * The URL pointing to an *externally* maintained  protocol, guideline,
    * orderset or other definition that is adhered to in whole or in part by
    * this Task.
    */
-  readonly instantiatesUri?: string;
+  instantiatesUri?: string;
 
   /**
    * BasedOn refers to a higher-level authorization that triggered the
@@ -160,140 +160,140 @@ export interface Task {
    * based on a ServiceRequest (= BasedOn), a task is created to fulfill a
    * procedureRequest ( = FocusOn ) to collect a specimen from a patient.
    */
-  readonly basedOn?: Reference<Resource>[];
+  basedOn?: Reference<Resource>[];
 
   /**
    * An identifier that links together multiple tasks and other requests
    * that were created in the same context.
    */
-  readonly groupIdentifier?: Identifier;
+  groupIdentifier?: Identifier;
 
   /**
    * Task that this particular task is part of.
    */
-  readonly partOf?: Reference<Task>[];
+  partOf?: Reference<Task>[];
 
   /**
    * The current status of the task.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * An explanation as to why this task is held, failed, was refused, etc.
    */
-  readonly statusReason?: CodeableConcept;
+  statusReason?: CodeableConcept;
 
   /**
    * Contains business-specific nuances of the business state.
    */
-  readonly businessStatus?: CodeableConcept;
+  businessStatus?: CodeableConcept;
 
   /**
    * Indicates the &quot;level&quot; of actionability associated with the Task, i.e.
    * i+R[9]Cs this a proposed task, a planned task, an actionable task,
    * etc.
    */
-  readonly intent?: string;
+  intent?: string;
 
   /**
    * Indicates how quickly the Task should be addressed with respect to
    * other requests.
    */
-  readonly priority?: string;
+  priority?: string;
 
   /**
    * A name or code (or both) briefly describing what the task involves.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * A free-text description of what is to be performed.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The request being actioned or the resource being manipulated by this
    * task.
    */
-  readonly focus?: Reference<Resource>;
+  focus?: Reference<Resource>;
 
   /**
    * The entity who benefits from the performance of the service specified
    * in the task (e.g., the patient).
    */
-  readonly for?: Reference<Resource>;
+  for?: Reference<Resource>;
 
   /**
    * The healthcare event  (e.g. a patient and healthcare provider
    * interaction) during which this task was created.
    */
-  readonly encounter?: Reference<Encounter>;
+  encounter?: Reference<Encounter>;
 
   /**
    * Identifies the time action was first taken against the task (start)
    * and/or the time final action was taken against the task prior to
    * marking it as completed (end).
    */
-  readonly executionPeriod?: Period;
+  executionPeriod?: Period;
 
   /**
    * The date and time this task was created.
    */
-  readonly authoredOn?: string;
+  authoredOn?: string;
 
   /**
    * The date and time of last modification to this task.
    */
-  readonly lastModified?: string;
+  lastModified?: string;
 
   /**
    * The creator of the task.
    */
-  readonly requester?: Reference<Device | Organization | Patient | Practitioner | PractitionerRole | RelatedPerson>;
+  requester?: Reference<Device | Organization | Patient | Practitioner | PractitionerRole | RelatedPerson>;
 
   /**
    * The kind of participant that should perform the task.
    */
-  readonly performerType?: CodeableConcept[];
+  performerType?: CodeableConcept[];
 
   /**
    * Individual organization or Device currently responsible for task
    * execution.
    */
-  readonly owner?: Reference<Practitioner | PractitionerRole | Organization | CareTeam | HealthcareService | Patient | Device | RelatedPerson>;
+  owner?: Reference<Practitioner | PractitionerRole | Organization | CareTeam | HealthcareService | Patient | Device | RelatedPerson>;
 
   /**
    * Principal physical location where the this task is performed.
    */
-  readonly location?: Reference<Location>;
+  location?: Reference<Location>;
 
   /**
    * A description or code indicating why this task needs to be performed.
    */
-  readonly reasonCode?: CodeableConcept;
+  reasonCode?: CodeableConcept;
 
   /**
    * A resource reference indicating why this task needs to be performed.
    */
-  readonly reasonReference?: Reference<Resource>;
+  reasonReference?: Reference<Resource>;
 
   /**
    * Insurance plans, coverage extensions, pre-authorizations and/or
    * pre-determinations that may be relevant to the Task.
    */
-  readonly insurance?: Reference<Coverage | ClaimResponse>[];
+  insurance?: Reference<Coverage | ClaimResponse>[];
 
   /**
    * Free-text information captured about the task as it progresses.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 
   /**
    * Links to Provenance records for past versions of this Task that
    * identify key state transitions or updates that are likely to be
    * relevant to a user looking at the current version of the task.
    */
-  readonly relevantHistory?: Reference<Provenance>[];
+  relevantHistory?: Reference<Provenance>[];
 
   /**
    * If the Task.focus is a request resource and the task is seeking
@@ -301,18 +301,18 @@ export interface Task {
    * element identifies any limitations on what parts of the referenced
    * request should be actioned.
    */
-  readonly restriction?: TaskRestriction;
+  restriction?: TaskRestriction;
 
   /**
    * Additional information that may be needed in the execution of the
    * task.
    */
-  readonly input?: TaskInput[];
+  input?: TaskInput[];
 
   /**
    * Outputs produced by the Task.
    */
-  readonly output?: TaskOutput[];
+  output?: TaskOutput[];
 }
 
 /**
@@ -325,7 +325,7 @@ export interface TaskInput {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -335,7 +335,7 @@ export interface TaskInput {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -354,263 +354,263 @@ export interface TaskInput {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A code or description indicating how the input is intended to be used
    * as part of the task execution.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueBase64Binary?: string;
+  valueBase64Binary?: string;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueBoolean?: boolean;
+  valueBoolean?: boolean;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueCanonical?: string;
+  valueCanonical?: string;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueCode?: string;
+  valueCode?: string;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueDate?: string;
+  valueDate?: string;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueDateTime?: string;
+  valueDateTime?: string;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueDecimal?: number;
+  valueDecimal?: number;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueId?: string;
+  valueId?: string;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueInstant?: string;
+  valueInstant?: string;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueInteger?: number;
+  valueInteger?: number;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueMarkdown?: string;
+  valueMarkdown?: string;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueOid?: string;
+  valueOid?: string;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valuePositiveInt?: number;
+  valuePositiveInt?: number;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueString?: string;
+  valueString?: string;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueTime?: string;
+  valueTime?: string;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueUnsignedInt?: number;
+  valueUnsignedInt?: number;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueUri?: string;
+  valueUri?: string;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueUrl?: string;
+  valueUrl?: string;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueUuid?: string;
+  valueUuid?: string;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueAddress?: Address;
+  valueAddress?: Address;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueAge?: Age;
+  valueAge?: Age;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueAnnotation?: Annotation;
+  valueAnnotation?: Annotation;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueAttachment?: Attachment;
+  valueAttachment?: Attachment;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueCodeableConcept?: CodeableConcept;
+  valueCodeableConcept?: CodeableConcept;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueCoding?: Coding;
+  valueCoding?: Coding;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueContactPoint?: ContactPoint;
+  valueContactPoint?: ContactPoint;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueCount?: Count;
+  valueCount?: Count;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueDistance?: Distance;
+  valueDistance?: Distance;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueDuration?: Duration;
+  valueDuration?: Duration;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueHumanName?: HumanName;
+  valueHumanName?: HumanName;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueIdentifier?: Identifier;
+  valueIdentifier?: Identifier;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueMoney?: Money;
+  valueMoney?: Money;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valuePeriod?: Period;
+  valuePeriod?: Period;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueQuantity?: Quantity;
+  valueQuantity?: Quantity;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueRange?: Range;
+  valueRange?: Range;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueRatio?: Ratio;
+  valueRatio?: Ratio;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueReference?: Reference;
+  valueReference?: Reference;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueSampledData?: SampledData;
+  valueSampledData?: SampledData;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueSignature?: Signature;
+  valueSignature?: Signature;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueTiming?: Timing;
+  valueTiming?: Timing;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueContactDetail?: ContactDetail;
+  valueContactDetail?: ContactDetail;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueContributor?: Contributor;
+  valueContributor?: Contributor;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueDataRequirement?: DataRequirement;
+  valueDataRequirement?: DataRequirement;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueExpression?: Expression;
+  valueExpression?: Expression;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueParameterDefinition?: ParameterDefinition;
+  valueParameterDefinition?: ParameterDefinition;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueRelatedArtifact?: RelatedArtifact;
+  valueRelatedArtifact?: RelatedArtifact;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueTriggerDefinition?: TriggerDefinition;
+  valueTriggerDefinition?: TriggerDefinition;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueUsageContext?: UsageContext;
+  valueUsageContext?: UsageContext;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueDosage?: Dosage;
+  valueDosage?: Dosage;
 
   /**
    * The value of the input parameter as a basic type.
    */
-  readonly valueMeta?: Meta;
+  valueMeta?: Meta;
 }
 
 /**
@@ -622,7 +622,7 @@ export interface TaskOutput {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -632,7 +632,7 @@ export interface TaskOutput {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -651,262 +651,262 @@ export interface TaskOutput {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The name of the Output parameter.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueBase64Binary?: string;
+  valueBase64Binary?: string;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueBoolean?: boolean;
+  valueBoolean?: boolean;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueCanonical?: string;
+  valueCanonical?: string;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueCode?: string;
+  valueCode?: string;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueDate?: string;
+  valueDate?: string;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueDateTime?: string;
+  valueDateTime?: string;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueDecimal?: number;
+  valueDecimal?: number;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueId?: string;
+  valueId?: string;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueInstant?: string;
+  valueInstant?: string;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueInteger?: number;
+  valueInteger?: number;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueMarkdown?: string;
+  valueMarkdown?: string;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueOid?: string;
+  valueOid?: string;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valuePositiveInt?: number;
+  valuePositiveInt?: number;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueString?: string;
+  valueString?: string;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueTime?: string;
+  valueTime?: string;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueUnsignedInt?: number;
+  valueUnsignedInt?: number;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueUri?: string;
+  valueUri?: string;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueUrl?: string;
+  valueUrl?: string;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueUuid?: string;
+  valueUuid?: string;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueAddress?: Address;
+  valueAddress?: Address;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueAge?: Age;
+  valueAge?: Age;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueAnnotation?: Annotation;
+  valueAnnotation?: Annotation;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueAttachment?: Attachment;
+  valueAttachment?: Attachment;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueCodeableConcept?: CodeableConcept;
+  valueCodeableConcept?: CodeableConcept;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueCoding?: Coding;
+  valueCoding?: Coding;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueContactPoint?: ContactPoint;
+  valueContactPoint?: ContactPoint;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueCount?: Count;
+  valueCount?: Count;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueDistance?: Distance;
+  valueDistance?: Distance;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueDuration?: Duration;
+  valueDuration?: Duration;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueHumanName?: HumanName;
+  valueHumanName?: HumanName;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueIdentifier?: Identifier;
+  valueIdentifier?: Identifier;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueMoney?: Money;
+  valueMoney?: Money;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valuePeriod?: Period;
+  valuePeriod?: Period;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueQuantity?: Quantity;
+  valueQuantity?: Quantity;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueRange?: Range;
+  valueRange?: Range;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueRatio?: Ratio;
+  valueRatio?: Ratio;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueReference?: Reference;
+  valueReference?: Reference;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueSampledData?: SampledData;
+  valueSampledData?: SampledData;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueSignature?: Signature;
+  valueSignature?: Signature;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueTiming?: Timing;
+  valueTiming?: Timing;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueContactDetail?: ContactDetail;
+  valueContactDetail?: ContactDetail;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueContributor?: Contributor;
+  valueContributor?: Contributor;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueDataRequirement?: DataRequirement;
+  valueDataRequirement?: DataRequirement;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueExpression?: Expression;
+  valueExpression?: Expression;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueParameterDefinition?: ParameterDefinition;
+  valueParameterDefinition?: ParameterDefinition;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueRelatedArtifact?: RelatedArtifact;
+  valueRelatedArtifact?: RelatedArtifact;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueTriggerDefinition?: TriggerDefinition;
+  valueTriggerDefinition?: TriggerDefinition;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueUsageContext?: UsageContext;
+  valueUsageContext?: UsageContext;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueDosage?: Dosage;
+  valueDosage?: Dosage;
 
   /**
    * The value of the Output parameter as a basic type.
    */
-  readonly valueMeta?: Meta;
+  valueMeta?: Meta;
 }
 
 /**
@@ -921,7 +921,7 @@ export interface TaskRestriction {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -931,7 +931,7 @@ export interface TaskRestriction {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -950,21 +950,21 @@ export interface TaskRestriction {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Indicates the number of times the requested action should occur.
    */
-  readonly repetitions?: number;
+  repetitions?: number;
 
   /**
    * Over what time-period is fulfillment sought.
    */
-  readonly period?: Period;
+  period?: Period;
 
   /**
    * For requests that are targeted to more than on potential
    * recipient/target, for whom is fulfillment sought?
    */
-  readonly recipient?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Group | Organization>[];
+  recipient?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Group | Organization>[];
 }

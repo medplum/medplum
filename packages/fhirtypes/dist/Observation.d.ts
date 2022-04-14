@@ -61,14 +61,14 @@ export interface Observation {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -76,12 +76,12 @@ export interface Observation {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -91,14 +91,14 @@ export interface Observation {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -108,7 +108,7 @@ export interface Observation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -126,41 +126,41 @@ export interface Observation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A unique identifier assigned to this observation.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * A plan, proposal or order that is fulfilled in whole or in part by
    * this event.  For example, a MedicationRequest may require a patient to
    * have laboratory test performed before  it is dispensed.
    */
-  readonly basedOn?: Reference<CarePlan | DeviceRequest | ImmunizationRecommendation | MedicationRequest | NutritionOrder | ServiceRequest>[];
+  basedOn?: Reference<CarePlan | DeviceRequest | ImmunizationRecommendation | MedicationRequest | NutritionOrder | ServiceRequest>[];
 
   /**
    * A larger event of which this particular Observation is a component or
    * step.  For example,  an observation as part of a procedure.
    */
-  readonly partOf?: Reference<MedicationAdministration | MedicationDispense | MedicationStatement | Procedure | Immunization | ImagingStudy>[];
+  partOf?: Reference<MedicationAdministration | MedicationDispense | MedicationStatement | Procedure | Immunization | ImagingStudy>[];
 
   /**
    * The status of the result value.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A code that classifies the general type of observation being made.
    */
-  readonly category?: CodeableConcept[];
+  category?: CodeableConcept[];
 
   /**
    * Describes what was observed. Sometimes this is called the observation
    * &quot;name&quot;.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * The patient, or group of patients, location, or device this
@@ -169,7 +169,7 @@ export interface Observation {
    * (or a sample of, part, or region of the subject), the `focus` element
    * or the `code` itself specifies the actual focus of the observation.
    */
-  readonly subject?: Reference<Patient | Group | Device | Location>;
+  subject?: Reference<Patient | Group | Device | Location>;
 
   /**
    * The actual focus of an observation when it is not the patient of
@@ -183,13 +183,13 @@ export interface Observation {
    * change her child's tracheostomy tube. In this example, the child is
    * the patient of record and the mother is the focus.
    */
-  readonly focus?: Reference<Resource>[];
+  focus?: Reference<Resource>[];
 
   /**
    * The healthcare event  (e.g. a patient and healthcare provider
    * interaction) during which this observation is made.
    */
-  readonly encounter?: Reference<Encounter>;
+  encounter?: Reference<Encounter>;
 
   /**
    * The time or time-period the observed value is asserted as being true.
@@ -198,7 +198,7 @@ export interface Observation {
    * of the procedure or of specimen collection, but very often the source
    * of the date/time is not known, only the date/time itself.
    */
-  readonly effectiveDateTime?: string;
+  effectiveDateTime?: string;
 
   /**
    * The time or time-period the observed value is asserted as being true.
@@ -207,7 +207,7 @@ export interface Observation {
    * of the procedure or of specimen collection, but very often the source
    * of the date/time is not known, only the date/time itself.
    */
-  readonly effectivePeriod?: Period;
+  effectivePeriod?: Period;
 
   /**
    * The time or time-period the observed value is asserted as being true.
@@ -216,7 +216,7 @@ export interface Observation {
    * of the procedure or of specimen collection, but very often the source
    * of the date/time is not known, only the date/time itself.
    */
-  readonly effectiveTiming?: Timing;
+  effectiveTiming?: Timing;
 
   /**
    * The time or time-period the observed value is asserted as being true.
@@ -225,123 +225,123 @@ export interface Observation {
    * of the procedure or of specimen collection, but very often the source
    * of the date/time is not known, only the date/time itself.
    */
-  readonly effectiveInstant?: string;
+  effectiveInstant?: string;
 
   /**
    * The date and time this version of the observation was made available
    * to providers, typically after the results have been reviewed and
    * verified.
    */
-  readonly issued?: string;
+  issued?: string;
 
   /**
    * Who was responsible for asserting the observed value as &quot;true&quot;.
    */
-  readonly performer?: Reference<Practitioner | PractitionerRole | Organization | CareTeam | Patient | RelatedPerson>[];
+  performer?: Reference<Practitioner | PractitionerRole | Organization | CareTeam | Patient | RelatedPerson>[];
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueQuantity?: Quantity;
+  valueQuantity?: Quantity;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueCodeableConcept?: CodeableConcept;
+  valueCodeableConcept?: CodeableConcept;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueString?: string;
+  valueString?: string;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueBoolean?: boolean;
+  valueBoolean?: boolean;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueInteger?: number;
+  valueInteger?: number;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueRange?: Range;
+  valueRange?: Range;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueRatio?: Ratio;
+  valueRatio?: Ratio;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueSampledData?: SampledData;
+  valueSampledData?: SampledData;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueTime?: string;
+  valueTime?: string;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueDateTime?: string;
+  valueDateTime?: string;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valuePeriod?: Period;
+  valuePeriod?: Period;
 
   /**
    * Provides a reason why the expected value in the element
    * Observation.value[x] is missing.
    */
-  readonly dataAbsentReason?: CodeableConcept;
+  dataAbsentReason?: CodeableConcept;
 
   /**
    * A categorical assessment of an observation value.  For example, high,
    * low, normal.
    */
-  readonly interpretation?: CodeableConcept[];
+  interpretation?: CodeableConcept[];
 
   /**
    * Comments about the observation or the results.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 
   /**
    * Indicates the site on the subject's body where the observation was
    * made (i.e. the target site).
    */
-  readonly bodySite?: CodeableConcept;
+  bodySite?: CodeableConcept;
 
   /**
    * Indicates the mechanism used to perform the observation.
    */
-  readonly method?: CodeableConcept;
+  method?: CodeableConcept;
 
   /**
    * The specimen that was used when this observation was made.
    */
-  readonly specimen?: Reference<Specimen>;
+  specimen?: Reference<Specimen>;
 
   /**
    * The device used to generate the observation data.
    */
-  readonly device?: Reference<Device | DeviceMetric>;
+  device?: Reference<Device | DeviceMetric>;
 
   /**
    * Guidance on how to interpret the value by comparison to a normal or
@@ -349,21 +349,21 @@ export interface Observation {
    * &quot;OR&quot;.   In other words, to represent two distinct target populations,
    * two `referenceRange` elements would be used.
    */
-  readonly referenceRange?: ObservationReferenceRange[];
+  referenceRange?: ObservationReferenceRange[];
 
   /**
    * This observation is a group observation (e.g. a battery, a panel of
    * tests, a set of vital sign measurements) that includes the target as a
    * member of the group.
    */
-  readonly hasMember?: Reference<Observation | QuestionnaireResponse | MolecularSequence>[];
+  hasMember?: Reference<Observation | QuestionnaireResponse | MolecularSequence>[];
 
   /**
    * The target resource that represents a measurement from which this
    * observation value is derived. For example, a calculated anion gap or a
    * fetal measurement based on an ultrasound image.
    */
-  readonly derivedFrom?: Reference<DocumentReference | ImagingStudy | Media | QuestionnaireResponse | Observation | MolecularSequence>[];
+  derivedFrom?: Reference<DocumentReference | ImagingStudy | Media | QuestionnaireResponse | Observation | MolecularSequence>[];
 
   /**
    * Some observations have multiple component observations.  These
@@ -372,7 +372,7 @@ export interface Observation {
    * component observations for blood pressure measurement and multiple
    * component observations for genetics observations.
    */
-  readonly component?: ObservationComponent[];
+  component?: ObservationComponent[];
 }
 
 /**
@@ -388,7 +388,7 @@ export interface ObservationComponent {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -398,7 +398,7 @@ export interface ObservationComponent {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -417,97 +417,97 @@ export interface ObservationComponent {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Describes what was observed. Sometimes this is called the observation
    * &quot;code&quot;.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueQuantity?: Quantity;
+  valueQuantity?: Quantity;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueCodeableConcept?: CodeableConcept;
+  valueCodeableConcept?: CodeableConcept;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueString?: string;
+  valueString?: string;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueBoolean?: boolean;
+  valueBoolean?: boolean;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueInteger?: number;
+  valueInteger?: number;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueRange?: Range;
+  valueRange?: Range;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueRatio?: Ratio;
+  valueRatio?: Ratio;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueSampledData?: SampledData;
+  valueSampledData?: SampledData;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueTime?: string;
+  valueTime?: string;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valueDateTime?: string;
+  valueDateTime?: string;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
-  readonly valuePeriod?: Period;
+  valuePeriod?: Period;
 
   /**
    * Provides a reason why the expected value in the element
    * Observation.component.value[x] is missing.
    */
-  readonly dataAbsentReason?: CodeableConcept;
+  dataAbsentReason?: CodeableConcept;
 
   /**
    * A categorical assessment of an observation value.  For example, high,
    * low, normal.
    */
-  readonly interpretation?: CodeableConcept[];
+  interpretation?: CodeableConcept[];
 
   /**
    * Guidance on how to interpret the value by comparison to a normal or
    * recommended range.
    */
-  readonly referenceRange?: ObservationReferenceRange[];
+  referenceRange?: ObservationReferenceRange[];
 }
 
 /**
@@ -522,7 +522,7 @@ export interface ObservationReferenceRange {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -532,7 +532,7 @@ export interface ObservationReferenceRange {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -551,7 +551,7 @@ export interface ObservationReferenceRange {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The value of the low bound of the reference range.  The low bound of
@@ -559,7 +559,7 @@ export interface ObservationReferenceRange {
    * reference range is &gt;=5 - &lt;=9). If the low bound is omitted,  it is
    * assumed to be meaningless (e.g. reference range is &lt;=2.3).
    */
-  readonly low?: Quantity;
+  low?: Quantity;
 
   /**
    * The value of the high bound of the reference range.  The high bound of
@@ -567,13 +567,13 @@ export interface ObservationReferenceRange {
    * reference range is &gt;=5 - &lt;=9). If the high bound is omitted,  it is
    * assumed to be meaningless (e.g. reference range is &gt;= 2.3).
    */
-  readonly high?: Quantity;
+  high?: Quantity;
 
   /**
    * Codes to indicate the what part of the targeted reference population
    * it applies to. For example, the normal or therapeutic range.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Codes to indicate the target population this reference range applies
@@ -583,13 +583,13 @@ export interface ObservationReferenceRange {
    * represent a target population of African American females, both a code
    * of female and a code for African American would be used.
    */
-  readonly appliesTo?: CodeableConcept[];
+  appliesTo?: CodeableConcept[];
 
   /**
    * The age at which this reference range is applicable. This is a
    * neonatal age (e.g. number of weeks at term) if the meaning says so.
    */
-  readonly age?: Range;
+  age?: Range;
 
   /**
    * Text based reference range in an observation which may be used when a
@@ -597,5 +597,5 @@ export interface ObservationReferenceRange {
    * would be a reference value of &quot;Negative&quot; or a list or table of
    * &quot;normals&quot;.
    */
-  readonly text?: string;
+  text?: string;
 }

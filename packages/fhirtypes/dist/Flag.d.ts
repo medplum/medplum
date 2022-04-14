@@ -38,14 +38,14 @@ export interface Flag {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -53,12 +53,12 @@ export interface Flag {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -68,14 +68,14 @@ export interface Flag {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -85,7 +85,7 @@ export interface Flag {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -103,53 +103,53 @@ export interface Flag {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Business identifiers assigned to this flag by the performer or other
    * systems which remain constant as the resource is updated and
    * propagates from server to server.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * Supports basic workflow.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * Allows a flag to be divided into different categories like clinical,
    * administrative etc. Intended to be used as a means of filtering which
    * flags are displayed to particular user or in a given context.
    */
-  readonly category?: CodeableConcept[];
+  category?: CodeableConcept[];
 
   /**
    * The coded value or textual component of the flag to display to the
    * user.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * The patient, location, group, organization, or practitioner etc. this
    * is about record this flag is associated with.
    */
-  readonly subject?: Reference<Patient | Location | Group | Organization | Practitioner | PlanDefinition | Medication | Procedure>;
+  subject?: Reference<Patient | Location | Group | Organization | Practitioner | PlanDefinition | Medication | Procedure>;
 
   /**
    * The period of time from the activation of the flag to inactivation of
    * the flag. If the flag is active, the end of the period should be
    * unspecified.
    */
-  readonly period?: Period;
+  period?: Period;
 
   /**
    * This alert is only relevant during the encounter.
    */
-  readonly encounter?: Reference<Encounter>;
+  encounter?: Reference<Encounter>;
 
   /**
    * The person, organization or device that created the flag.
    */
-  readonly author?: Reference<Device | Organization | Patient | Practitioner | PractitionerRole>;
+  author?: Reference<Device | Organization | Patient | Practitioner | PractitionerRole>;
 }

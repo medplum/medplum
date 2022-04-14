@@ -39,14 +39,14 @@ export interface CoverageEligibilityRequest {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -54,12 +54,12 @@ export interface CoverageEligibilityRequest {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -69,14 +69,14 @@ export interface CoverageEligibilityRequest {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -86,7 +86,7 @@ export interface CoverageEligibilityRequest {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -104,22 +104,22 @@ export interface CoverageEligibilityRequest {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A unique identifier assigned to this coverage eligiblity request.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The status of the resource instance.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * When the requestor expects the processor to complete processing.
    */
-  readonly priority?: CodeableConcept;
+  priority?: CodeableConcept;
 
   /**
    * Code to specify whether requesting: prior authorization requirements
@@ -128,70 +128,70 @@ export interface CoverageEligibilityRequest {
    * patient; and/or validation that the specified coverage is in-force at
    * the date/period specified or 'now' if not specified.
    */
-  readonly purpose?: string[];
+  purpose?: string[];
 
   /**
    * The party who is the beneficiary of the supplied coverage and for whom
    * eligibility is sought.
    */
-  readonly patient?: Reference<Patient>;
+  patient?: Reference<Patient>;
 
   /**
    * The date or dates when the enclosed suite of services were performed
    * or completed.
    */
-  readonly servicedDate?: string;
+  servicedDate?: string;
 
   /**
    * The date or dates when the enclosed suite of services were performed
    * or completed.
    */
-  readonly servicedPeriod?: Period;
+  servicedPeriod?: Period;
 
   /**
    * The date when this resource was created.
    */
-  readonly created?: string;
+  created?: string;
 
   /**
    * Person who created the request.
    */
-  readonly enterer?: Reference<Practitioner | PractitionerRole>;
+  enterer?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * The provider which is responsible for the request.
    */
-  readonly provider?: Reference<Practitioner | PractitionerRole | Organization>;
+  provider?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * The Insurer who issued the coverage in question and is the recipient
    * of the request.
    */
-  readonly insurer?: Reference<Organization>;
+  insurer?: Reference<Organization>;
 
   /**
    * Facility where the services are intended to be provided.
    */
-  readonly facility?: Reference<Location>;
+  facility?: Reference<Location>;
 
   /**
    * Additional information codes regarding exceptions, special
    * considerations, the condition, situation, prior or concurrent issues.
    */
-  readonly supportingInfo?: CoverageEligibilityRequestSupportingInfo[];
+  supportingInfo?: CoverageEligibilityRequestSupportingInfo[];
 
   /**
    * Financial instruments for reimbursement for the health care products
    * and services.
    */
-  readonly insurance?: CoverageEligibilityRequestInsurance[];
+  insurance?: CoverageEligibilityRequestInsurance[];
 
   /**
    * Service categories or billable services for which benefit details
    * and/or an authorization prior to service delivery may be required by
    * the payor.
    */
-  readonly item?: CoverageEligibilityRequestItem[];
+  item?: CoverageEligibilityRequestItem[];
 }
 
 /**
@@ -204,7 +204,7 @@ export interface CoverageEligibilityRequestInsurance {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -214,7 +214,7 @@ export interface CoverageEligibilityRequestInsurance {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -233,13 +233,13 @@ export interface CoverageEligibilityRequestInsurance {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A flag to indicate that this Coverage is to be used for evaluation of
    * this request when set to true.
    */
-  readonly focal?: boolean;
+  focal?: boolean;
 
   /**
    * Reference to the insurance card level information contained in the
@@ -247,13 +247,13 @@ export interface CoverageEligibilityRequestInsurance {
    * to locate the patient's actual coverage within the insurer's
    * information system.
    */
-  readonly coverage?: Reference<Coverage>;
+  coverage?: Reference<Coverage>;
 
   /**
    * A business agreement number established between the provider and the
    * insurer for special business processing purposes.
    */
-  readonly businessArrangement?: string;
+  businessArrangement?: string;
 }
 
 /**
@@ -267,7 +267,7 @@ export interface CoverageEligibilityRequestItem {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -277,7 +277,7 @@ export interface CoverageEligibilityRequestItem {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -296,62 +296,62 @@ export interface CoverageEligibilityRequestItem {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Exceptions, special conditions and supporting information applicable
    * for this service or product line.
    */
-  readonly supportingInfoSequence?: number[];
+  supportingInfoSequence?: number[];
 
   /**
    * Code to identify the general type of benefits under which products and
    * services are provided.
    */
-  readonly category?: CodeableConcept;
+  category?: CodeableConcept;
 
   /**
    * This contains the product, service, drug or other billing code for the
    * item.
    */
-  readonly productOrService?: CodeableConcept;
+  productOrService?: CodeableConcept;
 
   /**
    * Item typification or modifiers codes to convey additional context for
    * the product or service.
    */
-  readonly modifier?: CodeableConcept[];
+  modifier?: CodeableConcept[];
 
   /**
    * The practitioner who is responsible for the product or service to be
    * rendered to the patient.
    */
-  readonly provider?: Reference<Practitioner | PractitionerRole>;
+  provider?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * The number of repetitions of a service or product.
    */
-  readonly quantity?: Quantity;
+  quantity?: Quantity;
 
   /**
    * The amount charged to the patient by the provider for a single unit.
    */
-  readonly unitPrice?: Money;
+  unitPrice?: Money;
 
   /**
    * Facility where the services will be provided.
    */
-  readonly facility?: Reference<Location | Organization>;
+  facility?: Reference<Location | Organization>;
 
   /**
    * Patient diagnosis for which care is sought.
    */
-  readonly diagnosis?: CoverageEligibilityRequestItemDiagnosis[];
+  diagnosis?: CoverageEligibilityRequestItemDiagnosis[];
 
   /**
    * The plan/proposal/order describing the proposed service in detail.
    */
-  readonly detail?: Reference<Resource>[];
+  detail?: Reference<Resource>[];
 }
 
 /**
@@ -363,7 +363,7 @@ export interface CoverageEligibilityRequestItemDiagnosis {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -373,7 +373,7 @@ export interface CoverageEligibilityRequestItemDiagnosis {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -392,19 +392,19 @@ export interface CoverageEligibilityRequestItemDiagnosis {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The nature of illness or problem in a coded form or as a reference to
    * an external defined Condition.
    */
-  readonly diagnosisCodeableConcept?: CodeableConcept;
+  diagnosisCodeableConcept?: CodeableConcept;
 
   /**
    * The nature of illness or problem in a coded form or as a reference to
    * an external defined Condition.
    */
-  readonly diagnosisReference?: Reference<Condition>;
+  diagnosisReference?: Reference<Condition>;
 }
 
 /**
@@ -417,7 +417,7 @@ export interface CoverageEligibilityRequestSupportingInfo {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -427,7 +427,7 @@ export interface CoverageEligibilityRequestSupportingInfo {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -446,23 +446,23 @@ export interface CoverageEligibilityRequestSupportingInfo {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A number to uniquely identify supporting information entries.
    */
-  readonly sequence?: number;
+  sequence?: number;
 
   /**
    * Additional data or information such as resources, documents, images
    * etc. including references to the data or the actual inclusion of the
    * data.
    */
-  readonly information?: Reference<Resource>;
+  information?: Reference<Resource>;
 
   /**
    * The supporting materials are applicable for all detail items,
    * product/servce categories and specific billing codes.
    */
-  readonly appliesToAll?: boolean;
+  appliesToAll?: boolean;
 }

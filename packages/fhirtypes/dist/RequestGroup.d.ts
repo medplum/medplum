@@ -46,14 +46,14 @@ export interface RequestGroup {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -61,12 +61,12 @@ export interface RequestGroup {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -76,14 +76,14 @@ export interface RequestGroup {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -93,7 +93,7 @@ export interface RequestGroup {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -111,111 +111,111 @@ export interface RequestGroup {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Allows a service to provide a unique, business identifier for the
    * request.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * A canonical URL referencing a FHIR-defined protocol, guideline,
    * orderset or other definition that is adhered to in whole or in part by
    * this request.
    */
-  readonly instantiatesCanonical?: string[];
+  instantiatesCanonical?: string[];
 
   /**
    * A URL referencing an externally defined protocol, guideline, orderset
    * or other definition that is adhered to in whole or in part by this
    * request.
    */
-  readonly instantiatesUri?: string[];
+  instantiatesUri?: string[];
 
   /**
    * A plan, proposal or order that is fulfilled in whole or in part by
    * this request.
    */
-  readonly basedOn?: Reference<Resource>[];
+  basedOn?: Reference<Resource>[];
 
   /**
    * Completed or terminated request(s) whose function is taken by this new
    * request.
    */
-  readonly replaces?: Reference<Resource>[];
+  replaces?: Reference<Resource>[];
 
   /**
    * A shared identifier common to all requests that were authorized more
    * or less simultaneously by a single author, representing the identifier
    * of the requisition, prescription or similar form.
    */
-  readonly groupIdentifier?: Identifier;
+  groupIdentifier?: Identifier;
 
   /**
    * The current state of the request. For request groups, the status
    * reflects the status of all the requests in the group.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * Indicates the level of authority/intentionality associated with the
    * request and where the request fits into the workflow chain.
    */
-  readonly intent?: string;
+  intent?: string;
 
   /**
    * Indicates how quickly the request should be addressed with respect to
    * other requests.
    */
-  readonly priority?: string;
+  priority?: string;
 
   /**
    * A code that identifies what the overall request group is.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * The subject for which the request group was created.
    */
-  readonly subject?: Reference<Patient | Group>;
+  subject?: Reference<Patient | Group>;
 
   /**
    * Describes the context of the request group, if any.
    */
-  readonly encounter?: Reference<Encounter>;
+  encounter?: Reference<Encounter>;
 
   /**
    * Indicates when the request group was created.
    */
-  readonly authoredOn?: string;
+  authoredOn?: string;
 
   /**
    * Provides a reference to the author of the request group.
    */
-  readonly author?: Reference<Device | Practitioner | PractitionerRole>;
+  author?: Reference<Device | Practitioner | PractitionerRole>;
 
   /**
    * Describes the reason for the request group in coded or textual form.
    */
-  readonly reasonCode?: CodeableConcept[];
+  reasonCode?: CodeableConcept[];
 
   /**
    * Indicates another resource whose existence justifies this request
    * group.
    */
-  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
+  reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
 
   /**
    * Provides a mechanism to communicate additional information about the
    * response.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 
   /**
    * The actions, if any, produced by the evaluation of the artifact.
    */
-  readonly action?: RequestGroupAction[];
+  action?: RequestGroupAction[];
 }
 
 /**
@@ -227,7 +227,7 @@ export interface RequestGroupAction {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -237,7 +237,7 @@ export interface RequestGroupAction {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -256,23 +256,23 @@ export interface RequestGroupAction {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A user-visible prefix for the action.
    */
-  readonly prefix?: string;
+  prefix?: string;
 
   /**
    * The title of the action displayed to a user.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * A short description of the action used to provide a summary to display
    * to the user.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * A text equivalent of the action to be performed. This provides a
@@ -280,115 +280,115 @@ export interface RequestGroupAction {
    * consumed by a system that might not be capable of interpreting it
    * dynamically.
    */
-  readonly textEquivalent?: string;
+  textEquivalent?: string;
 
   /**
    * Indicates how quickly the action should be addressed with respect to
    * other actions.
    */
-  readonly priority?: string;
+  priority?: string;
 
   /**
    * A code that provides meaning for the action or action group. For
    * example, a section may have a LOINC code for a section of a
    * documentation template.
    */
-  readonly code?: CodeableConcept[];
+  code?: CodeableConcept[];
 
   /**
    * Didactic or other informational resources associated with the action
    * that can be provided to the CDS recipient. Information resources can
    * include inline text commentary and links to web resources.
    */
-  readonly documentation?: RelatedArtifact[];
+  documentation?: RelatedArtifact[];
 
   /**
    * An expression that describes applicability criteria, or start/stop
    * conditions for the action.
    */
-  readonly condition?: RequestGroupActionCondition[];
+  condition?: RequestGroupActionCondition[];
 
   /**
    * A relationship to another action such as &quot;before&quot; or &quot;30-60 minutes
    * after start of&quot;.
    */
-  readonly relatedAction?: RequestGroupActionRelatedAction[];
+  relatedAction?: RequestGroupActionRelatedAction[];
 
   /**
    * An optional value describing when the action should be performed.
    */
-  readonly timingDateTime?: string;
+  timingDateTime?: string;
 
   /**
    * An optional value describing when the action should be performed.
    */
-  readonly timingAge?: Age;
+  timingAge?: Age;
 
   /**
    * An optional value describing when the action should be performed.
    */
-  readonly timingPeriod?: Period;
+  timingPeriod?: Period;
 
   /**
    * An optional value describing when the action should be performed.
    */
-  readonly timingDuration?: Duration;
+  timingDuration?: Duration;
 
   /**
    * An optional value describing when the action should be performed.
    */
-  readonly timingRange?: Range;
+  timingRange?: Range;
 
   /**
    * An optional value describing when the action should be performed.
    */
-  readonly timingTiming?: Timing;
+  timingTiming?: Timing;
 
   /**
    * The participant that should perform or be responsible for this action.
    */
-  readonly participant?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Device>[];
+  participant?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Device>[];
 
   /**
    * The type of action to perform (create, update, remove).
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Defines the grouping behavior for the action and its children.
    */
-  readonly groupingBehavior?: string;
+  groupingBehavior?: string;
 
   /**
    * Defines the selection behavior for the action and its children.
    */
-  readonly selectionBehavior?: string;
+  selectionBehavior?: string;
 
   /**
    * Defines expectations around whether an action is required.
    */
-  readonly requiredBehavior?: string;
+  requiredBehavior?: string;
 
   /**
    * Defines whether the action should usually be preselected.
    */
-  readonly precheckBehavior?: string;
+  precheckBehavior?: string;
 
   /**
    * Defines whether the action can be selected multiple times.
    */
-  readonly cardinalityBehavior?: string;
+  cardinalityBehavior?: string;
 
   /**
    * The resource that is the target of the action (e.g.
    * CommunicationRequest).
    */
-  readonly resource?: Reference<Resource>;
+  resource?: Reference<Resource>;
 
   /**
    * Sub actions.
    */
-  readonly action?: RequestGroupAction[];
+  action?: RequestGroupAction[];
 }
 
 /**
@@ -401,7 +401,7 @@ export interface RequestGroupActionCondition {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -411,7 +411,7 @@ export interface RequestGroupActionCondition {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -430,18 +430,18 @@ export interface RequestGroupActionCondition {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The kind of condition.
    */
-  readonly kind?: string;
+  kind?: string;
 
   /**
    * An expression that returns true or false, indicating whether or not
    * the condition is satisfied.
    */
-  readonly expression?: Expression;
+  expression?: Expression;
 }
 
 /**
@@ -454,7 +454,7 @@ export interface RequestGroupActionRelatedAction {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -464,7 +464,7 @@ export interface RequestGroupActionRelatedAction {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -483,27 +483,27 @@ export interface RequestGroupActionRelatedAction {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The element id of the action this is related to.
    */
-  readonly actionId?: string;
+  actionId?: string;
 
   /**
    * The relationship of this action to the related action.
    */
-  readonly relationship?: string;
+  relationship?: string;
 
   /**
    * A duration or range of durations to apply to the relationship. For
    * example, 30-60 minutes before.
    */
-  readonly offsetDuration?: Duration;
+  offsetDuration?: Duration;
 
   /**
    * A duration or range of durations to apply to the relationship. For
    * example, 30-60 minutes before.
    */
-  readonly offsetRange?: Range;
+  offsetRange?: Range;
 }

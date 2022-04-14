@@ -37,14 +37,14 @@ export interface SubstanceSpecification {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -52,12 +52,12 @@ export interface SubstanceSpecification {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -67,14 +67,14 @@ export interface SubstanceSpecification {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -84,7 +84,7 @@ export interface SubstanceSpecification {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -102,105 +102,105 @@ export interface SubstanceSpecification {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifier by which this substance is known.
    */
-  readonly identifier?: Identifier;
+  identifier?: Identifier;
 
   /**
    * High level categorization, e.g. polymer or nucleic acid.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Status of substance within the catalogue e.g. approved.
    */
-  readonly status?: CodeableConcept;
+  status?: CodeableConcept;
 
   /**
    * If the substance applies to only human or veterinary use.
    */
-  readonly domain?: CodeableConcept;
+  domain?: CodeableConcept;
 
   /**
    * Textual description of the substance.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Supporting literature.
    */
-  readonly source?: Reference<DocumentReference>[];
+  source?: Reference<DocumentReference>[];
 
   /**
    * Textual comment about this record of a substance.
    */
-  readonly comment?: string;
+  comment?: string;
 
   /**
    * Moiety, for structural modifications.
    */
-  readonly moiety?: SubstanceSpecificationMoiety[];
+  moiety?: SubstanceSpecificationMoiety[];
 
   /**
    * General specifications for this substance, including how it is related
    * to other substances.
    */
-  readonly property?: SubstanceSpecificationProperty[];
+  property?: SubstanceSpecificationProperty[];
 
   /**
    * General information detailing this substance.
    */
-  readonly referenceInformation?: Reference<SubstanceReferenceInformation>;
+  referenceInformation?: Reference<SubstanceReferenceInformation>;
 
   /**
    * Structural information.
    */
-  readonly structure?: SubstanceSpecificationStructure;
+  structure?: SubstanceSpecificationStructure;
 
   /**
    * Codes associated with the substance.
    */
-  readonly code?: SubstanceSpecificationCode[];
+  code?: SubstanceSpecificationCode[];
 
   /**
    * Names applicable to this substance.
    */
-  readonly name?: SubstanceSpecificationName[];
+  name?: SubstanceSpecificationName[];
 
   /**
    * The molecular weight or weight range (for proteins, polymers or
    * nucleic acids).
    */
-  readonly molecularWeight?: SubstanceSpecificationStructureIsotopeMolecularWeight[];
+  molecularWeight?: SubstanceSpecificationStructureIsotopeMolecularWeight[];
 
   /**
    * A link between this substance and another, with details of the
    * relationship.
    */
-  readonly relationship?: SubstanceSpecificationRelationship[];
+  relationship?: SubstanceSpecificationRelationship[];
 
   /**
    * Data items specific to nucleic acids.
    */
-  readonly nucleicAcid?: Reference<SubstanceNucleicAcid>;
+  nucleicAcid?: Reference<SubstanceNucleicAcid>;
 
   /**
    * Data items specific to polymers.
    */
-  readonly polymer?: Reference<SubstancePolymer>;
+  polymer?: Reference<SubstancePolymer>;
 
   /**
    * Data items specific to proteins.
    */
-  readonly protein?: Reference<SubstanceProtein>;
+  protein?: Reference<SubstanceProtein>;
 
   /**
    * Material or taxonomic/anatomical source for the substance.
    */
-  readonly sourceMaterial?: Reference<SubstanceSourceMaterial>;
+  sourceMaterial?: Reference<SubstanceSourceMaterial>;
 }
 
 /**
@@ -212,7 +212,7 @@ export interface SubstanceSpecificationCode {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -222,7 +222,7 @@ export interface SubstanceSpecificationCode {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -241,33 +241,33 @@ export interface SubstanceSpecificationCode {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The specific code.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * Status of the code assignment.
    */
-  readonly status?: CodeableConcept;
+  status?: CodeableConcept;
 
   /**
    * The date at which the code status is changed as part of the
    * terminology maintenance.
    */
-  readonly statusDate?: string;
+  statusDate?: string;
 
   /**
    * Any comment can be provided in this field, if necessary.
    */
-  readonly comment?: string;
+  comment?: string;
 
   /**
    * Supporting literature.
    */
-  readonly source?: Reference<DocumentReference>[];
+  source?: Reference<DocumentReference>[];
 }
 
 /**
@@ -279,7 +279,7 @@ export interface SubstanceSpecificationMoiety {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -289,7 +289,7 @@ export interface SubstanceSpecificationMoiety {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -308,47 +308,47 @@ export interface SubstanceSpecificationMoiety {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Role that the moiety is playing.
    */
-  readonly role?: CodeableConcept;
+  role?: CodeableConcept;
 
   /**
    * Identifier by which this moiety substance is known.
    */
-  readonly identifier?: Identifier;
+  identifier?: Identifier;
 
   /**
    * Textual name for this moiety substance.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Stereochemistry type.
    */
-  readonly stereochemistry?: CodeableConcept;
+  stereochemistry?: CodeableConcept;
 
   /**
    * Optical activity type.
    */
-  readonly opticalActivity?: CodeableConcept;
+  opticalActivity?: CodeableConcept;
 
   /**
    * Molecular formula.
    */
-  readonly molecularFormula?: string;
+  molecularFormula?: string;
 
   /**
    * Quantitative value for this moiety.
    */
-  readonly amountQuantity?: Quantity;
+  amountQuantity?: Quantity;
 
   /**
    * Quantitative value for this moiety.
    */
-  readonly amountString?: string;
+  amountString?: string;
 }
 
 /**
@@ -360,7 +360,7 @@ export interface SubstanceSpecificationName {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -370,7 +370,7 @@ export interface SubstanceSpecificationName {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -389,63 +389,63 @@ export interface SubstanceSpecificationName {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The actual name.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Name type.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The status of the name.
    */
-  readonly status?: CodeableConcept;
+  status?: CodeableConcept;
 
   /**
    * If this is the preferred name for this substance.
    */
-  readonly preferred?: boolean;
+  preferred?: boolean;
 
   /**
    * Language of the name.
    */
-  readonly language?: CodeableConcept[];
+  language?: CodeableConcept[];
 
   /**
    * The use context of this name for example if there is a different name
    * a drug active ingredient as opposed to a food colour additive.
    */
-  readonly domain?: CodeableConcept[];
+  domain?: CodeableConcept[];
 
   /**
    * The jurisdiction where this name applies.
    */
-  readonly jurisdiction?: CodeableConcept[];
+  jurisdiction?: CodeableConcept[];
 
   /**
    * A synonym of this name.
    */
-  readonly synonym?: SubstanceSpecificationName[];
+  synonym?: SubstanceSpecificationName[];
 
   /**
    * A translation for this name.
    */
-  readonly translation?: SubstanceSpecificationName[];
+  translation?: SubstanceSpecificationName[];
 
   /**
    * Details of the official nature of this name.
    */
-  readonly official?: SubstanceSpecificationNameOfficial[];
+  official?: SubstanceSpecificationNameOfficial[];
 
   /**
    * Supporting literature.
    */
-  readonly source?: Reference<DocumentReference>[];
+  source?: Reference<DocumentReference>[];
 }
 
 /**
@@ -457,7 +457,7 @@ export interface SubstanceSpecificationNameOfficial {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -467,7 +467,7 @@ export interface SubstanceSpecificationNameOfficial {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -486,22 +486,22 @@ export interface SubstanceSpecificationNameOfficial {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Which authority uses this official name.
    */
-  readonly authority?: CodeableConcept;
+  authority?: CodeableConcept;
 
   /**
    * The status of the official name.
    */
-  readonly status?: CodeableConcept;
+  status?: CodeableConcept;
 
   /**
    * Date of official name change.
    */
-  readonly date?: string;
+  date?: string;
 }
 
 /**
@@ -514,7 +514,7 @@ export interface SubstanceSpecificationProperty {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -524,7 +524,7 @@ export interface SubstanceSpecificationProperty {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -543,45 +543,45 @@ export interface SubstanceSpecificationProperty {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A category for this property, e.g. Physical, Chemical, Enzymatic.
    */
-  readonly category?: CodeableConcept;
+  category?: CodeableConcept;
 
   /**
    * Property type e.g. viscosity, pH, isoelectric point.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * Parameters that were used in the measurement of a property (e.g. for
    * viscosity: measured at 20C with a pH of 7.1).
    */
-  readonly parameters?: string;
+  parameters?: string;
 
   /**
    * A substance upon which a defining property depends (e.g. for
    * solubility: in water, in alcohol).
    */
-  readonly definingSubstanceReference?: Reference<SubstanceSpecification | Substance>;
+  definingSubstanceReference?: Reference<SubstanceSpecification | Substance>;
 
   /**
    * A substance upon which a defining property depends (e.g. for
    * solubility: in water, in alcohol).
    */
-  readonly definingSubstanceCodeableConcept?: CodeableConcept;
+  definingSubstanceCodeableConcept?: CodeableConcept;
 
   /**
    * Quantitative value for this property.
    */
-  readonly amountQuantity?: Quantity;
+  amountQuantity?: Quantity;
 
   /**
    * Quantitative value for this property.
    */
-  readonly amountString?: string;
+  amountString?: string;
 }
 
 /**
@@ -594,7 +594,7 @@ export interface SubstanceSpecificationRelationship {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -604,7 +604,7 @@ export interface SubstanceSpecificationRelationship {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -623,75 +623,75 @@ export interface SubstanceSpecificationRelationship {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A pointer to another substance, as a resource or just a
    * representational code.
    */
-  readonly substanceReference?: Reference<SubstanceSpecification>;
+  substanceReference?: Reference<SubstanceSpecification>;
 
   /**
    * A pointer to another substance, as a resource or just a
    * representational code.
    */
-  readonly substanceCodeableConcept?: CodeableConcept;
+  substanceCodeableConcept?: CodeableConcept;
 
   /**
    * For example &quot;salt to parent&quot;, &quot;active moiety&quot;, &quot;starting material&quot;.
    */
-  readonly relationship?: CodeableConcept;
+  relationship?: CodeableConcept;
 
   /**
    * For example where an enzyme strongly bonds with a particular
    * substance, this is a defining relationship for that enzyme, out of
    * several possible substance relationships.
    */
-  readonly isDefining?: boolean;
+  isDefining?: boolean;
 
   /**
    * A numeric factor for the relationship, for instance to express that
    * the salt of a substance has some percentage of the active substance in
    * relation to some other.
    */
-  readonly amountQuantity?: Quantity;
+  amountQuantity?: Quantity;
 
   /**
    * A numeric factor for the relationship, for instance to express that
    * the salt of a substance has some percentage of the active substance in
    * relation to some other.
    */
-  readonly amountRange?: Range;
+  amountRange?: Range;
 
   /**
    * A numeric factor for the relationship, for instance to express that
    * the salt of a substance has some percentage of the active substance in
    * relation to some other.
    */
-  readonly amountRatio?: Ratio;
+  amountRatio?: Ratio;
 
   /**
    * A numeric factor for the relationship, for instance to express that
    * the salt of a substance has some percentage of the active substance in
    * relation to some other.
    */
-  readonly amountString?: string;
+  amountString?: string;
 
   /**
    * For use when the numeric.
    */
-  readonly amountRatioLowLimit?: Ratio;
+  amountRatioLowLimit?: Ratio;
 
   /**
    * An operator for the amount, for example &quot;average&quot;, &quot;approximately&quot;,
    * &quot;less than&quot;.
    */
-  readonly amountType?: CodeableConcept;
+  amountType?: CodeableConcept;
 
   /**
    * Supporting literature.
    */
-  readonly source?: Reference<DocumentReference>[];
+  source?: Reference<DocumentReference>[];
 }
 
 /**
@@ -703,7 +703,7 @@ export interface SubstanceSpecificationStructure {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -713,7 +713,7 @@ export interface SubstanceSpecificationStructure {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -732,50 +732,50 @@ export interface SubstanceSpecificationStructure {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Stereochemistry type.
    */
-  readonly stereochemistry?: CodeableConcept;
+  stereochemistry?: CodeableConcept;
 
   /**
    * Optical activity type.
    */
-  readonly opticalActivity?: CodeableConcept;
+  opticalActivity?: CodeableConcept;
 
   /**
    * Molecular formula.
    */
-  readonly molecularFormula?: string;
+  molecularFormula?: string;
 
   /**
    * Specified per moiety according to the Hill system, i.e. first C, then
    * H, then alphabetical, each moiety separated by a dot.
    */
-  readonly molecularFormulaByMoiety?: string;
+  molecularFormulaByMoiety?: string;
 
   /**
    * Applicable for single substances that contain a radionuclide or a
    * non-natural isotopic ratio.
    */
-  readonly isotope?: SubstanceSpecificationStructureIsotope[];
+  isotope?: SubstanceSpecificationStructureIsotope[];
 
   /**
    * The molecular weight or weight range (for proteins, polymers or
    * nucleic acids).
    */
-  readonly molecularWeight?: SubstanceSpecificationStructureIsotopeMolecularWeight;
+  molecularWeight?: SubstanceSpecificationStructureIsotopeMolecularWeight;
 
   /**
    * Supporting literature.
    */
-  readonly source?: Reference<DocumentReference>[];
+  source?: Reference<DocumentReference>[];
 
   /**
    * Molecular structural representation.
    */
-  readonly representation?: SubstanceSpecificationStructureRepresentation[];
+  representation?: SubstanceSpecificationStructureRepresentation[];
 }
 
 /**
@@ -788,7 +788,7 @@ export interface SubstanceSpecificationStructureIsotope {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -798,7 +798,7 @@ export interface SubstanceSpecificationStructureIsotope {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -817,33 +817,33 @@ export interface SubstanceSpecificationStructureIsotope {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Substance identifier for each non-natural or radioisotope.
    */
-  readonly identifier?: Identifier;
+  identifier?: Identifier;
 
   /**
    * Substance name for each non-natural or radioisotope.
    */
-  readonly name?: CodeableConcept;
+  name?: CodeableConcept;
 
   /**
    * The type of isotopic substitution present in a single substance.
    */
-  readonly substitution?: CodeableConcept;
+  substitution?: CodeableConcept;
 
   /**
    * Half life - for a non-natural nuclide.
    */
-  readonly halfLife?: Quantity;
+  halfLife?: Quantity;
 
   /**
    * The molecular weight or weight range (for proteins, polymers or
    * nucleic acids).
    */
-  readonly molecularWeight?: SubstanceSpecificationStructureIsotopeMolecularWeight;
+  molecularWeight?: SubstanceSpecificationStructureIsotopeMolecularWeight;
 }
 
 /**
@@ -856,7 +856,7 @@ export interface SubstanceSpecificationStructureIsotopeMolecularWeight {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -866,7 +866,7 @@ export interface SubstanceSpecificationStructureIsotopeMolecularWeight {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -885,18 +885,18 @@ export interface SubstanceSpecificationStructureIsotopeMolecularWeight {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The method by which the molecular weight was determined.
    */
-  readonly method?: CodeableConcept;
+  method?: CodeableConcept;
 
   /**
    * Type of molecular weight such as exact, average (also known as. number
    * average), weight average.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Used to capture quantitative values for a variety of elements. If only
@@ -904,7 +904,7 @@ export interface SubstanceSpecificationStructureIsotopeMolecularWeight {
    * single definite value for a given element is given, it would be
    * captured in this field.
    */
-  readonly amount?: Quantity;
+  amount?: Quantity;
 }
 
 /**
@@ -916,7 +916,7 @@ export interface SubstanceSpecificationStructureRepresentation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -926,7 +926,7 @@ export interface SubstanceSpecificationStructureRepresentation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -945,21 +945,21 @@ export interface SubstanceSpecificationStructureRepresentation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The type of structure (e.g. Full, Partial, Representative).
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The structural representation as text string in a format e.g. InChI,
    * SMILES, MOLFILE, CDX.
    */
-  readonly representation?: string;
+  representation?: string;
 
   /**
    * An attached file with the structural representation.
    */
-  readonly attachment?: Attachment;
+  attachment?: Attachment;
 }

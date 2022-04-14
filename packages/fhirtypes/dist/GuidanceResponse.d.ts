@@ -41,14 +41,14 @@ export interface GuidanceResponse {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -56,12 +56,12 @@ export interface GuidanceResponse {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -71,14 +71,14 @@ export interface GuidanceResponse {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -88,7 +88,7 @@ export interface GuidanceResponse {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -106,7 +106,7 @@ export interface GuidanceResponse {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The identifier of the request associated with this response. If an
@@ -114,31 +114,31 @@ export interface GuidanceResponse {
    * here to enable the requester to more easily identify the response in a
    * multi-request scenario.
    */
-  readonly requestIdentifier?: Identifier;
+  requestIdentifier?: Identifier;
 
   /**
    * Allows a service to provide  unique, business identifiers for the
    * response.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * An identifier, CodeableConcept or canonical reference to the guidance
    * that was requested.
    */
-  readonly moduleUri?: string;
+  moduleUri?: string;
 
   /**
    * An identifier, CodeableConcept or canonical reference to the guidance
    * that was requested.
    */
-  readonly moduleCanonical?: string;
+  moduleCanonical?: string;
 
   /**
    * An identifier, CodeableConcept or canonical reference to the guidance
    * that was requested.
    */
-  readonly moduleCodeableConcept?: CodeableConcept;
+  moduleCodeableConcept?: CodeableConcept;
 
   /**
    * The status of the response. If the evaluation is completed
@@ -151,34 +151,34 @@ export interface GuidanceResponse {
    * available, the status will be data-requested, and the response will
    * contain a description of the additional requested information.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The patient for which the request was processed.
    */
-  readonly subject?: Reference<Patient | Group>;
+  subject?: Reference<Patient | Group>;
 
   /**
    * The encounter during which this response was created or to which the
    * creation of this record is tightly associated.
    */
-  readonly encounter?: Reference<Encounter>;
+  encounter?: Reference<Encounter>;
 
   /**
    * Indicates when the guidance response was processed.
    */
-  readonly occurrenceDateTime?: string;
+  occurrenceDateTime?: string;
 
   /**
    * Provides a reference to the device that performed the guidance.
    */
-  readonly performer?: Reference<Device>;
+  performer?: Reference<Device>;
 
   /**
    * Describes the reason for the guidance response in coded or textual
    * form.
    */
-  readonly reasonCode?: CodeableConcept[];
+  reasonCode?: CodeableConcept[];
 
   /**
    * Indicates the reason the request was initiated. This is typically
@@ -186,13 +186,13 @@ export interface GuidanceResponse {
    * although for some use cases, such as subscription- or event-based
    * scenarios, it may provide an indication of the cause for the response.
    */
-  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
+  reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
 
   /**
    * Provides a mechanism to communicate additional information about the
    * response.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 
   /**
    * Messages resulting from the evaluation of the artifact or artifacts.
@@ -200,7 +200,7 @@ export interface GuidanceResponse {
    * informational or warning messages. These messages will be provided by
    * this element.
    */
-  readonly evaluationMessage?: Reference<OperationOutcome>[];
+  evaluationMessage?: Reference<OperationOutcome>[];
 
   /**
    * The output parameters of the evaluation, if any. Many modules will
@@ -210,12 +210,12 @@ export interface GuidanceResponse {
    * returned as the result of the evaluation, and these would be returned
    * in this element.
    */
-  readonly outputParameters?: Reference<Parameters>;
+  outputParameters?: Reference<Parameters>;
 
   /**
    * The actions, if any, produced by the evaluation of the artifact.
    */
-  readonly result?: Reference<CarePlan | RequestGroup>;
+  result?: Reference<CarePlan | RequestGroup>;
 
   /**
    * If the evaluation could not be completed due to lack of information,
@@ -224,5 +224,5 @@ export interface GuidanceResponse {
    * order to proceed with the evaluation. A subsequent request to the
    * service should include this data.
    */
-  readonly dataRequirement?: DataRequirement[];
+  dataRequirement?: DataRequirement[];
 }

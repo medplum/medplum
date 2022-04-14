@@ -38,14 +38,14 @@ export interface Immunization {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -53,12 +53,12 @@ export interface Immunization {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -68,14 +68,14 @@ export interface Immunization {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -85,7 +85,7 @@ export interface Immunization {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -103,147 +103,147 @@ export interface Immunization {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A unique identifier assigned to this immunization record.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * Indicates the current status of the immunization event.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * Indicates the reason the immunization event was not performed.
    */
-  readonly statusReason?: CodeableConcept;
+  statusReason?: CodeableConcept;
 
   /**
    * Vaccine that was administered or was to be administered.
    */
-  readonly vaccineCode?: CodeableConcept;
+  vaccineCode?: CodeableConcept;
 
   /**
    * The patient who either received or did not receive the immunization.
    */
-  readonly patient?: Reference<Patient>;
+  patient?: Reference<Patient>;
 
   /**
    * The visit or admission or other contact between patient and health
    * care provider the immunization was performed as part of.
    */
-  readonly encounter?: Reference<Encounter>;
+  encounter?: Reference<Encounter>;
 
   /**
    * Date vaccine administered or was to be administered.
    */
-  readonly occurrenceDateTime?: string;
+  occurrenceDateTime?: string;
 
   /**
    * Date vaccine administered or was to be administered.
    */
-  readonly occurrenceString?: string;
+  occurrenceString?: string;
 
   /**
    * The date the occurrence of the immunization was first captured in the
    * record - potentially significantly after the occurrence of the event.
    */
-  readonly recorded?: string;
+  recorded?: string;
 
   /**
    * An indication that the content of the record is based on information
    * from the person who administered the vaccine. This reflects the
    * context under which the data was originally recorded.
    */
-  readonly primarySource?: boolean;
+  primarySource?: boolean;
 
   /**
    * The source of the data when the report of the immunization event is
    * not based on information from the person who administered the vaccine.
    */
-  readonly reportOrigin?: CodeableConcept;
+  reportOrigin?: CodeableConcept;
 
   /**
    * The service delivery location where the vaccine administration
    * occurred.
    */
-  readonly location?: Reference<Location>;
+  location?: Reference<Location>;
 
   /**
    * Name of vaccine manufacturer.
    */
-  readonly manufacturer?: Reference<Organization>;
+  manufacturer?: Reference<Organization>;
 
   /**
    * Lot number of the  vaccine product.
    */
-  readonly lotNumber?: string;
+  lotNumber?: string;
 
   /**
    * Date vaccine batch expires.
    */
-  readonly expirationDate?: string;
+  expirationDate?: string;
 
   /**
    * Body site where vaccine was administered.
    */
-  readonly site?: CodeableConcept;
+  site?: CodeableConcept;
 
   /**
    * The path by which the vaccine product is taken into the body.
    */
-  readonly route?: CodeableConcept;
+  route?: CodeableConcept;
 
   /**
    * The quantity of vaccine product that was administered.
    */
-  readonly doseQuantity?: Quantity;
+  doseQuantity?: Quantity;
 
   /**
    * Indicates who performed the immunization event.
    */
-  readonly performer?: ImmunizationPerformer[];
+  performer?: ImmunizationPerformer[];
 
   /**
    * Extra information about the immunization that is not conveyed by the
    * other attributes.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 
   /**
    * Reasons why the vaccine was administered.
    */
-  readonly reasonCode?: CodeableConcept[];
+  reasonCode?: CodeableConcept[];
 
   /**
    * Condition, Observation or DiagnosticReport that supports why the
    * immunization was administered.
    */
-  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport>[];
+  reasonReference?: Reference<Condition | Observation | DiagnosticReport>[];
 
   /**
    * Indication if a dose is considered to be subpotent. By default, a dose
    * should be considered to be potent.
    */
-  readonly isSubpotent?: boolean;
+  isSubpotent?: boolean;
 
   /**
    * Reason why a dose is considered to be subpotent.
    */
-  readonly subpotentReason?: CodeableConcept[];
+  subpotentReason?: CodeableConcept[];
 
   /**
    * Educational material presented to the patient (or guardian) at the
    * time of vaccine administration.
    */
-  readonly education?: ImmunizationEducation[];
+  education?: ImmunizationEducation[];
 
   /**
    * Indicates a patient's eligibility for a funding program.
    */
-  readonly programEligibility?: CodeableConcept[];
+  programEligibility?: CodeableConcept[];
 
   /**
    * Indicates the source of the vaccine actually administered. This may be
@@ -252,19 +252,19 @@ export interface Immunization {
    * issues, vaccine purchased with private funds was actually
    * administered).
    */
-  readonly fundingSource?: CodeableConcept;
+  fundingSource?: CodeableConcept;
 
   /**
    * Categorical data indicating that an adverse event is associated in
    * time to an immunization.
    */
-  readonly reaction?: ImmunizationReaction[];
+  reaction?: ImmunizationReaction[];
 
   /**
    * The protocol (set of recommendations) being followed by the provider
    * who administered the dose.
    */
-  readonly protocolApplied?: ImmunizationProtocolApplied[];
+  protocolApplied?: ImmunizationProtocolApplied[];
 }
 
 /**
@@ -277,7 +277,7 @@ export interface ImmunizationEducation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -287,7 +287,7 @@ export interface ImmunizationEducation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -306,28 +306,28 @@ export interface ImmunizationEducation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifier of the material presented to the patient.
    */
-  readonly documentType?: string;
+  documentType?: string;
 
   /**
    * Reference pointer to the educational material given to the patient if
    * the information was on line.
    */
-  readonly reference?: string;
+  reference?: string;
 
   /**
    * Date the educational material was published.
    */
-  readonly publicationDate?: string;
+  publicationDate?: string;
 
   /**
    * Date the educational material was given to the patient.
    */
-  readonly presentationDate?: string;
+  presentationDate?: string;
 }
 
 /**
@@ -339,7 +339,7 @@ export interface ImmunizationPerformer {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -349,7 +349,7 @@ export interface ImmunizationPerformer {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -368,18 +368,18 @@ export interface ImmunizationPerformer {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Describes the type of performance (e.g. ordering provider,
    * administering provider, etc.).
    */
-  readonly function?: CodeableConcept;
+  function?: CodeableConcept;
 
   /**
    * The practitioner or organization who performed the action.
    */
-  readonly actor?: Reference<Practitioner | PractitionerRole | Organization>;
+  actor?: Reference<Practitioner | PractitionerRole | Organization>;
 }
 
 /**
@@ -392,7 +392,7 @@ export interface ImmunizationProtocolApplied {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -402,7 +402,7 @@ export interface ImmunizationProtocolApplied {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -421,45 +421,45 @@ export interface ImmunizationProtocolApplied {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * One possible path to achieve presumed immunity against a disease -
    * within the context of an authority.
    */
-  readonly series?: string;
+  series?: string;
 
   /**
    * Indicates the authority who published the protocol (e.g. ACIP) that is
    * being followed.
    */
-  readonly authority?: Reference<Organization>;
+  authority?: Reference<Organization>;
 
   /**
    * The vaccine preventable disease the dose is being administered
    * against.
    */
-  readonly targetDisease?: CodeableConcept[];
+  targetDisease?: CodeableConcept[];
 
   /**
    * Nominal position in a series.
    */
-  readonly doseNumberPositiveInt?: number;
+  doseNumberPositiveInt?: number;
 
   /**
    * Nominal position in a series.
    */
-  readonly doseNumberString?: string;
+  doseNumberString?: string;
 
   /**
    * The recommended number of doses to achieve immunity.
    */
-  readonly seriesDosesPositiveInt?: number;
+  seriesDosesPositiveInt?: number;
 
   /**
    * The recommended number of doses to achieve immunity.
    */
-  readonly seriesDosesString?: string;
+  seriesDosesString?: string;
 }
 
 /**
@@ -472,7 +472,7 @@ export interface ImmunizationReaction {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -482,7 +482,7 @@ export interface ImmunizationReaction {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -501,20 +501,20 @@ export interface ImmunizationReaction {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Date of reaction to the immunization.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * Details of the reaction.
    */
-  readonly detail?: Reference<Observation>;
+  detail?: Reference<Observation>;
 
   /**
    * Self-reported indicator.
    */
-  readonly reported?: boolean;
+  reported?: boolean;
 }

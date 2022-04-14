@@ -20,7 +20,7 @@ export interface Identifier {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -30,38 +30,38 @@ export interface Identifier {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * The purpose of this identifier.
    */
-  readonly use?: string;
+  use?: string;
 
   /**
    * A coded type for the identifier that can be used to determine which
    * identifier to use for a specific purpose.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Establishes the namespace for the value - that is, a URL that
    * describes a set values that are unique.
    */
-  readonly system?: string;
+  system?: string;
 
   /**
    * The portion of the identifier typically relevant to the user and which
    * is unique within the context of the system.
    */
-  readonly value?: string;
+  value?: string;
 
   /**
    * Time period during which identifier is/was valid for use.
    */
-  readonly period?: Period;
+  period?: Period;
 
   /**
    * Organization that issued/manages the identifier.
    */
-  readonly assigner?: Reference<Organization>;
+  assigner?: Reference<Organization>;
 }

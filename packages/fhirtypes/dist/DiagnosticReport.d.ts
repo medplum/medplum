@@ -50,14 +50,14 @@ export interface DiagnosticReport {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -65,12 +65,12 @@ export interface DiagnosticReport {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -80,14 +80,14 @@ export interface DiagnosticReport {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -97,7 +97,7 @@ export interface DiagnosticReport {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -115,22 +115,22 @@ export interface DiagnosticReport {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifiers assigned to this report by the performer or other systems.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * Details concerning a service requested.
    */
-  readonly basedOn?: Reference<CarePlan | ImmunizationRecommendation | MedicationRequest | NutritionOrder | ServiceRequest>[];
+  basedOn?: Reference<CarePlan | ImmunizationRecommendation | MedicationRequest | NutritionOrder | ServiceRequest>[];
 
   /**
    * The status of the diagnostic report.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A code that classifies the clinical discipline, department or
@@ -138,25 +138,25 @@ export interface DiagnosticReport {
    * biochemistry, hematology, MRI). This is used for searching, sorting
    * and display purposes.
    */
-  readonly category?: CodeableConcept[];
+  category?: CodeableConcept[];
 
   /**
    * A code or name that describes this diagnostic report.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * The subject of the report. Usually, but not always, this is a patient.
    * However, diagnostic services also perform analyses on specimens
    * collected from a variety of other sources.
    */
-  readonly subject?: Reference<Patient | Group | Device | Location>;
+  subject?: Reference<Patient | Group | Device | Location>;
 
   /**
    * The healthcare event  (e.g. a patient and healthcare provider
    * interaction) which this DiagnosticReport is about.
    */
-  readonly encounter?: Reference<Encounter>;
+  encounter?: Reference<Encounter>;
 
   /**
    * The time or time-period the observed values are related to. When the
@@ -164,7 +164,7 @@ export interface DiagnosticReport {
    * the procedure or of specimen collection(s), but very often the source
    * of the date/time is not known, only the date/time itself.
    */
-  readonly effectiveDateTime?: string;
+  effectiveDateTime?: string;
 
   /**
    * The time or time-period the observed values are related to. When the
@@ -172,35 +172,35 @@ export interface DiagnosticReport {
    * the procedure or of specimen collection(s), but very often the source
    * of the date/time is not known, only the date/time itself.
    */
-  readonly effectivePeriod?: Period;
+  effectivePeriod?: Period;
 
   /**
    * The date and time that this version of the report was made available
    * to providers, typically after the report was reviewed and verified.
    */
-  readonly issued?: string;
+  issued?: string;
 
   /**
    * The diagnostic service that is responsible for issuing the report.
    */
-  readonly performer?: Reference<Practitioner | PractitionerRole | Organization | CareTeam>[];
+  performer?: Reference<Practitioner | PractitionerRole | Organization | CareTeam>[];
 
   /**
    * The practitioner or organization that is responsible for the report's
    * conclusions and interpretations.
    */
-  readonly resultsInterpreter?: Reference<Practitioner | PractitionerRole | Organization | CareTeam>[];
+  resultsInterpreter?: Reference<Practitioner | PractitionerRole | Organization | CareTeam>[];
 
   /**
    * Details about the specimens on which this diagnostic report is based.
    */
-  readonly specimen?: Reference<Specimen>[];
+  specimen?: Reference<Specimen>[];
 
   /**
    * [Observations](observation.html)  that are part of this diagnostic
    * report.
    */
-  readonly result?: Reference<Observation>[];
+  result?: Reference<Observation>[];
 
   /**
    * One or more links to full details of any imaging performed during the
@@ -209,33 +209,33 @@ export interface DiagnosticReport {
    * PACS viewer can use this information to provide views of the source
    * images.
    */
-  readonly imagingStudy?: Reference<ImagingStudy>[];
+  imagingStudy?: Reference<ImagingStudy>[];
 
   /**
    * A list of key images associated with this report. The images are
    * generally created during the diagnostic process, and may be directly
    * of the patient, or of treated specimens (i.e. slides of interest).
    */
-  readonly media?: DiagnosticReportMedia[];
+  media?: DiagnosticReportMedia[];
 
   /**
    * Concise and clinically contextualized summary conclusion
    * (interpretation/impression) of the diagnostic report.
    */
-  readonly conclusion?: string;
+  conclusion?: string;
 
   /**
    * One or more codes that represent the summary conclusion
    * (interpretation/impression) of the diagnostic report.
    */
-  readonly conclusionCode?: CodeableConcept[];
+  conclusionCode?: CodeableConcept[];
 
   /**
    * Rich text representation of the entire result as issued by the
    * diagnostic service. Multiple formats are allowed but they SHALL be
    * semantically equivalent.
    */
-  readonly presentedForm?: Attachment[];
+  presentedForm?: Attachment[];
 }
 
 /**
@@ -249,7 +249,7 @@ export interface DiagnosticReportMedia {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -259,7 +259,7 @@ export interface DiagnosticReportMedia {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -278,17 +278,17 @@ export interface DiagnosticReportMedia {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A comment about the image. Typically, this is used to provide an
    * explanation for why the image is included, or to draw the viewer's
    * attention to important features.
    */
-  readonly comment?: string;
+  comment?: string;
 
   /**
    * Reference to the image source.
    */
-  readonly link?: Reference<Media>;
+  link?: Reference<Media>;
 }

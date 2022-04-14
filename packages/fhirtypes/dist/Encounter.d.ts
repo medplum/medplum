@@ -45,14 +45,14 @@ export interface Encounter {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -60,12 +60,12 @@ export interface Encounter {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -75,14 +75,14 @@ export interface Encounter {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -92,7 +92,7 @@ export interface Encounter {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -110,32 +110,32 @@ export interface Encounter {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifier(s) by which this encounter is known.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * planned | arrived | triaged | in-progress | onleave | finished |
    * cancelled +.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The status history permits the encounter resource to contain the
    * status history without needing to read through the historical versions
    * of the resource, or even have the server store them.
    */
-  readonly statusHistory?: EncounterStatusHistory[];
+  statusHistory?: EncounterStatusHistory[];
 
   /**
    * Concepts representing classification of patient encounter such as
    * ambulatory (outpatient), inpatient, emergency, home health or others
    * due to local variations.
    */
-  readonly class?: Coding;
+  class?: Coding;
 
   /**
    * The class history permits the tracking of the encounters transitions
@@ -147,29 +147,29 @@ export interface Encounter {
    * not get lost or cancelled during a kind of discharge from emergency to
    * inpatient.
    */
-  readonly classHistory?: EncounterClassHistory[];
+  classHistory?: EncounterClassHistory[];
 
   /**
    * Specific type of encounter (e.g. e-mail consultation, surgical
    * day-care, skilled nursing, rehabilitation).
    */
-  readonly type?: CodeableConcept[];
+  type?: CodeableConcept[];
 
   /**
    * Broad categorization of the service that is to be provided (e.g.
    * cardiology).
    */
-  readonly serviceType?: CodeableConcept;
+  serviceType?: CodeableConcept;
 
   /**
    * Indicates the urgency of the encounter.
    */
-  readonly priority?: CodeableConcept;
+  priority?: CodeableConcept;
 
   /**
    * The patient or group present at the encounter.
    */
-  readonly subject?: Reference<Patient | Group>;
+  subject?: Reference<Patient | Group>;
 
   /**
    * Where a specific encounter should be classified as a part of a
@@ -181,66 +181,66 @@ export interface Encounter {
    * grouped on entry rather than editing the episode of care to append
    * another encounter to it (the episode of care could span years).
    */
-  readonly episodeOfCare?: Reference<EpisodeOfCare>[];
+  episodeOfCare?: Reference<EpisodeOfCare>[];
 
   /**
    * The request this encounter satisfies (e.g. incoming referral or
    * procedure request).
    */
-  readonly basedOn?: Reference<ServiceRequest>[];
+  basedOn?: Reference<ServiceRequest>[];
 
   /**
    * The list of people responsible for providing the service.
    */
-  readonly participant?: EncounterParticipant[];
+  participant?: EncounterParticipant[];
 
   /**
    * The appointment that scheduled this encounter.
    */
-  readonly appointment?: Reference<Appointment>[];
+  appointment?: Reference<Appointment>[];
 
   /**
    * The start and end time of the encounter.
    */
-  readonly period?: Period;
+  period?: Period;
 
   /**
    * Quantity of time the encounter lasted. This excludes the time during
    * leaves of absence.
    */
-  readonly length?: Duration;
+  length?: Duration;
 
   /**
    * Reason the encounter takes place, expressed as a code. For admissions,
    * this can be used for a coded admission diagnosis.
    */
-  readonly reasonCode?: CodeableConcept[];
+  reasonCode?: CodeableConcept[];
 
   /**
    * Reason the encounter takes place, expressed as a code. For admissions,
    * this can be used for a coded admission diagnosis.
    */
-  readonly reasonReference?: Reference<Condition | Procedure | Observation | ImmunizationRecommendation>[];
+  reasonReference?: Reference<Condition | Procedure | Observation | ImmunizationRecommendation>[];
 
   /**
    * The list of diagnosis relevant to this encounter.
    */
-  readonly diagnosis?: EncounterDiagnosis[];
+  diagnosis?: EncounterDiagnosis[];
 
   /**
    * The set of accounts that may be used for billing for this Encounter.
    */
-  readonly account?: Reference<Account>[];
+  account?: Reference<Account>[];
 
   /**
    * Details about the admission to a healthcare service.
    */
-  readonly hospitalization?: EncounterHospitalization;
+  hospitalization?: EncounterHospitalization;
 
   /**
    * List of locations where  the patient has been during this encounter.
    */
-  readonly location?: EncounterLocation[];
+  location?: EncounterLocation[];
 
   /**
    * The organization that is primarily responsible for this Encounter's
@@ -250,13 +250,13 @@ export interface Encounter {
    * seperately) for an external consultation.  Refer to the example bundle
    * showing an abbreviated set of Encounters for a colonoscopy.
    */
-  readonly serviceProvider?: Reference<Organization>;
+  serviceProvider?: Reference<Organization>;
 
   /**
    * Another Encounter of which this encounter is a part of
    * (administratively or in time).
    */
-  readonly partOf?: Reference<Encounter>;
+  partOf?: Reference<Encounter>;
 }
 
 /**
@@ -275,7 +275,7 @@ export interface EncounterClassHistory {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -285,7 +285,7 @@ export interface EncounterClassHistory {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -304,17 +304,17 @@ export interface EncounterClassHistory {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * inpatient | outpatient | ambulatory | emergency +.
    */
-  readonly class?: Coding;
+  class?: Coding;
 
   /**
    * The time that the episode was in the specified class.
    */
-  readonly period?: Period;
+  period?: Period;
 }
 
 /**
@@ -326,7 +326,7 @@ export interface EncounterDiagnosis {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -336,7 +336,7 @@ export interface EncounterDiagnosis {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -355,7 +355,7 @@ export interface EncounterDiagnosis {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Reason the encounter takes place, as specified using information from
@@ -363,18 +363,18 @@ export interface EncounterDiagnosis {
    * indication will typically be a Condition (with other resources
    * referenced in the evidence.detail), or a Procedure.
    */
-  readonly condition?: Reference<Condition | Procedure>;
+  condition?: Reference<Condition | Procedure>;
 
   /**
    * Role that this diagnosis has within the encounter (e.g. admission,
    * billing, discharge &hellip;).
    */
-  readonly use?: CodeableConcept;
+  use?: CodeableConcept;
 
   /**
    * Ranking of the diagnosis (for each role type).
    */
-  readonly rank?: number;
+  rank?: number;
 }
 
 /**
@@ -386,7 +386,7 @@ export interface EncounterHospitalization {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -396,7 +396,7 @@ export interface EncounterHospitalization {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -415,55 +415,55 @@ export interface EncounterHospitalization {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Pre-admission identifier.
    */
-  readonly preAdmissionIdentifier?: Identifier;
+  preAdmissionIdentifier?: Identifier;
 
   /**
    * The location/organization from which the patient came before
    * admission.
    */
-  readonly origin?: Reference<Location | Organization>;
+  origin?: Reference<Location | Organization>;
 
   /**
    * From where patient was admitted (physician referral, transfer).
    */
-  readonly admitSource?: CodeableConcept;
+  admitSource?: CodeableConcept;
 
   /**
    * Whether this hospitalization is a readmission and why if known.
    */
-  readonly reAdmission?: CodeableConcept;
+  reAdmission?: CodeableConcept;
 
   /**
    * Diet preferences reported by the patient.
    */
-  readonly dietPreference?: CodeableConcept[];
+  dietPreference?: CodeableConcept[];
 
   /**
    * Special courtesies (VIP, board member).
    */
-  readonly specialCourtesy?: CodeableConcept[];
+  specialCourtesy?: CodeableConcept[];
 
   /**
    * Any special requests that have been made for this hospitalization
    * encounter, such as the provision of specific equipment or other
    * things.
    */
-  readonly specialArrangement?: CodeableConcept[];
+  specialArrangement?: CodeableConcept[];
 
   /**
    * Location/organization to which the patient is discharged.
    */
-  readonly destination?: Reference<Location | Organization>;
+  destination?: Reference<Location | Organization>;
 
   /**
    * Category or kind of location after discharge.
    */
-  readonly dischargeDisposition?: CodeableConcept;
+  dischargeDisposition?: CodeableConcept;
 }
 
 /**
@@ -475,7 +475,7 @@ export interface EncounterLocation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -485,7 +485,7 @@ export interface EncounterLocation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -504,30 +504,30 @@ export interface EncounterLocation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The location where the encounter takes place.
    */
-  readonly location?: Reference<Location>;
+  location?: Reference<Location>;
 
   /**
    * The status of the participants' presence at the specified location
    * during the period specified. If the participant is no longer at the
    * location, then the period will have an end date/time.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * This will be used to specify the required levels (bed/ward/room/etc.)
    * desired to be recorded to simplify either messaging or query.
    */
-  readonly physicalType?: CodeableConcept;
+  physicalType?: CodeableConcept;
 
   /**
    * Time period during which the patient was present at the location.
    */
-  readonly period?: Period;
+  period?: Period;
 }
 
 /**
@@ -539,7 +539,7 @@ export interface EncounterParticipant {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -549,7 +549,7 @@ export interface EncounterParticipant {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -568,24 +568,24 @@ export interface EncounterParticipant {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Role of participant in encounter.
    */
-  readonly type?: CodeableConcept[];
+  type?: CodeableConcept[];
 
   /**
    * The period of time that the specified participant participated in the
    * encounter. These can overlap or be sub-sets of the overall encounter's
    * period.
    */
-  readonly period?: Period;
+  period?: Period;
 
   /**
    * Persons involved in the encounter other than the patient.
    */
-  readonly individual?: Reference<Practitioner | PractitionerRole | RelatedPerson>;
+  individual?: Reference<Practitioner | PractitionerRole | RelatedPerson>;
 }
 
 /**
@@ -599,7 +599,7 @@ export interface EncounterStatusHistory {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -609,7 +609,7 @@ export interface EncounterStatusHistory {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -628,16 +628,16 @@ export interface EncounterStatusHistory {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * planned | arrived | triaged | in-progress | onleave | finished |
    * cancelled +.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The time that the episode was in the specified status.
    */
-  readonly period?: Period;
+  period?: Period;
 }

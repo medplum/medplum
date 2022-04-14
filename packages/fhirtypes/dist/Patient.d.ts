@@ -35,14 +35,14 @@ export interface Patient {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -50,12 +50,12 @@ export interface Patient {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -65,14 +65,14 @@ export interface Patient {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -82,7 +82,7 @@ export interface Patient {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -100,12 +100,12 @@ export interface Patient {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An identifier for this patient.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * Whether this patient record is in active use.
@@ -118,93 +118,93 @@ export interface Patient {
    * Deceased patients may also be marked as inactive for the same reasons,
    * but may be active for some time after death.
    */
-  readonly active?: boolean;
+  active?: boolean;
 
   /**
    * A name associated with the individual.
    */
-  readonly name?: HumanName[];
+  name?: HumanName[];
 
   /**
    * A contact detail (e.g. a telephone number or an email address) by
    * which the individual may be contacted.
    */
-  readonly telecom?: ContactPoint[];
+  telecom?: ContactPoint[];
 
   /**
    * Administrative Gender - the gender that the patient is considered to
    * have for administration and record keeping purposes.
    */
-  readonly gender?: string;
+  gender?: string;
 
   /**
    * The date of birth for the individual.
    */
-  readonly birthDate?: string;
+  birthDate?: string;
 
   /**
    * Indicates if the individual is deceased or not.
    */
-  readonly deceasedBoolean?: boolean;
+  deceasedBoolean?: boolean;
 
   /**
    * Indicates if the individual is deceased or not.
    */
-  readonly deceasedDateTime?: string;
+  deceasedDateTime?: string;
 
   /**
    * An address for the individual.
    */
-  readonly address?: Address[];
+  address?: Address[];
 
   /**
    * This field contains a patient's most recent marital (civil) status.
    */
-  readonly maritalStatus?: CodeableConcept;
+  maritalStatus?: CodeableConcept;
 
   /**
    * Indicates whether the patient is part of a multiple (boolean) or
    * indicates the actual birth order (integer).
    */
-  readonly multipleBirthBoolean?: boolean;
+  multipleBirthBoolean?: boolean;
 
   /**
    * Indicates whether the patient is part of a multiple (boolean) or
    * indicates the actual birth order (integer).
    */
-  readonly multipleBirthInteger?: number;
+  multipleBirthInteger?: number;
 
   /**
    * Image of the patient.
    */
-  readonly photo?: Attachment[];
+  photo?: Attachment[];
 
   /**
    * A contact party (e.g. guardian, partner, friend) for the patient.
    */
-  readonly contact?: PatientContact[];
+  contact?: PatientContact[];
 
   /**
    * A language which may be used to communicate with the patient about his
    * or her health.
    */
-  readonly communication?: PatientCommunication[];
+  communication?: PatientCommunication[];
 
   /**
    * Patient's nominated care provider.
    */
-  readonly generalPractitioner?: Reference<Organization | Practitioner | PractitionerRole>[];
+  generalPractitioner?: Reference<Organization | Practitioner | PractitionerRole>[];
 
   /**
    * Organization that is the custodian of the patient record.
    */
-  readonly managingOrganization?: Reference<Organization>;
+  managingOrganization?: Reference<Organization>;
 
   /**
    * Link to another patient resource that concerns the same actual
    * patient.
    */
-  readonly link?: PatientLink[];
+  link?: PatientLink[];
 }
 
 /**
@@ -217,7 +217,7 @@ export interface PatientCommunication {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -227,7 +227,7 @@ export interface PatientCommunication {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -246,7 +246,7 @@ export interface PatientCommunication {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The ISO-639-1 alpha 2 code in lower case for the language, optionally
@@ -254,13 +254,13 @@ export interface PatientCommunication {
    * upper case; e.g. &quot;en&quot; for English, or &quot;en-US&quot; for American English
    * versus &quot;en-EN&quot; for England English.
    */
-  readonly language?: CodeableConcept;
+  language?: CodeableConcept;
 
   /**
    * Indicates whether or not the patient prefers this language (over other
    * languages he masters up a certain level).
    */
-  readonly preferred?: boolean;
+  preferred?: boolean;
 }
 
 /**
@@ -272,7 +272,7 @@ export interface PatientContact {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -282,7 +282,7 @@ export interface PatientContact {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -301,47 +301,47 @@ export interface PatientContact {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The nature of the relationship between the patient and the contact
    * person.
    */
-  readonly relationship?: CodeableConcept[];
+  relationship?: CodeableConcept[];
 
   /**
    * A name associated with the contact person.
    */
-  readonly name?: HumanName;
+  name?: HumanName;
 
   /**
    * A contact detail for the person, e.g. a telephone number or an email
    * address.
    */
-  readonly telecom?: ContactPoint[];
+  telecom?: ContactPoint[];
 
   /**
    * Address for the contact person.
    */
-  readonly address?: Address;
+  address?: Address;
 
   /**
    * Administrative Gender - the gender that the contact person is
    * considered to have for administration and record keeping purposes.
    */
-  readonly gender?: string;
+  gender?: string;
 
   /**
    * Organization on behalf of which the contact is acting or for which the
    * contact is working.
    */
-  readonly organization?: Reference<Organization>;
+  organization?: Reference<Organization>;
 
   /**
    * The period during which this contact person or organization is valid
    * to be contacted relating to this patient.
    */
-  readonly period?: Period;
+  period?: Period;
 }
 
 /**
@@ -354,7 +354,7 @@ export interface PatientLink {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -364,7 +364,7 @@ export interface PatientLink {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -383,16 +383,16 @@ export interface PatientLink {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The other patient resource that the link refers to.
    */
-  readonly other?: Reference<Patient | RelatedPerson>;
+  other?: Reference<Patient | RelatedPerson>;
 
   /**
    * The type of link between this patient resource and another patient
    * resource.
    */
-  readonly type?: string;
+  type?: string;
 }

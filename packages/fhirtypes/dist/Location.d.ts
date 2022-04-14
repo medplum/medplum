@@ -32,14 +32,14 @@ export interface Location {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -47,12 +47,12 @@ export interface Location {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -62,14 +62,14 @@ export interface Location {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -79,7 +79,7 @@ export interface Location {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -97,19 +97,19 @@ export interface Location {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Unique code or number identifying the location to its users.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The status property covers the general availability of the resource,
    * not the current value which may be covered by the operationStatus, or
    * by a schedule/slots if they are configured for the location.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The operational status covers operation values most relevant to beds
@@ -117,74 +117,74 @@ export interface Location {
    * unit/dialysis chair). This typically covers concepts such as
    * contamination, housekeeping, and other activities like maintenance.
    */
-  readonly operationalStatus?: Coding;
+  operationalStatus?: Coding;
 
   /**
    * Name of the location as used by humans. Does not need to be unique.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A list of alternate names that the location is known as, or was known
    * as, in the past.
    */
-  readonly alias?: string[];
+  alias?: string[];
 
   /**
    * Description of the Location, which helps in finding or referencing the
    * place.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Indicates whether a resource instance represents a specific location
    * or a class of locations.
    */
-  readonly mode?: string;
+  mode?: string;
 
   /**
    * Indicates the type of function performed at the location.
    */
-  readonly type?: CodeableConcept[];
+  type?: CodeableConcept[];
 
   /**
    * The contact details of communication devices available at the
    * location. This can include phone numbers, fax numbers, mobile numbers,
    * email addresses and web sites.
    */
-  readonly telecom?: ContactPoint[];
+  telecom?: ContactPoint[];
 
   /**
    * Physical location.
    */
-  readonly address?: Address;
+  address?: Address;
 
   /**
    * Physical form of the location, e.g. building, room, vehicle, road.
    */
-  readonly physicalType?: CodeableConcept;
+  physicalType?: CodeableConcept;
 
   /**
    * The absolute geographic location of the Location, expressed using the
    * WGS84 datum (This is the same co-ordinate system used in KML).
    */
-  readonly position?: LocationPosition;
+  position?: LocationPosition;
 
   /**
    * The organization responsible for the provisioning and upkeep of the
    * location.
    */
-  readonly managingOrganization?: Reference<Organization>;
+  managingOrganization?: Reference<Organization>;
 
   /**
    * Another Location of which this Location is physically a part of.
    */
-  readonly partOf?: Reference<Location>;
+  partOf?: Reference<Location>;
 
   /**
    * What days/times during a week is this location usually open.
    */
-  readonly hoursOfOperation?: LocationHoursOfOperation[];
+  hoursOfOperation?: LocationHoursOfOperation[];
 
   /**
    * A description of when the locations opening ours are different to
@@ -192,13 +192,13 @@ export interface Location {
    * possible exceptions to normal site availability as detailed in the
    * opening hours Times.
    */
-  readonly availabilityExceptions?: string;
+  availabilityExceptions?: string;
 
   /**
    * Technical endpoints providing access to services operated for the
    * location.
    */
-  readonly endpoint?: Reference<Endpoint>[];
+  endpoint?: Reference<Endpoint>[];
 }
 
 /**
@@ -210,7 +210,7 @@ export interface LocationHoursOfOperation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -220,7 +220,7 @@ export interface LocationHoursOfOperation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -239,28 +239,28 @@ export interface LocationHoursOfOperation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Indicates which days of the week are available between the start and
    * end Times.
    */
-  readonly daysOfWeek?: string[];
+  daysOfWeek?: string[];
 
   /**
    * The Location is open all day.
    */
-  readonly allDay?: boolean;
+  allDay?: boolean;
 
   /**
    * Time that the Location opens.
    */
-  readonly openingTime?: string;
+  openingTime?: string;
 
   /**
    * Time that the Location closes.
    */
-  readonly closingTime?: string;
+  closingTime?: string;
 }
 
 /**
@@ -273,7 +273,7 @@ export interface LocationPosition {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -283,7 +283,7 @@ export interface LocationPosition {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -302,23 +302,23 @@ export interface LocationPosition {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Longitude. The value domain and the interpretation are the same as for
    * the text of the longitude element in KML (see notes below).
    */
-  readonly longitude?: number;
+  longitude?: number;
 
   /**
    * Latitude. The value domain and the interpretation are the same as for
    * the text of the latitude element in KML (see notes below).
    */
-  readonly latitude?: number;
+  latitude?: number;
 
   /**
    * Altitude. The value domain and the interpretation are the same as for
    * the text of the altitude element in KML (see notes below).
    */
-  readonly altitude?: number;
+  altitude?: number;
 }

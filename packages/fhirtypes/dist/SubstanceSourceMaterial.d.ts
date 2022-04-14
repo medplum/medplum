@@ -38,14 +38,14 @@ export interface SubstanceSourceMaterial {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -53,12 +53,12 @@ export interface SubstanceSourceMaterial {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -68,14 +68,14 @@ export interface SubstanceSourceMaterial {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -85,7 +85,7 @@ export interface SubstanceSourceMaterial {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -103,49 +103,49 @@ export interface SubstanceSourceMaterial {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * General high level classification of the source material specific to
    * the origin of the material.
    */
-  readonly sourceMaterialClass?: CodeableConcept;
+  sourceMaterialClass?: CodeableConcept;
 
   /**
    * The type of the source material shall be specified based on a
    * controlled vocabulary. For vaccines, this subclause refers to the
    * class of infectious agent.
    */
-  readonly sourceMaterialType?: CodeableConcept;
+  sourceMaterialType?: CodeableConcept;
 
   /**
    * The state of the source material when extracted.
    */
-  readonly sourceMaterialState?: CodeableConcept;
+  sourceMaterialState?: CodeableConcept;
 
   /**
    * The unique identifier associated with the source material parent
    * organism shall be specified.
    */
-  readonly organismId?: Identifier;
+  organismId?: Identifier;
 
   /**
    * The organism accepted Scientific name shall be provided based on the
    * organism taxonomy.
    */
-  readonly organismName?: string;
+  organismName?: string;
 
   /**
    * The parent of the herbal drug Ginkgo biloba, Leaf is the substance ID
    * of the substance (fresh) of Ginkgo biloba L. or Ginkgo biloba L.
    * (Whole plant).
    */
-  readonly parentSubstanceId?: Identifier[];
+  parentSubstanceId?: Identifier[];
 
   /**
    * The parent substance of the Herbal Drug, or Herbal preparation.
    */
-  readonly parentSubstanceName?: string[];
+  parentSubstanceName?: string[];
 
   /**
    * The country where the plant material is harvested or the countries
@@ -154,20 +154,20 @@ export interface SubstanceSourceMaterial {
    * country of origin provides information about the countries used for
    * the manufacturing of the Cryopoor plama or Crioprecipitate.
    */
-  readonly countryOfOrigin?: CodeableConcept[];
+  countryOfOrigin?: CodeableConcept[];
 
   /**
    * The place/region where the plant is harvested or the places/regions
    * where the animal source material has its habitat.
    */
-  readonly geographicalLocation?: string[];
+  geographicalLocation?: string[];
 
   /**
    * Stage of life for animals, plants, insects and microorganisms. This
    * information shall be provided only when the substance is significantly
    * different in these stages (e.g. foetal bovine serum).
    */
-  readonly developmentStage?: CodeableConcept;
+  developmentStage?: CodeableConcept;
 
   /**
    * Many complex materials are fractions of parts of plants, animals, or
@@ -180,7 +180,7 @@ export interface SubstanceSourceMaterial {
    * plasma-derived products fraction information will be captured at the
    * Substance and the Specified Substance Group 1 levels.
    */
-  readonly fractionDescription?: SubstanceSourceMaterialFractionDescription[];
+  fractionDescription?: SubstanceSourceMaterialFractionDescription[];
 
   /**
    * This subclause describes the organism which the substance is derived
@@ -188,12 +188,12 @@ export interface SubstanceSourceMaterial {
    * these subclause elements. As an example, full taxonomy will be
    * described for the Substance Name: ., Leaf.
    */
-  readonly organism?: SubstanceSourceMaterialOrganism;
+  organism?: SubstanceSourceMaterialOrganism;
 
   /**
    * To do.
    */
-  readonly partDescription?: SubstanceSourceMaterialPartDescription[];
+  partDescription?: SubstanceSourceMaterialPartDescription[];
 }
 
 /**
@@ -213,7 +213,7 @@ export interface SubstanceSourceMaterialFractionDescription {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -223,7 +223,7 @@ export interface SubstanceSourceMaterialFractionDescription {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -242,20 +242,20 @@ export interface SubstanceSourceMaterialFractionDescription {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * This element is capturing information about the fraction of a plant
    * part, or human plasma for fractionation.
    */
-  readonly fraction?: string;
+  fraction?: string;
 
   /**
    * The specific type of the material constituting the component. For
    * Herbal preparations the particulars of the extracts (liquid/dry) is
    * described in Specified Substance Group 1.
    */
-  readonly materialType?: CodeableConcept;
+  materialType?: CodeableConcept;
 }
 
 /**
@@ -270,7 +270,7 @@ export interface SubstanceSourceMaterialOrganism {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -280,7 +280,7 @@ export interface SubstanceSourceMaterialOrganism {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -299,31 +299,31 @@ export interface SubstanceSourceMaterialOrganism {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The family of an organism shall be specified.
    */
-  readonly family?: CodeableConcept;
+  family?: CodeableConcept;
 
   /**
    * The genus of an organism shall be specified; refers to the Latin
    * epithet of the genus element of the plant/animal scientific name; it
    * is present in names for genera, species and infraspecies.
    */
-  readonly genus?: CodeableConcept;
+  genus?: CodeableConcept;
 
   /**
    * The species of an organism shall be specified; refers to the Latin
    * epithet of the species of the plant/animal; it is present in names for
    * species and infraspecies.
    */
-  readonly species?: CodeableConcept;
+  species?: CodeableConcept;
 
   /**
    * The Intraspecific type of an organism shall be specified.
    */
-  readonly intraspecificType?: CodeableConcept;
+  intraspecificType?: CodeableConcept;
 
   /**
    * The intraspecific description of an organism shall be specified based
@@ -331,22 +331,22 @@ export interface SubstanceSourceMaterialOrganism {
    * description shall contain the syntax of the antigen in line with the
    * WHO convention.
    */
-  readonly intraspecificDescription?: string;
+  intraspecificDescription?: string;
 
   /**
    * 4.9.13.6.1 Author type (Conditional).
    */
-  readonly author?: SubstanceSourceMaterialOrganismAuthor[];
+  author?: SubstanceSourceMaterialOrganismAuthor[];
 
   /**
    * 4.9.13.8.1 Hybrid species maternal organism ID (Optional).
    */
-  readonly hybrid?: SubstanceSourceMaterialOrganismHybrid;
+  hybrid?: SubstanceSourceMaterialOrganismHybrid;
 
   /**
    * 4.9.13.7.1 Kingdom (Conditional).
    */
-  readonly organismGeneral?: SubstanceSourceMaterialOrganismOrganismGeneral;
+  organismGeneral?: SubstanceSourceMaterialOrganismOrganismGeneral;
 }
 
 /**
@@ -358,7 +358,7 @@ export interface SubstanceSourceMaterialOrganismAuthor {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -368,7 +368,7 @@ export interface SubstanceSourceMaterialOrganismAuthor {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -387,7 +387,7 @@ export interface SubstanceSourceMaterialOrganismAuthor {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The type of author of an organism species shall be specified. The
@@ -396,7 +396,7 @@ export interface SubstanceSourceMaterialOrganismAuthor {
    * of an organism species refers to the first author(s), who validly
    * published the plant/animal name.
    */
-  readonly authorType?: CodeableConcept;
+  authorType?: CodeableConcept;
 
   /**
    * The author of an organism species shall be specified. The author year
@@ -404,7 +404,7 @@ export interface SubstanceSourceMaterialOrganismAuthor {
    * year in which the first author(s) published the infraspecific
    * plant/animal name (of any rank).
    */
-  readonly authorDescription?: string;
+  authorDescription?: string;
 }
 
 /**
@@ -416,7 +416,7 @@ export interface SubstanceSourceMaterialOrganismHybrid {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -426,7 +426,7 @@ export interface SubstanceSourceMaterialOrganismHybrid {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -445,7 +445,7 @@ export interface SubstanceSourceMaterialOrganismHybrid {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The identifier of the maternal species constituting the hybrid
@@ -453,7 +453,7 @@ export interface SubstanceSourceMaterialOrganismHybrid {
    * plants, the parents aren&rsquo;t always known, and it is unlikely that it
    * will be known which is maternal and which is paternal.
    */
-  readonly maternalOrganismId?: string;
+  maternalOrganismId?: string;
 
   /**
    * The name of the maternal species constituting the hybrid organism
@@ -461,24 +461,24 @@ export interface SubstanceSourceMaterialOrganismHybrid {
    * it is unlikely that it will be known which is maternal and which is
    * paternal.
    */
-  readonly maternalOrganismName?: string;
+  maternalOrganismName?: string;
 
   /**
    * The identifier of the paternal species constituting the hybrid
    * organism shall be specified based on a controlled vocabulary.
    */
-  readonly paternalOrganismId?: string;
+  paternalOrganismId?: string;
 
   /**
    * The name of the paternal species constituting the hybrid organism
    * shall be specified.
    */
-  readonly paternalOrganismName?: string;
+  paternalOrganismName?: string;
 
   /**
    * The hybrid type of an organism shall be specified.
    */
-  readonly hybridType?: CodeableConcept;
+  hybridType?: CodeableConcept;
 }
 
 /**
@@ -490,7 +490,7 @@ export interface SubstanceSourceMaterialOrganismOrganismGeneral {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -500,7 +500,7 @@ export interface SubstanceSourceMaterialOrganismOrganismGeneral {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -519,27 +519,27 @@ export interface SubstanceSourceMaterialOrganismOrganismGeneral {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The kingdom of an organism shall be specified.
    */
-  readonly kingdom?: CodeableConcept;
+  kingdom?: CodeableConcept;
 
   /**
    * The phylum of an organism shall be specified.
    */
-  readonly phylum?: CodeableConcept;
+  phylum?: CodeableConcept;
 
   /**
    * The class of an organism shall be specified.
    */
-  readonly class?: CodeableConcept;
+  class?: CodeableConcept;
 
   /**
    * The order of an organism shall be specified,.
    */
-  readonly order?: CodeableConcept;
+  order?: CodeableConcept;
 }
 
 /**
@@ -551,7 +551,7 @@ export interface SubstanceSourceMaterialPartDescription {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -561,7 +561,7 @@ export interface SubstanceSourceMaterialPartDescription {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -580,17 +580,17 @@ export interface SubstanceSourceMaterialPartDescription {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Entity of anatomical origin of source material within an organism.
    */
-  readonly part?: CodeableConcept;
+  part?: CodeableConcept;
 
   /**
    * The detailed anatomic location when the part can be extracted from
    * different anatomical locations of the organism. Multiple alternative
    * locations may apply.
    */
-  readonly partLocation?: CodeableConcept;
+  partLocation?: CodeableConcept;
 }

@@ -45,7 +45,7 @@ export interface Extension {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -55,311 +55,311 @@ export interface Extension {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * Source of the definition for the extension code - a logical name or a
    * URL.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueBase64Binary?: string;
+  valueBase64Binary?: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueBoolean?: boolean;
+  valueBoolean?: boolean;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueCanonical?: string;
+  valueCanonical?: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueCode?: string;
+  valueCode?: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueDate?: string;
+  valueDate?: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueDateTime?: string;
+  valueDateTime?: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueDecimal?: number;
+  valueDecimal?: number;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueId?: string;
+  valueId?: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueInstant?: string;
+  valueInstant?: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueInteger?: number;
+  valueInteger?: number;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueMarkdown?: string;
+  valueMarkdown?: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueOid?: string;
+  valueOid?: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valuePositiveInt?: number;
+  valuePositiveInt?: number;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueString?: string;
+  valueString?: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueTime?: string;
+  valueTime?: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueUnsignedInt?: number;
+  valueUnsignedInt?: number;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueUri?: string;
+  valueUri?: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueUrl?: string;
+  valueUrl?: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueUuid?: string;
+  valueUuid?: string;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueAddress?: Address;
+  valueAddress?: Address;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueAge?: Age;
+  valueAge?: Age;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueAnnotation?: Annotation;
+  valueAnnotation?: Annotation;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueAttachment?: Attachment;
+  valueAttachment?: Attachment;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueCodeableConcept?: CodeableConcept;
+  valueCodeableConcept?: CodeableConcept;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueCoding?: Coding;
+  valueCoding?: Coding;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueContactPoint?: ContactPoint;
+  valueContactPoint?: ContactPoint;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueCount?: Count;
+  valueCount?: Count;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueDistance?: Distance;
+  valueDistance?: Distance;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueDuration?: Duration;
+  valueDuration?: Duration;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueHumanName?: HumanName;
+  valueHumanName?: HumanName;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueIdentifier?: Identifier;
+  valueIdentifier?: Identifier;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueMoney?: Money;
+  valueMoney?: Money;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valuePeriod?: Period;
+  valuePeriod?: Period;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueQuantity?: Quantity;
+  valueQuantity?: Quantity;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueRange?: Range;
+  valueRange?: Range;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueRatio?: Ratio;
+  valueRatio?: Ratio;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueReference?: Reference;
+  valueReference?: Reference;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueSampledData?: SampledData;
+  valueSampledData?: SampledData;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueSignature?: Signature;
+  valueSignature?: Signature;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueTiming?: Timing;
+  valueTiming?: Timing;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueContactDetail?: ContactDetail;
+  valueContactDetail?: ContactDetail;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueContributor?: Contributor;
+  valueContributor?: Contributor;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueDataRequirement?: DataRequirement;
+  valueDataRequirement?: DataRequirement;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueExpression?: Expression;
+  valueExpression?: Expression;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueParameterDefinition?: ParameterDefinition;
+  valueParameterDefinition?: ParameterDefinition;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueRelatedArtifact?: RelatedArtifact;
+  valueRelatedArtifact?: RelatedArtifact;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueTriggerDefinition?: TriggerDefinition;
+  valueTriggerDefinition?: TriggerDefinition;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueUsageContext?: UsageContext;
+  valueUsageContext?: UsageContext;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueDosage?: Dosage;
+  valueDosage?: Dosage;
 
   /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
-  readonly valueMeta?: Meta;
+  valueMeta?: Meta;
 }

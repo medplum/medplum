@@ -37,14 +37,14 @@ export interface EpisodeOfCare {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -52,12 +52,12 @@ export interface EpisodeOfCare {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -67,14 +67,14 @@ export interface EpisodeOfCare {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -84,7 +84,7 @@ export interface EpisodeOfCare {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -102,77 +102,77 @@ export interface EpisodeOfCare {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The EpisodeOfCare may be known by different identifiers for different
    * contexts of use, such as when an external agency is tracking the
    * Episode for funding purposes.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * planned | waitlist | active | onhold | finished | cancelled.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The history of statuses that the EpisodeOfCare has been through
    * (without requiring processing the history of the resource).
    */
-  readonly statusHistory?: EpisodeOfCareStatusHistory[];
+  statusHistory?: EpisodeOfCareStatusHistory[];
 
   /**
    * A classification of the type of episode of care; e.g. specialist
    * referral, disease management, type of funded care.
    */
-  readonly type?: CodeableConcept[];
+  type?: CodeableConcept[];
 
   /**
    * The list of diagnosis relevant to this episode of care.
    */
-  readonly diagnosis?: EpisodeOfCareDiagnosis[];
+  diagnosis?: EpisodeOfCareDiagnosis[];
 
   /**
    * The patient who is the focus of this episode of care.
    */
-  readonly patient?: Reference<Patient>;
+  patient?: Reference<Patient>;
 
   /**
    * The organization that has assumed the specific responsibilities for
    * the specified duration.
    */
-  readonly managingOrganization?: Reference<Organization>;
+  managingOrganization?: Reference<Organization>;
 
   /**
    * The interval during which the managing organization assumes the
    * defined responsibility.
    */
-  readonly period?: Period;
+  period?: Period;
 
   /**
    * Referral Request(s) that are fulfilled by this EpisodeOfCare, incoming
    * referrals.
    */
-  readonly referralRequest?: Reference<ServiceRequest>[];
+  referralRequest?: Reference<ServiceRequest>[];
 
   /**
    * The practitioner that is the care manager/care coordinator for this
    * patient.
    */
-  readonly careManager?: Reference<Practitioner | PractitionerRole>;
+  careManager?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * The list of practitioners that may be facilitating this episode of
    * care for specific purposes.
    */
-  readonly team?: Reference<CareTeam>[];
+  team?: Reference<CareTeam>[];
 
   /**
    * The set of accounts that may be used for billing for this
    * EpisodeOfCare.
    */
-  readonly account?: Reference<Account>[];
+  account?: Reference<Account>[];
 }
 
 /**
@@ -184,7 +184,7 @@ export interface EpisodeOfCareDiagnosis {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -194,7 +194,7 @@ export interface EpisodeOfCareDiagnosis {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -213,24 +213,24 @@ export interface EpisodeOfCareDiagnosis {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A list of conditions/problems/diagnoses that this episode of care is
    * intended to be providing care for.
    */
-  readonly condition?: Reference<Condition>;
+  condition?: Reference<Condition>;
 
   /**
    * Role that this diagnosis has within the episode of care (e.g.
    * admission, billing, discharge &hellip;).
    */
-  readonly role?: CodeableConcept;
+  role?: CodeableConcept;
 
   /**
    * Ranking of the diagnosis (for each role type).
    */
-  readonly rank?: number;
+  rank?: number;
 }
 
 /**
@@ -243,7 +243,7 @@ export interface EpisodeOfCareStatusHistory {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -253,7 +253,7 @@ export interface EpisodeOfCareStatusHistory {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -272,15 +272,15 @@ export interface EpisodeOfCareStatusHistory {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * planned | waitlist | active | onhold | finished | cancelled.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The period during this EpisodeOfCare that the specific status applied.
    */
-  readonly period?: Period;
+  period?: Period;
 }

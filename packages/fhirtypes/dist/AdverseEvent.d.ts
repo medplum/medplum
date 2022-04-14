@@ -49,14 +49,14 @@ export interface AdverseEvent {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -64,12 +64,12 @@ export interface AdverseEvent {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -79,14 +79,14 @@ export interface AdverseEvent {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -96,7 +96,7 @@ export interface AdverseEvent {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -114,94 +114,94 @@ export interface AdverseEvent {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Business identifiers assigned to this adverse event by the performer
    * or other systems which remain constant as the resource is updated and
    * propagates from server to server.
    */
-  readonly identifier?: Identifier;
+  identifier?: Identifier;
 
   /**
    * Whether the event actually happened, or just had the potential to.
    * Note that this is independent of whether anyone was affected or harmed
    * or how severely.
    */
-  readonly actuality?: string;
+  actuality?: string;
 
   /**
    * The overall type of event, intended for search and filtering purposes.
    */
-  readonly category?: CodeableConcept[];
+  category?: CodeableConcept[];
 
   /**
    * This element defines the specific type of event that occurred or that
    * was prevented from occurring.
    */
-  readonly event?: CodeableConcept;
+  event?: CodeableConcept;
 
   /**
    * This subject or group impacted by the event.
    */
-  readonly subject?: Reference<Patient | Group | Practitioner | RelatedPerson>;
+  subject?: Reference<Patient | Group | Practitioner | RelatedPerson>;
 
   /**
    * The Encounter during which AdverseEvent was created or to which the
    * creation of this record is tightly associated.
    */
-  readonly encounter?: Reference<Encounter>;
+  encounter?: Reference<Encounter>;
 
   /**
    * The date (and perhaps time) when the adverse event occurred.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * Estimated or actual date the AdverseEvent began, in the opinion of the
    * reporter.
    */
-  readonly detected?: string;
+  detected?: string;
 
   /**
    * The date on which the existence of the AdverseEvent was first
    * recorded.
    */
-  readonly recordedDate?: string;
+  recordedDate?: string;
 
   /**
    * Includes information about the reaction that occurred as a result of
    * exposure to a substance (for example, a drug or a chemical).
    */
-  readonly resultingCondition?: Reference<Condition>[];
+  resultingCondition?: Reference<Condition>[];
 
   /**
    * The information about where the adverse event occurred.
    */
-  readonly location?: Reference<Location>;
+  location?: Reference<Location>;
 
   /**
    * Assessment whether this event was of real importance.
    */
-  readonly seriousness?: CodeableConcept;
+  seriousness?: CodeableConcept;
 
   /**
    * Describes the severity of the adverse event, in relation to the
    * subject. Contrast to AdverseEvent.seriousness - a severe rash might
    * not be serious, but a mild heart problem is.
    */
-  readonly severity?: CodeableConcept;
+  severity?: CodeableConcept;
 
   /**
    * Describes the type of outcome from the adverse event.
    */
-  readonly outcome?: CodeableConcept;
+  outcome?: CodeableConcept;
 
   /**
    * Information on who recorded the adverse event.  May be the patient or
    * a practitioner.
    */
-  readonly recorder?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson>;
+  recorder?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson>;
 
   /**
    * Parties that may or should contribute or have contributed information
@@ -212,29 +212,29 @@ export interface AdverseEvent {
    * (e.g. informant of clinical history), or information about what
    * activity was performed (e.g. informant witness).
    */
-  readonly contributor?: Reference<Practitioner | PractitionerRole | Device>[];
+  contributor?: Reference<Practitioner | PractitionerRole | Device>[];
 
   /**
    * Describes the entity that is suspected to have caused the adverse
    * event.
    */
-  readonly suspectEntity?: AdverseEventSuspectEntity[];
+  suspectEntity?: AdverseEventSuspectEntity[];
 
   /**
    * AdverseEvent.subjectMedicalHistory.
    */
-  readonly subjectMedicalHistory?: Reference<Condition | Observation | AllergyIntolerance | FamilyMemberHistory |
-      Immunization | Procedure | Media | DocumentReference>[];
+  subjectMedicalHistory?: Reference<Condition | Observation | AllergyIntolerance | FamilyMemberHistory | Immunization
+      | Procedure | Media | DocumentReference>[];
 
   /**
    * AdverseEvent.referenceDocument.
    */
-  readonly referenceDocument?: Reference<DocumentReference>[];
+  referenceDocument?: Reference<DocumentReference>[];
 
   /**
    * AdverseEvent.study.
    */
-  readonly study?: Reference<ResearchStudy>[];
+  study?: Reference<ResearchStudy>[];
 }
 
 /**
@@ -247,7 +247,7 @@ export interface AdverseEventSuspectEntity {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -257,7 +257,7 @@ export interface AdverseEventSuspectEntity {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -276,19 +276,19 @@ export interface AdverseEventSuspectEntity {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifies the actual instance of what caused the adverse event.  May
    * be a substance, medication, medication administration, medication
    * statement or a device.
    */
-  readonly instance?: Reference<Immunization | Procedure | Substance | Medication | MedicationAdministration | MedicationStatement | Device>;
+  instance?: Reference<Immunization | Procedure | Substance | Medication | MedicationAdministration | MedicationStatement | Device>;
 
   /**
    * Information on the possible cause of the event.
    */
-  readonly causality?: AdverseEventSuspectEntityCausality[];
+  causality?: AdverseEventSuspectEntityCausality[];
 }
 
 /**
@@ -300,7 +300,7 @@ export interface AdverseEventSuspectEntityCausality {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -310,7 +310,7 @@ export interface AdverseEventSuspectEntityCausality {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -329,25 +329,25 @@ export interface AdverseEventSuspectEntityCausality {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Assessment of if the entity caused the event.
    */
-  readonly assessment?: CodeableConcept;
+  assessment?: CodeableConcept;
 
   /**
    * AdverseEvent.suspectEntity.causalityProductRelatedness.
    */
-  readonly productRelatedness?: string;
+  productRelatedness?: string;
 
   /**
    * AdverseEvent.suspectEntity.causalityAuthor.
    */
-  readonly author?: Reference<Practitioner | PractitionerRole>;
+  author?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * ProbabilityScale | Bayesian | Checklist.
    */
-  readonly method?: CodeableConcept;
+  method?: CodeableConcept;
 }

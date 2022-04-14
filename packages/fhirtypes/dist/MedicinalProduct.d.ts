@@ -35,14 +35,14 @@ export interface MedicinalProduct {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -50,12 +50,12 @@ export interface MedicinalProduct {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -65,14 +65,14 @@ export interface MedicinalProduct {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -82,7 +82,7 @@ export interface MedicinalProduct {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -100,116 +100,116 @@ export interface MedicinalProduct {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Business identifier for this product. Could be an MPID.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * Regulatory type, e.g. Investigational or Authorized.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * If this medicine applies to human or veterinary uses.
    */
-  readonly domain?: Coding;
+  domain?: Coding;
 
   /**
    * The dose form for a single part product, or combined form of a
    * multiple part product.
    */
-  readonly combinedPharmaceuticalDoseForm?: CodeableConcept;
+  combinedPharmaceuticalDoseForm?: CodeableConcept;
 
   /**
    * The legal status of supply of the medicinal product as classified by
    * the regulator.
    */
-  readonly legalStatusOfSupply?: CodeableConcept;
+  legalStatusOfSupply?: CodeableConcept;
 
   /**
    * Whether the Medicinal Product is subject to additional monitoring for
    * regulatory reasons.
    */
-  readonly additionalMonitoringIndicator?: CodeableConcept;
+  additionalMonitoringIndicator?: CodeableConcept;
 
   /**
    * Whether the Medicinal Product is subject to special measures for
    * regulatory reasons.
    */
-  readonly specialMeasures?: string[];
+  specialMeasures?: string[];
 
   /**
    * If authorised for use in children.
    */
-  readonly paediatricUseIndicator?: CodeableConcept;
+  paediatricUseIndicator?: CodeableConcept;
 
   /**
    * Allows the product to be classified by various systems.
    */
-  readonly productClassification?: CodeableConcept[];
+  productClassification?: CodeableConcept[];
 
   /**
    * Marketing status of the medicinal product, in contrast to marketing
    * authorizaton.
    */
-  readonly marketingStatus?: MarketingStatus[];
+  marketingStatus?: MarketingStatus[];
 
   /**
    * Pharmaceutical aspects of product.
    */
-  readonly pharmaceuticalProduct?: Reference<MedicinalProductPharmaceutical>[];
+  pharmaceuticalProduct?: Reference<MedicinalProductPharmaceutical>[];
 
   /**
    * Package representation for the product.
    */
-  readonly packagedMedicinalProduct?: Reference<MedicinalProductPackaged>[];
+  packagedMedicinalProduct?: Reference<MedicinalProductPackaged>[];
 
   /**
    * Supporting documentation, typically for regulatory submission.
    */
-  readonly attachedDocument?: Reference<DocumentReference>[];
+  attachedDocument?: Reference<DocumentReference>[];
 
   /**
    * A master file for to the medicinal product (e.g. Pharmacovigilance
    * System Master File).
    */
-  readonly masterFile?: Reference<DocumentReference>[];
+  masterFile?: Reference<DocumentReference>[];
 
   /**
    * A product specific contact, person (in a role), or an organization.
    */
-  readonly contact?: Reference<Organization | PractitionerRole>[];
+  contact?: Reference<Organization | PractitionerRole>[];
 
   /**
    * Clinical trials or studies that this product is involved in.
    */
-  readonly clinicalTrial?: Reference<ResearchStudy>[];
+  clinicalTrial?: Reference<ResearchStudy>[];
 
   /**
    * The product's name, including full name and possibly coded parts.
    */
-  readonly name?: MedicinalProductName[];
+  name?: MedicinalProductName[];
 
   /**
    * Reference to another product, e.g. for linking authorised to
    * investigational product.
    */
-  readonly crossReference?: Identifier[];
+  crossReference?: Identifier[];
 
   /**
    * An operation applied to the product, for manufacturing or
    * adminsitrative purpose.
    */
-  readonly manufacturingBusinessOperation?: MedicinalProductManufacturingBusinessOperation[];
+  manufacturingBusinessOperation?: MedicinalProductManufacturingBusinessOperation[];
 
   /**
    * Indicates if the medicinal product has an orphan designation for the
    * treatment of a rare disease.
    */
-  readonly specialDesignation?: MedicinalProductSpecialDesignation[];
+  specialDesignation?: MedicinalProductSpecialDesignation[];
 }
 
 /**
@@ -222,7 +222,7 @@ export interface MedicinalProductManufacturingBusinessOperation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -232,7 +232,7 @@ export interface MedicinalProductManufacturingBusinessOperation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -251,37 +251,37 @@ export interface MedicinalProductManufacturingBusinessOperation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The type of manufacturing operation.
    */
-  readonly operationType?: CodeableConcept;
+  operationType?: CodeableConcept;
 
   /**
    * Regulatory authorization reference number.
    */
-  readonly authorisationReferenceNumber?: Identifier;
+  authorisationReferenceNumber?: Identifier;
 
   /**
    * Regulatory authorization date.
    */
-  readonly effectiveDate?: string;
+  effectiveDate?: string;
 
   /**
    * To indicate if this proces is commercially confidential.
    */
-  readonly confidentialityIndicator?: CodeableConcept;
+  confidentialityIndicator?: CodeableConcept;
 
   /**
    * The manufacturer or establishment associated with the process.
    */
-  readonly manufacturer?: Reference<Organization>[];
+  manufacturer?: Reference<Organization>[];
 
   /**
    * A regulator which oversees the operation.
    */
-  readonly regulator?: Reference<Organization>;
+  regulator?: Reference<Organization>;
 }
 
 /**
@@ -293,7 +293,7 @@ export interface MedicinalProductName {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -303,7 +303,7 @@ export interface MedicinalProductName {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -322,22 +322,22 @@ export interface MedicinalProductName {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The full product name.
    */
-  readonly productName?: string;
+  productName?: string;
 
   /**
    * Coding words or phrases of the name.
    */
-  readonly namePart?: MedicinalProductNameNamePart[];
+  namePart?: MedicinalProductNameNamePart[];
 
   /**
    * Country where the name applies.
    */
-  readonly countryLanguage?: MedicinalProductNameCountryLanguage[];
+  countryLanguage?: MedicinalProductNameCountryLanguage[];
 }
 
 /**
@@ -349,7 +349,7 @@ export interface MedicinalProductNameCountryLanguage {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -359,7 +359,7 @@ export interface MedicinalProductNameCountryLanguage {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -378,22 +378,22 @@ export interface MedicinalProductNameCountryLanguage {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Country code for where this name applies.
    */
-  readonly country?: CodeableConcept;
+  country?: CodeableConcept;
 
   /**
    * Jurisdiction code for where this name applies.
    */
-  readonly jurisdiction?: CodeableConcept;
+  jurisdiction?: CodeableConcept;
 
   /**
    * Language code for this name.
    */
-  readonly language?: CodeableConcept;
+  language?: CodeableConcept;
 }
 
 /**
@@ -405,7 +405,7 @@ export interface MedicinalProductNameNamePart {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -415,7 +415,7 @@ export interface MedicinalProductNameNamePart {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -434,17 +434,17 @@ export interface MedicinalProductNameNamePart {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A fragment of a product name.
    */
-  readonly part?: string;
+  part?: string;
 
   /**
    * Idenifying type for this part of the name (e.g. strength part).
    */
-  readonly type?: Coding;
+  type?: Coding;
 }
 
 /**
@@ -457,7 +457,7 @@ export interface MedicinalProductSpecialDesignation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -467,7 +467,7 @@ export interface MedicinalProductSpecialDesignation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -486,45 +486,45 @@ export interface MedicinalProductSpecialDesignation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifier for the designation, or procedure number.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The type of special designation, e.g. orphan drug, minor use.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The intended use of the product, e.g. prevention, treatment.
    */
-  readonly intendedUse?: CodeableConcept;
+  intendedUse?: CodeableConcept;
 
   /**
    * Condition for which the medicinal use applies.
    */
-  readonly indicationCodeableConcept?: CodeableConcept;
+  indicationCodeableConcept?: CodeableConcept;
 
   /**
    * Condition for which the medicinal use applies.
    */
-  readonly indicationReference?: Reference<MedicinalProductIndication>;
+  indicationReference?: Reference<MedicinalProductIndication>;
 
   /**
    * For example granted, pending, expired or withdrawn.
    */
-  readonly status?: CodeableConcept;
+  status?: CodeableConcept;
 
   /**
    * Date when the designation was granted.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * Animal species for which this applies.
    */
-  readonly species?: CodeableConcept;
+  species?: CodeableConcept;
 }

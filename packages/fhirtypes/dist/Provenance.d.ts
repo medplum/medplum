@@ -43,14 +43,14 @@ export interface Provenance {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -58,12 +58,12 @@ export interface Provenance {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -73,14 +73,14 @@ export interface Provenance {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -90,7 +90,7 @@ export interface Provenance {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -108,7 +108,7 @@ export interface Provenance {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The Reference(s) that were generated or updated by  the activity
@@ -116,63 +116,63 @@ export interface Provenance {
    * target if multiple resources were created/updated by the same
    * activity.
    */
-  readonly target?: Reference<Resource>[];
+  target?: Reference<Resource>[];
 
   /**
    * The period during which the activity occurred.
    */
-  readonly occurredPeriod?: Period;
+  occurredPeriod?: Period;
 
   /**
    * The period during which the activity occurred.
    */
-  readonly occurredDateTime?: string;
+  occurredDateTime?: string;
 
   /**
    * The instant of time at which the activity was recorded.
    */
-  readonly recorded?: string;
+  recorded?: string;
 
   /**
    * Policy or plan the activity was defined by. Typically, a single
    * activity may have multiple applicable policy documents, such as
    * patient consent, guarantor funding, etc.
    */
-  readonly policy?: string[];
+  policy?: string[];
 
   /**
    * Where the activity occurred, if relevant.
    */
-  readonly location?: Reference<Location>;
+  location?: Reference<Location>;
 
   /**
    * The reason that the activity was taking place.
    */
-  readonly reason?: CodeableConcept[];
+  reason?: CodeableConcept[];
 
   /**
    * An activity is something that occurs over a period of time and acts
    * upon or with entities; it may include consuming, processing,
    * transforming, modifying, relocating, using, or generating entities.
    */
-  readonly activity?: CodeableConcept;
+  activity?: CodeableConcept;
 
   /**
    * An actor taking a role in an activity  for which it can be assigned
    * some degree of responsibility for the activity taking place.
    */
-  readonly agent?: ProvenanceAgent[];
+  agent?: ProvenanceAgent[];
 
   /**
    * An entity used in this activity.
    */
-  readonly entity?: ProvenanceEntity[];
+  entity?: ProvenanceEntity[];
 
   /**
    * A digital signature on the target Reference(s). The signer should
    * match a Provenance.agent. The purpose of the signature is indicated.
    */
-  readonly signature?: Signature[];
+  signature?: Signature[];
 }
 
 /**
@@ -185,7 +185,7 @@ export interface ProvenanceAgent {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -195,7 +195,7 @@ export interface ProvenanceAgent {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -214,28 +214,28 @@ export interface ProvenanceAgent {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The participation the agent had with respect to the activity.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The function of the agent with respect to the activity. The security
    * role enabling the agent with respect to the activity.
    */
-  readonly role?: CodeableConcept[];
+  role?: CodeableConcept[];
 
   /**
    * The individual, device or organization that participated in the event.
    */
-  readonly who?: Reference<Practitioner | PractitionerRole | RelatedPerson | Patient | Device | Organization>;
+  who?: Reference<Practitioner | PractitionerRole | RelatedPerson | Patient | Device | Organization>;
 
   /**
    * The individual, device, or organization for whom the change was made.
    */
-  readonly onBehalfOf?: Reference<Practitioner | PractitionerRole | RelatedPerson | Patient | Device | Organization>;
+  onBehalfOf?: Reference<Practitioner | PractitionerRole | RelatedPerson | Patient | Device | Organization>;
 }
 
 /**
@@ -247,7 +247,7 @@ export interface ProvenanceEntity {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -257,7 +257,7 @@ export interface ProvenanceEntity {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -276,18 +276,18 @@ export interface ProvenanceEntity {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * How the entity was used during the activity.
    */
-  readonly role?: string;
+  role?: string;
 
   /**
    * Identity of the  Entity used. May be a logical or physical uri and
    * maybe absolute or relative.
    */
-  readonly what?: Reference<Resource>;
+  what?: Reference<Resource>;
 
   /**
    * The entity is attributed to an agent to express the agent's
@@ -295,5 +295,5 @@ export interface ProvenanceEntity {
    * description can be understood as shorthand for saying that the agent
    * was responsible for the activity which generated the entity.
    */
-  readonly agent?: ProvenanceAgent[];
+  agent?: ProvenanceAgent[];
 }

@@ -53,14 +53,14 @@ export interface Parameters {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -68,17 +68,17 @@ export interface Parameters {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A parameter passed to or received from the operation.
    */
-  readonly parameter?: ParametersParameter[];
+  parameter?: ParametersParameter[];
 }
 
 /**
@@ -90,7 +90,7 @@ export interface ParametersParameter {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -100,7 +100,7 @@ export interface ParametersParameter {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -119,270 +119,270 @@ export interface ParametersParameter {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The name of the parameter (reference to the operation definition).
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueBase64Binary?: string;
+  valueBase64Binary?: string;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueBoolean?: boolean;
+  valueBoolean?: boolean;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueCanonical?: string;
+  valueCanonical?: string;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueCode?: string;
+  valueCode?: string;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueDate?: string;
+  valueDate?: string;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueDateTime?: string;
+  valueDateTime?: string;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueDecimal?: number;
+  valueDecimal?: number;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueId?: string;
+  valueId?: string;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueInstant?: string;
+  valueInstant?: string;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueInteger?: number;
+  valueInteger?: number;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueMarkdown?: string;
+  valueMarkdown?: string;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueOid?: string;
+  valueOid?: string;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valuePositiveInt?: number;
+  valuePositiveInt?: number;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueString?: string;
+  valueString?: string;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueTime?: string;
+  valueTime?: string;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueUnsignedInt?: number;
+  valueUnsignedInt?: number;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueUri?: string;
+  valueUri?: string;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueUrl?: string;
+  valueUrl?: string;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueUuid?: string;
+  valueUuid?: string;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueAddress?: Address;
+  valueAddress?: Address;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueAge?: Age;
+  valueAge?: Age;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueAnnotation?: Annotation;
+  valueAnnotation?: Annotation;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueAttachment?: Attachment;
+  valueAttachment?: Attachment;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueCodeableConcept?: CodeableConcept;
+  valueCodeableConcept?: CodeableConcept;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueCoding?: Coding;
+  valueCoding?: Coding;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueContactPoint?: ContactPoint;
+  valueContactPoint?: ContactPoint;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueCount?: Count;
+  valueCount?: Count;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueDistance?: Distance;
+  valueDistance?: Distance;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueDuration?: Duration;
+  valueDuration?: Duration;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueHumanName?: HumanName;
+  valueHumanName?: HumanName;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueIdentifier?: Identifier;
+  valueIdentifier?: Identifier;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueMoney?: Money;
+  valueMoney?: Money;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valuePeriod?: Period;
+  valuePeriod?: Period;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueQuantity?: Quantity;
+  valueQuantity?: Quantity;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueRange?: Range;
+  valueRange?: Range;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueRatio?: Ratio;
+  valueRatio?: Ratio;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueReference?: Reference;
+  valueReference?: Reference;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueSampledData?: SampledData;
+  valueSampledData?: SampledData;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueSignature?: Signature;
+  valueSignature?: Signature;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueTiming?: Timing;
+  valueTiming?: Timing;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueContactDetail?: ContactDetail;
+  valueContactDetail?: ContactDetail;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueContributor?: Contributor;
+  valueContributor?: Contributor;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueDataRequirement?: DataRequirement;
+  valueDataRequirement?: DataRequirement;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueExpression?: Expression;
+  valueExpression?: Expression;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueParameterDefinition?: ParameterDefinition;
+  valueParameterDefinition?: ParameterDefinition;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueRelatedArtifact?: RelatedArtifact;
+  valueRelatedArtifact?: RelatedArtifact;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueTriggerDefinition?: TriggerDefinition;
+  valueTriggerDefinition?: TriggerDefinition;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueUsageContext?: UsageContext;
+  valueUsageContext?: UsageContext;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueDosage?: Dosage;
+  valueDosage?: Dosage;
 
   /**
    * If the parameter is a data type.
    */
-  readonly valueMeta?: Meta;
+  valueMeta?: Meta;
 
   /**
    * If the parameter is a whole resource.
    */
-  readonly resource?: Resource;
+  resource?: Resource;
 
   /**
    * A named part of a multi-part parameter.
    */
-  readonly part?: ParametersParameter[];
+  part?: ParametersParameter[];
 }

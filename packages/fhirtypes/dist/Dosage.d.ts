@@ -20,7 +20,7 @@ export interface Dosage {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -30,7 +30,7 @@ export interface Dosage {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -49,18 +49,18 @@ export interface Dosage {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Indicates the order in which the dosage instructions should be applied
    * or interpreted.
    */
-  readonly sequence?: number;
+  sequence?: number;
 
   /**
    * Free text dosage instructions e.g. SIG.
    */
-  readonly text?: string;
+  text?: string;
 
   /**
    * Supplemental instructions to the patient on how to take the medication
@@ -68,66 +68,66 @@ export interface Dosage {
    * for the patient about the medication (e.g. &quot;may cause drowsiness&quot; or
    * &quot;avoid exposure of skin to direct sunlight or sunlamps&quot;).
    */
-  readonly additionalInstruction?: CodeableConcept[];
+  additionalInstruction?: CodeableConcept[];
 
   /**
    * Instructions in terms that are understood by the patient or consumer.
    */
-  readonly patientInstruction?: string;
+  patientInstruction?: string;
 
   /**
    * When medication should be administered.
    */
-  readonly timing?: Timing;
+  timing?: Timing;
 
   /**
    * Indicates whether the Medication is only taken when needed within a
    * specific dosing schedule (Boolean option), or it indicates the
    * precondition for taking the Medication (CodeableConcept).
    */
-  readonly asNeededBoolean?: boolean;
+  asNeededBoolean?: boolean;
 
   /**
    * Indicates whether the Medication is only taken when needed within a
    * specific dosing schedule (Boolean option), or it indicates the
    * precondition for taking the Medication (CodeableConcept).
    */
-  readonly asNeededCodeableConcept?: CodeableConcept;
+  asNeededCodeableConcept?: CodeableConcept;
 
   /**
    * Body site to administer to.
    */
-  readonly site?: CodeableConcept;
+  site?: CodeableConcept;
 
   /**
    * How drug should enter body.
    */
-  readonly route?: CodeableConcept;
+  route?: CodeableConcept;
 
   /**
    * Technique for administering medication.
    */
-  readonly method?: CodeableConcept;
+  method?: CodeableConcept;
 
   /**
    * The amount of medication administered.
    */
-  readonly doseAndRate?: DosageDoseAndRate[];
+  doseAndRate?: DosageDoseAndRate[];
 
   /**
    * Upper limit on medication per unit of time.
    */
-  readonly maxDosePerPeriod?: Ratio;
+  maxDosePerPeriod?: Ratio;
 
   /**
    * Upper limit on medication per administration.
    */
-  readonly maxDosePerAdministration?: Quantity;
+  maxDosePerAdministration?: Quantity;
 
   /**
    * Upper limit on medication per lifetime of the patient.
    */
-  readonly maxDosePerLifetime?: Quantity;
+  maxDosePerLifetime?: Quantity;
 }
 
 /**
@@ -139,7 +139,7 @@ export interface DosageDoseAndRate {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -149,36 +149,36 @@ export interface DosageDoseAndRate {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * The kind of dose or rate specified, for example, ordered or
    * calculated.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * Amount of medication per dose.
    */
-  readonly doseRange?: Range;
+  doseRange?: Range;
 
   /**
    * Amount of medication per dose.
    */
-  readonly doseQuantity?: Quantity;
+  doseQuantity?: Quantity;
 
   /**
    * Amount of medication per unit of time.
    */
-  readonly rateRatio?: Ratio;
+  rateRatio?: Ratio;
 
   /**
    * Amount of medication per unit of time.
    */
-  readonly rateRange?: Range;
+  rateRange?: Range;
 
   /**
    * Amount of medication per unit of time.
    */
-  readonly rateQuantity?: Quantity;
+  rateQuantity?: Quantity;
 }

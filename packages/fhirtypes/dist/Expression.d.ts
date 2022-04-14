@@ -17,7 +17,7 @@ export interface Expression {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -27,32 +27,32 @@ export interface Expression {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * A brief, natural language description of the condition that
    * effectively communicates the intended semantics.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * A short name assigned to the expression to allow for multiple reuse of
    * the expression in the context where it is defined.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * The media type of the language for the expression.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * An expression in the specified language that returns a value.
    */
-  readonly expression?: string;
+  expression?: string;
 
   /**
    * A URI that defines where the expression is found.
    */
-  readonly reference?: string;
+  reference?: string;
 }

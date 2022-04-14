@@ -42,14 +42,14 @@ export interface DocumentReference {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -57,12 +57,12 @@ export interface DocumentReference {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -72,14 +72,14 @@ export interface DocumentReference {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -89,7 +89,7 @@ export interface DocumentReference {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -107,7 +107,7 @@ export interface DocumentReference {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Document identifier as assigned by the source of the document. This
@@ -115,37 +115,37 @@ export interface DocumentReference {
    * identifier may be used elsewhere to identify this version of the
    * document.
    */
-  readonly masterIdentifier?: Identifier;
+  masterIdentifier?: Identifier;
 
   /**
    * Other identifiers associated with the document, including version
    * independent identifiers.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The status of this document reference.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The status of the underlying document.
    */
-  readonly docStatus?: string;
+  docStatus?: string;
 
   /**
    * Specifies the particular kind of document referenced  (e.g. History
    * and Physical, Discharge Summary, Progress Note). This usually equates
    * to the purpose of making the document referenced.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * A categorization for the type of document referenced - helps for
    * indexing and searching. This may be implied by or derived from the
    * code specified in the DocumentReference.type.
    */
-  readonly category?: CodeableConcept[];
+  category?: CodeableConcept[];
 
   /**
    * Who or what the document is about. The document can be about a person,
@@ -153,41 +153,41 @@ export interface DocumentReference {
    * even a group of subjects (such as a document about a herd of farm
    * animals, or a set of patients that share a common exposure).
    */
-  readonly subject?: Reference<Patient | Practitioner | Group | Device>;
+  subject?: Reference<Patient | Practitioner | Group | Device>;
 
   /**
    * When the document reference was created.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * Identifies who is responsible for adding the information to the
    * document.
    */
-  readonly author?: Reference<Practitioner | PractitionerRole | Organization | Device | Patient | RelatedPerson>[];
+  author?: Reference<Practitioner | PractitionerRole | Organization | Device | Patient | RelatedPerson>[];
 
   /**
    * Which person or organization authenticates that this document is
    * valid.
    */
-  readonly authenticator?: Reference<Practitioner | PractitionerRole | Organization>;
+  authenticator?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * Identifies the organization or group who is responsible for ongoing
    * maintenance of and access to the document.
    */
-  readonly custodian?: Reference<Organization>;
+  custodian?: Reference<Organization>;
 
   /**
    * Relationships that this document has with other document references
    * that already exist.
    */
-  readonly relatesTo?: DocumentReferenceRelatesTo[];
+  relatesTo?: DocumentReferenceRelatesTo[];
 
   /**
    * Human-readable description of the source document.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * A set of Security-Tag codes specifying the level of privacy/security
@@ -196,18 +196,18 @@ export interface DocumentReference {
    * DocumentReference.securityLabel contains a snapshot of the security
    * labels on the document the reference refers to.
    */
-  readonly securityLabel?: CodeableConcept[];
+  securityLabel?: CodeableConcept[];
 
   /**
    * The document and format referenced. There may be multiple content
    * element repetitions, each with a different format.
    */
-  readonly content?: DocumentReferenceContent[];
+  content?: DocumentReferenceContent[];
 
   /**
    * The clinical context in which the document was prepared.
    */
-  readonly context?: DocumentReferenceContext;
+  context?: DocumentReferenceContext;
 }
 
 /**
@@ -220,7 +220,7 @@ export interface DocumentReferenceContent {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -230,7 +230,7 @@ export interface DocumentReferenceContent {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -249,20 +249,20 @@ export interface DocumentReferenceContent {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The document or URL of the document along with critical metadata to
    * prove content has integrity.
    */
-  readonly attachment?: Attachment;
+  attachment?: Attachment;
 
   /**
    * An identifier of the document encoding, structure, and template that
    * the document conforms to beyond the base format indicated in the
    * mimeType.
    */
-  readonly format?: Coding;
+  format?: Coding;
 }
 
 /**
@@ -274,7 +274,7 @@ export interface DocumentReferenceContext {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -284,7 +284,7 @@ export interface DocumentReferenceContext {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -303,13 +303,13 @@ export interface DocumentReferenceContext {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Describes the clinical encounter or type of care that the document
    * content is associated with.
    */
-  readonly encounter?: Reference<Encounter | EpisodeOfCare>[];
+  encounter?: Reference<Encounter | EpisodeOfCare>[];
 
   /**
    * This list of codes represents the main clinical acts, such as a
@@ -318,36 +318,36 @@ export interface DocumentReferenceContext {
    * Report&quot; in which the procedure being documented is necessarily a
    * &quot;History and Physical&quot; act.
    */
-  readonly event?: CodeableConcept[];
+  event?: CodeableConcept[];
 
   /**
    * The time period over which the service that is described by the
    * document was provided.
    */
-  readonly period?: Period;
+  period?: Period;
 
   /**
    * The kind of facility where the patient was seen.
    */
-  readonly facilityType?: CodeableConcept;
+  facilityType?: CodeableConcept;
 
   /**
    * This property may convey specifics about the practice setting where
    * the content was created, often reflecting the clinical specialty.
    */
-  readonly practiceSetting?: CodeableConcept;
+  practiceSetting?: CodeableConcept;
 
   /**
    * The Patient Information as known when the document was published. May
    * be a reference to a version specific, or contained.
    */
-  readonly sourcePatientInfo?: Reference<Patient>;
+  sourcePatientInfo?: Reference<Patient>;
 
   /**
    * Related identifiers or resources associated with the
    * DocumentReference.
    */
-  readonly related?: Reference<Resource>[];
+  related?: Reference<Resource>[];
 }
 
 /**
@@ -360,7 +360,7 @@ export interface DocumentReferenceRelatesTo {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -370,7 +370,7 @@ export interface DocumentReferenceRelatesTo {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -389,15 +389,15 @@ export interface DocumentReferenceRelatesTo {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The type of relationship that this document has with anther document.
    */
-  readonly code?: string;
+  code?: string;
 
   /**
    * The target document of this relationship.
    */
-  readonly target?: Reference<DocumentReference>;
+  target?: Reference<DocumentReference>;
 }

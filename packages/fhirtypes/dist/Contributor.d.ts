@@ -17,7 +17,7 @@ export interface Contributor {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -27,22 +27,22 @@ export interface Contributor {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * The type of contributor.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * The name of the individual or organization responsible for the
    * contribution.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * contributor.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 }

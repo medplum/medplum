@@ -53,14 +53,14 @@ export interface ServiceRequest {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -68,12 +68,12 @@ export interface ServiceRequest {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -83,14 +83,14 @@ export interface ServiceRequest {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -100,7 +100,7 @@ export interface ServiceRequest {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -118,81 +118,81 @@ export interface ServiceRequest {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifiers assigned to this order instance by the orderer and/or the
    * receiver and/or order fulfiller.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The URL pointing to a FHIR-defined protocol, guideline, orderset or
    * other definition that is adhered to in whole or in part by this
    * ServiceRequest.
    */
-  readonly instantiatesCanonical?: string[];
+  instantiatesCanonical?: string[];
 
   /**
    * The URL pointing to an externally maintained protocol, guideline,
    * orderset or other definition that is adhered to in whole or in part by
    * this ServiceRequest.
    */
-  readonly instantiatesUri?: string[];
+  instantiatesUri?: string[];
 
   /**
    * Plan/proposal/order fulfilled by this request.
    */
-  readonly basedOn?: Reference<CarePlan | ServiceRequest | MedicationRequest>[];
+  basedOn?: Reference<CarePlan | ServiceRequest | MedicationRequest>[];
 
   /**
    * The request takes the place of the referenced completed or terminated
    * request(s).
    */
-  readonly replaces?: Reference<ServiceRequest>[];
+  replaces?: Reference<ServiceRequest>[];
 
   /**
    * A shared identifier common to all service requests that were
    * authorized more or less simultaneously by a single author,
    * representing the composite or group identifier.
    */
-  readonly requisition?: Identifier;
+  requisition?: Identifier;
 
   /**
    * The status of the order.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * Whether the request is a proposal, plan, an original order or a reflex
    * order.
    */
-  readonly intent?: string;
+  intent?: string;
 
   /**
    * A code that classifies the service for searching, sorting and display
    * purposes (e.g. &quot;Surgical Procedure&quot;).
    */
-  readonly category?: CodeableConcept[];
+  category?: CodeableConcept[];
 
   /**
    * Indicates how quickly the ServiceRequest should be addressed with
    * respect to other requests.
    */
-  readonly priority?: string;
+  priority?: string;
 
   /**
    * Set this to true if the record is saying that the service/procedure
    * should NOT be performed.
    */
-  readonly doNotPerform?: boolean;
+  doNotPerform?: boolean;
 
   /**
    * A code that identifies a particular service (i.e., procedure,
    * diagnostic investigation, or panel of investigations) that have been
    * requested.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * Additional details and instructions about the how the services are to
@@ -201,28 +201,28 @@ export interface ServiceRequest {
    * for a bandage may require additional instructions specifying how the
    * bandage should be applied.
    */
-  readonly orderDetail?: CodeableConcept[];
+  orderDetail?: CodeableConcept[];
 
   /**
    * An amount of service being requested which can be a quantity ( for
    * example $1,500 home modification), a ratio ( for example, 20 half day
    * visits per month), or a range (2.0 to 1.8 Gy per fraction).
    */
-  readonly quantityQuantity?: Quantity;
+  quantityQuantity?: Quantity;
 
   /**
    * An amount of service being requested which can be a quantity ( for
    * example $1,500 home modification), a ratio ( for example, 20 half day
    * visits per month), or a range (2.0 to 1.8 Gy per fraction).
    */
-  readonly quantityRatio?: Ratio;
+  quantityRatio?: Ratio;
 
   /**
    * An amount of service being requested which can be a quantity ( for
    * example $1,500 home modification), a ratio ( for example, 20 half day
    * visits per month), or a range (2.0 to 1.8 Gy per fraction).
    */
-  readonly quantityRange?: Range;
+  quantityRange?: Range;
 
   /**
    * On whom or what the service is to be performed. This is usually a
@@ -230,74 +230,74 @@ export interface ServiceRequest {
    * or animals, devices such as dialysis machines, or even locations
    * (typically for environmental scans).
    */
-  readonly subject?: Reference<Patient | Group | Location | Device>;
+  subject?: Reference<Patient | Group | Location | Device>;
 
   /**
    * An encounter that provides additional information about the healthcare
    * context in which this request is made.
    */
-  readonly encounter?: Reference<Encounter>;
+  encounter?: Reference<Encounter>;
 
   /**
    * The date/time at which the requested service should occur.
    */
-  readonly occurrenceDateTime?: string;
+  occurrenceDateTime?: string;
 
   /**
    * The date/time at which the requested service should occur.
    */
-  readonly occurrencePeriod?: Period;
+  occurrencePeriod?: Period;
 
   /**
    * The date/time at which the requested service should occur.
    */
-  readonly occurrenceTiming?: Timing;
+  occurrenceTiming?: Timing;
 
   /**
    * If a CodeableConcept is present, it indicates the pre-condition for
    * performing the service.  For example &quot;pain&quot;, &quot;on flare-up&quot;, etc.
    */
-  readonly asNeededBoolean?: boolean;
+  asNeededBoolean?: boolean;
 
   /**
    * If a CodeableConcept is present, it indicates the pre-condition for
    * performing the service.  For example &quot;pain&quot;, &quot;on flare-up&quot;, etc.
    */
-  readonly asNeededCodeableConcept?: CodeableConcept;
+  asNeededCodeableConcept?: CodeableConcept;
 
   /**
    * When the request transitioned to being actionable.
    */
-  readonly authoredOn?: string;
+  authoredOn?: string;
 
   /**
    * The individual who initiated the request and has responsibility for
    * its activation.
    */
-  readonly requester?: Reference<Practitioner | PractitionerRole | Organization | Patient | RelatedPerson | Device>;
+  requester?: Reference<Practitioner | PractitionerRole | Organization | Patient | RelatedPerson | Device>;
 
   /**
    * Desired type of performer for doing the requested service.
    */
-  readonly performerType?: CodeableConcept;
+  performerType?: CodeableConcept;
 
   /**
    * The desired performer for doing the requested service.  For example,
    * the surgeon, dermatopathologist, endoscopist, etc.
    */
-  readonly performer?: Reference<Practitioner | PractitionerRole | Organization | CareTeam | HealthcareService | Patient | Device | RelatedPerson>[];
+  performer?: Reference<Practitioner | PractitionerRole | Organization | CareTeam | HealthcareService | Patient | Device | RelatedPerson>[];
 
   /**
    * The preferred location(s) where the procedure should actually happen
    * in coded or free text form. E.g. at home or nursing day care center.
    */
-  readonly locationCode?: CodeableConcept[];
+  locationCode?: CodeableConcept[];
 
   /**
    * A reference to the the preferred location(s) where the procedure
    * should actually happen. E.g. at home or nursing day care center.
    */
-  readonly locationReference?: Reference<Location>[];
+  locationReference?: Reference<Location>[];
 
   /**
    * An explanation or justification for why this service is being
@@ -305,21 +305,21 @@ export interface ServiceRequest {
    * purposes.  May relate to the resources referred to in
    * `supportingInfo`.
    */
-  readonly reasonCode?: CodeableConcept[];
+  reasonCode?: CodeableConcept[];
 
   /**
    * Indicates another resource that provides a justification for why this
    * service is being requested.   May relate to the resources referred to
    * in `supportingInfo`.
    */
-  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
+  reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
 
   /**
    * Insurance plans, coverage extensions, pre-authorizations and/or
    * pre-determinations that may be needed for delivering the requested
    * service.
    */
-  readonly insurance?: Reference<Coverage | ClaimResponse>[];
+  insurance?: Reference<Coverage | ClaimResponse>[];
 
   /**
    * Additional clinical information about the patient or specimen that may
@@ -331,32 +331,32 @@ export interface ServiceRequest {
    * information needed to complete the order. For example,  reporting the
    * amount of inspired oxygen for blood gas measurements.
    */
-  readonly supportingInfo?: Reference<Resource>[];
+  supportingInfo?: Reference<Resource>[];
 
   /**
    * One or more specimens that the laboratory procedure will use.
    */
-  readonly specimen?: Reference<Specimen>[];
+  specimen?: Reference<Specimen>[];
 
   /**
    * Anatomic location where the procedure should be performed. This is the
    * target site.
    */
-  readonly bodySite?: CodeableConcept[];
+  bodySite?: CodeableConcept[];
 
   /**
    * Any other notes and comments made about the service request. For
    * example, internal billing notes.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 
   /**
    * Instructions in terms that are understood by the patient or consumer.
    */
-  readonly patientInstruction?: string;
+  patientInstruction?: string;
 
   /**
    * Key events in the history of the request.
    */
-  readonly relevantHistory?: Reference<Provenance>[];
+  relevantHistory?: Reference<Provenance>[];
 }

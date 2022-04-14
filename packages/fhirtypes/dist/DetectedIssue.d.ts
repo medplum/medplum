@@ -33,14 +33,14 @@ export interface DetectedIssue {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -48,12 +48,12 @@ export interface DetectedIssue {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -63,14 +63,14 @@ export interface DetectedIssue {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -80,7 +80,7 @@ export interface DetectedIssue {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -98,75 +98,75 @@ export interface DetectedIssue {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Business identifier associated with the detected issue record.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * Indicates the status of the detected issue.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * Identifies the general type of issue identified.
    */
-  readonly code?: CodeableConcept;
+  code?: CodeableConcept;
 
   /**
    * Indicates the degree of importance associated with the identified
    * issue based on the potential impact on the patient.
    */
-  readonly severity?: string;
+  severity?: string;
 
   /**
    * Indicates the patient whose record the detected issue is associated
    * with.
    */
-  readonly patient?: Reference<Patient>;
+  patient?: Reference<Patient>;
 
   /**
    * The date or period when the detected issue was initially identified.
    */
-  readonly identifiedDateTime?: string;
+  identifiedDateTime?: string;
 
   /**
    * The date or period when the detected issue was initially identified.
    */
-  readonly identifiedPeriod?: Period;
+  identifiedPeriod?: Period;
 
   /**
    * Individual or device responsible for the issue being raised.  For
    * example, a decision support application or a pharmacist conducting a
    * medication review.
    */
-  readonly author?: Reference<Practitioner | PractitionerRole | Device>;
+  author?: Reference<Practitioner | PractitionerRole | Device>;
 
   /**
    * Indicates the resource representing the current activity or proposed
    * activity that is potentially problematic.
    */
-  readonly implicated?: Reference<Resource>[];
+  implicated?: Reference<Resource>[];
 
   /**
    * Supporting evidence or manifestations that provide the basis for
    * identifying the detected issue such as a GuidanceResponse or
    * MeasureReport.
    */
-  readonly evidence?: DetectedIssueEvidence[];
+  evidence?: DetectedIssueEvidence[];
 
   /**
    * A textual explanation of the detected issue.
    */
-  readonly detail?: string;
+  detail?: string;
 
   /**
    * The literature, knowledge-base or similar reference that describes the
    * propensity for the detected issue identified.
    */
-  readonly reference?: string;
+  reference?: string;
 
   /**
    * Indicates an action that has been taken or is committed to reduce or
@@ -174,7 +174,7 @@ export interface DetectedIssue {
    * from manifesting.  Can also reflect an observation of known mitigating
    * factors that may reduce/eliminate the need for any action.
    */
-  readonly mitigation?: DetectedIssueMitigation[];
+  mitigation?: DetectedIssueMitigation[];
 }
 
 /**
@@ -188,7 +188,7 @@ export interface DetectedIssueEvidence {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -198,7 +198,7 @@ export interface DetectedIssueEvidence {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -217,18 +217,18 @@ export interface DetectedIssueEvidence {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A manifestation that led to the recording of this detected issue.
    */
-  readonly code?: CodeableConcept[];
+  code?: CodeableConcept[];
 
   /**
    * Links to resources that constitute evidence for the detected issue
    * such as a GuidanceResponse or MeasureReport.
    */
-  readonly detail?: Reference<Resource>[];
+  detail?: Reference<Resource>[];
 }
 
 /**
@@ -243,7 +243,7 @@ export interface DetectedIssueMitigation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -253,7 +253,7 @@ export interface DetectedIssueMitigation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -272,22 +272,22 @@ export interface DetectedIssueMitigation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Describes the action that was taken or the observation that was made
    * that reduces/eliminates the risk associated with the identified issue.
    */
-  readonly action?: CodeableConcept;
+  action?: CodeableConcept;
 
   /**
    * Indicates when the mitigating action was documented.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * Identifies the practitioner who determined the mitigation and takes
    * responsibility for the mitigation step occurring.
    */
-  readonly author?: Reference<Practitioner | PractitionerRole>;
+  author?: Reference<Practitioner | PractitionerRole>;
 }

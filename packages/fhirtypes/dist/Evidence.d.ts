@@ -34,14 +34,14 @@ export interface Evidence {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -49,12 +49,12 @@ export interface Evidence {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -64,14 +64,14 @@ export interface Evidence {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -81,7 +81,7 @@ export interface Evidence {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -99,7 +99,7 @@ export interface Evidence {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI that is used to identify this evidence when it is
@@ -110,14 +110,14 @@ export interface Evidence {
    * the target of a canonical reference. It SHALL remain the same when the
    * evidence is stored on different servers.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * A formal identifier that is used to identify this evidence when it is
    * represented in other formats, or referenced in a specification, model,
    * design or an instance.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The identifier that is used to identify this version of the evidence
@@ -132,37 +132,37 @@ export interface Evidence {
    * the Decision Support Service specification. Note that a version is
    * required for non-experimental active artifacts.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * A natural language name identifying the evidence. This name should be
    * usable as an identifier for the module by machine processing
    * applications such as code generation.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A short, descriptive, user-friendly title for the evidence.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * The short title provides an alternate title for use in informal
    * descriptive contexts where the full, formal title is not necessary.
    */
-  readonly shortTitle?: string;
+  shortTitle?: string;
 
   /**
    * An explanatory or alternate title for the Evidence giving additional
    * information about its content.
    */
-  readonly subtitle?: string;
+  subtitle?: string;
 
   /**
    * The status of this evidence. Enables tracking the life-cycle of the
    * content.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The date  (and optionally time) when the evidence was published. The
@@ -170,31 +170,31 @@ export interface Evidence {
    * if the status code changes. In addition, it should change when the
    * substantive content of the evidence changes.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The name of the organization or individual that published the
    * evidence.
    */
-  readonly publisher?: string;
+  publisher?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * publisher.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * A free text natural language description of the evidence from a
    * consumer's perspective.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * A human-readable string to clarify or explain concepts about the
    * resource.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -203,93 +203,93 @@ export interface Evidence {
    * (insurance plans, studies, ...) and may be used to assist with
    * indexing and searching for appropriate evidence instances.
    */
-  readonly useContext?: UsageContext[];
+  useContext?: UsageContext[];
 
   /**
    * A legal or geographic region in which the evidence is intended to be
    * used.
    */
-  readonly jurisdiction?: CodeableConcept[];
+  jurisdiction?: CodeableConcept[];
 
   /**
    * A copyright statement relating to the evidence and/or its contents.
    * Copyright statements are generally legal restrictions on the use and
    * publishing of the evidence.
    */
-  readonly copyright?: string;
+  copyright?: string;
 
   /**
    * The date on which the resource content was approved by the publisher.
    * Approval happens once when the content is officially approved for
    * usage.
    */
-  readonly approvalDate?: string;
+  approvalDate?: string;
 
   /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
-  readonly lastReviewDate?: string;
+  lastReviewDate?: string;
 
   /**
    * The period during which the evidence content was or is planned to be
    * in active use.
    */
-  readonly effectivePeriod?: Period;
+  effectivePeriod?: Period;
 
   /**
    * Descriptive topics related to the content of the Evidence. Topics
    * provide a high-level categorization grouping types of Evidences that
    * can be useful for filtering and searching.
    */
-  readonly topic?: CodeableConcept[];
+  topic?: CodeableConcept[];
 
   /**
    * An individiual or organization primarily involved in the creation and
    * maintenance of the content.
    */
-  readonly author?: ContactDetail[];
+  author?: ContactDetail[];
 
   /**
    * An individual or organization primarily responsible for internal
    * coherence of the content.
    */
-  readonly editor?: ContactDetail[];
+  editor?: ContactDetail[];
 
   /**
    * An individual or organization primarily responsible for review of some
    * aspect of the content.
    */
-  readonly reviewer?: ContactDetail[];
+  reviewer?: ContactDetail[];
 
   /**
    * An individual or organization responsible for officially endorsing the
    * content for use in some setting.
    */
-  readonly endorser?: ContactDetail[];
+  endorser?: ContactDetail[];
 
   /**
    * Related artifacts such as additional documentation, justification, or
    * bibliographic references.
    */
-  readonly relatedArtifact?: RelatedArtifact[];
+  relatedArtifact?: RelatedArtifact[];
 
   /**
    * A reference to a EvidenceVariable resource that defines the population
    * for the research.
    */
-  readonly exposureBackground?: Reference<EvidenceVariable>;
+  exposureBackground?: Reference<EvidenceVariable>;
 
   /**
    * A reference to a EvidenceVariable resource that defines the exposure
    * for the research.
    */
-  readonly exposureVariant?: Reference<EvidenceVariable>[];
+  exposureVariant?: Reference<EvidenceVariable>[];
 
   /**
    * A reference to a EvidenceVariable resomece that defines the outcome
    * for the research.
    */
-  readonly outcome?: Reference<EvidenceVariable>[];
+  outcome?: Reference<EvidenceVariable>[];
 }

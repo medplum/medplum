@@ -40,14 +40,14 @@ export interface QuestionnaireResponse {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -55,12 +55,12 @@ export interface QuestionnaireResponse {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -70,14 +70,14 @@ export interface QuestionnaireResponse {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -87,7 +87,7 @@ export interface QuestionnaireResponse {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -105,13 +105,13 @@ export interface QuestionnaireResponse {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A business identifier assigned to a particular completed (or partially
    * completed) questionnaire.
    */
-  readonly identifier?: Identifier;
+  identifier?: Identifier;
 
   /**
    * The order, proposal or plan that is fulfilled in whole or in part by
@@ -119,61 +119,61 @@ export interface QuestionnaireResponse {
    * intake assessment or a decision support recommendation to assess for
    * post-partum depression.
    */
-  readonly basedOn?: Reference<CarePlan | ServiceRequest>[];
+  basedOn?: Reference<CarePlan | ServiceRequest>[];
 
   /**
    * A procedure or observation that this questionnaire was performed as
    * part of the execution of.  For example, the surgery a checklist was
    * executed as part of.
    */
-  readonly partOf?: Reference<Observation | Procedure>[];
+  partOf?: Reference<Observation | Procedure>[];
 
   /**
    * The Questionnaire that defines and organizes the questions for which
    * answers are being provided.
    */
-  readonly questionnaire?: string;
+  questionnaire?: string;
 
   /**
    * The position of the questionnaire response within its overall
    * lifecycle.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The subject of the questionnaire response.  This could be a patient,
    * organization, practitioner, device, etc.  This is who/what the answers
    * apply to, but is not necessarily the source of information.
    */
-  readonly subject?: Reference<Resource>;
+  subject?: Reference<Resource>;
 
   /**
    * The Encounter during which this questionnaire response was created or
    * to which the creation of this record is tightly associated.
    */
-  readonly encounter?: Reference<Encounter>;
+  encounter?: Reference<Encounter>;
 
   /**
    * The date and/or time that this set of answers were last changed.
    */
-  readonly authored?: string;
+  authored?: string;
 
   /**
    * Person who received the answers to the questions in the
    * QuestionnaireResponse and recorded them in the system.
    */
-  readonly author?: Reference<Device | Practitioner | PractitionerRole | Patient | RelatedPerson | Organization>;
+  author?: Reference<Device | Practitioner | PractitionerRole | Patient | RelatedPerson | Organization>;
 
   /**
    * The person who answered the questions about the subject.
    */
-  readonly source?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson>;
+  source?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson>;
 
   /**
    * A group or question item from the original questionnaire for which
    * answers are provided.
    */
-  readonly item?: QuestionnaireResponseItem[];
+  item?: QuestionnaireResponseItem[];
 }
 
 /**
@@ -186,7 +186,7 @@ export interface QuestionnaireResponseItem {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -196,7 +196,7 @@ export interface QuestionnaireResponseItem {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -215,35 +215,35 @@ export interface QuestionnaireResponseItem {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The item from the Questionnaire that corresponds to this item in the
    * QuestionnaireResponse resource.
    */
-  readonly linkId?: string;
+  linkId?: string;
 
   /**
    * A reference to an [ElementDefinition](elementdefinition.html) that
    * provides the details for the item.
    */
-  readonly definition?: string;
+  definition?: string;
 
   /**
    * Text that is displayed above the contents of the group or as the text
    * of the question being answered.
    */
-  readonly text?: string;
+  text?: string;
 
   /**
    * The respondent's answer(s) to the question.
    */
-  readonly answer?: QuestionnaireResponseItemAnswer[];
+  answer?: QuestionnaireResponseItemAnswer[];
 
   /**
    * Questions or sub-groups nested beneath a question or group.
    */
-  readonly item?: QuestionnaireResponseItem[];
+  item?: QuestionnaireResponseItem[];
 }
 
 /**
@@ -255,7 +255,7 @@ export interface QuestionnaireResponseItemAnswer {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -265,7 +265,7 @@ export interface QuestionnaireResponseItemAnswer {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -284,82 +284,82 @@ export interface QuestionnaireResponseItemAnswer {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
-  readonly valueBoolean?: boolean;
+  valueBoolean?: boolean;
 
   /**
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
-  readonly valueDecimal?: number;
+  valueDecimal?: number;
 
   /**
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
-  readonly valueInteger?: number;
+  valueInteger?: number;
 
   /**
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
-  readonly valueDate?: string;
+  valueDate?: string;
 
   /**
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
-  readonly valueDateTime?: string;
+  valueDateTime?: string;
 
   /**
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
-  readonly valueTime?: string;
+  valueTime?: string;
 
   /**
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
-  readonly valueString?: string;
+  valueString?: string;
 
   /**
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
-  readonly valueUri?: string;
+  valueUri?: string;
 
   /**
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
-  readonly valueAttachment?: Attachment;
+  valueAttachment?: Attachment;
 
   /**
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
-  readonly valueCoding?: Coding;
+  valueCoding?: Coding;
 
   /**
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
-  readonly valueQuantity?: Quantity;
+  valueQuantity?: Quantity;
 
   /**
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
-  readonly valueReference?: Reference<Resource>;
+  valueReference?: Reference<Resource>;
 
   /**
    * Nested groups and/or questions found within this particular answer.
    */
-  readonly item?: QuestionnaireResponseItem[];
+  item?: QuestionnaireResponseItem[];
 }

@@ -30,7 +30,7 @@ export interface UsageContext {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -40,35 +40,35 @@ export interface UsageContext {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * A code that identifies the type of context being specified by this
    * usage context.
    */
-  readonly code?: Coding;
+  code?: Coding;
 
   /**
    * A value that defines the context specified in this context of use. The
    * interpretation of the value is defined by the code.
    */
-  readonly valueCodeableConcept?: CodeableConcept;
+  valueCodeableConcept?: CodeableConcept;
 
   /**
    * A value that defines the context specified in this context of use. The
    * interpretation of the value is defined by the code.
    */
-  readonly valueQuantity?: Quantity;
+  valueQuantity?: Quantity;
 
   /**
    * A value that defines the context specified in this context of use. The
    * interpretation of the value is defined by the code.
    */
-  readonly valueRange?: Range;
+  valueRange?: Range;
 
   /**
    * A value that defines the context specified in this context of use. The
    * interpretation of the value is defined by the code.
    */
-  readonly valueReference?: Reference<PlanDefinition | ResearchStudy | InsurancePlan | HealthcareService | Group | Location | Organization>;
+  valueReference?: Reference<PlanDefinition | ResearchStudy | InsurancePlan | HealthcareService | Group | Location | Organization>;
 }

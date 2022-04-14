@@ -34,14 +34,14 @@ export interface AppointmentResponse {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -49,12 +49,12 @@ export interface AppointmentResponse {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -64,14 +64,14 @@ export interface AppointmentResponse {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -81,7 +81,7 @@ export interface AppointmentResponse {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -99,7 +99,7 @@ export interface AppointmentResponse {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * This records identifiers associated with this appointment response
@@ -107,36 +107,36 @@ export interface AppointmentResponse {
    * to it when a direct URL reference to the resource itself is not
    * appropriate.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * Appointment that this response is replying to.
    */
-  readonly appointment?: Reference<Appointment>;
+  appointment?: Reference<Appointment>;
 
   /**
    * Date/Time that the appointment is to take place, or requested new
    * start time.
    */
-  readonly start?: string;
+  start?: string;
 
   /**
    * This may be either the same as the appointment request to confirm the
    * details of the appointment, or alternately a new time to request a
    * re-negotiation of the end time.
    */
-  readonly end?: string;
+  end?: string;
 
   /**
    * Role of participant in the appointment.
    */
-  readonly participantType?: CodeableConcept[];
+  participantType?: CodeableConcept[];
 
   /**
    * A Person, Location, HealthcareService, or Device that is participating
    * in the appointment.
    */
-  readonly actor?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Device | HealthcareService | Location>;
+  actor?: Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Device | HealthcareService | Location>;
 
   /**
    * Participation status of the participant. When the status is declined
@@ -145,10 +145,10 @@ export interface AppointmentResponse {
    * When the status is accepted, the times can either be the time of the
    * appointment (as a confirmation of the time) or can be empty.
    */
-  readonly participantStatus?: string;
+  participantStatus?: string;
 
   /**
    * Additional comments about the appointment.
    */
-  readonly comment?: string;
+  comment?: string;
 }

@@ -34,14 +34,14 @@ export interface BiologicallyDerivedProduct {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -49,12 +49,12 @@ export interface BiologicallyDerivedProduct {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -64,14 +64,14 @@ export interface BiologicallyDerivedProduct {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -81,7 +81,7 @@ export interface BiologicallyDerivedProduct {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -99,7 +99,7 @@ export interface BiologicallyDerivedProduct {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * This records identifiers associated with this biologically derived
@@ -108,62 +108,62 @@ export interface BiologicallyDerivedProduct {
    * appropriate (e.g. in CDA documents, or in written / printed
    * documentation).
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * Broad category of this product.
    */
-  readonly productCategory?: string;
+  productCategory?: string;
 
   /**
    * A code that identifies the kind of this biologically derived product
    * (SNOMED Ctcode).
    */
-  readonly productCode?: CodeableConcept;
+  productCode?: CodeableConcept;
 
   /**
    * Whether the product is currently available.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * Procedure request to obtain this biologically derived product.
    */
-  readonly request?: Reference<ServiceRequest>[];
+  request?: Reference<ServiceRequest>[];
 
   /**
    * Number of discrete units within this product.
    */
-  readonly quantity?: number;
+  quantity?: number;
 
   /**
    * Parent product (if any).
    */
-  readonly parent?: Reference<BiologicallyDerivedProduct>[];
+  parent?: Reference<BiologicallyDerivedProduct>[];
 
   /**
    * How this product was collected.
    */
-  readonly collection?: BiologicallyDerivedProductCollection;
+  collection?: BiologicallyDerivedProductCollection;
 
   /**
    * Any processing of the product during collection that does not change
    * the fundamental nature of the product. For example adding
    * anti-coagulants during the collection of Peripheral Blood Stem Cells.
    */
-  readonly processing?: BiologicallyDerivedProductProcessing[];
+  processing?: BiologicallyDerivedProductProcessing[];
 
   /**
    * Any manipulation of product post-collection that is intended to alter
    * the product.  For example a buffy-coat enrichment or CD8 reduction of
    * Peripheral Blood Stem Cells to make it more suitable for infusion.
    */
-  readonly manipulation?: BiologicallyDerivedProductManipulation;
+  manipulation?: BiologicallyDerivedProductManipulation;
 
   /**
    * Product storage.
    */
-  readonly storage?: BiologicallyDerivedProductStorage[];
+  storage?: BiologicallyDerivedProductStorage[];
 }
 
 /**
@@ -175,7 +175,7 @@ export interface BiologicallyDerivedProductCollection {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -185,7 +185,7 @@ export interface BiologicallyDerivedProductCollection {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -204,28 +204,28 @@ export interface BiologicallyDerivedProductCollection {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Healthcare professional who is performing the collection.
    */
-  readonly collector?: Reference<Practitioner | PractitionerRole>;
+  collector?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * The patient or entity, such as a hospital or vendor in the case of a
    * processed/manipulated/manufactured product, providing the product.
    */
-  readonly source?: Reference<Patient | Organization>;
+  source?: Reference<Patient | Organization>;
 
   /**
    * Time of product collection.
    */
-  readonly collectedDateTime?: string;
+  collectedDateTime?: string;
 
   /**
    * Time of product collection.
    */
-  readonly collectedPeriod?: Period;
+  collectedPeriod?: Period;
 }
 
 /**
@@ -239,7 +239,7 @@ export interface BiologicallyDerivedProductManipulation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -249,7 +249,7 @@ export interface BiologicallyDerivedProductManipulation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -268,22 +268,22 @@ export interface BiologicallyDerivedProductManipulation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Description of manipulation.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Time of manipulation.
    */
-  readonly timeDateTime?: string;
+  timeDateTime?: string;
 
   /**
    * Time of manipulation.
    */
-  readonly timePeriod?: Period;
+  timePeriod?: Period;
 }
 
 /**
@@ -297,7 +297,7 @@ export interface BiologicallyDerivedProductProcessing {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -307,7 +307,7 @@ export interface BiologicallyDerivedProductProcessing {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -326,32 +326,32 @@ export interface BiologicallyDerivedProductProcessing {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Description of of processing.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Procesing code.
    */
-  readonly procedure?: CodeableConcept;
+  procedure?: CodeableConcept;
 
   /**
    * Substance added during processing.
    */
-  readonly additive?: Reference<Substance>;
+  additive?: Reference<Substance>;
 
   /**
    * Time of processing.
    */
-  readonly timeDateTime?: string;
+  timeDateTime?: string;
 
   /**
    * Time of processing.
    */
-  readonly timePeriod?: Period;
+  timePeriod?: Period;
 }
 
 /**
@@ -363,7 +363,7 @@ export interface BiologicallyDerivedProductStorage {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -373,7 +373,7 @@ export interface BiologicallyDerivedProductStorage {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -392,25 +392,25 @@ export interface BiologicallyDerivedProductStorage {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Description of storage.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Storage temperature.
    */
-  readonly temperature?: number;
+  temperature?: number;
 
   /**
    * Temperature scale used.
    */
-  readonly scale?: string;
+  scale?: string;
 
   /**
    * Storage timeperiod.
    */
-  readonly duration?: Period;
+  duration?: Period;
 }

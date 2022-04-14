@@ -35,14 +35,14 @@ export interface MessageHeader {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -50,12 +50,12 @@ export interface MessageHeader {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -65,14 +65,14 @@ export interface MessageHeader {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -82,7 +82,7 @@ export interface MessageHeader {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -100,7 +100,7 @@ export interface MessageHeader {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Code that identifies the event this message represents and connects it
@@ -109,7 +109,7 @@ export interface MessageHeader {
    * &quot;http://terminology.hl7.org/CodeSystem/message-events&quot;.  Alternatively
    * uri to the EventDefinition.
    */
-  readonly eventCoding?: Coding;
+  eventCoding?: Coding;
 
   /**
    * Code that identifies the event this message represents and connects it
@@ -118,25 +118,25 @@ export interface MessageHeader {
    * &quot;http://terminology.hl7.org/CodeSystem/message-events&quot;.  Alternatively
    * uri to the EventDefinition.
    */
-  readonly eventUri?: string;
+  eventUri?: string;
 
   /**
    * The destination application which the message is intended for.
    */
-  readonly destination?: MessageHeaderDestination[];
+  destination?: MessageHeaderDestination[];
 
   /**
    * Identifies the sending system to allow the use of a trust
    * relationship.
    */
-  readonly sender?: Reference<Practitioner | PractitionerRole | Organization>;
+  sender?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * The person or device that performed the data entry leading to this
    * message. When there is more than one candidate, pick the most proximal
    * to the message. Can provide other enterers in extensions.
    */
-  readonly enterer?: Reference<Practitioner | PractitionerRole>;
+  enterer?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * The logical author of the message - the person or device that decided
@@ -144,42 +144,42 @@ export interface MessageHeader {
    * candidate, pick the most proximal to the MessageHeader. Can provide
    * other authors in extensions.
    */
-  readonly author?: Reference<Practitioner | PractitionerRole>;
+  author?: Reference<Practitioner | PractitionerRole>;
 
   /**
    * The source application from which this message originated.
    */
-  readonly source?: MessageHeaderSource;
+  source?: MessageHeaderSource;
 
   /**
    * The person or organization that accepts overall responsibility for the
    * contents of the message. The implication is that the message event
    * happened under the policies of the responsible party.
    */
-  readonly responsible?: Reference<Practitioner | PractitionerRole | Organization>;
+  responsible?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * Coded indication of the cause for the event - indicates  a reason for
    * the occurrence of the event that is a focus of this message.
    */
-  readonly reason?: CodeableConcept;
+  reason?: CodeableConcept;
 
   /**
    * Information about the message that this message is a response to.
    * Only present if this message is a response.
    */
-  readonly response?: MessageHeaderResponse;
+  response?: MessageHeaderResponse;
 
   /**
    * The actual data of the message - a reference to the root/focus class
    * of the event.
    */
-  readonly focus?: Reference<Resource>[];
+  focus?: Reference<Resource>[];
 
   /**
    * Permanent link to the MessageDefinition for this message.
    */
-  readonly definition?: string;
+  definition?: string;
 }
 
 /**
@@ -191,7 +191,7 @@ export interface MessageHeaderDestination {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -201,7 +201,7 @@ export interface MessageHeaderDestination {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -220,30 +220,30 @@ export interface MessageHeaderDestination {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Human-readable name for the target system.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Identifies the target end system in situations where the initial
    * message transmission is to an intermediary system.
    */
-  readonly target?: Reference<Device>;
+  target?: Reference<Device>;
 
   /**
    * Indicates where the message should be routed to.
    */
-  readonly endpoint?: string;
+  endpoint?: string;
 
   /**
    * Allows data conveyed by a message to be addressed to a particular
    * person or department when routing to a specific application isn't
    * sufficient.
    */
-  readonly receiver?: Reference<Practitioner | PractitionerRole | Organization>;
+  receiver?: Reference<Practitioner | PractitionerRole | Organization>;
 }
 
 /**
@@ -256,7 +256,7 @@ export interface MessageHeaderResponse {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -266,7 +266,7 @@ export interface MessageHeaderResponse {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -285,24 +285,24 @@ export interface MessageHeaderResponse {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The MessageHeader.id of the message to which this message is a
    * response.
    */
-  readonly identifier?: string;
+  identifier?: string;
 
   /**
    * Code that identifies the type of response to the message - whether it
    * was successful or not, and whether it should be resent or not.
    */
-  readonly code?: string;
+  code?: string;
 
   /**
    * Full details of any issues found in the message.
    */
-  readonly details?: Reference<OperationOutcome>;
+  details?: Reference<OperationOutcome>;
 }
 
 /**
@@ -314,7 +314,7 @@ export interface MessageHeaderSource {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -324,7 +324,7 @@ export interface MessageHeaderSource {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -343,32 +343,32 @@ export interface MessageHeaderSource {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Human-readable name for the source system.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * May include configuration or other information useful in debugging.
    */
-  readonly software?: string;
+  software?: string;
 
   /**
    * Can convey versions of multiple systems in situations where a message
    * passes through multiple hands.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * An e-mail, phone, website or other contact point to use to resolve
    * issues with message communications.
    */
-  readonly contact?: ContactPoint;
+  contact?: ContactPoint;
 
   /**
    * Identifies the routing target to send acknowledgements to.
    */
-  readonly endpoint?: string;
+  endpoint?: string;
 }

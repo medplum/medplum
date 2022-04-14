@@ -30,14 +30,14 @@ export interface StructureDefinition {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -45,12 +45,12 @@ export interface StructureDefinition {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -60,14 +60,14 @@ export interface StructureDefinition {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -77,7 +77,7 @@ export interface StructureDefinition {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -95,7 +95,7 @@ export interface StructureDefinition {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI that is used to identify this structure definition
@@ -107,14 +107,14 @@ export interface StructureDefinition {
    * SHALL remain the same when the structure definition is stored on
    * different servers.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * A formal identifier that is used to identify this structure definition
    * when it is represented in other formats, or referenced in a
    * specification, model, design or an instance.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The identifier that is used to identify this version of the structure
@@ -125,33 +125,33 @@ export interface StructureDefinition {
    * is not available. There is also no expectation that versions can be
    * placed in a lexicographical sequence.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * A natural language name identifying the structure definition. This
    * name should be usable as an identifier for the module by machine
    * processing applications such as code generation.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A short, descriptive, user-friendly title for the structure
    * definition.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * The status of this structure definition. Enables tracking the
    * life-cycle of the content.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A Boolean value to indicate that this structure definition is authored
    * for testing purposes (or education/evaluation/marketing) and is not
    * intended to be used for genuine usage.
    */
-  readonly experimental?: boolean;
+  experimental?: boolean;
 
   /**
    * The date  (and optionally time) when the structure definition was
@@ -160,25 +160,25 @@ export interface StructureDefinition {
    * change when the substantive content of the structure definition
    * changes.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The name of the organization or individual that published the
    * structure definition.
    */
-  readonly publisher?: string;
+  publisher?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * publisher.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * A free text natural language description of the structure definition
    * from a consumer's perspective.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -187,33 +187,33 @@ export interface StructureDefinition {
    * (insurance plans, studies, ...) and may be used to assist with
    * indexing and searching for appropriate structure definition instances.
    */
-  readonly useContext?: UsageContext[];
+  useContext?: UsageContext[];
 
   /**
    * A legal or geographic region in which the structure definition is
    * intended to be used.
    */
-  readonly jurisdiction?: CodeableConcept[];
+  jurisdiction?: CodeableConcept[];
 
   /**
    * Explanation of why this structure definition is needed and why it has
    * been designed as it has.
    */
-  readonly purpose?: string;
+  purpose?: string;
 
   /**
    * A copyright statement relating to the structure definition and/or its
    * contents. Copyright statements are generally legal restrictions on the
    * use and publishing of the structure definition.
    */
-  readonly copyright?: string;
+  copyright?: string;
 
   /**
    * A set of key words or terms from external terminologies that may be
    * used to assist with indexing and searching of templates nby describing
    * the use of this structure definition, or the content it describes.
    */
-  readonly keyword?: Coding[];
+  keyword?: Coding[];
 
   /**
    * The version of the FHIR specification on which this
@@ -221,17 +221,17 @@ export interface StructureDefinition {
    * specification, without the revision number, e.g.
    * [publication].[major].[minor], which is 4.0.1. for this version.
    */
-  readonly fhirVersion?: string;
+  fhirVersion?: string;
 
   /**
    * An external specification that the content is mapped to.
    */
-  readonly mapping?: StructureDefinitionMapping[];
+  mapping?: StructureDefinitionMapping[];
 
   /**
    * Defines the kind of structure that this definition is describing.
    */
-  readonly kind?: string;
+  kind?: string;
 
   /**
    * Whether structure this definition describes is abstract or not  - that
@@ -239,20 +239,20 @@ export interface StructureDefinition {
    * Resources and Data types, abstract types will never be exchanged
    * between systems.
    */
-  readonly abstract?: boolean;
+  abstract?: boolean;
 
   /**
    * Identifies the types of resource or data type elements to which the
    * extension can be applied.
    */
-  readonly context?: StructureDefinitionContext[];
+  context?: StructureDefinitionContext[];
 
   /**
    * A set of rules as FHIRPath Invariants about when the extension can be
    * used (e.g. co-occurrence variants for the extension). All the rules
    * must be true.
    */
-  readonly contextInvariant?: string[];
+  contextInvariant?: string[];
 
   /**
    * The type this structure describes. If the derivation kind is
@@ -265,30 +265,30 @@ export interface StructureDefinition {
    * to http://hl7.org/fhir/StructureDefinition/string. Absolute URLs are
    * only allowed in logical models.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * An absolute URI that is the base structure from which this type is
    * derived, either by specialization or constraint.
    */
-  readonly baseDefinition?: string;
+  baseDefinition?: string;
 
   /**
    * How the type relates to the baseDefinition.
    */
-  readonly derivation?: string;
+  derivation?: string;
 
   /**
    * A snapshot view is expressed in a standalone form that can be used and
    * interpreted without considering the base StructureDefinition.
    */
-  readonly snapshot?: StructureDefinitionSnapshot;
+  snapshot?: StructureDefinitionSnapshot;
 
   /**
    * A differential view is expressed relative to the base
    * StructureDefinition - a statement of differences that it applies.
    */
-  readonly differential?: StructureDefinitionDifferential;
+  differential?: StructureDefinitionDifferential;
 }
 
 /**
@@ -301,7 +301,7 @@ export interface StructureDefinitionContext {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -311,7 +311,7 @@ export interface StructureDefinitionContext {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -330,19 +330,19 @@ export interface StructureDefinitionContext {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Defines how to interpret the expression that defines what the context
    * of the extension is.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * An expression that defines where an extension can be used in
    * resources.
    */
-  readonly expression?: string;
+  expression?: string;
 }
 
 /**
@@ -355,7 +355,7 @@ export interface StructureDefinitionDifferential {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -365,7 +365,7 @@ export interface StructureDefinitionDifferential {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -384,12 +384,12 @@ export interface StructureDefinitionDifferential {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Captures constraints on each element within the resource.
    */
-  readonly element?: ElementDefinition[];
+  element?: ElementDefinition[];
 }
 
 /**
@@ -401,7 +401,7 @@ export interface StructureDefinitionMapping {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -411,7 +411,7 @@ export interface StructureDefinitionMapping {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -430,30 +430,30 @@ export interface StructureDefinitionMapping {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An Internal id that is used to identify this mapping set when specific
    * mappings are made.
    */
-  readonly identity?: string;
+  identity?: string;
 
   /**
    * An absolute URI that identifies the specification that this mapping is
    * expressed to.
    */
-  readonly uri?: string;
+  uri?: string;
 
   /**
    * A name for the specification that is being mapped to.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Comments about this mapping, including version notes, issues, scope
    * limitations, and other important notes for usage.
    */
-  readonly comment?: string;
+  comment?: string;
 }
 
 /**
@@ -466,7 +466,7 @@ export interface StructureDefinitionSnapshot {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -476,7 +476,7 @@ export interface StructureDefinitionSnapshot {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -495,10 +495,10 @@ export interface StructureDefinitionSnapshot {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Captures constraints on each element within the resource.
    */
-  readonly element?: ElementDefinition[];
+  element?: ElementDefinition[];
 }

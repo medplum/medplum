@@ -21,14 +21,14 @@ export interface AccessPolicy {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -36,29 +36,29 @@ export interface AccessPolicy {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A name associated with the AccessPolicy.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Optional compartment for newly created resources.  If this field is
    * set, any resources created by a user with this access policy will
    * automatically be included in the specified compartment.
    */
-  readonly compartment?: Reference;
+  compartment?: Reference;
 
   /**
    * Access details for a resource type.
    */
-  readonly resource?: AccessPolicyResource[];
+  resource?: AccessPolicyResource[];
 }
 
 /**
@@ -69,27 +69,27 @@ export interface AccessPolicyResource {
   /**
    * The resource type.
    */
-  readonly resourceType?: string;
+  resourceType?: string;
 
   /**
    * Optional compartment restriction for the resource type.
    */
-  readonly compartment?: Reference;
+  compartment?: Reference;
 
   /**
    * Optional flag to indicate that the resource type is read-only.
    */
-  readonly readonly?: boolean;
+  readonly?: boolean;
 
   /**
    * Optional list of hidden fields.  Hidden fields are not readable or
    * writeable.
    */
-  readonly hiddenFields?: string[];
+  hiddenFields?: string[];
 
   /**
    * Optional list of read-only fields.  Read-only fields are readable but
    * not writeable.
    */
-  readonly readonlyFields?: string[];
+  readonlyFields?: string[];
 }

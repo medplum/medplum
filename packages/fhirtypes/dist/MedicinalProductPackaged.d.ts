@@ -34,14 +34,14 @@ export interface MedicinalProductPackaged {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -49,12 +49,12 @@ export interface MedicinalProductPackaged {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -64,14 +64,14 @@ export interface MedicinalProductPackaged {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -81,7 +81,7 @@ export interface MedicinalProductPackaged {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -99,54 +99,54 @@ export interface MedicinalProductPackaged {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Unique identifier.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The product with this is a pack for.
    */
-  readonly subject?: Reference<MedicinalProduct>[];
+  subject?: Reference<MedicinalProduct>[];
 
   /**
    * Textual description.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The legal status of supply of the medicinal product as classified by
    * the regulator.
    */
-  readonly legalStatusOfSupply?: CodeableConcept;
+  legalStatusOfSupply?: CodeableConcept;
 
   /**
    * Marketing information.
    */
-  readonly marketingStatus?: MarketingStatus[];
+  marketingStatus?: MarketingStatus[];
 
   /**
    * Manufacturer of this Package Item.
    */
-  readonly marketingAuthorization?: Reference<MedicinalProductAuthorization>;
+  marketingAuthorization?: Reference<MedicinalProductAuthorization>;
 
   /**
    * Manufacturer of this Package Item.
    */
-  readonly manufacturer?: Reference<Organization>[];
+  manufacturer?: Reference<Organization>[];
 
   /**
    * Batch numbering.
    */
-  readonly batchIdentifier?: MedicinalProductPackagedBatchIdentifier[];
+  batchIdentifier?: MedicinalProductPackagedBatchIdentifier[];
 
   /**
    * A packaging item, as a contained for medicine, possibly with other
    * packaging items within.
    */
-  readonly packageItem?: MedicinalProductPackagedPackageItem[];
+  packageItem?: MedicinalProductPackagedPackageItem[];
 }
 
 /**
@@ -158,7 +158,7 @@ export interface MedicinalProductPackagedBatchIdentifier {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -168,7 +168,7 @@ export interface MedicinalProductPackagedBatchIdentifier {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -187,18 +187,18 @@ export interface MedicinalProductPackagedBatchIdentifier {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A number appearing on the outer packaging of a specific batch.
    */
-  readonly outerPackaging?: Identifier;
+  outerPackaging?: Identifier;
 
   /**
    * A number appearing on the immediate packaging (and not the outer
    * packaging).
    */
-  readonly immediatePackaging?: Identifier;
+  immediatePackaging?: Identifier;
 }
 
 /**
@@ -211,7 +211,7 @@ export interface MedicinalProductPackagedPackageItem {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -221,7 +221,7 @@ export interface MedicinalProductPackagedPackageItem {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -240,66 +240,66 @@ export interface MedicinalProductPackagedPackageItem {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Including possibly Data Carrier Identifier.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The physical type of the container of the medicine.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * The quantity of this package in the medicinal product, at the current
    * level of packaging. The outermost is always 1.
    */
-  readonly quantity?: Quantity;
+  quantity?: Quantity;
 
   /**
    * Material type of the package item.
    */
-  readonly material?: CodeableConcept[];
+  material?: CodeableConcept[];
 
   /**
    * A possible alternate material for the packaging.
    */
-  readonly alternateMaterial?: CodeableConcept[];
+  alternateMaterial?: CodeableConcept[];
 
   /**
    * A device accompanying a medicinal product.
    */
-  readonly device?: Reference<DeviceDefinition>[];
+  device?: Reference<DeviceDefinition>[];
 
   /**
    * The manufactured item as contained in the packaged medicinal product.
    */
-  readonly manufacturedItem?: Reference<MedicinalProductManufactured>[];
+  manufacturedItem?: Reference<MedicinalProductManufactured>[];
 
   /**
    * Allows containers within containers.
    */
-  readonly packageItem?: MedicinalProductPackagedPackageItem[];
+  packageItem?: MedicinalProductPackagedPackageItem[];
 
   /**
    * Dimensions, color etc.
    */
-  readonly physicalCharacteristics?: ProdCharacteristic;
+  physicalCharacteristics?: ProdCharacteristic;
 
   /**
    * Other codeable characteristics.
    */
-  readonly otherCharacteristics?: CodeableConcept[];
+  otherCharacteristics?: CodeableConcept[];
 
   /**
    * Shelf Life and storage information.
    */
-  readonly shelfLifeStorage?: ProductShelfLife[];
+  shelfLifeStorage?: ProductShelfLife[];
 
   /**
    * Manufacturer of this Package Item.
    */
-  readonly manufacturer?: Reference<Organization>[];
+  manufacturer?: Reference<Organization>[];
 }

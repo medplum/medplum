@@ -53,14 +53,14 @@ export interface StructureMap {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -68,12 +68,12 @@ export interface StructureMap {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -83,14 +83,14 @@ export interface StructureMap {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -100,7 +100,7 @@ export interface StructureMap {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -118,7 +118,7 @@ export interface StructureMap {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI that is used to identify this structure map when it is
@@ -129,14 +129,14 @@ export interface StructureMap {
    * be the target of a canonical reference. It SHALL remain the same when
    * the structure map is stored on different servers.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * A formal identifier that is used to identify this structure map when
    * it is represented in other formats, or referenced in a specification,
    * model, design or an instance.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The identifier that is used to identify this version of the structure
@@ -147,32 +147,32 @@ export interface StructureMap {
    * available. There is also no expectation that versions can be placed in
    * a lexicographical sequence.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * A natural language name identifying the structure map. This name
    * should be usable as an identifier for the module by machine processing
    * applications such as code generation.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A short, descriptive, user-friendly title for the structure map.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * The status of this structure map. Enables tracking the life-cycle of
    * the content.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A Boolean value to indicate that this structure map is authored for
    * testing purposes (or education/evaluation/marketing) and is not
    * intended to be used for genuine usage.
    */
-  readonly experimental?: boolean;
+  experimental?: boolean;
 
   /**
    * The date  (and optionally time) when the structure map was published.
@@ -180,25 +180,25 @@ export interface StructureMap {
    * change if the status code changes. In addition, it should change when
    * the substantive content of the structure map changes.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The name of the organization or individual that published the
    * structure map.
    */
-  readonly publisher?: string;
+  publisher?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * publisher.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * A free text natural language description of the structure map from a
    * consumer's perspective.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -207,44 +207,44 @@ export interface StructureMap {
    * (insurance plans, studies, ...) and may be used to assist with
    * indexing and searching for appropriate structure map instances.
    */
-  readonly useContext?: UsageContext[];
+  useContext?: UsageContext[];
 
   /**
    * A legal or geographic region in which the structure map is intended to
    * be used.
    */
-  readonly jurisdiction?: CodeableConcept[];
+  jurisdiction?: CodeableConcept[];
 
   /**
    * Explanation of why this structure map is needed and why it has been
    * designed as it has.
    */
-  readonly purpose?: string;
+  purpose?: string;
 
   /**
    * A copyright statement relating to the structure map and/or its
    * contents. Copyright statements are generally legal restrictions on the
    * use and publishing of the structure map.
    */
-  readonly copyright?: string;
+  copyright?: string;
 
   /**
    * A structure definition used by this map. The structure definition may
    * describe instances that are converted, or the instances that are
    * produced.
    */
-  readonly structure?: StructureMapStructure[];
+  structure?: StructureMapStructure[];
 
   /**
    * Other maps used by this map (canonical URLs).
    */
-  readonly import?: string[];
+  import?: string[];
 
   /**
    * Organizes the mapping into manageable chunks for human review/ease of
    * maintenance.
    */
-  readonly group?: StructureMapGroup[];
+  group?: StructureMapGroup[];
 }
 
 /**
@@ -257,7 +257,7 @@ export interface StructureMapGroup {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -267,7 +267,7 @@ export interface StructureMapGroup {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -286,40 +286,40 @@ export interface StructureMapGroup {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A unique name for the group for the convenience of human readers.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Another group that this group adds rules to.
    */
-  readonly extends?: string;
+  extends?: string;
 
   /**
    * If this is the default rule set to apply for the source type or this
    * combination of types.
    */
-  readonly typeMode?: string;
+  typeMode?: string;
 
   /**
    * Additional supporting documentation that explains the purpose of the
    * group and the types of mappings within it.
    */
-  readonly documentation?: string;
+  documentation?: string;
 
   /**
    * A name assigned to an instance of data. The instance must be provided
    * when the mapping is invoked.
    */
-  readonly input?: StructureMapGroupInput[];
+  input?: StructureMapGroupInput[];
 
   /**
    * Transform Rule from source to target.
    */
-  readonly rule?: StructureMapGroupRule[];
+  rule?: StructureMapGroupRule[];
 }
 
 /**
@@ -332,7 +332,7 @@ export interface StructureMapGroupInput {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -342,7 +342,7 @@ export interface StructureMapGroupInput {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -361,27 +361,27 @@ export interface StructureMapGroupInput {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Name for this instance of data.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Type for this instance of data.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * Mode for this instance of data.
    */
-  readonly mode?: string;
+  mode?: string;
 
   /**
    * Documentation for this instance of data.
    */
-  readonly documentation?: string;
+  documentation?: string;
 }
 
 /**
@@ -393,7 +393,7 @@ export interface StructureMapGroupRule {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -403,7 +403,7 @@ export interface StructureMapGroupRule {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -422,37 +422,37 @@ export interface StructureMapGroupRule {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Name of the rule for internal references.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Source inputs to the mapping.
    */
-  readonly source?: StructureMapGroupRuleSource[];
+  source?: StructureMapGroupRuleSource[];
 
   /**
    * Content to create because of this mapping rule.
    */
-  readonly target?: StructureMapGroupRuleTarget[];
+  target?: StructureMapGroupRuleTarget[];
 
   /**
    * Rules contained in this rule.
    */
-  readonly rule?: StructureMapGroupRule[];
+  rule?: StructureMapGroupRule[];
 
   /**
    * Which other rules to apply in the context of this rule.
    */
-  readonly dependent?: StructureMapGroupRuleDependent[];
+  dependent?: StructureMapGroupRuleDependent[];
 
   /**
    * Documentation for this instance of data.
    */
-  readonly documentation?: string;
+  documentation?: string;
 }
 
 /**
@@ -464,7 +464,7 @@ export interface StructureMapGroupRuleDependent {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -474,7 +474,7 @@ export interface StructureMapGroupRuleDependent {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -493,17 +493,17 @@ export interface StructureMapGroupRuleDependent {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Name of a rule or group to apply.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Variable to pass to the rule or group.
    */
-  readonly variable?: string[];
+  variable?: string[];
 }
 
 /**
@@ -515,7 +515,7 @@ export interface StructureMapGroupRuleSource {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -525,7 +525,7 @@ export interface StructureMapGroupRuleSource {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -544,313 +544,313 @@ export interface StructureMapGroupRuleSource {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Type or variable this rule applies to.
    */
-  readonly context?: string;
+  context?: string;
 
   /**
    * Specified minimum cardinality for the element. This is optional; if
    * present, it acts an implicit check on the input content.
    */
-  readonly min?: number;
+  min?: number;
 
   /**
    * Specified maximum cardinality for the element - a number or a &quot;*&quot;.
    * This is optional; if present, it acts an implicit check on the input
    * content (* just serves as documentation; it's the default value).
    */
-  readonly max?: string;
+  max?: string;
 
   /**
    * Specified type for the element. This works as a condition on the
    * mapping - use for polymorphic elements.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueBase64Binary?: string;
+  defaultValueBase64Binary?: string;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueBoolean?: boolean;
+  defaultValueBoolean?: boolean;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueCanonical?: string;
+  defaultValueCanonical?: string;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueCode?: string;
+  defaultValueCode?: string;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueDate?: string;
+  defaultValueDate?: string;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueDateTime?: string;
+  defaultValueDateTime?: string;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueDecimal?: number;
+  defaultValueDecimal?: number;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueId?: string;
+  defaultValueId?: string;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueInstant?: string;
+  defaultValueInstant?: string;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueInteger?: number;
+  defaultValueInteger?: number;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueMarkdown?: string;
+  defaultValueMarkdown?: string;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueOid?: string;
+  defaultValueOid?: string;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValuePositiveInt?: number;
+  defaultValuePositiveInt?: number;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueString?: string;
+  defaultValueString?: string;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueTime?: string;
+  defaultValueTime?: string;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueUnsignedInt?: number;
+  defaultValueUnsignedInt?: number;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueUri?: string;
+  defaultValueUri?: string;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueUrl?: string;
+  defaultValueUrl?: string;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueUuid?: string;
+  defaultValueUuid?: string;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueAddress?: Address;
+  defaultValueAddress?: Address;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueAge?: Age;
+  defaultValueAge?: Age;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueAnnotation?: Annotation;
+  defaultValueAnnotation?: Annotation;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueAttachment?: Attachment;
+  defaultValueAttachment?: Attachment;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueCodeableConcept?: CodeableConcept;
+  defaultValueCodeableConcept?: CodeableConcept;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueCoding?: Coding;
+  defaultValueCoding?: Coding;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueContactPoint?: ContactPoint;
+  defaultValueContactPoint?: ContactPoint;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueCount?: Count;
+  defaultValueCount?: Count;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueDistance?: Distance;
+  defaultValueDistance?: Distance;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueDuration?: Duration;
+  defaultValueDuration?: Duration;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueHumanName?: HumanName;
+  defaultValueHumanName?: HumanName;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueIdentifier?: Identifier;
+  defaultValueIdentifier?: Identifier;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueMoney?: Money;
+  defaultValueMoney?: Money;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValuePeriod?: Period;
+  defaultValuePeriod?: Period;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueQuantity?: Quantity;
+  defaultValueQuantity?: Quantity;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueRange?: Range;
+  defaultValueRange?: Range;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueRatio?: Ratio;
+  defaultValueRatio?: Ratio;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueReference?: Reference;
+  defaultValueReference?: Reference;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueSampledData?: SampledData;
+  defaultValueSampledData?: SampledData;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueSignature?: Signature;
+  defaultValueSignature?: Signature;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueTiming?: Timing;
+  defaultValueTiming?: Timing;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueContactDetail?: ContactDetail;
+  defaultValueContactDetail?: ContactDetail;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueContributor?: Contributor;
+  defaultValueContributor?: Contributor;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueDataRequirement?: DataRequirement;
+  defaultValueDataRequirement?: DataRequirement;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueExpression?: Expression;
+  defaultValueExpression?: Expression;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueParameterDefinition?: ParameterDefinition;
+  defaultValueParameterDefinition?: ParameterDefinition;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueRelatedArtifact?: RelatedArtifact;
+  defaultValueRelatedArtifact?: RelatedArtifact;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueTriggerDefinition?: TriggerDefinition;
+  defaultValueTriggerDefinition?: TriggerDefinition;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueUsageContext?: UsageContext;
+  defaultValueUsageContext?: UsageContext;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueDosage?: Dosage;
+  defaultValueDosage?: Dosage;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
-  readonly defaultValueMeta?: Meta;
+  defaultValueMeta?: Meta;
 
   /**
    * Optional field for this source.
    */
-  readonly element?: string;
+  element?: string;
 
   /**
    * How to handle the list mode for this element.
    */
-  readonly listMode?: string;
+  listMode?: string;
 
   /**
    * Named context for field, if a field is specified.
    */
-  readonly variable?: string;
+  variable?: string;
 
   /**
    * FHIRPath expression  - must be true or the rule does not apply.
    */
-  readonly condition?: string;
+  condition?: string;
 
   /**
    * FHIRPath expression  - must be true or the mapping engine throws an
    * error instead of completing.
    */
-  readonly check?: string;
+  check?: string;
 
   /**
    * A FHIRPath expression which specifies a message to put in the
    * transform log when content matching the source rule is found.
    */
-  readonly logMessage?: string;
+  logMessage?: string;
 }
 
 /**
@@ -862,7 +862,7 @@ export interface StructureMapGroupRuleTarget {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -872,7 +872,7 @@ export interface StructureMapGroupRuleTarget {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -891,47 +891,47 @@ export interface StructureMapGroupRuleTarget {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Type or variable this rule applies to.
    */
-  readonly context?: string;
+  context?: string;
 
   /**
    * How to interpret the context.
    */
-  readonly contextType?: string;
+  contextType?: string;
 
   /**
    * Field to create in the context.
    */
-  readonly element?: string;
+  element?: string;
 
   /**
    * Named context for field, if desired, and a field is specified.
    */
-  readonly variable?: string;
+  variable?: string;
 
   /**
    * If field is a list, how to manage the list.
    */
-  readonly listMode?: string[];
+  listMode?: string[];
 
   /**
    * Internal rule reference for shared list items.
    */
-  readonly listRuleId?: string;
+  listRuleId?: string;
 
   /**
    * How the data is copied / created.
    */
-  readonly transform?: string;
+  transform?: string;
 
   /**
    * Parameters to the transform.
    */
-  readonly parameter?: StructureMapGroupRuleTargetParameter[];
+  parameter?: StructureMapGroupRuleTargetParameter[];
 }
 
 /**
@@ -943,7 +943,7 @@ export interface StructureMapGroupRuleTargetParameter {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -953,7 +953,7 @@ export interface StructureMapGroupRuleTargetParameter {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -972,32 +972,32 @@ export interface StructureMapGroupRuleTargetParameter {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Parameter value - variable or literal.
    */
-  readonly valueId?: string;
+  valueId?: string;
 
   /**
    * Parameter value - variable or literal.
    */
-  readonly valueString?: string;
+  valueString?: string;
 
   /**
    * Parameter value - variable or literal.
    */
-  readonly valueBoolean?: boolean;
+  valueBoolean?: boolean;
 
   /**
    * Parameter value - variable or literal.
    */
-  readonly valueInteger?: number;
+  valueInteger?: number;
 
   /**
    * Parameter value - variable or literal.
    */
-  readonly valueDecimal?: number;
+  valueDecimal?: number;
 }
 
 /**
@@ -1011,7 +1011,7 @@ export interface StructureMapStructure {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1021,7 +1021,7 @@ export interface StructureMapStructure {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1040,25 +1040,25 @@ export interface StructureMapStructure {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The canonical reference to the structure.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * How the referenced structure is used in this mapping.
    */
-  readonly mode?: string;
+  mode?: string;
 
   /**
    * The name used for this type in the map.
    */
-  readonly alias?: string;
+  alias?: string;
 
   /**
    * Documentation that describes how the structure is used in the mapping.
    */
-  readonly documentation?: string;
+  documentation?: string;
 }

@@ -28,14 +28,14 @@ export interface NamingSystem {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -43,12 +43,12 @@ export interface NamingSystem {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -58,14 +58,14 @@ export interface NamingSystem {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -75,7 +75,7 @@ export interface NamingSystem {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -93,26 +93,26 @@ export interface NamingSystem {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A natural language name identifying the naming system. This name
    * should be usable as an identifier for the module by machine processing
    * applications such as code generation.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * The status of this naming system. Enables tracking the life-cycle of
    * the content.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * Indicates the purpose for the naming system - what kinds of things
    * does it make unique?
    */
-  readonly kind?: string;
+  kind?: string;
 
   /**
    * The date  (and optionally time) when the naming system was published.
@@ -120,39 +120,39 @@ export interface NamingSystem {
    * change if the status code changes. In addition, it should change when
    * the substantive content of the naming system changes.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The name of the organization or individual that published the naming
    * system.
    */
-  readonly publisher?: string;
+  publisher?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * publisher.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * The name of the organization that is responsible for issuing
    * identifiers or codes for this namespace and ensuring their
    * non-collision.
    */
-  readonly responsible?: string;
+  responsible?: string;
 
   /**
    * Categorizes a naming system for easier search by grouping related
    * naming systems.
    */
-  readonly type?: CodeableConcept;
+  type?: CodeableConcept;
 
   /**
    * A free text natural language description of the naming system from a
    * consumer's perspective. Details about what the namespace identifies
    * including scope, granularity, version labeling, etc.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -161,25 +161,25 @@ export interface NamingSystem {
    * (insurance plans, studies, ...) and may be used to assist with
    * indexing and searching for appropriate naming system instances.
    */
-  readonly useContext?: UsageContext[];
+  useContext?: UsageContext[];
 
   /**
    * A legal or geographic region in which the naming system is intended to
    * be used.
    */
-  readonly jurisdiction?: CodeableConcept[];
+  jurisdiction?: CodeableConcept[];
 
   /**
    * Provides guidance on the use of the namespace, including the handling
    * of formatting characters, use of upper vs. lower case, etc.
    */
-  readonly usage?: string;
+  usage?: string;
 
   /**
    * Indicates how the system may be identified when referenced in
    * electronic exchange.
    */
-  readonly uniqueId?: NamingSystemUniqueId[];
+  uniqueId?: NamingSystemUniqueId[];
 }
 
 /**
@@ -192,7 +192,7 @@ export interface NamingSystemUniqueId {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -202,7 +202,7 @@ export interface NamingSystemUniqueId {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -221,35 +221,35 @@ export interface NamingSystemUniqueId {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifies the unique identifier scheme used for this particular
    * identifier.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * The string that should be sent over the wire to identify the code
    * system or identifier system.
    */
-  readonly value?: string;
+  value?: string;
 
   /**
    * Indicates whether this identifier is the &quot;preferred&quot; identifier of
    * this type.
    */
-  readonly preferred?: boolean;
+  preferred?: boolean;
 
   /**
    * Notes about the past or intended usage of this identifier.
    */
-  readonly comment?: string;
+  comment?: string;
 
   /**
    * Identifies the period of time over which this identifier is considered
    * appropriate to refer to the naming system.  Outside of this window,
    * the identifier might be non-deterministic.
    */
-  readonly period?: Period;
+  period?: Period;
 }

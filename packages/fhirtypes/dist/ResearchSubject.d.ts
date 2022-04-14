@@ -29,14 +29,14 @@ export interface ResearchSubject {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -44,12 +44,12 @@ export interface ResearchSubject {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -59,14 +59,14 @@ export interface ResearchSubject {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -76,7 +76,7 @@ export interface ResearchSubject {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -94,49 +94,49 @@ export interface ResearchSubject {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifiers assigned to this research subject for a study.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The current state of the subject.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * The dates the subject began and ended their participation in the
    * study.
    */
-  readonly period?: Period;
+  period?: Period;
 
   /**
    * Reference to the study the subject is participating in.
    */
-  readonly study?: Reference<ResearchStudy>;
+  study?: Reference<ResearchStudy>;
 
   /**
    * The record of the person or animal who is involved in the study.
    */
-  readonly individual?: Reference<Patient>;
+  individual?: Reference<Patient>;
 
   /**
    * The name of the arm in the study the subject is expected to follow as
    * part of this study.
    */
-  readonly assignedArm?: string;
+  assignedArm?: string;
 
   /**
    * The name of the arm in the study the subject actually followed as part
    * of this study.
    */
-  readonly actualArm?: string;
+  actualArm?: string;
 
   /**
    * A record of the patient's informed agreement to participate in the
    * study.
    */
-  readonly consent?: Reference<Consent>;
+  consent?: Reference<Consent>;
 }

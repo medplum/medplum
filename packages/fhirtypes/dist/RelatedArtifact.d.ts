@@ -17,7 +17,7 @@ export interface RelatedArtifact {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -27,46 +27,46 @@ export interface RelatedArtifact {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * The type of relationship to the related artifact.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * A short label that can be used to reference the citation from
    * elsewhere in the containing artifact, such as a footnote index.
    */
-  readonly label?: string;
+  label?: string;
 
   /**
    * A brief description of the document or knowledge resource being
    * referenced, suitable for display to a consumer.
    */
-  readonly display?: string;
+  display?: string;
 
   /**
    * A bibliographic citation for the related artifact. This text SHOULD be
    * formatted according to an accepted citation format.
    */
-  readonly citation?: string;
+  citation?: string;
 
   /**
    * A url for the artifact that can be followed to access the actual
    * content.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * The document being referenced, represented as an attachment. This is
    * exclusive with the resource element.
    */
-  readonly document?: Attachment;
+  document?: Attachment;
 
   /**
    * The related resource, such as a library, value set, profile, or other
    * knowledge resource.
    */
-  readonly resource?: string;
+  resource?: string;
 }

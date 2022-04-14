@@ -26,14 +26,14 @@ export interface ExampleScenario {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -41,12 +41,12 @@ export interface ExampleScenario {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -56,14 +56,14 @@ export interface ExampleScenario {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -73,7 +73,7 @@ export interface ExampleScenario {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -91,7 +91,7 @@ export interface ExampleScenario {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI that is used to identify this example scenario when it
@@ -102,14 +102,14 @@ export interface ExampleScenario {
    * can be the target of a canonical reference. It SHALL remain the same
    * when the example scenario is stored on different servers.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * A formal identifier that is used to identify this example scenario
    * when it is represented in other formats, or referenced in a
    * specification, model, design or an instance.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The identifier that is used to identify this version of the example
@@ -120,27 +120,27 @@ export interface ExampleScenario {
    * available. There is also no expectation that versions can be placed in
    * a lexicographical sequence.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * A natural language name identifying the example scenario. This name
    * should be usable as an identifier for the module by machine processing
    * applications such as code generation.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * The status of this example scenario. Enables tracking the life-cycle
    * of the content.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A Boolean value to indicate that this example scenario is authored for
    * testing purposes (or education/evaluation/marketing) and is not
    * intended to be used for genuine usage.
    */
-  readonly experimental?: boolean;
+  experimental?: boolean;
 
   /**
    * The date  (and optionally time) when the example scenario was
@@ -149,19 +149,19 @@ export interface ExampleScenario {
    * change when the substantive content of the example scenario changes.
    * (e.g. the 'content logical definition').
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The name of the organization or individual that published the example
    * scenario.
    */
-  readonly publisher?: string;
+  publisher?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * publisher.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -170,47 +170,47 @@ export interface ExampleScenario {
    * (insurance plans, studies, ...) and may be used to assist with
    * indexing and searching for appropriate example scenario instances.
    */
-  readonly useContext?: UsageContext[];
+  useContext?: UsageContext[];
 
   /**
    * A legal or geographic region in which the example scenario is intended
    * to be used.
    */
-  readonly jurisdiction?: CodeableConcept[];
+  jurisdiction?: CodeableConcept[];
 
   /**
    * A copyright statement relating to the example scenario and/or its
    * contents. Copyright statements are generally legal restrictions on the
    * use and publishing of the example scenario.
    */
-  readonly copyright?: string;
+  copyright?: string;
 
   /**
    * What the example scenario resource is created for. This should not be
    * used to show the business purpose of the scenario itself, but the
    * purpose of documenting a scenario.
    */
-  readonly purpose?: string;
+  purpose?: string;
 
   /**
    * Actor participating in the resource.
    */
-  readonly actor?: ExampleScenarioActor[];
+  actor?: ExampleScenarioActor[];
 
   /**
    * Each resource and each version that is present in the workflow.
    */
-  readonly instance?: ExampleScenarioInstance[];
+  instance?: ExampleScenarioInstance[];
 
   /**
    * Each major process - a group of operations.
    */
-  readonly process?: ExampleScenarioProcess[];
+  process?: ExampleScenarioProcess[];
 
   /**
    * Another nested workflow.
    */
-  readonly workflow?: string[];
+  workflow?: string[];
 }
 
 /**
@@ -222,7 +222,7 @@ export interface ExampleScenarioActor {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -232,7 +232,7 @@ export interface ExampleScenarioActor {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -251,27 +251,27 @@ export interface ExampleScenarioActor {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * ID or acronym of actor.
    */
-  readonly actorId?: string;
+  actorId?: string;
 
   /**
    * The type of actor - person or system.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * The name of the actor as shown in the page.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * The description of the actor.
    */
-  readonly description?: string;
+  description?: string;
 }
 
 /**
@@ -283,7 +283,7 @@ export interface ExampleScenarioInstance {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -293,7 +293,7 @@ export interface ExampleScenarioInstance {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -312,38 +312,38 @@ export interface ExampleScenarioInstance {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The id of the resource for referencing.
    */
-  readonly resourceId?: string;
+  resourceId?: string;
 
   /**
    * The type of the resource.
    */
-  readonly resourceType?: string;
+  resourceType?: string;
 
   /**
    * A short name for the resource instance.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Human-friendly description of the resource instance.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * A specific version of the resource.
    */
-  readonly version?: ExampleScenarioInstanceVersion[];
+  version?: ExampleScenarioInstanceVersion[];
 
   /**
    * Resources contained in the instance (e.g. the observations contained
    * in a bundle).
    */
-  readonly containedInstance?: ExampleScenarioInstanceContainedInstance[];
+  containedInstance?: ExampleScenarioInstanceContainedInstance[];
 }
 
 /**
@@ -356,7 +356,7 @@ export interface ExampleScenarioInstanceContainedInstance {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -366,7 +366,7 @@ export interface ExampleScenarioInstanceContainedInstance {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -385,17 +385,17 @@ export interface ExampleScenarioInstanceContainedInstance {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Each resource contained in the instance.
    */
-  readonly resourceId?: string;
+  resourceId?: string;
 
   /**
    * A specific version of a resource contained in the instance.
    */
-  readonly versionId?: string;
+  versionId?: string;
 }
 
 /**
@@ -407,7 +407,7 @@ export interface ExampleScenarioInstanceVersion {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -417,7 +417,7 @@ export interface ExampleScenarioInstanceVersion {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -436,17 +436,17 @@ export interface ExampleScenarioInstanceVersion {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The identifier of a specific version of a resource.
    */
-  readonly versionId?: string;
+  versionId?: string;
 
   /**
    * The description of the resource version.
    */
-  readonly description?: string;
+  description?: string;
 }
 
 /**
@@ -458,7 +458,7 @@ export interface ExampleScenarioProcess {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -468,7 +468,7 @@ export interface ExampleScenarioProcess {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -487,32 +487,32 @@ export interface ExampleScenarioProcess {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The diagram title of the group of operations.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * A longer description of the group of operations.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Description of initial status before the process starts.
    */
-  readonly preConditions?: string;
+  preConditions?: string;
 
   /**
    * Description of final status after the process ends.
    */
-  readonly postConditions?: string;
+  postConditions?: string;
 
   /**
    * Each step of the process.
    */
-  readonly step?: ExampleScenarioProcessStep[];
+  step?: ExampleScenarioProcessStep[];
 }
 
 /**
@@ -524,7 +524,7 @@ export interface ExampleScenarioProcessStep {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -534,7 +534,7 @@ export interface ExampleScenarioProcessStep {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -553,28 +553,28 @@ export interface ExampleScenarioProcessStep {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Nested process.
    */
-  readonly process?: ExampleScenarioProcess[];
+  process?: ExampleScenarioProcess[];
 
   /**
    * If there is a pause in the flow.
    */
-  readonly pause?: boolean;
+  pause?: boolean;
 
   /**
    * Each interaction or action.
    */
-  readonly operation?: ExampleScenarioProcessStepOperation;
+  operation?: ExampleScenarioProcessStepOperation;
 
   /**
    * Indicates an alternative step that can be taken instead of the
    * operations on the base step in exceptional/atypical circumstances.
    */
-  readonly alternative?: ExampleScenarioProcessStepAlternative[];
+  alternative?: ExampleScenarioProcessStepAlternative[];
 }
 
 /**
@@ -587,7 +587,7 @@ export interface ExampleScenarioProcessStepAlternative {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -597,7 +597,7 @@ export interface ExampleScenarioProcessStepAlternative {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -616,24 +616,24 @@ export interface ExampleScenarioProcessStepAlternative {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The label to display for the alternative that gives a sense of the
    * circumstance in which the alternative should be invoked.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * A human-readable description of the alternative explaining when the
    * alternative should occur rather than the base step.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * What happens in each alternative option.
    */
-  readonly step?: ExampleScenarioProcessStep[];
+  step?: ExampleScenarioProcessStep[];
 }
 
 /**
@@ -645,7 +645,7 @@ export interface ExampleScenarioProcessStepOperation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -655,7 +655,7 @@ export interface ExampleScenarioProcessStepOperation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -674,55 +674,55 @@ export interface ExampleScenarioProcessStepOperation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The sequential number of the interaction, e.g. 1.2.5.
    */
-  readonly number?: string;
+  number?: string;
 
   /**
    * The type of operation - CRUD.
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * The human-friendly name of the interaction.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * Who starts the transaction.
    */
-  readonly initiator?: string;
+  initiator?: string;
 
   /**
    * Who receives the transaction.
    */
-  readonly receiver?: string;
+  receiver?: string;
 
   /**
    * A comment to be inserted in the diagram.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Whether the initiator is deactivated right after the transaction.
    */
-  readonly initiatorActive?: boolean;
+  initiatorActive?: boolean;
 
   /**
    * Whether the receiver is deactivated right after the transaction.
    */
-  readonly receiverActive?: boolean;
+  receiverActive?: boolean;
 
   /**
    * Each resource instance used by the initiator.
    */
-  readonly request?: ExampleScenarioInstanceContainedInstance;
+  request?: ExampleScenarioInstanceContainedInstance;
 
   /**
    * Each resource instance used by the responder.
    */
-  readonly response?: ExampleScenarioInstanceContainedInstance;
+  response?: ExampleScenarioInstanceContainedInstance;
 }

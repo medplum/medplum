@@ -29,14 +29,14 @@ export interface TestScript {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -44,12 +44,12 @@ export interface TestScript {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -59,14 +59,14 @@ export interface TestScript {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -76,7 +76,7 @@ export interface TestScript {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -94,7 +94,7 @@ export interface TestScript {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An absolute URI that is used to identify this test script when it is
@@ -105,14 +105,14 @@ export interface TestScript {
    * be the target of a canonical reference. It SHALL remain the same when
    * the test script is stored on different servers.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * A formal identifier that is used to identify this test script when it
    * is represented in other formats, or referenced in a specification,
    * model, design or an instance.
    */
-  readonly identifier?: Identifier;
+  identifier?: Identifier;
 
   /**
    * The identifier that is used to identify this version of the test
@@ -123,32 +123,32 @@ export interface TestScript {
    * is also no expectation that versions can be placed in a
    * lexicographical sequence.
    */
-  readonly version?: string;
+  version?: string;
 
   /**
    * A natural language name identifying the test script. This name should
    * be usable as an identifier for the module by machine processing
    * applications such as code generation.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A short, descriptive, user-friendly title for the test script.
    */
-  readonly title?: string;
+  title?: string;
 
   /**
    * The status of this test script. Enables tracking the life-cycle of the
    * content.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A Boolean value to indicate that this test script is authored for
    * testing purposes (or education/evaluation/marketing) and is not
    * intended to be used for genuine usage.
    */
-  readonly experimental?: boolean;
+  experimental?: boolean;
 
   /**
    * The date  (and optionally time) when the test script was published.
@@ -156,25 +156,25 @@ export interface TestScript {
    * change if the status code changes. In addition, it should change when
    * the substantive content of the test script changes.
    */
-  readonly date?: string;
+  date?: string;
 
   /**
    * The name of the organization or individual that published the test
    * script.
    */
-  readonly publisher?: string;
+  publisher?: string;
 
   /**
    * Contact details to assist a user in finding and communicating with the
    * publisher.
    */
-  readonly contact?: ContactDetail[];
+  contact?: ContactDetail[];
 
   /**
    * A free text natural language description of the test script from a
    * consumer's perspective.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -183,77 +183,77 @@ export interface TestScript {
    * (insurance plans, studies, ...) and may be used to assist with
    * indexing and searching for appropriate test script instances.
    */
-  readonly useContext?: UsageContext[];
+  useContext?: UsageContext[];
 
   /**
    * A legal or geographic region in which the test script is intended to
    * be used.
    */
-  readonly jurisdiction?: CodeableConcept[];
+  jurisdiction?: CodeableConcept[];
 
   /**
    * Explanation of why this test script is needed and why it has been
    * designed as it has.
    */
-  readonly purpose?: string;
+  purpose?: string;
 
   /**
    * A copyright statement relating to the test script and/or its contents.
    * Copyright statements are generally legal restrictions on the use and
    * publishing of the test script.
    */
-  readonly copyright?: string;
+  copyright?: string;
 
   /**
    * An abstract server used in operations within this test script in the
    * origin element.
    */
-  readonly origin?: TestScriptOrigin[];
+  origin?: TestScriptOrigin[];
 
   /**
    * An abstract server used in operations within this test script in the
    * destination element.
    */
-  readonly destination?: TestScriptDestination[];
+  destination?: TestScriptDestination[];
 
   /**
    * The required capability must exist and are assumed to function
    * correctly on the FHIR server being tested.
    */
-  readonly metadata?: TestScriptMetadata;
+  metadata?: TestScriptMetadata;
 
   /**
    * Fixture in the test script - by reference (uri). All fixtures are
    * required for the test script to execute.
    */
-  readonly fixture?: TestScriptFixture[];
+  fixture?: TestScriptFixture[];
 
   /**
    * Reference to the profile to be used for validation.
    */
-  readonly profile?: Reference<Resource>[];
+  profile?: Reference<Resource>[];
 
   /**
    * Variable is set based either on element value in response body or on
    * header field value in the response headers.
    */
-  readonly variable?: TestScriptVariable[];
+  variable?: TestScriptVariable[];
 
   /**
    * A series of required setup operations before tests are executed.
    */
-  readonly setup?: TestScriptSetup;
+  setup?: TestScriptSetup;
 
   /**
    * A test in this script.
    */
-  readonly test?: TestScriptTest[];
+  test?: TestScriptTest[];
 
   /**
    * A series of operations required to clean up after all the tests are
    * executed (successfully or otherwise).
    */
-  readonly teardown?: TestScriptTeardown;
+  teardown?: TestScriptTeardown;
 }
 
 /**
@@ -266,7 +266,7 @@ export interface TestScriptDestination {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -276,7 +276,7 @@ export interface TestScriptDestination {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -295,18 +295,18 @@ export interface TestScriptDestination {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Abstract name given to a destination server in this test script.  The
    * name is provided as a number starting at 1.
    */
-  readonly index?: number;
+  index?: number;
 
   /**
    * The type of destination profile the test system supports.
    */
-  readonly profile?: Coding;
+  profile?: Coding;
 }
 
 /**
@@ -319,7 +319,7 @@ export interface TestScriptFixture {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -329,7 +329,7 @@ export interface TestScriptFixture {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -348,7 +348,7 @@ export interface TestScriptFixture {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Whether or not to implicitly create the fixture during setup. If true,
@@ -356,7 +356,7 @@ export interface TestScriptFixture {
    * during setup, therefore no create operation is required for this
    * fixture in the TestScript.setup section.
    */
-  readonly autocreate?: boolean;
+  autocreate?: boolean;
 
   /**
    * Whether or not to implicitly delete the fixture during teardown. If
@@ -364,13 +364,13 @@ export interface TestScriptFixture {
    * during teardown, therefore no delete operation is required for this
    * fixture in the TestScript.teardown section.
    */
-  readonly autodelete?: boolean;
+  autodelete?: boolean;
 
   /**
    * Reference to the resource (containing the contents of the resource
    * needed for operations).
    */
-  readonly resource?: Reference<Resource>;
+  resource?: Reference<Resource>;
 }
 
 /**
@@ -383,7 +383,7 @@ export interface TestScriptMetadata {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -393,7 +393,7 @@ export interface TestScriptMetadata {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -412,18 +412,18 @@ export interface TestScriptMetadata {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A link to the FHIR specification that this test is covering.
    */
-  readonly link?: TestScriptMetadataLink[];
+  link?: TestScriptMetadataLink[];
 
   /**
    * Capabilities that must exist and are assumed to function correctly on
    * the FHIR server being tested.
    */
-  readonly capability?: TestScriptMetadataCapability[];
+  capability?: TestScriptMetadataCapability[];
 }
 
 /**
@@ -436,7 +436,7 @@ export interface TestScriptMetadataCapability {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -446,7 +446,7 @@ export interface TestScriptMetadataCapability {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -465,48 +465,48 @@ export interface TestScriptMetadataCapability {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Whether or not the test execution will require the given capabilities
    * of the server in order for this test script to execute.
    */
-  readonly required?: boolean;
+  required?: boolean;
 
   /**
    * Whether or not the test execution will validate the given capabilities
    * of the server in order for this test script to execute.
    */
-  readonly validated?: boolean;
+  validated?: boolean;
 
   /**
    * Description of the capabilities that this test script is requiring the
    * server to support.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Which origin server these requirements apply to.
    */
-  readonly origin?: number[];
+  origin?: number[];
 
   /**
    * Which server these requirements apply to.
    */
-  readonly destination?: number;
+  destination?: number;
 
   /**
    * Links to the FHIR specification that describes this interaction and
    * the resources involved in more detail.
    */
-  readonly link?: string[];
+  link?: string[];
 
   /**
    * Minimum capabilities required of server for test script to execute
    * successfully.   If server does not meet at a minimum the referenced
    * capability statement, then all tests in this script are skipped.
    */
-  readonly capabilities?: string;
+  capabilities?: string;
 }
 
 /**
@@ -518,7 +518,7 @@ export interface TestScriptMetadataLink {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -528,7 +528,7 @@ export interface TestScriptMetadataLink {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -547,18 +547,18 @@ export interface TestScriptMetadataLink {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * URL to a particular requirement or feature within the FHIR
    * specification.
    */
-  readonly url?: string;
+  url?: string;
 
   /**
    * Short description of the link.
    */
-  readonly description?: string;
+  description?: string;
 }
 
 /**
@@ -571,7 +571,7 @@ export interface TestScriptOrigin {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -581,7 +581,7 @@ export interface TestScriptOrigin {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -600,18 +600,18 @@ export interface TestScriptOrigin {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Abstract name given to an origin server in this test script.  The name
    * is provided as a number starting at 1.
    */
-  readonly index?: number;
+  index?: number;
 
   /**
    * The type of origin profile the test system supports.
    */
-  readonly profile?: Coding;
+  profile?: Coding;
 }
 
 /**
@@ -623,7 +623,7 @@ export interface TestScriptSetup {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -633,7 +633,7 @@ export interface TestScriptSetup {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -652,12 +652,12 @@ export interface TestScriptSetup {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Action would contain either an operation or an assertion.
    */
-  readonly action?: TestScriptSetupAction[];
+  action?: TestScriptSetupAction[];
 }
 
 /**
@@ -669,7 +669,7 @@ export interface TestScriptSetupAction {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -679,7 +679,7 @@ export interface TestScriptSetupAction {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -698,18 +698,18 @@ export interface TestScriptSetupAction {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The operation to perform.
    */
-  readonly operation?: TestScriptSetupActionOperation;
+  operation?: TestScriptSetupActionOperation;
 
   /**
    * Evaluates the results of previous operations to determine if the
    * server under test behaves appropriately.
    */
-  readonly assert?: TestScriptSetupActionAssert;
+  assert?: TestScriptSetupActionAssert;
 }
 
 /**
@@ -722,7 +722,7 @@ export interface TestScriptSetupActionAssert {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -732,7 +732,7 @@ export interface TestScriptSetupActionAssert {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -751,135 +751,135 @@ export interface TestScriptSetupActionAssert {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The label would be used for tracking/logging purposes by test engines.
    */
-  readonly label?: string;
+  label?: string;
 
   /**
    * The description would be used by test engines for tracking and
    * reporting purposes.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The direction to use for the assertion.
    */
-  readonly direction?: string;
+  direction?: string;
 
   /**
    * Id of the source fixture used as the contents to be evaluated by
    * either the &quot;source/expression&quot; or &quot;sourceId/path&quot; definition.
    */
-  readonly compareToSourceId?: string;
+  compareToSourceId?: string;
 
   /**
    * The FHIRPath expression to evaluate against the source fixture. When
    * compareToSourceId is defined, either compareToSourceExpression or
    * compareToSourcePath must be defined, but not both.
    */
-  readonly compareToSourceExpression?: string;
+  compareToSourceExpression?: string;
 
   /**
    * XPath or JSONPath expression to evaluate against the source fixture.
    * When compareToSourceId is defined, either compareToSourceExpression or
    * compareToSourcePath must be defined, but not both.
    */
-  readonly compareToSourcePath?: string;
+  compareToSourcePath?: string;
 
   /**
    * The mime-type contents to compare against the request or response
    * message 'Content-Type' header.
    */
-  readonly contentType?: string;
+  contentType?: string;
 
   /**
    * The FHIRPath expression to be evaluated against the request or
    * response message contents - HTTP headers and payload.
    */
-  readonly expression?: string;
+  expression?: string;
 
   /**
    * The HTTP header field name e.g. 'Location'.
    */
-  readonly headerField?: string;
+  headerField?: string;
 
   /**
    * The ID of a fixture.  Asserts that the response contains at a minimum
    * the fixture specified by minimumId.
    */
-  readonly minimumId?: string;
+  minimumId?: string;
 
   /**
    * Whether or not the test execution performs validation on the bundle
    * navigation links.
    */
-  readonly navigationLinks?: boolean;
+  navigationLinks?: boolean;
 
   /**
    * The operator type defines the conditional behavior of the assert. If
    * not defined, the default is equals.
    */
-  readonly operator?: string;
+  operator?: string;
 
   /**
    * The XPath or JSONPath expression to be evaluated against the fixture
    * representing the response received from server.
    */
-  readonly path?: string;
+  path?: string;
 
   /**
    * The request method or HTTP operation code to compare against that used
    * by the client system under test.
    */
-  readonly requestMethod?: string;
+  requestMethod?: string;
 
   /**
    * The value to use in a comparison against the request URL path string.
    */
-  readonly requestURL?: string;
+  requestURL?: string;
 
   /**
    * The type of the resource.  See
    * http://build.fhir.org/resourcelist.html.
    */
-  readonly resource?: string;
+  resource?: string;
 
   /**
    * okay | created | noContent | notModified | bad | forbidden | notFound
    * | methodNotAllowed | conflict | gone | preconditionFailed |
    * unprocessable.
    */
-  readonly response?: string;
+  response?: string;
 
   /**
    * The value of the HTTP response code to be tested.
    */
-  readonly responseCode?: string;
+  responseCode?: string;
 
   /**
    * Fixture to evaluate the XPath/JSONPath expression or the headerField
    * against.
    */
-  readonly sourceId?: string;
+  sourceId?: string;
 
   /**
    * The ID of the Profile to validate against.
    */
-  readonly validateProfileId?: string;
+  validateProfileId?: string;
 
   /**
    * The value to compare to.
    */
-  readonly value?: string;
+  value?: string;
 
   /**
    * Whether or not the test execution will produce a warning only on error
    * for this assert.
    */
-  readonly warningOnly?: boolean;
+  warningOnly?: boolean;
 }
 
 /**
@@ -891,7 +891,7 @@ export interface TestScriptSetupActionOperation {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -901,7 +901,7 @@ export interface TestScriptSetupActionOperation {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -920,46 +920,46 @@ export interface TestScriptSetupActionOperation {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Server interaction or operation type.
    */
-  readonly type?: Coding;
+  type?: Coding;
 
   /**
    * The type of the resource.  See
    * http://build.fhir.org/resourcelist.html.
    */
-  readonly resource?: string;
+  resource?: string;
 
   /**
    * The label would be used for tracking/logging purposes by test engines.
    */
-  readonly label?: string;
+  label?: string;
 
   /**
    * The description would be used by test engines for tracking and
    * reporting purposes.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The mime-type to use for RESTful operation in the 'Accept' header.
    */
-  readonly accept?: string;
+  accept?: string;
 
   /**
    * The mime-type to use for RESTful operation in the 'Content-Type'
    * header.
    */
-  readonly contentType?: string;
+  contentType?: string;
 
   /**
    * The server where the request message is destined for.  Must be one of
    * the server numbers listed in TestScript.destination section.
    */
-  readonly destination?: number;
+  destination?: number;
 
   /**
    * Whether or not to implicitly send the request url in encoded format.
@@ -967,56 +967,56 @@ export interface TestScriptSetupActionOperation {
    * to false when communicating with a server that does not support
    * encoded url paths.
    */
-  readonly encodeRequestUrl?: boolean;
+  encodeRequestUrl?: boolean;
 
   /**
    * The HTTP method the test engine MUST use for this operation regardless
    * of any other operation details.
    */
-  readonly method?: string;
+  method?: string;
 
   /**
    * The server where the request message originates from.  Must be one of
    * the server numbers listed in TestScript.origin section.
    */
-  readonly origin?: number;
+  origin?: number;
 
   /**
    * Path plus parameters after [type].  Used to set parts of the request
    * URL explicitly.
    */
-  readonly params?: string;
+  params?: string;
 
   /**
    * Header elements would be used to set HTTP headers.
    */
-  readonly requestHeader?: TestScriptSetupActionOperationRequestHeader[];
+  requestHeader?: TestScriptSetupActionOperationRequestHeader[];
 
   /**
    * The fixture id (maybe new) to map to the request.
    */
-  readonly requestId?: string;
+  requestId?: string;
 
   /**
    * The fixture id (maybe new) to map to the response.
    */
-  readonly responseId?: string;
+  responseId?: string;
 
   /**
    * The id of the fixture used as the body of a PUT or POST request.
    */
-  readonly sourceId?: string;
+  sourceId?: string;
 
   /**
    * Id of fixture used for extracting the [id],  [type], and [vid] for GET
    * requests.
    */
-  readonly targetId?: string;
+  targetId?: string;
 
   /**
    * Complete request URL.
    */
-  readonly url?: string;
+  url?: string;
 }
 
 /**
@@ -1028,7 +1028,7 @@ export interface TestScriptSetupActionOperationRequestHeader {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1038,7 +1038,7 @@ export interface TestScriptSetupActionOperationRequestHeader {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1057,17 +1057,17 @@ export interface TestScriptSetupActionOperationRequestHeader {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The HTTP header field e.g. &quot;Accept&quot;.
    */
-  readonly field?: string;
+  field?: string;
 
   /**
    * The value of the header e.g. &quot;application/fhir+xml&quot;.
    */
-  readonly value?: string;
+  value?: string;
 }
 
 /**
@@ -1080,7 +1080,7 @@ export interface TestScriptTeardown {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1090,7 +1090,7 @@ export interface TestScriptTeardown {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1109,12 +1109,12 @@ export interface TestScriptTeardown {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The teardown action will only contain an operation.
    */
-  readonly action?: TestScriptTeardownAction[];
+  action?: TestScriptTeardownAction[];
 }
 
 /**
@@ -1126,7 +1126,7 @@ export interface TestScriptTeardownAction {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1136,7 +1136,7 @@ export interface TestScriptTeardownAction {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1155,12 +1155,12 @@ export interface TestScriptTeardownAction {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An operation would involve a REST request to a server.
    */
-  readonly operation?: TestScriptSetupActionOperation;
+  operation?: TestScriptSetupActionOperation;
 }
 
 /**
@@ -1172,7 +1172,7 @@ export interface TestScriptTest {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1182,7 +1182,7 @@ export interface TestScriptTest {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1201,24 +1201,24 @@ export interface TestScriptTest {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * The name of this test used for tracking/logging purposes by test
    * engines.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A short description of the test used by test engines for tracking and
    * reporting purposes.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * Action would contain either an operation or an assertion.
    */
-  readonly action?: TestScriptTestAction[];
+  action?: TestScriptTestAction[];
 }
 
 /**
@@ -1230,7 +1230,7 @@ export interface TestScriptTestAction {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1240,7 +1240,7 @@ export interface TestScriptTestAction {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1259,18 +1259,18 @@ export interface TestScriptTestAction {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * An operation would involve a REST request to a server.
    */
-  readonly operation?: TestScriptSetupActionOperation;
+  operation?: TestScriptSetupActionOperation;
 
   /**
    * Evaluates the results of previous operations to determine if the
    * server under test behaves appropriately.
    */
-  readonly assert?: TestScriptSetupActionAssert;
+  assert?: TestScriptSetupActionAssert;
 }
 
 /**
@@ -1283,7 +1283,7 @@ export interface TestScriptVariable {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1293,7 +1293,7 @@ export interface TestScriptVariable {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -1312,53 +1312,53 @@ export interface TestScriptVariable {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Descriptive name for this variable.
    */
-  readonly name?: string;
+  name?: string;
 
   /**
    * A default, hard-coded, or user-defined value for this variable.
    */
-  readonly defaultValue?: string;
+  defaultValue?: string;
 
   /**
    * A free text natural language description of the variable and its
    * purpose.
    */
-  readonly description?: string;
+  description?: string;
 
   /**
    * The FHIRPath expression to evaluate against the fixture body. When
    * variables are defined, only one of either expression, headerField or
    * path must be specified.
    */
-  readonly expression?: string;
+  expression?: string;
 
   /**
    * Will be used to grab the HTTP header field value from the headers that
    * sourceId is pointing to.
    */
-  readonly headerField?: string;
+  headerField?: string;
 
   /**
    * Displayable text string with hint help information to the user when
    * entering a default value.
    */
-  readonly hint?: string;
+  hint?: string;
 
   /**
    * XPath or JSONPath to evaluate against the fixture body.  When
    * variables are defined, only one of either expression, headerField or
    * path must be specified.
    */
-  readonly path?: string;
+  path?: string;
 
   /**
    * Fixture to evaluate the XPath/JSONPath expression or the headerField
    * against within this variable.
    */
-  readonly sourceId?: string;
+  sourceId?: string;
 }

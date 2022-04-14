@@ -48,14 +48,14 @@ export interface MedicationAdministration {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -63,12 +63,12 @@ export interface MedicationAdministration {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -78,14 +78,14 @@ export interface MedicationAdministration {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -95,7 +95,7 @@ export interface MedicationAdministration {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -113,7 +113,7 @@ export interface MedicationAdministration {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Identifiers associated with this Medication Administration that are
@@ -123,18 +123,18 @@ export interface MedicationAdministration {
    * other systems and remain constant as the resource is updated and
    * propagates from server to server.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * A protocol, guideline, orderset, or other definition that was adhered
    * to in whole or in part by this event.
    */
-  readonly instantiates?: string[];
+  instantiates?: string[];
 
   /**
    * A larger event of which this particular event is a component or step.
    */
-  readonly partOf?: Reference<MedicationAdministration | Procedure>[];
+  partOf?: Reference<MedicationAdministration | Procedure>[];
 
   /**
    * Will generally be set to show that the administration has been
@@ -142,18 +142,18 @@ export interface MedicationAdministration {
    * it is possible for an administration to be started but not completed
    * or it may be paused while some other process is under way.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * A code indicating why the administration was not performed.
    */
-  readonly statusReason?: CodeableConcept[];
+  statusReason?: CodeableConcept[];
 
   /**
    * Indicates where the medication is expected to be consumed or
    * administered.
    */
-  readonly category?: CodeableConcept;
+  category?: CodeableConcept;
 
   /**
    * Identifies the medication that was administered. This is either a link
@@ -161,7 +161,7 @@ export interface MedicationAdministration {
    * attribute carrying a code that identifies the medication from a known
    * list of medications.
    */
-  readonly medicationCodeableConcept?: CodeableConcept;
+  medicationCodeableConcept?: CodeableConcept;
 
   /**
    * Identifies the medication that was administered. This is either a link
@@ -169,24 +169,24 @@ export interface MedicationAdministration {
    * attribute carrying a code that identifies the medication from a known
    * list of medications.
    */
-  readonly medicationReference?: Reference<Medication>;
+  medicationReference?: Reference<Medication>;
 
   /**
    * The person or animal or group receiving the medication.
    */
-  readonly subject?: Reference<Patient | Group>;
+  subject?: Reference<Patient | Group>;
 
   /**
    * The visit, admission, or other contact between patient and health care
    * provider during which the medication administration was performed.
    */
-  readonly context?: Reference<Encounter | EpisodeOfCare>;
+  context?: Reference<Encounter | EpisodeOfCare>;
 
   /**
    * Additional information (for example, patient height and weight) that
    * supports the administration of the medication.
    */
-  readonly supportingInformation?: Reference<Resource>[];
+  supportingInformation?: Reference<Resource>[];
 
   /**
    * A specific date/time or interval of time during which the
@@ -194,7 +194,7 @@ export interface MedicationAdministration {
    * attribute is true). For many administrations, such as swallowing a
    * tablet the use of dateTime is more appropriate.
    */
-  readonly effectiveDateTime?: string;
+  effectiveDateTime?: string;
 
   /**
    * A specific date/time or interval of time during which the
@@ -202,54 +202,54 @@ export interface MedicationAdministration {
    * attribute is true). For many administrations, such as swallowing a
    * tablet the use of dateTime is more appropriate.
    */
-  readonly effectivePeriod?: Period;
+  effectivePeriod?: Period;
 
   /**
    * Indicates who or what performed the medication administration and how
    * they were involved.
    */
-  readonly performer?: MedicationAdministrationPerformer[];
+  performer?: MedicationAdministrationPerformer[];
 
   /**
    * A code indicating why the medication was given.
    */
-  readonly reasonCode?: CodeableConcept[];
+  reasonCode?: CodeableConcept[];
 
   /**
    * Condition or observation that supports why the medication was
    * administered.
    */
-  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport>[];
+  reasonReference?: Reference<Condition | Observation | DiagnosticReport>[];
 
   /**
    * The original request, instruction or authority to perform the
    * administration.
    */
-  readonly request?: Reference<MedicationRequest>;
+  request?: Reference<MedicationRequest>;
 
   /**
    * The device used in administering the medication to the patient.  For
    * example, a particular infusion pump.
    */
-  readonly device?: Reference<Device>[];
+  device?: Reference<Device>[];
 
   /**
    * Extra information about the medication administration that is not
    * conveyed by the other attributes.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 
   /**
    * Describes the medication dosage information details e.g. dose, rate,
    * site, route, etc.
    */
-  readonly dosage?: MedicationAdministrationDosage;
+  dosage?: MedicationAdministrationDosage;
 
   /**
    * A summary of the events of interest that have occurred, such as when
    * the administration was verified.
    */
-  readonly eventHistory?: Reference<Provenance>[];
+  eventHistory?: Reference<Provenance>[];
 }
 
 /**
@@ -262,7 +262,7 @@ export interface MedicationAdministrationDosage {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -272,7 +272,7 @@ export interface MedicationAdministrationDosage {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -291,7 +291,7 @@ export interface MedicationAdministrationDosage {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Free text dosage can be used for cases where the dosage administered
@@ -300,20 +300,20 @@ export interface MedicationAdministrationDosage {
    * instructions should reflect the dosage of the medication that was
    * administered.
    */
-  readonly text?: string;
+  text?: string;
 
   /**
    * A coded specification of the anatomic site where the medication first
    * entered the body.  For example, &quot;left arm&quot;.
    */
-  readonly site?: CodeableConcept;
+  site?: CodeableConcept;
 
   /**
    * A code specifying the route or physiological path of administration of
    * a therapeutic agent into or onto the patient.  For example, topical,
    * intravenous, etc.
    */
-  readonly route?: CodeableConcept;
+  route?: CodeableConcept;
 
   /**
    * A coded value indicating the method by which the medication is
@@ -321,14 +321,14 @@ export interface MedicationAdministrationDosage {
    * will most often NOT be populated.  It is most commonly used for
    * injections.  For example, Slow Push, Deep IV.
    */
-  readonly method?: CodeableConcept;
+  method?: CodeableConcept;
 
   /**
    * The amount of the medication given at one administration event.   Use
    * this value when the administration is essentially an instantaneous
    * event such as a swallowing a tablet or giving an injection.
    */
-  readonly dose?: Quantity;
+  dose?: Quantity;
 
   /**
    * Identifies the speed with which the medication was or will be
@@ -337,7 +337,7 @@ export interface MedicationAdministrationDosage {
    * unit of time, e.g. 500 ml per 2 hours.  Other examples:  200 mcg/min
    * or 200 mcg/1 minute; 1 liter/8 hours.
    */
-  readonly rateRatio?: Ratio;
+  rateRatio?: Ratio;
 
   /**
    * Identifies the speed with which the medication was or will be
@@ -346,7 +346,7 @@ export interface MedicationAdministrationDosage {
    * unit of time, e.g. 500 ml per 2 hours.  Other examples:  200 mcg/min
    * or 200 mcg/1 minute; 1 liter/8 hours.
    */
-  readonly rateQuantity?: Quantity;
+  rateQuantity?: Quantity;
 }
 
 /**
@@ -359,7 +359,7 @@ export interface MedicationAdministrationPerformer {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -369,7 +369,7 @@ export interface MedicationAdministrationPerformer {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -388,16 +388,16 @@ export interface MedicationAdministrationPerformer {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Distinguishes the type of involvement of the performer in the
    * medication administration.
    */
-  readonly function?: CodeableConcept;
+  function?: CodeableConcept;
 
   /**
    * Indicates who or what performed the medication administration.
    */
-  readonly actor?: Reference<Practitioner | PractitionerRole | Patient | RelatedPerson | Device>;
+  actor?: Reference<Practitioner | PractitionerRole | Patient | RelatedPerson | Device>;
 }

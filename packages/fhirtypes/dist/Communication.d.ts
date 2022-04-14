@@ -43,14 +43,14 @@ export interface Communication {
    * The logical id of the resource, as used in the URL for the resource.
    * Once assigned, this value never changes.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
    */
-  readonly meta?: Meta;
+  meta?: Meta;
 
   /**
    * A reference to a set of rules that were followed when the resource was
@@ -58,12 +58,12 @@ export interface Communication {
    * Often, this is a reference to an implementation guide that defines the
    * special rules along with other profiles etc.
    */
-  readonly implicitRules?: string;
+  implicitRules?: string;
 
   /**
    * The base language in which the resource is written.
    */
-  readonly language?: string;
+  language?: string;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -73,14 +73,14 @@ export interface Communication {
    * just read the narrative. Resource definitions may define what content
    * should be represented in the narrative to ensure clinical safety.
    */
-  readonly text?: Narrative;
+  text?: Narrative;
 
   /**
    * These resources do not have an independent existence apart from the
    * resource that contains them - they cannot be identified independently,
    * and nor can they have their own independent transaction scope.
    */
-  readonly contained?: Resource[];
+  contained?: Resource[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -90,7 +90,7 @@ export interface Communication {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -108,104 +108,104 @@ export interface Communication {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * Business identifiers assigned to this communication by the performer
    * or other systems which remain constant as the resource is updated and
    * propagates from server to server.
    */
-  readonly identifier?: Identifier[];
+  identifier?: Identifier[];
 
   /**
    * The URL pointing to a FHIR-defined protocol, guideline, orderset or
    * other definition that is adhered to in whole or in part by this
    * Communication.
    */
-  readonly instantiatesCanonical?: string[];
+  instantiatesCanonical?: string[];
 
   /**
    * The URL pointing to an externally maintained protocol, guideline,
    * orderset or other definition that is adhered to in whole or in part by
    * this Communication.
    */
-  readonly instantiatesUri?: string[];
+  instantiatesUri?: string[];
 
   /**
    * An order, proposal or plan fulfilled in whole or in part by this
    * Communication.
    */
-  readonly basedOn?: Reference<Resource>[];
+  basedOn?: Reference<Resource>[];
 
   /**
    * Part of this action.
    */
-  readonly partOf?: Reference<Resource>[];
+  partOf?: Reference<Resource>[];
 
   /**
    * Prior communication that this communication is in response to.
    */
-  readonly inResponseTo?: Reference<Communication>[];
+  inResponseTo?: Reference<Communication>[];
 
   /**
    * The status of the transmission.
    */
-  readonly status?: string;
+  status?: string;
 
   /**
    * Captures the reason for the current state of the Communication.
    */
-  readonly statusReason?: CodeableConcept;
+  statusReason?: CodeableConcept;
 
   /**
    * The type of message conveyed such as alert, notification, reminder,
    * instruction, etc.
    */
-  readonly category?: CodeableConcept[];
+  category?: CodeableConcept[];
 
   /**
    * Characterizes how quickly the planned or in progress communication
    * must be addressed. Includes concepts such as stat, urgent, routine.
    */
-  readonly priority?: string;
+  priority?: string;
 
   /**
    * A channel that was used for this communication (e.g. email, fax).
    */
-  readonly medium?: CodeableConcept[];
+  medium?: CodeableConcept[];
 
   /**
    * The patient or group that was the focus of this communication.
    */
-  readonly subject?: Reference<Patient | Group>;
+  subject?: Reference<Patient | Group>;
 
   /**
    * Description of the purpose/content, similar to a subject line in an
    * email.
    */
-  readonly topic?: CodeableConcept;
+  topic?: CodeableConcept;
 
   /**
    * Other resources that pertain to this communication and to which this
    * communication should be associated.
    */
-  readonly about?: Reference<Resource>[];
+  about?: Reference<Resource>[];
 
   /**
    * The Encounter during which this Communication was created or to which
    * the creation of this record is tightly associated.
    */
-  readonly encounter?: Reference<Encounter>;
+  encounter?: Reference<Encounter>;
 
   /**
    * The time when this communication was sent.
    */
-  readonly sent?: string;
+  sent?: string;
 
   /**
    * The time when this communication arrived at the destination.
    */
-  readonly received?: string;
+  received?: string;
 
   /**
    * The entity (e.g. person, organization, clinical information system,
@@ -216,36 +216,36 @@ export interface Communication {
    * tracked (e.g. a mass mail-out) or a receipt is captured in aggregate
    * (all emails confirmed received by a particular time).
    */
-  readonly recipient?: Reference<Device | Organization | Patient | Practitioner | PractitionerRole | RelatedPerson | Group | CareTeam | HealthcareService>[];
+  recipient?: Reference<Device | Organization | Patient | Practitioner | PractitionerRole | RelatedPerson | Group | CareTeam | HealthcareService>[];
 
   /**
    * The entity (e.g. person, organization, clinical information system, or
    * device) which was the source of the communication.
    */
-  readonly sender?: Reference<Device | Organization | Patient | Practitioner | PractitionerRole | RelatedPerson | HealthcareService>;
+  sender?: Reference<Device | Organization | Patient | Practitioner | PractitionerRole | RelatedPerson | HealthcareService>;
 
   /**
    * The reason or justification for the communication.
    */
-  readonly reasonCode?: CodeableConcept[];
+  reasonCode?: CodeableConcept[];
 
   /**
    * Indicates another resource whose existence justifies this
    * communication.
    */
-  readonly reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
+  reasonReference?: Reference<Condition | Observation | DiagnosticReport | DocumentReference>[];
 
   /**
    * Text, attachment(s), or resource(s) that was communicated to the
    * recipient.
    */
-  readonly payload?: CommunicationPayload[];
+  payload?: CommunicationPayload[];
 
   /**
    * Additional notes or commentary about the communication by the sender,
    * receiver or other interested parties.
    */
-  readonly note?: Annotation[];
+  note?: Annotation[];
 }
 
 /**
@@ -258,7 +258,7 @@ export interface CommunicationPayload {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -268,7 +268,7 @@ export interface CommunicationPayload {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * May be used to represent additional information that is not part of
@@ -287,23 +287,23 @@ export interface CommunicationPayload {
    * Resource or DomainResource (including cannot change the meaning of
    * modifierExtension itself).
    */
-  readonly modifierExtension?: Extension[];
+  modifierExtension?: Extension[];
 
   /**
    * A communicated content (or for multi-part communications, one portion
    * of the communication).
    */
-  readonly contentString?: string;
+  contentString?: string;
 
   /**
    * A communicated content (or for multi-part communications, one portion
    * of the communication).
    */
-  readonly contentAttachment?: Attachment;
+  contentAttachment?: Attachment;
 
   /**
    * A communicated content (or for multi-part communications, one portion
    * of the communication).
    */
-  readonly contentReference?: Reference<Resource>;
+  contentReference?: Reference<Resource>;
 }

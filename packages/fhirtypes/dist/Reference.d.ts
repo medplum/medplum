@@ -17,7 +17,7 @@ export interface Reference<T extends Resource = Resource> {
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
    */
-  readonly id?: string;
+  id?: string;
 
   /**
    * May be used to represent additional information that is not part of
@@ -27,7 +27,7 @@ export interface Reference<T extends Resource = Resource> {
    * define an extension, there is a set of requirements that SHALL be met
    * as part of the definition of the extension.
    */
-  readonly extension?: Extension[];
+  extension?: Extension[];
 
   /**
    * A reference to a location at which the other resource is found. The
@@ -38,7 +38,7 @@ export interface Reference<T extends Resource = Resource> {
    * be assumed to be version specific. Internal fragment references (start
    * with '#') refer to contained resources.
    */
-  readonly reference?: string;
+  reference?: string;
 
   /**
    * The expected type of the target of the reference. If both
@@ -52,7 +52,7 @@ export interface Reference<T extends Resource = Resource> {
    * only allowed for logical models (and can only be used in references in
    * logical models, not resources).
    */
-  readonly type?: string;
+  type?: string;
 
   /**
    * An identifier for the target resource. This is used when there is no
@@ -65,16 +65,16 @@ export interface Reference<T extends Resource = Resource> {
    * expected to be exposed as a FHIR instance, and that instance would
    * need to be of a FHIR resource type allowed by the reference.
    */
-  readonly identifier?: Identifier;
+  identifier?: Identifier;
 
   /**
    * Plain text narrative that identifies the resource in addition to the
    * resource reference.
    */
-  readonly display?: string;
+  display?: string;
 
   /**
    * Optional Resource referred to by this reference.
    */
-  readonly resource?: T;
+  resource?: T;
 }
