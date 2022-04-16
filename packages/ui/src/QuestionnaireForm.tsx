@@ -4,6 +4,7 @@ import {
   getReferenceString,
   IndexedStructureDefinition,
   ProfileResource,
+  stringify,
 } from '@medplum/core';
 import {
   Questionnaire,
@@ -18,6 +19,7 @@ import {
 import React, { useEffect, useState } from 'react';
 import { AttachmentInput } from './AttachmentInput';
 import { Button } from './Button';
+import { DateTimeInput } from './DateTimeInput';
 import { Form } from './Form';
 import { FormSection } from './FormSection';
 import { Input } from './Input';
@@ -215,7 +217,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       );
     case QuestionnaireItemType.dateTime:
       return (
-        <Input
+        <DateTimeInput
           type="datetime-local"
           name={name}
           step={1}
@@ -264,8 +266,11 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <div>
           {item.answerOption &&
             item.answerOption.map((option: QuestionnaireItemAnswerOption, index: number) => {
-              const valueProperty = props.schema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
-              const [propertyValue, propertyType] = getValueAndType(option, valueProperty);
+              const valueElementDefinition = props.schema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
+              const initialElementDefinition =
+                props.schema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
+              const [propertyValue, propertyType] = getValueAndType(option, valueElementDefinition);
+              const [initialValue, initialType] = getValueAndType(initial, initialElementDefinition);
               const propertyName = 'value' + capitalize(propertyType);
               const optionName = `${name}-option-${index}`;
               return (
@@ -276,6 +281,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
                       id={optionName}
                       name={name}
                       value={propertyValue}
+                      defaultChecked={
+                        propertyType === initialType && stringify(propertyValue) === stringify(initialValue)
+                      }
                       onChange={() => onChangeAnswer({ [propertyName]: propertyValue })}
                     />
                   </div>
@@ -283,7 +291,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
                     <label htmlFor={optionName}>
                       <ResourcePropertyDisplay
                         schema={props.schema}
-                        property={valueProperty}
+                        property={valueElementDefinition}
                         propertyType={propertyType}
                         value={propertyValue}
                       />

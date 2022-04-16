@@ -10,6 +10,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import each from 'jest-each';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
 import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 import { QuestionnaireItemType } from './QuestionnaireUtils';
@@ -19,9 +20,11 @@ const medplum = new MockClient();
 async function setup(args: QuestionnaireFormProps): Promise<void> {
   await act(async () => {
     render(
-      <MedplumProvider medplum={medplum}>
-        <QuestionnaireForm {...args} />
-      </MedplumProvider>
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <QuestionnaireForm {...args} />
+        </MedplumProvider>
+      </MemoryRouter>
     );
   });
 }
@@ -306,6 +309,57 @@ describe('QuestionnaireForm', () => {
 
     const response2 = onSubmit.mock.calls[1][0];
     expect(getAnswer(response2, 'q1')).toMatchObject({ valueString: 'a2' });
+  });
+
+  test('Choice valueReference default value', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.choice,
+            text: 'q1',
+            answerOption: [
+              {
+                valueString: 'a1',
+              },
+              {
+                valueString: 'a2',
+              },
+              {
+                valueReference: {
+                  reference: 'Patient/123',
+                },
+              },
+              {
+                valueReference: {
+                  reference: 'Organization/123',
+                },
+              },
+            ],
+            initial: [
+              {
+                valueReference: {
+                  reference: 'Organization/123',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const radioButton1 = screen.getByLabelText('a1');
+    expect(radioButton1).toBeInTheDocument();
+    expect((radioButton1 as HTMLInputElement).checked).toBe(false);
+
+    const radioButton2 = screen.getByLabelText('Organization/123');
+    expect(radioButton2).toBeInTheDocument();
+    expect((radioButton2 as HTMLInputElement).checked).toBe(true);
   });
 
   test('Open choice input', async () => {
