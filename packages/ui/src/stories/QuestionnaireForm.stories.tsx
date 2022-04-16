@@ -232,3 +232,185 @@ export const KitchenSink = (): JSX.Element => (
     />
   </Document>
 );
+
+export const KitchenSinkWithInitialValues = (): JSX.Element => (
+  <Document>
+    <QuestionnaireForm
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        id: 'kitchen-sink',
+        title: 'Kitchen Sink Exmple',
+        item: [
+          {
+            linkId: 'i1',
+            type: 'display',
+            text: 'This is an example of all question types.  See: https://www.hl7.org/fhir/valueset-item-type.html',
+          },
+          {
+            linkId: 'boolean',
+            type: 'boolean',
+            text: 'boolean',
+            initial: [
+              {
+                valueBoolean: true,
+              },
+            ],
+          },
+          {
+            linkId: 'decimal',
+            type: 'decimal',
+            text: 'decimal',
+            initial: [
+              {
+                valueDecimal: 123.45,
+              },
+            ],
+          },
+          {
+            linkId: 'integer',
+            type: 'integer',
+            text: 'integer',
+            initial: [
+              {
+                valueInteger: 123,
+              },
+            ],
+          },
+          {
+            linkId: 'date',
+            type: 'date',
+            text: 'date',
+            initial: [
+              {
+                valueDate: '2020-01-01',
+              },
+            ],
+          },
+          {
+            linkId: 'dateTime',
+            type: 'dateTime',
+            text: 'dateTime',
+            initial: [
+              {
+                valueDateTime: '2020-01-01T00:00:00Z',
+              },
+            ],
+          },
+          {
+            linkId: 'time',
+            type: 'time',
+            text: 'time',
+            initial: [
+              {
+                valueTime: '09:40:00',
+              },
+            ],
+          },
+          {
+            linkId: 'string',
+            type: 'string',
+            text: 'string',
+            initial: [
+              {
+                valueString: 'foo',
+              },
+            ],
+          },
+          {
+            linkId: 'text',
+            type: 'text',
+            text: 'text',
+            initial: [
+              {
+                valueString: 'Lorem ipsum',
+              },
+            ],
+          },
+          {
+            linkId: 'url',
+            type: 'url',
+            text: 'url',
+            initial: [
+              {
+                valueUri: 'https://example.com',
+              },
+            ],
+          },
+          {
+            linkId: 'choice',
+            type: 'choice',
+            text: 'choice',
+            answerOption: [
+              {
+                valueCoding: {
+                  code: 'code1',
+                },
+              },
+              {
+                valueDate: '2020-01-01',
+              },
+              {
+                valueInteger: 123,
+              },
+              {
+                valueString: 'string',
+              },
+              {
+                valueReference: {
+                  reference: 'Organization/123',
+                  display: 'Test Organization',
+                },
+              },
+            ],
+            initial: [
+              {
+                valueReference: {
+                  reference: 'Organization/123',
+                  display: 'Test Organization',
+                },
+              },
+            ],
+          },
+          {
+            linkId: 'open-choice',
+            type: 'open-choice',
+            text: 'open-choice',
+          },
+          {
+            linkId: 'attachment',
+            type: 'attachment',
+            text: 'attachment',
+          },
+          {
+            linkId: 'reference',
+            type: 'reference',
+            text: 'reference',
+            initial: [
+              {
+                valueReference: {
+                  reference: 'Organization/123',
+                },
+              },
+            ],
+          },
+          {
+            linkId: 'quantity',
+            type: 'quantity',
+            text: 'quantity',
+            initial: [
+              {
+                valueQuantity: {
+                  value: 123,
+                  unit: 'kg',
+                },
+              },
+            ],
+          },
+        ],
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
