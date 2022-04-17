@@ -16,7 +16,7 @@ npm --version
 [ ! -d "node_modules" ] && npm ci
 
 # Build
-BUILD_ORDER=("definitions" "fhirpath" "core" "mock" "ui" "app" "graphiql" "server" "docs")
+BUILD_ORDER=("definitions" "fhirpath" "core" "mock" "ui" "app" "graphiql" "server" "infra" "docs")
 for PACKAGE in ${BUILD_ORDER[@]}; do
   pushd "packages/$PACKAGE"
   npm run build
@@ -24,7 +24,7 @@ for PACKAGE in ${BUILD_ORDER[@]}; do
 done
 
 # Test
-TEST_ORDER=("fhirpath" "core" "mock" "ui" "app")
+TEST_ORDER=("fhirpath" "core" "mock" "ui" "app" "infra")
 for PACKAGE in ${TEST_ORDER[@]}; do
   pushd "packages/$PACKAGE"
   npm t
