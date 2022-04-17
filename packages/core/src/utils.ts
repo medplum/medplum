@@ -145,6 +145,65 @@ export function getDateProperty(date: string | undefined): Date | undefined {
 }
 
 /**
+ * Calculates the age in years from the birth date.
+ * @param birthDateStr The birth date or start date in ISO-8601 format YYYY-MM-DD.
+ * @param endDateStr Optional end date in ISO-8601 format YYYY-MM-DD. Default value is today.
+ * @returns The age in years, months, and days.
+ */
+export function calculateAge(
+  birthDateStr: string,
+  endDateStr?: string
+): { years: number; months: number; days: number } {
+  const startDate = new Date(birthDateStr);
+  startDate.setUTCHours(0, 0, 0, 0);
+
+  const endDate = endDateStr ? new Date(endDateStr) : new Date();
+  endDate.setUTCHours(0, 0, 0, 0);
+
+  const startYear = startDate.getUTCFullYear();
+  const startMonth = startDate.getUTCMonth();
+  const startDay = startDate.getUTCDate();
+
+  const endYear = endDate.getUTCFullYear();
+  const endMonth = endDate.getUTCMonth();
+  const endDay = endDate.getUTCDate();
+
+  let years = endYear - startYear;
+  if (endMonth < startMonth || (endMonth === startMonth && endDay < startDay)) {
+    years--;
+  }
+
+  let months = endYear * 12 + endMonth - (startYear * 12 + startMonth);
+  if (endDay < startDay) {
+    months--;
+  }
+
+  const days = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+
+  return { years, months, days };
+}
+
+/**
+ * Calculates the age string for display using the age appropriate units.
+ * If the age is greater than or equal to 2 years, then the age is displayed in years.
+ * If the age is greater than or equal to 1 month, then the age is displayed in months.
+ * Otherwise, the age is displayed in days.
+ * @param birthDateStr The birth date or start date in ISO-8601 format YYYY-MM-DD.
+ * @param endDateStr Optional end date in ISO-8601 format YYYY-MM-DD. Default value is today.
+ * @returns The age string.
+ */
+export function calculateAgeString(birthDateStr: string, endDateStr?: string): string | undefined {
+  const { years, months, days } = calculateAge(birthDateStr, endDateStr);
+  if (years >= 2) {
+    return years.toString().padStart(3, '0') + 'Y';
+  } else if (months >= 1) {
+    return months.toString().padStart(3, '0') + 'M';
+  } else {
+    return days.toString().padStart(3, '0') + 'D';
+  }
+}
+
+/**
  * FHIR JSON stringify.
  * Removes properties with empty string values.
  * Removes objects with zero properties.
