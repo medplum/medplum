@@ -10,6 +10,7 @@ import { Request, Response } from 'express';
 import { readFileSync } from 'fs';
 import JSZip from 'jszip';
 import { asyncWrap } from '../../async';
+import { getConfig } from '../../config';
 import { logger } from '../../logger';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
@@ -91,8 +92,8 @@ async function lambdaExists(client: LambdaClient, name: string): Promise<boolean
 async function createLambda(client: LambdaClient, name: string, zipFile: Uint8Array): Promise<void> {
   const command = new CreateFunctionCommand({
     FunctionName: name,
+    Role: getConfig().botLambdaRoleArn,
     Runtime: 'nodejs14.x',
-    Role: 'arn:aws:iam::647991932601:role/cody-lambda-test-role',
     Handler: 'index.handler',
     Code: {
       ZipFile: zipFile,

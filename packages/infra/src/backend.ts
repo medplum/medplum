@@ -248,6 +248,11 @@ export class BackEnd extends cdk.Construct {
       zone: zone,
     });
 
+    // Bot Lambda Role
+    const botLambdaRole = new iam.Role(this, 'BotLambdaRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+    });
+
     // SSM Parameters
     const databaseSecrets = new ssm.StringParameter(this, 'DatabaseSecretsParameter', {
       tier: ssm.ParameterTier.STANDARD,
@@ -263,10 +268,18 @@ export class BackEnd extends cdk.Construct {
       stringValue: redisSecrets.secretArn,
     });
 
+    const botLambdaRoleParameter = new ssm.StringParameter(this, 'BotLambdaRoleParameter', {
+      tier: ssm.ParameterTier.STANDARD,
+      parameterName: `/medplum/${name}/botLambdaRoleArn`,
+      description: 'Bot lambda execution role ARN',
+      stringValue: botLambdaRole.roleArn,
+    });
+
     // Debug
     console.log('ARecord', record.domainName);
     console.log('DatabaseSecretsParameter', databaseSecrets.parameterArn);
     console.log('RedisSecretsParameter', redisSecretsParameter.parameterArn);
     console.log('RedisCluster', redisCluster.attrPrimaryEndPointAddress);
+    console.log('BotLambdaRole', botLambdaRoleParameter.stringValue);
   }
 }
