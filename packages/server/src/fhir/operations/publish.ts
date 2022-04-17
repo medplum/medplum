@@ -22,7 +22,7 @@ export const publishHandler = asyncWrap(async (req: Request, res: Response) => {
 
   const client = new LambdaClient({ region: 'us-east-1' });
   const name = `medplum-bot-lambda-${bot.id}`;
-  deployLambda(client, name, bot.code as string);
+  await deployLambda(client, name, bot.code as string);
   sendOutcome(res, allOk);
 });
 
