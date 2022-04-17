@@ -1,8 +1,10 @@
+import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { assertOk, createReference } from '@medplum/core';
 import { AuditEvent, Bot, Project } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import fetch from 'node-fetch';
 import Mail from 'nodemailer/lib/mailer';
+import { TextDecoder, TextEncoder } from 'util';
 import vm from 'vm';
 import { asyncWrap } from '../../async';
 import { sendEmail } from '../../email';
@@ -71,6 +73,49 @@ export async function executeBot(bot: Bot, context: any): Promise<any> {
     return undefined;
   }
 
+  if (bot.runtimeVersion === 'awslambda') {
+    return runInLambda(bot, context);
+  } else {
+    return runInVmContext(bot, context);
+  }
+}
+
+async function isBotEnabled(bot: Bot): Promise<boolean> {
+  const [projectOutcome, project] = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
+  assertOk(projectOutcome, project);
+  return !!project.features?.includes('bots');
+}
+
+async function runInLambda(bot: Bot, context: any): Promise<any> {
+  const client = new LambdaClient({ region: 'us-east-1' });
+  const name = `medplum-bot-lambda-${bot.id}`;
+
+  // Build the command
+  const encoder = new TextEncoder();
+  const command = new InvokeCommand({
+    FunctionName: name,
+    InvocationType: 'RequestResponse',
+    LogType: 'Tail',
+    Payload: encoder.encode(JSON.stringify(context)),
+  });
+
+  // Execute the command
+  const response = await client.send(command);
+
+  // Decode the log data
+  const logBuffer = Buffer.from(response.LogResult as string, 'base64');
+  console.log(logBuffer.toString('ascii'));
+
+  // Decode the payload data
+  if (response.Payload) {
+    const decoder = new TextDecoder();
+    return JSON.parse(decoder.decode(response.Payload));
+  } else {
+    return undefined;
+  }
+}
+
+async function runInVmContext(bot: Bot, context: any): Promise<any> {
   const sandbox = {
     ...context,
     assertOk,
@@ -86,16 +131,10 @@ export async function executeBot(bot: Bot, context: any): Promise<any> {
   };
 
   // Wrap code in an async block for top-level await support
-  const wrappedCode = '(async () => {' + code + '})();';
+  const wrappedCode = '(async () => {' + bot.code + '})();';
 
   // Return the result of the code execution
   return (await vm.runInNewContext(wrappedCode, sandbox, options)) as any;
-}
-
-async function isBotEnabled(bot: Bot): Promise<boolean> {
-  const [projectOutcome, project] = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
-  assertOk(projectOutcome, project);
-  return !!project.features?.includes('bots');
 }
 
 function getResponseContentType(req: Request): string {

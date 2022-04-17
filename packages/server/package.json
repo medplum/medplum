@@ -19,6 +19,7 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
+    "@aws-sdk/client-lambda": "3.58.0",
     "@aws-sdk/client-s3": "3.58.0",
     "@aws-sdk/client-sesv2": "3.58.0",
     "@aws-sdk/client-ssm": "3.58.0",
@@ -43,6 +44,7 @@
     "hibp": "11.0.0",
     "ioredis": "4.28.5",
     "jose": "4.6.0",
+    "jszip": "3.9.1",
     "mustache": "4.2.0",
     "node-fetch": "2.6.7",
     "nodemailer": "6.7.3",

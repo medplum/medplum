@@ -53,6 +53,12 @@ export interface Bot {
   description?: string;
 
   /**
+   * The identifier of the bot runtime environment (i.e., vmcontext,
+   * awslambda, etc).
+   */
+  runtimeVersion?: string;
+
+  /**
    * Image of the bot.
    */
   photo?: Attachment;
