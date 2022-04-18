@@ -1,13 +1,6 @@
 import { Request, Response } from 'express';
 import { JSONSchema4 } from 'json-schema';
-import {
-  ComponentsObject,
-  OpenAPIObject,
-  ReferenceObject,
-  SchemaObject,
-  SecurityRequirementObject,
-  TagObject,
-} from 'openapi3-ts';
+import { ComponentsObject, OpenAPIObject, ReferenceObject, SchemaObject, TagObject } from 'openapi3-ts';
 import { getConfig } from './config';
 import { getSchemaDefinitions } from './fhir';
 
@@ -45,7 +38,7 @@ function buildBaseSpec(): OpenAPIObject {
     info: {
       title: 'Medplum - OpenAPI 3.0',
       description:
-        'Medplum OpenAPI 3.0 specification.  You can find out more about Medplum at [https://www.medplum.com](https://www.medplum.com).',
+        'Medplum OpenAPI 3.0 specification.  Learn more about Medplum at [https://www.medplum.com](https://www.medplum.com).',
       termsOfService: 'https://www.medplum.com/docs/terms/',
       contact: {
         email: 'hello@medplum.com',
@@ -57,7 +50,7 @@ function buildBaseSpec(): OpenAPIObject {
       version: '1.0.5',
     },
     externalDocs: {
-      description: 'Find out more about Medplum',
+      description: 'Learn more about Medplum',
       url: 'https://www.medplum.com/',
     },
     servers: [
@@ -65,39 +58,34 @@ function buildBaseSpec(): OpenAPIObject {
         url: config.baseUrl,
       },
     ],
-    security: buildSecurity(),
+    security: [
+      {
+        BasicAuth: [],
+        BearerAuth: [],
+        OpenID: [],
+      },
+    ],
     tags: [],
     paths: {},
     components: {
       schemas: {},
       securitySchemes: {
-        OAuth2: {
-          type: 'oauth2',
-          flows: {
-            authorizationCode: {
-              authorizationUrl: config.authorizeUrl,
-              tokenUrl: config.tokenUrl,
-              scopes: {
-                openid: 'OpenID',
-              },
-            },
-          },
+        BasicAuth: {
+          type: 'http',
+          scheme: 'basic',
+        },
+        BearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+        OpenID: {
+          type: 'openIdConnect',
+          openIdConnectUrl: config.baseUrl + '.well-known/openid-configuration',
         },
       },
     },
   };
-}
-
-/**
- * Builds the OpenAPI security defintions.
- * @returns The OpenAPI security defintions.
- */
-function buildSecurity(): SecurityRequirementObject[] {
-  return [
-    {
-      OAuth2: ['openid'],
-    },
-  ];
 }
 
 /**
@@ -108,13 +96,9 @@ function buildSecurity(): SecurityRequirementObject[] {
  */
 function buildFhirType(result: OpenAPIObject, typeName: string, typeDefinition: JSONSchema4): void {
   buildSchema(result, typeName, typeDefinition);
-  if (hasEndpoint(typeDefinition)) {
+  if (isResourceType(typeDefinition)) {
     buildTags(result, typeName, typeDefinition);
   }
-
-  ((result.components as ComponentsObject).schemas as SchemaMap)['Resource'] = {
-    oneOf: [{ $ref: '#/components/schemas/Patient' }, { $ref: '#/components/schemas/Observation' }],
-  };
 }
 
 /**
@@ -138,9 +122,9 @@ function buildSchema(result: OpenAPIObject, typeName: string, typeDefinition: JS
  * @returns The OpenAPI type definition.
  */
 function buildObjectSchema(name: string, definition: JSONSchema4): SchemaObject {
-  const result = JSON.parse(JSON.stringify(definition, refReplacer));
-  const resourceTypeProperty = result.properties?.resourceType;
-  if (resourceTypeProperty && resourceTypeProperty.const) {
+  const result = JSON.parse(JSON.stringify(definition, refReplacer)) as SchemaObject;
+  const resourceTypeProperty = result.properties?.resourceType as any;
+  if (resourceTypeProperty?.const) {
     delete resourceTypeProperty.const;
     resourceTypeProperty.type = 'string';
   }
@@ -158,7 +142,7 @@ function refReplacer(key: string, value: any): any {
   if (key === '$ref') {
     return (value as string).replace('#/definitions/', '#/components/schemas/');
   }
-  if (key === 'oneOf' || key.startsWith('_')) {
+  if (key.startsWith('_')) {
     return undefined;
   }
   return value;
@@ -259,7 +243,7 @@ function buildCreatePath(): any {
       content: {
         'application/fhir+json': {
           schema: {
-            $ref: '#/components/schemas/Resource',
+            $ref: '#/components/schemas/ResourceList',
           },
         },
       },
@@ -271,7 +255,7 @@ function buildCreatePath(): any {
         content: {
           'application/fhir+json': {
             schema: {
-              $ref: '#/components/schemas/Resource',
+              $ref: '#/components/schemas/ResourceList',
             },
           },
         },
@@ -312,7 +296,7 @@ function buildReadPath(): any {
         content: {
           'application/fhir+json': {
             schema: {
-              $ref: '#/components/schemas/Resource',
+              $ref: '#/components/schemas/ResourceList',
             },
           },
         },
@@ -404,7 +388,7 @@ function buildReadVersionPath(): any {
         content: {
           'application/fhir+json': {
             schema: {
-              $ref: '#/components/schemas/Resource',
+              $ref: '#/components/schemas/ResourceList',
             },
           },
         },
@@ -444,7 +428,7 @@ function buildUpdatePath(): any {
       content: {
         'application/fhir+json': {
           schema: {
-            $ref: '#/components/schemas/Resource',
+            $ref: '#/components/schemas/ResourceList',
           },
         },
       },
@@ -456,7 +440,7 @@ function buildUpdatePath(): any {
         content: {
           'application/fhir+json': {
             schema: {
-              $ref: '#/components/schemas/Resource',
+              $ref: '#/components/schemas/ResourceList',
             },
           },
         },
@@ -533,7 +517,7 @@ function buildPatchPath(): any {
   };
 }
 
-function hasEndpoint(definition: any): boolean {
+function isResourceType(definition: JSONSchema4): boolean {
   const props = definition?.properties;
-  return props && 'resourceType' in props && 'id' in props;
+  return !!(props && 'resourceType' in props && 'id' in props && 'meta' in props);
 }
