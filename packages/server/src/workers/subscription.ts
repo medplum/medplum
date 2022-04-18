@@ -364,7 +364,7 @@ export async function execBot(
     repo: botRepo,
   };
 
-  let outcome: AuditEventOutcome = AuditEventOutcome.Success;
+  let outcome: AuditEventOutcome;
   let logResult: string;
 
   try {
