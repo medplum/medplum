@@ -571,6 +571,13 @@ export class MedplumClient extends EventTarget {
     await this.#refreshProfile();
   }
 
+  setAccessToken(accessToken: string): void {
+    this.#accessToken = accessToken;
+    this.#refreshToken = undefined;
+    this.#profile = undefined;
+    this.#config = undefined;
+  }
+
   getLogins(): LoginState[] {
     return this.#storage.getObject<LoginState[]>('logins') ?? [];
   }

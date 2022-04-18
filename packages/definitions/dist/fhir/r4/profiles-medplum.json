@@ -483,6 +483,16 @@
             }]
           },
           {
+            "id" : "Bot.runtimeVersion",
+            "path" : "Bot.runtimeVersion",
+            "definition" : "The identifier of the bot runtime environment (i.e., vmcontext, awslambda, etc).",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
             "id" : "Bot.photo",
             "path" : "Bot.photo",
             "definition" : "Image of the bot.",

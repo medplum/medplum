@@ -254,6 +254,7 @@ interface ResourceTabProps {
 }
 
 function ResourceTab(props: ResourceTabProps): JSX.Element | null {
+  const medplum = useMedplum();
   const [code, setCode] = useState<string | undefined>();
   switch (props.name) {
     case 'details':
@@ -314,6 +315,18 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
           <CodeEditor defaultValue={(props.resource as Bot).code} onChange={setCode} />
           <div className="medplum-right">
             <Button type="submit">OK</Button>
+            <Button
+              type="button"
+              onClick={() => medplum.post(medplum.fhirUrl('Bot', props.resource.id as string, '$publish'), {})}
+            >
+              Publish
+            </Button>
+            <Button
+              type="button"
+              onClick={() => medplum.post(medplum.fhirUrl('Bot', props.resource.id as string, '$execute'), {})}
+            >
+              Execute
+            </Button>
           </div>
         </Form>
       );

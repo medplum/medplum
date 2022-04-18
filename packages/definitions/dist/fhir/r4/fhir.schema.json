@@ -61516,6 +61516,10 @@
           "description": "A summary, characterization or explanation of the Bot.",
           "$ref": "#/definitions/string"
         },
+        "runtimeVersion": {
+          "description": "The identifier of the bot runtime environment (i.e., vmcontext, awslambda, etc).",
+          "$ref": "#/definitions/string"
+        },
         "photo": {
           "description": "Image of the bot.",
           "$ref": "#/definitions/Attachment"

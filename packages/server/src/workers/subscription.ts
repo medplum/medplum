@@ -10,7 +10,6 @@ import { executeBot } from '../fhir/operations/execute';
 import { matchesSearchRequest, parseSearchUrl } from '../fhir/search';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
-import { MockConsole } from '../util/console';
 
 /*
  * The subscription worker inspects every resource change,
@@ -355,8 +354,6 @@ export async function execBot(
   const [botOutcome, bot] = await systemRepo.readReference<Bot>({ reference: url });
   assertOk(botOutcome, bot);
 
-  const botConsole = new MockConsole();
-
   const botRepo = new Repository({
     project: bot?.meta?.project as string,
     author: createReference(bot),
@@ -364,24 +361,22 @@ export async function execBot(
 
   const sandbox = {
     resource,
-    console: botConsole,
     repo: botRepo,
   };
 
-  let outcome: AuditEventOutcome = AuditEventOutcome.Success;
+  let outcome: AuditEventOutcome;
+  let logResult: string;
 
   try {
     const result = await executeBot(bot, sandbox);
-    botConsole.log('Success');
-    if (result !== undefined) {
-      botConsole.log(JSON.stringify(result, undefined, 2));
-    }
+    outcome = result.success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure;
+    logResult = result.logResult;
   } catch (error) {
-    outcome = AuditEventOutcome.MinorFailure;
-    botConsole.log('Error:', (error as Error).message);
+    outcome = AuditEventOutcome.MajorFailure;
+    logResult = (error as Error).message;
   }
 
-  await createSubscriptionEvent(subscription, resource, outcome, botConsole.toString());
+  await createSubscriptionEvent(subscription, resource, outcome, logResult);
 }
 
 /**

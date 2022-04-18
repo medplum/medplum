@@ -8,6 +8,24 @@ import { initTestAuth } from '../../jest.setup';
 import { initKeys } from '../../oauth';
 import { seedDatabase } from '../../seed';
 
+jest.mock('@aws-sdk/client-lambda', () => {
+  const original = jest.requireActual('@aws-sdk/client-lambda');
+
+  class LambdaClient {
+    async send(): Promise<any> {
+      return {
+        LogResult: '',
+        Payload: '',
+      };
+    }
+  }
+
+  return {
+    ...original,
+    LambdaClient,
+  };
+});
+
 const app = express();
 let accessToken: string;
 let bot: Bot;
@@ -86,5 +104,37 @@ describe('Execute', () => {
       .send(text);
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('x-application/hl7-v2+er7; charset=utf-8');
+  });
+
+  test('Execute on AWS Lambda', async () => {
+    // Step 1: Create a bot
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', 'application/fhir+json')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        code: `console.log('input', input); return input;`,
+      });
+    expect(res1.status).toBe(201);
+    const bot = res1.body as Bot;
+
+    // Step 2: Publish the bot
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$publish`)
+      .set('Content-Type', 'application/fhir+json')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res2.status).toBe(200);
+
+    // Step 3: Execute the bot
+    const res3 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', 'application/fhir+json')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res3.status).toBe(200);
   });
 });
