@@ -2,7 +2,7 @@ import { assertOk, createReference } from '@medplum/core';
 import { AccessPolicy, Bot, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
+import { invalidRequest, Repository, sendOutcome, systemRepo } from '../fhir';
 import { verifyProjectAdmin } from './utils';
 
 export const createBotValidators = [body('name').notEmpty().withMessage('Bot name is required')];
@@ -20,7 +20,7 @@ export async function createBotHandler(req: Request, res: Response): Promise<voi
     return;
   }
 
-  const bot = await createBot({
+  const bot = await createBot(res.locals.repo as Repository, {
     ...req.body,
     project: project,
   });
@@ -35,14 +35,15 @@ export interface CreateBotRequest {
   readonly accessPolicy?: Reference<AccessPolicy>;
 }
 
-export async function createBot(request: CreateBotRequest): Promise<Bot> {
-  const [clientOutcome, bot] = await systemRepo.createResource<Bot>({
+export async function createBot(repo: Repository, request: CreateBotRequest): Promise<Bot> {
+  const [clientOutcome, bot] = await repo.createResource<Bot>({
     meta: {
       project: request.project.id,
     },
     resourceType: 'Bot',
     name: request.name,
     description: request.description,
+    runtimeVersion: 'awslambda',
   });
   assertOk(clientOutcome, bot);
 

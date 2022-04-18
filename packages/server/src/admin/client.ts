@@ -2,7 +2,7 @@ import { assertOk, createReference } from '@medplum/core';
 import { AccessPolicy, ClientApplication, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
+import { invalidRequest, Repository, sendOutcome, systemRepo } from '../fhir';
 import { generateSecret } from '../oauth';
 import { verifyProjectAdmin } from './utils';
 
@@ -21,7 +21,7 @@ export async function createClientHandler(req: Request, res: Response): Promise<
     return;
   }
 
-  const client = await createClient({
+  const client = await createClient(res.locals.repo as Repository, {
     ...req.body,
     project: project,
   });
@@ -37,8 +37,8 @@ export interface CreateClientRequest {
   readonly accessPolicy?: Reference<AccessPolicy>;
 }
 
-export async function createClient(request: CreateClientRequest): Promise<ClientApplication> {
-  const [clientOutcome, client] = await systemRepo.createResource<ClientApplication>({
+export async function createClient(repo: Repository, request: CreateClientRequest): Promise<ClientApplication> {
+  const [clientOutcome, client] = await repo.createResource<ClientApplication>({
     meta: {
       project: request.project.id,
     },
