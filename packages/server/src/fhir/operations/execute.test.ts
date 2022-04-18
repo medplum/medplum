@@ -106,6 +106,29 @@ describe('Execute', () => {
     expect(res.headers['content-type']).toBe('x-application/hl7-v2+er7; charset=utf-8');
   });
 
+  test('Execute without code', async () => {
+    // Create a bot with empty code
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', 'application/fhir+json')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        code: '',
+      });
+    expect(res1.status).toBe(201);
+    const bot = res1.body as Bot;
+
+    // Execute the bot
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', 'application/fhir+json')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res2.status).toBe(400);
+  });
+
   test('Execute on AWS Lambda', async () => {
     // Step 1: Create a bot
     const res1 = await request(app)
