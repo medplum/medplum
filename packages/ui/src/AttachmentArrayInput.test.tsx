@@ -1,42 +1,10 @@
-import { MedplumClient } from '@medplum/core';
-import { Binary } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { randomUUID } from 'crypto';
 import React from 'react';
 import { AttachmentArrayInput, AttachmentArrayInputProps } from './AttachmentArrayInput';
 import { MedplumProvider } from './MedplumProvider';
 
-function mockFetch(url: string, options: any): Promise<any> {
-  let result: any = {};
-
-  if (options.method === 'POST' && url === 'https://example.com/fhir/R4/Binary') {
-    const binary: Binary = {
-      resourceType: 'Binary',
-      id: randomUUID(),
-      contentType: 'text/plain',
-    };
-    result = binary;
-  }
-
-  const response: any = {
-    request: {
-      url,
-      options,
-    },
-    ...result,
-  };
-
-  return Promise.resolve({
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response),
-  });
-}
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://example.com/',
-  clientId: 'my-client-id',
-  fetch: mockFetch,
-});
+const medplum = new MockClient();
 
 function setup(args?: AttachmentArrayInputProps): void {
   render(
