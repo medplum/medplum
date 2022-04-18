@@ -647,4 +647,18 @@ describe('Client', () => {
     callback({ key: null });
     expect(mockReload).toHaveBeenCalled();
   });
+
+  test('setAccessToken', async () => {
+    const fetch = jest.fn(async () => ({
+      json: async () => ({ resourceType: 'Patient' }),
+    }));
+
+    const client = new MedplumClient({ fetch });
+    client.setAccessToken('foo');
+
+    const patient = await client.readResource('Patient', '123');
+    expect(patient).toBeDefined();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect((fetch.mock.calls[0] as any[])[1].headers.Authorization).toBe('Bearer foo');
+  });
 });
