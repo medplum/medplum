@@ -562,7 +562,7 @@ describe('Subscription Worker', () => {
     expect(bundle.entry?.length).toEqual(1);
 
     const auditEvent = bundle.entry?.[0]?.resource as AuditEvent;
-    expect(auditEvent.outcomeDesc).toEqual('Success');
+    expect(auditEvent.outcomeDesc).toEqual('Bots not enabled');
   });
 
   test('Execute bot subscriptions', async () => {
@@ -618,7 +618,6 @@ describe('Subscription Worker', () => {
     assertOk(searchOutcome, bundle);
     expect(bundle.entry?.length).toEqual(1);
     expect(bundle.entry?.[0]?.resource?.outcome).toEqual('0');
-    expect(bundle.entry?.[0]?.resource?.outcomeDesc).toContain('Success');
     expect(bundle.entry?.[0]?.resource?.outcomeDesc).toContain(nonce);
   });
 
@@ -636,6 +635,7 @@ describe('Subscription Worker', () => {
         ],
       });
       assertOk(outcome, appointment);
+      console.log(JSON.stringify(appointment, null, 2));
       return appointment;
     `;
 
@@ -689,7 +689,6 @@ describe('Subscription Worker', () => {
     assertOk(searchOutcome, bundle);
     expect(bundle.entry?.length).toEqual(1);
     expect(bundle.entry?.[0]?.resource?.outcome).toEqual('0');
-    expect(bundle.entry?.[0]?.resource?.outcomeDesc).toContain('Success');
     expect(bundle.entry?.[0]?.resource?.outcomeDesc).toContain('"resourceType": "Appointment"');
   });
 
