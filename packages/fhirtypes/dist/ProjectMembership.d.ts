@@ -4,6 +4,7 @@
  */
 
 import { AccessPolicy } from './AccessPolicy';
+import { Bot } from './Bot';
 import { ClientApplication } from './ClientApplication';
 import { Meta } from './Meta';
 import { Patient } from './Patient';
@@ -59,13 +60,13 @@ export interface ProjectMembership {
   /**
    * User that is granted access to the project.
    */
-  user?: Reference<ClientApplication | User>;
+  user?: Reference<Bot | ClientApplication | User>;
 
   /**
    * Reference to the resource that represents the user profile within the
    * project.
    */
-  profile?: Reference<ClientApplication | Patient | Practitioner | RelatedPerson>;
+  profile?: Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
 
   /**
    * The access policy for the user within the project memebership.

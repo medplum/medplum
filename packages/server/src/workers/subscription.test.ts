@@ -524,6 +524,14 @@ describe('Subscription Worker', () => {
     });
     assertOk(botOutcome, bot);
 
+    const [membershipOutcome, membership] = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      project: { reference: 'Project/' + bot.meta?.project },
+      user: createReference(bot),
+      profile: createReference(bot),
+    });
+    assertOk(membershipOutcome, membership);
+
     const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
@@ -578,6 +586,14 @@ describe('Subscription Worker', () => {
       code: `console.log('${nonce}');`,
     });
     assertOk(botOutcome, bot);
+
+    const [membershipOutcome, membership] = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      project: { reference: 'Project/' + bot.meta?.project },
+      user: createReference(bot),
+      profile: createReference(bot),
+    });
+    assertOk(membershipOutcome, membership);
 
     const [subscriptionOutcome, subscription] = await botRepo.createResource<Subscription>({
       resourceType: 'Subscription',
@@ -963,6 +979,14 @@ describe('Subscription Worker', () => {
     });
     assertOk(botOutcome, bot);
 
+    const [membershipOutcome, membership] = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      project: { reference: 'Project/' + bot.meta?.project },
+      user: createReference(bot),
+      profile: createReference(bot),
+    });
+    assertOk(membershipOutcome, membership);
+
     const [subscriptionOutcome, subscription] = await botRepo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
@@ -1017,8 +1041,15 @@ describe('Subscription Worker', () => {
       description: 'Test Bot',
       code: `throw new Error('${nonce}');`,
     });
-    expect(botOutcome.id).toEqual('created');
-    expect(bot).toBeDefined();
+    assertOk(botOutcome, bot);
+
+    const [membershipOutcome, membership] = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      project: { reference: 'Project/' + bot.meta?.project },
+      user: createReference(bot),
+      profile: createReference(bot),
+    });
+    assertOk(membershipOutcome, membership);
 
     const [subscriptionOutcome, subscription] = await botRepo.createResource<Subscription>({
       resourceType: 'Subscription',

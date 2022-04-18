@@ -1267,33 +1267,6 @@ export async function getRepoForMembership(membership: ProjectMembership): Promi
   });
 }
 
-export async function getRepoForProjectProfile(project: string, profile: Reference): Promise<Repository> {
-  const [outcome, bundle] = await systemRepo.search<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    count: 1,
-    filters: [
-      {
-        code: 'project',
-        operator: FhirOperator.EQUALS,
-        value: `Project/${project}`,
-      },
-      {
-        code: 'profile',
-        operator: FhirOperator.EQUALS,
-        value: profile.reference as string,
-      },
-    ],
-  });
-  assertOk(outcome, bundle);
-
-  const membership = bundle.entry?.[0]?.resource;
-  if (!membership) {
-    return Promise.reject('Membership not found');
-  }
-
-  return getRepoForMembership(membership);
-}
-
 export const systemRepo = new Repository({
   author: {
     reference: 'system',
