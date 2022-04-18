@@ -692,7 +692,6 @@ describe('Subscription Worker', () => {
     assertOk(auditEventOutcome, auditEventBundle);
     expect(auditEventBundle.entry?.length).toEqual(1);
     expect(auditEventBundle.entry?.[0]?.resource?.outcome).toEqual('0');
-    expect(auditEventBundle.entry?.[0]?.resource?.outcomeDesc).toContain('Success');
 
     // Search for the new patient
     // 1) This patient should exist
