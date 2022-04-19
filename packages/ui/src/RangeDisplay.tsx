@@ -8,7 +8,7 @@ export interface RangeDisplayProps {
 
 export function RangeDisplay(props: RangeDisplayProps): JSX.Element | null {
   const value = props.value;
-  if (!value) {
+  if (!value || (!value.low && !value.high)) {
     return null;
   }
 

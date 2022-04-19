@@ -11,6 +11,7 @@ import { CodeableConceptDisplay } from './CodeableConceptDisplay';
 import { DateTimeDisplay } from './DateTimeDisplay';
 import { MedplumLink } from './MedplumLink';
 import { QuantityDisplay } from './QuantityDisplay';
+import { RangeDisplay } from './RangeDisplay';
 import { ResourceBadge } from './ResourceBadge';
 import { useResource } from './useResource';
 import './DiagnosticReportDisplay.css';
@@ -171,24 +172,5 @@ function ReferenceRangeDisplay(props: ReferenceRangeProps): JSX.Element | null {
   if (!range) {
     return null;
   }
-
-  const { low, high } = range;
-
-  if (low && high) {
-    return (
-      <>
-        {low.value}&nbsp;-&nbsp;{high.value}
-      </>
-    );
-  }
-
-  if (low) {
-    return <>&gt;{low.value}</>;
-  }
-
-  if (high) {
-    return <>&lt;{high.value}</>;
-  }
-
-  return null;
+  return <RangeDisplay value={range} />;
 }

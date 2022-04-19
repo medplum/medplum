@@ -220,9 +220,11 @@ export const HomerObservation4: Observation = {
     {
       low: {
         value: 10,
+        unit: 'x',
       },
       high: {
         value: 50,
+        unit: 'x',
       },
     },
   ],
