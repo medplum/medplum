@@ -429,7 +429,7 @@ describe('ResourcePropertyDisplay', () => {
       />
     );
 
-    expect(screen.getByText('5 mg')).toBeInTheDocument();
+    expect(screen.getByText('5 mg - 10 mg')).toBeInTheDocument();
   });
 
   test('Renders Ratio', () => {
@@ -447,7 +447,7 @@ describe('ResourcePropertyDisplay', () => {
       />
     );
 
-    expect(screen.getByText('5 mg')).toBeInTheDocument();
+    expect(screen.getByText('5 mg / 10 ml')).toBeInTheDocument();
   });
 
   test('Renders Reference', () => {
