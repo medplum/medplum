@@ -1,17 +1,17 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { assertOk, createReference } from '@medplum/core';
-import { AuditEvent, Bot, Project } from '@medplum/fhirtypes';
+import { assertOk, createReference, resolveId } from '@medplum/core';
+import { AuditEvent, Bot, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import fetch from 'node-fetch';
 import Mail from 'nodemailer/lib/mailer';
 import { TextDecoder, TextEncoder } from 'util';
 import vm from 'vm';
 import { asyncWrap } from '../../async';
 import { sendEmail } from '../../email';
+import { generateAccessToken } from '../../oauth';
 import { AuditEventOutcome } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
 import { createPdf } from '../../util/pdf';
-import { Repository, systemRepo } from '../repo';
+import { getRepoForMembership, Repository, systemRepo } from '../repo';
 import { rewriteAttachments, RewriteMode } from '../rewrite';
 
 export const EXECUTE_CONTENT_TYPES = [
@@ -20,6 +20,12 @@ export const EXECUTE_CONTENT_TYPES = [
   'text/plain',
   'x-application/hl7-v2+er7',
 ];
+
+export interface BotExecutionRequest {
+  readonly bot: Bot;
+  readonly runAs: ProjectMembership;
+  readonly input: any;
+}
 
 export interface BotExecutionResult {
   readonly success: boolean;
@@ -40,14 +46,17 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   const [outcome, bot] = await repo.readResource<Bot>('Bot', id);
   assertOk(outcome, bot);
 
-  const context = {
+  // Execute the bot
+  const result = await executeBot({
+    bot,
+    runAs: res.locals.membership as ProjectMembership,
     input: req.body,
-    fetch,
-    repo,
-  };
+  });
 
-  const result = await executeBot(bot, context);
+  // Create the audit event
   createAuditEvent(bot, result.success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure, result.logResult);
+
+  // Send the response
   res
     .status(result.success ? 200 : 400)
     .type(getResponseContentType(req))
@@ -55,14 +64,15 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
 });
 
 /**
- * Executes a Bot in a VM sandbox.
- * @param bot The bot resource.
- * @param context The global variables to expose in the VM sandbox.
- * @returns
+ * Executes a Bot.
+ * This method ensures the bot is valid and enabled.
+ * This method dispatches to the appropriate execution method.
+ * @param request The bot request.
+ * @returns The bot execution result.
  */
-export async function executeBot(bot: Bot, context: any): Promise<BotExecutionResult> {
-  const code = bot.code;
-  if (!code) {
+export async function executeBot(request: BotExecutionRequest): Promise<BotExecutionResult> {
+  const { bot } = request;
+  if (!bot.code) {
     return { success: false, logResult: 'Ignore bots with no code' };
   }
 
@@ -71,21 +81,55 @@ export async function executeBot(bot: Bot, context: any): Promise<BotExecutionRe
   }
 
   if (bot.runtimeVersion === 'awslambda') {
-    return runInLambda(bot, context);
+    return runInLambda(request);
   } else {
-    return runInVmContext(bot, context);
+    return runInVmContext(request);
   }
 }
 
+/**
+ * Returns true if the bot is enabled and bots are enabled for the project.
+ * @param bot The bot resource.
+ * @returns True if the bot is enabled.
+ */
 async function isBotEnabled(bot: Bot): Promise<boolean> {
   const [projectOutcome, project] = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
   assertOk(projectOutcome, project);
   return !!project.features?.includes('bots');
 }
 
-async function runInLambda(bot: Bot, context: any): Promise<BotExecutionResult> {
+/**
+ * Executes a Bot in an AWS Lambda.
+ * @param request The bot request.
+ * @returns The bot execution result.
+ */
+async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionResult> {
+  const { bot, runAs, input } = request;
+
+  // Create the Login resource
+  const [loginOutcome, login] = await systemRepo.createResource<Login>({
+    resourceType: 'Login',
+    membership: createReference(runAs),
+    authTime: new Date().toISOString(),
+    scope: 'openid',
+  });
+  assertOk(loginOutcome, login);
+
+  // Create the access token
+  const accessToken = await generateAccessToken({
+    login_id: login.id as string,
+    sub: resolveId(runAs.user?.reference as Reference) as string,
+    username: resolveId(runAs.user?.reference as Reference) as string,
+    profile: runAs.profile?.reference as string,
+    scope: 'openid',
+  });
+
   const client = new LambdaClient({ region: 'us-east-1' });
   const name = `medplum-bot-lambda-${bot.id}`;
+  const payload = {
+    accessToken,
+    input,
+  };
 
   // Build the command
   const encoder = new TextEncoder();
@@ -93,7 +137,7 @@ async function runInLambda(bot: Bot, context: any): Promise<BotExecutionResult> 
     FunctionName: name,
     InvocationType: 'RequestResponse',
     LogType: 'Tail',
-    Payload: encoder.encode(JSON.stringify(context)),
+    Payload: encoder.encode(JSON.stringify(payload)),
   });
 
   // Execute the command
@@ -113,17 +157,26 @@ async function runInLambda(bot: Bot, context: any): Promise<BotExecutionResult> 
   }
 }
 
-async function runInVmContext(bot: Bot, context: any): Promise<BotExecutionResult> {
+/**
+ * Executes a Bot in a VM sandbox.
+ * @param request The bot request.
+ * @returns The bot execution result.
+ */
+async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutionResult> {
+  const { bot, runAs, input } = request;
+  const botRepo = await getRepoForMembership(runAs);
   const botConsole = new MockConsole();
 
   const sandbox = {
-    ...context,
+    input,
+    resource: input,
+    repo: botRepo,
     console: botConsole,
     assertOk,
     createReference,
     createPdf,
     sendEmail: async (args: Mail.Options) => {
-      await sendEmail(await rewriteAttachments(RewriteMode.PRESIGNED_URL, context.repo, args));
+      await sendEmail(await rewriteAttachments(RewriteMode.PRESIGNED_URL, botRepo, args));
     },
   };
 

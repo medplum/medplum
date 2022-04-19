@@ -67,4 +67,9 @@ export interface Bot {
    * Bot logic script.
    */
   code?: string;
+
+  /**
+   * Optional flag to indicate that the bot should be run as the user.
+   */
+  runAsUser?: boolean;
 }

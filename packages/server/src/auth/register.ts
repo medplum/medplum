@@ -124,7 +124,7 @@ async function registerNewProject(request: RegisterRequest): Promise<RegisterRes
   const project = await createProject(request, user);
   const profile = await createPractitioner(request, project);
   const membership = await createProjectMembership(user, project, profile, undefined, true);
-  const client = await createClient({
+  const client = await createClient(systemRepo, {
     project,
     name: project.name + ' Default Client',
     description: 'Default client for ' + project.name,

@@ -61527,6 +61527,10 @@
         "code": {
           "description": "Bot logic script.",
           "$ref": "#/definitions/string"
+        },
+        "runAsUser": {
+          "description": "Optional flag to indicate that the bot should be run as the user.",
+          "$ref": "#/definitions/boolean"
         }
       }
     },

@@ -1,11 +1,20 @@
 import { assertOk, createReference, isGone, Operator, stringify } from '@medplum/core';
-import { AuditEvent, Bot, BundleEntry, Extension, Resource, Subscription } from '@medplum/fhirtypes';
+import {
+  AuditEvent,
+  Bot,
+  BundleEntry,
+  Extension,
+  ProjectMembership,
+  Reference,
+  Resource,
+  Subscription,
+} from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
 import { URL } from 'url';
 import { MedplumRedisConfig } from '../config';
-import { Repository, systemRepo } from '../fhir';
+import { systemRepo } from '../fhir';
 import { executeBot } from '../fhir/operations/execute';
 import { matchesSearchRequest, parseSearchUrl } from '../fhir/search';
 import { logger } from '../logger';
@@ -354,21 +363,23 @@ export async function execBot(
   const [botOutcome, bot] = await systemRepo.readReference<Bot>({ reference: url });
   assertOk(botOutcome, bot);
 
-  const botRepo = new Repository({
-    project: bot?.meta?.project as string,
-    author: createReference(bot),
-  });
+  const project = bot.meta?.project as string;
+  let runAs: ProjectMembership | undefined;
+  if (bot.runAsUser) {
+    runAs = await findProjectMembership(project, resource.meta?.author as Reference);
+  } else {
+    runAs = await findProjectMembership(project, createReference(bot));
+  }
 
-  const sandbox = {
-    resource,
-    repo: botRepo,
-  };
+  if (!runAs) {
+    return Promise.reject('Could not find project membership for bot');
+  }
 
   let outcome: AuditEventOutcome;
   let logResult: string;
 
   try {
-    const result = await executeBot(bot, sandbox);
+    const result = await executeBot({ bot, runAs, input: resource });
     outcome = result.success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure;
     logResult = result.logResult;
   } catch (error) {
@@ -377,6 +388,27 @@ export async function execBot(
   }
 
   await createSubscriptionEvent(subscription, resource, outcome, logResult);
+}
+
+async function findProjectMembership(project: string, profile: Reference): Promise<ProjectMembership | undefined> {
+  const [outcome, bundle] = await systemRepo.search<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    count: 1,
+    filters: [
+      {
+        code: 'project',
+        operator: Operator.EQUALS,
+        value: `Project/${project}`,
+      },
+      {
+        code: 'profile',
+        operator: Operator.EQUALS,
+        value: profile.reference as string,
+      },
+    ],
+  });
+  assertOk(outcome, bundle);
+  return bundle.entry?.[0]?.resource;
 }
 
 /**

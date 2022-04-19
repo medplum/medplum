@@ -1,4 +1,4 @@
-import { ProfileResource, stringify } from '@medplum/core';
+import { ProfileResource } from '@medplum/core';
 import {
   Attachment,
   AuditEvent,
@@ -20,6 +20,7 @@ import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { ResourceDiffTable } from './ResourceDiffTable';
 import { ResourceTable } from './ResourceTable';
+import { Scrollable } from './Scrollable';
 import { Timeline, TimelineItem } from './Timeline';
 import { UploadButton } from './UploadButton';
 import { useResource } from './useResource';
@@ -257,7 +258,9 @@ interface AuditEventTimelineItemProps {
 function AuditEventTimelineItem(props: AuditEventTimelineItemProps): JSX.Element {
   return (
     <TimelineItem resource={props.auditEvent} padding={true}>
-      <pre>{stringify(props.auditEvent, true)}</pre>
+      <Scrollable>
+        <pre>{props.auditEvent.outcomeDesc}</pre>
+      </Scrollable>
     </TimelineItem>
   );
 }

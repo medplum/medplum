@@ -357,7 +357,8 @@
             "max" : "1",
             "type" : [{
               "code" : "Reference",
-              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/ClientApplication",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Bot",
+                "https://medplum.com/fhir/StructureDefinition/ClientApplication",
                 "https://medplum.com/fhir/StructureDefinition/User"]
             }]
           },
@@ -369,7 +370,8 @@
             "max" : "1",
             "type" : [{
               "code" : "Reference",
-              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/ClientApplication",
+              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/Bot",
+                "http://hl7.org/fhir/StructureDefinition/ClientApplication",
                 "http://hl7.org/fhir/StructureDefinition/Patient",
                 "http://hl7.org/fhir/StructureDefinition/Practitioner",
                 "http://hl7.org/fhir/StructureDefinition/RelatedPerson"]
@@ -510,6 +512,16 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
+            }]
+          },
+          {
+            "id" : "Bot.runAsUser",
+            "path" : "Bot.runAsUser",
+            "definition" : "Optional flag to indicate that the bot should be run as the user.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
             }]
           }
         ]

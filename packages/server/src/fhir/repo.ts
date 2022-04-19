@@ -133,7 +133,7 @@ export class Repository {
 
   constructor(context: RepositoryContext) {
     this.#context = context;
-    if (!this.#context.author.reference) {
+    if (!this.#context.author?.reference) {
       throw new Error('Invalid author reference');
     }
   }
@@ -1241,12 +1241,6 @@ function fhirOperatorToSqlOperator(fhirOperator: FhirOperator): Operator {
  * @returns A repository configured for the login details.
  */
 export async function getRepoForLogin(login: Login, membership: ProjectMembership): Promise<Repository> {
-  let accessPolicy: AccessPolicy | undefined = undefined;
-
-  if (!membership.profile?.reference) {
-    return Promise.reject('Cannot create repo for login without profile');
-  }
-
   if (login.admin) {
     return new Repository({
       project: resolveId(membership.project) as string,
@@ -1254,6 +1248,11 @@ export async function getRepoForLogin(login: Login, membership: ProjectMembershi
       admin: true,
     });
   }
+  return getRepoForMembership(membership);
+}
+
+export async function getRepoForMembership(membership: ProjectMembership): Promise<Repository> {
+  let accessPolicy: AccessPolicy | undefined = undefined;
 
   if (membership.accessPolicy) {
     const [accessPolicyOutcome, accessPolicyResource] = await systemRepo.readReference(membership.accessPolicy);

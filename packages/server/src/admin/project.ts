@@ -4,12 +4,14 @@ import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { sendOutcome, systemRepo } from '../fhir';
 import { authenticateToken } from '../oauth';
+import { createBotHandler, createBotValidators } from './bot';
 import { createClientHandler, createClientValidators } from './client';
 import { inviteHandler, inviteValidators } from './invite';
 import { getProjectMemberships, verifyProjectAdmin } from './utils';
 
 export const projectAdminRouter = Router();
 projectAdminRouter.use(authenticateToken);
+projectAdminRouter.post('/:projectId/bot', createBotValidators, asyncWrap(createBotHandler));
 projectAdminRouter.post('/:projectId/client', createClientValidators, asyncWrap(createClientHandler));
 projectAdminRouter.post('/:projectId/invite', inviteValidators, asyncWrap(inviteHandler));
 
@@ -25,7 +27,6 @@ projectAdminRouter.get(
       return res.sendStatus(404);
     }
 
-    // const { project, memberships } = projectDetails;
     const memberships = await getProjectMemberships(project.id as string);
     const members = [];
     for (const membership of memberships) {
@@ -124,6 +125,9 @@ projectAdminRouter.delete(
  * @returns A string representing the role of the user in the project.
  */
 function getRole(project: Project, membership: ProjectMembership): string {
+  if (membership.user?.reference?.startsWith('Bot/')) {
+    return 'bot';
+  }
   if (membership.user?.reference?.startsWith('ClientApplication/')) {
     return 'client';
   }

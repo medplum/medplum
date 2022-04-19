@@ -97,6 +97,36 @@ export function ProjectPage(): JSX.Element {
       <div className="medplum-right">
         <MedplumLink to={`/admin/projects/${result.project.id}/client`}>Create new client</MedplumLink>
       </div>
+      <h3>Bots</h3>
+      <table className="medplum-table">
+        <colgroup>
+          <col style={{ width: '80%' }} />
+          <col style={{ width: '20%' }} />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th className="medplum-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {result.members
+            .filter((member: any) => member.role === 'bot')
+            .map((member: any) => (
+              <tr key={member.profile.reference}>
+                <td>
+                  <ResourceBadge value={member.profile} link={true} />
+                </td>
+                <td className="medplum-center">
+                  <MedplumLink to={`/admin/projects/${id}/members/${member.id}`}>Access</MedplumLink>
+                </td>
+              </tr>
+            ))}
+        </tbody>
+      </table>
+      <div className="medplum-right">
+        <MedplumLink to={`/admin/projects/${result.project.id}/bot`}>Create new bot</MedplumLink>
+      </div>
     </Document>
   );
 }
