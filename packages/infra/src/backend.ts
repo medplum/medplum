@@ -131,7 +131,8 @@ export class BackEnd extends cdk.Construct {
       'SecretsManagerReadWrite', // Read RDS secrets
       'AmazonCognitoPowerUser', // Authenticate users with Cognito
       'AmazonSESFullAccess', // Send emails with SES
-      'AmazonS3FullAccess', // upload content to content bucket
+      'AmazonS3FullAccess', // Upload content to content bucket
+      'AWSLambda_FullAccess', // Create and execute lambdas
     ];
     policies.forEach((policy) => taskRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName(policy)));
 
