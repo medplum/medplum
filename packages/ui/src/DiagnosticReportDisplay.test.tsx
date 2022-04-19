@@ -94,6 +94,7 @@ describe('DiagnosticReportDisplay', () => {
     // See packages/mock/src/mocks/simpsons.ts
     expect(screen.getByText('Diagnostic Report')).toBeDefined();
     expect(screen.getByText('110 mmHg / 75 mmHg')).toBeDefined();
+    expect(screen.getByText('10 x - 50 x')).toBeDefined();
     expect(screen.getByText('> 50 x')).toBeDefined();
   });
 

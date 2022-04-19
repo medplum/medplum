@@ -21,4 +21,8 @@ describe('RangeDisplay', () => {
   test('Renders undefined value', () => {
     render(<RangeDisplay />);
   });
+
+  test('Renders empty range', () => {
+    render(<RangeDisplay value={{}} />);
+  });
 });
