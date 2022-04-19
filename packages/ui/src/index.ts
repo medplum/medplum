@@ -17,6 +17,7 @@ export * from './DefaultResourceTimeline';
 export * from './DiagnosticReportDisplay';
 export * from './Document';
 export * from './EncounterTimeline';
+export * from './ErrorBoundary';
 export * from './FooterLinks';
 export * from './Form';
 export * from './FormSection';

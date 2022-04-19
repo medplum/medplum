@@ -3,6 +3,7 @@ import React from 'react';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
 import { DateTimeDisplay } from './DateTimeDisplay';
+import { ErrorBoundary } from './ErrorBoundary';
 import { MedplumLink } from './MedplumLink';
 import { ResourceName } from './ResourceName';
 import './Timeline.css';
@@ -42,8 +43,10 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
           </div>
         </div>
       </div>
-      {props.padding && <div style={{ padding: '2px 16px 16px 16px' }}>{props.children}</div>}
-      {!props.padding && <>{props.children}</>}
+      <ErrorBoundary>
+        {props.padding && <div style={{ padding: '2px 16px 16px 16px' }}>{props.children}</div>}
+        {!props.padding && <>{props.children}</>}
+      </ErrorBoundary>
       {props.socialEnabled && (
         <div className="medplum-timeline-item-footer">
           <Button borderless={true}>Like</Button>

@@ -14,6 +14,7 @@ import {
   DiagnosticReportDisplay,
   Document,
   EncounterTimeline,
+  ErrorBoundary,
   Form,
   Loading,
   MedplumLink,
@@ -219,22 +220,24 @@ export function ResourcePage(): JSX.Element {
         <TabSwitch value={tab || defaultTab}>
           {tabs.map((t) => (
             <TabPanel key={t} name={t.toLowerCase()}>
-              <ResourceTab
-                name={t.toLowerCase()}
-                resource={value}
-                resourceHistory={historyBundle}
-                questionnaires={questionnaires as Bundle<Questionnaire>}
-                onSubmit={onSubmit}
-                onDelete={() => {
-                  if (window.confirm('Are you sure you want to delete this resource?')) {
-                    medplum
-                      .deleteResource(resourceType, id)
-                      .then(() => navigate(`/${resourceType}`))
-                      .catch(setError);
-                  }
-                }}
-                outcome={error}
-              />
+              <ErrorBoundary>
+                <ResourceTab
+                  name={t.toLowerCase()}
+                  resource={value}
+                  resourceHistory={historyBundle}
+                  questionnaires={questionnaires as Bundle<Questionnaire>}
+                  onSubmit={onSubmit}
+                  onDelete={() => {
+                    if (window.confirm('Are you sure you want to delete this resource?')) {
+                      medplum
+                        .deleteResource(resourceType, id)
+                        .then(() => navigate(`/${resourceType}`))
+                        .catch(setError);
+                    }
+                  }}
+                  outcome={error}
+                />
+              </ErrorBoundary>
             </TabPanel>
           ))}
         </TabSwitch>
