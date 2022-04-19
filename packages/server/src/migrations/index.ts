@@ -10,3 +10,4 @@ export * as v8 from './v8';
 export * as v9 from './v9';
 export * as v10 from './v10';
 export * as v11 from './v11';
+export * as v12 from './v12';
