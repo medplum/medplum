@@ -2,6 +2,7 @@ import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { assertOk, createReference, resolveId } from '@medplum/core';
 import { AuditEvent, Bot, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
+import fetch from 'node-fetch';
 import Mail from 'nodemailer/lib/mailer';
 import { TextDecoder, TextEncoder } from 'util';
 import vm from 'vm';
@@ -172,6 +173,7 @@ async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutio
     resource: input,
     repo: botRepo,
     console: botConsole,
+    fetch,
     assertOk,
     createReference,
     createPdf,
