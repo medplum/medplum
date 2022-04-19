@@ -214,6 +214,7 @@ export const HomerObservation4: Observation = {
   valueQuantity: {
     value: 50,
     unit: 'x',
+    comparator: '>',
   },
   referenceRange: [
     {

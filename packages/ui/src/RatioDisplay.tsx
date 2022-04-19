@@ -13,10 +13,10 @@ export function RatioDisplay(props: RatioDisplayProps): JSX.Element | null {
   }
 
   return (
-    <span>
+    <>
       <QuantityDisplay value={value.numerator} />
       &nbsp;/&nbsp;
       <QuantityDisplay value={value.denominator} />
-    </span>
+    </>
   );
 }

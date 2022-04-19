@@ -11,9 +11,27 @@ export function QuantityDisplay(props: QuantityDisplayProps): JSX.Element | null
     return null;
   }
 
-  return (
-    <span>
-      {value.comparator} {value.value} {value.unit}
-    </span>
-  );
+  return <>{formatQuantityString(value)}</>;
+}
+
+export function formatQuantityString(quantity: Quantity): string {
+  const result = [];
+
+  if (quantity.comparator) {
+    result.push(quantity.comparator);
+    result.push(' ');
+  }
+
+  if (quantity.value !== undefined) {
+    result.push(quantity.value);
+  }
+
+  if (quantity.unit) {
+    if (quantity.unit !== '%') {
+      result.push(' ');
+    }
+    result.push(quantity.unit);
+  }
+
+  return result.join('');
 }

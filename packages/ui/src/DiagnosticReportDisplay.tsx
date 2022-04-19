@@ -10,6 +10,7 @@ import React from 'react';
 import { CodeableConceptDisplay } from './CodeableConceptDisplay';
 import { DateTimeDisplay } from './DateTimeDisplay';
 import { MedplumLink } from './MedplumLink';
+import { QuantityDisplay } from './QuantityDisplay';
 import { ResourceBadge } from './ResourceBadge';
 import { useResource } from './useResource';
 import './DiagnosticReportDisplay.css';
@@ -85,7 +86,6 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
       <thead>
         <tr>
           <th>Test</th>
-          <th>Units</th>
           <th>Value</th>
           <th>Reference Range</th>
           <th>Interpretation</th>
@@ -117,8 +117,9 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
           <CodeableConceptDisplay value={observation.code} />
         </MedplumLink>
       </td>
-      <td>{getUnitsDisplayString(observation)}</td>
-      <td>{getValueDisplayString(observation)}</td>
+      <td>
+        <ObservationValueDisplay value={observation} />
+      </td>
       <td>
         <ReferenceRangeDisplay value={observation.referenceRange} />
       </td>
@@ -131,32 +132,34 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
   );
 }
 
-function getUnitsDisplayString(observation: Observation | ObservationComponent): string | undefined {
-  if (observation.valueQuantity?.unit) {
-    return observation.valueQuantity.unit;
-  }
-
-  if ('component' in observation && observation.component) {
-    return observation.component.map((c) => getUnitsDisplayString(c)).join('/');
-  }
-
-  return undefined;
+interface ObservationValueDisplayProps {
+  value?: Observation | ObservationComponent;
 }
 
-function getValueDisplayString(observation: Observation | ObservationComponent): string | number | undefined {
-  if (observation.valueQuantity?.value !== undefined) {
-    return observation.valueQuantity.value;
+function ObservationValueDisplay(props: ObservationValueDisplayProps): JSX.Element | null {
+  const obs = props.value;
+
+  if (obs?.valueQuantity) {
+    return <QuantityDisplay value={props.value?.valueQuantity} />;
   }
 
-  if (observation.valueString) {
-    return observation.valueString;
+  if (obs?.valueString) {
+    return <>{obs.valueString}</>;
   }
 
-  if ('component' in observation && observation.component) {
-    return observation.component.map((c) => getValueDisplayString(c)).join('/');
+  if (obs && 'component' in obs && obs?.component) {
+    return (
+      <>
+        {obs.component
+          .map<React.ReactNode>((component: ObservationComponent, index: number) => (
+            <ObservationValueDisplay key={`obs-${index}`} value={component} />
+          ))
+          .reduce((prev, curr) => [prev, ' / ', curr])}
+      </>
+    );
   }
 
-  return undefined;
+  return null;
 }
 
 interface ReferenceRangeProps {

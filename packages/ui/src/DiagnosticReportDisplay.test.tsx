@@ -79,16 +79,22 @@ describe('DiagnosticReportDisplay', () => {
     await act(async () => {
       setup({ value: HomerDiagnosticReport });
     });
+
+    // See packages/mock/src/mocks/simpsons.ts
     expect(screen.getByText('Diagnostic Report')).toBeDefined();
-    expect(screen.getByText('110/75')).toBeDefined();
+    expect(screen.getByText('110 mmHg / 75 mmHg')).toBeDefined();
+    expect(screen.getByText('> 50 x')).toBeDefined();
   });
 
   test('Renders by reference', async () => {
     await act(async () => {
       setup({ value: { reference: 'DiagnosticReport/123' } });
     });
+
+    // See packages/mock/src/mocks/simpsons.ts
     expect(screen.getByText('Diagnostic Report')).toBeDefined();
-    expect(screen.getByText('110/75')).toBeDefined();
+    expect(screen.getByText('110 mmHg / 75 mmHg')).toBeDefined();
+    expect(screen.getByText('> 50 x')).toBeDefined();
   });
 
   test('Renders presented form', async () => {
