@@ -224,7 +224,16 @@ export function stringify(value: any, pretty?: boolean): string {
  * @param {*} v Property value.
  */
 function stringifyReplacer(k: string, v: any): any {
-  return isEmpty(v) ? undefined : v;
+  return !isArrayKey(k) && isEmpty(v) ? undefined : v;
+}
+
+/**
+ * Returns true if the key is an array key.
+ * @param k The property key.
+ * @returns True if the key is an array key.
+ */
+function isArrayKey(k: string): boolean {
+  return !!k.match(/\d+$/);
 }
 
 /**

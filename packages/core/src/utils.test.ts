@@ -201,6 +201,9 @@ describe('Core Utils', () => {
     expect(stringify({ x: {} })).toEqual('{}');
     expect(stringify({ x: { y: 'z' } })).toEqual('{"x":{"y":"z"}}');
     expect(stringify({ x: 2 }, true)).toEqual('{\n  "x": 2\n}');
+    expect(stringify({ resourceType: 'Patient', address: [{ line: [''] }] })).toEqual(
+      '{"resourceType":"Patient","address":[{"line":[""]}]}'
+    );
   });
 
   test('Deep equals', () => {
