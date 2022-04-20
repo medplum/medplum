@@ -68,6 +68,10 @@ describe('Core Utils', () => {
     expect(getDisplayString({ resourceType: 'Patient', name: [{ family: 'Smith' }] })).toEqual('Smith');
     expect(getDisplayString({ resourceType: 'Patient', id: '123', name: [] })).toEqual('Patient/123');
     expect(getDisplayString({ resourceType: 'Observation', id: '123' })).toEqual('Observation/123');
+    expect(getDisplayString({ resourceType: 'Observation', id: '123', code: {} })).toEqual('Observation/123');
+    expect(getDisplayString({ resourceType: 'Observation', id: '123', code: { text: 'TESTOSTERONE' } })).toEqual(
+      'TESTOSTERONE'
+    );
     expect(getDisplayString({ resourceType: 'ClientApplication', id: '123' })).toEqual('ClientApplication/123');
     expect(
       getDisplayString({
