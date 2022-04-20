@@ -148,6 +148,54 @@ interface SchemaGraphQLResponse {
   };
 }
 
+/**
+ * The MedplumClient class provides a client for the Medplum FHIR server.
+ *
+ * The client can be used in the browser, in a NodeJS application, or in a Medplum Bot.
+ *
+ * The client provides helpful methods for common operations such as:
+ *   1) Authenticating
+ *   2) Creating resources
+ *   2) Reading resources
+ *   3) Updating resources
+ *   5) Deleting resources
+ *   6) Searching
+ *   7) Making GraphQL queries
+ *
+ * Here is a quick example of how to use the client:
+ *
+ * ```typescript
+ * import { MedplumClient } from '@medplum/core';
+ * const medplum = new MedplumClient();
+ * ```
+ *
+ * Create a `Patient`:
+ *
+ * ```typescript
+ * const patient = await medplum.createResource({
+ *   resourceType: 'Patient',
+ *   name: [{
+ *     given: ['Alice'],
+ *     family: 'Smith'
+ *   }]
+ * });
+ * ```
+ *
+ * Read a `Patient` by ID:
+ *
+ * ```typescript
+ * const patient = await medplum.readResource('Patient', '123');
+ * console.log(patient.name[0].given[0]);
+ * ```
+ *
+ * Search for a `Patient` by name:
+ *
+ * ```typescript
+ * const bundle = await medplum.search('Patient?name=Alice');
+ * console.log(bundle.total);
+ * ```
+ *
+ */
 export class MedplumClient extends EventTarget {
   readonly #fetch: FetchLike;
   readonly #storage: ClientStorage;
@@ -212,10 +260,34 @@ export class MedplumClient extends EventTarget {
     this.dispatchEvent({ type: 'change' });
   }
 
+  /**
+   * Makes an HTTP GET request to the specified URL.
+   *
+   * This is a lower level method for custom requests.
+   * For common operations, we recommend using higher level methods
+   * such as `readResource()`, `search()`, etc.
+   *
+   * @param url The target URL.
+   * @param options Optional fetch options.
+   * @returns Promise to the response content.
+   */
   get(url: string, options: RequestInit = {}): Promise<any> {
     return this.#request('GET', url, options);
   }
 
+  /**
+   * Makes an HTTP POST request to the specified URL.
+   *
+   * This is a lower level method for custom requests.
+   * For common operations, we recommend using higher level methods
+   * such as `createResource()`.
+   *
+   * @param url The target URL.
+   * @param body The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
+   * @param contentType The content type to be included in the "Content-Type" header.
+   * @param options Optional fetch options.
+   * @returns Promise to the response content.
+   */
   post(url: string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
     if (body) {
       this.#setRequestBody(options, body);
@@ -226,6 +298,19 @@ export class MedplumClient extends EventTarget {
     return this.#request('POST', url, options);
   }
 
+  /**
+   * Makes an HTTP PUT request to the specified URL.
+   *
+   * This is a lower level method for custom requests.
+   * For common operations, we recommend using higher level methods
+   * such as `updateResource()`.
+   *
+   * @param url The target URL.
+   * @param body The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
+   * @param contentType The content type to be included in the "Content-Type" header.
+   * @param options Optional fetch options.
+   * @returns Promise to the response content.
+   */
   put(url: string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
     if (body) {
       this.#setRequestBody(options, body);
@@ -236,12 +321,35 @@ export class MedplumClient extends EventTarget {
     return this.#request('PUT', url, options);
   }
 
+  /**
+   * Makes an HTTP PATCH request to the specified URL.
+   *
+   * This is a lower level method for custom requests.
+   * For common operations, we recommend using higher level methods
+   * such as `patchResource()`.
+   *
+   * @param url The target URL.
+   * @param operations Array of JSONPatch operations.
+   * @param options Optional fetch options.
+   * @returns Promise to the response content.
+   */
   patch(url: string, operations: Operation[], options: RequestInit = {}): Promise<any> {
     this.#setRequestBody(options, operations);
     this.#setRequestContentType(options, PATCH_CONTENT_TYPE);
     return this.#request('PATCH', url, options);
   }
 
+  /**
+   * Makes an HTTP DELETE request to the specified URL.
+   *
+   * This is a lower level method for custom requests.
+   * For common operations, we recommend using higher level methods
+   * such as `deleteResource()`.
+   *
+   * @param url The target URL.
+   * @param options Optional fetch options.
+   * @returns Promise to the response content.
+   */
   delete(url: string, options: RequestInit = {}): Promise<any> {
     return this.#request('DELETE', url, options);
   }
@@ -335,17 +443,82 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Sends a FHIR search request.
-   * @param query The search query.
+   *
+   * Example using a FHIR search string:
+   *
+   * ```typescript
+   * const bundle = await client.search('Patient?name=Alice');
+   * console.log(bundle);
+   * ```
+   *
+   * Example using a structured search:
+   *
+   * ```typescript
+   * const bundle = await client.search({
+   *   resourceType: 'Patient',
+   *   filters: [{
+   *     code: 'name',
+   *     operator: 'eq',
+   *     value: 'Alice',
+   *   }]
+   * });
+   * console.log(bundle);
+   * ```
+   *
+   * The return value is a FHIR bundle:
+   *
+   * ```json
+   * {
+   *    "resourceType": "Bundle",
+   *    "type": "searchest",
+   *    "total": 1,
+   *    "entry": [
+   *       {
+   *          "resource": {
+   *             "resourceType": "Patient",
+   *             "name": [
+   *                {
+   *                   "given": [
+   *                      "George"
+   *                   ],
+   *                   "family": "Washington"
+   *                }
+   *             ],
+   *          }
+   *       }
+   *    ]
+   * }
+   * ```
+   *
+   * See FHIR search for full details: https://www.hl7.org/fhir/search.html
+   *
+   * @param query The search query as either a string or a structured search object.
    * @returns Promise to the search result bundle.
    */
   search<T extends Resource>(query: string | SearchRequest, options: RequestInit = {}): Promise<Bundle<T>> {
-    const search: SearchRequest = typeof query === 'string' ? parseSearchDefinition(query) : query;
-    return this.get(this.fhirUrl(search.resourceType) + formatSearchQuery(search), options);
+    return this.get(
+      typeof query === 'string' ? 'fhir/R4/' + query : this.fhirUrl(query.resourceType) + formatSearchQuery(query),
+      options
+    );
   }
 
   /**
-   * Sends a FHIR search request.
-   * @param query The search query.
+   * Sends a FHIR search request for a single resource.
+   *
+   * This is a convenience method for `search()` that returns the first resource rather than a `Bundle`.
+   *
+   * Example using a FHIR search string:
+   *
+   * ```typescript
+   * const patient = await client.searchOne('Patient?identifier=123');
+   * console.log(patient);
+   * ```
+   *
+   * The return value is the resource, if available; otherwise, undefined.
+   *
+   * See FHIR search for full details: https://www.hl7.org/fhir/search.html
+   *
+   * @param query The search query as either a string or a structured search object.
    * @returns Promise to the search result bundle.
    */
   async searchOne<T extends Resource>(
@@ -359,8 +532,22 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
-   * Sends a FHIR search request.
-   * @param query The search query.
+   * Sends a FHIR search request for an array of resources.
+   *
+   * This is a convenience method for `search()` that returns the resources as an array rather than a `Bundle`.
+   *
+   * Example using a FHIR search string:
+   *
+   * ```typescript
+   * const patients = await client.searchResources('Patient?name=Alice');
+   * console.log(patients);
+   * ```
+   *
+   * The return value is an array of resources.
+   *
+   * See FHIR search for full details: https://www.hl7.org/fhir/search.html
+   *
+   * @param query The search query as either a string or a structured search object.
    * @returns Promise to the search result bundle.
    */
   async searchResources<T extends Resource>(query: string | SearchRequest, options: RequestInit = {}): Promise<T[]> {
@@ -412,6 +599,22 @@ export class MedplumClient extends EventTarget {
     return undefined;
   }
 
+  /**
+   * Reads a resource by resource type and ID.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const patient = await medplum.readResource('Patient', '123');
+   * console.log(patient);
+   * ```
+   *
+   * See the FHIR "read" operation for full details: https://www.hl7.org/fhir/http.html#read
+   *
+   * @param resourceType The FHIR resource type.
+   * @param id The resource ID.
+   * @returns The resource if available; undefined otherwise.
+   */
   readResource<T extends Resource>(resourceType: string, id: string): Promise<T> {
     const cacheKey = resourceType + '/' + id;
     const promise = this.get(this.fhirUrl(resourceType, id)).then((resource: T) => {
@@ -422,11 +625,47 @@ export class MedplumClient extends EventTarget {
     return promise;
   }
 
+  /**
+   * Reads a resource by resource type and ID using the in-memory resource cache.
+   *
+   * If the resource is not available in the cache, it will be read from the server.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const patient = await medplum.readCached('Patient', '123');
+   * console.log(patient);
+   * ```
+   *
+   * See the FHIR "read" operation for full details: https://www.hl7.org/fhir/http.html#read
+   *
+   * @param resourceType The FHIR resource type.
+   * @param id The resource ID.
+   * @returns The resource if available; undefined otherwise.
+   */
   readCached<T extends Resource>(resourceType: string, id: string): Promise<T> {
     const cached = this.#resourceCache.get(resourceType + '/' + id) as T | Promise<T> | undefined;
     return cached ? Promise.resolve(cached) : this.readResource(resourceType, id);
   }
 
+  /**
+   * Reads a resource by `Reference`.
+   *
+   * This is a convenience method for `readResource()` that accepts a `Reference` object.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const serviceRequest = await medplum.readResource('ServiceRequest', '123');
+   * const patient = await medplum.readReference(serviceRequest.subject);
+   * console.log(patient);
+   * ```
+   *
+   * See the FHIR "read" operation for full details: https://www.hl7.org/fhir/http.html#read
+   *
+   * @param reference The FHIR reference object.
+   * @returns The resource if available; undefined otherwise.
+   */
   readReference<T extends Resource>(reference: Reference<T>): Promise<T> {
     const refString = reference?.reference;
     if (!refString) {
@@ -436,6 +675,26 @@ export class MedplumClient extends EventTarget {
     return this.readResource(resourceType, id);
   }
 
+  /**
+   * Reads a resource by `Reference` using the in-memory resource cache.
+   *
+   * This is a convenience method for `readResource()` that accepts a `Reference` object.
+   *
+   * If the resource is not available in the cache, it will be read from the server.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const serviceRequest = await medplum.readResource('ServiceRequest', '123');
+   * const patient = await medplum.readCachedReference(serviceRequest.subject);
+   * console.log(patient);
+   * ```
+   *
+   * See the FHIR "read" operation for full details: https://www.hl7.org/fhir/http.html#read
+   *
+   * @param reference The FHIR reference object.
+   * @returns The resource if available; undefined otherwise.
+   */
   readCachedReference<T extends Resource>(reference: Reference<T>): Promise<T> {
     const refString = reference?.reference;
     if (!refString) {
@@ -510,10 +769,44 @@ export class MedplumClient extends EventTarget {
     return this.#schema;
   }
 
+  /**
+   * Reads resource history by resource type and ID.
+   *
+   * The return value is a bundle of all versions of the resource.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const history = await medplum.readHistory('Patient', '123');
+   * console.log(history);
+   * ```
+   *
+   * See the FHIR "history" operation for full details: https://www.hl7.org/fhir/http.html#history
+   *
+   * @param resourceType The FHIR resource type.
+   * @param id The resource ID.
+   * @returns The resource if available; undefined otherwise.
+   */
   readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>> {
     return this.get(this.fhirUrl(resourceType, id, '_history'));
   }
 
+  /**
+   * Reads a specific version of a resource by resource type, ID, and version ID.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const version = await medplum.readVersion('Patient', '123', '456');
+   * console.log(version);
+   * ```
+   *
+   * See the FHIR "vread" operation for full details: https://www.hl7.org/fhir/http.html#vread
+   *
+   * @param resourceType The FHIR resource type.
+   * @param id The resource ID.
+   * @returns The resource if available; undefined otherwise.
+   */
   readVersion<T extends Resource>(resourceType: string, id: string, vid: string): Promise<T> {
     return this.get(this.fhirUrl(resourceType, id, '_history', vid));
   }
@@ -522,6 +815,29 @@ export class MedplumClient extends EventTarget {
     return this.get(this.fhirUrl('Patient', id, '$everything'));
   }
 
+  /**
+   * Creates a new FHIR resource.
+   *
+   * The return value is the newly created resource, including the ID and meta.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const result = await medplum.createResource({
+   *   resourceType: 'Patient',
+   *   name: [{
+   *    family: 'Smith',
+   *    given: ['John']
+   *   }]
+   * });
+   * console.log(result.id);
+   * ```
+   *
+   * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
+   *
+   * @param resource The FHIR resource to create.
+   * @returns The result of the create operation.
+   */
   createResource<T extends Resource>(resource: T): Promise<T> {
     if (!resource.resourceType) {
       return Promise.reject('Missing resourceType');
@@ -529,10 +845,55 @@ export class MedplumClient extends EventTarget {
     return this.post(this.fhirUrl(resource.resourceType), resource);
   }
 
+  /**
+   * Creates a FHIR `Binary` resource with the provided data content.
+   *
+   * The return value is the newly created resource, including the ID and meta.
+   *
+   * The `data` parameter can be a string or a `File` object.
+   *
+   * A `File` object often comes from a `<input type="file">` element.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const result = await medplum.createBinary(myFile, 'test.jpg', 'image/jpeg');
+   * console.log(result.id);
+   * ```
+   *
+   * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
+   *
+   * @param resource The FHIR resource to create.
+   * @returns The result of the create operation.
+   */
   createBinary(data: any, filename: string, contentType: string): Promise<Binary> {
     return this.post(this.fhirUrl('Binary') + '?_filename=' + encodeURIComponent(filename), data, contentType);
   }
 
+  /**
+   * Updates a FHIR resource.
+   *
+   * The return value is the updated resource, including the ID and meta.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const result = await medplum.updateResource({
+   *   resourceType: 'Patient',
+   *   id: '123',
+   *   name: [{
+   *    family: 'Smith',
+   *    given: ['John']
+   *   }]
+   * });
+   * console.log(result.meta.versionId);
+   * ```
+   *
+   * See the FHIR "update" operation for full details: https://www.hl7.org/fhir/http.html#update
+   *
+   * @param resource The FHIR resource to update.
+   * @returns The result of the update operation.
+   */
   updateResource<T extends Resource>(resource: T): Promise<T> {
     if (!resource.resourceType) {
       return Promise.reject('Missing resourceType');
@@ -543,10 +904,48 @@ export class MedplumClient extends EventTarget {
     return this.put(this.fhirUrl(resource.resourceType, resource.id), resource);
   }
 
+  /**
+   * Updates a FHIR resource using JSONPatch operations.
+   *
+   * The return value is the updated resource, including the ID and meta.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const result = await medplum.patchResource('Patient', '123', [
+   *   {op: 'replace', path: '/name/0/family', value: 'Smith'},
+   * ]);
+   * console.log(result.meta.versionId);
+   * ```
+   *
+   * See the FHIR "update" operation for full details: https://www.hl7.org/fhir/http.html#patch
+   *
+   * See the JSONPatch specification for full details: https://tools.ietf.org/html/rfc6902
+   *
+   * @param resourceType The FHIR resource type.
+   * @param id The resource ID.
+   * @param operations The JSONPatch operations.
+   * @returns The result of the patch operations.
+   */
   patchResource<T extends Resource>(resourceType: string, id: string, operations: Operation[]): Promise<T> {
     return this.patch(this.fhirUrl(resourceType, id), operations);
   }
 
+  /**
+   * Deletes a FHIR resource by resource type and ID.
+   *
+   * Example:
+   *
+   * ```typescript
+   * await medplum.deleteResource('Patient', '123');
+   * ```
+   *
+   * See the FHIR "delete" operation for full details: https://www.hl7.org/fhir/http.html#delete
+   *
+   * @param resourceType The FHIR resource type.
+   * @param id The resource ID.
+   * @returns The result of the delete operation.
+   */
   deleteResource(resourceType: string, id: string): Promise<any> {
     return this.delete(this.fhirUrl(resourceType, id));
   }

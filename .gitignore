@@ -12,6 +12,7 @@ node_modules/
 # Output
 packages/app/dist/
 packages/core/dist/
+packages/core/docs/
 packages/definitions/dist/**/*.js
 packages/definitions/dist/**/*.js.map
 packages/definitions/dist/**/*.d.ts
