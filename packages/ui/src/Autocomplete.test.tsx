@@ -559,4 +559,38 @@ describe('Autocomplete', () => {
     expect(option).toBeDefined();
     expect(option?.innerHTML).toMatch(/Carol Brown/);
   });
+
+  test('Auto submit', async () => {
+    const onChange = jest.fn();
+
+    render(
+      <Autocomplete
+        name="foo"
+        loadOptions={async () => ['Homer Simpson', 'Bob Jones', 'Carol Brown']}
+        getId={(item: string) => item}
+        getDisplay={(item: string) => <span>{item}</span>}
+        onChange={onChange}
+      />
+    );
+
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+
+    // Enter "Simpson"
+    await act(async () => {
+      fireEvent.input(input, { target: { value: 'Simpson' } });
+    });
+
+    // Press "Enter" (without waiting for the dropdown)
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+      await waitFor(() => expect(onChange).toHaveBeenCalledWith(['Homer Simpson']));
+    });
+
+    expect(onChange).toHaveBeenCalledWith(['Homer Simpson']);
+  });
 });

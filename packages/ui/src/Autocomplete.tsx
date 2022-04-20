@@ -23,21 +23,32 @@ export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
   const inputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
   const [lastValue, setLastValue] = useState('');
+  const [timer, setTimer] = useState<number>();
   const [dropDownVisible, setDropDownVisible] = useState(false);
   const [values, setValues] = useState(props.defaultValue ?? []);
   const [options, setOptions] = useState<T[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [abortController, setAbortController] = useState<AbortController>();
+  const [autoSubmit, setAutoSubmit] = useState<boolean>();
 
   const lastValueRef = useRef<string>();
   lastValueRef.current = lastValue;
 
+  const timerRef = useRef<number>();
+  timerRef.current = timer;
+
   const abortControllerRef = useRef<AbortController>();
   abortControllerRef.current = abortController;
 
+  const autoSubmitRef = useRef<boolean>();
+  autoSubmitRef.current = autoSubmit;
+
   useEffect(() => {
-    const interval = setInterval(handleTimer, 50);
-    return () => clearInterval(interval);
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -78,6 +89,25 @@ export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
     dismissOnDelay();
   }
 
+  /**
+   * Handles an input event.
+   * Clears existing timers.
+   * Schedules a timer to execute the search after a short delay.
+   */
+  function handleInput(): void {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setAbortController(undefined);
+    }
+
+    if (timerRef.current !== undefined) {
+      window.clearTimeout(timerRef.current);
+    }
+
+    const newTimer = window.setTimeout(() => handleTimer(), 100);
+    setTimer(newTimer);
+  }
+
   function handleKeyDown(e: React.KeyboardEvent): void {
     switch (e.key) {
       case 'Enter':
@@ -116,6 +146,10 @@ export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
     if (tryAddOption()) {
       killEvent(e);
       inputRef.current?.focus();
+    } else {
+      // The user pressed enter, but we don't have results yet.
+      // We need to wait for the results to come in.
+      setAutoSubmit(true);
     }
   }
 
@@ -205,10 +239,6 @@ export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
       return;
     }
 
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
     setLastValue(value);
 
     const newAbortController = new AbortController();
@@ -220,6 +250,10 @@ export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
         if (!newAbortController.signal.aborted) {
           setDropDownVisible(newOptions.length > 0);
           setOptions(newOptions);
+          if (autoSubmitRef.current) {
+            addOption(newOptions[0]);
+            setAutoSubmit(false);
+          }
         }
       })
       .catch(console.log);
@@ -293,6 +327,8 @@ export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
             spellCheck="true"
             onFocus={() => handleFocus()}
             onBlur={() => handleBlur()}
+            onChange={() => handleInput()}
+            onInput={() => handleInput()}
             onKeyDown={(e: React.KeyboardEvent) => handleKeyDown(e)}
             ref={inputRef}
             data-testid="input-element"
