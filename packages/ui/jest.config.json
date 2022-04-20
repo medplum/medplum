@@ -12,7 +12,7 @@
   "setupFilesAfterEnv": ["./src/jest.setup.ts"],
   "collectCoverage": true,
   "coverageDirectory": "coverage",
-  "coverageReporters": ["json"],
+  "coverageReporters": ["json", "text"],
   "collectCoverageFrom": [
     "**/src/**/*",
     "!**/stories/**"
