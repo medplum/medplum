@@ -63,6 +63,11 @@ export function getDisplayString(resource: Resource): string {
       return deviceName;
     }
   }
+  if (resource.resourceType === 'Observation') {
+    if ('code' in resource && (resource.code as any)?.text) {
+      return (resource.code as any)?.text;
+    }
+  }
   if (resource.resourceType === 'User') {
     if (resource.email) {
       return resource.email;
@@ -70,9 +75,6 @@ export function getDisplayString(resource: Resource): string {
   }
   if ('name' in resource && resource.name && typeof resource.name === 'string') {
     return resource.name;
-  }
-  if ('code' in resource && (resource.code as any)?.text) {
-    return (resource.code as any)?.text;
   }
   return getReferenceString(resource);
 }
