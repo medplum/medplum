@@ -24,9 +24,11 @@ export async function initDatabase(config: MedplumDatabaseConfig): Promise<void>
   let client: PoolClient | undefined;
   try {
     client = await pool.connect();
+    await client.query('SELECT pg_advisory_lock(1)');
     await migrate(client);
   } finally {
     if (client) {
+      await client.query('SELECT pg_advisory_unlock_all()');
       client.release();
     }
   }
