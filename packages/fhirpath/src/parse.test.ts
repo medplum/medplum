@@ -9,7 +9,7 @@ describe('FHIRPath parser', () => {
   });
 
   test('Parser can build a arithmetic parser with parentheses', () => {
-    const result = evalFhirPath('3 / 3 + 4 * 3)', 0);
+    const result = evalFhirPath('(3 / 3 + 4 * 3)', 0);
     expect(result).toEqual([13]);
   });
 
@@ -92,6 +92,25 @@ describe('FHIRPath parser', () => {
       },
     ]);
     expect(result).toEqual(['Alice', 'Bob']);
+  });
+
+  test('Evaluate FHIRPath Patient.name[1].given (indexed selection)', () => {
+    const result = evalFhirPath('Patient.name.given', [
+      {
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Bob'],
+            family: 'Jones',
+          },
+          {
+            given: ['Robert'],
+            family: 'Jones',
+          },
+        ],
+      },
+    ]);
+    expect(result).toEqual(['Robert']);
   });
 
   test('Evaluate FHIRPath string concatenation on array of resources', () => {

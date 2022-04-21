@@ -193,6 +193,16 @@ const PARENTHESES_PARSELET: PrefixParselet = {
   },
 };
 
+// const BRACKET_PARSELET: InfixParselet = {
+//   parse(parser: Parser, left: Atom) {
+//     const expr = parser.parse();
+//     if (!parser.match(']')) {
+//       throw new Error('Parse error: expected `]`');
+//     }
+//     return expr;
+//   },
+// };
+
 const FUNCTION_CALL_PARSELET: InfixParselet = {
   parse(parser: Parser, left: Atom) {
     if (!(left instanceof SymbolAtom)) {
@@ -241,7 +251,10 @@ const parserBuilder = new ParserBuilder()
     parse: (_, token) => new LiteralAtom(parseQuantity(token.value)),
   })
   .registerPrefix('Number', {
-    parse: (_, token) => new LiteralAtom(parseFloat(token.value)),
+    parse: (_, token) => {
+      console.log(token);
+      return new LiteralAtom(parseFloat(token.value));
+    },
   })
   .registerPrefix('Symbol', {
     parse: (_, token) => {
@@ -256,6 +269,7 @@ const parserBuilder = new ParserBuilder()
   })
   .registerPrefix('{}', { parse: () => new EmptySetAtom() })
   .registerPrefix('(', PARENTHESES_PARSELET)
+  // .registerInfix('[', BRACKET_PARSELET)
   .registerInfix('(', FUNCTION_CALL_PARSELET)
   .prefix('+', Precedence.UnaryAdd, (_, right) => new UnaryOperatorAtom(right, (x) => x))
   .prefix('-', Precedence.UnarySubtract, (_, right) => new ArithemticOperatorAtom(right, right, (_, y) => -y))
