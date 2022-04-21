@@ -65,6 +65,8 @@ async function createZipFile(code: string): Promise<Uint8Array> {
     import { assertOk, createReference, LegacyRepositoryClient, MedplumClient } from './medplum.mjs';
     export async function handler(event, context) {
       const accessToken = event.accessToken;
+      const input = event.input;
+      const resource = event.input;
       const medplum = new MedplumClient({ fetch });
       medplum.setAccessToken(accessToken);
       const repo = new LegacyRepositoryClient(medplum);
