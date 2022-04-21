@@ -25,6 +25,7 @@ const config = {
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/medplum/medplum/packages/docs/',
+          routeBasePath: '/',
         },
         blog: {
           showReadingTime: true,
