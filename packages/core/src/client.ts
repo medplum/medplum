@@ -13,7 +13,7 @@ import {
   UserConfiguration,
   ValueSet,
 } from '@medplum/fhirtypes';
-import { Operation } from 'fast-json-patch';
+import type { Operation } from 'fast-json-patch';
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
