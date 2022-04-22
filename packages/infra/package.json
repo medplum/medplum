@@ -33,6 +33,7 @@
     "@aws-cdk/aws-s3": "1.156.1",
     "@aws-cdk/aws-secretsmanager": "1.156.1",
     "@aws-cdk/aws-ssm": "1.156.1",
+    "@aws-cdk/aws-wafv2": "1.156.1",
     "@aws-cdk/core": "1.156.1",
     "aws-cdk": "2.24.1",
     "cdk-serverless-clamscan": "1.2.6",
