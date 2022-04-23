@@ -247,7 +247,7 @@ export class BackEnd extends cdk.Construct {
     });
 
     // Create an association between the load balancer and the WAF
-    new wafv2.CfnWebACLAssociation(this, 'LoadBalancerAssociation', {
+    const wafAssociation = new wafv2.CfnWebACLAssociation(this, 'LoadBalancerAssociation', {
       resourceArn: loadBalancer.loadBalancerArn,
       webAclArn: waf.attrArn,
     });
@@ -303,5 +303,7 @@ export class BackEnd extends cdk.Construct {
     console.log('RedisSecretsParameter', redisSecretsParameter.parameterArn);
     console.log('RedisCluster', redisCluster.attrPrimaryEndPointAddress);
     console.log('BotLambdaRole', botLambdaRoleParameter.stringValue);
+    console.log('WAF', waf.attrArn);
+    console.log('WAF Association', wafAssociation.node.id);
   }
 }
