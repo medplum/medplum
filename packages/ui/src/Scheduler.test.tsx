@@ -33,7 +33,9 @@ describe('Scheduler', () => {
   });
 
   test('Success', async () => {
-    setup(DrAliceSmithSchedule);
+    await act(async () => {
+      setup(DrAliceSmithSchedule);
+    });
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('scheduler'));

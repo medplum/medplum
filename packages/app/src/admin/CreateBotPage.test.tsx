@@ -7,16 +7,18 @@ import { CreateBotPage } from './CreateBotPage';
 
 const medplum = new MockClient();
 
-function setup(url: string): void {
-  render(
-    <MedplumProvider medplum={medplum}>
-      <MemoryRouter initialEntries={[url]} initialIndex={0}>
-        <Routes>
-          <Route path="/admin/projects/:projectId/bot" element={<CreateBotPage />} />
-        </Routes>
-      </MemoryRouter>
-    </MedplumProvider>
-  );
+async function setup(url: string): Promise<void> {
+  await act(async () => {
+    render(
+      <MedplumProvider medplum={medplum}>
+        <MemoryRouter initialEntries={[url]} initialIndex={0}>
+          <Routes>
+            <Route path="/admin/projects/:projectId/bot" element={<CreateBotPage />} />
+          </Routes>
+        </MemoryRouter>
+      </MedplumProvider>
+    );
+  });
 }
 
 describe('CreateBotPage', () => {
@@ -32,21 +34,14 @@ describe('CreateBotPage', () => {
   });
 
   test('Renders', async () => {
-    setup('/admin/projects/123/bot');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Create Bot'));
-    });
-
+    await setup('/admin/projects/123/bot');
+    await waitFor(() => screen.getByText('Create Bot'));
     expect(screen.getByText('Create Bot')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
-    setup('/admin/projects/123/bot');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Create Bot'));
-    });
+    await setup('/admin/projects/123/bot');
+    await waitFor(() => screen.getByText('Create Bot'));
 
     expect(screen.getByText('Create Bot')).toBeInTheDocument();
 
@@ -67,11 +62,8 @@ describe('CreateBotPage', () => {
   });
 
   test('Submit with access policy', async () => {
-    setup('/admin/projects/123/bot');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Create Bot'));
-    });
+    await setup('/admin/projects/123/bot');
+    await waitFor(() => screen.getByText('Create Bot'));
 
     expect(screen.getByText('Create Bot')).toBeInTheDocument();
 
@@ -94,8 +86,9 @@ describe('CreateBotPage', () => {
     // Wait for the drop down
     await act(async () => {
       jest.advanceTimersByTime(1000);
-      await waitFor(() => screen.getByTestId('dropdown'));
     });
+
+    await waitFor(() => screen.getByTestId('dropdown'));
 
     // Press "Enter"
     await act(async () => {

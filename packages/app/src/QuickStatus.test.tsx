@@ -10,25 +10,25 @@ const medplum = new MockClient();
 medplum.getUserConfiguration = () => ExampleUserConfiguration;
 
 describe('QuickStatus', () => {
-  function setup(url: string): void {
-    render(
-      <MedplumProvider medplum={medplum}>
-        <MemoryRouter initialEntries={[url]} initialIndex={0}>
-          <Routes>
-            <Route path="/:resourceType/:id" element={<ResourcePage />} />
-          </Routes>
-        </MemoryRouter>
-      </MedplumProvider>
-    );
+  async function setup(url: string): Promise<void> {
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <MemoryRouter initialEntries={[url]} initialIndex={0}>
+            <Routes>
+              <Route path="/:resourceType/:id" element={<ResourcePage />} />
+            </Routes>
+          </MemoryRouter>
+        </MedplumProvider>
+      );
+    });
   }
 
   test('Updates on change', async () => {
-    setup(`/${getReferenceString(HomerServiceRequest)}`);
+    await setup(`/${getReferenceString(HomerServiceRequest)}`);
 
     // Wait for the page to load
-    await act(async () => {
-      await waitFor(() => screen.getByText('Homer Simpson'));
-    });
+    await waitFor(() => screen.getByDisplayValue('ORDERED'));
 
     // Expect the status selector to be visible
     expect(screen.getByDisplayValue('ORDERED')).toBeInTheDocument();

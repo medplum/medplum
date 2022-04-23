@@ -24,9 +24,7 @@ describe('ServiceRequestTimeline', () => {
       serviceRequest: createReference(HomerServiceRequest),
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
@@ -35,9 +33,7 @@ describe('ServiceRequestTimeline', () => {
   test('Renders resource', async () => {
     setup({ serviceRequest: HomerServiceRequest });
 
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
@@ -47,9 +43,7 @@ describe('ServiceRequestTimeline', () => {
     setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     // Enter the comment text
     await act(async () => {
@@ -66,9 +60,7 @@ describe('ServiceRequestTimeline', () => {
     });
 
     // Wait for new comment
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
@@ -78,9 +70,7 @@ describe('ServiceRequestTimeline', () => {
     setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     // Upload the file
     await act(async () => {
@@ -91,9 +81,7 @@ describe('ServiceRequestTimeline', () => {
     });
 
     // Wait for new comment
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();

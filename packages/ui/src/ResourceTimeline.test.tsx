@@ -37,46 +37,44 @@ function buildEncounterSearch(encounter: Resource): Bundle {
 }
 
 describe('ResourceTimeline', () => {
-  function setup<T extends Resource>(args: ResourceTimelineProps<T>): void {
-    render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <ResourceTimeline {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
-    );
+  async function setup<T extends Resource>(args: ResourceTimelineProps<T>): Promise<void> {
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <ResourceTimeline {...args} />
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+    });
   }
 
   test('Renders reference', async () => {
-    setup({
+    await setup({
       value: createReference(HomerEncounter),
       buildSearchRequests: buildEncounterSearch,
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
   });
 
   test('Renders resource', async () => {
-    setup({
+    await setup({
       value: HomerEncounter,
       buildSearchRequests: buildEncounterSearch,
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
   });
 
   test('Create comment', async () => {
-    setup({
+    await setup({
       value: HomerEncounter,
       buildSearchRequests: buildEncounterSearch,
       createCommunication: (resource: Encounter, sender: ProfileResource, text: string) => ({
@@ -89,9 +87,7 @@ describe('ResourceTimeline', () => {
     });
 
     // Wait for initial load
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     // Enter the comment text
     await act(async () => {
@@ -108,16 +104,14 @@ describe('ResourceTimeline', () => {
     });
 
     // Wait for new comment
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
   });
 
   test('Upload media', async () => {
-    setup({
+    await setup({
       value: HomerEncounter,
       buildSearchRequests: buildEncounterSearch,
       createCommunication: jest.fn(),
@@ -131,9 +125,7 @@ describe('ResourceTimeline', () => {
     });
 
     // Wait for initial load
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     // Upload the file
     await act(async () => {
@@ -144,9 +136,7 @@ describe('ResourceTimeline', () => {
     });
 
     // Wait for new comment
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();

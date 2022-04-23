@@ -1,6 +1,7 @@
 import { MockClient } from '@medplum/mock';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
+import { act } from 'react-dom/test-utils';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
 import { getTimeString, ResourceBlame, ResourceBlameProps } from './ResourceBlame';
@@ -8,29 +9,21 @@ import { getTimeString, ResourceBlame, ResourceBlameProps } from './ResourceBlam
 const medplum = new MockClient();
 
 describe('ResourceBlame', () => {
-  function setup(args: ResourceBlameProps): void {
-    render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <ResourceBlame {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
-    );
-  }
-
-  test('ResourceBlame renders', async () => {
-    setup({
-      resourceType: 'Patient',
-      id: '123',
+  async function setup(args: ResourceBlameProps): Promise<void> {
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <ResourceBlame {...args} />
+          </MedplumProvider>
+        </MemoryRouter>
+      );
     });
-
-    const el = await screen.findByText('Loading...');
-    expect(el).toBeDefined();
-  });
+  }
 
   test('ResourceBlame renders preloaded history', async () => {
     const history = await medplum.readHistory('Patient', '123');
-    setup({
+    await setup({
       history,
     });
 
@@ -40,7 +33,7 @@ describe('ResourceBlame', () => {
   });
 
   test('ResourceBlame renders after loading the resource', async () => {
-    setup({
+    await setup({
       resourceType: 'Patient',
       id: '123',
     });

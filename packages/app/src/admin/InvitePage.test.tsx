@@ -7,16 +7,18 @@ import { InvitePage } from './InvitePage';
 
 const medplum = new MockClient();
 
-function setup(url: string): void {
-  render(
-    <MedplumProvider medplum={medplum}>
-      <MemoryRouter initialEntries={[url]} initialIndex={0}>
-        <Routes>
-          <Route path="/admin/projects/:projectId/invite" element={<InvitePage />} />
-        </Routes>
-      </MemoryRouter>
-    </MedplumProvider>
-  );
+async function setup(url: string): Promise<void> {
+  await act(async () => {
+    render(
+      <MedplumProvider medplum={medplum}>
+        <MemoryRouter initialEntries={[url]} initialIndex={0}>
+          <Routes>
+            <Route path="/admin/projects/:projectId/invite" element={<InvitePage />} />
+          </Routes>
+        </MemoryRouter>
+      </MedplumProvider>
+    );
+  });
 }
 
 describe('InvitePage', () => {
@@ -32,21 +34,15 @@ describe('InvitePage', () => {
   });
 
   test('Renders', async () => {
-    setup('/admin/projects/123/invite');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Invite'));
-    });
+    await setup('/admin/projects/123/invite');
+    await waitFor(() => screen.getByText('Invite'));
 
     expect(screen.getByText('Invite')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
-    setup('/admin/projects/123/invite');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Invite'));
-    });
+    await setup('/admin/projects/123/invite');
+    await waitFor(() => screen.getByText('Invite'));
 
     expect(screen.getByText('Invite')).toBeInTheDocument();
 
@@ -70,11 +66,8 @@ describe('InvitePage', () => {
   });
 
   test('Submit with access policy', async () => {
-    setup('/admin/projects/123/invite');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Invite'));
-    });
+    await setup('/admin/projects/123/invite');
+    await waitFor(() => screen.getByText('Invite'));
 
     expect(screen.getByText('Invite')).toBeInTheDocument();
 
@@ -100,8 +93,9 @@ describe('InvitePage', () => {
     // Wait for the drop down
     await act(async () => {
       jest.advanceTimersByTime(1000);
-      await waitFor(() => screen.getByTestId('dropdown'));
     });
+
+    await waitFor(() => screen.getByTestId('dropdown'));
 
     // Press "Enter"
     await act(async () => {

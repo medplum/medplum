@@ -22,9 +22,7 @@ describe('EncounterTimeline', () => {
   test('Renders reference', async () => {
     setup({ encounter: createReference(HomerEncounter) });
 
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
@@ -33,9 +31,7 @@ describe('EncounterTimeline', () => {
   test('Renders resource', async () => {
     setup({ encounter: HomerEncounter });
 
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
@@ -45,9 +41,7 @@ describe('EncounterTimeline', () => {
     setup({ encounter: HomerEncounter });
 
     // Wait for initial load
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     // Enter the comment text
     await act(async () => {
@@ -64,9 +58,7 @@ describe('EncounterTimeline', () => {
     });
 
     // Wait for new comment
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
@@ -76,9 +68,7 @@ describe('EncounterTimeline', () => {
     setup({ encounter: HomerEncounter });
 
     // Wait for initial load
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     // Upload the file
     await act(async () => {
@@ -89,9 +79,7 @@ describe('EncounterTimeline', () => {
     });
 
     // Wait for new comment
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();

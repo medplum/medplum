@@ -166,8 +166,9 @@ describe('SearchFilterValueInput', () => {
     // Wait for the drop down
     await act(async () => {
       jest.advanceTimersByTime(1000);
-      await waitFor(() => screen.getByTestId('dropdown'));
     });
+
+    await waitFor(() => screen.getByTestId('dropdown'));
 
     // Press "Enter"
     await act(async () => {

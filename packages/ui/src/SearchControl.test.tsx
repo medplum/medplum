@@ -7,14 +7,16 @@ import { MedplumProvider } from './MedplumProvider';
 import { SearchControl, SearchControlProps } from './SearchControl';
 
 describe('SearchControl', () => {
-  function setup(args: SearchControlProps): void {
-    render(
-      <MemoryRouter>
-        <MedplumProvider medplum={new MockClient()}>
-          <SearchControl {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
-    );
+  async function setup(args: SearchControlProps): Promise<void> {
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <MedplumProvider medplum={new MockClient()}>
+            <SearchControl {...args} />
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+    });
   }
 
   test('Renders results', async () => {
@@ -33,7 +35,7 @@ describe('SearchControl', () => {
       onLoad: jest.fn(),
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -61,7 +63,7 @@ describe('SearchControl', () => {
       onLoad: jest.fn(),
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -85,7 +87,7 @@ describe('SearchControl', () => {
       onLoad: jest.fn(),
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('empty-search'));
@@ -105,7 +107,7 @@ describe('SearchControl', () => {
       onLoad: jest.fn(),
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -134,7 +136,7 @@ describe('SearchControl', () => {
       checkboxesEnabled: true,
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -161,7 +163,7 @@ describe('SearchControl', () => {
       checkboxesEnabled: true,
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('empty-search'));
@@ -181,7 +183,7 @@ describe('SearchControl', () => {
       onLoad: jest.fn(),
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -204,7 +206,7 @@ describe('SearchControl', () => {
       onLoad: jest.fn(),
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -234,7 +236,7 @@ describe('SearchControl', () => {
       onLoad: jest.fn(),
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -260,7 +262,7 @@ describe('SearchControl', () => {
       onChange: jest.fn(),
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('next-page-button'));
@@ -287,7 +289,7 @@ describe('SearchControl', () => {
       },
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('next-page-button'));
@@ -313,7 +315,7 @@ describe('SearchControl', () => {
       onChange: jest.fn(),
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('prev-page-button'));
@@ -329,7 +331,7 @@ describe('SearchControl', () => {
   test('New button', async () => {
     const onNew = jest.fn();
 
-    setup({
+    await setup({
       search: {
         resourceType: 'Patient',
       },
@@ -350,7 +352,7 @@ describe('SearchControl', () => {
   test('Export button', async () => {
     const onExport = jest.fn();
 
-    setup({
+    await setup({
       search: {
         resourceType: 'Patient',
       },
@@ -371,7 +373,7 @@ describe('SearchControl', () => {
   test('Delete button', async () => {
     const onDelete = jest.fn();
 
-    setup({
+    await setup({
       search: {
         resourceType: 'Patient',
       },
@@ -405,7 +407,7 @@ describe('SearchControl', () => {
       onAuxClick: jest.fn(),
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -440,7 +442,7 @@ describe('SearchControl', () => {
       onAuxClick: jest.fn(),
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -474,7 +476,7 @@ describe('SearchControl', () => {
       onLoad: jest.fn(),
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -508,7 +510,7 @@ describe('SearchControl', () => {
       onLoad: jest.fn(),
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -542,7 +544,7 @@ describe('SearchControl', () => {
       onLoad: jest.fn(),
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -576,7 +578,7 @@ describe('SearchControl', () => {
       onLoad: jest.fn(),
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -611,7 +613,7 @@ describe('SearchControl', () => {
       onLoad: jest.fn(),
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -652,7 +654,7 @@ describe('SearchControl', () => {
       checkboxesEnabled: true,
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -693,7 +695,7 @@ describe('SearchControl', () => {
       checkboxesEnabled: true,
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -739,7 +741,7 @@ describe('SearchControl', () => {
       checkboxesEnabled: true,
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('search-control'));
@@ -796,7 +798,7 @@ describe('SearchControl', () => {
       onChange,
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       await waitFor(() => screen.getByTestId('saved-search-select'));

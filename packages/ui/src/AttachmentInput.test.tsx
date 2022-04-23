@@ -33,8 +33,9 @@ describe('AttachmentInput', () => {
           title: 'test.jpg',
         },
       });
-      await waitFor(() => screen.getByAltText('test.jpg'));
     });
+
+    await waitFor(() => screen.getByAltText('test.jpg'));
   });
 
   test('Add attachment', async () => {
@@ -62,9 +63,7 @@ describe('AttachmentInput', () => {
       });
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByAltText('test.jpg'));
-    });
+    await waitFor(() => screen.getByAltText('test.jpg'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('Remove'));

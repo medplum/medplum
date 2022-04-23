@@ -265,9 +265,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByTestId('submit'));
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('text-field-error'));
-    });
+    await waitFor(() => screen.getByTestId('text-field-error'));
 
     expect(screen.getByTestId('text-field-error')).toBeInTheDocument();
     expect(screen.getByText('Email or password is invalid')).toBeInTheDocument();
@@ -292,9 +290,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByTestId('submit'));
     });
 
-    await act(async () => {
-      await waitFor(() => expect(screen.getByTestId('text-field-error')).toBeInTheDocument());
-    });
+    await waitFor(() => expect(screen.getByTestId('text-field-error')).toBeInTheDocument());
 
     expect(screen.getByTestId('text-field-error')).toBeInTheDocument();
     expect(screen.getByText('Email or password is invalid')).toBeInTheDocument();
@@ -369,21 +365,14 @@ describe('SignInForm', () => {
       });
     });
 
-    await act(async () => {
-      await waitFor(() => expect(screen.getByText('Sign in with Google')).toBeInTheDocument());
-    });
+    await waitFor(() => expect(screen.getByText('Sign in with Google')).toBeInTheDocument());
 
     await act(async () => {
       fireEvent.click(screen.getByText('Sign in with Google'));
     });
 
-    await act(async () => {
-      await waitFor(() => expect(onSuccess).toHaveBeenCalled());
-    });
-
-    await act(async () => {
-      await waitFor(() => expect(screen.getByText('Success')).toBeInTheDocument());
-    });
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByText('Success')).toBeInTheDocument());
 
     expect(google.accounts.id.initialize).toHaveBeenCalled();
     expect(google.accounts.id.renderButton).toHaveBeenCalled();

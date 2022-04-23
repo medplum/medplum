@@ -7,55 +7,51 @@ import { ResourceTable, ResourceTableProps } from './ResourceTable';
 const medplum = new MockClient();
 
 describe('ResourceTable', () => {
-  function setup(props: ResourceTableProps): void {
-    render(
-      <MedplumProvider medplum={medplum}>
-        <ResourceTable {...props} />
-      </MedplumProvider>
-    );
+  async function setup(props: ResourceTableProps): Promise<void> {
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <ResourceTable {...props} />
+        </MedplumProvider>
+      );
+    });
   }
 
   test('Renders empty Practitioner form', async () => {
-    setup({
+    await setup({
       value: {
         resourceType: 'Practitioner',
       },
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByText('Name'));
-    });
+    await waitFor(() => screen.getByText('Name'));
 
     expect(screen.getByText('ID')).toBeInTheDocument();
     expect(screen.getByText('Name')).toBeInTheDocument();
   });
 
   test('Renders Practitioner resource', async () => {
-    setup({
+    await setup({
       value: {
         reference: 'Practitioner/123',
       },
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByText('Name'));
-    });
+    await waitFor(() => screen.getByText('Name'));
 
     expect(screen.getByText('Name')).toBeInTheDocument();
     expect(screen.getByText('Gender')).toBeInTheDocument();
   });
 
   test('Ignore missing values', async () => {
-    setup({
+    await setup({
       value: {
         reference: 'Practitioner/123',
       },
       ignoreMissingValues: true,
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByText('Name'));
-    });
+    await waitFor(() => screen.getByText('Name'));
 
     expect(screen.getByText('Name')).toBeInTheDocument();
     expect(screen.queryByText('Gender')).toBeNull();

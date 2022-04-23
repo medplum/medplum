@@ -25,8 +25,8 @@
     "graphiql": "1.8.7",
     "graphql": "16.3.0",
     "html-webpack-plugin": "5.5.0",
-    "react": "17.0.2",
-    "react-dom": "17.0.2",
+    "react": "18.0.0",
+    "react-dom": "18.0.0",
     "regenerator-runtime": "0.13.9",
     "style-loader": "3.3.1",
     "worker-loader": "3.0.8"

@@ -7,34 +7,30 @@ import { App } from './App';
 
 const medplum = new MockClient();
 
-function setup(): void {
-  render(
-    <MemoryRouter>
-      <MedplumProvider medplum={medplum}>
-        <App />
-      </MedplumProvider>
-    </MemoryRouter>
-  );
+async function setup(): Promise<void> {
+  await act(async () => {
+    render(
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <App />
+        </MedplumProvider>
+      </MemoryRouter>
+    );
+  });
 }
 
 describe('App', () => {
   test('Renders', async () => {
-    setup();
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await setup();
+    await waitFor(() => screen.getByTestId('search-control'));
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
   });
 
   test('Click logo', async () => {
-    setup();
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await setup();
+    await waitFor(() => screen.getByTestId('search-control'));
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('header-logo'));
@@ -42,11 +38,8 @@ describe('App', () => {
   });
 
   test('Click profile', async () => {
-    setup();
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await setup();
+    await waitFor(() => screen.getByTestId('search-control'));
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('header-profile-menu-button'));
@@ -58,11 +51,8 @@ describe('App', () => {
   });
 
   test('Click sign out', async () => {
-    setup();
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await setup();
+    await waitFor(() => screen.getByTestId('search-control'));
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('header-profile-menu-button'));
