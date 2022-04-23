@@ -1,7 +1,7 @@
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/ui';
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
 
@@ -11,13 +11,13 @@ const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/signin'),
 });
 
-ReactDOM.render(
+const root = createRoot(document.getElementById('root') as HTMLElement);
+root.render(
   <React.StrictMode>
     <BrowserRouter>
       <MedplumProvider medplum={medplum}>
         <App />
       </MedplumProvider>
     </BrowserRouter>
-  </React.StrictMode>,
-  document.getElementById('root')
+  </React.StrictMode>
 );
