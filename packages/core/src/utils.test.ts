@@ -1,3 +1,4 @@
+import { Patient } from '@medplum/fhirtypes';
 import {
   arrayBufferToBase64,
   arrayBufferToHex,
@@ -8,7 +9,9 @@ import {
   deepEquals,
   getDateProperty,
   getDisplayString,
+  getExtensionValue,
   getImageSrc,
+  getQuestionnaireAnswers,
   isLowerCase,
   isProfileResource,
   resolveId,
@@ -192,6 +195,73 @@ describe('Core Utils', () => {
     expect(calculateAgeString('2020-01-01', '2021-02-01')).toEqual('013M');
     expect(calculateAgeString('2020-01-01', '2021-02-02')).toEqual('013M');
     expect(calculateAgeString('2020-01-01', '2022-01-01')).toEqual('002Y');
+  });
+
+  test('Get Questionnaire answers', () => {
+    expect(
+      getQuestionnaireAnswers({
+        resourceType: 'QuestionnaireResponse',
+      })
+    ).toMatchObject({});
+    expect(
+      getQuestionnaireAnswers({
+        resourceType: 'QuestionnaireResponse',
+        item: [
+          { linkId: 'q1', answer: [{ valueString: 'xyz' }] },
+          { linkId: 'q2', answer: [{ valueDecimal: 2.0 }] },
+          { linkId: 'q3', answer: [{ valueBoolean: true }] },
+        ],
+      })
+    ).toMatchObject({
+      q1: { valueString: 'xyz' },
+      q2: { valueDecimal: 2.0 },
+      q3: { valueBoolean: true },
+    });
+    expect(
+      getQuestionnaireAnswers({
+        resourceType: 'QuestionnaireResponse',
+        item: [
+          {
+            linkId: 'group1',
+            item: [
+              {
+                linkId: 'group2',
+                item: [
+                  {
+                    linkId: 'q1',
+                    answer: [
+                      {
+                        valueString: 'xyz',
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      })
+    ).toMatchObject({ q1: { valueString: 'xyz' } });
+  });
+
+  test('Get extension value', () => {
+    const resource: Patient = {
+      resourceType: 'Patient',
+      extension: [
+        {
+          url: 'http://example.com',
+          valueString: 'xyz',
+          extension: [
+            {
+              url: 'key1',
+              valueString: 'value1',
+            },
+          ],
+        },
+      ],
+    };
+    expect(getExtensionValue(resource, 'http://example.com')).toBe('xyz');
+    expect(getExtensionValue(resource, 'http://example.com', 'key1')).toBe('value1');
   });
 
   test('Stringify', () => {

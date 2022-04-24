@@ -1,4 +1,16 @@
-import { Attachment, Device, Patient, Practitioner, Reference, RelatedPerson, Resource } from '@medplum/fhirtypes';
+import {
+  Attachment,
+  Device,
+  Extension,
+  Patient,
+  Practitioner,
+  QuestionnaireResponse,
+  QuestionnaireResponseItem,
+  QuestionnaireResponseItemAnswer,
+  Reference,
+  RelatedPerson,
+  Resource,
+} from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
 
 export type ProfileResource = Patient | Practitioner | RelatedPerson;
@@ -209,6 +221,56 @@ export function calculateAgeString(birthDateStr: string, endDateStr?: string): s
 }
 
 /**
+ * Returns all questionnaire answers as a map by link ID.
+ * @param response The questionnaire response resource.
+ * @returns Questionnaire answers mapped by link ID.
+ */
+export function getQuestionnaireAnswers(
+  response: QuestionnaireResponse
+): Record<string, QuestionnaireResponseItemAnswer> {
+  const result: Record<string, QuestionnaireResponseItemAnswer> = {};
+  buildQuestionnaireAnswerItems(response.item, result);
+  return result;
+}
+
+/**
+ * Recursively builds the questionnaire answer items map.
+ * @param item The current questionnaire response item.
+ * @param result The cumulative result map.
+ */
+function buildQuestionnaireAnswerItems(
+  items: QuestionnaireResponseItem[] | undefined,
+  result: Record<string, QuestionnaireResponseItemAnswer>
+): void {
+  if (items) {
+    for (const item of items) {
+      if (item.linkId && item.answer && item.answer.length > 0) {
+        result[item.linkId] = item.answer[0];
+      }
+      buildQuestionnaireAnswerItems(item.item, result);
+    }
+  }
+}
+
+/**
+ * Returns an extension value by extension URLs.
+ * @param resource The base resource.
+ * @param urls Array of extension URLs.  Each entry represents a nested extension.
+ * @returns The extension value if found; undefined otherwise.
+ */
+export function getExtensionValue(resource: Resource, ...urls: string[]): string | undefined {
+  // Let curr be the current resource or extension. Extensions can be nested.
+  let curr: any = resource;
+
+  // For each of the urls, try to find a matching nested extension.
+  for (let i = 0; i < urls.length && curr; i++) {
+    curr = (curr?.extension as Extension[] | undefined)?.find((e) => e.url === urls[i]);
+  }
+
+  return curr?.valueString as string | undefined;
+}
+
+/**
  * FHIR JSON stringify.
  * Removes properties with empty string values.
  * Removes objects with zero properties.
@@ -288,8 +350,22 @@ export function deepEquals(object1: any, object2: any, path?: string): boolean {
   return true;
 }
 
-function isObject(object: any): boolean {
-  return object !== null && typeof object === 'object';
+/**
+ * Returns true if the input is an object.
+ * @param object The candidate object.
+ * @returns True if the input is a non-null non-undefined object.
+ */
+export function isObject(obj: unknown): obj is object {
+  return obj !== null && typeof obj === 'object';
+}
+
+/**
+ * Returns true if the input array is an array of strings.
+ * @param arr Input array.
+ * @returns True if the input array is an array of strings.
+ */
+export function isStringArray(arr: any[]): arr is string[] {
+  return arr.every((e) => typeof e === 'string');
 }
 
 // Precompute hex octets
