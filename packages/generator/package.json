@@ -1,6 +1,6 @@
 {
   "name": "@medplum/generator",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "Medplum Code Generator",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -19,8 +19,8 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/definitions": "0.9.0",
-    "@medplum/fhirtypes": "0.9.0",
+    "@medplum/definitions": "0.9.1",
+    "@medplum/fhirtypes": "0.9.1",
     "fhirpath": "2.14.1",
     "fast-xml-parser": "4.0.7"
   }
