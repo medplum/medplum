@@ -10,18 +10,20 @@ import { ResourceForm, ResourceFormProps } from './ResourceForm';
 const medplum = new MockClient();
 
 describe('ResourceForm', () => {
-  function setup(props: ResourceFormProps): void {
-    render(
-      <MedplumProvider medplum={medplum}>
-        <ResourceForm {...props} />
-      </MedplumProvider>
-    );
+  async function setup(props: ResourceFormProps): Promise<void> {
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <ResourceForm {...props} />
+        </MedplumProvider>
+      );
+    });
   }
 
   test('Error on missing resource type', async () => {
     const onSubmit = jest.fn();
 
-    setup({
+    await setup({
       defaultValue: {},
       onSubmit,
     });
@@ -30,16 +32,14 @@ describe('ResourceForm', () => {
   test('Renders empty Practitioner form', async () => {
     const onSubmit = jest.fn();
 
-    setup({
+    await setup({
       defaultValue: {
         resourceType: 'Practitioner',
       },
       onSubmit,
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByText('Resource Type'));
-    });
+    await waitFor(() => screen.getByText('Resource Type'));
 
     const control = screen.getByText('Resource Type');
     expect(control).toBeDefined();
@@ -48,16 +48,14 @@ describe('ResourceForm', () => {
   test('Renders Practitioner resource', async () => {
     const onSubmit = jest.fn();
 
-    setup({
+    await setup({
       defaultValue: {
         reference: 'Practitioner/123',
       },
       onSubmit,
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByText('Resource Type'));
-    });
+    await waitFor(() => screen.getByText('Resource Type'));
 
     const control = screen.getByText('Resource Type');
     expect(control).toBeDefined();
@@ -66,16 +64,14 @@ describe('ResourceForm', () => {
   test('Submit Practitioner', async () => {
     const onSubmit = jest.fn();
 
-    setup({
+    await setup({
       defaultValue: {
         resourceType: 'Practitioner',
       },
       onSubmit,
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByText('Resource Type'));
-    });
+    await waitFor(() => screen.getByText('Resource Type'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('OK'));
@@ -87,16 +83,14 @@ describe('ResourceForm', () => {
   test('Renders empty Observation form', async () => {
     const onSubmit = jest.fn();
 
-    setup({
+    await setup({
       defaultValue: {
         resourceType: 'Observation',
       },
       onSubmit,
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByText('Resource Type'));
-    });
+    await waitFor(() => screen.getByText('Resource Type'));
 
     const control = screen.getByText('Resource Type');
     expect(control).toBeDefined();
@@ -105,14 +99,12 @@ describe('ResourceForm', () => {
   test('Renders Observation resource', async () => {
     const onSubmit = jest.fn();
 
-    setup({
+    await setup({
       defaultValue: createReference(HomerObservation1),
       onSubmit,
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByText('Resource Type'));
-    });
+    await waitFor(() => screen.getByText('Resource Type'));
 
     const control = screen.getByText('Resource Type');
     expect(control).toBeDefined();
@@ -121,7 +113,7 @@ describe('ResourceForm', () => {
   test('Submit Observation', async () => {
     const onSubmit = jest.fn();
 
-    setup({
+    await setup({
       defaultValue: {
         resourceType: 'Observation',
         valueQuantity: {
@@ -132,9 +124,7 @@ describe('ResourceForm', () => {
       onSubmit,
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByText('Resource Type'));
-    });
+    await waitFor(() => screen.getByText('Resource Type'));
 
     // Change the value[x] from Quantity to string
     // and set a value
@@ -165,15 +155,13 @@ describe('ResourceForm', () => {
     const onSubmit = jest.fn();
     const onDelete = jest.fn();
 
-    await act(async () => {
-      setup({
-        defaultValue: {
-          resourceType: 'Practitioner',
-          id: 'xyz',
-        },
-        onSubmit,
-        onDelete,
-      });
+    await setup({
+      defaultValue: {
+        resourceType: 'Practitioner',
+        id: 'xyz',
+      },
+      onSubmit,
+      onDelete,
     });
 
     expect(screen.getByText('Delete')).toBeInTheDocument();
@@ -193,11 +181,9 @@ describe('ResourceForm', () => {
     const isoString = convertLocalToIso(localString);
     const onSubmit = jest.fn();
 
-    setup({ defaultValue: { resourceType: 'Specimen' }, onSubmit });
+    await setup({ defaultValue: { resourceType: 'Specimen' }, onSubmit });
 
-    await act(async () => {
-      await waitFor(() => screen.getByText('Resource Type'));
-    });
+    await waitFor(() => screen.getByText('Resource Type'));
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('collected[x]'), { target: { value: localString } });

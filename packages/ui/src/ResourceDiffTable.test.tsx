@@ -40,8 +40,9 @@ describe('ResourceTable', () => {
 
     await act(async () => {
       setup({ original, revised });
-      await waitFor(() => screen.getByText('Property'));
     });
+
+    await waitFor(() => screen.getByText('Property'));
 
     const removed = screen.getByText('false');
     expect(removed).toBeDefined();

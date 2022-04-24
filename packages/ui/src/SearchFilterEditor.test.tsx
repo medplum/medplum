@@ -8,8 +8,10 @@ import { SearchFilterEditor } from './SearchFilterEditor';
 const medplum = new MockClient();
 let schema: IndexedStructureDefinition;
 
-function setup(child: React.ReactNode): void {
-  render(<MedplumProvider medplum={medplum}>{child}</MedplumProvider>);
+async function setup(child: React.ReactNode): Promise<void> {
+  await act(async () => {
+    render(<MedplumProvider medplum={medplum}>{child}</MedplumProvider>);
+  });
 }
 
 describe('SearchFilterEditor', () => {
@@ -29,7 +31,7 @@ describe('SearchFilterEditor', () => {
   });
 
   test('Not visible', async () => {
-    setup(
+    await setup(
       <SearchFilterEditor
         schema={schema}
         search={{ resourceType: 'Patient' }}
@@ -51,7 +53,7 @@ describe('SearchFilterEditor', () => {
       resourceType: 'Patient',
     };
 
-    setup(
+    await setup(
       <SearchFilterEditor
         schema={schema}
         search={currSearch}
@@ -108,7 +110,7 @@ describe('SearchFilterEditor', () => {
       ],
     };
 
-    setup(
+    await setup(
       <SearchFilterEditor
         schema={schema}
         search={currSearch}
@@ -135,8 +137,9 @@ describe('SearchFilterEditor', () => {
     // Wait for the drop down
     await act(async () => {
       jest.advanceTimersByTime(1000);
-      await waitFor(() => screen.getByTestId('dropdown'));
     });
+
+    await waitFor(() => screen.getByTestId('dropdown'));
 
     // Press "Enter"
     await act(async () => {
@@ -177,7 +180,7 @@ describe('SearchFilterEditor', () => {
       ],
     };
 
-    setup(
+    await setup(
       <SearchFilterEditor
         schema={schema}
         search={currSearch}
@@ -210,7 +213,7 @@ describe('SearchFilterEditor', () => {
       ],
     };
 
-    setup(
+    await setup(
       <SearchFilterEditor
         schema={schema}
         search={currSearch}
@@ -252,7 +255,7 @@ describe('SearchFilterEditor', () => {
       ],
     };
 
-    setup(
+    await setup(
       <SearchFilterEditor
         schema={schema}
         search={currSearch}
@@ -298,7 +301,7 @@ describe('SearchFilterEditor', () => {
       ],
     };
 
-    setup(
+    await setup(
       <SearchFilterEditor
         schema={schema}
         search={currSearch}
@@ -330,7 +333,7 @@ describe('SearchFilterEditor', () => {
       ],
     };
 
-    setup(
+    await setup(
       <SearchFilterEditor
         schema={schema}
         search={currSearch}

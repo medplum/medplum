@@ -7,16 +7,18 @@ import { EditMembershipPage } from './EditMembershipPage';
 
 let medplum = new MockClient();
 
-function setup(url: string): void {
-  render(
-    <MedplumProvider medplum={medplum}>
-      <MemoryRouter initialEntries={[url]} initialIndex={0}>
-        <Routes>
-          <Route path="/admin/projects/:projectId/members/:membershipId" element={<EditMembershipPage />} />
-        </Routes>
-      </MemoryRouter>
-    </MedplumProvider>
-  );
+async function setup(url: string): Promise<void> {
+  await act(async () => {
+    render(
+      <MedplumProvider medplum={medplum}>
+        <MemoryRouter initialEntries={[url]} initialIndex={0}>
+          <Routes>
+            <Route path="/admin/projects/:projectId/members/:membershipId" element={<EditMembershipPage />} />
+          </Routes>
+        </MemoryRouter>
+      </MedplumProvider>
+    );
+  });
 }
 
 describe('EditMembershipPage', () => {
@@ -34,21 +36,15 @@ describe('EditMembershipPage', () => {
   });
 
   test('Renders', async () => {
-    setup('/admin/projects/123/members/456');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Save'));
-    });
+    await setup('/admin/projects/123/members/456');
+    await waitFor(() => screen.getByText('Save'));
 
     expect(screen.getByText('Save')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
-    setup('/admin/projects/123/members/456');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Save'));
-    });
+    await setup('/admin/projects/123/members/456');
+    await waitFor(() => screen.getByText('Save'));
 
     expect(screen.getByText('Save')).toBeInTheDocument();
 
@@ -60,11 +56,8 @@ describe('EditMembershipPage', () => {
   });
 
   test('Submit with access policy', async () => {
-    setup('/admin/projects/123/members/456');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Save'));
-    });
+    await setup('/admin/projects/123/members/456');
+    await waitFor(() => screen.getByText('Save'));
 
     expect(screen.getByText('Save')).toBeInTheDocument();
 
@@ -79,8 +72,9 @@ describe('EditMembershipPage', () => {
     // Wait for the drop down
     await act(async () => {
       jest.advanceTimersByTime(1000);
-      await waitFor(() => screen.getByTestId('dropdown'));
     });
+
+    await waitFor(() => screen.getByTestId('dropdown'));
 
     // Press "Enter"
     await act(async () => {
@@ -95,11 +89,8 @@ describe('EditMembershipPage', () => {
   });
 
   test('Submit with user configuration', async () => {
-    setup('/admin/projects/123/members/456');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Save'));
-    });
+    await setup('/admin/projects/123/members/456');
+    await waitFor(() => screen.getByText('Save'));
 
     expect(screen.getByText('Save')).toBeInTheDocument();
 
@@ -114,8 +105,9 @@ describe('EditMembershipPage', () => {
     // Wait for the drop down
     await act(async () => {
       jest.advanceTimersByTime(1000);
-      await waitFor(() => screen.getByTestId('dropdown'));
     });
+
+    await waitFor(() => screen.getByTestId('dropdown'));
 
     // Press "Enter"
     await act(async () => {
@@ -132,11 +124,8 @@ describe('EditMembershipPage', () => {
   test('Submit with admin', async () => {
     const medplumPostSpy = jest.spyOn(medplum, 'post');
 
-    setup('/admin/projects/123/members/456');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Save'));
-    });
+    await setup('/admin/projects/123/members/456');
+    await waitFor(() => screen.getByText('Save'));
 
     expect(screen.getByText('Save')).toBeInTheDocument();
 
@@ -167,11 +156,8 @@ describe('EditMembershipPage', () => {
   });
 
   test('Remove user accept confirm', async () => {
-    setup('/admin/projects/123/members/456');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Save'));
-    });
+    await setup('/admin/projects/123/members/456');
+    await waitFor(() => screen.getByText('Save'));
 
     expect(screen.getByText('Remove user')).toBeInTheDocument();
 
@@ -184,11 +170,8 @@ describe('EditMembershipPage', () => {
   });
 
   test('Remove user reject confirm', async () => {
-    setup('/admin/projects/123/members/456');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Save'));
-    });
+    await setup('/admin/projects/123/members/456');
+    await waitFor(() => screen.getByText('Save'));
 
     expect(screen.getByText('Remove user')).toBeInTheDocument();
 

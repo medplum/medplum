@@ -9,18 +9,20 @@ import { ResourceHeader } from './ResourceHeader';
 const medplum = new MockClient();
 
 describe('ResourceHeader', () => {
-  function setup(resource: Resource | Reference): void {
-    render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <ResourceHeader resource={resource} />
-        </MedplumProvider>
-      </MemoryRouter>
-    );
+  async function setup(resource: Resource | Reference): Promise<void> {
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <ResourceHeader resource={resource} />
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+    });
   }
 
   test('Renders ID', async () => {
-    setup({
+    await setup({
       resourceType: 'ServiceRequest',
       id: '123',
     });
@@ -29,7 +31,7 @@ describe('ResourceHeader', () => {
   });
 
   test('Renders single identifier', async () => {
-    setup({
+    await setup({
       resourceType: 'Bundle',
       id: '123',
       identifier: { system: 'abc', value: '456' },
@@ -41,7 +43,7 @@ describe('ResourceHeader', () => {
   });
 
   test('Renders identifier array', async () => {
-    setup({
+    await setup({
       resourceType: 'ServiceRequest',
       id: '123',
       identifier: [
@@ -58,7 +60,7 @@ describe('ResourceHeader', () => {
   });
 
   test('Renders name', async () => {
-    setup({
+    await setup({
       resourceType: 'Organization',
       id: '123',
       name: 'Test Org',
@@ -69,19 +71,17 @@ describe('ResourceHeader', () => {
   });
 
   test('Handles reference', async () => {
-    setup({
+    await setup({
       reference: 'Organization/123',
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByText('Test Organization'));
-    });
+    await waitFor(() => screen.getByText('Test Organization'));
 
     expect(screen.getByText('Test Organization')).toBeInTheDocument();
   });
 
   test('Handles null identifier', async () => {
-    setup({
+    await setup({
       resourceType: 'ServiceRequest',
       id: '123',
       identifier: [null as unknown as Identifier],
@@ -91,7 +91,7 @@ describe('ResourceHeader', () => {
   });
 
   test('Handles missing identifier system', async () => {
-    setup({
+    await setup({
       resourceType: 'ServiceRequest',
       id: '123',
       identifier: [{ value: 'abc' }],
@@ -102,7 +102,7 @@ describe('ResourceHeader', () => {
   });
 
   test('Handles missing identifier value', async () => {
-    setup({
+    await setup({
       resourceType: 'ServiceRequest',
       id: '123',
       identifier: [{ system: 'abc' }],
@@ -113,7 +113,7 @@ describe('ResourceHeader', () => {
   });
 
   test('Renders code and category text', async () => {
-    setup({
+    await setup({
       resourceType: 'ServiceRequest',
       id: '123',
       code: { text: 'TEST_CODE' },
@@ -125,7 +125,7 @@ describe('ResourceHeader', () => {
   });
 
   test('Renders code and category coding', async () => {
-    setup({
+    await setup({
       resourceType: 'ServiceRequest',
       id: '123',
       code: { coding: [{ display: 'TEST_CODE' }] },
@@ -137,7 +137,7 @@ describe('ResourceHeader', () => {
   });
 
   test('Does not render Bot code', async () => {
-    setup({
+    await setup({
       resourceType: 'Bot',
       id: '123',
       code: 'console.log("Hello World")',

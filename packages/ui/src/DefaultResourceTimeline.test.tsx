@@ -9,33 +9,31 @@ import { MedplumProvider } from './MedplumProvider';
 const medplum = new MockClient();
 
 describe('DefaultResourceTimeline', () => {
-  function setup(args: DefaultResourceTimelineProps): void {
-    render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <DefaultResourceTimeline {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
-    );
+  async function setup(args: DefaultResourceTimelineProps): Promise<void> {
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <DefaultResourceTimeline {...args} />
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+    });
   }
 
   test('Renders reference', async () => {
-    setup({ resource: createReference(ExampleSubscription) });
+    await setup({ resource: createReference(ExampleSubscription) });
 
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
   });
 
   test('Renders resource', async () => {
-    setup({ resource: ExampleSubscription });
+    await setup({ resource: ExampleSubscription });
 
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();

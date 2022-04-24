@@ -27,12 +27,14 @@ const medplum = new MedplumClient({
   fetch: mockFetch,
 });
 
-function setup(args?: AttachmentDisplayProps): void {
-  render(
-    <MedplumProvider medplum={medplum}>
-      <AttachmentDisplay {...args} />
-    </MedplumProvider>
-  );
+async function setup(args?: AttachmentDisplayProps): Promise<void> {
+  await act(async () => {
+    render(
+      <MedplumProvider medplum={medplum}>
+        <AttachmentDisplay {...args} />
+      </MedplumProvider>
+    );
+  });
 }
 
 describe('AttachmentDisplay', () => {
@@ -45,39 +47,33 @@ describe('AttachmentDisplay', () => {
   });
 
   test('Renders image', async () => {
-    await act(async () => {
-      await setup({
-        value: {
-          contentType: 'image/jpeg',
-          url: 'https://example.com/test.jpg',
-        },
-      });
-      await waitFor(() => screen.getByTestId('attachment-image'));
+    await setup({
+      value: {
+        contentType: 'image/jpeg',
+        url: 'https://example.com/test.jpg',
+      },
     });
+    await waitFor(() => screen.getByTestId('attachment-image'));
   });
 
   test('Renders video', async () => {
-    await act(async () => {
-      await setup({
-        value: {
-          contentType: 'video/mp4',
-          url: 'https://example.com/test.mp4',
-        },
-      });
-      await waitFor(() => screen.getByTestId('attachment-video'));
+    await setup({
+      value: {
+        contentType: 'video/mp4',
+        url: 'https://example.com/test.mp4',
+      },
     });
+    await waitFor(() => screen.getByTestId('attachment-video'));
   });
 
   test('Renders PDF', async () => {
-    await act(async () => {
-      await setup({
-        value: {
-          contentType: 'application/pdf',
-          url: 'https://example.com/test.pdf',
-        },
-      });
-      await waitFor(() => screen.getByTestId('attachment-pdf'));
+    await setup({
+      value: {
+        contentType: 'application/pdf',
+        url: 'https://example.com/test.pdf',
+      },
     });
+    await waitFor(() => screen.getByTestId('attachment-pdf'));
     expect(screen.getByText('Download')).toBeInTheDocument();
   });
 
@@ -86,44 +82,38 @@ describe('AttachmentDisplay', () => {
     // In the past, files with a filename were downloaded via Content-Disposition.
     // Those files do not work with the PDF-in-iframe viewer.
     // So we do not show them.
-    await act(async () => {
-      await setup({
-        value: {
-          contentType: 'application/pdf',
-          url: 'https://example.com/test.pdf',
-          title: 'test.pdf',
-        },
-      });
-      await waitFor(() => screen.getByText('test.pdf'));
+    await setup({
+      value: {
+        contentType: 'application/pdf',
+        url: 'https://example.com/test.pdf',
+        title: 'test.pdf',
+      },
     });
+    await waitFor(() => screen.getByText('test.pdf'));
     expect(screen.getByText('test.pdf')).toBeInTheDocument();
     expect(screen.queryByTestId('attachment-pdf')).toBeNull();
   });
 
   test('Renders other file with title', async () => {
-    await act(async () => {
-      await setup({
-        value: {
-          contentType: 'text/plain',
-          url: 'https://example.com/test.txt',
-          title: 'test.txt',
-        },
-      });
-      await waitFor(() => screen.getByTestId('attachment-details'));
+    await setup({
+      value: {
+        contentType: 'text/plain',
+        url: 'https://example.com/test.txt',
+        title: 'test.txt',
+      },
     });
+    await waitFor(() => screen.getByTestId('attachment-details'));
     expect(screen.getByText('test.txt')).toBeInTheDocument();
   });
 
   test('Renders other file without title', async () => {
-    await act(async () => {
-      await setup({
-        value: {
-          contentType: 'text/plain',
-          url: 'https://example.com/test.txt',
-        },
-      });
-      await waitFor(() => screen.getByTestId('attachment-details'));
+    await setup({
+      value: {
+        contentType: 'text/plain',
+        url: 'https://example.com/test.txt',
+      },
     });
+    await waitFor(() => screen.getByTestId('attachment-details'));
     expect(screen.getByText('Download')).toBeInTheDocument();
   });
 });

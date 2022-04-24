@@ -1,5 +1,5 @@
 import { MockClient } from '@medplum/mock';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
@@ -8,29 +8,21 @@ import { ResourceHistoryTable, ResourceHistoryTableProps } from './ResourceHisto
 const medplum = new MockClient();
 
 describe('ResourceHistoryTable', () => {
-  function setup(args: ResourceHistoryTableProps): void {
-    render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <ResourceHistoryTable {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
-    );
-  }
-
-  test('Renders', async () => {
-    setup({
-      resourceType: 'Patient',
-      id: '123',
+  async function setup(args: ResourceHistoryTableProps): Promise<void> {
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <ResourceHistoryTable {...args} />
+          </MedplumProvider>
+        </MemoryRouter>
+      );
     });
-
-    const el = await screen.findByText('Loading...');
-    expect(el).toBeDefined();
-  });
+  }
 
   test('Renders preloaded history', async () => {
     const history = await medplum.readHistory('Patient', '123');
-    setup({
+    await setup({
       history,
     });
 
@@ -39,7 +31,7 @@ describe('ResourceHistoryTable', () => {
   });
 
   test('Renders after loading the resource', async () => {
-    setup({
+    await setup({
       resourceType: 'Patient',
       id: '123',
     });

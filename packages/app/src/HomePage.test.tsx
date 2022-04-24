@@ -5,20 +5,21 @@ import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { getDefaultFields, HomePage } from './HomePage';
 
-function setup(url = '/Patient'): void {
-  const medplum = new MockClient();
-  render(
-    <MedplumProvider medplum={medplum}>
-      <MemoryRouter initialEntries={[url]} initialIndex={0}>
-        <Routes>
-          <Route path="/:resourceType/new" element={<div>Create Resource Page</div>} />
-          <Route path="/:resourceType/:id" element={<div>Resource Page</div>} />
-          <Route path="/:resourceType" element={<HomePage />} />
-          <Route path="/" element={<HomePage />} />
-        </Routes>
-      </MemoryRouter>
-    </MedplumProvider>
-  );
+async function setup(url = '/Patient'): Promise<void> {
+  await act(async () => {
+    render(
+      <MedplumProvider medplum={new MockClient()}>
+        <MemoryRouter initialEntries={[url]} initialIndex={0}>
+          <Routes>
+            <Route path="/:resourceType/new" element={<div>Create Resource Page</div>} />
+            <Route path="/:resourceType/:id" element={<div>Resource Page</div>} />
+            <Route path="/:resourceType" element={<HomePage />} />
+            <Route path="/" element={<HomePage />} />
+          </Routes>
+        </MemoryRouter>
+      </MedplumProvider>
+    );
+  });
 }
 
 describe('HomePage', () => {
@@ -27,44 +28,32 @@ describe('HomePage', () => {
   });
 
   test('Renders default page', async () => {
-    setup('/');
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await setup('/');
+    await waitFor(() => screen.getByTestId('search-control'));
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
   });
 
   test('Renders with resourceType', async () => {
-    setup('/Patient');
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await setup('/Patient');
+    await waitFor(() => screen.getByTestId('search-control'));
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
   });
 
   test('Renders with resourceType and fields', async () => {
-    setup('/Patient?_fields=id,_lastUpdated,name,birthDate,gender');
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await setup('/Patient?_fields=id,_lastUpdated,name,birthDate,gender');
+    await waitFor(() => screen.getByTestId('search-control'));
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
   });
 
   test('Next page button', async () => {
-    setup();
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('next-page-button'));
-    });
+    await setup();
+    await waitFor(() => screen.getByTestId('next-page-button'));
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('next-page-button'));
@@ -72,11 +61,8 @@ describe('HomePage', () => {
   });
 
   test('Prev page button', async () => {
-    setup();
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('prev-page-button'));
-    });
+    await setup();
+    await waitFor(() => screen.getByTestId('prev-page-button'));
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('prev-page-button'));
@@ -84,11 +70,8 @@ describe('HomePage', () => {
   });
 
   test('New button', async () => {
-    setup();
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('New...'));
-    });
+    await setup();
+    await waitFor(() => screen.getByText('New...'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('New...'));
@@ -98,11 +81,8 @@ describe('HomePage', () => {
   test('Delete button, cancel', async () => {
     window.confirm = jest.fn(() => false);
 
-    setup();
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Delete...'));
-    });
+    await setup();
+    await waitFor(() => screen.getByText('Delete...'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('Delete...'));
@@ -112,11 +92,8 @@ describe('HomePage', () => {
   test('Delete button, ok', async () => {
     window.confirm = jest.fn(() => true);
 
-    setup();
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Delete...'));
-    });
+    await setup();
+    await waitFor(() => screen.getByText('Delete...'));
 
     // Select all
     const checkboxes = screen.queryAllByTestId('row-checkbox');
@@ -134,11 +111,8 @@ describe('HomePage', () => {
     window.URL.createObjectURL = jest.fn(() => 'blob:http://localhost/blob');
     window.open = jest.fn();
 
-    setup();
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Export...'));
-    });
+    await setup();
+    await waitFor(() => screen.getByText('Export...'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('Export...'));
@@ -180,11 +154,8 @@ describe('HomePage', () => {
   test('Left click on row', async () => {
     window.open = jest.fn();
 
-    setup('/Patient');
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await setup('/Patient');
+    await waitFor(() => screen.getByTestId('search-control'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('Homer Simpson'));
@@ -200,11 +171,8 @@ describe('HomePage', () => {
   test('Middle click on row', async () => {
     window.open = jest.fn();
 
-    setup('/Patient');
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await setup('/Patient');
+    await waitFor(() => screen.getByTestId('search-control'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('Homer Simpson'), { button: 1 });

@@ -1,6 +1,6 @@
 import { createReference } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { Avatar, AvatarProps } from './Avatar';
@@ -9,33 +9,35 @@ import { MedplumProvider } from './MedplumProvider';
 const medplum = new MockClient();
 
 describe('Avatar', () => {
-  function setup(args: AvatarProps): void {
-    render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <Avatar {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
-    );
+  async function setup(args: AvatarProps): Promise<void> {
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <Avatar {...args} />
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+    });
   }
 
-  test('Avatar renders image', () => {
-    setup({ src: 'https://example.com/profile.jpg', alt: 'Profile' });
+  test('Avatar renders image', async () => {
+    await setup({ src: 'https://example.com/profile.jpg', alt: 'Profile' });
     expect((screen.getByAltText('Profile') as HTMLImageElement).src).toEqual('https://example.com/profile.jpg');
   });
 
-  test('Avatar renders system', () => {
-    setup({ value: { reference: 'system' } });
+  test('Avatar renders system', async () => {
+    await setup({ value: { reference: 'system' } });
     expect(screen.getByText('S')).toBeDefined();
   });
 
-  test('Avatar renders initials', () => {
-    setup({ alt: 'Homer Simpson' });
+  test('Avatar renders initials', async () => {
+    await setup({ alt: 'Homer Simpson' });
     expect(screen.getByTestId('avatar')).toBeDefined();
   });
 
   test('Avatar renders resource directly', async () => {
-    setup({
+    await setup({
       value: HomerSimpson,
     });
 
@@ -45,7 +47,7 @@ describe('Avatar', () => {
   });
 
   test('Avatar renders resource directly as link', async () => {
-    setup({
+    await setup({
       value: HomerSimpson,
       link: true,
     });
@@ -56,7 +58,7 @@ describe('Avatar', () => {
   });
 
   test('Avatar renders after loading the resource', async () => {
-    setup({
+    await setup({
       value: createReference(HomerSimpson),
     });
 

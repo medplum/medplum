@@ -42,8 +42,9 @@ describe('AttachmentArrayInput', () => {
           },
         ],
       });
-      await waitFor(() => screen.getByAltText('test.jpg'));
     });
+
+    await waitFor(() => screen.getByAltText('test.jpg'));
   });
 
   test('Add attachment', async () => {

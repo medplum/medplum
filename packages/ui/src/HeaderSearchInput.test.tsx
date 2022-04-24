@@ -116,8 +116,9 @@ describe('HeaderSearchInput', () => {
     // Wait for the drop down
     await act(async () => {
       jest.advanceTimersByTime(1000);
-      await waitFor(() => screen.getByTestId('dropdown'));
     });
+
+    await waitFor(() => screen.getByTestId('dropdown'));
 
     // Press "Enter"
     await act(async () => {
@@ -146,8 +147,9 @@ describe('HeaderSearchInput', () => {
     // Wait for the drop down
     await act(async () => {
       jest.advanceTimersByTime(1000);
-      await waitFor(() => screen.getByTestId('dropdown'));
     });
+
+    await waitFor(() => screen.getByTestId('dropdown'));
 
     // Press "Enter"
     await act(async () => {
@@ -173,8 +175,9 @@ describe('HeaderSearchInput', () => {
     // Wait for the drop down
     await act(async () => {
       jest.advanceTimersByTime(1000);
-      await waitFor(() => screen.getByTestId('dropdown'));
     });
+
+    await waitFor(() => screen.getByTestId('dropdown'));
 
     // There should only be 5 results displayed
     const elements = screen.getAllByText('__Many__');
@@ -197,8 +200,9 @@ describe('HeaderSearchInput', () => {
     // Wait for the drop down
     await act(async () => {
       jest.advanceTimersByTime(1000);
-      await waitFor(() => screen.getByTestId('dropdown'));
     });
+
+    await waitFor(() => screen.getByTestId('dropdown'));
 
     // There should only be 5 results displayed
     const elements = screen.getAllByText('__Many__');
@@ -221,8 +225,9 @@ describe('HeaderSearchInput', () => {
     // Wait for the drop down
     await act(async () => {
       jest.advanceTimersByTime(1000);
-      await waitFor(() => screen.getByTestId('dropdown'));
     });
+
+    await waitFor(() => screen.getByTestId('dropdown'));
 
     expect(screen.getByText('Patient/emptyPatient')).toBeInTheDocument();
     expect(screen.getByText('ServiceRequest/emptyServiceRequest')).toBeInTheDocument();

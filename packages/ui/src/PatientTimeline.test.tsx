@@ -9,22 +9,22 @@ import { PatientTimeline, PatientTimelineProps } from './PatientTimeline';
 const medplum = new MockClient();
 
 describe('PatientTimeline', () => {
-  function setup(args: PatientTimelineProps): void {
-    render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <PatientTimeline {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
-    );
+  async function setup(args: PatientTimelineProps): Promise<void> {
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <PatientTimeline {...args} />
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+    });
   }
 
   test('Renders reference', async () => {
-    setup({ patient: createReference(HomerSimpson) });
+    await setup({ patient: createReference(HomerSimpson) });
 
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
@@ -32,11 +32,9 @@ describe('PatientTimeline', () => {
   });
 
   test('Renders resource', async () => {
-    setup({ patient: HomerSimpson });
+    await setup({ patient: HomerSimpson });
 
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
@@ -44,12 +42,10 @@ describe('PatientTimeline', () => {
   });
 
   test('Create comment', async () => {
-    setup({ patient: HomerSimpson });
+    await setup({ patient: HomerSimpson });
 
     // Wait for initial load
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     // Enter the comment text
     await act(async () => {
@@ -66,21 +62,17 @@ describe('PatientTimeline', () => {
     });
 
     // Wait for new comment
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
   });
 
   test('Upload media', async () => {
-    setup({ patient: HomerSimpson });
+    await setup({ patient: HomerSimpson });
 
     // Wait for initial load
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     // Upload the file
     await act(async () => {
@@ -90,10 +82,8 @@ describe('PatientTimeline', () => {
       });
     });
 
-    // Wait for new comment
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('timeline-item'));
-    });
+    // Wait for new media
+    await waitFor(() => screen.getAllByTestId('timeline-item'));
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();

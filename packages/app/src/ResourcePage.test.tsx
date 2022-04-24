@@ -9,60 +9,46 @@ import { ResourcePage } from './ResourcePage';
 const medplum = new MockClient();
 
 describe('ResourcePage', () => {
-  function setup(url: string): void {
-    render(
-      <MedplumProvider medplum={medplum}>
-        <MemoryRouter initialEntries={[url]} initialIndex={0}>
-          <Routes>
-            <Route path="/:resourceType/:id/:tab" element={<ResourcePage />} />
-            <Route path="/:resourceType/:id" element={<ResourcePage />} />
-            <Route path="/:resourceType" element={<HomePage />} />
-          </Routes>
-        </MemoryRouter>
-      </MedplumProvider>
-    );
+  async function setup(url: string): Promise<void> {
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <MemoryRouter initialEntries={[url]} initialIndex={0}>
+            <Routes>
+              <Route path="/:resourceType/:id/:tab" element={<ResourcePage />} />
+              <Route path="/:resourceType/:id" element={<ResourcePage />} />
+              <Route path="/:resourceType" element={<HomePage />} />
+            </Routes>
+          </MemoryRouter>
+        </MedplumProvider>
+      );
+    });
   }
 
   test('Not found', async () => {
-    setup('/Practitioner/not-found');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Resource not found'));
-    });
-
+    await setup('/Practitioner/not-found');
+    await waitFor(() => screen.getByText('Resource not found'));
     expect(screen.getByText('Resource not found')).toBeInTheDocument();
   });
 
   test('Details tab renders', async () => {
-    setup('/Practitioner/123');
-
-    await act(async () => {
-      await waitFor(() => screen.queryAllByText('Name'));
-    });
-
+    await setup('/Practitioner/123');
+    await waitFor(() => screen.queryAllByText('Name'));
     expect(screen.queryAllByText('Name')[0]).toBeInTheDocument();
     expect(screen.getByText('Gender')).toBeInTheDocument();
   });
 
   test('Edit tab renders', async () => {
-    setup('/Practitioner/123/edit');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Edit'));
-    });
-
+    await setup('/Practitioner/123/edit');
+    await waitFor(() => screen.getByText('Edit'));
     expect(screen.getByText('Edit')).toBeInTheDocument();
   });
 
   test('Delete button confirm', async () => {
     window.confirm = jest.fn(() => true);
 
-    setup('/Practitioner/123/edit');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Delete'));
-    });
-
+    await setup('/Practitioner/123/edit');
+    await waitFor(() => screen.getByText('Delete'));
     expect(screen.getByText('Delete')).toBeInTheDocument();
 
     await act(async () => {
@@ -75,12 +61,8 @@ describe('ResourcePage', () => {
   test('Delete button decline', async () => {
     window.confirm = jest.fn(() => false);
 
-    setup('/Practitioner/123/edit');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Delete'));
-    });
-
+    await setup('/Practitioner/123/edit');
+    await waitFor(() => screen.getByText('Delete'));
     expect(screen.getByText('Delete')).toBeInTheDocument();
 
     await act(async () => {
@@ -91,41 +73,29 @@ describe('ResourcePage', () => {
   });
 
   test('History tab renders', async () => {
-    setup('/Practitioner/123/history');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('History'));
-    });
+    await setup('/Practitioner/123/history');
+    await waitFor(() => screen.getByText('History'));
 
     expect(screen.getByText('History')).toBeInTheDocument();
   });
 
   test('Blame tab renders', async () => {
-    setup('/Practitioner/123/blame');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Blame'));
-    });
+    await setup('/Practitioner/123/blame');
+    await waitFor(() => screen.getByText('Blame'));
 
     expect(screen.getByText('Blame')).toBeInTheDocument();
   });
 
   test('JSON tab renders', async () => {
-    setup('/Practitioner/123/json');
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('resource-json'));
-    });
+    await setup('/Practitioner/123/json');
+    await waitFor(() => screen.getByTestId('resource-json'));
 
     expect(screen.getByTestId('resource-json')).toBeInTheDocument();
   });
 
   test('JSON submit', async () => {
-    setup('/Practitioner/123/json');
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('resource-json'));
-    });
+    await setup('/Practitioner/123/json');
+    await waitFor(() => screen.getByTestId('resource-json'));
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('resource-json'), {
@@ -141,11 +111,8 @@ describe('ResourcePage', () => {
   });
 
   test('JSON submit with meta', async () => {
-    setup('/Practitioner/123/json');
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('resource-json'));
-    });
+    await setup('/Practitioner/123/json');
+    await waitFor(() => screen.getByTestId('resource-json'));
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('resource-json'), {
@@ -172,11 +139,8 @@ describe('ResourcePage', () => {
   });
 
   test('Patient timeline', async () => {
-    setup('/Patient/123/timeline');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Timeline'));
-    });
+    await setup('/Patient/123/timeline');
+    await waitFor(() => screen.getByText('Timeline'));
 
     expect(screen.getByText('Timeline')).toBeInTheDocument();
 
@@ -187,42 +151,30 @@ describe('ResourcePage', () => {
   });
 
   test('Patient apps', async () => {
-    setup('/Patient/123/apps');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Apps'));
-    });
+    await setup('/Patient/123/apps');
+    await waitFor(() => screen.getByText('Apps'));
 
     expect(screen.getByText('Apps')).toBeInTheDocument();
     expect(screen.getByText('Vitals')).toBeInTheDocument();
   });
 
   test('Encounter timeline', async () => {
-    setup('/Encounter/123/timeline');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Timeline'));
-    });
+    await setup('/Encounter/123/timeline');
+    await waitFor(() => screen.getByText('Timeline'));
 
     expect(screen.getByText('Timeline')).toBeInTheDocument();
   });
 
   test('Questionnaire builder', async () => {
-    setup('/Questionnaire/123/builder');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Save'));
-    });
+    await setup('/Questionnaire/123/builder');
+    await waitFor(() => screen.getByText('Save'));
 
     expect(screen.getByText('Save')).toBeDefined();
   });
 
   test('Questionnaire preview', async () => {
-    setup('/Questionnaire/123/preview');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Preview'));
-    });
+    await setup('/Questionnaire/123/preview');
+    await waitFor(() => screen.getByText('Preview'));
 
     expect(screen.getByText('Preview')).toBeInTheDocument();
 
@@ -232,21 +184,15 @@ describe('ResourcePage', () => {
   });
 
   test('Bot editor', async () => {
-    setup('/Bot/123/editor');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Editor'));
-    });
+    await setup('/Bot/123/editor');
+    await waitFor(() => screen.getByText('Editor'));
 
     expect(screen.getByText('Editor')).toBeInTheDocument();
   });
 
   test('DiagnosticReport display', async () => {
-    setup('/DiagnosticReport/123/report');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Report'));
-    });
+    await setup('/DiagnosticReport/123/report');
+    await waitFor(() => screen.getByText('Report'));
 
     expect(screen.getByText('Report')).toBeInTheDocument();
   });
@@ -254,11 +200,8 @@ describe('ResourcePage', () => {
   test('Left click on tab', async () => {
     window.open = jest.fn();
 
-    setup('/Practitioner/123');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Name'));
-    });
+    await setup('/Practitioner/123');
+    await waitFor(() => screen.getByText('Name'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('History'));
@@ -274,11 +217,8 @@ describe('ResourcePage', () => {
   test('Middle click on tab', async () => {
     window.open = jest.fn();
 
-    setup('/Practitioner/123');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Name'));
-    });
+    await setup('/Practitioner/123');
+    await waitFor(() => screen.getByText('Name'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('History'), { button: 1 });

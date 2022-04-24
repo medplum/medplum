@@ -7,16 +7,18 @@ import { CreateClientPage } from './CreateClientPage';
 
 const medplum = new MockClient();
 
-function setup(url: string): void {
-  render(
-    <MedplumProvider medplum={medplum}>
-      <MemoryRouter initialEntries={[url]} initialIndex={0}>
-        <Routes>
-          <Route path="/admin/projects/:projectId/client" element={<CreateClientPage />} />
-        </Routes>
-      </MemoryRouter>
-    </MedplumProvider>
-  );
+async function setup(url: string): Promise<void> {
+  await act(async () => {
+    render(
+      <MedplumProvider medplum={medplum}>
+        <MemoryRouter initialEntries={[url]} initialIndex={0}>
+          <Routes>
+            <Route path="/admin/projects/:projectId/client" element={<CreateClientPage />} />
+          </Routes>
+        </MemoryRouter>
+      </MedplumProvider>
+    );
+  });
 }
 
 describe('CreateClientPage', () => {
@@ -32,21 +34,14 @@ describe('CreateClientPage', () => {
   });
 
   test('Renders', async () => {
-    setup('/admin/projects/123/client');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Create Client'));
-    });
-
+    await setup('/admin/projects/123/client');
+    await waitFor(() => screen.getByText('Create Client'));
     expect(screen.getByText('Create Client')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
-    setup('/admin/projects/123/client');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Create Client'));
-    });
+    await setup('/admin/projects/123/client');
+    await waitFor(() => screen.getByText('Create Client'));
 
     expect(screen.getByText('Create Client')).toBeInTheDocument();
 
@@ -70,11 +65,8 @@ describe('CreateClientPage', () => {
   });
 
   test('Submit with access policy', async () => {
-    setup('/admin/projects/123/client');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Create Client'));
-    });
+    await setup('/admin/projects/123/client');
+    await waitFor(() => screen.getByText('Create Client'));
 
     expect(screen.getByText('Create Client')).toBeInTheDocument();
 
@@ -100,8 +92,9 @@ describe('CreateClientPage', () => {
     // Wait for the drop down
     await act(async () => {
       jest.advanceTimersByTime(1000);
-      await waitFor(() => screen.getByTestId('dropdown'));
     });
+
+    await waitFor(() => screen.getByTestId('dropdown'));
 
     // Press "Enter"
     await act(async () => {

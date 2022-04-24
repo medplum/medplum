@@ -7,16 +7,18 @@ import { ProjectPage } from './ProjectPage';
 
 const medplum = new MockClient();
 
-function setup(url: string): void {
-  render(
-    <MedplumProvider medplum={medplum}>
-      <MemoryRouter initialEntries={[url]} initialIndex={0}>
-        <Routes>
-          <Route path="/admin/project" element={<ProjectPage />} />
-        </Routes>
-      </MemoryRouter>
-    </MedplumProvider>
-  );
+async function setup(url: string): Promise<void> {
+  await act(async () => {
+    render(
+      <MedplumProvider medplum={medplum}>
+        <MemoryRouter initialEntries={[url]} initialIndex={0}>
+          <Routes>
+            <Route path="/admin/project" element={<ProjectPage />} />
+          </Routes>
+        </MemoryRouter>
+      </MedplumProvider>
+    );
+  });
 }
 
 describe('ProjectPage', () => {
@@ -32,12 +34,8 @@ describe('ProjectPage', () => {
       },
     });
 
-    setup('/admin/project');
-
-    await act(async () => {
-      await waitFor(() => screen.getByText('Alice Smith'));
-    });
-
+    await setup('/admin/project');
+    await waitFor(() => screen.getByText('Alice Smith'));
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();
   });
 });
