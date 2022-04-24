@@ -1,13 +1,13 @@
-import { Message } from './parser';
+import { Hl7Message } from './hl7';
 
 describe('HL7', () => {
   test('Unsupported encoding', () => {
-    expect(() => Message.parse('MSH_^~\\&|')).toThrow();
+    expect(() => Hl7Message.parse('MSH_^~\\&|')).toThrow();
   });
 
   test('Minimal', () => {
     const text = 'MSH|^~\\&';
-    const msg = Message.parse(text);
+    const msg = Hl7Message.parse(text);
     expect(msg).toBeDefined();
     expect(msg.segments.length).toBe(1);
     expect(msg.toString()).toBe(text);
@@ -24,7 +24,7 @@ describe('HL7', () => {
       'MSH|^~\\&|Main_HIS|XYZ_HOSPITAL|iFW|ABC_Lab|20160915003015||ACK|9B38584D|P|2.6.1|\r' +
       'MSA|AA|9B38584D|Everything was okay dokay!|';
 
-    const msg = Message.parse(text);
+    const msg = Hl7Message.parse(text);
     expect(msg).toBeDefined();
     expect(msg.segments.length).toBe(2);
     expect(msg.toString()).toBe(text);
@@ -36,7 +36,7 @@ PID||0493575^^^2^ID 1|454721||DOE^JOHN^^^^|DOE^JOHN^^^^|19480203|M||B|254 MYSTRE
 NK1||ROE^MARIE^^^^|SPO||(216)123-4567||EC|||||||||||||||||||||||||||
 PV1||O|168 ~219~C~PMA^^^^^^^^^||||277^ALLEN MYLASTNAME^BONNIE^^^^|||||||||| ||2688684|||||||||||||||||||||||||199912271408||||||002376853`;
 
-    const msg = Message.parse(text);
+    const msg = Hl7Message.parse(text);
     expect(msg).toBeDefined();
     expect(msg.segments.length).toBe(4);
     expect(msg.segments[0].name).toBe('MSH');
@@ -71,7 +71,7 @@ PV1||O|168 ~219~C~PMA^^^^^^^^^||||277^ALLEN MYLASTNAME^BONNIE^^^^|||||||||| ||26
 QPD|INISEQ^^99ROC|query1233|123|50001|1|||||SERPLAS^^99ROC|SC^^99ROC|R
 RCP|I|1|R^^HL70394`;
 
-    const msg = Message.parse(text);
+    const msg = Hl7Message.parse(text);
     expect(msg).toBeDefined();
     expect(msg.segments.length).toBe(3);
     expect(msg.segments[0].name).toBe('MSH');
@@ -105,7 +105,7 @@ OBX|7|ST|TR_TECHNICALLIMIT^TR_TECHNICALLIMIT^99ROC^S_OTHER^Other·Supplemental^I
 OBX|8|ST|TR_REPEATLIMIT^TR_REPEATLIMIT^99ROC^S_OTHER^Other·Supplemental^IHELAW|1|-99999·-·999999|||N^^HL70078|||F|||||Admin~REALTIME||c503^ROCHE~^ROCHE~1^ROCHE|20180222150842||||||||||RSLT
 OBX|9|ST|TR_EXPECTEDVALUES^TR_EXPECTEDVALUES^99ROC^S_OTHER^Other·Supplemental^IHELAW|1|-99999·-·999999|||N^^HL70078|||F|||||Admin~REALTIME||c503^ROCHE~^ROCHE~1^ROCHE|20180222150842||||||||||RSLT`;
 
-    const msg = Message.parse(text);
+    const msg = Hl7Message.parse(text);
     expect(msg).toBeDefined();
     expect(msg.segments.length).toBe(19);
     expect(msg.segments[0].name).toBe('MSH');

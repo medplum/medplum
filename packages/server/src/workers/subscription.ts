@@ -1,14 +1,5 @@
-import { assertOk, createReference, isGone, Operator, stringify } from '@medplum/core';
-import {
-  AuditEvent,
-  Bot,
-  BundleEntry,
-  Extension,
-  ProjectMembership,
-  Reference,
-  Resource,
-  Subscription,
-} from '@medplum/fhirtypes';
+import { assertOk, createReference, getExtensionValue, isGone, Operator, stringify } from '@medplum/core';
+import { AuditEvent, Bot, BundleEntry, ProjectMembership, Reference, Resource, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
@@ -409,24 +400,6 @@ async function findProjectMembership(project: string, profile: Reference): Promi
   });
   assertOk(outcome, bundle);
   return bundle.entry?.[0]?.resource;
-}
-
-/**
- * Returns an extension value by extension URLs.
- * @param resource The base resource.
- * @param urls Array of extension URLs.  Each entry represents a nested extension.
- * @returns The extension value if found; undefined otherwise.
- */
-function getExtensionValue(resource: Resource, ...urls: string[]): string | undefined {
-  // Let curr be the current resource or extension. Extensions can be nested.
-  let curr: any = resource;
-
-  // For each of the urls, try to find a matching nested extension.
-  for (let i = 0; i < urls.length && curr; i++) {
-    curr = (curr?.extension as Extension[] | undefined)?.find((e) => e.url === urls[i]);
-  }
-
-  return curr?.valueString as string | undefined;
 }
 
 /**

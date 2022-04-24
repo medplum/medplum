@@ -1,3 +1,4 @@
+import { Hl7Message } from '@medplum/core';
 import express from 'express';
 import request from 'supertest';
 import { initApp } from '../app';
@@ -6,7 +7,6 @@ import { closeDatabase, initDatabase } from '../database';
 import { initTestAuth } from '../jest.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
-import { Message } from './parser';
 import { HL7_V2_ER7_CONTENT_TYPE } from './routes';
 
 const app = express();
@@ -44,7 +44,7 @@ describe('HL7 Routes', () => {
       .send(msg);
     expect(res.status).toBe(200);
 
-    const ack = Message.parse(res.text);
+    const ack = Hl7Message.parse(res.text);
     expect(ack.get('MSH')).toBeDefined();
     expect(ack.get('MSA')).toBeDefined();
   });
@@ -67,7 +67,7 @@ describe('HL7 Routes', () => {
       .send(msg);
     expect(res.status).toBe(200);
 
-    const ack = Message.parse(res.text);
+    const ack = Hl7Message.parse(res.text);
     expect(ack.get('MSH')).toBeDefined();
     expect(ack.get('MSA')).toBeDefined();
   });
