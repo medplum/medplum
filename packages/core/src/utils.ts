@@ -253,6 +253,24 @@ function buildQuestionnaireAnswerItems(
 }
 
 /**
+ * Returns an extension value by extension URLs.
+ * @param resource The base resource.
+ * @param urls Array of extension URLs.  Each entry represents a nested extension.
+ * @returns The extension value if found; undefined otherwise.
+ */
+export function getExtensionValue(resource: Resource, ...urls: string[]): string | undefined {
+  // Let curr be the current resource or extension. Extensions can be nested.
+  let curr: any = resource;
+
+  // For each of the urls, try to find a matching nested extension.
+  for (let i = 0; i < urls.length && curr; i++) {
+    curr = (curr?.extension as Extension[] | undefined)?.find((e) => e.url === urls[i]);
+  }
+
+  return curr?.valueString as string | undefined;
+}
+
+/**
  * FHIR JSON stringify.
  * Removes properties with empty string values.
  * Removes objects with zero properties.
@@ -348,24 +366,6 @@ export function isObject(obj: unknown): obj is object {
  */
 export function isStringArray(arr: any[]): arr is string[] {
   return arr.every((e) => typeof e === 'string');
-}
-
-/**
- * Returns an extension value by extension URLs.
- * @param resource The base resource.
- * @param urls Array of extension URLs.  Each entry represents a nested extension.
- * @returns The extension value if found; undefined otherwise.
- */
-export function getExtensionValue(resource: Resource, ...urls: string[]): string | undefined {
-  // Let curr be the current resource or extension. Extensions can be nested.
-  let curr: any = resource;
-
-  // For each of the urls, try to find a matching nested extension.
-  for (let i = 0; i < urls.length && curr; i++) {
-    curr = (curr?.extension as Extension[] | undefined)?.find((e) => e.url === urls[i]);
-  }
-
-  return curr?.valueString as string | undefined;
 }
 
 // Precompute hex octets
