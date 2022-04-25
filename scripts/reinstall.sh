@@ -2,6 +2,7 @@
 
 rm -rf node_modules
 rm -rf packages/app/node_modules
+rm -rf packages/cli/node_modules
 rm -rf packages/core/node_modules
 rm -rf packages/docs/node_modules
 rm -rf packages/definitions/node_modules

@@ -16,7 +16,7 @@ npm --version
 [ ! -d "node_modules" ] && npm ci
 
 # Build
-BUILD_ORDER=("definitions" "fhirpath" "core" "mock" "ui" "app" "graphiql" "server" "infra" "docs")
+BUILD_ORDER=("definitions" "fhirpath" "core" "mock" "ui" "app" "graphiql" "server" "infra" "docs" "cli")
 for PACKAGE in ${BUILD_ORDER[@]}; do
   pushd "packages/$PACKAGE"
   npm run build
@@ -24,7 +24,7 @@ for PACKAGE in ${BUILD_ORDER[@]}; do
 done
 
 # Test
-TEST_ORDER=("fhirpath" "core" "mock" "ui" "app" "infra")
+TEST_ORDER=("fhirpath" "core" "mock" "ui" "app" "infra" "cli")
 for PACKAGE in ${TEST_ORDER[@]}; do
   pushd "packages/$PACKAGE"
   npm t
@@ -42,6 +42,7 @@ mkdir -p coverage/packages
 mkdir -p coverage/combined
 cp packages/app/coverage/coverage-final.json coverage/packages/coverage-app.json
 cp packages/core/coverage/coverage-final.json coverage/packages/coverage-core.json
+cp packages/cli/coverage/coverage-final.json coverage/packages/coverage-cli.json
 cp packages/fhirpath/coverage/coverage-final.json coverage/packages/coverage-fhirpath.json
 cp packages/infra/coverage/coverage-final.json coverage/packages/coverage-infra.json
 cp packages/mock/coverage/coverage-final.json coverage/packages/coverage-mock.json
