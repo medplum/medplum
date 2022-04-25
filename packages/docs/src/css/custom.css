@@ -31,3 +31,17 @@ html[data-theme='dark'] .docusaurus-highlight-code-line {
 main img {
   width: 90%;
 }
+
+.homepage-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2rem;
+  margin-inline: 2rem;
+  margin-block-end: 4rem;
+}
+
+@media screen and (max-width: 966px) {
+  .homepage-grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}

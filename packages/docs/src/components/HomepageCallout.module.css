@@ -1,0 +1,24 @@
+.container {
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: center;
+  background-color: var(--ifm-color-primary);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.content {
+  padding: 0.25rem;
+}
+
+.link-container {
+  background-color: rgb(88, 183, 64);
+  border-radius: 8px;
+  max-width: 8rem;
+  padding: 0.5rem;
+}
+
+.link-container a {
+  color: var(--ifm-font-color-base-inverse);
+  font-weight: bold;
+}
