@@ -5,7 +5,6 @@ import './TextArea.css';
 
 export interface TextAreaProps {
   name?: string;
-  step?: number;
   defaultValue?: string;
   required?: boolean;
   autoComplete?: string;

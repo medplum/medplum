@@ -168,7 +168,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       return (
         <Input
           type="number"
-          step={propertyType === PropertyType.decimal ? 0.01 : 1}
+          step={propertyType === PropertyType.decimal ? 'any' : 1}
           name={name}
           testid={name}
           defaultValue={value}
