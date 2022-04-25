@@ -333,3 +333,14 @@ export class FunctionAtom implements Atom {
     return this.impl(ensureArray(context), ...this.args);
   }
 }
+
+export class IndexerAtom implements Atom {
+  constructor(public readonly expr: Atom) {}
+  eval(context: unknown): unknown {
+    const index = this.expr.eval(context);
+    if (index instanceof Number) {
+      throw new Error(`Invalid indexer expression: should return integer}`);
+    }
+    return applyMaybeArray(context, (e: unknown) => (e as Array<any>)[index as number]);
+  }
+}
