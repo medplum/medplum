@@ -7,7 +7,6 @@ export interface InputProps {
   name?: string;
   type?: string;
   size?: number;
-  step?: number;
   defaultValue?: string | number;
   required?: boolean;
   autoCapitalize?: string;
@@ -31,7 +30,6 @@ export function Input(props: InputProps): JSX.Element {
       name={props.name}
       type={getInputType(props.type)}
       size={props.size}
-      step={props.step}
       className={className}
       defaultValue={props.defaultValue || ''}
       required={props.required}

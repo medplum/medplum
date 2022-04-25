@@ -190,7 +190,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <Input
           type="number"
-          step={0.01}
           name={name}
           defaultValue={initial?.valueDecimal}
           onChange={(newValue) => onChangeAnswer({ valueDecimal: parseFloat(newValue) })}
@@ -200,7 +199,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <Input
           type="number"
-          step={1}
           name={name}
           defaultValue={initial?.valueInteger}
           onChange={(newValue) => onChangeAnswer({ valueInteger: parseInt(newValue) })}
@@ -220,7 +218,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <DateTimeInput
           type="datetime-local"
           name={name}
-          step={1}
           defaultValue={initial?.valueDateTime}
           onChange={(newValue) => onChangeAnswer({ valueDateTime: newValue })}
         />

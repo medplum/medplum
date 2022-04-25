@@ -24,7 +24,6 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
       <Input
         name={props.name}
         type="number"
-        step={0.01}
         placeholder="Value"
         defaultValue={value?.value?.toString()}
         onChange={(newValue) =>
