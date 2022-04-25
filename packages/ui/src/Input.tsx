@@ -7,7 +7,7 @@ export interface InputProps {
   name?: string;
   type?: string;
   size?: number;
-  step?: number;
+  step?: number | 'any';
   defaultValue?: string | number;
   required?: boolean;
   autoCapitalize?: string;
