@@ -194,16 +194,16 @@ const PARENTHESES_PARSELET: PrefixParselet = {
   },
 };
 
-const BRACKET_PARSELET: PrefixParselet = {
-  parse(parser: Parser) {
+const INDEXER_PARSELET: InfixParselet = {
+  parse(parser: Parser, left: Atom) {
     const expr = parser.consumeAndParse();
     if (!parser.match(']')) {
       throw new Error('Parse error: expected `]`');
     }
-    return new IndexerAtom(expr);
+    return new IndexerAtom(left, expr);
   },
 
-  precedence: Precedence.FunctionCall,
+  precedence: Precedence.Indexer,
 };
 
 const FUNCTION_CALL_PARSELET: InfixParselet = {
@@ -269,7 +269,7 @@ const parserBuilder = new ParserBuilder()
   })
   .registerPrefix('{}', { parse: () => new EmptySetAtom() })
   .registerPrefix('(', PARENTHESES_PARSELET)
-  .registerPrefix('[', BRACKET_PARSELET)
+  .registerInfix('[', INDEXER_PARSELET)
   .registerInfix('(', FUNCTION_CALL_PARSELET)
   .prefix('+', Precedence.UnaryAdd, (_, right) => new UnaryOperatorAtom(right, (x) => x))
   .prefix('-', Precedence.UnarySubtract, (_, right) => new ArithemticOperatorAtom(right, right, (_, y) => -y))

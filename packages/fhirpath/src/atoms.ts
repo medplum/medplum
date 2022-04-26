@@ -335,12 +335,16 @@ export class FunctionAtom implements Atom {
 }
 
 export class IndexerAtom implements Atom {
-  constructor(public readonly expr: Atom) {}
+  constructor(public readonly left: Atom, public readonly expr: Atom) {}
   eval(context: unknown): unknown {
     const index = this.expr.eval(context);
-    if (index instanceof Number) {
+    if (typeof index !== 'number') {
       throw new Error(`Invalid indexer expression: should return integer}`);
     }
-    return applyMaybeArray(context, (e: unknown) => (e as Array<any>)[index as number]);
+    const leftResult: unknown[] = this.left.eval(context) as unknown[];
+    if (!(index in leftResult)) {
+      return [];
+    }
+    return leftResult[index as number];
   }
 }

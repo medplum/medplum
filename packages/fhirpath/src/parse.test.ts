@@ -95,7 +95,7 @@ describe('FHIRPath parser', () => {
   });
 
   test('Evaluate FHIRPath Patient.name[1].given', () => {
-    const result = evalFhirPath('Patient.name.given', [
+    const result = evalFhirPath('Patient.name[1].given', [
       {
         resourceType: 'Patient',
         name: [
@@ -114,7 +114,7 @@ describe('FHIRPath parser', () => {
   });
 
   test('Evaluate FHIRPath Patient.name[ (10 - 8) / 2].given', () => {
-    const result = evalFhirPath('Patient.name.given', [
+    const result = evalFhirPath('Patient.name[ (10 - 8) / 2].given', [
       {
         resourceType: 'Patient',
         name: [
@@ -132,8 +132,8 @@ describe('FHIRPath parser', () => {
     expect(result).toEqual(['Robert']);
   });
 
-  test.only('Evaluate FHIRPath Patient.name.given[1]', () => {
-    const result = evalFhirPath('Patient.name.given', [
+  test('Evaluate FHIRPath Patient.name.select(given[0])', () => {
+    const result = evalFhirPath('Patient.name.select(given[0])', [
       {
         resourceType: 'Patient',
         name: [
@@ -148,7 +148,26 @@ describe('FHIRPath parser', () => {
         ],
       },
     ]);
-    expect(result).toEqual(['A', 'Adam']);
+    expect(result).toEqual(['Bob', 'Robert']);
+  });
+
+  test('Evaluate FHIRPath Patient.name.select(given[1])', () => {
+    const result = evalFhirPath('Patient.name.select(given[1])', [
+      {
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Bob'],
+            family: 'Jones',
+          },
+          {
+            given: ['Robert', 'Adam'],
+            family: 'Jones',
+          },
+        ],
+      },
+    ]);
+    expect(result).toEqual(['Adam']);
   });
 
   test('Evaluate FHIRPath string concatenation on array of resources', () => {
