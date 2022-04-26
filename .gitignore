@@ -36,3 +36,5 @@ tsconfig.tsbuildinfo
 # Server tarball
 medplum-server.tar.gz
 
+# VSCode
+.vscode/
