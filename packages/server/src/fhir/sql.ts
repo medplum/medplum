@@ -268,6 +268,10 @@ export class SelectQuery extends BaseQuery {
     return this;
   }
 
+  getNextJoinAlias(): string {
+    return `T${this.joins.length + 1}`;
+  }
+
   join(rightTableName: string, leftColumnName: string, rightColumnName: string, subQuery?: SelectQuery): this {
     this.joins.push(
       new Join(new Column(this.tableName, leftColumnName), new Column(rightTableName, rightColumnName), subQuery)

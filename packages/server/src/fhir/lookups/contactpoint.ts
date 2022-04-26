@@ -97,7 +97,7 @@ export class ContactPointTable extends LookupTable<ContactPoint> {
    */
   addWhere(selectQuery: SelectQuery, predicate: Conjunction, filter: Filter): void {
     const tableName = this.getTableName();
-    const joinName = 'T' + (selectQuery.joins.length + 1);
+    const joinName = selectQuery.getNextJoinAlias();
     const subQuery = new SelectQuery(tableName)
       .raw(`DISTINCT ON ("${tableName}"."resourceId") *`)
       .where({ tableName, columnName: 'value' }, Operator.EQUALS, filter.value)

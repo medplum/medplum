@@ -44,7 +44,7 @@ export abstract class LookupTable<T> {
    */
   addWhere(selectQuery: SelectQuery, predicate: Conjunction, filter: Filter): void {
     const tableName = this.getTableName();
-    const joinName = 'T' + (selectQuery.joins.length + 1);
+    const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(filter.code);
     const subQuery = new SelectQuery(tableName)
       .raw(`DISTINCT ON ("${tableName}"."resourceId") *`)
@@ -75,13 +75,13 @@ export abstract class LookupTable<T> {
    */
   addOrderBy(selectQuery: SelectQuery, sortRule: SortRule): void {
     const tableName = this.getTableName();
-    const joinName = 'T' + (selectQuery.joins.length + 1);
+    const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(sortRule.code);
     const subQuery = new SelectQuery(tableName)
       .raw(`DISTINCT ON ("${tableName}"."resourceId") *`)
       .orderBy('resourceId');
     selectQuery.join(joinName, 'id', 'resourceId', subQuery);
-    selectQuery.orderBy({ tableName: joinName, columnName }, sortRule.descending);
+    selectQuery.orderBy(new Column(joinName, columnName), sortRule.descending);
   }
 
   /**
