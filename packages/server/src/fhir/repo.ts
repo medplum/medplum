@@ -795,6 +795,8 @@ export class Repository {
       } else {
         columns[details.columnName] = this.#buildColumnValue(searchParam, values[0]);
       }
+    } else {
+      columns[details.columnName] = null;
     }
   }
 

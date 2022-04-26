@@ -1443,6 +1443,46 @@ describe('FHIR Repo', () => {
     expect(bundle1.entry?.length).toEqual(1);
   });
 
+  test('Delete Questionnaire.subjectType', async () => {
+    const nonce = randomUUID();
+
+    const [outcome1, resource1] = await systemRepo.createResource<Questionnaire>({
+      resourceType: 'Questionnaire',
+      subjectType: [nonce],
+    });
+    assertOk(outcome1, resource1);
+
+    const [outcome2, resource2] = await systemRepo.search({
+      resourceType: 'Questionnaire',
+      filters: [
+        {
+          code: 'subject-type',
+          operator: Operator.EQUALS,
+          value: nonce,
+        },
+      ],
+    });
+    assertOk(outcome2, resource2);
+    expect(resource2.entry?.length).toEqual(1);
+
+    delete resource1.subjectType;
+    const [outcome3, resource3] = await systemRepo.updateResource<Questionnaire>(resource1);
+    assertOk(outcome3, resource3);
+
+    const [outcome4, resource4] = await systemRepo.search({
+      resourceType: 'Questionnaire',
+      filters: [
+        {
+          code: 'subject-type',
+          operator: Operator.EQUALS,
+          value: nonce,
+        },
+      ],
+    });
+    assertOk(outcome4, resource4);
+    expect(resource4.entry?.length).toEqual(0);
+  });
+
   test('Comma separated value', async () => {
     const category = randomUUID();
     const codes = [randomUUID(), randomUUID(), randomUUID()];
