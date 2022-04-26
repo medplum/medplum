@@ -6,6 +6,7 @@ import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
+import { SpyInstance, vi } from 'vitest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
@@ -13,9 +14,9 @@ import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 
-jest.mock('@aws-sdk/client-sesv2');
-jest.mock('hibp');
-jest.mock('node-fetch');
+vi.mock('@aws-sdk/client-sesv2');
+vi.mock('hibp');
+vi.mock('node-fetch');
 
 const app = express();
 
@@ -33,12 +34,12 @@ describe('Admin Invite', () => {
   });
 
   beforeEach(() => {
-    (SESv2Client as unknown as jest.Mock).mockClear();
-    (SendEmailCommand as unknown as jest.Mock).mockClear();
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    (SESv2Client as unknown as SpyInstance).mockClear();
+    (SendEmailCommand as unknown as SpyInstance).mockClear();
+    (fetch as unknown as SpyInstance).mockClear();
+    (pwnedPassword as unknown as SpyInstance).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as SpyInstance, 0);
+    setupRecaptchaMock(fetch as unknown as SpyInstance, true);
   });
 
   test('New user to project', async () => {
@@ -73,7 +74,7 @@ describe('Admin Invite', () => {
     expect(SESv2Client).toHaveBeenCalledTimes(1);
     expect(SendEmailCommand).toHaveBeenCalledTimes(1);
 
-    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
+    const args = (SendEmailCommand as unknown as SpyInstance).mock.calls[0][0];
     expect(args.Destination.ToAddresses[0]).toBe(bobEmail);
 
     const parsed = await simpleParser(args.Content.Raw.Data);
@@ -126,7 +127,7 @@ describe('Admin Invite', () => {
     expect(SESv2Client).toHaveBeenCalledTimes(1);
     expect(SendEmailCommand).toHaveBeenCalledTimes(1);
 
-    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
+    const args = (SendEmailCommand as unknown as SpyInstance).mock.calls[0][0];
     expect(args.Destination.ToAddresses[0]).toBe(bobEmail);
 
     const parsed = await simpleParser(args.Content.Raw.Data);

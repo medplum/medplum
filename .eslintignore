@@ -3,8 +3,7 @@ packages/**/dist/
 packages/docs/build/
 packages/docs/docusaurus.config.js
 packages/docs/sidebars.js
-babel.config.js
-jest.sequencer.js
 package-lock.json
-rollup.config.js
+babel.config.js
+vite.config.js
 webpack.config.js

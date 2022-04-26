@@ -8,7 +8,8 @@ import request from 'supertest';
 import { initApp } from './app';
 import { loadTestConfig } from './config';
 import { closeDatabase, initDatabase } from './database';
-import { getBinaryStorage, initBinaryStorage, systemRepo } from './fhir';
+import { systemRepo } from './fhir/repo';
+import { getBinaryStorage, initBinaryStorage } from './fhir/storage';
 import { seedDatabase } from './seed';
 
 const app = express();

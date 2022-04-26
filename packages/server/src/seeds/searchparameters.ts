@@ -2,7 +2,7 @@ import { assertOk } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, SearchParameter } from '@medplum/fhirtypes';
 import { getClient } from '../database';
-import { systemRepo } from '../fhir';
+import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 
 /**

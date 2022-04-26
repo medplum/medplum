@@ -140,9 +140,7 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
           <label htmlFor="remember">Remember me</label>
         </div>
         <div>
-          <Button type="submit" testid="submit">
-            Sign in
-          </Button>
+          <Button type="submit">Sign in</Button>
         </div>
       </div>
       <div className="medplum-signin-google-container">

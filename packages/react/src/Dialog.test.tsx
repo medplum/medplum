@@ -1,16 +1,17 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
+import { vi } from 'vitest';
 import { Dialog } from './Dialog';
 
 describe('Dialog', () => {
   test('Hidden', () => {
-    render(<Dialog visible={false} title="x" onOk={jest.fn()} onCancel={jest.fn()} />);
+    render(<Dialog visible={false} title="x" onOk={vi.fn()} onCancel={vi.fn()} />);
     expect(screen.queryByText('Dialog')).toBeNull();
   });
 
   test('Renders', () => {
-    const onOk = jest.fn();
-    const onCancel = jest.fn();
+    const onOk = vi.fn();
+    const onCancel = vi.fn();
 
     render(
       <Dialog visible={true} title="title" onOk={onOk} onCancel={onCancel}>
@@ -23,8 +24,8 @@ describe('Dialog', () => {
   });
 
   test('Click OK', async () => {
-    const onOk = jest.fn();
-    const onCancel = jest.fn();
+    const onOk = vi.fn();
+    const onCancel = vi.fn();
 
     render(
       <Dialog visible={true} title="title" onOk={onOk} onCancel={onCancel}>
@@ -41,8 +42,8 @@ describe('Dialog', () => {
   });
 
   test('Click Cancel', async () => {
-    const onOk = jest.fn();
-    const onCancel = jest.fn();
+    const onOk = vi.fn();
+    const onCancel = vi.fn();
 
     render(
       <Dialog visible={true} title="title" onOk={onOk} onCancel={onCancel}>
@@ -59,8 +60,8 @@ describe('Dialog', () => {
   });
 
   test('Drag to move', async () => {
-    const onOk = jest.fn();
-    const onCancel = jest.fn();
+    const onOk = vi.fn();
+    const onCancel = vi.fn();
 
     render(
       <Dialog visible={true} title="title" onOk={onOk} onCancel={onCancel}>

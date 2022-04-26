@@ -1,6 +1,7 @@
 import { IndexedStructureDefinition, SearchRequest } from '@medplum/core';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
+import { vi } from 'vitest';
 import { SearchFieldEditor } from './SearchFieldEditor';
 
 const schema: IndexedStructureDefinition = {
@@ -52,9 +53,7 @@ describe('SearchFieldEditor', () => {
       fields: ['name'],
     };
 
-    render(
-      <SearchFieldEditor schema={schema} search={currSearch} visible={false} onOk={jest.fn()} onCancel={jest.fn()} />
-    );
+    render(<SearchFieldEditor schema={schema} search={currSearch} visible={false} onOk={vi.fn()} onCancel={vi.fn()} />);
 
     expect(screen.queryByText('OK')).toBeNull();
   });

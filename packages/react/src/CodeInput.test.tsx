@@ -2,6 +2,7 @@ import { ElementDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
+import { vi } from 'vitest';
 import { CodeInput } from './CodeInput';
 import { MedplumProvider } from './MedplumProvider';
 
@@ -15,14 +16,11 @@ const medplum = new MockClient();
 
 describe('CodeInput', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
-    act(() => {
-      jest.runOnlyPendingTimers();
-    });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders', () => {
@@ -62,7 +60,7 @@ describe('CodeInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     await waitFor(() => screen.getByTestId('dropdown'));

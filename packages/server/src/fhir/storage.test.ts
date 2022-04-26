@@ -3,16 +3,17 @@ import { Upload } from '@aws-sdk/lib-storage';
 import { Binary } from '@medplum/fhirtypes';
 import { Request } from 'express';
 import internal, { Readable } from 'stream';
+import { SpyInstance, vi } from 'vitest';
 import { getBinaryStorage, initBinaryStorage } from './storage';
 
-jest.mock('@aws-sdk/client-s3');
-jest.mock('@aws-sdk/lib-storage');
+vi.mock('@aws-sdk/client-s3');
+vi.mock('@aws-sdk/lib-storage');
 
 describe('Storage', () => {
   beforeEach(() => {
-    (S3Client as unknown as jest.Mock).mockClear();
-    (Upload as unknown as jest.Mock).mockClear();
-    (GetObjectCommand as unknown as jest.Mock).mockClear();
+    (S3Client as unknown as SpyInstance).mockClear();
+    (Upload as unknown as SpyInstance).mockClear();
+    (GetObjectCommand as unknown as SpyInstance).mockClear();
   });
 
   test('Undefined binary storage', () => {
@@ -60,10 +61,10 @@ describe('Storage', () => {
     initBinaryStorage('s3:foo');
     expect(S3Client).toHaveBeenCalled();
 
-    const client = (S3Client as unknown as jest.Mock).mock.instances[0];
+    const client = (S3Client as unknown as SpyInstance).mock.instances[0];
     client.send = async () => ({
       Body: {
-        pipe: jest.fn(),
+        pipe: vi.fn(),
       },
     });
 
@@ -103,10 +104,10 @@ describe('Storage', () => {
     initBinaryStorage('s3:foo');
     expect(S3Client).toHaveBeenCalled();
 
-    const client = (S3Client as unknown as jest.Mock).mock.instances[0];
+    const client = (S3Client as unknown as SpyInstance).mock.instances[0];
     client.send = async () => ({
       Body: {
-        pipe: jest.fn(),
+        pipe: vi.fn(),
       },
     });
 

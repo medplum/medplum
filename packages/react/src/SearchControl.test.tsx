@@ -3,6 +3,7 @@ import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { vi } from 'vitest';
 import { MedplumProvider } from './MedplumProvider';
 import { SearchControl, SearchControlProps } from './SearchControl';
 
@@ -32,7 +33,7 @@ describe('SearchControl', () => {
         ],
         fields: ['id', '_lastUpdated', 'name'],
       },
-      onLoad: jest.fn(),
+      onLoad: vi.fn(),
     };
 
     await setup(props);
@@ -60,7 +61,7 @@ describe('SearchControl', () => {
         ],
         fields: ['id', '_lastUpdated', 'name'],
       },
-      onLoad: jest.fn(),
+      onLoad: vi.fn(),
     };
 
     await setup(props);
@@ -84,7 +85,7 @@ describe('SearchControl', () => {
           },
         ],
       },
-      onLoad: jest.fn(),
+      onLoad: vi.fn(),
     };
 
     await setup(props);
@@ -104,7 +105,7 @@ describe('SearchControl', () => {
         resourceType: 'Observation',
         fields: ['value[x]'],
       },
-      onLoad: jest.fn(),
+      onLoad: vi.fn(),
     };
 
     await setup(props);
@@ -132,7 +133,7 @@ describe('SearchControl', () => {
         ],
         fields: ['id', '_lastUpdated', 'name'],
       },
-      onLoad: jest.fn(),
+      onLoad: vi.fn(),
       checkboxesEnabled: true,
     };
 
@@ -159,7 +160,7 @@ describe('SearchControl', () => {
           },
         ],
       },
-      onLoad: jest.fn(),
+      onLoad: vi.fn(),
       checkboxesEnabled: true,
     };
 
@@ -180,7 +181,7 @@ describe('SearchControl', () => {
         resourceType: 'Patient',
         fields: ['id', '_lastUpdated', 'name', 'birthDate', 'active', 'email', 'phone'],
       },
-      onLoad: jest.fn(),
+      onLoad: vi.fn(),
     };
 
     await setup(props);
@@ -203,7 +204,7 @@ describe('SearchControl', () => {
         resourceType: 'Patient',
         fields: ['id', '_lastUpdated', 'name', 'address-city', 'address-state'],
       },
-      onLoad: jest.fn(),
+      onLoad: vi.fn(),
     };
 
     await setup(props);
@@ -233,7 +234,7 @@ describe('SearchControl', () => {
           },
         ],
       },
-      onLoad: jest.fn(),
+      onLoad: vi.fn(),
     };
 
     await setup(props);
@@ -259,7 +260,7 @@ describe('SearchControl', () => {
           },
         ],
       },
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     };
 
     await setup(props);
@@ -312,7 +313,7 @@ describe('SearchControl', () => {
           },
         ],
       },
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     };
 
     await setup(props);
@@ -329,7 +330,7 @@ describe('SearchControl', () => {
   });
 
   test('New button', async () => {
-    const onNew = jest.fn();
+    const onNew = vi.fn();
 
     await setup({
       search: {
@@ -350,7 +351,7 @@ describe('SearchControl', () => {
   });
 
   test('Export button', async () => {
-    const onExport = jest.fn();
+    const onExport = vi.fn();
 
     await setup({
       search: {
@@ -371,7 +372,7 @@ describe('SearchControl', () => {
   });
 
   test('Delete button', async () => {
-    const onDelete = jest.fn();
+    const onDelete = vi.fn();
 
     await setup({
       search: {
@@ -392,7 +393,7 @@ describe('SearchControl', () => {
   });
 
   test('Bulk button', async () => {
-    const onBulk = jest.fn();
+    const onBulk = vi.fn();
 
     await setup({
       search: {
@@ -424,8 +425,8 @@ describe('SearchControl', () => {
           },
         ],
       },
-      onClick: jest.fn(),
-      onAuxClick: jest.fn(),
+      onClick: vi.fn(),
+      onAuxClick: vi.fn(),
     };
 
     await setup(props);
@@ -459,8 +460,8 @@ describe('SearchControl', () => {
           },
         ],
       },
-      onClick: jest.fn(),
-      onAuxClick: jest.fn(),
+      onClick: vi.fn(),
+      onAuxClick: vi.fn(),
     };
 
     await setup(props);
@@ -494,7 +495,7 @@ describe('SearchControl', () => {
           },
         ],
       },
-      onLoad: jest.fn(),
+      onLoad: vi.fn(),
     };
 
     await setup(props);
@@ -528,7 +529,7 @@ describe('SearchControl', () => {
           },
         ],
       },
-      onLoad: jest.fn(),
+      onLoad: vi.fn(),
     };
 
     await setup(props);
@@ -562,7 +563,7 @@ describe('SearchControl', () => {
           },
         ],
       },
-      onLoad: jest.fn(),
+      onLoad: vi.fn(),
     };
 
     await setup(props);
@@ -596,7 +597,7 @@ describe('SearchControl', () => {
           },
         ],
       },
-      onLoad: jest.fn(),
+      onLoad: vi.fn(),
     };
 
     await setup(props);
@@ -631,7 +632,7 @@ describe('SearchControl', () => {
         ],
         fields: ['id', 'name'],
       },
-      onLoad: jest.fn(),
+      onLoad: vi.fn(),
     };
 
     await setup(props);
@@ -671,7 +672,7 @@ describe('SearchControl', () => {
           },
         ],
       },
-      onLoad: jest.fn(),
+      onLoad: vi.fn(),
       checkboxesEnabled: true,
     };
 
@@ -712,7 +713,7 @@ describe('SearchControl', () => {
           },
         ],
       },
-      onLoad: jest.fn(),
+      onLoad: vi.fn(),
       checkboxesEnabled: true,
     };
 
@@ -758,7 +759,7 @@ describe('SearchControl', () => {
           },
         ],
       },
-      onLoad: jest.fn(),
+      onLoad: vi.fn(),
       checkboxesEnabled: true,
     };
 
@@ -800,7 +801,7 @@ describe('SearchControl', () => {
   });
 
   test('Saved searches', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     const props: SearchControlProps = {
       search: {

@@ -6,15 +6,16 @@ import { mkdtempSync, rmSync } from 'fs';
 import fetch from 'node-fetch';
 import { sep } from 'path';
 import { Readable } from 'stream';
+import { SpyInstance, vi } from 'vitest';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { initBinaryStorage } from '../fhir';
 import { Repository } from '../fhir/repo';
+import { initBinaryStorage } from '../fhir/storage';
 import { seedDatabase } from '../seed';
 import { closeDownloadWorker, execDownloadJob, initDownloadWorker } from './download';
 
-jest.mock('bullmq');
-jest.mock('node-fetch');
+vi.mock('bullmq');
+vi.mock('node-fetch');
 
 const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
 let repo: Repository;
@@ -43,13 +44,13 @@ describe('Download Worker', () => {
   });
 
   beforeEach(async () => {
-    (fetch as unknown as jest.Mock).mockClear();
+    (fetch as unknown as SpyInstance).mockClear();
   });
 
   test('Download external URL', async () => {
     const url = 'https://example.com/download';
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = (Queue as unknown as SpyInstance<any[], Queue>).mock.results[0].value;
     queue.add.mockClear();
 
     const [mediaOutcome, media] = await repo.createResource<Media>({
@@ -68,10 +69,10 @@ describe('Download Worker', () => {
     body.push('foo');
     body.push(null);
 
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+    (fetch as unknown as SpyInstance).mockImplementation(() => ({
       status: 200,
       headers: {
-        get: jest.fn(),
+        get: vi.fn(),
       },
       body,
     }));
@@ -83,7 +84,7 @@ describe('Download Worker', () => {
   });
 
   test('Ignore media missing URL', async () => {
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = (Queue as unknown as SpyInstance<any[], Queue>).mock.results[0].value;
     queue.add.mockClear();
 
     const [mediaOutcome, media] = await repo.createResource<Media>({
@@ -102,7 +103,7 @@ describe('Download Worker', () => {
   test('Retry on 400', async () => {
     const url = 'https://example.com/download';
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = (Queue as unknown as SpyInstance<any[], Queue>).mock.results[0].value;
     queue.add.mockClear();
 
     const [mediaOutcome, media] = await repo.createResource<Media>({
@@ -117,7 +118,7 @@ describe('Download Worker', () => {
     expect(media).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
-    (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 400 }));
+    (fetch as unknown as SpyInstance).mockImplementation(() => ({ status: 400 }));
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
 
@@ -128,7 +129,7 @@ describe('Download Worker', () => {
   test('Retry on exception', async () => {
     const url = 'https://example.com/download';
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = (Queue as unknown as SpyInstance<any[], Queue>).mock.results[0].value;
     queue.add.mockClear();
 
     const [mediaOutcome, media] = await repo.createResource<Media>({
@@ -143,7 +144,7 @@ describe('Download Worker', () => {
     expect(media).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
-    (fetch as unknown as jest.Mock).mockImplementation(() => {
+    (fetch as unknown as SpyInstance).mockImplementation(() => {
       throw new Error();
     });
 
@@ -154,7 +155,7 @@ describe('Download Worker', () => {
   });
 
   test('Stop retries if Resource deleted', async () => {
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = (Queue as unknown as SpyInstance<any[], Queue>).mock.results[0].value;
     queue.add.mockClear();
 
     const [mediaOutcome, media] = await repo.createResource<Media>({
@@ -181,7 +182,7 @@ describe('Download Worker', () => {
   });
 
   test('Stop if URL changed', async () => {
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = (Queue as unknown as SpyInstance<any[], Queue>).mock.results[0].value;
     queue.add.mockClear();
 
     const [mediaOutcome, media] = await repo.createResource<Media>({

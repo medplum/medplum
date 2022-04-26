@@ -6,7 +6,7 @@ describe('Seed', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
-  });
+  }, 60000);
 
   afterAll(async () => {
     await closeDatabase();
@@ -18,5 +18,5 @@ describe('Seed', () => {
 
     // Second time, seeder should silently ignore
     await seedDatabase();
-  });
+  }, 60000);
 });

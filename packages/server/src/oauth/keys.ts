@@ -14,7 +14,7 @@ import {
   SignJWT,
 } from 'jose';
 import { MedplumServerConfig } from '../config';
-import { systemRepo } from '../fhir';
+import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 
 export interface MedplumBaseClaims extends JWTPayload {

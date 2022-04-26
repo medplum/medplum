@@ -1,8 +1,9 @@
 import { Bundle, Patient, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
-import crypto, { randomUUID } from 'crypto';
+import { randomUUID, webcrypto } from 'crypto';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
+import { vi } from 'vitest';
 import { MedplumClient } from './client';
 import { ProfileResource, stringify } from './utils';
 
@@ -197,8 +198,8 @@ describe('Client', () => {
       value: TextEncoder,
     });
 
-    Object.defineProperty(global.self, 'crypto', {
-      value: crypto.webcrypto,
+    Object.defineProperty(global, 'crypto', {
+      value: webcrypto,
     });
   });
 
@@ -230,14 +231,6 @@ describe('Client', () => {
         new MedplumClient({
           clientId: 'xyz',
           baseUrl: 'https://x/',
-        })
-    ).toThrow();
-
-    expect(
-      () =>
-        new MedplumClient({
-          clientId: 'xyz',
-          baseUrl: 'https://x/',
           fetch: mockFetch,
         })
     ).not.toThrow();
@@ -249,7 +242,7 @@ describe('Client', () => {
         })
     ).not.toThrow();
 
-    window.fetch = jest.fn();
+    window.fetch = vi.fn();
     expect(() => new MedplumClient()).not.toThrow();
   });
 
@@ -314,10 +307,9 @@ describe('Client', () => {
 
   test('SignInWithRedirect', async () => {
     // Mock window.location.assign
-    global.window = Object.create(window);
     Object.defineProperty(window, 'location', {
       value: {
-        assign: jest.fn(),
+        assign: vi.fn(),
       },
       writable: true,
     });
@@ -331,7 +323,7 @@ describe('Client', () => {
     // Mock response code
     Object.defineProperty(window, 'location', {
       value: {
-        assign: jest.fn(),
+        assign: vi.fn(),
         search: new URLSearchParams({ code: 'test-code' }),
       },
       writable: true,
@@ -344,10 +336,9 @@ describe('Client', () => {
 
   test('SignOutWithRedirect', async () => {
     // Mock window.location.assign
-    global.window = Object.create(window);
     Object.defineProperty(window, 'location', {
       value: {
-        assign: jest.fn(),
+        assign: vi.fn(),
       },
       writable: true,
     });
@@ -402,7 +393,7 @@ describe('Client', () => {
     tokenExpired = true;
     canRefresh = false;
 
-    const onUnauthenticated = jest.fn();
+    const onUnauthenticated = vi.fn();
     const client = new MedplumClient({ ...defaultOptions, onUnauthenticated });
     const loginResponse = await client.startLogin({ email: 'admin@example.com', password: 'admin' });
     await expect(client.processCode(loginResponse.code as string)).rejects.toThrow('Failed to fetch tokens');
@@ -571,7 +562,7 @@ describe('Client', () => {
 
   test('Create pdf success', async () => {
     const client = new MedplumClient({ ...defaultOptions, createPdf });
-    const footer = jest.fn(() => 'footer');
+    const footer = vi.fn(() => 'footer');
     const result = await client.createPdf(
       {
         content: ['Hello World'],
@@ -746,8 +737,8 @@ describe('Client', () => {
       writable: true,
     });
 
-    const mockAddEventListener = jest.fn();
-    const mockReload = jest.fn();
+    const mockAddEventListener = vi.fn();
+    const mockReload = vi.fn();
 
     window.addEventListener = mockAddEventListener;
     window.location.reload = mockReload;
@@ -773,7 +764,7 @@ describe('Client', () => {
   });
 
   test('setAccessToken', async () => {
-    const fetch = jest.fn(async () => ({
+    const fetch = vi.fn(async () => ({
       json: async () => ({ resourceType: 'Patient' }),
     }));
 

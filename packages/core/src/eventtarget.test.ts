@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { EventTarget } from './eventtarget';
 
 describe('EventTarget', () => {
@@ -7,7 +8,7 @@ describe('EventTarget', () => {
   });
 
   test('Add event listener', () => {
-    const myCallback = jest.fn();
+    const myCallback = vi.fn();
     const target = new EventTarget();
     target.addEventListener('test', myCallback);
     target.dispatchEvent({ type: 'test' });
@@ -15,8 +16,8 @@ describe('EventTarget', () => {
   });
 
   test('Add multiple event listeners', () => {
-    const myCallback1 = jest.fn();
-    const myCallback2 = jest.fn();
+    const myCallback1 = vi.fn();
+    const myCallback2 = vi.fn();
     const target = new EventTarget();
     target.addEventListener('test', myCallback1);
     target.addEventListener('test', myCallback2);
@@ -26,7 +27,7 @@ describe('EventTarget', () => {
   });
 
   test('Remove event listener', () => {
-    const myCallback = jest.fn();
+    const myCallback = vi.fn();
     const target = new EventTarget();
     target.addEventListener('test', myCallback);
     target.removeEventListeneer('test', myCallback);
@@ -35,11 +36,11 @@ describe('EventTarget', () => {
   });
 
   test('Remove event listener not found', () => {
-    const myCallback = jest.fn();
+    const myCallback = vi.fn();
     const target = new EventTarget();
-    target.removeEventListeneer('test', jest.fn());
+    target.removeEventListeneer('test', vi.fn());
     target.addEventListener('test', myCallback);
-    target.removeEventListeneer('test', jest.fn());
+    target.removeEventListeneer('test', vi.fn());
     expect(() => target.dispatchEvent({ type: 'test' })).not.toThrow();
     expect(myCallback).toBeCalled();
   });

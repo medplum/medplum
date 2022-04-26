@@ -342,7 +342,7 @@ function mockFhirHandler(method: string, url: string, options: any): any {
       return mockRepo.search(parseSearchDefinition(url));
     }
   } else if (method === 'PUT') {
-    return mockRepo.createResource(JSON.parse(options.body));
+    return mockRepo.updateResource(JSON.parse(options.body));
   } else if (method === 'DELETE') {
     if (resourceType && id) {
       return mockRepo.deleteResource(resourceType, id);

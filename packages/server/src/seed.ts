@@ -2,7 +2,7 @@ import { assertOk, createReference } from '@medplum/core';
 import { ClientApplication, Project, User } from '@medplum/fhirtypes';
 import { registerNew } from './auth/register';
 import { getConfig } from './config';
-import { systemRepo } from './fhir';
+import { systemRepo } from './fhir/repo';
 import { logger } from './logger';
 import { createSearchParameters } from './seeds/searchparameters';
 import { createStructureDefinitions } from './seeds/structuredefinitions';

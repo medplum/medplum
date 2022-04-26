@@ -2,6 +2,7 @@ import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { vi } from 'vitest';
 import { MedplumProvider } from './MedplumProvider';
 import { MenuItem } from './MenuItem';
 import { MenuSeparator } from './MenuSeparator';
@@ -19,14 +20,11 @@ function setup(children: React.ReactNode): void {
 
 describe('SubMenu', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
-    act(() => {
-      jest.runOnlyPendingTimers();
-    });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders', async () => {
@@ -43,7 +41,7 @@ describe('SubMenu', () => {
   });
 
   test('Opens on click', async () => {
-    const onClick = jest.fn();
+    const onClick = vi.fn();
 
     setup(
       <SubMenu title="SubMenu Test">
@@ -72,9 +70,9 @@ describe('SubMenu', () => {
   test('Opens on hover', async () => {
     setup(
       <SubMenu title="SubMenu Test">
-        <MenuItem onClick={jest.fn()}>MenuItem Test</MenuItem>
+        <MenuItem onClick={vi.fn()}>MenuItem Test</MenuItem>
         <MenuSeparator />
-        <MenuItem onClick={jest.fn()}>2nd Item Test</MenuItem>
+        <MenuItem onClick={vi.fn()}>2nd Item Test</MenuItem>
       </SubMenu>
     );
 
@@ -86,7 +84,7 @@ describe('SubMenu', () => {
     });
 
     await act(async () => {
-      jest.advanceTimersByTime(200);
+      vi.advanceTimersByTime(200);
     });
 
     await act(async () => {
@@ -100,7 +98,7 @@ describe('SubMenu', () => {
     });
 
     await act(async () => {
-      jest.advanceTimersByTime(200);
+      vi.advanceTimersByTime(200);
     });
 
     await act(async () => {

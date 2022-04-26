@@ -2,7 +2,7 @@ import { assertOk } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { invalidRequest, sendOutcome } from '../fhir';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { tryLogin } from '../oauth';
 import { sendLoginResult } from './utils';
 

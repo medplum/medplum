@@ -3,6 +3,7 @@ import { Specimen } from '@medplum/fhirtypes';
 import { HomerObservation1, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
+import { vi } from 'vitest';
 import { convertIsoToLocal, convertLocalToIso } from './DateTimeInput';
 import { MedplumProvider } from './MedplumProvider';
 import { ResourceForm, ResourceFormProps } from './ResourceForm';
@@ -21,7 +22,7 @@ describe('ResourceForm', () => {
   }
 
   test('Error on missing resource type', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       defaultValue: {},
@@ -30,7 +31,7 @@ describe('ResourceForm', () => {
   });
 
   test('Renders empty Practitioner form', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       defaultValue: {
@@ -46,7 +47,7 @@ describe('ResourceForm', () => {
   });
 
   test('Renders Practitioner resource', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       defaultValue: {
@@ -62,7 +63,7 @@ describe('ResourceForm', () => {
   });
 
   test('Submit Practitioner', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       defaultValue: {
@@ -81,7 +82,7 @@ describe('ResourceForm', () => {
   });
 
   test('Renders empty Observation form', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       defaultValue: {
@@ -97,7 +98,7 @@ describe('ResourceForm', () => {
   });
 
   test('Renders Observation resource', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       defaultValue: createReference(HomerObservation1),
@@ -111,7 +112,7 @@ describe('ResourceForm', () => {
   });
 
   test('Submit Observation', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       defaultValue: {
@@ -152,8 +153,8 @@ describe('ResourceForm', () => {
   });
 
   test('Delete', async () => {
-    const onSubmit = jest.fn();
-    const onDelete = jest.fn();
+    const onSubmit = vi.fn();
+    const onDelete = vi.fn();
 
     await setup({
       defaultValue: {
@@ -179,7 +180,7 @@ describe('ResourceForm', () => {
     date.setMilliseconds(0); // datetime-local does not support milliseconds
     const localString = convertIsoToLocal(date.toISOString());
     const isoString = convertLocalToIso(localString);
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({ defaultValue: { resourceType: 'Specimen' }, onSubmit });
 

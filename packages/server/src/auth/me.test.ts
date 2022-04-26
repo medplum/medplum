@@ -5,6 +5,7 @@ import express from 'express';
 import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
+import { SpyInstance, vi } from 'vitest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
@@ -12,8 +13,8 @@ import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 
-jest.mock('hibp');
-jest.mock('node-fetch');
+vi.mock('hibp');
+vi.mock('node-fetch');
 
 const app = express();
 
@@ -31,10 +32,10 @@ describe('Me', () => {
   });
 
   beforeEach(async () => {
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    (fetch as unknown as SpyInstance).mockClear();
+    (pwnedPassword as unknown as SpyInstance).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as SpyInstance, 0);
+    setupRecaptchaMock(fetch as unknown as SpyInstance, true);
   });
 
   test('Unauthenticated', async () => {

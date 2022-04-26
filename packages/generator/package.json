@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "name": "@medplum/generator",
   "version": "0.9.11",
   "description": "Medplum Code Generator",
@@ -16,7 +17,7 @@
     "generate": "ts-node src/index.ts",
     "migrate": "ts-node src/migrate.ts",
     "docs": "ts-node src/docs.ts",
-    "test": "jest"
+    "test": "vitest run"
   },
   "devDependencies": {
     "@medplum/definitions": "0.9.11",

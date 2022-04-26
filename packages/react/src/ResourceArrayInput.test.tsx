@@ -2,6 +2,7 @@ import { IndexedStructureDefinition } from '@medplum/core';
 import { ElementDefinition } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
+import { vi } from 'vitest';
 import { ResourceArrayInput } from './ResourceArrayInput';
 
 const schema: IndexedStructureDefinition = {
@@ -62,7 +63,7 @@ describe('ResourceArrayInput', () => {
   });
 
   test('Change value', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     render(
       <ResourceArrayInput

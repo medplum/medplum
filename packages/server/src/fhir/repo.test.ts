@@ -12,6 +12,7 @@ import {
   StructureDefinition,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { vi } from 'vitest';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
@@ -21,7 +22,7 @@ import { processBatch } from './batch';
 import { getRepoForLogin, Repository, systemRepo } from './repo';
 import { parseSearchRequest } from './search';
 
-jest.mock('hibp');
+vi.mock('hibp');
 
 describe('FHIR Repo', () => {
   beforeAll(async () => {
@@ -1337,7 +1338,7 @@ describe('FHIR Repo', () => {
       },
     });
 
-    const [reindexOutcome] = await repo.reindexResourceType('Practitioner');
+    const [reindexOutcome] = await repo.reindexResourceType('MedicationAdministration');
     expect(isOk(reindexOutcome)).toBe(false);
   });
 
@@ -1349,17 +1350,17 @@ describe('FHIR Repo', () => {
       },
     });
 
-    const [reindexOutcome] = await repo.reindexResource('Practitioner', randomUUID());
+    const [reindexOutcome] = await repo.reindexResource('MedicationAdministration', randomUUID());
     expect(isOk(reindexOutcome)).toBe(false);
   });
 
   test('Reindex resource not found', async () => {
-    const [reindexOutcome] = await systemRepo.reindexResource('Practitioner', randomUUID());
+    const [reindexOutcome] = await systemRepo.reindexResource('MedicationAdministration', randomUUID());
     expect(isOk(reindexOutcome)).toBe(false);
   });
 
   test('Reindex success', async () => {
-    const [reindexOutcome] = await systemRepo.reindexResourceType('Practitioner');
+    const [reindexOutcome] = await systemRepo.reindexResourceType('MedicationAdministration');
     expect(isOk(reindexOutcome)).toBe(true);
   });
 

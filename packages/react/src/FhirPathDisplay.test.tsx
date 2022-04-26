@@ -2,6 +2,7 @@ import { PropertyType } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
+import { vi } from 'vitest';
 import { FhirPathDisplay } from './FhirPathDisplay';
 
 describe('FhirPathDisplay', () => {
@@ -21,7 +22,7 @@ describe('FhirPathDisplay', () => {
   });
 
   test('Error on multiple values', () => {
-    console.error = jest.fn();
+    console.error = vi.fn();
     const patient: Patient = {
       resourceType: 'Patient',
       name: [

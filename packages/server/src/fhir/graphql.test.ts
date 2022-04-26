@@ -233,7 +233,7 @@ describe('GraphQL', () => {
       .send(introspectionRequest);
     expect(res2.status).toBe(200);
     expect(res2.text).toEqual(res1.text);
-  });
+  }, 30000);
 
   test('Get __schema', async () => {
     // https://graphql.org/learn/introspection/

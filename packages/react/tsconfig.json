@@ -1,8 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "module": "esnext",
     "outDir": "dist/types",
     "lib": ["esnext", "dom", "dom.iterable"],
+    "types": ["vite/client", "vitest/globals"],
     "emitDeclarationOnly": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"]

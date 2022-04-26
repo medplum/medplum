@@ -3,7 +3,8 @@ import { Binary, Meta, Resource } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { getConfig, MedplumRedisConfig } from '../config';
-import { getBinaryStorage, systemRepo } from '../fhir';
+import { systemRepo } from '../fhir/repo';
+import { getBinaryStorage } from '../fhir/storage';
 import { logger } from '../logger';
 
 /*

@@ -16,7 +16,7 @@
     "prestart": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node-dev --poll --respawn --transpile-only src/index.ts",
-    "test": "jest --runInBand"
+    "test": "vitest run"
   },
   "dependencies": {
     "@aws-sdk/client-lambda": "3.100.0",
@@ -51,7 +51,6 @@
     "validator": "13.7.0"
   },
   "devDependencies": {
-    "@jest/test-sequencer": "28.1.0",
     "@medplum/fhirtypes": "0.9.11",
     "@types/bcryptjs": "2.4.2",
     "@types/body-parser": "1.19.2",

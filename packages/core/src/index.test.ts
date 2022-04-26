@@ -1,9 +1,10 @@
+import { vi } from 'vitest';
 import { MedplumClient } from './client';
 
 describe('Index', () => {
   test('MedplumClient import', () => {
     const client = new MedplumClient({
-      fetch: jest.fn(),
+      fetch: vi.fn(),
     });
     expect(client).toBeDefined();
   });

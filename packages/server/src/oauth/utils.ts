@@ -25,7 +25,7 @@ import {
 import bcrypt from 'bcryptjs';
 import { timingSafeEqual } from 'crypto';
 import { JWTPayload } from 'jose';
-import { RepositoryResult, systemRepo } from '../fhir';
+import { RepositoryResult, systemRepo } from '../fhir/repo';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
 
 export interface LoginRequest {

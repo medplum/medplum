@@ -3,6 +3,7 @@ import { MockClient, PatientSearchParameters } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { vi } from 'vitest';
 import { MedplumProvider } from './MedplumProvider';
 import { getFieldDefinitions } from './SearchControlField';
 import { SearchPopupMenu, SearchPopupMenuProps } from './SearchPopupMenu';
@@ -66,9 +67,9 @@ describe('SearchPopupMenu', () => {
       visible: true,
       x: 0,
       y: 0,
-      onPrompt: jest.fn(),
-      onChange: jest.fn(),
-      onClose: jest.fn(),
+      onPrompt: vi.fn(),
+      onChange: vi.fn(),
+      onClose: vi.fn(),
       ...partialProps,
     } as SearchPopupMenuProps;
 
@@ -206,7 +207,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Text submenu prompt', async () => {
-    const onPrompt = jest.fn();
+    const onPrompt = vi.fn();
 
     setup({
       search: {
@@ -239,7 +240,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Text search prompt', async () => {
-    const onPrompt = jest.fn();
+    const onPrompt = vi.fn();
 
     setup({
       search: {
@@ -261,7 +262,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Date submenu prompt', async () => {
-    const onPrompt = jest.fn();
+    const onPrompt = vi.fn();
 
     setup({
       search: {

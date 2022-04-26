@@ -1,6 +1,11 @@
 import { Patient, Reference, Resource, Specimen } from '@medplum/fhirtypes';
 import { createScriptTag } from '@medplum/react';
 
+declare const grecaptcha: {
+  ready: (callback: () => void) => void;
+  execute: (key: string, event: any) => Promise<string>;
+};
+
 export function getPatient(resource: Resource): Patient | Reference<Patient> | undefined {
   if (resource.resourceType === 'Patient') {
     return resource;
@@ -35,7 +40,7 @@ export function getSpecimen(resource: Resource): Specimen | Reference<Specimen> 
  */
 export function initRecaptcha(): void {
   if (typeof grecaptcha === 'undefined') {
-    createScriptTag('https://www.google.com/recaptcha/api.js?render=' + process.env.RECAPTCHA_SITE_KEY);
+    createScriptTag('https://www.google.com/recaptcha/api.js?render=' + import.meta.env.VITE_RECAPTCHA_SITE_KEY);
   }
 }
 
@@ -46,7 +51,7 @@ export function initRecaptcha(): void {
 export function getRecaptcha(): Promise<string> {
   return new Promise((resolve) => {
     grecaptcha.ready(() => {
-      grecaptcha.execute(process.env.RECAPTCHA_SITE_KEY as string, { action: 'submit' }).then(resolve);
+      grecaptcha.execute(import.meta.env.VITE_RECAPTCHA_SITE_KEY as string, { action: 'submit' }).then(resolve);
     });
   });
 }

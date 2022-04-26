@@ -6,7 +6,8 @@ import { body, validationResult } from 'express-validator';
 import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
 import { URL } from 'url';
 import { getConfig } from '../config';
-import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { systemRepo } from '../fhir/repo';
 import { GoogleCredentialClaims, tryLogin } from '../oauth';
 import { sendLoginResult } from './utils';
 

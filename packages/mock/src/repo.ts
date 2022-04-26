@@ -44,6 +44,15 @@ export class MemoryRepository {
     return result;
   }
 
+  updateResource<T extends Resource>(resource: T): T {
+    if (!resource.meta) {
+      resource.meta = {};
+    }
+
+    resource.meta.versionId = this.generateId();
+    return this.createResource(resource);
+  }
+
   readResource<T extends Resource>(resourceType: string, id: string): T | undefined {
     return this.#resources?.[resourceType]?.[id] as T | undefined;
   }
@@ -84,7 +93,7 @@ export class MemoryRepository {
   }
 
   private generateId(): string {
-    return Date.now().toString(36);
+    return Date.now().toString(36) + '-' + Math.round(Math.random() * 10000);
   }
 }
 

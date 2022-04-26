@@ -2,6 +2,7 @@ import { Attachment } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
+import { vi } from 'vitest';
 import { MedplumProvider } from './MedplumProvider';
 import { UploadButton, UploadButtonProps } from './UploadButton';
 
@@ -102,7 +103,7 @@ describe('UploadButton', () => {
   });
 
   test('Error handling', async () => {
-    window.alert = jest.fn();
+    window.alert = vi.fn();
 
     setup();
 

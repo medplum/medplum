@@ -1,12 +1,13 @@
 import express from 'express';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { initApp } from './app';
 import { loadTestConfig } from './config';
 import { closeDatabase, initDatabase } from './database';
 import { initKeys } from './oauth';
 import { closeRedis, initRedis } from './redis';
 
-jest.mock('ioredis');
+vi.mock('ioredis');
 
 const app = express();
 

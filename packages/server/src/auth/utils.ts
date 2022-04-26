@@ -13,7 +13,7 @@ import {
 import { Response } from 'express';
 import fetch from 'node-fetch';
 import { getConfig } from '../config';
-import { systemRepo } from '../fhir';
+import { systemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { logger } from '../logger';
 import { getUserMemberships } from '../oauth';

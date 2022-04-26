@@ -6,10 +6,10 @@ import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { systemRepo } from '../fhir';
-import { createTestClient } from '../test.setup';
+import { systemRepo } from '../fhir/repo';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
+import { createTestClient } from '../test.setup';
 import { generateAccessToken, generateSecret } from './keys';
 
 const app = express();
