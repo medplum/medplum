@@ -66,13 +66,14 @@ export class MockClient extends MedplumClient {
           console.log('MockClient: not found', method, path);
         }
 
-        const response: any = {
-          request: {
-            url,
-            options,
-          },
-          ...result,
-        };
+        // const response: any = {
+        //   request: {
+        //     url,
+        //     options,
+        //   },
+        //   ...result,
+        // };
+        const response = result;
 
         if (clientOptions?.debug) {
           console.log('MockClient', JSON.stringify(response, null, 2));
@@ -173,6 +174,12 @@ function mockAuthHandler(method: string, path: string, options: any): any {
 
   if (path.startsWith('auth/resetpassword')) {
     return mockResetPasswordHandler(method, path, options);
+  }
+
+  if (path.startsWith('auth/me')) {
+    return {
+      profile: { reference: 'Practitioner/123' },
+    };
   }
 
   return null;
@@ -353,7 +360,7 @@ function mockFhirBatchHandler(method: string, path: string, options: any): any {
       const url = 'fhir/R4/' + e?.request?.url;
       const method = e?.request?.method as string;
       const resource = mockHandler(method, url, null);
-      if (resource?.resourceType === 'OperationOutcome') {
+      if (resource && resource?.resourceType === 'OperationOutcome') {
         return { resource, response: { status: getStatus(resource).toString() } };
       } else if (resource) {
         return { resource, response: { status: '200' } };

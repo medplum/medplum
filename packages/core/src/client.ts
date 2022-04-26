@@ -1067,7 +1067,7 @@ export class MedplumClient extends EventTarget {
     }
 
     const obj = await response.json();
-    if (obj.resourceType === 'OperationOutcome' && !isOk(obj)) {
+    if (obj?.resourceType === 'OperationOutcome' && !isOk(obj)) {
       return Promise.reject(obj);
     }
     return obj;

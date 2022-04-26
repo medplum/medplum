@@ -21,7 +21,8 @@
     "node-fetch": "2.6.7"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "0.9.1"
+    "@medplum/fhirtypes": "0.9.1",
+    "@medplum/mock": "0.9.1"
   },
   "bin": {
     "medplum": "./dist/index.js"
