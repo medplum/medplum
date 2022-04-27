@@ -257,7 +257,7 @@ export function where(input: unknown[], criteria: Atom): unknown[] {
  * See: http://hl7.org/fhirpath/#selectprojection-expression-collection
  */
 export function select(input: unknown[], criteria: Atom): unknown[] {
-  return ensureArray(criteria.eval(input));
+  return ensureArray(input.map((e) => criteria.eval(e)).flat());
 }
 
 /**

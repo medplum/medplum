@@ -13,6 +13,7 @@ import {
   EquivalentAtom,
   FhirPathAtom,
   FunctionAtom,
+  IndexerAtom,
   InAtom,
   IsAtom,
   LiteralAtom,
@@ -54,7 +55,7 @@ class ParserBuilder {
   public prefix(tokenType: string, precedence: number, builder: (token: Token, right: Atom) => Atom): ParserBuilder {
     return this.registerPrefix(tokenType, {
       parse(parser, token) {
-        const right = parser.parse(precedence);
+        const right = parser.consumeAndParse(precedence);
         return builder(token, right);
       },
     });
@@ -67,7 +68,7 @@ class ParserBuilder {
   ): ParserBuilder {
     return this.registerInfix(tokenType, {
       parse(parser, left, token) {
-        const right = parser.parse(precedence);
+        const right = parser.consumeAndParse(precedence);
         return builder(left, token, right);
       },
       precedence,
@@ -104,7 +105,7 @@ class Parser {
     return true;
   }
 
-  public parse(precedence = Precedence.MaximumPrecedence): Atom {
+  public consumeAndParse(precedence = Precedence.MaximumPrecedence): Atom {
     const token = this.#consume();
     const prefix = this.#prefixParselets[token.id];
     if (!prefix) {
@@ -185,12 +186,24 @@ const enum Precedence {
 
 const PARENTHESES_PARSELET: PrefixParselet = {
   parse(parser: Parser) {
-    const expr = parser.parse();
+    const expr = parser.consumeAndParse();
     if (!parser.match(')')) {
       throw new Error('Parse error: expected `)`');
     }
     return expr;
   },
+};
+
+const INDEXER_PARSELET: InfixParselet = {
+  parse(parser: Parser, left: Atom) {
+    const expr = parser.consumeAndParse();
+    if (!parser.match(']')) {
+      throw new Error('Parse error: expected `]`');
+    }
+    return new IndexerAtom(left, expr);
+  },
+
+  precedence: Precedence.Indexer,
 };
 
 const FUNCTION_CALL_PARSELET: InfixParselet = {
@@ -205,7 +218,7 @@ const FUNCTION_CALL_PARSELET: InfixParselet = {
 
     const args = [];
     while (!parser.match(')')) {
-      args.push(parser.parse());
+      args.push(parser.consumeAndParse());
       parser.match(',');
     }
 
@@ -256,6 +269,7 @@ const parserBuilder = new ParserBuilder()
   })
   .registerPrefix('{}', { parse: () => new EmptySetAtom() })
   .registerPrefix('(', PARENTHESES_PARSELET)
+  .registerInfix('[', INDEXER_PARSELET)
   .registerInfix('(', FUNCTION_CALL_PARSELET)
   .prefix('+', Precedence.UnaryAdd, (_, right) => new UnaryOperatorAtom(right, (x) => x))
   .prefix('-', Precedence.UnarySubtract, (_, right) => new ArithemticOperatorAtom(right, right, (_, y) => -y))
@@ -317,7 +331,7 @@ const parserBuilder = new ParserBuilder()
  */
 export function parseFhirPath(input: string): FhirPathAtom {
   try {
-    return new FhirPathAtom(input, parserBuilder.construct(input).parse());
+    return new FhirPathAtom(input, parserBuilder.construct(input).consumeAndParse());
   } catch (error) {
     throw new Error(`FhirPathError on "${input}": ${error}`);
   }

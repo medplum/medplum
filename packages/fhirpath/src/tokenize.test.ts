@@ -134,6 +134,30 @@ describe('Tokenizer', () => {
     ]);
   });
 
+  test('FHIR Path index[number]', () => {
+    const matches = tokenize('Patient.name[0]');
+    expect(matches).toMatchObject([
+      { id: 'Symbol', value: 'Patient' },
+      { id: '.', value: '.' },
+      { id: 'Symbol', value: 'name' },
+      { id: '[', value: '[' },
+      { id: 'Number', value: '0' },
+      { id: ']', value: ']' },
+    ]);
+  });
+
+  test('FHIR Path index[string]', () => {
+    const matches = tokenize('Patient.name[zebra]');
+    expect(matches).toMatchObject([
+      { id: 'Symbol', value: 'Patient' },
+      { id: '.', value: '.' },
+      { id: 'Symbol', value: 'name' },
+      { id: '[', value: '[' },
+      { id: 'Symbol', value: 'zebra' },
+      { id: ']', value: ']' },
+    ]);
+  });
+
   test('Quantity units', () => {
     expect(tokenize("1.0 'mg'")).toMatchObject([{ id: 'Quantity', value: "1.0 'mg'" }]);
     expect(tokenize('7 days = 1 week')).toMatchObject([
