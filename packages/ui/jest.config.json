@@ -9,7 +9,7 @@
     "\\.css$": "identity-obj-proxy"
   },
   "testMatch": ["**/src/**/*.test.ts", "**/src/**/*.test.tsx"],
-  "setupFilesAfterEnv": ["./src/jest.setup.ts"],
+  "setupFilesAfterEnv": ["./src/test.setup.ts"],
   "collectCoverage": true,
   "coverageDirectory": "coverage",
   "coverageReporters": ["json"],

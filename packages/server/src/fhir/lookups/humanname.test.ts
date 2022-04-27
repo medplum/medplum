@@ -3,7 +3,7 @@ import { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../../config';
 import { closeDatabase, initDatabase } from '../../database';
-import { bundleContains } from '../../jest.setup';
+import { bundleContains } from '../../test.setup';
 import { seedDatabase } from '../../seed';
 import { systemRepo } from '../repo';
 

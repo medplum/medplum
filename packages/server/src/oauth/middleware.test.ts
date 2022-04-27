@@ -7,7 +7,7 @@ import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { systemRepo } from '../fhir';
-import { createTestClient } from '../jest.setup';
+import { createTestClient } from '../test.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 import { generateAccessToken, generateSecret } from './keys';

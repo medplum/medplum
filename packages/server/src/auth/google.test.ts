@@ -9,7 +9,7 @@ import { initApp } from '../app';
 import { getConfig, loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { systemRepo } from '../fhir';
-import { setupPwnedPasswordMock, setupRecaptchaMock } from '../jest.setup';
+import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 

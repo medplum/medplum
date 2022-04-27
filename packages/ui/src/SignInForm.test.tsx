@@ -122,22 +122,25 @@ const medplum = new MedplumClient({
   fetch: mockFetch,
 });
 
-function setup(args?: SignInFormProps): void {
+async function setup(args?: SignInFormProps): Promise<void> {
   medplum.signOut();
 
   const props = {
     onSuccess: jest.fn(),
     ...args,
   };
-  render(
-    <MemoryRouter>
-      <MedplumProvider medplum={medplum}>
-        <SignInForm {...props}>
-          <h1>Sign in to Medplum</h1>
-        </SignInForm>
-      </MedplumProvider>
-    </MemoryRouter>
-  );
+
+  await act(async () => {
+    render(
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <SignInForm {...props}>
+            <h1>Sign in to Medplum</h1>
+          </SignInForm>
+        </MedplumProvider>
+      </MemoryRouter>
+    );
+  });
 }
 
 describe('SignInForm', () => {
@@ -151,8 +154,8 @@ describe('SignInForm', () => {
     });
   });
 
-  test('Renders', () => {
-    setup();
+  test('Renders', async () => {
+    await setup();
     const input = screen.getByTestId('submit') as HTMLButtonElement;
     expect(input.innerHTML).toBe('Sign in');
   });
@@ -160,7 +163,7 @@ describe('SignInForm', () => {
   test('Submit success', async () => {
     let success = false;
 
-    setup({
+    await setup({
       onSuccess: () => (success = true),
     });
 
@@ -186,7 +189,7 @@ describe('SignInForm', () => {
   });
 
   test('Submit success without callback', async () => {
-    setup({});
+    await setup({});
     expect(medplum.getProfile()).toBeUndefined();
 
     await act(async () => {
@@ -213,7 +216,7 @@ describe('SignInForm', () => {
   test('Submit success multiple profiles', async () => {
     let success = false;
 
-    setup({
+    await setup({
       onSuccess: () => (success = true),
     });
 
@@ -247,7 +250,7 @@ describe('SignInForm', () => {
   });
 
   test('User not found', async () => {
-    setup();
+    await setup();
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('email'), {
@@ -272,7 +275,7 @@ describe('SignInForm', () => {
   });
 
   test('Incorrect password', async () => {
-    setup();
+    await setup();
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('email'), {
@@ -302,7 +305,7 @@ describe('SignInForm', () => {
       onSuccess: jest.fn(),
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('forgotpassword'));
@@ -317,7 +320,7 @@ describe('SignInForm', () => {
       onSuccess: jest.fn(),
     };
 
-    setup(props);
+    await setup(props);
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('register'));
@@ -359,7 +362,7 @@ describe('SignInForm', () => {
     const onSuccess = jest.fn();
 
     await act(async () => {
-      setup({
+      await setup({
         onSuccess,
         googleClientId: clientId,
       });

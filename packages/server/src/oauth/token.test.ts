@@ -8,7 +8,7 @@ import { initApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { systemRepo } from '../fhir';
-import { createTestClient } from '../jest.setup';
+import { createTestClient } from '../test.setup';
 import { seedDatabase } from '../seed';
 import { generateSecret, initKeys } from './keys';
 import { hashCode } from './token';

@@ -15,7 +15,7 @@ import { randomUUID } from 'crypto';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { bundleContains } from '../jest.setup';
+import { bundleContains } from '../test.setup';
 import { seedDatabase } from '../seed';
 import { processBatch } from './batch';
 import { getRepoForLogin, Repository, systemRepo } from './repo';

@@ -4,7 +4,7 @@ import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { initTestAuth } from '../jest.setup';
+import { initTestAuth } from '../test.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 import { HL7_V2_ER7_CONTENT_TYPE } from './routes';
