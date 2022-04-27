@@ -1,6 +1,5 @@
 {
   "testEnvironment": "node",
-  "testRunner": "jasmine2",
   "testTimeout": 60000,
   "testSequencer": "<rootDir>/jest.sequencer.js",
   "transform": {

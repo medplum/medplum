@@ -57,6 +57,9 @@ describe('RegisterPage', () => {
       fireEvent.change(screen.getByTestId('lastName'), {
         target: { value: 'Washington' },
       });
+      fireEvent.change(screen.getByTestId('projectName'), {
+        target: { value: 'Test Project' },
+      });
       fireEvent.change(screen.getByTestId('email'), {
         target: { value: 'george@example.com' },
       });
