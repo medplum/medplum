@@ -17,7 +17,7 @@ import fetch from 'node-fetch';
 import { loadTestConfig } from '../config';
 import { closeDatabase, getClient, initDatabase } from '../database';
 import { getRepoForMembership, Repository, systemRepo } from '../fhir/repo';
-import { createTestProject } from '../jest.setup';
+import { createTestProject } from '../test.setup';
 import { seedDatabase } from '../seed';
 import { closeSubscriptionWorker, execSubscriptionJob, initSubscriptionWorker } from './subscription';
 

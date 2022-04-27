@@ -5,7 +5,7 @@ import { URL, URLSearchParams } from 'url';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { createTestClient } from '../jest.setup';
+import { createTestClient } from '../test.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 

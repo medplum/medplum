@@ -3,7 +3,7 @@ import { ClientApplication } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { createTestClient } from '../jest.setup';
+import { createTestClient } from '../test.setup';
 import { seedDatabase } from '../seed';
 import { initKeys } from './keys';
 import { tryLogin, validateLoginRequest } from './utils';
