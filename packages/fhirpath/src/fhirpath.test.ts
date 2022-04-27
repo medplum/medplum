@@ -886,8 +886,8 @@ describe('FHIRPath Test Suite', () => {
       expect(evalFhirPath('Patient.name.select(given | family).distinct()', patient)).toEqual([
         'Peter',
         'James',
-        'Jim',
         'Chalmers',
+        'Jim',
         'Windsor',
       ]);
     });
