@@ -319,32 +319,65 @@ function isEmpty(v: any): boolean {
 /**
  * Resource equality.
  * Ignores meta.versionId and meta.lastUpdated.
- * See: https://dmitripavlutin.com/how-to-compare-objects-in-javascript/#4-deep-equality
  * @param object1 The first object.
  * @param object2 The second object.
  * @returns True if the objects are equal.
  */
-export function deepEquals(object1: any, object2: any, path?: string): boolean {
-  let keys1 = Object.keys(object1);
-  let keys2 = Object.keys(object2);
-  if (path === 'meta') {
-    keys1 = keys1.filter((k) => k !== 'versionId' && k !== 'lastUpdated' && k !== 'author');
-    keys2 = keys2.filter((k) => k !== 'versionId' && k !== 'lastUpdated' && k !== 'author');
+export function deepEquals(object1: unknown, object2: unknown, path?: string): boolean {
+  if (object1 === object2) {
+    return true;
   }
-  if (keys1.length !== keys2.length) {
+  if (isEmpty(object1) && isEmpty(object2)) {
+    return true;
+  }
+  if (isEmpty(object1) || isEmpty(object2)) {
     return false;
   }
-  for (const key of keys1) {
+  if (Array.isArray(object1) && Array.isArray(object2)) {
+    return deepEqualsArray(object1, object2);
+  }
+  if (Array.isArray(object1) || Array.isArray(object2)) {
+    return false;
+  }
+  if (isObject(object1) && isObject(object2)) {
+    return deepEqualsObject(object1, object2, path);
+  }
+  if (isObject(object1) || isObject(object2)) {
+    return false;
+  }
+  return false;
+}
+
+function deepEqualsArray(array1: unknown[], array2: unknown[]): boolean {
+  if (array1.length !== array2.length) {
+    return false;
+  }
+  for (let i = 0; i < array1.length; i++) {
+    if (!deepEquals(array1[i], array2[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function deepEqualsObject(
+  object1: Record<string, unknown>,
+  object2: Record<string, unknown>,
+  path: string | undefined
+): boolean {
+  const keySet = new Set<string>();
+  Object.keys(object1).forEach((k) => keySet.add(k));
+  Object.keys(object2).forEach((k) => keySet.add(k));
+  if (path === 'meta') {
+    keySet.delete('versionId');
+    keySet.delete('lastUpdated');
+    keySet.delete('author');
+  }
+  for (const key of keySet) {
     const val1 = object1[key];
     const val2 = object2[key];
-    if (isObject(val1) && isObject(val2)) {
-      if (!deepEquals(val1, val2, key)) {
-        return false;
-      }
-    } else {
-      if (val1 !== val2) {
-        return false;
-      }
+    if (!deepEquals(val1, val2, key)) {
+      return false;
     }
   }
   return true;
@@ -355,7 +388,7 @@ export function deepEquals(object1: any, object2: any, path?: string): boolean {
  * @param object The candidate object.
  * @returns True if the input is a non-null non-undefined object.
  */
-export function isObject(obj: unknown): obj is object {
+export function isObject(obj: unknown): obj is Record<string, unknown> {
   return obj !== null && typeof obj === 'object';
 }
 
