@@ -554,6 +554,7 @@ function renderPropertyValue(
       value={value}
       maxWidth={200}
       ignoreMissingValues={true}
+      link={false}
     />
   );
 }

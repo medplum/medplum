@@ -25,6 +25,7 @@ export interface ResourcePropertyDisplayProps {
   arrayElement?: boolean;
   maxWidth?: number;
   ignoreMissingValues?: boolean;
+  link?: boolean;
 }
 
 export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JSX.Element {
@@ -40,6 +41,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
         property={property}
         values={value}
         ignoreMissingValues={props.ignoreMissingValues}
+        link={props.link}
       />
     );
   }
@@ -87,7 +89,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.Ratio:
       return <RatioDisplay value={value} />;
     case PropertyType.Reference:
-      return <ReferenceDisplay value={value} />;
+      return <ReferenceDisplay value={value} link={props.link} />;
     default:
       return (
         <BackboneElementDisplay
