@@ -9,6 +9,7 @@ interface ResourceArrayDisplayProps {
   values: any[];
   arrayElement?: boolean;
   ignoreMissingValues?: boolean;
+  link?: boolean;
 }
 
 export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Element {
@@ -26,6 +27,7 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Elem
           propertyType={propertyType}
           value={v}
           ignoreMissingValues={props.ignoreMissingValues}
+          link={props.link}
         />
       ))}
     </>

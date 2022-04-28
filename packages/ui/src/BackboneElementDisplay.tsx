@@ -10,6 +10,7 @@ export interface BackboneElementDisplayProps {
   value?: any;
   compact?: boolean;
   ignoreMissingValues?: boolean;
+  link?: boolean;
 }
 
 export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.Element | null {
@@ -54,6 +55,7 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
               propertyType={propertyType}
               value={propertyValue}
               ignoreMissingValues={props.ignoreMissingValues}
+              link={props.link}
             />
           </DescriptionListEntry>
         );
