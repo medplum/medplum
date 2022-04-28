@@ -1,6 +1,5 @@
 {
   "testEnvironment": "node",
-  "testRunner": "jasmine2",
   "transform": {
     "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
   },
