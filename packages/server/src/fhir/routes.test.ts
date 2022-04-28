@@ -5,9 +5,9 @@ import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { initTestAuth } from '../test.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
+import { initTestAuth } from '../test.setup';
 
 const app = express();
 let accessToken: string;
@@ -266,6 +266,32 @@ describe('FHIR Routes', () => {
       .put(`/fhir/R4/Patient/${patient.id}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(patient);
+    expect(res2.status).toBe(304);
+  });
+
+  test('Update resource not modified with empty strings', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Patient',
+        managingOrganization: {
+          reference: 'Organization/123',
+        },
+      });
+    expect(res.status).toBe(201);
+    const patient = res.body;
+    const res2 = await request(app)
+      .put(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        ...patient,
+        managingOrganization: {
+          reference: 'Organization/123',
+          display: '',
+        },
+      });
     expect(res2.status).toBe(304);
   });
 

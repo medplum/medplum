@@ -281,6 +281,17 @@ describe('Core Utils', () => {
   });
 
   test('Deep equals', () => {
+    // Empty values = null, undefined, empty string
+    expect(deepEquals(null, null)).toBe(true);
+    expect(deepEquals(null, undefined)).toBe(true);
+    expect(deepEquals(null, '')).toBe(true);
+    expect(deepEquals(undefined, null)).toBe(true);
+    expect(deepEquals(undefined, undefined)).toBe(true);
+    expect(deepEquals(undefined, '')).toBe(true);
+    expect(deepEquals('', null)).toBe(true);
+    expect(deepEquals('', undefined)).toBe(true);
+    expect(deepEquals('', '')).toBe(true);
+
     // Numbers
     expect(deepEquals({ value: 0 }, { value: 0 })).toEqual(true);
     expect(deepEquals({ value: 0 }, { value: 1 })).toEqual(false);
@@ -315,14 +326,17 @@ describe('Core Utils', () => {
     );
     expect(deepEquals({ value: { x: 1 } }, { value: { x: 2 } })).toEqual(false);
     expect(deepEquals({ value: { x: 1 } }, { value: { y: 1 } })).toEqual(false);
+    expect(deepEquals({ value: 1 }, { value: { value: 1 } })).toEqual(false);
 
     // Arrays
     expect(deepEquals({ value: [] }, { value: [] })).toEqual(true);
     expect(deepEquals({ value: [1, 2, 3] }, { value: [1, 2, 3] })).toEqual(true);
     expect(deepEquals({ value: [] }, { value: [1] })).toEqual(false);
     expect(deepEquals({ value: [1, 2, 3] }, { value: [1, 2] })).toEqual(false);
+    expect(deepEquals({ value: [1, 2, 3] }, { value: [1, 2, 4] })).toEqual(false);
     expect(deepEquals({ value: [] }, { value: [true] })).toEqual(false);
     expect(deepEquals({ value: [] }, { value: [{}] })).toEqual(false);
+    expect(deepEquals({ value: [1] }, { value: { value: 1 } })).toEqual(false);
 
     // Resources
     expect(deepEquals({ resourceType: 'Patient' }, { resourceType: 'Patient' })).toEqual(true);
