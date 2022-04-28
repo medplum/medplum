@@ -3,31 +3,11 @@
 import * as wafv2 from '@aws-cdk/aws-wafv2';
 
 export const awsManagedRules: wafv2.CfnWebACL.RuleProperty[] = [
-  // AWS IP Reputation list includes known malicious actors/bots and is regularly updated
-  // https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-ip-rep.html
-  {
-    name: 'AWS-AWSManagedRulesAmazonIpReputationList',
-    priority: 10,
-    statement: {
-      managedRuleGroupStatement: {
-        vendorName: 'AWS',
-        name: 'AWSManagedRulesAmazonIpReputationList',
-      },
-    },
-    overrideAction: {
-      none: {},
-    },
-    visibilityConfig: {
-      sampledRequestsEnabled: true,
-      cloudWatchMetricsEnabled: true,
-      metricName: 'AWSManagedRulesAmazonIpReputationList',
-    },
-  },
   // Common Rule Set aligns with major portions of OWASP Core Rule Set
   // https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-baseline.html
   {
     name: 'AWS-AWSManagedRulesCommonRuleSet',
-    priority: 20,
+    priority: 10,
     statement: {
       managedRuleGroupStatement: {
         vendorName: 'AWS',
@@ -38,12 +18,32 @@ export const awsManagedRules: wafv2.CfnWebACL.RuleProperty[] = [
       },
     },
     overrideAction: {
-      none: {},
+      count: {},
     },
     visibilityConfig: {
       sampledRequestsEnabled: true,
       cloudWatchMetricsEnabled: true,
       metricName: 'AWS-AWSManagedRulesCommonRuleSet',
+    },
+  },
+  // AWS IP Reputation list includes known malicious actors/bots and is regularly updated
+  // https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-ip-rep.html
+  {
+    name: 'AWS-AWSManagedRulesAmazonIpReputationList',
+    priority: 20,
+    statement: {
+      managedRuleGroupStatement: {
+        vendorName: 'AWS',
+        name: 'AWSManagedRulesAmazonIpReputationList',
+      },
+    },
+    overrideAction: {
+      count: {},
+    },
+    visibilityConfig: {
+      sampledRequestsEnabled: true,
+      cloudWatchMetricsEnabled: true,
+      metricName: 'AWSManagedRulesAmazonIpReputationList',
     },
   },
   // Blocks common SQL Injection
@@ -57,7 +57,7 @@ export const awsManagedRules: wafv2.CfnWebACL.RuleProperty[] = [
       metricName: 'AWSManagedRulesSQLiRuleSet',
     },
     overrideAction: {
-      none: {},
+      count: {},
     },
     statement: {
       managedRuleGroupStatement: {
@@ -71,14 +71,14 @@ export const awsManagedRules: wafv2.CfnWebACL.RuleProperty[] = [
   // https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-use-case.html#aws-managed-rule-groups-use-case-linux-os
   {
     name: 'AWSManagedRuleLinux',
-    priority: 50,
+    priority: 40,
     visibilityConfig: {
       sampledRequestsEnabled: true,
       cloudWatchMetricsEnabled: true,
       metricName: 'AWSManagedRuleLinux',
     },
     overrideAction: {
-      none: {},
+      count: {},
     },
     statement: {
       managedRuleGroupStatement: {
