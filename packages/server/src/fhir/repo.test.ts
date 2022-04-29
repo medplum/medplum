@@ -15,8 +15,8 @@ import { randomUUID } from 'crypto';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { bundleContains } from '../test.setup';
 import { seedDatabase } from '../seed';
+import { bundleContains } from '../test.setup';
 import { processBatch } from './batch';
 import { getRepoForLogin, Repository, systemRepo } from './repo';
 import { parseSearchRequest } from './search';
@@ -1555,6 +1555,34 @@ describe('FHIR Repo', () => {
       resourceType: 'ServiceRequest',
       subject: { reference: 'Patient/' + randomUUID() },
       category: [{ coding: [{ code: category2 }] }],
+      code: { coding: [{ code }] },
+    });
+    assertOk(outcome2, serviceRequest2);
+
+    const [outcome3, bundle1] = await systemRepo.search(
+      parseSearchRequest('ServiceRequest', { code, 'category:not': category1 })
+    );
+    assertOk(outcome3, bundle1);
+    expect(bundle1.entry?.length).toEqual(1);
+    expect(bundleContains(bundle1, serviceRequest1)).toEqual(false);
+    expect(bundleContains(bundle1, serviceRequest2)).toEqual(true);
+  });
+
+  test('Null token array not equals', async () => {
+    const category1 = randomUUID();
+    const code = randomUUID();
+
+    const [outcome1, serviceRequest1] = await systemRepo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      subject: { reference: 'Patient/' + randomUUID() },
+      category: [{ coding: [{ code: category1 }] }],
+      code: { coding: [{ code }] },
+    });
+    assertOk(outcome1, serviceRequest1);
+
+    const [outcome2, serviceRequest2] = await systemRepo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      subject: { reference: 'Patient/' + randomUUID() },
       code: { coding: [{ code }] },
     });
     assertOk(outcome2, serviceRequest2);

@@ -85,10 +85,13 @@ export class Condition implements Expression {
   }
 
   protected buildArrayContainsValue(sql: SqlBuilder): void {
+    sql.append('(');
+    sql.appendColumn(this.column);
+    sql.append(' IS NOT NULL AND ');
     sql.param(this.parameter);
     sql.append('=ANY(');
     sql.appendColumn(this.column);
-    sql.append(')');
+    sql.append('))');
   }
 
   protected buildSimpleCondition(sql: SqlBuilder): void {
