@@ -599,9 +599,59 @@ describe('Autocomplete', () => {
     // Wait for the drop down
     await act(async () => {
       jest.advanceTimersByTime(1000);
-      await waitFor(() => expect(onChange).toHaveBeenCalledWith(['Homer Simpson']));
     });
 
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith(['Homer Simpson']));
+
     expect(onChange).toHaveBeenCalledWith(['Homer Simpson']);
+  });
+
+  test('Auto submit with intermediate results', async () => {
+    const onChange = jest.fn();
+
+    render(
+      <Autocomplete
+        name="foo"
+        loadOptions={async (input: string) => {
+          if (input === 'sim') {
+            return ['Homer Simpson', 'Bart Simpson'];
+          } else {
+            return ['Bart Simpson'];
+          }
+        }}
+        getId={(item: string) => item}
+        getDisplay={(item: string) => <span>{item}</span>}
+        onChange={onChange}
+      />
+    );
+
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+
+    // Enter "sim"
+    await act(async () => {
+      fireEvent.input(input, { target: { value: 'sim' } });
+    });
+
+    // Wait for the first drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    await waitFor(() => expect(screen.getByTestId('dropdown')).toBeInTheDocument());
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+    expect(screen.getByText('Bart Simpson')).toBeInTheDocument();
+
+    // Enter "sim b"
+    await act(async () => {
+      fireEvent.input(input, { target: { value: 'sim b' } });
+    });
+
+    // Press "Enter" (without waiting for the dropdown)
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith(['Bart Simpson']));
+    expect(onChange).toHaveBeenCalledWith(['Bart Simpson']);
   });
 });
