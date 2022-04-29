@@ -143,7 +143,7 @@ export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
    * @param e The key down event.
    */
   function handleSelectKey(e: React.KeyboardEvent): void {
-    if (tryAddOption()) {
+    if (!timerRef.current && !abortControllerRef.current && tryAddOption()) {
       killEvent(e);
       inputRef.current?.focus();
     } else {
@@ -225,6 +225,8 @@ export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
    * for updated contents.
    */
   function handleTimer(): void {
+    setTimer(undefined);
+
     const value = inputRef.current?.value?.trim() || '';
     if (value === lastValueRef.current) {
       // Nothing has changed, move on
@@ -250,6 +252,7 @@ export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
         if (!newAbortController.signal.aborted) {
           setDropDownVisible(newOptions.length > 0);
           setOptions(newOptions);
+          setAbortController(undefined);
           if (autoSubmitRef.current) {
             addOption(newOptions[0]);
             setAutoSubmit(false);
