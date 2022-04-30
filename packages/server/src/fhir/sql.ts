@@ -32,7 +32,7 @@ export class Negation implements Expression {
   constructor(readonly expression: Expression) {}
 
   buildSql(sql: SqlBuilder): void {
-    sql.append(' NOT (');
+    sql.append('NOT (');
     this.expression.buildSql(sql);
     sql.append(')');
   }
@@ -204,8 +204,12 @@ export class SqlBuilder {
     return this;
   }
 
+  toString(): string {
+    return this.#sql.join('');
+  }
+
   async execute(conn: Client | Pool): Promise<any[]> {
-    const sql = this.#sql.join('');
+    const sql = this.toString();
     if (DEBUG) {
       console.log('sql', sql);
       console.log('values', this.#values);
