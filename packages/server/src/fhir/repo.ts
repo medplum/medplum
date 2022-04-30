@@ -47,7 +47,7 @@ import { getPatientId } from './patient';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { validateResource, validateResourceType } from './schema';
 import { parseSearchUrl } from './search';
-import { Condition, Conjunction, Disjunction, InsertQuery, Negation, Operator, SelectQuery } from './sql';
+import { Condition, Conjunction, Disjunction, Expression, InsertQuery, Negation, Operator, SelectQuery } from './sql';
 import { getSearchParameter, getSearchParameters, getStructureDefinitions } from './structure';
 
 /**
@@ -172,7 +172,7 @@ export class Repository {
     const client = getClient();
     const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', Operator.EQUALS, id);
 
-    this.#addCompartments(builder, resourceType);
+    this.#addSecurityFilters(builder, resourceType);
 
     const rows = await builder.execute(client);
     if (rows.length === 0) {
@@ -458,7 +458,7 @@ export class Repository {
       .column({ tableName: resourceType, columnName: 'content' });
 
     this.#addDeletedFilter(builder);
-    this.#addCompartments(builder, resourceType);
+    this.#addSecurityFilters(builder, resourceType);
     this.#addSearchFilters(builder, builder.predicate, searchRequest);
     this.#addSortRules(builder, searchRequest);
 
@@ -500,7 +500,7 @@ export class Repository {
     );
 
     this.#addDeletedFilter(builder);
-    this.#addCompartments(builder, searchRequest.resourceType);
+    this.#addSecurityFilters(builder, searchRequest.resourceType);
     this.#addSearchFilters(builder, builder.predicate, searchRequest);
     const rows = await builder.execute(client);
     return rows[0].count as number;
@@ -515,11 +515,11 @@ export class Repository {
   }
 
   /**
-   * Adds compartment restrictions to the query.
+   * Adds security filters to the select query.
    * @param builder The select query builder.
    * @param resourceType The resource type for compartments.
    */
-  #addCompartments(builder: SelectQuery, resourceType: string): void {
+  #addSecurityFilters(builder: SelectQuery, resourceType: string): void {
     if (publicResourceTypes.includes(resourceType)) {
       // No compartment restrictions for public resources.
       return;
@@ -530,42 +530,54 @@ export class Repository {
       return;
     }
 
+    this.#addProjectFilter(builder);
+    this.#addAccessPolicyFilters(builder, resourceType);
+  }
+
+  /**
+   * Adds the "project" filter to the select query.
+   * @param builder The select query builder.
+   */
+  #addProjectFilter(builder: SelectQuery): void {
     if (this.#context.project) {
-      // Add compartment restriction for the project.
       builder.where('compartments', Operator.ARRAY_CONTAINS, [this.#context.project], 'UUID[]');
     }
+  }
 
-    const compartmentIds = [];
-    const accessPolicyDisjunction = new Disjunction([]);
+  /**
+   * Adds access policy filters to the select query.
+   * @param builder The select query builder.
+   * @param resourceType The resource type being searched.
+   */
+  #addAccessPolicyFilters(builder: SelectQuery, resourceType: string): void {
+    if (!this.#context.accessPolicy?.resource) {
+      return;
+    }
 
-    if (this.#context.accessPolicy?.resource) {
-      for (const policy of this.#context.accessPolicy.resource) {
-        if (policy.resourceType === resourceType) {
-          const policyCompartmentId = resolveId(policy.compartment);
-          if (policyCompartmentId) {
-            // Deprecated - to be removed
-            // Add compartment restriction for the access policy.
-            compartmentIds.push(policyCompartmentId);
-          }
+    const expressions: Expression[] = [];
 
-          if (policy.criteria) {
-            // Add subquery for access policy criteria.
-            const searchRequest = parseSearchUrl(new URL(policy.criteria, 'https://api.medplum.com/'));
-            const accessPolicyConjunction = new Conjunction([]);
-            this.#addSearchFilters(builder, accessPolicyConjunction, searchRequest);
-            accessPolicyDisjunction.expressions.push(accessPolicyConjunction);
-          }
+    for (const policy of this.#context.accessPolicy.resource) {
+      if (policy.resourceType === resourceType) {
+        const policyCompartmentId = resolveId(policy.compartment);
+        if (policyCompartmentId) {
+          // Deprecated - to be removed
+          // Add compartment restriction for the access policy.
+          expressions.push(new Condition('compartments', Operator.ARRAY_CONTAINS, [policyCompartmentId], 'UUID[]'));
+        }
+
+        if (policy.criteria) {
+          // Add subquery for access policy criteria.
+          const searchRequest = parseSearchUrl(new URL(policy.criteria, 'https://api.medplum.com/'));
+          console.log('parsed search', JSON.stringify(searchRequest, null, 2));
+          const accessPolicyConjunction = new Conjunction([]);
+          this.#addSearchFilters(builder, accessPolicyConjunction, searchRequest);
+          expressions.push(accessPolicyConjunction);
         }
       }
     }
 
-    if (accessPolicyDisjunction.expressions.length > 0) {
-      builder.predicate.expressions.push(accessPolicyDisjunction);
-    }
-
-    if (compartmentIds.length > 0) {
-      // Deprecated - to be removed
-      builder.where('compartments', Operator.ARRAY_CONTAINS, compartmentIds, 'UUID[]');
+    if (expressions.length > 0) {
+      builder.predicate.expressions.push(new Disjunction(expressions));
     }
   }
 
