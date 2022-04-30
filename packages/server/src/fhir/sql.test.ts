@@ -31,7 +31,7 @@ describe('SqlBuilder', () => {
   test('Select where array contains', () => {
     const sql = new SqlBuilder();
     new SelectQuery('MyTable').column('id').where('name', Operator.ARRAY_CONTAINS, 'x').buildSql(sql);
-    expect(sql.toString()).toBe('SELECT "id" FROM "MyTable" WHERE $1=ANY("name")');
+    expect(sql.toString()).toBe('SELECT "id" FROM "MyTable" WHERE ("name" IS NOT NULL AND $1=ANY("name"))');
   });
 
   test('Select where array contains array', () => {
