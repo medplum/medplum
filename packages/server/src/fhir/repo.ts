@@ -568,7 +568,6 @@ export class Repository {
         if (policy.criteria) {
           // Add subquery for access policy criteria.
           const searchRequest = parseSearchUrl(new URL(policy.criteria, 'https://api.medplum.com/'));
-          console.log('parsed search', JSON.stringify(searchRequest, null, 2));
           const accessPolicyConjunction = new Conjunction([]);
           this.#addSearchFilters(builder, accessPolicyConjunction, searchRequest);
           expressions.push(accessPolicyConjunction);

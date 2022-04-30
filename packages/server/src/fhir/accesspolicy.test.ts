@@ -336,7 +336,7 @@ describe('AccessPolicy', () => {
       resource: [
         {
           resourceType: 'Patient',
-          criteria: `Patient?_compartment=Organization/${org1}`,
+          criteria: `Patient?_compartment=${org1}`,
         },
       ],
     };
@@ -349,7 +349,7 @@ describe('AccessPolicy', () => {
       resource: [
         {
           resourceType: 'Patient',
-          criteria: `Patient?_compartment=Organization/${org1}`,
+          criteria: `Patient?_compartment=${org2}`,
         },
       ],
     };
