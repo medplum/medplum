@@ -31,13 +31,13 @@ describe('SqlBuilder', () => {
   test('Select where array contains', () => {
     const sql = new SqlBuilder();
     new SelectQuery('MyTable').column('id').where('name', Operator.ARRAY_CONTAINS, 'x').buildSql(sql);
-    expect(sql.toString()).toBe('SELECT "id" FROM "MyTable" WHERE ("name" IS NOT NULL AND $1=ANY("name"))');
+    expect(sql.toString()).toBe('SELECT "id" FROM "MyTable" WHERE ("name" IS NOT NULL AND "name"&&ARRAY[$1])');
   });
 
   test('Select where array contains array', () => {
     const sql = new SqlBuilder();
     new SelectQuery('MyTable').column('id').where('name', Operator.ARRAY_CONTAINS, ['x', 'y']).buildSql(sql);
-    expect(sql.toString()).toBe('SELECT "id" FROM "MyTable" WHERE "name"&&ARRAY[$1,$2]');
+    expect(sql.toString()).toBe('SELECT "id" FROM "MyTable" WHERE ("name" IS NOT NULL AND "name"&&ARRAY[$1,$2])');
   });
 
   test('Select where is null', () => {
