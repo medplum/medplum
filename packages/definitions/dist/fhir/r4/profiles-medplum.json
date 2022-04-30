@@ -1190,11 +1190,22 @@
           {
             "id" : "AccessPolicy.resource.compartment",
             "path" : "AccessPolicy.resource.compartment",
-            "definition" : "Optional compartment restriction for the resource type.",
+            "definition" : "DEPRECATED Optional compartment restriction for the resource type.",
             "min" : 0,
             "max" : "1",
             "type" : [{
               "code" : "Reference"
+            }]
+          },
+          {
+            "id" : "AccessPolicy.resource.criteria",
+            "path" : "AccessPolicy.resource.criteria",
+            "definition" : "The rules that the server should use to determine which resources to allow.",
+            "comment" : "The rules are search criteria (without the [base] part). Like Bundle.entry.request.url, it has no leading \"/\".",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
             }]
           },
           {

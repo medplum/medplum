@@ -73,11 +73,12 @@ export class IdentifierTable extends LookupTable<Identifier> {
   /**
    * Adds "where" conditions to the select query builder.
    * @param selectQuery The select query builder.
+   * @param predicate The conjunction where conditions should be added.
    * @param filter The search filter details.
    */
-  addWhere(selectQuery: SelectQuery, filter: Filter): void {
+  addWhere(selectQuery: SelectQuery, predicate: Conjunction, filter: Filter): void {
     const tableName = this.getTableName();
-    const joinName = tableName + '_' + filter.code + '_search';
+    const joinName = selectQuery.getNextJoinAlias();
     const subQuery = new SelectQuery(tableName)
       .raw(`DISTINCT ON ("${tableName}"."resourceId") *`)
       .orderBy('resourceId');
@@ -87,6 +88,7 @@ export class IdentifierTable extends LookupTable<Identifier> {
     }
     subQuery.whereExpr(disjunction);
     selectQuery.join(joinName, 'id', 'resourceId', subQuery);
+    predicate.expressions.push(new Condition(new Column(joinName, 'id'), Operator.NOT_EQUALS, null));
   }
 
   #buildWhereCondition(operator: FhirOperator, query: string): Expression {

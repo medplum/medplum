@@ -39,11 +39,12 @@ export abstract class LookupTable<T> {
   /**
    * Adds "where" conditions to the select query builder.
    * @param selectQuery The select query builder.
+   * @param predicate The conjunction where conditions should be added.
    * @param filter The search filter details.
    */
-  addWhere(selectQuery: SelectQuery, filter: Filter): void {
+  addWhere(selectQuery: SelectQuery, predicate: Conjunction, filter: Filter): void {
     const tableName = this.getTableName();
-    const joinName = tableName + '_' + filter.code + '_search';
+    const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(filter.code);
     const subQuery = new SelectQuery(tableName)
       .raw(`DISTINCT ON ("${tableName}"."resourceId") *`)
@@ -64,6 +65,7 @@ export abstract class LookupTable<T> {
     }
     subQuery.whereExpr(disjunction);
     selectQuery.join(joinName, 'id', 'resourceId', subQuery);
+    predicate.expressions.push(new Condition(new Column(joinName, columnName), Operator.NOT_EQUALS, null));
   }
 
   /**
@@ -73,13 +75,13 @@ export abstract class LookupTable<T> {
    */
   addOrderBy(selectQuery: SelectQuery, sortRule: SortRule): void {
     const tableName = this.getTableName();
-    const joinName = tableName + '_' + sortRule.code + '_sort';
+    const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(sortRule.code);
     const subQuery = new SelectQuery(tableName)
       .raw(`DISTINCT ON ("${tableName}"."resourceId") *`)
       .orderBy('resourceId');
     selectQuery.join(joinName, 'id', 'resourceId', subQuery);
-    selectQuery.orderBy({ tableName: joinName, columnName }, sortRule.descending);
+    selectQuery.orderBy(new Column(joinName, columnName), sortRule.descending);
   }
 
   /**

@@ -129,6 +129,16 @@ class SearchParser implements SearchRequest {
         });
         break;
 
+      case '_account':
+      case '_compartment':
+      case '_project':
+        this.filters.push({
+          code: code,
+          operator: Operator.EQUALS,
+          value,
+        });
+        break;
+
       case '_lastUpdated':
       case 'meta.lastUpdated':
         {

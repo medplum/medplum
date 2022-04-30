@@ -175,12 +175,12 @@ describe('AccessPolicy', () => {
     });
     assertOk(createOutcome, patient);
     expect(patient).toBeDefined();
-    expect(patient?.meta?.account).toBeDefined();
+    expect(patient?.meta?.account?.reference).toEqual('Organization/' + orgId);
 
     const [readOutcome, readPatient] = await repo.readResource('Patient', patient?.id as string);
     assertOk(readOutcome, readPatient);
     expect(readPatient).toBeDefined();
-    expect(readPatient?.meta?.account).toBeDefined();
+    expect(readPatient?.meta?.account?.reference).toEqual('Organization/' + orgId);
   });
 
   test('Access policy blocks account override', async () => {
@@ -263,6 +263,93 @@ describe('AccessPolicy', () => {
           compartment: {
             reference: 'Organization/' + org2,
           },
+        },
+      ],
+    };
+
+    const repo1 = new Repository({
+      author: {
+        reference: 'Practitioner/123',
+      },
+      accessPolicy: accessPolicy1,
+    });
+
+    const repo2 = new Repository({
+      author: {
+        reference: 'Practitioner/123',
+      },
+      accessPolicy: accessPolicy2,
+    });
+
+    const [createOutcome1, patient1] = await repo1.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      birthDate: '1970-01-01',
+    });
+    assertOk(createOutcome1, patient1);
+    expect(patient1).toBeDefined();
+    expect(patient1?.meta?.account).toBeDefined();
+    expect(patient1?.meta?.account?.reference).toEqual('Organization/' + org1);
+
+    const [readOutcome1, readPatient1] = await repo1.readResource('Patient', patient1?.id as string);
+    assertOk(readOutcome1, readPatient1);
+    expect(readPatient1).toBeDefined();
+    expect(readPatient1?.meta?.account).toBeDefined();
+
+    const [createOutcome2, patient2] = await repo2.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      birthDate: '1970-01-01',
+    });
+    assertOk(createOutcome2, patient2);
+    expect(patient2).toBeDefined();
+    expect(patient2?.meta?.account).toBeDefined();
+    expect(patient2?.meta?.account?.reference).toEqual('Organization/' + org2);
+
+    const [readOutcome2, readPatient2] = await repo2.readResource('Patient', patient2?.id as string);
+    assertOk(readOutcome2, readPatient2);
+    expect(readPatient2).toBeDefined();
+    expect(readPatient2?.meta?.account).toBeDefined();
+
+    // Try to read patient1 with repo2
+    // This should fail
+    const [readOutcome3, readPatient3] = await repo2.readResource('Patient', patient1?.id as string);
+    expect(readOutcome3.id).toEqual('not-found');
+    expect(readPatient3).toBeUndefined();
+
+    // Try to read patient2 with repo1
+    // This should fail
+    const [readOutcome4, readPatient4] = await repo1.readResource('Patient', patient2?.id as string);
+    expect(readOutcome4.id).toEqual('not-found');
+    expect(readPatient4).toBeUndefined();
+  });
+
+  test('Access policy restrict criteria', async () => {
+    const org1 = randomUUID();
+    const org2 = randomUUID();
+
+    const accessPolicy1: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      compartment: {
+        reference: 'Organization/' + org1,
+      },
+      resource: [
+        {
+          resourceType: 'Patient',
+          criteria: `Patient?_compartment=${org1}`,
+        },
+      ],
+    };
+
+    const accessPolicy2: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      compartment: {
+        reference: 'Organization/' + org2,
+      },
+      resource: [
+        {
+          resourceType: 'Patient',
+          criteria: `Patient?_compartment=${org2}`,
         },
       ],
     };

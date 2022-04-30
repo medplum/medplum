@@ -61590,8 +61590,12 @@
           "$ref": "#/definitions/string"
         },
         "compartment": {
-          "description": "Optional compartment restriction for the resource type.",
+          "description": "DEPRECATED Optional compartment restriction for the resource type.",
           "$ref": "#/definitions/Reference"
+        },
+        "criteria": {
+          "description": "The rules that the server should use to determine which resources to allow.",
+          "$ref": "#/definitions/string"
         },
         "readonly": {
           "description": "Optional flag to indicate that the resource type is read-only.",

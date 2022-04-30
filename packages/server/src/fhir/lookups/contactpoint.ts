@@ -2,7 +2,7 @@ import { Filter, stringify } from '@medplum/core';
 import { ContactPoint, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { getClient } from '../../database';
-import { InsertQuery, Operator, SelectQuery } from '../sql';
+import { Column, Condition, Conjunction, InsertQuery, Operator, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
@@ -92,11 +92,12 @@ export class ContactPointTable extends LookupTable<ContactPoint> {
   /**
    * Adds "where" conditions to the select query builder.
    * @param selectQuery The select query builder.
+   * @param predicate The conjunction where conditions should be added.
    * @param filter The search filter details.
    */
-  addWhere(selectQuery: SelectQuery, filter: Filter): void {
+  addWhere(selectQuery: SelectQuery, predicate: Conjunction, filter: Filter): void {
     const tableName = this.getTableName();
-    const joinName = tableName + '_' + filter.code + '_search';
+    const joinName = selectQuery.getNextJoinAlias();
     const subQuery = new SelectQuery(tableName)
       .raw(`DISTINCT ON ("${tableName}"."resourceId") *`)
       .where({ tableName, columnName: 'value' }, Operator.EQUALS, filter.value)
@@ -108,5 +109,6 @@ export class ContactPointTable extends LookupTable<ContactPoint> {
     }
 
     selectQuery.join(joinName, 'id', 'resourceId', subQuery);
+    predicate.expressions.push(new Condition(new Column(joinName, 'id'), Operator.NOT_EQUALS, null));
   }
 }

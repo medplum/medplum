@@ -36,6 +36,7 @@ import {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { applyPatch, Operation } from 'fast-json-patch';
+import { URL } from 'url';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getClient } from '../database';
@@ -45,7 +46,8 @@ import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, Looku
 import { getPatientId } from './patient';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { validateResource, validateResourceType } from './schema';
-import { Condition, Disjunction, InsertQuery, Negation, Operator, SelectQuery } from './sql';
+import { parseSearchUrl } from './search';
+import { Condition, Conjunction, Disjunction, Expression, InsertQuery, Negation, Operator, SelectQuery } from './sql';
 import { getSearchParameter, getSearchParameters, getStructureDefinitions } from './structure';
 
 /**
@@ -170,7 +172,7 @@ export class Repository {
     const client = getClient();
     const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', Operator.EQUALS, id);
 
-    this.#addCompartments(builder, resourceType);
+    this.#addSecurityFilters(builder, resourceType);
 
     const rows = await builder.execute(client);
     if (rows.length === 0) {
@@ -456,8 +458,8 @@ export class Repository {
       .column({ tableName: resourceType, columnName: 'content' });
 
     this.#addDeletedFilter(builder);
-    this.#addCompartments(builder, resourceType);
-    this.#addSearchFilters(builder, searchRequest);
+    this.#addSecurityFilters(builder, resourceType);
+    this.#addSearchFilters(builder, builder.predicate, searchRequest);
     this.#addSortRules(builder, searchRequest);
 
     const count = searchRequest.count || 20;
@@ -498,8 +500,8 @@ export class Repository {
     );
 
     this.#addDeletedFilter(builder);
-    this.#addCompartments(builder, searchRequest.resourceType);
-    this.#addSearchFilters(builder, searchRequest);
+    this.#addSecurityFilters(builder, searchRequest.resourceType);
+    this.#addSearchFilters(builder, builder.predicate, searchRequest);
     const rows = await builder.execute(client);
     return rows[0].count as number;
   }
@@ -513,60 +515,97 @@ export class Repository {
   }
 
   /**
-   * Adds compartment restrictions to the query.
+   * Adds security filters to the select query.
    * @param builder The select query builder.
    * @param resourceType The resource type for compartments.
    */
-  #addCompartments(builder: SelectQuery, resourceType: string): void {
+  #addSecurityFilters(builder: SelectQuery, resourceType: string): void {
     if (publicResourceTypes.includes(resourceType)) {
+      // No compartment restrictions for public resources.
       return;
     }
 
     if (this.#isAdmin()) {
+      // No compartment restrictions for admins.
       return;
     }
 
-    const compartmentIds = [];
+    this.#addProjectFilter(builder);
+    this.#addAccessPolicyFilters(builder, resourceType);
+  }
 
-    if (this.#context.accessPolicy?.resource) {
-      for (const policy of this.#context.accessPolicy.resource) {
-        if (policy.resourceType === resourceType) {
-          const policyCompartmentId = resolveId(policy.compartment);
-          if (policyCompartmentId) {
-            compartmentIds.push(policyCompartmentId);
-          }
+  /**
+   * Adds the "project" filter to the select query.
+   * @param builder The select query builder.
+   */
+  #addProjectFilter(builder: SelectQuery): void {
+    if (this.#context.project) {
+      builder.where('compartments', Operator.ARRAY_CONTAINS, [this.#context.project], 'UUID[]');
+    }
+  }
+
+  /**
+   * Adds access policy filters to the select query.
+   * @param builder The select query builder.
+   * @param resourceType The resource type being searched.
+   */
+  #addAccessPolicyFilters(builder: SelectQuery, resourceType: string): void {
+    if (!this.#context.accessPolicy?.resource) {
+      return;
+    }
+
+    const expressions: Expression[] = [];
+
+    for (const policy of this.#context.accessPolicy.resource) {
+      if (policy.resourceType === resourceType) {
+        const policyCompartmentId = resolveId(policy.compartment);
+        if (policyCompartmentId) {
+          // Deprecated - to be removed
+          // Add compartment restriction for the access policy.
+          expressions.push(new Condition('compartments', Operator.ARRAY_CONTAINS, [policyCompartmentId], 'UUID[]'));
+        }
+
+        if (policy.criteria) {
+          // Add subquery for access policy criteria.
+          const searchRequest = parseSearchUrl(new URL(policy.criteria, 'https://api.medplum.com/'));
+          const accessPolicyConjunction = new Conjunction([]);
+          this.#addSearchFilters(builder, accessPolicyConjunction, searchRequest);
+          expressions.push(accessPolicyConjunction);
         }
       }
     }
 
-    if (compartmentIds.length === 0 && this.#context.project !== undefined) {
-      compartmentIds.push(this.#context.project);
-    }
-
-    if (compartmentIds.length > 0) {
-      builder.where('compartments', Operator.ARRAY_CONTAINS, compartmentIds, 'UUID[]');
+    if (expressions.length > 0) {
+      builder.predicate.expressions.push(new Disjunction(expressions));
     }
   }
 
   /**
    * Adds all search filters as "WHERE" clauses to the query builder.
-   * @param builder The client query builder.
+   * @param selectQuery The select query builder.
+   * @param predicate The predicate conjunction.
    * @param searchRequest The search request.
    */
-  #addSearchFilters(builder: SelectQuery, searchRequest: SearchRequest): void {
-    searchRequest.filters?.forEach((filter) => this.#addSearchFilter(builder, searchRequest, filter));
+  #addSearchFilters(selectQuery: SelectQuery, predicate: Conjunction, searchRequest: SearchRequest): void {
+    searchRequest.filters?.forEach((filter) => this.#addSearchFilter(selectQuery, predicate, searchRequest, filter));
   }
 
   /**
    * Adds a single search filter as "WHERE" clause to the query builder.
-   * @param builder The client query builder.
+   * @param selectQuery The select query builder.
+   * @param predicate The predicate conjunction.
    * @param searchRequest The search request.
    * @param filter The search filter.
    */
-  #addSearchFilter(builder: SelectQuery, searchRequest: SearchRequest, filter: Filter): void {
+  #addSearchFilter(
+    selectQuery: SelectQuery,
+    predicate: Conjunction,
+    searchRequest: SearchRequest,
+    filter: Filter
+  ): void {
     const resourceType = searchRequest.resourceType;
 
-    if (this.#trySpecialSearchParameter(builder, resourceType, filter)) {
+    if (this.#trySpecialSearchParameter(predicate, resourceType, filter)) {
       return;
     }
 
@@ -577,19 +616,19 @@ export class Repository {
 
     const lookupTable = this.#getLookupTable(param);
     if (lookupTable) {
-      lookupTable.addWhere(builder, filter);
+      lookupTable.addWhere(selectQuery, predicate, filter);
       return;
     }
 
     const details = getSearchParameterDetails(getStructureDefinitions(), resourceType, param);
     if (param.type === 'string') {
-      this.#addStringSearchFilter(builder, details, filter);
+      this.#addStringSearchFilter(predicate, details, filter);
     } else if (param.type === 'token') {
-      this.#addTokenSearchFilter(builder, details, filter);
+      this.#addTokenSearchFilter(predicate, details, filter);
     } else if (param.type === 'reference') {
-      this.#addReferenceSearchFilter(builder, details, filter);
+      this.#addReferenceSearchFilter(predicate, details, filter);
     } else {
-      builder.where(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
+      predicate.where(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
     }
   }
 
@@ -598,12 +637,12 @@ export class Repository {
    *
    * See: https://www.hl7.org/fhir/search.html#all
    *
-   * @param builder The client query builder.
+   * @param predicate The predicate conjunction.
    * @param resourceType The resource type.
    * @param filter The search filter.
    * @returns True if the search parameter is a special code.
    */
-  #trySpecialSearchParameter(builder: SelectQuery, resourceType: string, filter: Filter): boolean {
+  #trySpecialSearchParameter(predicate: Conjunction, resourceType: string, filter: Filter): boolean {
     const code = filter.code;
     if (!code.startsWith('_')) {
       return false;
@@ -612,25 +651,37 @@ export class Repository {
     const op = fhirOperatorToSqlOperator(filter.operator);
 
     if (code === '_id') {
-      builder.where({ tableName: resourceType, columnName: 'id' }, op, filter.value);
+      predicate.where({ tableName: resourceType, columnName: 'id' }, op, filter.value);
     } else if (code === '_lastUpdated') {
-      builder.where({ tableName: resourceType, columnName: 'lastUpdated' }, op, filter.value);
-    } else if (code === '_project') {
-      builder.where('compartments', Operator.ARRAY_CONTAINS, [filter.value], 'UUID[]');
+      predicate.where({ tableName: resourceType, columnName: 'lastUpdated' }, op, filter.value);
+    } else if (code === '_compartment' || code === '_project') {
+      predicate.where('compartments', Operator.ARRAY_CONTAINS, [filter.value], 'UUID[]');
     }
 
     return true;
   }
 
-  #addStringSearchFilter(builder: SelectQuery, details: SearchParameterDetails, filter: Filter): void {
+  /**
+   * Adds a string search filter as "WHERE" clause to the query builder.
+   * @param predicate The select query predicate conjunction.
+   * @param details The search parameter details.
+   * @param filter The search filter.
+   */
+  #addStringSearchFilter(predicate: Conjunction, details: SearchParameterDetails, filter: Filter): void {
     if (filter.operator === FhirOperator.EXACT) {
-      builder.where(details.columnName, Operator.EQUALS, filter.value);
+      predicate.where(details.columnName, Operator.EQUALS, filter.value);
     } else {
-      builder.where(details.columnName, Operator.LIKE, '%' + filter.value + '%');
+      predicate.where(details.columnName, Operator.LIKE, '%' + filter.value + '%');
     }
   }
 
-  #addTokenSearchFilter(builder: SelectQuery, details: SearchParameterDetails, filter: Filter): void {
+  /**
+   * Adds a token search filter as "WHERE" clause to the query builder.
+   * @param predicate The select query predicate conjunction.
+   * @param details The search parameter details.
+   * @param filter The search filter.
+   */
+  #addTokenSearchFilter(predicate: Conjunction, details: SearchParameterDetails, filter: Filter): void {
     const expressions = [];
     for (const valueStr of filter.value.split(',')) {
       const value = details.type === SearchParameterType.BOOLEAN ? valueStr === 'true' : valueStr;
@@ -648,16 +699,21 @@ export class Repository {
         expressions.push(new Condition(details.columnName, Operator.EQUALS, value));
       }
     }
-    builder.whereExpr(new Disjunction(expressions));
+    predicate.whereExpr(new Disjunction(expressions));
   }
 
-  #addReferenceSearchFilter(builder: SelectQuery, details: SearchParameterDetails, filter: Filter): void {
-    // TODO: Support optional resource type when known (param.target.length === 1)
+  /**
+   * Adds a reference search filter as "WHERE" clause to the query builder.
+   * @param predicate The select query predicate conjunction.
+   * @param details The search parameter details.
+   * @param filter The search filter.
+   */
+  #addReferenceSearchFilter(predicate: Conjunction, details: SearchParameterDetails, filter: Filter): void {
     // TODO: Support reference queries (filter.value === 'Patient?identifier=123')
     if (details.array) {
-      builder.where(details.columnName, Operator.ARRAY_CONTAINS, filter.value);
+      predicate.where(details.columnName, Operator.ARRAY_CONTAINS, filter.value);
     } else {
-      builder.where(details.columnName, Operator.EQUALS, filter.value);
+      predicate.where(details.columnName, Operator.EQUALS, filter.value);
     }
   }
 
@@ -1125,8 +1181,11 @@ export class Repository {
     }
     if (this.#context.accessPolicy.resource) {
       for (const resourcePolicy of this.#context.accessPolicy.resource) {
-        if (resourcePolicy.resourceType === resourceType || resourcePolicy.resourceType === '*') {
-          return !resourcePolicy.readonly;
+        if (
+          (resourcePolicy.resourceType === resourceType || resourcePolicy.resourceType === '*') &&
+          !resourcePolicy.readonly
+        ) {
+          return true;
         }
       }
     }
