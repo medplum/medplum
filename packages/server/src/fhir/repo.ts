@@ -26,6 +26,7 @@ import {
   AccessPolicy,
   AccessPolicyResource,
   Bundle,
+  BundleEntry,
   Login,
   Meta,
   OperationOutcome,
@@ -452,22 +453,10 @@ export class Repository {
       return [accessDenied, undefined];
     }
 
-    const client = getClient();
-    const builder = new SelectQuery(resourceType)
-      .column({ tableName: resourceType, columnName: 'id' })
-      .column({ tableName: resourceType, columnName: 'content' });
-
-    this.#addDeletedFilter(builder);
-    this.#addSecurityFilters(builder, resourceType);
-    this.#addSearchFilters(builder, builder.predicate, searchRequest);
-    this.#addSortRules(builder, searchRequest);
-
-    const count = searchRequest.count || 20;
-    const page = searchRequest.page || 0;
-    builder.limit(count);
-    builder.offset(count * page);
-
-    const rows = await builder.execute(client);
+    let entry = undefined;
+    if (searchRequest.count === undefined || searchRequest.count > 0) {
+      entry = await this.#getSearchEntries<T>(searchRequest);
+    }
 
     let total = undefined;
     if (searchRequest.total === 'estimate' || searchRequest.total === 'accurate') {
@@ -479,12 +468,36 @@ export class Repository {
       {
         resourceType: 'Bundle',
         type: 'searchest',
+        entry,
         total,
-        entry: rows.map((row) => ({
-          resource: this.#removeHiddenFields(JSON.parse(row.content as string)),
-        })),
       },
     ];
+  }
+
+  /**
+   * Returns the bundle entries for a search request.
+   * @param searchRequest The search request.
+   * @returns The bundle entries for the search result.
+   */
+  async #getSearchEntries<T extends Resource>(searchRequest: SearchRequest): Promise<BundleEntry<T>[]> {
+    const resourceType = searchRequest.resourceType;
+    const client = getClient();
+    const builder = new SelectQuery(resourceType)
+      .column({ tableName: resourceType, columnName: 'id' })
+      .column({ tableName: resourceType, columnName: 'content' });
+
+    this.#addDeletedFilter(builder);
+    this.#addSecurityFilters(builder, resourceType);
+    this.#addSearchFilters(builder, builder.predicate, searchRequest);
+    this.#addSortRules(builder, searchRequest);
+
+    builder.limit(searchRequest.count || 20);
+    builder.offset(searchRequest.offset || 0);
+
+    const rows = await builder.execute(client);
+    return rows.map((row) => ({
+      resource: this.#removeHiddenFields(JSON.parse(row.content as string)),
+    }));
   }
 
   /**

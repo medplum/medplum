@@ -78,7 +78,7 @@ function addDefaultSearchValues(search: SearchRequest, config: UserConfiguration
   const fields = search.fields ?? getDefaultFields(resourceType);
   const filters = search.filters ?? (!search.resourceType ? getDefaultFilters(resourceType) : undefined);
   const sortRules = search.sortRules ?? getDefaultSortRules(resourceType);
-  const page = search.page ?? 0;
+  const offset = search.offset ?? 0;
   const count = search.count ?? 20;
 
   return {
@@ -87,7 +87,7 @@ function addDefaultSearchValues(search: SearchRequest, config: UserConfiguration
     fields,
     filters,
     sortRules,
-    page,
+    offset,
     count,
   };
 }

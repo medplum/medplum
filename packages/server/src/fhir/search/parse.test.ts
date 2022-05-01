@@ -36,19 +36,11 @@ describe('FHIR Search Utils', () => {
     });
   });
 
-  test('Parse page and count', () => {
-    expect(parseSearchRequest('Patient', { _page: '3', _count: '7' })).toMatchObject({
-      resourceType: 'Patient',
-      page: 3,
-      count: 7,
-    });
-  });
-
   test('Parse count and offset', () => {
     expect(parseSearchRequest('Patient', { _count: '5', _offset: '10' })).toMatchObject({
       resourceType: 'Patient',
-      page: 2,
       count: 5,
+      offset: 10,
     });
   });
 
@@ -64,6 +56,14 @@ describe('FHIR Search Utils', () => {
     expect(parseSearchRequest('Patient', { _total: 'estimate' })).toMatchObject({
       resourceType: 'Patient',
       total: 'estimate',
+    });
+  });
+
+  test('Parse summary', () => {
+    expect(parseSearchRequest('Patient', { _summary: 'true' })).toMatchObject({
+      resourceType: 'Patient',
+      total: 'estimate',
+      count: 0,
     });
   });
 

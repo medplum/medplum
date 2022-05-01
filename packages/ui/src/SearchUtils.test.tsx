@@ -16,7 +16,7 @@ import {
   getSortField,
   isSortDescending,
   setFilters,
-  setPage,
+  setOffset,
   setSort,
   toggleSort,
 } from './SearchUtils';
@@ -25,7 +25,7 @@ describe('SearchUtils', () => {
   test('Set filters', () => {
     const original: SearchRequest = {
       resourceType: 'Patient',
-      page: 2,
+      offset: 10,
       filters: [
         {
           code: 'name',
@@ -44,7 +44,7 @@ describe('SearchUtils', () => {
     const result = setFilters(original, filters);
     expect(result.filters?.length).toBe(1);
     expect(result.filters?.[0].value).toBe('alice');
-    expect(result.page).toBe(0);
+    expect(result.offset).toBe(0);
   });
 
   test('Clear filters', () => {
@@ -267,18 +267,18 @@ describe('SearchUtils', () => {
     });
   });
 
-  test('Set page', () => {
-    expect(setPage({ resourceType: 'Patient' }, 1)).toMatchObject({
+  test('Set offset', () => {
+    expect(setOffset({ resourceType: 'Patient' }, 1)).toMatchObject({
       resourceType: 'Patient',
-      page: 1,
+      offset: 1,
     });
-    expect(setPage({ resourceType: 'Patient', page: 2 }, 2)).toMatchObject({
+    expect(setOffset({ resourceType: 'Patient', offset: 10 }, 10)).toMatchObject({
       resourceType: 'Patient',
-      page: 2,
+      offset: 10,
     });
-    expect(setPage({ resourceType: 'Patient', page: 3 }, 4)).toMatchObject({
+    expect(setOffset({ resourceType: 'Patient', offset: 15 }, 20)).toMatchObject({
       resourceType: 'Patient',
-      page: 4,
+      offset: 20,
     });
   });
 

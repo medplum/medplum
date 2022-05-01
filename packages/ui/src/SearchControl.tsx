@@ -521,9 +521,9 @@ function FilterIcon(): JSX.Element {
 }
 
 function getStart(search: SearchRequest, total: number): number {
-  return Math.min(total, (search.page ?? 0) * (search.count ?? 10) + 1);
+  return Math.min(total, (search.offset ?? 0) + 1);
 }
 
 function getEnd(search: SearchRequest, total: number): number {
-  return Math.min(total, ((search.page ?? 0) + 1) * (search.count ?? 10));
+  return Math.min(total, ((search.offset ?? 0) + 1) * (search.count ?? 10));
 }

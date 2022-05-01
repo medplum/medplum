@@ -102,10 +102,10 @@ describe('Search Utils', () => {
           value: 'alice',
         },
       ],
-      page: 2,
+      offset: 10,
       count: 5,
     });
-    expect(result).toEqual('?_count=5&_fields=id,name&_page=2&name=alice');
+    expect(result).toEqual('?_count=5&_fields=id,name&_offset=10&name=alice');
   });
 
   test('Format Patient search sort', () => {
