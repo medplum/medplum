@@ -58,40 +58,30 @@ export class Condition implements Expression {
   }
 
   protected buildArrayCondition(sql: SqlBuilder): void {
-    if (Array.isArray(this.parameter)) {
-      this.buildArrayContainsArray(sql);
-    } else {
-      this.buildArrayContainsValue(sql);
-    }
-  }
-
-  protected buildArrayContainsArray(sql: SqlBuilder): void {
+    sql.append('(');
+    sql.appendColumn(this.column);
+    sql.append(' IS NOT NULL AND ');
     sql.appendColumn(this.column);
     sql.append('&&ARRAY[');
 
-    let first = true;
-    for (const value of this.parameter) {
-      if (!first) {
-        sql.append(',');
+    if (Array.isArray(this.parameter)) {
+      let first = true;
+      for (const value of this.parameter) {
+        if (!first) {
+          sql.append(',');
+        }
+        sql.param(value);
+        first = false;
       }
-      sql.param(value);
-      first = false;
+    } else {
+      sql.param(this.parameter);
     }
 
     sql.append(']');
     if (this.parameterType) {
       sql.append('::' + this.parameterType);
     }
-  }
-
-  protected buildArrayContainsValue(sql: SqlBuilder): void {
-    sql.append('(');
-    sql.appendColumn(this.column);
-    sql.append(' IS NOT NULL AND ');
-    sql.param(this.parameter);
-    sql.append('=ANY(');
-    sql.appendColumn(this.column);
-    sql.append('))');
+    sql.append(')');
   }
 
   protected buildSimpleCondition(sql: SqlBuilder): void {
