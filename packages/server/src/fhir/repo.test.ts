@@ -59,6 +59,7 @@ describe('FHIR Repo', () => {
     });
     assertOk(outcome1, result1);
     expect(result1.total).toBeUndefined();
+    expect(result1.link?.length).toBe(3);
 
     const [outcome2, result2] = await systemRepo.search({
       resourceType: 'Patient',
@@ -82,6 +83,17 @@ describe('FHIR Repo', () => {
     assertOk(outcome4, result4);
     expect(result4.total).toBeDefined();
     expect(typeof result4.total).toBe('number');
+  });
+
+  test('Search count=0', async () => {
+    const [outcome1, result1] = await systemRepo.search({
+      resourceType: 'Patient',
+      count: 0,
+    });
+    assertOk(outcome1, result1);
+    expect(result1.entry).toBeUndefined();
+    expect(result1.link).toBeDefined();
+    expect(result1.link?.length).toBe(1);
   });
 
   test('Repo read malformed reference', async () => {

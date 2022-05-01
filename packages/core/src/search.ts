@@ -1,8 +1,10 @@
+export const DEFAULT_SEARCH_COUNT = 20;
+
 export interface SearchRequest {
   readonly resourceType: string;
   filters?: Filter[];
   sortRules?: SortRule[];
-  page?: number;
+  offset?: number;
   count?: number;
   fields?: string[];
   name?: string;
@@ -95,15 +97,15 @@ export function parseSearchDefinition(url: string): SearchRequest {
   let filters: Filter[] | undefined = undefined;
   let sortRules: SortRule[] | undefined = undefined;
   let fields: string[] | undefined = undefined;
-  let page = undefined;
+  let offset = undefined;
   let count = undefined;
   let total = undefined;
 
   params.forEach((value, key) => {
     if (key === '_fields') {
       fields = value.split(',');
-    } else if (key === '_page') {
-      page = parseInt(value);
+    } else if (key === '_offset') {
+      offset = parseInt(value);
     } else if (key === '_count') {
       count = parseInt(value);
     } else if (key === '_total') {
@@ -121,7 +123,7 @@ export function parseSearchDefinition(url: string): SearchRequest {
     resourceType,
     filters,
     fields,
-    page,
+    offset,
     count,
     total,
     sortRules,
@@ -206,15 +208,15 @@ export function formatSearchQuery(definition: SearchRequest): string {
     params.push(formatSortRules(definition.sortRules));
   }
 
-  if (definition.page && definition.page > 0) {
-    params.push('_page=' + definition.page);
+  if (definition.offset !== undefined) {
+    params.push('_offset=' + definition.offset);
   }
 
-  if (definition.count && definition.count > 0) {
+  if (definition.count !== undefined) {
     params.push('_count=' + definition.count);
   }
 
-  if (definition.total) {
+  if (definition.total !== undefined) {
     params.push('_total=' + encodeURIComponent(definition.total));
   }
 

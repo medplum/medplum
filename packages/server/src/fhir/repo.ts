@@ -5,7 +5,9 @@ import {
   badRequest,
   created,
   deepEquals,
+  DEFAULT_SEARCH_COUNT,
   Filter,
+  formatSearchQuery,
   getSearchParameterDetails,
   gone,
   isGone,
@@ -26,6 +28,8 @@ import {
   AccessPolicy,
   AccessPolicyResource,
   Bundle,
+  BundleEntry,
+  BundleLink,
   Login,
   Meta,
   OperationOutcome,
@@ -452,22 +456,10 @@ export class Repository {
       return [accessDenied, undefined];
     }
 
-    const client = getClient();
-    const builder = new SelectQuery(resourceType)
-      .column({ tableName: resourceType, columnName: 'id' })
-      .column({ tableName: resourceType, columnName: 'content' });
-
-    this.#addDeletedFilter(builder);
-    this.#addSecurityFilters(builder, resourceType);
-    this.#addSearchFilters(builder, builder.predicate, searchRequest);
-    this.#addSortRules(builder, searchRequest);
-
-    const count = searchRequest.count || 20;
-    const page = searchRequest.page || 0;
-    builder.limit(count);
-    builder.offset(count * page);
-
-    const rows = await builder.execute(client);
+    let entry = undefined;
+    if (searchRequest.count === undefined || searchRequest.count > 0) {
+      entry = await this.#getSearchEntries<T>(searchRequest);
+    }
 
     let total = undefined;
     if (searchRequest.total === 'estimate' || searchRequest.total === 'accurate') {
@@ -479,12 +471,81 @@ export class Repository {
       {
         resourceType: 'Bundle',
         type: 'searchest',
+        entry,
         total,
-        entry: rows.map((row) => ({
-          resource: this.#removeHiddenFields(JSON.parse(row.content as string)),
-        })),
+        link: this.#getSearchLinks(searchRequest),
       },
     ];
+  }
+
+  /**
+   * Returns the bundle entries for a search request.
+   * @param searchRequest The search request.
+   * @returns The bundle entries for the search result.
+   */
+  async #getSearchEntries<T extends Resource>(searchRequest: SearchRequest): Promise<BundleEntry<T>[]> {
+    const resourceType = searchRequest.resourceType;
+    const client = getClient();
+    const builder = new SelectQuery(resourceType)
+      .column({ tableName: resourceType, columnName: 'id' })
+      .column({ tableName: resourceType, columnName: 'content' });
+
+    this.#addDeletedFilter(builder);
+    this.#addSecurityFilters(builder, resourceType);
+    this.#addSearchFilters(builder, builder.predicate, searchRequest);
+    this.#addSortRules(builder, searchRequest);
+
+    builder.limit(searchRequest.count || 20);
+    builder.offset(searchRequest.offset || 0);
+
+    const rows = await builder.execute(client);
+    return rows.map((row) => ({
+      resource: this.#removeHiddenFields(JSON.parse(row.content as string)),
+    }));
+  }
+
+  /**
+   * Returns the search bundle links for a search request.
+   * At minimum, the 'self' link will be returned.
+   * If "count" does not equal zero, then 'first', 'next', and 'previous' links will be included.
+   * @param searchRequest The search request.
+   * @returns The search bundle links.
+   */
+  #getSearchLinks(searchRequest: SearchRequest): BundleLink[] {
+    const result: BundleLink[] = [
+      {
+        relation: 'self',
+        url: this.#getSearchUrl(searchRequest),
+      },
+    ];
+
+    if (searchRequest.count === undefined || searchRequest.count > 0) {
+      const count = searchRequest.count || DEFAULT_SEARCH_COUNT;
+      const offset = searchRequest.offset || 0;
+
+      result.push({
+        relation: 'first',
+        url: this.#getSearchUrl({ ...searchRequest, offset: 0 }),
+      });
+
+      result.push({
+        relation: 'next',
+        url: this.#getSearchUrl({ ...searchRequest, offset: offset + count }),
+      });
+
+      if (offset > 0) {
+        result.push({
+          relation: 'previous',
+          url: this.#getSearchUrl({ ...searchRequest, offset: offset - count }),
+        });
+      }
+    }
+
+    return result;
+  }
+
+  #getSearchUrl(searchRequest: SearchRequest): string {
+    return `${getConfig().baseUrl}fhir/R4/${searchRequest.resourceType}${formatSearchQuery(searchRequest)}`;
   }
 
   /**

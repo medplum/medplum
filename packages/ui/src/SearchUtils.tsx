@@ -72,7 +72,7 @@ export function setFilters(definition: SearchRequest, filters: Filter[]): Search
   return {
     ...definition,
     filters: filters,
-    page: 0,
+    offset: 0,
     name: undefined,
   };
 }
@@ -352,17 +352,17 @@ export function hasFilterOnField(definition: SearchRequest, code: string): boole
 }
 
 /**
- * Sets the page number (starting at zero).
+ * Sets the offset (starting at zero).
  *
- * @param {number} page The page number.
+ * @param {number} offset The offset number.
  */
-export function setPage(definition: SearchRequest, page: number): SearchRequest {
-  if (definition.page === page) {
+export function setOffset(definition: SearchRequest, offset: number): SearchRequest {
+  if (definition.offset === offset) {
     return definition;
   }
   return {
     ...definition,
-    page: page,
+    offset,
     name: undefined,
   };
 }
@@ -374,7 +374,10 @@ export function setPage(definition: SearchRequest, page: number): SearchRequest 
  * @return {boolean} True if the page actually moved; false otherwise.
  */
 export function movePage(definition: SearchRequest, delta: number): SearchRequest {
-  return setPage(definition, Math.max((definition.page || 0) + (delta || 0), 0));
+  const count = definition.count ?? 20;
+  const currOffset = definition.offset ?? 0;
+  const newOffset = currOffset + delta * count;
+  return setOffset(definition, Math.max(newOffset, 0));
 }
 
 /**
