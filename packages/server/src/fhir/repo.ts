@@ -5,7 +5,9 @@ import {
   badRequest,
   created,
   deepEquals,
+  DEFAULT_SEARCH_COUNT,
   Filter,
+  formatSearchQuery,
   getSearchParameterDetails,
   gone,
   isGone,
@@ -27,6 +29,7 @@ import {
   AccessPolicyResource,
   Bundle,
   BundleEntry,
+  BundleLink,
   Login,
   Meta,
   OperationOutcome,
@@ -470,6 +473,7 @@ export class Repository {
         type: 'searchest',
         entry,
         total,
+        link: this.#getSearchLinks(searchRequest),
       },
     ];
   }
@@ -498,6 +502,50 @@ export class Repository {
     return rows.map((row) => ({
       resource: this.#removeHiddenFields(JSON.parse(row.content as string)),
     }));
+  }
+
+  /**
+   * Returns the search bundle links for a search request.
+   * At minimum, the 'self' link will be returned.
+   * If "count" does not equal zero, then 'first', 'next', and 'previous' links will be included.
+   * @param searchRequest The search request.
+   * @returns The search bundle links.
+   */
+  #getSearchLinks(searchRequest: SearchRequest): BundleLink[] {
+    const result: BundleLink[] = [
+      {
+        relation: 'self',
+        url: this.#getSearchUrl(searchRequest),
+      },
+    ];
+
+    if (searchRequest.count === undefined || searchRequest.count > 0) {
+      const count = searchRequest.count || DEFAULT_SEARCH_COUNT;
+      const offset = searchRequest.offset || 0;
+
+      result.push({
+        relation: 'first',
+        url: this.#getSearchUrl({ ...searchRequest, offset: 0 }),
+      });
+
+      result.push({
+        relation: 'next',
+        url: this.#getSearchUrl({ ...searchRequest, offset: offset + count }),
+      });
+
+      if (offset > 0) {
+        result.push({
+          relation: 'previous',
+          url: this.#getSearchUrl({ ...searchRequest, offset: offset - count }),
+        });
+      }
+    }
+
+    return result;
+  }
+
+  #getSearchUrl(searchRequest: SearchRequest): string {
+    return `${getConfig().baseUrl}fhir/R4/${searchRequest.resourceType}${formatSearchQuery(searchRequest)}`;
   }
 
   /**

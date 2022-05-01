@@ -525,5 +525,5 @@ function getStart(search: SearchRequest, total: number): number {
 }
 
 function getEnd(search: SearchRequest, total: number): number {
-  return Math.min(total, ((search.offset ?? 0) + 1) * (search.count ?? 10));
+  return Math.min(total, ((search.offset ?? 0) + 1) * (search.count ?? DEFAULT_SEARCH_COUNT));
 }

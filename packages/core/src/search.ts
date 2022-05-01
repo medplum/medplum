@@ -1,3 +1,5 @@
+export const DEFAULT_SEARCH_COUNT = 20;
+
 export interface SearchRequest {
   readonly resourceType: string;
   filters?: Filter[];

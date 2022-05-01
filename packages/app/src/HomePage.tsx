@@ -1,4 +1,11 @@
-import { Filter, formatSearchQuery, parseSearchDefinition, SearchRequest, SortRule } from '@medplum/core';
+import {
+  DEFAULT_SEARCH_COUNT,
+  Filter,
+  formatSearchQuery,
+  parseSearchDefinition,
+  SearchRequest,
+  SortRule,
+} from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
@@ -79,7 +86,7 @@ function addDefaultSearchValues(search: SearchRequest, config: UserConfiguration
   const filters = search.filters ?? (!search.resourceType ? getDefaultFilters(resourceType) : undefined);
   const sortRules = search.sortRules ?? getDefaultSortRules(resourceType);
   const offset = search.offset ?? 0;
-  const count = search.count ?? 20;
+  const count = search.count ?? DEFAULT_SEARCH_COUNT;
 
   return {
     ...search,
