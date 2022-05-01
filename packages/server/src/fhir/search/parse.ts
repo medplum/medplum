@@ -139,10 +139,6 @@ class SearchParser implements SearchRequest {
         this.#parseSortRule(value);
         break;
 
-      // case '_page':
-      //   this.page = parseInt(value);
-      //   break;
-
       case '_count':
         this.count = parseInt(value);
         break;
