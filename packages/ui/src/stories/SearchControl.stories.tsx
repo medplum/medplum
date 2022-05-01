@@ -69,7 +69,7 @@ export const ExtraFields = (): JSX.Element => {
 export const ServiceRequests = (): JSX.Element => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'ServiceRequest',
-    fields: ['id', '_lastUpdated', 'subject', 'code', 'status', 'orderDetail'],
+    fields: ['id', '_lastUpdated', 'subject', 'code', 'status', 'orderDetail', 'authoredOn'],
   });
 
   return (

@@ -316,6 +316,7 @@ export const HomerServiceRequest: ServiceRequest = {
     },
   ],
   specimen: [createReference(HomerSimpsonSpecimen)],
+  authoredOn: '2020-01-01T12:00:00Z',
 };
 
 export const BartSimpson: Patient = {

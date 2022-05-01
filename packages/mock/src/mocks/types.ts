@@ -95,6 +95,14 @@ export const PatientSearchParameters: SearchParameter[] = [
   },
   {
     resourceType: 'SearchParameter',
+    id: 'ServiceRequest-authored',
+    code: 'authored',
+    base: ['ServiceRequest'],
+    type: 'date',
+    expression: 'ServiceRequest.authoredOn',
+  },
+  {
+    resourceType: 'SearchParameter',
     id: 'Observation-value-quantity',
     code: 'value-quantity',
     base: ['Observation'],
