@@ -104,9 +104,6 @@ function getFieldDefinition(
   if (elementDefinition && !searchParam && typeSchema.searchParams) {
     // Try to find a search parameter based on the property
     // For example, name="birthDate", try to find searchParam="birthdate"
-    // const path = `${resourceType}.${name}`;
-    // searchParam = Object.values(typeSchema.searchParams).find((p) => p.expression?.includes(path));
-    // searchParam = getSearchParamForElement(typeSchema, resourceType, name);
     const path = `${resourceType}.${name}`;
     searchParam = Object.values(typeSchema.searchParams).find((p) => p.expression?.includes(path));
   }

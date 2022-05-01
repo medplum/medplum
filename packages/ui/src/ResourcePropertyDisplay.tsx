@@ -8,6 +8,7 @@ import { BackboneElementDisplay } from './BackboneElementDisplay';
 import { CodeableConceptDisplay } from './CodeableConceptDisplay';
 import { CodingDisplay } from './CodingDisplay';
 import { ContactPointDisplay } from './ContactPointDisplay';
+import { DateTimeDisplay } from './DateTimeDisplay';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { IdentifierDisplay } from './IdentifierDisplay';
 import { PeriodDisplay } from './PeriodDisplay';
@@ -53,8 +54,6 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.canonical:
     case PropertyType.code:
     case PropertyType.date:
-    case PropertyType.dateTime:
-    case PropertyType.instant:
     case PropertyType.integer:
     case PropertyType.positiveInt:
     case PropertyType.string:
@@ -62,6 +61,9 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.uri:
     case PropertyType.url:
       return <div>{value}</div>;
+    case PropertyType.dateTime:
+    case PropertyType.instant:
+      return <DateTimeDisplay value={value} />;
     case PropertyType.markdown:
       return <pre>{value}</pre>;
     case PropertyType.Address:
