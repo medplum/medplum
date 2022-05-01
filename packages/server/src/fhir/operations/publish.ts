@@ -107,7 +107,7 @@ export function preprocessBotCode(input: string): string {
   // Get all import statements
   // See: https://stackoverflow.com/a/69867053
   // See: https://regex101.com/r/0s3fBy/1
-  const importRegex = /import\s*([\w\d\s{},*]+)\s*from\s*['"]([^'"\n]+)['"]/g;
+  const importRegex = /import\s*([\w\s{},*]+)\s*from\s*['"]([^'"\n]+)['"]/g;
   const matches = input.matchAll(importRegex);
   for (const match of matches) {
     const originalCode = match[0];
