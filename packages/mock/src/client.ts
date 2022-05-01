@@ -60,20 +60,11 @@ export class MockClient extends MedplumClient {
           console.log('MockClient', method, path);
         }
 
-        const result = mockHandler(method, path, options);
+        const response = mockHandler(method, path, options);
 
-        if (clientOptions?.debug && !result) {
+        if (clientOptions?.debug && !response) {
           console.log('MockClient: not found', method, path);
         }
-
-        // const response: any = {
-        //   request: {
-        //     url,
-        //     options,
-        //   },
-        //   ...result,
-        // };
-        const response = result;
 
         if (clientOptions?.debug) {
           console.log('MockClient', JSON.stringify(response, null, 2));
