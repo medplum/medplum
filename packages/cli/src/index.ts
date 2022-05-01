@@ -22,34 +22,6 @@ export async function main(medplum: MedplumClient, argv: string[]): Promise<void
   }
 }
 
-function getBotCode(filePath: string): string {
-  let code = readFileSync(filePath, 'utf8');
-  let functionName = undefined;
-  let useAwait = false;
-
-  const functionMatch = code.match(/export\s+function\s+(\w+)/);
-  if (functionMatch) {
-    functionName = functionMatch[1];
-  }
-
-  const asyncMatch = code.match(/export\s+async\s+function\s+(\w+)/);
-  if (asyncMatch) {
-    functionName = asyncMatch[1];
-    useAwait = true;
-  }
-
-  code = code.replace(/export\s+/, '');
-  if (functionName) {
-    code += '\n\n';
-    if (useAwait) {
-      code += 'await ';
-    }
-    code += functionName + '(medplum, input);\n';
-  }
-
-  return code;
-}
-
 async function deployBot(medplum: MedplumClient, argv: string[]): Promise<void> {
   if (argv.length < 5) {
     console.log('Usage: medplum deploy-bot <bot-name> <bot-id>');
@@ -79,7 +51,7 @@ async function deployBot(medplum: MedplumClient, argv: string[]): Promise<void> 
     console.log('Update bot code.....');
     const result = await medplum.updateResource({
       ...bot,
-      code: getBotCode(filePath),
+      code: readFileSync(filePath, 'utf8'),
     });
     console.log(JSON.stringify(result, null, 2));
   } catch (err) {
