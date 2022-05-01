@@ -1,4 +1,10 @@
-import { Filter, IndexedStructureDefinition, parseSearchDefinition, SearchRequest } from '@medplum/core';
+import {
+  DEFAULT_SEARCH_COUNT,
+  Filter,
+  IndexedStructureDefinition,
+  parseSearchDefinition,
+  SearchRequest,
+} from '@medplum/core';
 import { Bundle, OperationOutcome, Resource, SearchParameter, UserConfiguration } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
