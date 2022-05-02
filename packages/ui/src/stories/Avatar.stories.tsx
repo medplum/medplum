@@ -12,9 +12,9 @@ export default {
 export const Image = (): JSX.Element => (
   <Document>
     <div style={{ display: 'flex', width: 168, justifyContent: 'space-between' }}>
-      <Avatar alt="George Washington" src="/avatars/1.jpg" />
-      <Avatar alt="Mona Lisa" src="/avatars/2.jpg" />
-      <Avatar alt="Elmo" src="/avatars/3.jpg" />
+      <Avatar alt="George Washington" src="./avatars/1.jpg" />
+      <Avatar alt="Mona Lisa" src="./avatars/2.jpg" />
+      <Avatar alt="Elmo" src="./avatars/3.jpg" />
     </div>
   </Document>
 );

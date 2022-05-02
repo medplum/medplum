@@ -4,6 +4,8 @@ This library contains [TypeScript](https://www.typescriptlang.org/) type definit
 
 ## Installation
 
+Add as a dependency:
+
 ```bash
 npm install --save-dev @medplum/fhirtypes
 ```
@@ -12,7 +14,7 @@ npm install --save-dev @medplum/fhirtypes
 
 Consider the following untyped code:
 
-```typescript
+```ts
 const myPatient = {
   resourceType: 'Patient',
   name: 'George Washington',
@@ -23,7 +25,7 @@ Keen observers will note that `Patient.name` should not be a string. Instead, it
 
 Let's add the type definition and see what happens:
 
-```typescript
+```ts
 import { Patient } from '@medplum/fhirtypes';
 
 const myPatient: Patient = {
@@ -42,7 +44,7 @@ And now you will receive typeahead support:
 
 So we can build a well-formed example:
 
-```typescript
+```ts
 import { Patient } from '@medplum/fhirtypes';
 
 const myPatient: Patient = {
@@ -55,6 +57,10 @@ const myPatient: Patient = {
   ],
 };
 ```
+
+## About Medplum
+
+Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications. Medplum includes a FHIR server, React component library, and developer app.
 
 ## License
 
