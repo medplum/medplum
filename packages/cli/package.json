@@ -1,0 +1,45 @@
+{
+  "name": "@medplum/cli",
+  "version": "0.9.1",
+  "description": "Medplum Command Line Interface",
+  "author": "Medplum <hello@medplum.com>",
+  "license": "Apache-2.0",
+  "homepage": "https://www.medplum.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/medplum/medplum.git",
+    "directory": "packages/cli"
+  },
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "npm run clean && tsc",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@medplum/core": "0.9.1",
+    "dotenv": "16.0.0",
+    "node-fetch": "2.6.7"
+  },
+  "devDependencies": {
+    "@medplum/fhirtypes": "0.9.1",
+    "@medplum/mock": "0.9.1"
+  },
+  "bin": {
+    "medplum": "./dist/index.js"
+  },
+  "keywords": [
+    "medplum",
+    "fhir",
+    "healthcare",
+    "interoperability",
+    "json",
+    "serialization",
+    "hl7",
+    "standards",
+    "clinical",
+    "dstu2",
+    "stu3",
+    "r4",
+    "normative"
+  ]
+}

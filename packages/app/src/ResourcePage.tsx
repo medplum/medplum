@@ -258,7 +258,7 @@ interface ResourceTabProps {
 
 function ResourceTab(props: ResourceTabProps): JSX.Element | null {
   const medplum = useMedplum();
-  const [code, setCode] = useState<string | undefined>();
+  const [code, setCode] = useState<string | undefined>((props.resource as Bot)?.code);
   switch (props.name) {
     case 'details':
       return <ResourceTable value={props.resource} />;

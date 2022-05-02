@@ -59,6 +59,13 @@ describe('MockClient', () => {
     ).rejects.toBeDefined();
   });
 
+  test('Who am i', () => {
+    const client = new MockClient();
+    expect(client.get('auth/me')).resolves.toMatchObject({
+      profile: { reference: 'Practitioner/123' },
+    });
+  });
+
   test('Batch request', async () => {
     const client = new MockClient();
     await expect(

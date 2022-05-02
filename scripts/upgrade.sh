@@ -2,6 +2,7 @@
 
 npx npm-check-updates -u --packageFile package.json
 npx npm-check-updates -u --packageFile packages/app/package.json
+npx npm-check-updates -u --packageFile packages/cli/package.json
 npx npm-check-updates -u --packageFile packages/core/package.json
 npx npm-check-updates -u --packageFile packages/definitions/package.json
 npx npm-check-updates -u --packageFile packages/docs/package.json

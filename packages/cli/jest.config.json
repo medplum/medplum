@@ -1,0 +1,12 @@
+{
+  "testEnvironment": "node",
+  "transform": {
+    "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
+  },
+  "moduleFileExtensions": ["ts", "js", "json", "node"],
+  "testMatch": ["**/src/**/*.test.ts"],
+  "collectCoverage": true,
+  "coverageDirectory": "coverage",
+  "coverageReporters": ["json", "text"],
+  "collectCoverageFrom": ["**/src/**/*"]
+}

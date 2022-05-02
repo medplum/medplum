@@ -139,7 +139,12 @@ describe('Execute', () => {
         resourceType: 'Bot',
         name: 'Test Bot',
         runtimeVersion: 'awslambda',
-        code: `console.log('input', input); return input;`,
+        code: `
+        export async function handler() {
+          console.log('input', input);
+          return input;
+        }
+        `,
       });
     expect(res1.status).toBe(201);
     const bot = res1.body as Bot;

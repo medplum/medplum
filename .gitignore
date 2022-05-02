@@ -11,6 +11,7 @@ node_modules/
 
 # Output
 packages/app/dist/
+packages/cli/dist/
 packages/core/dist/
 packages/core/docs/
 packages/definitions/dist/**/*.js
