@@ -1,14 +1,10 @@
-# Medplum
-
-Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications. Medplum includes a FHIR server, React component library, and developer app.
-
 # Medplum React Component Library
 
 The Medplum React Component Library provides many helpful components to quickly build your healthcare web app.
 
 The Medplum SDK can be used with any compliant FHIR server. However, some advanced features are only available when paired with a Medplum server.
 
-Check out a live demo: [https://storybook.medplum.com/](https://storybook.medplum.com/)
+Check out a live demo: [https://docs.medplum.com/storybook/index.html](https://docs.medplum.com/storybook/index.html)
 
 ## Key Features
 
@@ -21,21 +17,26 @@ Check out a live demo: [https://storybook.medplum.com/](https://storybook.medplu
 
 ## Installation
 
-Note that [`medplum`](https://www.npmjs.com/package/medplum) and [`react`](https://www.npmjs.com/package/react) are peer dependencies:
+Add as a dependency:
 
 ```
-npm install --save-dev medplum medplum-ui react react-dom
+npm install @medplum/ui
 ```
+
+Note the following peer dependencies:
+- [@medplum/core](https://www.npmjs.com/package/@medplum/core)
+- [@medplum/fhirpath](https://www.npmjs.com/package/@medplum/fhirpath)
+- [react](https://www.npmjs.com/package/react)
+- [react-dom](https://www.npmjs.com/package/react-dom)
+- [react-router-dom](https://www.npmjs.com/package/react-router-dom)
 
 ## Basic Usage
 
 ```tsx
 import { MedplumClient } from '@medplum/core';
+import { MedplumProvider } from '@medplum/ui';
 
-const medplum = new MedplumClient({
-  baseUrl: 'https://www.example.com/fhir/R4/',
-  clientId: 'MY_CLIENT_ID',
-});
+const medplum = new MedplumClient();
 
 export function App() {
   return (
@@ -81,6 +82,10 @@ export function ChatPage() {
   );
 }
 ```
+
+## About Medplum
+
+Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications. Medplum includes a FHIR server, React component library, and developer app.
 
 ## License
 

@@ -2,13 +2,15 @@
 
 The Medplum CLI (Command Line Interface) is a set of command line tools to quickly deploy Medplum web applications and Medplum bots.
 
-## Usage
+## Installation
 
 Add as a dependency:
 
 ```bash
-npm i -D @medplum/cli
+npm install @medplum/cli
 ```
+
+## Usage
 
 Syntax:
 
@@ -49,7 +51,7 @@ Authentication requires client credentials in the form of environment variables 
 
 Write your bot.  This can be TypeScript.  It can reference `@medplum/core` and `node-fetch`:
 
-```typescript
+```ts
 import { MedplumClient } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 
@@ -83,6 +85,10 @@ You can then use the Medplum CLI to deploy it.
 ```bash
 npm run deploy:hello-world
 ```
+
+## About Medplum
+
+Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications. Medplum includes a FHIR server, React component library, and developer app.
 
 ## License
 

@@ -1,7 +1,3 @@
-# Medplum
-
-Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications. Medplum includes a FHIR server, React component library, and developer app.
-
 # Medplum JS Client Library
 
 The Medplum JS Client Library is a pure TypeScript library for calling a FHIR server from the browser.
@@ -16,13 +12,25 @@ The Medplum JS Client Library is a pure TypeScript library for calling a FHIR se
 
 ## Installation
 
-```
-npm install medplum
+Add as a dependency:
+
+```bash
+npm install @medplum/core
 ```
 
 ## Basic Usage
 
-```typescript
+Create a new `MedplumClient`:
+
+```ts
+import { MedplumClient } from '@medplum/core';
+
+const medplum = new MedplumClient();
+```
+
+Create a `MedplumClient` with additional configuration options:
+
+```ts
 import { MedplumClient } from '@medplum/core';
 
 const medplum = new MedplumClient({
@@ -31,12 +39,11 @@ const medplum = new MedplumClient({
 });
 ```
 
-## Authenticating with OAuth
+## Authenticate with client credenials
 
-Authenticate with a FHIR server via OAuth2 redirect:
-
-```typescript
-medplum.signInWithRedirect().then((user) => console.log(user));
+```ts
+const medplum = new MedplumClient();
+medplum.clientCredentials(MY_CLIENT_ID, MY_CLIENT_SECRET);
 ```
 
 ## Authenticating with Medplum
@@ -50,25 +57,39 @@ Before you begin
 
 After that, you can use the `startLogin()` method:
 
-```typescript
+```ts
 const loginResult = await medplum.startLogin(email, password, remember);
 const profile = await medplum.processCode(loginResult.code);
 console.log(profile);
+```
+
+## Authenticating with OAuth
+
+Authenticate with a FHIR server via OAuth2 redirect:
+
+```ts
+medplum.signInWithRedirect().then((user) => console.log(user));
 ```
 
 ## Search
 
 Search for any resource using a [FHIR search](https://www.hl7.org/fhir/search.html) string:
 
-```typescript
+```ts
+search<T extends Resource>(query: string | SearchRequest, options: RequestInit = {}): Promise<Bundle<T>>
+```
+
+Example:
+
+```ts
 medplum.search('Patient?given=eve').then((bundle) => {
   bundle.entry.forEach((entry) => console.log(entry.resource));
 });
 ```
 
-Search using a structured object:
+Example using a structured object:
 
-```typescript
+```ts
 medplum
   .search({
     resourceType: 'Patient',
@@ -87,10 +108,16 @@ medplum
 
 ## Create
 
-Create a new resource:
+[Create resource](https://www.hl7.org/fhir/http.html#create):
 
-```typescript
-medplum.create({
+```ts
+createResource<T extends Resource>(resource: T): Promise<T>
+```
+
+Example:
+
+```ts
+medplum.createResource({
   resourceType: 'Observation',
   subject: {
     reference: 'Patient/123',
@@ -102,25 +129,127 @@ medplum.create({
 });
 ```
 
-## Read
+## Read a resource
 
-Read a resource by ID:
+[Read a resource by ID](https://www.hl7.org/fhir/http.html#read):
 
-```typescript
-medplum.read('Patient', '123');
+```ts
+readResource<T extends Resource>(resourceType: string, id: string): Promise<T>
 ```
 
-Read resource history:
+Example:
 
-```typescript
-medplum.readHistory('Patient', '123');
+```ts
+const patient = await medplum.readResource('Patient', '123');
 ```
 
-Read a specific version:
+## Read resource history
 
-```typescript
-medplum.readVersion('Patient', '123', '456');
+[Read resource history](https://www.hl7.org/fhir/http.html#history):
+
+```ts
+readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>>
 ```
+
+Example:
+
+```ts
+const historyBundle = await medplum.readHistory('Patient', '123');
+```
+
+## Read resource version
+
+[Read a specific version](https://www.hl7.org/fhir/http.html#vread):
+
+```ts
+readVersion<T extends Resource>(resourceType: string, id: string, vid: string): Promise<T>
+```
+
+Example:
+
+```ts
+const version = await medplum.readVersion('Patient', '123', '456');
+```
+
+## Update a resource
+
+[Update a resource](https://www.hl7.org/fhir/http.html#update):
+
+```ts
+updateResource<T extends Resource>(resource: T): Promise<T>
+```
+
+Example:
+
+```ts
+const result = await medplum.updateResource({
+  resourceType: 'Patient',
+  id: '123',
+  name: [{
+   family: 'Smith',
+   given: ['John']
+  }]
+});
+console.log(result.meta.versionId);
+```
+
+## Delete a resource
+
+[Delete a resource](https://www.hl7.org/fhir/http.html#delete):
+
+```ts
+deleteResource(resourceType: string, id: string): Promise<any>
+```
+
+Example:
+
+```ts
+await medplum.deleteResource('Patient', '123');
+```
+
+## Patch a resource
+
+[Patch a resource](https://www.hl7.org/fhir/http.html#patch):
+
+```ts
+patchResource<T extends Resource>(resourceType: string, id: string, operations: Operation[]): Promise<T>
+```
+
+Example:
+
+```ts
+const result = await medplum.patchResource('Patient', '123', [
+  {op: 'replace', path: '/name/0/family', value: 'Smith'},
+]);
+console.log(result.meta.versionId);
+```
+
+## GraphQL
+
+[Execute a GraphQL query](https://www.hl7.org/fhir/graphql.html):
+
+```ts
+graphql(query: string, options?: RequestInit): Promise<any>
+```
+
+Example:
+
+```ts
+const result = await graphql(`
+  {
+    PatientList(name: "Alice") {
+      name {
+        given,
+        family
+      }
+    }
+  }
+`);
+```
+
+## About Medplum
+
+Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications. Medplum includes a FHIR server, React component library, and developer app.
 
 ## License
 
