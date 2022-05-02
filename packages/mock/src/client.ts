@@ -351,7 +351,7 @@ function mockFhirBatchHandler(method: string, path: string, options: any): any {
       const url = 'fhir/R4/' + e?.request?.url;
       const method = e?.request?.method as string;
       const resource = mockHandler(method, url, null);
-      if (resource && resource?.resourceType === 'OperationOutcome') {
+      if (resource?.resourceType === 'OperationOutcome') {
         return { resource, response: { status: getStatus(resource).toString() } };
       } else if (resource) {
         return { resource, response: { status: '200' } };

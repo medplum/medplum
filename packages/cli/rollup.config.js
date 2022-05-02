@@ -4,10 +4,6 @@ import typescript from '@rollup/plugin-typescript';
 const extensions = ['.ts'];
 
 export default {
-  // acorn: {
-  //   //Let the hashbang be
-  //   allowHashBang: true,
-  // },
   input: 'src/index.ts',
   output: [
     {
