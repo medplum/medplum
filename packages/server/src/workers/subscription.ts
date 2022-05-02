@@ -370,7 +370,7 @@ export async function execBot(
   let logResult: string;
 
   try {
-    const result = await executeBot({ bot, runAs, input: resource });
+    const result = await executeBot({ bot, runAs, input: resource, contentType: 'application/fhir+json' });
     outcome = result.success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure;
     logResult = result.logResult;
   } catch (error) {

@@ -1,5 +1,5 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { assertOk, createReference, resolveId } from '@medplum/core';
+import { assertOk, createReference, Hl7Message, resolveId } from '@medplum/core';
 import { AuditEvent, Bot, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import fetch from 'node-fetch';
@@ -26,6 +26,7 @@ export interface BotExecutionRequest {
   readonly bot: Bot;
   readonly runAs: ProjectMembership;
   readonly input: any;
+  readonly contentType: string;
 }
 
 export interface BotExecutionResult {
@@ -52,6 +53,7 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
     bot,
     runAs: res.locals.membership as ProjectMembership,
     input: req.body,
+    contentType: req.header('content-type') as string,
   });
 
   // Create the audit event
@@ -105,7 +107,7 @@ async function isBotEnabled(bot: Bot): Promise<boolean> {
  * @returns The bot execution result.
  */
 async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionResult> {
-  const { bot, runAs, input } = request;
+  const { bot, runAs, input, contentType } = request;
 
   // Create the Login resource
   const [loginOutcome, login] = await systemRepo.createResource<Login>({
@@ -129,7 +131,8 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
   const name = `medplum-bot-lambda-${bot.id}`;
   const payload = {
     accessToken,
-    input,
+    input: input instanceof Hl7Message ? input.toString() : input,
+    contentType,
   };
 
   // Build the command
@@ -145,10 +148,12 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
   try {
     const response = await client.send(command);
     const logBuffer = Buffer.from(response.LogResult as string, 'base64');
+    const responseStr = response.Payload ? new TextDecoder().decode(response.Payload) : undefined;
+    const returnValue = responseStr && isJsonContentType(contentType) ? JSON.parse(responseStr) : responseStr;
     return {
       success: true,
       logResult: logBuffer.toString('ascii'),
-      returnValue: response.Payload ? JSON.parse(new TextDecoder().decode(response.Payload)) : undefined,
+      returnValue,
     };
   } catch (err) {
     return {
@@ -214,6 +219,10 @@ function getResponseContentType(req: Request): string {
 
   // Default to FHIR
   return 'application/fhir+json';
+}
+
+function isJsonContentType(contentType: string): boolean {
+  return contentType === 'application/json' || contentType === 'application/fhir+json';
 }
 
 /**

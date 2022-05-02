@@ -16,14 +16,17 @@ import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 
 const WRAPPER_CODE = `import fetch from './fetch.mjs';
-import { assertOk, createReference, LegacyRepositoryClient, MedplumClient } from './medplum.mjs';
-import userCode from './user.mjs';
+import { assertOk, createReference, Hl7Message, LegacyRepositoryClient, MedplumClient } from './medplum.mjs';
+import * as userCode from './user.mjs';
 export async function handler(event, context) {
-  const accessToken = event.accessToken;
+  const { accessToken, input, contentType } = event.accessToken;
   const medplum = new MedplumClient({ fetch });
   medplum.setAccessToken(accessToken);
   const repo = new LegacyRepositoryClient(medplum);
-  await userCode.handler(medplum, event);
+  return userCode.handler(medplum, {
+    input: contentType === 'x-application/hl7-v2+er7' ? Hl7Message.parse(input) : input,
+    contentType,
+  });
 }
 `;
 

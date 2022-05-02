@@ -33,6 +33,7 @@ export function CodeEditor(props: CodeEditorProps): JSX.Element {
         style={{ border: '1px solid #ccc' }}
         defaultValue={props.defaultValue}
         onChange={props.onChange}
+        editorProps={{}}
       />
     </Suspense>
   );
