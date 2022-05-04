@@ -19,7 +19,7 @@ const WRAPPER_CODE = `import fetch from './fetch.mjs';
 import { assertOk, createReference, Hl7Message, LegacyRepositoryClient, MedplumClient } from './medplum.mjs';
 import * as userCode from './user.mjs';
 export async function handler(event, context) {
-  const { accessToken, input, contentType } = event.accessToken;
+  const { accessToken, input, contentType } = event;
   const medplum = new MedplumClient({ fetch });
   medplum.setAccessToken(accessToken);
   const repo = new LegacyRepositoryClient(medplum);
