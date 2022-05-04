@@ -14,6 +14,7 @@ import {
   getQuestionnaireAnswers,
   isLowerCase,
   isProfileResource,
+  isUUID,
   resolveId,
   stringify,
 } from './utils';
@@ -386,5 +387,17 @@ describe('Core Utils', () => {
   test('isLowerCase', () => {
     expect(isLowerCase('a')).toEqual(true);
     expect(isLowerCase('A')).toEqual(false);
+  });
+
+  test('isUUID', () => {
+    expect(isUUID('')).toBe(false);
+    expect(isUUID('asdf')).toBe(false);
+    expect(isUUID('123')).toBe(false);
+    expect(isUUID('00000000-0000-0000-0000-000000000000')).toBe(true);
+    expect(isUUID('9066a96e-cbcd-11ec-9d64-0242ac120002')).toBe(true);
+    expect(isUUID('a1b3c259-1c48-4fda-9805-fc518da00094')).toBe(true);
+    expect(isUUID('00000000-0000-0000-0000-000000000000x')).toBe(false);
+    expect(isUUID('9066a96e-cbcd-11ec-9d64-0242ac120002x')).toBe(false);
+    expect(isUUID('a1b3c259-1c48-4fda-9805-fc518da00094x')).toBe(false);
   });
 });
