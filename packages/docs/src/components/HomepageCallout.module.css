@@ -2,7 +2,7 @@
   display: flex;
   flex-flow: column nowrap;
   justify-content: center;
-  background-color: var(--ifm-color-primary);
+  background-color: var(--ifm-color-primary-lightest);
   border-radius: 8px;
   padding: 1rem;
 }

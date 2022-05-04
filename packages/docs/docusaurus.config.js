@@ -52,11 +52,26 @@ const config = {
             type: 'doc',
             docId: 'intro',
             position: 'left',
+            label: 'Home',
+          },
+          {
+            to: '/api/tutorials/creare-fhir-data',
+            label: 'Tutorials',
+            position: 'left',
+          },
+          {
+            to: '/api/overview',
             label: 'Docs',
+            position: 'left',
           },
           {
             to: '/blog',
             label: 'Blog',
+            position: 'left',
+          },
+          {
+            to: '/developers/intro',
+            label: 'Contributing',
             position: 'left',
           },
           {
