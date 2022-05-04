@@ -1,20 +1,30 @@
+---
+id: fhir-basics
+toc_max_heading_level: 2
+---
+
 # FHIR Basics
 
-- Medplum stores data in the FHIR standard
-- FHIR has the following advantages
-  - Interoperability
-  - Future proofing (example: charge items for devices)
-- The page will go over the basic concepts for understanding FHIR data. [Link to FHIR docs](#)
+## Why FHIR?
+
+Medplum stores healthcare data using the FHIR standard. Storing data according to this standard provides developers with the following benefits:
+
+- **Interoperability**: Increasingly, healthcare partners are exposing their data via FHIR APIs. Storing your data according to FHIR spec smooths the path to interoperating with multiple partners
+- **Future Proofing**: The healthcare ecosystem is complex and fragmented. As they encounter these complexities, many digital health companies end up perforing costly data migrations. The FHIR spec anticipates many of the complexities that arise in the healthcare domain, helping teams avoid these backend rewrites.
+
+While FHIR is quite powerful, it can have a bit of a learning curve. The page will go over the basic concepts for understanding FHIR data in Medplum. For more information, you can check out the [official FHIR documentation](#http://hl7.org/fhir/).
 
 ## Resources
 
-A core data object in FHIR is called a [**Resource**](https://www.hl7.org/fhir/resource.html). You can think of Resources as **objects** in object oriented languages. The FHIR standard defines a set of [**Resource Types**](/category/resources), similar to **classes**, that have been built for healthcare applications. A `Resource` is composed of multiple fields, called `Elements`, each of which can be a **primitive type** (e.g. strings, numbers, dates) or a **complex type** (e.g. JSON objects)
+A core data object in FHIR is called a [**Resource**](https://www.hl7.org/fhir/resource.html). You can think of Resources as **objects** in object oriented languages. The FHIR standard defines a set of [**Resource Types**](/category/resources), similar to **classes**, that have been built for healthcare applications.
 
 Resources can represent a broad range of healthcare ideas, from very **concrete healthcare items** (e.g. [Patient](/api/fhir/resources/patient), [Medication](/api/fhir/resources/medication), [Device](/api/fhir/resources/device)) or more **abstract concepts** (e.g. [Procedure](/api/fhir/resources/procedure), [Care Plan](/api/fhir/resources/careplan), [Encounter](/api/fhir/resources/encounter)).
 
+A `Resource` is composed of multiple fields, called `Elements`, each of which can be a **primitive type** (e.g. strings, numbers, dates) or a **complex type** (e.g. JSON objects).
+
 ### Example
 
-The example below shows an example **[Patient](/api/fhir/resources/patient) resource**, represented as JSON:
+The example below shows an example **[Patient](/api/fhir/resources/patient) resource**, represented as JSON. Here we can see that the `Patient` contains multiple `Elements`, including: `name`, `telecom`, and `address`.
 
 ```json
 {
@@ -59,11 +69,13 @@ The example below shows an example **[Patient](/api/fhir/resources/patient) reso
 }
 ```
 
+<br/>
+
 ## References: Linking Resources
 
-Often times, one resource depends on data stored in another. To create pointers between objects, we use`Reference`s. A FHIR `Reference` is not a `Resource` itself, but a datatype for an `Element`.
+Often times, multiple resources contain related data. For example a **prescription is related to the receiving patient**, and a **diagnostic report may consist of multiple observations**.
 
-The full FHIR `Reference` object has the follow structure:
+**To create pointers between objects, we use** `Reference` **elements**. A FHIR `Reference` is not a `Resource`, but a data type for a resource `Element`. The full FHIR `Reference` object has the follow structure:
 
 ```ts
 {
@@ -78,7 +90,7 @@ In Medplum, we will typically only use the `reference` and `display` fields.
 
 ### Example
 
-The example below shows a [MedicationRequest](/api/fhir/resources/medicationrequest) resource two references: for the **`subject` (i.e. patient)** and the **`requester` (i.e. physician)**.
+The example below shows a [MedicationRequest](/api/fhir/resources/medicationrequest) resource two references: **`subject` (i.e. the patient)** and **`requester` (i.e. physician)**.
 
 ```json
 {
@@ -102,22 +114,26 @@ The example below shows a [MedicationRequest](/api/fhir/resources/medicationrequ
 }
 ```
 
+<br/>
+
 ## Identifiers: Naming Resources
 
-One issue in healthcare applications is that the same resource can have many different **identifiers**, depending on the context. For example, a patient might be identified simulataneously by their:
+One issue in healthcare applications is that **the same resource can have many different identifiers**, depending on the context. For example, a patient might be identified simulataneously by their:
 
 - Social Security Number (SSN)
 - Medical Record Number (MRN)
 - Medicare Beneficiary Identifier
 - Driver's License Number
 
-FHIR anticipates this complexity by allowing each resource to have multiple identfiers. Using the identifier system allows you to tame the complexity of healthcare applications by consolidating data in a single resource, while allowing different systesms to access the data by different ID schemes.
+FHIR anticipates this complexity by allowing each resource to have multiple identfiers.
 
 **Each identifier is defined by a** `(system, value)` ** pair.** The `system` acts as _namespace_ for the identifier, and _must be specified as an absolute URL_ to ensure that it is globally unique.
 
+**Using the identifier system allows you to simplify your healthcare applications** by consolidating data in a single resource, while allowing different systems to access the data by different ID schemes.
+
 ### Example
 
-- In the example below, we have a patient with both an SSN and two MRN identifiers
+The example `Patient` below has three identifiers: **an SSN and two MRN identifiers** from different hospital systems.
 
 ```json
 {
@@ -153,24 +169,42 @@ FHIR anticipates this complexity by allowing each resource to have multiple iden
 }
 ```
 
-## Search Parameters: Finding the right data
+<br/>
 
-There are many cases in which a client would like to query resources that fulfill certain criteria. To
+## Search Parameters: Querying Resources
 
-- The FHIR specification defines which fields can be used to search a given resource type. These are the resource's _search parameters_
-- Check out the the documentation for each Resource Type to understand which parameters can be searched
-- <Example/>
-- Refer to the FHIR docs for the detailed search syntax
+There are many caeses in which a client would like to query resources that fulfill certain criteria. **FHIR resources cannot be searched by arbitrary fields**. Instead, the specification **defines specific search parameters for each resource** that can be used for queries.
 
-## Subscriptions: Listening for updates
+You can find the search parameters on the [reference page](/category/resources) for each resource. **Refer to the [FHIR Search](https://www.hl7.org/fhir/search.html) documentation** for how construct search queries using these parameters.
 
-- FHIR has a built-in concept of subscriptions
-- A FHIR subscription is a general purpose notion than can used to describe any kind of event handler
-- You can use the Medplum App to set up Subscriptions to take the following actions
-  - Run a [Bot](#)
-  - ...
+### Example
 
-## Codeable Concepts
+For example the [Medication resource](/api/fhir/resources/medication#search-parameters) defines the following search parameters:
+
+- Identifier
+- Code
+- Expiration Date
+- Form
+- Ingredient
+- Ingredient Code
+- Lot Number
+- Manufacturer
+- Status
+
+<br/>
+
+## Subscriptions: Listening for changes
+
+**FHIR has a built-in [Subscription](/api/fhir/resources/subscription) resource** that is used to define a push-based subscription to resources in the system, analogous to web-hooks. A `Subscription` has two primary elements:
+
+- **criteria**: This is a string expression that defines _which_ resources to listen to, specified in [FHIRPath](https://hl7.org/fhirpath/) format. This subscription is invoked whenever a resource that matches the criteria is created or updated.
+- **channel**: this describes the kind of action that the `Subscription` will take when it sees a matching resource. Currently, the possible values are `rest-hook`, `websocket`, `email`, and `message`.
+
+In Medplum, a powerful feature is to to **use a [Medplum Bot](/app/bots)** as the endpoint of the `rest-hook` channel. This allows you to run an arbitrary piece of code in response to data changes and automate your medical workflows. See our [Bot-Subscription tutorial](/app/bot-for-questionnaire-response) for more information.
+
+<br/>
+
+## Codeable Concepts: Standarding Data
 
 The healthcare system commonly uses standardized coding systems to describe healthcare concepts such as **diagnoses**, **procedures**, **medical equipment**, and **billing information**. These coding systems are crucial for sharing data between systems because they provide standardized values that organizations know how to process. Some common coding systems include [LOINC](https://loinc.org/), [SNOWMED](https://www.snomed.org/), [CPT](https://www.ama-assn.org/amaone/cpt-current-procedural-terminology), [ICD](https://www.cms.gov/Medicare/Coding/ICD10), and [HCPCS](https://www.cms.gov/medicare/coding/medhcpcsgeninfo).
 
