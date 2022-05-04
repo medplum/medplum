@@ -17,6 +17,9 @@ medplum.graphql = jest.fn((query: string) => {
   if (query.includes('"abc"')) {
     data.Patients2 = [HomerSimpson];
   }
+  if (query.includes('"00000000-0000-0000-0000-000000000000"')) {
+    data.Patients1 = [HomerSimpson];
+  }
   if (query.includes('"9001"')) {
     data.ServiceRequestList = [HomerServiceRequest];
   }
@@ -111,6 +114,34 @@ describe('HeaderSearchInput', () => {
     // Enter "Simpson"
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Simpson' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    await waitFor(() => screen.getByTestId('dropdown'));
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    expect(screen.getByText('Homer Simpson')).toBeDefined();
+  });
+
+  test('Search by UUID', async () => {
+    setup({
+      name: 'foo',
+      onChange: jest.fn(),
+    });
+
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+
+    // Enter "00000000-0000-0000-0000-000000000000"
+    await act(async () => {
+      fireEvent.change(input, { target: { value: '00000000-0000-0000-0000-000000000000' } });
     });
 
     // Wait for the drop down

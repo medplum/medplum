@@ -384,6 +384,15 @@ function deepEqualsObject(
 }
 
 /**
+ * Returns true if the input string is a UUID.
+ * @param input The input string.
+ * @returns True if the input string matches the UUID format.
+ */
+export function isUUID(input: string): boolean {
+  return !!input.match(/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/i);
+}
+
+/**
  * Returns true if the input is an object.
  * @param object The candidate object.
  * @returns True if the input is a non-null non-undefined object.

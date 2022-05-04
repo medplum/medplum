@@ -1,4 +1,4 @@
-import { formatHumanName } from '@medplum/core';
+import { formatHumanName, isUUID } from '@medplum/core';
 import { Patient, ServiceRequest } from '@medplum/fhirtypes';
 import React from 'react';
 import { Autocomplete } from './Autocomplete';
@@ -17,9 +17,9 @@ export interface HeaderSearchInputProps {
 
 interface SearchGraphQLResponse {
   readonly data: {
-    readonly Patients1: Patient[];
-    readonly Patients2: Patient[];
-    readonly ServiceRequestList: ServiceRequest[];
+    readonly Patients1: Patient[] | undefined;
+    readonly Patients2: Patient[] | undefined;
+    readonly ServiceRequestList: ServiceRequest[] | undefined;
   };
 }
 
@@ -54,6 +54,34 @@ export function HeaderSearchInput(props: HeaderSearchInputProps): JSX.Element {
 
 function buildGraphQLQuery(input: string): string {
   const escaped = JSON.stringify(input);
+  if (isUUID(input)) {
+    return `{
+      Patients1: PatientList(_id: ${escaped}, _count: 1) {
+        resourceType
+        id
+        identifier {
+          system
+          value
+        }
+        name {
+          given
+          family
+        }
+        birthDate
+      }
+      ServiceRequestList(_id: ${escaped}, _count: 1) {
+        resourceType
+        id
+        identifier {
+          system
+          value
+        }
+        subject {
+          display
+        }
+      }
+    }`.replace(/\s+/g, ' ');
+  }
   return `{
     Patients1: PatientList(name: ${escaped}, _count: 5) {
       resourceType

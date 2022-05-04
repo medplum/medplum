@@ -233,6 +233,10 @@ function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
       type: GraphQLString,
       description: 'Specify the sort order by comma-separated list of sort rules in priority order.',
     },
+    _id: {
+      type: GraphQLString,
+      description: 'Select resources based on the logical id of the resource.',
+    },
     _lastUpdated: {
       type: GraphQLString,
       description: 'Select resources based on the last time they were changed.',
