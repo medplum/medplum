@@ -8,7 +8,7 @@ Bots are an advanced Medplum feature that enable complex workflows.
 
 One of the most powerful combos is "Bots" + "Questionnaires".
 
-A FHIR [Questionnaire](/docs/api/fhir/resources/questionnaire) is a customizable form. You can add custom questions, question types, multiple choice options, etc. You can think of a FHIR Questionnaire as a healthcare-specific Google Forms or Survey Monkey.
+A FHIR [Questionnaire](/api/fhir/resources/questionnaire) is a customizable form. You can add custom questions, question types, multiple choice options, etc. You can think of a FHIR Questionnaire as a healthcare-specific Google Forms or Survey Monkey.
 
 A Medplum [Bot](./bots) is a snippet of JavaScript code that can run on any resource change (create or update). This JavaScript code has access to a FHIR client, which itself can invoke FHIR operations.
 
@@ -18,8 +18,8 @@ Connecting a Bot to a Questionnaire enables custom workflows that you control to
 
 Consider some of these Bot and Questionnaire use cases:
 
-- Patient registration - Create a Patient plus initial [Appointment](/docs/api/fhir/resources/appointment) or [ServiceRequest](/docs/api/fhir/resources/servicerequest)
-- Observation entry - From one form, create many [Observation](/docs/api/fhir/resources/observation) and [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport) resources
+- Patient registration - Create a Patient plus initial [Appointment](/api/fhir/resources/appointment) or [ServiceRequest](/api/fhir/resources/servicerequest)
+- Observation entry - From one form, create many [Observation](/api/fhir/resources/observation) and [DiagnosticReport](/api/fhir/resources/diagnosticreport) resources
 - Quick ordering - Create shortcut forms for common orders or workflows
 
 These capabilities would normally require writing custom code, HTTP servers, webhooks, and managing credentials for a separate service.

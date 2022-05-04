@@ -4,7 +4,7 @@ sidebar_position: 5
 
 # Create a patient
 
-This guide explains how to create a [Patient](/docs/api/fhir/resources/patient) in the Medplum app.
+This guide explains how to create a [Patient](/api/fhir/resources/patient) in the Medplum app.
 
 Open the Medplum app in your browser: https://app.medplum.com/  If you don't have an account yet, see the [Register](./register) page.
 

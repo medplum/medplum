@@ -20,12 +20,12 @@ Medplim is a developer platform that enables **flexible and rapid development** 
 
 1. **Medplum Clinical Data Repository (CDR)** - This is the the backend server that hosts your healthcare data in a secure, compliant, and standards based respository. The Medplum CDR also exposes a [FHIR-based API](/api/overview) for sending, receiving, and manipulating data
 2. **Medplum App** - This is a web application where can you can view your data, perform basic editing tasks. You can also use the Medplum App to manage basic workflows.
-3. **UI Component Library** - Medplum ships with a system of [React components](/api/tutorials/react-hello-world/hello-world-part-1) designed to help you quickly develop custom healthcare applications
+3. **UI Component Library** - Medplum ships with a system of [React components](/tutorials/react-hello-world/hello-world-part-1) designed to help you quickly develop custom healthcare applications
 
 ## Getting Started
 
 - The [Basic Concepts](/intro) page provides a good primer on Medplum and contains important information about the FHIR, the healthcare data standard on which Medplum is built.
-- If you're ready to start coding, use our [Quickstart Guide](/api/tutorials/api-basics/create-fhir-data) to get up and running
+- If you're ready to start coding, use our [Quickstart Guide](/tutorials/api-basics/create-fhir-data) to get up and running
 - Our detailed tutorials go step-by-step through specific use cases. Don't see a tutorial you need? Reach out on our [Discord](https://discord.gg/UBAWwvrVeN) or send us an email at [Support@medplum.com](mailto:support@medplum.com)
 
 ## Common Use Cases
@@ -43,5 +43,5 @@ Stay tuned: we will post detailed implementation guides for all of these scenari
 
 ## Community
 
-- **Contributing** - Medplum is open source because we believe that streamling healthcare is based on _transparency_ and _collaboration_. If you are interested contributing to Medplum, check out our [Contributors](/developers/intro) page
+- **Contributing** - Medplum is open source because we believe that streamling healthcare is based on _transparency_ and _collaboration_. If you are interested contributing to Medplum, check out our [Contributors](/contributing/intro) page
 - **Discord** - Join the conversation by checking us out on [Discord](https://discord.gg/UBAWwvrVeN)

@@ -29,7 +29,7 @@ const config = {
         },
         blog: {
           showReadingTime: true,
-          editUrl: 'https://github.com/medplum/medplum/medplum/docs/',
+          editUrl: 'https://github.com/medplum/medplum/packages/docs/',
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
@@ -55,23 +55,23 @@ const config = {
             label: 'Home',
           },
           {
-            to: '/api/tutorials/creare-fhir-data',
+            to: '/tutorials/intro',
             label: 'Tutorials',
             position: 'left',
           },
           {
             to: '/api/overview',
-            label: 'Docs',
+            label: 'API',
+            position: 'left',
+          },
+          {
+            to: '/contributing/intro',
+            label: 'Contributing',
             position: 'left',
           },
           {
             to: '/blog',
             label: 'Blog',
-            position: 'left',
-          },
-          {
-            to: '/developers/intro',
-            label: 'Contributing',
             position: 'left',
           },
           {
@@ -89,7 +89,7 @@ const config = {
             items: [
               {
                 label: 'Tutorial',
-                to: '/docs/intro',
+                to: '/tutorials/intro',
               },
             ],
           },

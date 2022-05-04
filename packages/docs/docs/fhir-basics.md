@@ -26,7 +26,7 @@ A `Resource` is composed of multiple fields, called `Elements`, each of which ca
 
 The example below shows an example **[Patient](/api/fhir/resources/patient) resource**, represented as JSON. Here we can see that the `Patient` contains multiple `Elements`, including: `name`, `telecom`, and `address`.
 
-```json
+```javascript
 {
   // Resource Type (i.e. "class name")
   "resourceType": "Patient",
@@ -92,7 +92,7 @@ In Medplum, we will typically only use the `reference` and `display` fields.
 
 The example below shows a [MedicationRequest](/api/fhir/resources/medicationrequest) resource two references: **`subject` (i.e. the patient)** and **`requester` (i.e. physician)**.
 
-```json
+```javascript
 {
   "resourceType": "MedicationRequest",
   "id": "medrx002",
@@ -135,7 +135,7 @@ FHIR anticipates this complexity by allowing each resource to have multiple iden
 
 The example `Patient` below has three identifiers: **an SSN and two MRN identifiers** from different hospital systems.
 
-```json
+```javascript
 {
   // Resource Type (i.e. "class name")
   "resourceType": "Patient",
@@ -212,7 +212,7 @@ The same concept being defined in mulitple coding systems. To handle this mappin
 
 Below is an example `CodeableConcept`, that defines a negative test result outcome in the **SNOWMED** and **ACME Lab** systems.
 
-```json
+```javascript
 {
   // Text description of the concept
   "text": "Negative for Chlamydia Trachomatis rRNA",
