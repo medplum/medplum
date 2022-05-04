@@ -48,9 +48,9 @@ Make note of the Bot "id" which we will need in the next step.
 
 ## Setup the bot subscription
 
-Bots are triggered using FHIR [Subscriptions](/docs/api/fhir/resources/subscription).
+Bots are triggered using FHIR [Subscriptions](/api/fhir/resources/subscription).
 
-Let's connect our bot to [Patient](/docs/api/fhir/resources/patient) resources. That means that the Bot code will run on any "create" or "update" operation to any "Patient".
+Let's connect our bot to [Patient](/api/fhir/resources/patient) resources. That means that the Bot code will run on any "create" or "update" operation to any "Patient".
 
 - First, go to the Subscription resources using the top-left menu and then click "Subscriptions".
 - Next, click on the "New..." button.
