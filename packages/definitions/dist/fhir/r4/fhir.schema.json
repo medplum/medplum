@@ -615,9 +615,6 @@
       "$ref": "#/definitions/Login"
     },
     {
-      "$ref": "#/definitions/RefreshToken"
-    },
-    {
       "$ref": "#/definitions/PasswordChangeRequest"
     },
     {
@@ -1085,9 +1082,6 @@
         },
         {
           "$ref": "#/definitions/Login"
-        },
-        {
-          "$ref": "#/definitions/RefreshToken"
         },
         {
           "$ref": "#/definitions/PasswordChangeRequest"
