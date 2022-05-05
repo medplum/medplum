@@ -78,6 +78,13 @@ describe('HomePage', () => {
     });
   });
 
+  test('New button hidden on Bot page', async () => {
+    await setup('/Bot');
+    await waitFor(() => screen.getByTestId('search-control'));
+
+    expect(screen.queryByText('New...')).toBeNull();
+  });
+
   test('Delete button, cancel', async () => {
     window.confirm = jest.fn(() => false);
 

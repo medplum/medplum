@@ -51,9 +51,13 @@ export function HomePage(): JSX.Element {
       onChange={(e) => {
         navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
       }}
-      onNew={() => {
-        navigate(`/${search.resourceType}/new`);
-      }}
+      onNew={
+        search.resourceType === 'Bot'
+          ? undefined
+          : () => {
+              navigate(`/${search.resourceType}/new`);
+            }
+      }
       onExport={() => {
         const url = medplum.fhirUrl(search.resourceType) + '/$csv' + formatSearchQuery(search);
         medplum.download(url).then((blob) => {

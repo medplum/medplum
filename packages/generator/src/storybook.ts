@@ -13,6 +13,7 @@ const resourceTypes = [
   'Questionnaire',
   'ServiceRequest',
   'Specimen',
+  'Bot',
 ];
 const properties = [
   'resourceType',
@@ -33,20 +34,25 @@ const properties = [
 ];
 
 export function main(): void {
-  const bundle = readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition>;
   const output: StructureDefinition[] = [];
-  for (const entry of bundle.entry as BundleEntry<StructureDefinition>[]) {
-    const resource = entry.resource as Resource;
-    if (resource.resourceType === 'StructureDefinition' && resourceTypes.includes(resource.id as string)) {
-      output.push(resource);
-    }
-  }
+  addStructureDefinitions('fhir/r4/profiles-resources.json', output);
+  addStructureDefinitions('fhir/r4/profiles-medplum.json', output);
   console.log(JSON.stringify(output, keyReplacer, 2));
   writeFileSync(
     resolve(__dirname, '../../mock/src/mocks/structuredefinitions.json'),
     JSON.stringify(output, keyReplacer, 2),
     'utf8'
   );
+}
+
+function addStructureDefinitions(fileName: string, output: StructureDefinition[]): void {
+  const bundle = readJson(fileName) as Bundle<StructureDefinition>;
+  for (const entry of bundle.entry as BundleEntry<StructureDefinition>[]) {
+    const resource = entry.resource as Resource;
+    if (resource.resourceType === 'StructureDefinition' && resourceTypes.includes(resource.id as string)) {
+      output.push(resource);
+    }
+  }
 }
 
 function keyReplacer(key: string, value: any): any {
