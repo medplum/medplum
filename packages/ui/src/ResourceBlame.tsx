@@ -21,7 +21,7 @@ export function ResourceBlame(props: ResourceBlameProps): JSX.Element {
     if (!props.history && props.resourceType && props.id) {
       medplum.readHistory(props.resourceType, props.id).then((result) => setValue(result));
     }
-  }, [props.history, props.resourceType, props.id]);
+  }, [medplum, props.history, props.resourceType, props.id]);
 
   if (!value) {
     return <div>Loading...</div>;

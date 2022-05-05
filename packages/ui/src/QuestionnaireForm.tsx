@@ -47,7 +47,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
   useEffect(() => {
     medplum.requestSchema('Questionnaire').then(setSchema);
-  }, []);
+  }, [medplum]);
 
   useEffect(() => {
     setResponse(questionnaire ? buildInitialResponse(questionnaire) : undefined);

@@ -68,7 +68,7 @@ export function FormPage(): JSX.Element {
         setError(reason);
         setLoading(false);
       });
-  }, [id, location]);
+  }, [medplum, queryParams, id, location]);
 
   if (error) {
     return (

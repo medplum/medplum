@@ -27,7 +27,7 @@ export function EditMembershipPage(): JSX.Element {
         setLoading(false);
       })
       .catch(setOutcome);
-  }, [projectId, membershipId]);
+  }, [medplum, projectId, membershipId]);
 
   function deleteMembership(): void {
     if (window.confirm('Are you sure?')) {

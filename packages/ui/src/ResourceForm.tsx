@@ -28,7 +28,7 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
       setValue(JSON.parse(JSON.stringify(defaultValue)));
       medplum.requestSchema(defaultValue.resourceType).then(setSchema);
     }
-  }, [defaultValue]);
+  }, [medplum, defaultValue]);
 
   if (!schema || !value) {
     return <div>Loading...</div>;

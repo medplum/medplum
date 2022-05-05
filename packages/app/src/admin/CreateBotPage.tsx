@@ -21,7 +21,7 @@ export function CreateBotPage(): JSX.Element {
         setResult(response);
       })
       .catch(setOutcome);
-  }, [projectId]);
+  }, [medplum, projectId]);
 
   if (!result) {
     return <Loading />;

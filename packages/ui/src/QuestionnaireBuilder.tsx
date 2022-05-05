@@ -5,7 +5,6 @@ import { Button } from './Button';
 import { Form } from './Form';
 import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
-import './QuestionnaireBuilder.css';
 import { QuestionnaireFormItem } from './QuestionnaireForm';
 import { isChoiceQuestion, QuestionnaireItemType } from './QuestionnaireUtils';
 import { getValueAndType } from './ResourcePropertyDisplay';
@@ -14,6 +13,7 @@ import { Select } from './Select';
 import { TextArea } from './TextArea';
 import { useResource } from './useResource';
 import { killEvent } from './utils/dom';
+import './QuestionnaireBuilder.css';
 
 export interface QuestionnaireBuilderProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;
@@ -38,7 +38,7 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
 
   useEffect(() => {
     medplum.requestSchema('Questionnaire').then(setSchema);
-  }, []);
+  }, [medplum]);
 
   useEffect(() => {
     setValue(ensureQuestionnaireKeys(defaultValue ?? { resourceType: 'Questionnaire' }));

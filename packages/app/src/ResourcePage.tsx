@@ -33,7 +33,7 @@ import {
   TextArea,
   useMedplum,
 } from '@medplum/ui';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CodeEditor } from './CodeEditor';
 import { PatientHeader } from './PatientHeader';
@@ -90,7 +90,8 @@ export function ResourcePage(): JSX.Element {
   const [questionnaires, setQuestionnaires] = useState<Bundle<Questionnaire>>();
   const [error, setError] = useState<OperationOutcome | undefined>();
 
-  function loadResource(): Promise<void> {
+  const loadResource = useCallback(() => {
+    // function loadResource(): Promise<void> {
     setError(undefined);
     setLoading(true);
 
@@ -139,7 +140,7 @@ export function ResourcePage(): JSX.Element {
         setError(reason);
         setLoading(false);
       });
-  }
+  }, [medplum, resourceType, id]);
 
   /**
    * Handles a tab change event.
@@ -176,7 +177,7 @@ export function ResourcePage(): JSX.Element {
 
   useEffect(() => {
     loadResource();
-  }, [resourceType, id]);
+  }, [loadResource]);
 
   if (loading) {
     return <Loading />;

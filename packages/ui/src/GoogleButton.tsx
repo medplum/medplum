@@ -46,7 +46,7 @@ export function GoogleButton(props: GoogleButtonProps): JSX.Element | null {
       google.accounts.id.renderButton(parentRef.current, {});
       setButtonRendered(true);
     }
-  }, [scriptLoaded, parentRef]);
+  }, [medplum, googleClientId, initialized, scriptLoaded, parentRef, buttonRendered, props.handleAuthResponse]);
 
   if (!googleClientId) {
     return null;

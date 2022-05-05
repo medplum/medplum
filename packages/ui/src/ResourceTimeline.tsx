@@ -20,12 +20,12 @@ import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { ResourceDiffTable } from './ResourceDiffTable';
 import { ResourceTable } from './ResourceTable';
+import './ResourceTimeline.css';
 import { Scrollable } from './Scrollable';
 import { Timeline, TimelineItem } from './Timeline';
 import { UploadButton } from './UploadButton';
 import { useResource } from './useResource';
 import { sortByDate } from './utils/date';
-import './ResourceTimeline.css';
 
 export interface ResourceTimelineProps<T extends Resource> {
   value: T | Reference<T>;
@@ -48,7 +48,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   /**
    * Loads existing timeline resources.
    */
-  function loadItems(): void {
+  useEffect(() => {
     if (!resource) {
       setItems([]);
       setHistory({} as Bundle);
@@ -57,7 +57,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
 
     const batchRequest = props.buildSearchRequests(resource);
     medplum.post('fhir/R4', batchRequest).then(handleBatchResponse);
-  }
+  }, [medplum, props, resource]);
 
   /**
    * Handles a batch request response.
@@ -130,10 +130,6 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       addResources([result]);
     });
   }
-
-  useEffect(() => {
-    loadItems();
-  }, [resource]);
 
   if (!resource || !history) {
     return <Loading />;

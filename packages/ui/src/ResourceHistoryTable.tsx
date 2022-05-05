@@ -20,7 +20,7 @@ export function ResourceHistoryTable(props: ResourceHistoryTableProps): JSX.Elem
     if (!props.history && props.resourceType && props.id) {
       medplum.readHistory(props.resourceType, props.id).then((result) => setValue(result));
     }
-  }, [props.history, props.resourceType, props.id]);
+  }, [medplum, props.history, props.resourceType, props.id]);
 
   if (!value) {
     return <div>Loading...</div>;

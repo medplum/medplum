@@ -36,7 +36,7 @@ export function CalendarInput(props: CalendarInputProps): JSX.Element {
     });
   }
 
-  const grid = useMemo(() => buildGrid(month, props.slots), [month]);
+  const grid = useMemo(() => buildGrid(month, props.slots), [month, props.slots]);
 
   return (
     <div>

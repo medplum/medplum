@@ -10,6 +10,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
+import './SearchControl.css';
 import { getFieldDefinitions } from './SearchControlField';
 import { SearchFieldEditor } from './SearchFieldEditor';
 import { SearchFilterEditor } from './SearchFilterEditor';
@@ -20,7 +21,6 @@ import { addFilter, buildFieldNameString, getOpString, movePage, renderValue } f
 import { Select } from './Select';
 import { TitleBar } from './TitleBar';
 import { killEvent } from './utils/dom';
-import './SearchControl.css';
 
 export class SearchChangeEvent extends Event {
   readonly definition: SearchRequest;
@@ -88,6 +88,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const medplum = useMedplum();
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
+  const { search, onLoad } = props;
 
   const [state, setState] = useState<SearchControlState>({
     selected: {},
@@ -103,21 +104,21 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const stateRef = useRef<SearchControlState>(state);
   stateRef.current = state;
 
-  function requestResources(): void {
+  useEffect(() => {
     setOutcome(undefined);
     medplum
-      .search({ ...props.search, total: 'accurate' })
+      .search({ ...search, total: 'accurate' })
       .then((response) => {
         setState({ ...stateRef.current, searchResponse: response });
-        if (props.onLoad) {
-          props.onLoad(new SearchLoadEvent(response));
+        if (onLoad) {
+          onLoad(new SearchLoadEvent(response));
         }
       })
       .catch((reason) => {
         setState({ ...stateRef.current, searchResponse: undefined });
         setOutcome(reason);
       });
-  }
+  }, [medplum, search, onLoad]);
 
   function handleSingleCheckboxClick(e: React.ChangeEvent, id: string): void {
     e.stopPropagation();
@@ -217,9 +218,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       // so need to use the spread operator to kick React re-render.
       setSchema({ ...newSchema });
     });
-  }, [props.search.resourceType]);
-
-  useEffect(() => requestResources(), [props.search]);
+  }, [medplum, props.search.resourceType]);
 
   const typeSchema = schema?.types?.[props.search.resourceType];
   if (!typeSchema) {
@@ -227,7 +226,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   }
 
   const checkboxColumn = props.checkboxesEnabled;
-  const search = props.search;
   const fields = getFieldDefinitions(schema, search);
   const resourceType = search.resourceType;
   const lastResult = state.searchResponse;

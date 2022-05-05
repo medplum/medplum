@@ -17,7 +17,7 @@ export function BulkAppPage(): JSX.Element {
     medplum
       .searchResources<Questionnaire>(`Questionnaire?subject-type=${encodeURIComponent(resourceType)}`)
       .then(setQuestionnaires);
-  }, [resourceType]);
+  }, [medplum, resourceType]);
 
   if (!questionnaires) {
     return <Loading />;

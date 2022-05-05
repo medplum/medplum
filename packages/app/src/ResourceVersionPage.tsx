@@ -27,10 +27,10 @@ export function ResourceVersionPage(): JSX.Element {
   const [historyBundle, setHistoryBundle] = useState<Bundle | undefined>();
   const [error, setError] = useState<OperationOutcome | undefined>();
 
-  function loadResource(): Promise<void> {
+  useEffect(() => {
     setError(undefined);
     setLoading(true);
-    return medplum
+    medplum
       .readHistory(resourceType, id)
       .then((result) => setHistoryBundle(result))
       .then(() => setLoading(false))
@@ -38,11 +38,7 @@ export function ResourceVersionPage(): JSX.Element {
         setError(reason);
         setLoading(false);
       });
-  }
-
-  useEffect(() => {
-    loadResource();
-  }, [resourceType, id]);
+  }, [medplum, resourceType, id]);
 
   if (loading) {
     return <Loading />;
