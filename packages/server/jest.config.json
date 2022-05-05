@@ -7,7 +7,6 @@
   },
   "moduleFileExtensions": ["ts", "js", "json", "node"],
   "testMatch": ["**/src/**/*.test.ts"],
-  "collectCoverage": true,
   "coverageDirectory": "coverage",
   "coverageReporters": ["json", "text"],
   "collectCoverageFrom": [

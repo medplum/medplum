@@ -27,7 +27,7 @@ done
 TEST_ORDER=("fhirpath" "core" "mock" "ui" "app" "infra" "cli")
 for PACKAGE in ${TEST_ORDER[@]}; do
   pushd "packages/$PACKAGE"
-  npm t
+  npm t -- --coverage
   popd
 done
 
