@@ -30,6 +30,6 @@ oauthRouter.get('/logout', (req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-oauthRouter.post('/logout', (req: Request, res: Response) => {
+oauthRouter.post('/logout', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });

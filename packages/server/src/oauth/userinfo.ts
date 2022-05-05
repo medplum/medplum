@@ -16,7 +16,7 @@ import { systemRepo } from '../fhir';
  * Handles the OAuth/OpenID UserInfo Endpoint.
  * See: https://openid.net/specs/openid-connect-core-1_0.html#UserInfo
  */
-export const userInfoHandler: RequestHandler = asyncWrap(async (req: Request, res: Response) => {
+export const userInfoHandler: RequestHandler = asyncWrap(async (_req: Request, res: Response) => {
   const userInfo: Record<string, any> = {
     sub: res.locals.user,
   };

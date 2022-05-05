@@ -59,6 +59,12 @@ class FileSystemStorage implements BinaryStorage {
     contentType: string | undefined,
     stream: internal.Readable | NodeJS.ReadableStream
   ): Promise<void> {
+    if (checkFileExtension(filename)) {
+      return Promise.reject('Invalid file extension');
+    }
+    if (checkContentType(contentType)) {
+      return Promise.reject('Invalid content type');
+    }
     const dir = this.#getDir(binary);
     if (!existsSync(dir)) {
       mkdirSync(dir);

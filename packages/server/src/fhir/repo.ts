@@ -958,10 +958,9 @@ export class Repository {
 
   /**
    * Builds the columns to write for a Reference value.
-   * @param searchParam The search parameter definition.
    * @param value The property value of the reference.
    */
-  #buildReferenceColumns(searchParam: SearchParameter, value: any): string | undefined {
+  #buildReferenceColumns(value: any): string | undefined {
     if (value) {
       if (typeof value === 'string') {
         // Handle "canonical" properties such as QuestionnaireResponse.questionnaire

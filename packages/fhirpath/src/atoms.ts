@@ -345,6 +345,6 @@ export class IndexerAtom implements Atom {
     if (!(index in leftResult)) {
       return [];
     }
-    return leftResult[index as number];
+    return leftResult[index];
   }
 }

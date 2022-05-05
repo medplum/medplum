@@ -23,11 +23,11 @@ import { wellKnownRouter } from './wellknown';
 
 /**
  * Sets standard headers for all requests.
- * @param req The request.
+ * @param _req The request.
  * @param res The response.
  * @param next The next handler.
  */
-function standardHeaders(req: Request, res: Response, next: NextFunction): void {
+function standardHeaders(_req: Request, res: Response, next: NextFunction): void {
   // Disables all caching
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.set('Expires', 'Wed, 21 Oct 2015 07:28:00 GMT');

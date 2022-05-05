@@ -7,62 +7,62 @@ dicomRouter.use(authenticateToken);
 // DICOMweb WADO
 // https://www.dicomstandard.org/dicomweb
 
-dicomRouter.get('/studies', (req: Request, res: Response) => {
+dicomRouter.get('/studies', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-dicomRouter.post('/studies', (req: Request, res: Response) => {
+dicomRouter.post('/studies', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-dicomRouter.get('/studies/:study', (req: Request, res: Response) => {
+dicomRouter.get('/studies/:study', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-dicomRouter.post('/studies/:study', (req: Request, res: Response) => {
+dicomRouter.post('/studies/:study', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-dicomRouter.get('/studies/:study/rendered', (req: Request, res: Response) => {
+dicomRouter.get('/studies/:study/rendered', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-dicomRouter.get('/studies/:study/series', (req: Request, res: Response) => {
+dicomRouter.get('/studies/:study/series', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-dicomRouter.get('/studies/:study/series/:series', (req: Request, res: Response) => {
+dicomRouter.get('/studies/:study/series/:series', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-dicomRouter.get('/studies/:study/series/:series/rendered', (req: Request, res: Response) => {
+dicomRouter.get('/studies/:study/series/:series/rendered', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-dicomRouter.get('/studies/:study/series/:series/metadata', (req: Request, res: Response) => {
+dicomRouter.get('/studies/:study/series/:series/metadata', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-dicomRouter.get('/studies/:study/series/:series/instances', (req: Request, res: Response) => {
+dicomRouter.get('/studies/:study/series/:series/instances', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-dicomRouter.get('/studies/:study/series/:series/instances/:instance', (req: Request, res: Response) => {
+dicomRouter.get('/studies/:study/series/:series/instances/:instance', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-dicomRouter.get('/studies/:study/series/:series/instances/:instance/rendered', (req: Request, res: Response) => {
+dicomRouter.get('/studies/:study/series/:series/instances/:instance/rendered', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-dicomRouter.get('/studies/:study/series/:series/instances/:instance/metadata', (req: Request, res: Response) => {
+dicomRouter.get('/studies/:study/series/:series/instances/:instance/metadata', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-dicomRouter.get('/studies/:study/series/:series/instances/:instance/frames/:frame', (req: Request, res: Response) => {
+dicomRouter.get('/studies/:study/series/:series/instances/:instance/frames/:frame', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-dicomRouter.get('/:bulkdataUriReference', (req: Request, res: Response) => {
+dicomRouter.get('/:bulkdataUriReference', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });

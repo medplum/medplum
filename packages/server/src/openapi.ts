@@ -8,7 +8,7 @@ type SchemaMap = { [schema: string]: SchemaObject | ReferenceObject };
 
 let cachedSpec: any;
 
-export function openApiHandler(req: Request, res: Response): void {
+export function openApiHandler(_req: Request, res: Response): void {
   res.status(200).json(getSpec());
 }
 
@@ -109,19 +109,15 @@ function buildFhirType(result: OpenAPIObject, typeName: string, typeDefinition: 
  * @param typeDefinition The FHIR type definition.
  */
 function buildSchema(result: OpenAPIObject, typeName: string, typeDefinition: JSONSchema4): void {
-  ((result.components as ComponentsObject).schemas as SchemaMap)[typeName] = buildObjectSchema(
-    typeName,
-    typeDefinition
-  );
+  ((result.components as ComponentsObject).schemas as SchemaMap)[typeName] = buildObjectSchema(typeDefinition);
 }
 
 /**
  * Converts a JSONSchema type definition to an OpenAPI type definition.
- * @param name The type name.
  * @param definition The JSONSchema type definition.
  * @returns The OpenAPI type definition.
  */
-function buildObjectSchema(name: string, definition: JSONSchema4): SchemaObject {
+function buildObjectSchema(definition: JSONSchema4): SchemaObject {
   const result = JSON.parse(JSON.stringify(definition, refReplacer)) as SchemaObject;
   const resourceTypeProperty = result.properties?.resourceType as any;
   if (resourceTypeProperty?.const) {

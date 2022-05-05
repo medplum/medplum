@@ -14,16 +14,16 @@ export async function authenticateToken(req: Request, res: Response, next: NextF
   }
 
   if (tokenType === 'Bearer') {
-    await authenticateBearerToken(req, res, next, token);
+    await authenticateBearerToken(res, next, token);
   } else if (tokenType === 'Basic') {
-    await authenticateBasicAuth(req, res, next, token);
+    await authenticateBasicAuth(res, next, token);
   } else {
     res.sendStatus(401);
     return;
   }
 }
 
-async function authenticateBearerToken(req: Request, res: Response, next: NextFunction, token: string): Promise<void> {
+async function authenticateBearerToken(res: Response, next: NextFunction, token: string): Promise<void> {
   try {
     const verifyResult = await verifyJwt(token);
     const claims = verifyResult.payload as MedplumAccessTokenClaims;
@@ -51,7 +51,7 @@ async function authenticateBearerToken(req: Request, res: Response, next: NextFu
   }
 }
 
-async function authenticateBasicAuth(req: Request, res: Response, next: NextFunction, token: string): Promise<void> {
+async function authenticateBasicAuth(res: Response, next: NextFunction, token: string): Promise<void> {
   const credentials = Buffer.from(token, 'base64').toString('ascii');
   const [username, password] = credentials.split(':');
   if (!username || !password) {

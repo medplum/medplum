@@ -16,7 +16,7 @@ superAdminRouter.use(authenticateToken);
 // Run this after changes to how ValueSet elements are defined.
 superAdminRouter.post(
   '/valuesets',
-  asyncWrap(async (req: Request, res: Response) => {
+  asyncWrap(async (_req: Request, res: Response) => {
     const [outcome, user] = await systemRepo.readResource<User>('User', res.locals.user);
     assertOk(outcome, user);
 
@@ -35,7 +35,7 @@ superAdminRouter.post(
 // Run this after any changes to the built-in StructureDefinitions.
 superAdminRouter.post(
   '/structuredefinitions',
-  asyncWrap(async (req: Request, res: Response) => {
+  asyncWrap(async (_req: Request, res: Response) => {
     const [outcome, user] = await systemRepo.readResource<User>('User', res.locals.user);
     assertOk(outcome, user);
 
@@ -54,7 +54,7 @@ superAdminRouter.post(
 // Run this after any changes to the built-in SearchParameters.
 superAdminRouter.post(
   '/searchparameters',
-  asyncWrap(async (req: Request, res: Response) => {
+  asyncWrap(async (_req: Request, res: Response) => {
     const [outcome, user] = await systemRepo.readResource<User>('User', res.locals.user);
     assertOk(outcome, user);
 
