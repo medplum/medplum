@@ -71,7 +71,7 @@ describe('FormPage', () => {
     await waitFor(() => screen.getByText('First question'));
 
     expect(screen.getByText('First question')).toBeInTheDocument();
-    expect(screen.getByText('Submit for 2 resources')).toBeInTheDocument();
+    expect(screen.getByText('Vitals (for 2 resources)')).toBeInTheDocument();
     expect(screen.queryByText('Homer Simpson')).not.toBeInTheDocument();
   });
 });
