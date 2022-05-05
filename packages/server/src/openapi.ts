@@ -156,7 +156,7 @@ function buildTags(result: OpenAPIObject, typeName: string, typeDefinition: JSON
     name: typeName,
     description: typeDefinition.description,
     externalDocs: {
-      url: 'https://docs.medplum.com/fhir/R4/' + typeName,
+      url: 'https://docs.medplum.com/api/fhir/resources/' + typeName.toLowerCase(),
     },
   });
 }

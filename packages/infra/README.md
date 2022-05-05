@@ -9,7 +9,9 @@ CDK scripts to setup the full stack:
 
 ### Install
 
-Medplum uses [npm workspaces](https://docs.npmjs.com/cli/v8/using-npm/workspaces) for a monorepo configuration. See [Developer Setup](https://docs.medplum.com/docs/developers/intro) for cloning the repository and installing dependencies.
+Medplum uses [npm workspaces](https://docs.npmjs.com/cli/v8/using-npm/workspaces) for a monorepo configuration.
+
+See [Developer Setup](https://docs.medplum.com/contributing/intro) for cloning the repository and installing dependencies.
 
 ### Deploy
 
