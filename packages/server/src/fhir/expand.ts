@@ -26,7 +26,7 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
   }
   const pipeIndex = url.indexOf('|');
   if (pipeIndex >= 0) {
-    url = url.substr(0, pipeIndex);
+    url = url.substring(0, pipeIndex);
   }
 
   const filter = req.query.filter as string | undefined;

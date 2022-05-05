@@ -11,7 +11,7 @@ export interface HL7BodyParserOptions {
  * @returns Express middleware request handler.
  */
 export function hl7BodyParser(options: HL7BodyParserOptions): RequestHandler {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, _res: Response, next: NextFunction) => {
     if (req.is(options.type)) {
       req.body = Hl7Message.parse(req.body);
     }

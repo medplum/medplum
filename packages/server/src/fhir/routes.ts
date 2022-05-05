@@ -55,7 +55,7 @@ const publicRoutes = Router();
 fhirRouter.use(publicRoutes);
 
 // Metadata / CapabilityStatement
-publicRoutes.get('/metadata', (req: Request, res: Response) => {
+publicRoutes.get('/metadata', (_req: Request, res: Response) => {
   res.status(200).json(getCapabilityStatement());
 });
 
@@ -63,7 +63,7 @@ publicRoutes.get('/metadata', (req: Request, res: Response) => {
 // See:
 // 1) https://www.hl7.org/fhir/smart-app-launch/conformance/index.html
 // 2) https://www.hl7.org/fhir/uv/bulkdata/authorization/index.html
-publicRoutes.get('/.well-known/smart-configuration', (req: Request, res: Response) => {
+publicRoutes.get('/.well-known/smart-configuration', (_req: Request, res: Response) => {
   const config = getConfig();
   res
     .status(200)

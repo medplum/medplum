@@ -245,7 +245,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   const channelType = subscription?.channel?.type;
   if (channelType === 'rest-hook') {
     if (subscription?.channel?.endpoint?.startsWith('Bot/')) {
-      await execBot(job, subscription, resourceVersion);
+      await execBot(subscription, resourceVersion);
     } else {
       await sendRestHook(job, subscription, resourceVersion);
     }
@@ -258,7 +258,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
  * @param subscription The subscription.
  * @param resource The resource that triggered the subscription.
  */
-export async function sendRestHook(
+async function sendRestHook(
   job: Job<SubscriptionJobData>,
   subscription: Subscription,
   resource: Resource
@@ -334,15 +334,10 @@ function buildRestHookHeaders(subscription: Subscription, resource: Resource): H
 
 /**
  * Executes a Bot sbuscription.
- * @param job The subscription job details.
  * @param subscription The subscription.
  * @param resource The resource that triggered the subscription.
  */
-export async function execBot(
-  job: Job<SubscriptionJobData>,
-  subscription: Subscription,
-  resource: Resource
-): Promise<void> {
+async function execBot(subscription: Subscription, resource: Resource): Promise<void> {
   const url = subscription?.channel?.endpoint as string;
   if (!url) {
     // This can happen if a user updates the Subscription after the job is created.

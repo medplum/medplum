@@ -280,10 +280,10 @@ export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
 
   /**
    * Handles a hover event.
-   * @param e The mouse event.
+   * @param _e The mouse event.
    * @param index The drop down option index.
    */
-  function handleDropDownHover(e: React.MouseEvent, index: number): void {
+  function handleDropDownHover(_e: React.MouseEvent, index: number): void {
     setSelectedIndex(index);
   }
 

@@ -104,7 +104,7 @@ export class MockClient extends MedplumClient {
     return super.getActiveLogin();
   }
 
-  createBinary(data: any, filename: string, contentType: string): Promise<Binary> {
+  createBinary(_data: any, filename: string, contentType: string): Promise<Binary> {
     if (filename.endsWith('.exe')) {
       return Promise.reject(badRequest('Invalid file type'));
     }
@@ -130,7 +130,7 @@ function mockHandler(method: string, path: string, options: any): any {
   }
 }
 
-function mockAdminHandler(method: string, path: string): any {
+function mockAdminHandler(_method: string, path: string): any {
   if (path.startsWith('admin/projects/123')) {
     return {
       project: { id: '123', name: 'Project 123' },
@@ -176,7 +176,7 @@ function mockAuthHandler(method: string, path: string, options: any): any {
   return null;
 }
 
-function mockChangePasswordHandler(method: string, path: string, options: any): any {
+function mockChangePasswordHandler(_method: string, _path: string, options: any): any {
   const { body } = options;
   const { oldPassword } = JSON.parse(body);
   if (oldPassword === 'orange') {
@@ -196,7 +196,7 @@ function mockChangePasswordHandler(method: string, path: string, options: any): 
   }
 }
 
-function mockLoginHandler(method: string, path: string, options: any): any {
+function mockLoginHandler(_method: string, _path: string, options: any): any {
   const { body } = options;
   const { password } = JSON.parse(body);
   if (password === 'password') {
@@ -218,7 +218,7 @@ function mockLoginHandler(method: string, path: string, options: any): any {
   }
 }
 
-function mockSetPasswordHandler(method: string, path: string, options: any): any {
+function mockSetPasswordHandler(_method: string, _path: string, options: any): any {
   const { body } = options;
   const { password } = JSON.parse(body);
   if (password === 'orange') {
@@ -238,7 +238,7 @@ function mockSetPasswordHandler(method: string, path: string, options: any): any
   }
 }
 
-function mockRegisterHandler(method: string, path: string, options: any): any {
+function mockRegisterHandler(_method: string, _path: string, options: any): any {
   const { body } = options;
   const { email, password } = JSON.parse(body);
   if (email === 'george@example.com' && password === 'password') {
@@ -257,7 +257,7 @@ function mockRegisterHandler(method: string, path: string, options: any): any {
   }
 }
 
-function mockResetPasswordHandler(method: string, path: string, options: any): any {
+function mockResetPasswordHandler(_method: string, _path: string, options: any): any {
   const { body } = options;
   const { email } = JSON.parse(body);
   if (email === 'admin@example.com') {
@@ -341,7 +341,7 @@ function mockFhirHandler(method: string, url: string, options: any): any {
   }
 }
 
-function mockFhirBatchHandler(method: string, path: string, options: any): any {
+function mockFhirBatchHandler(_method: string, _path: string, options: any): any {
   const { body } = options;
   const request = JSON.parse(body) as Bundle;
   return {

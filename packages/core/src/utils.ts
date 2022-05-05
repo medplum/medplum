@@ -447,7 +447,7 @@ export function arrayBufferToBase64(arrayBuffer: ArrayBuffer): string {
 }
 
 export function capitalize(word: string): string {
-  return word.charAt(0).toUpperCase() + word.substr(1);
+  return word.charAt(0).toUpperCase() + word.substring(1);
 }
 
 export function isLowerCase(c: string): boolean {

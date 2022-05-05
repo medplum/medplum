@@ -7,26 +7,26 @@ scimRouter.use(authenticateToken);
 // SCIM
 // http://www.simplecloud.info/
 
-scimRouter.get('/:resourceType', (req: Request, res: Response) => {
+scimRouter.get('/:resourceType', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-scimRouter.post('/:resourceType', (req: Request, res: Response) => {
+scimRouter.post('/:resourceType', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-scimRouter.get('/:resourceType/:id', (req: Request, res: Response) => {
+scimRouter.get('/:resourceType/:id', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-scimRouter.put('/:resourceType/:id', (req: Request, res: Response) => {
+scimRouter.put('/:resourceType/:id', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-scimRouter.delete('/:resourceType/:id', (req: Request, res: Response) => {
+scimRouter.delete('/:resourceType/:id', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });
 
-scimRouter.patch('/:resourceType/:id', (req: Request, res: Response) => {
+scimRouter.patch('/:resourceType/:id', (_req: Request, res: Response) => {
   res.sendStatus(200);
 });

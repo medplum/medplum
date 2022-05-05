@@ -310,14 +310,14 @@ async function resolveBySearch(
  * GraphQL data loader for ID requests.
  * The field name should always by the resource type.
  * There should always be exactly one argument "id".
- * @param source The source/root.  This should always be null for our top level readers.
+ * @param _source The source/root.  This should always be null for our top level readers.
  * @param args The GraphQL search arguments.
  * @param ctx The GraphQL context.  This is the Node IncomingMessage.
  * @param info The GraphQL resolve info.  This includes the schema, and additional field details.
  * @returns Promise to read the resoure for the query.
  * @implements {GraphQLFieldResolver}
  */
-async function resolveById(source: any, args: any, ctx: any, info: GraphQLResolveInfo): Promise<Resource | undefined> {
+async function resolveById(_source: any, args: any, ctx: any, info: GraphQLResolveInfo): Promise<Resource | undefined> {
   const repo = ctx.res.locals.repo as Repository;
   const [outcome, resource] = await repo.readResource(info.fieldName, args.id);
   assertOk(outcome, resource);
@@ -328,13 +328,12 @@ async function resolveById(source: any, args: any, ctx: any, info: GraphQLResolv
  * GraphQL data loader for Reference requests.
  * This is a special data loader for following Reference objects.
  * @param source The source/root.  This should always be null for our top level readers.
- * @param args The GraphQL search arguments.
+ * @param _args The GraphQL search arguments.
  * @param ctx The GraphQL context.  This is the Node IncomingMessage.
- * @param info The GraphQL resolve info.  This includes the schema, and additional field details.
  * @returns Promise to read the resoure(s) for the query.
  * @implements {GraphQLFieldResolver}
  */
-async function resolveByReference(source: any, args: any, ctx: any): Promise<Resource | undefined> {
+async function resolveByReference(source: any, _args: any, ctx: any): Promise<Resource | undefined> {
   const repo = ctx.res.locals.repo as Repository;
   const [outcome, resource] = await repo.readReference(source as Reference);
   assertOk(outcome, resource);

@@ -4,11 +4,11 @@ import { getJwks } from './oauth/keys';
 
 export const wellKnownRouter = Router();
 
-wellKnownRouter.get('/jwks.json', (req: Request, res: Response) => {
+wellKnownRouter.get('/jwks.json', (_req: Request, res: Response) => {
   res.status(200).json(getJwks());
 });
 
-wellKnownRouter.get('/openid-configuration', (req: Request, res: Response) => {
+wellKnownRouter.get('/openid-configuration', (_req: Request, res: Response) => {
   const config = getConfig();
   res.status(200).json({
     issuer: config.issuer,

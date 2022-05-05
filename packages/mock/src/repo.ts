@@ -95,7 +95,7 @@ export function matchesSearchRequest(resource: Resource, searchRequest: SearchRe
   }
   if (searchRequest.filters) {
     for (const filter of searchRequest.filters) {
-      if (!matchesSearchFilter(resource, searchRequest, filter)) {
+      if (!matchesSearchFilter(resource, filter)) {
         return false;
       }
     }
@@ -109,7 +109,7 @@ export function matchesSearchRequest(resource: Resource, searchRequest: SearchRe
  * @param filter One of the filters of a subscription criteria.
  * @returns True if the resource satisfies the search filter.
  */
-function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, filter: Filter): boolean {
+function matchesSearchFilter(resource: Resource, filter: Filter): boolean {
   const expression = filter.code.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
   const values = evalFhirPath(expression as string, resource);
   const result = values.some((value) => JSON.stringify(value).toLowerCase().includes(filter.value.toLowerCase()));
