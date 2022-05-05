@@ -33,7 +33,7 @@ done
 
 # Server has special test configuration
 pushd "packages/server"
-node --expose-gc --trace-uncaught --max_old_space_size=4096 ../../node_modules/jest/bin/jest.js --runInBand --logHeapUsage
+node --expose-gc --trace-uncaught --max_old_space_size=4096 ../../node_modules/jest/bin/jest.js --runInBand --logHeapUsage --coverage
 popd
 
 # Combine test coverage
