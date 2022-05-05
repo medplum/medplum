@@ -2,8 +2,8 @@ import { getReferenceString, Operator } from '@medplum/core';
 import { BundleEntry, Patient, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { MedplumLink, sortByDate, useMedplum, useResource } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
-import './QuickServiceRequests.css';
 import { getPatient } from './utils';
+import './QuickServiceRequests.css';
 
 export interface QuickServiceRequestsProps {
   value: Resource | Reference;
@@ -35,7 +35,7 @@ export function QuickServiceRequests(props: QuickServiceRequestsProps): JSX.Elem
         resources.reverse();
         setServiceRequests(resources);
       });
-  }, [resource]);
+  }, [medplum, resource]);
 
   if (!serviceRequests) {
     return null;

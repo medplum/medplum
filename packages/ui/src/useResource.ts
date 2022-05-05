@@ -35,7 +35,7 @@ export function useResource<T extends Resource>(value: Reference<T> | T | undefi
     }
 
     return (() => (subscribed = false)) as () => void;
-  }, [value]);
+  }, [medplum, resource, value]);
 
   return resource;
 }

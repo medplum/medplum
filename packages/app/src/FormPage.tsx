@@ -18,6 +18,7 @@ export function FormPage(): JSX.Element {
   const { id } = useParams() as { id: string };
   const location = useLocation();
   const queryParams = Object.fromEntries(new URLSearchParams(location.search).entries()) as Record<string, string>;
+  const subjectParam = queryParams.subject;
   const medplum = useMedplum();
   const [loading, setLoading] = useState<boolean>(true);
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | undefined>();
@@ -40,8 +41,8 @@ export function FormPage(): JSX.Element {
       ],
     };
 
-    if ('subject' in queryParams) {
-      const subjectIds = queryParams.subject.split(',').filter((e) => !!e);
+    if (subjectParam) {
+      const subjectIds = subjectParam.split(',').filter((e) => !!e);
       if (subjectIds.length === 1) {
         (requestBundle.entry as BundleEntry[]).push({
           request: {
@@ -68,7 +69,7 @@ export function FormPage(): JSX.Element {
         setError(reason);
         setLoading(false);
       });
-  }, [id, location]);
+  }, [medplum, id, subjectParam]);
 
   if (error) {
     return (

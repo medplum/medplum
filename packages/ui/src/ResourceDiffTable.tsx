@@ -2,9 +2,9 @@ import { getPropertyDisplayName, IndexedStructureDefinition, stringify } from '@
 import { Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { useMedplum } from './MedplumProvider';
+import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 import './ResourceDiff.css';
 import './ResourceDiffTable.css';
-import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 export interface ResourceDiffTableProps {
   original: Resource;
@@ -17,7 +17,7 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
 
   useEffect(() => {
     medplum.requestSchema(props.original.resourceType).then(setSchema);
-  }, []);
+  }, [medplum, props.original.resourceType]);
 
   if (!schema) {
     return null;

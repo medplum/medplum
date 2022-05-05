@@ -17,7 +17,7 @@ export function ProjectPage(): JSX.Element {
         setLoading(false);
       })
       .catch((reason) => setError(reason));
-  }, [id]);
+  }, [medplum, id]);
 
   if (error) {
     return (

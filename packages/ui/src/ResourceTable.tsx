@@ -19,7 +19,7 @@ export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
     if (value) {
       medplum.requestSchema(value.resourceType).then(setSchema);
     }
-  }, [value]);
+  }, [medplum, value]);
 
   if (!schema || !value) {
     return null;

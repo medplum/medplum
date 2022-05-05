@@ -35,7 +35,7 @@ export function HomePage(): JSX.Element {
       // Otherwise, navigate to the desired URL
       navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
     }
-  }, [location]);
+  }, [medplum, navigate, location]);
 
   if (!search?.resourceType || !search.fields || search.fields.length === 0) {
     return <Loading />;

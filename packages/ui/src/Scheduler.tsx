@@ -8,8 +8,8 @@ import { FormSection } from './FormSection';
 import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
 import { ResourceName } from './ResourceName';
-import './Scheduler.css';
 import { useResource } from './useResource';
+import './Scheduler.css';
 
 export interface SchedulerProps {
   schedule: Schedule | Reference<Schedule>;
@@ -47,7 +47,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
     } else {
       setSlots(undefined);
     }
-  }, [schedule]);
+  }, [medplum, schedule]);
 
   if (!schedule || !slots) {
     return null;

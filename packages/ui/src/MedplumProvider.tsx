@@ -22,7 +22,30 @@ export interface MedplumContext {
  *   2) profile - The current user profile (if signed in)
  */
 export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
-  const medplumContext = createMedplumContext(props.medplum);
+  const medplum = props.medplum;
+
+  const [state, setState] = useState({
+    profile: medplum.getProfile(),
+    loading: false,
+  });
+
+  useEffect(() => {
+    function eventListener(): void {
+      setState({
+        ...state,
+        profile: medplum.getProfile(),
+      });
+    }
+
+    medplum.addEventListener('change', eventListener);
+    return () => medplum.removeEventListeneer('change', eventListener);
+  }, [medplum, state]);
+
+  const medplumContext = {
+    ...state,
+    medplum,
+  };
+
   return <reactContext.Provider value={medplumContext}>{props.children}</reactContext.Provider>;
 }
 
@@ -48,31 +71,4 @@ export function useMedplum(): MedplumClient {
  */
 export function useMedplumProfile(): ProfileResource | undefined {
   return useMedplumContext().profile;
-}
-
-/**
- * Creates the auth object that handles user state.
- */
-function createMedplumContext(medplum: MedplumClient): MedplumContext {
-  const [state, setState] = useState({
-    profile: medplum.getProfile(),
-    loading: false,
-  });
-
-  useEffect(() => {
-    function eventListener(): void {
-      setState({
-        ...state,
-        profile: medplum.getProfile(),
-      });
-    }
-
-    medplum.addEventListener('change', eventListener);
-    return () => medplum.removeEventListeneer('change', eventListener);
-  }, []);
-
-  return {
-    ...state,
-    medplum,
-  };
 }

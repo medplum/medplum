@@ -46,7 +46,7 @@ export function Popup(props: PopupProps): JSX.Element {
 
     document.addEventListener('click', handleClick, true);
     return () => document.removeEventListener('click', handleClick, true);
-  }, []);
+  }, [props]);
 
   // Listen for changes in the location
   // If the browser navigates to a new page, close the popup
@@ -54,7 +54,7 @@ export function Popup(props: PopupProps): JSX.Element {
     if (props.visible && location !== locationRef.current) {
       props.onClose();
     }
-  }, [location]);
+  }, [location, props]);
 
   const style: React.CSSProperties = {
     display: props.visible ? 'block' : 'none',
