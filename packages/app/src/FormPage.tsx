@@ -141,15 +141,15 @@ export function FormPage(): JSX.Element {
   );
 
   async function handleSubmit(questionnaireResponse: QuestionnaireResponse): Promise<void> {
-    const result = [] as QuestionnaireResponse[];
+    const responses = [] as QuestionnaireResponse[];
 
     if (!subjectList || subjectList.length === 0) {
       // If there is no subject, then simply submit the questionnaire response.
-      result.push(await medplum.createResource(questionnaireResponse));
+      responses.push(await medplum.createResource(questionnaireResponse));
     } else {
       // Otherwise submit one questionnaire response for each subject ID.
       for (const subjectId of subjectList) {
-        result.push(
+        responses.push(
           await medplum.createResource({
             ...questionnaireResponse,
             subject: { reference: subjectId },
@@ -158,6 +158,6 @@ export function FormPage(): JSX.Element {
       }
     }
 
-    setResult(result);
+    setResult(responses);
   }
 }
