@@ -1,6 +1,6 @@
 import { AccessPolicy, OperationOutcome, ProjectMembership, Reference, UserConfiguration } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Loading, MedplumLink, ResourceBadge, useMedplum } from '@medplum/ui';
-import React, { useEffect, useState } from 'react';
+import { Button, Document, Form, FormSection, MedplumLink, ResourceBadge, useMedplum } from '@medplum/ui';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AccessPolicyInput } from './AccessPolicyInput';
 import { UserConfigurationInput } from './UserConfigurationInput';
@@ -8,26 +8,14 @@ import { UserConfigurationInput } from './UserConfigurationInput';
 export function EditMembershipPage(): JSX.Element {
   const { projectId, membershipId } = useParams();
   const medplum = useMedplum();
-  const [loading, setLoading] = useState<boolean>(true);
-  const [membership, setMembership] = useState<ProjectMembership>();
-  const [accessPolicy, setAccessPolicy] = useState<Reference<AccessPolicy>>();
-  const [userConfiguration, setUserConfiguration] = useState<Reference<UserConfiguration>>();
-  const [admin, setAdmin] = useState<boolean>();
+  const membership = medplum.get(`admin/projects/${projectId}/members/${membershipId}`).read();
+  const [accessPolicy, setAccessPolicy] = useState<Reference<AccessPolicy> | undefined>(membership.accessPolicy);
+  const [userConfiguration, setUserConfiguration] = useState<Reference<UserConfiguration> | undefined>(
+    membership.userConfiguration
+  );
+  const [admin, setAdmin] = useState<boolean>(membership.admin);
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [success, setSuccess] = useState(false);
-
-  useEffect(() => {
-    medplum
-      .get(`admin/projects/${projectId}/members/${membershipId}`)
-      .then((response) => {
-        setMembership(response);
-        setAccessPolicy(response.accessPolicy);
-        setUserConfiguration(response.userConfiguration);
-        setAdmin(response.admin);
-        setLoading(false);
-      })
-      .catch(setOutcome);
-  }, [medplum, projectId, membershipId]);
 
   function deleteMembership(): void {
     if (window.confirm('Are you sure?')) {
@@ -36,10 +24,6 @@ export function EditMembershipPage(): JSX.Element {
         .then(() => setSuccess(true))
         .catch(setOutcome);
     }
-  }
-
-  if (loading || !membership) {
-    return <Loading />;
   }
 
   return (
