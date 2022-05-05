@@ -9,6 +9,7 @@ import { InvitePage } from './admin/InvitePage';
 import { ProjectPage } from './admin/ProjectPage';
 import { SuperAdminPage } from './admin/SuperAdminPage';
 import { BatchPage } from './BatchPage';
+import { BulkAppPage } from './BulkAppPage';
 import { ChangePasswordPage } from './ChangePasswordPage';
 import { CreateResourcePage } from './CreateResourcePage';
 import { FormPage } from './FormPage';
@@ -53,6 +54,7 @@ export function App(): JSX.Element {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/changepassword" element={<ChangePasswordPage />} />
           <Route path="/batch" element={<BatchPage />} />
+          <Route path="/bulk/:resourceType" element={<BulkAppPage />} />
           <Route path="/forms/:id" element={<FormPage />} />
           <Route path="/admin/project" element={<ProjectPage />} />
           <Route path="/admin/projects/:projectId/bot" element={<CreateBotPage />} />

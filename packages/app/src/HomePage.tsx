@@ -80,6 +80,9 @@ export function HomePage(): JSX.Element {
             .then(() => setSearch({ ...search }));
         }
       }}
+      onBulk={(ids: string[]) => {
+        navigate(`/bulk/${search.resourceType}?ids=${ids.join(',')}`);
+      }}
     />
   );
 }

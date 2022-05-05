@@ -391,6 +391,27 @@ describe('SearchControl', () => {
     expect(onDelete).toBeCalled();
   });
 
+  test('Bulk button', async () => {
+    const onBulk = jest.fn();
+
+    await setup({
+      search: {
+        resourceType: 'Patient',
+      },
+      onBulk,
+    });
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('Bulk...'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Bulk...'));
+    });
+
+    expect(onBulk).toBeCalled();
+  });
+
   test('Click on row', async () => {
     const props = {
       search: {

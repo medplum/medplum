@@ -65,4 +65,13 @@ describe('FormPage', () => {
     expect(screen.getByText('First question')).toBeInTheDocument();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
+
+  test('Multiple subjects', async () => {
+    await setup('/forms/123?subject=ServiceRequest/123,ServiceRequest/456');
+    await waitFor(() => screen.getByText('First question'));
+
+    expect(screen.getByText('First question')).toBeInTheDocument();
+    expect(screen.getByText('Vitals (for 2 resources)')).toBeInTheDocument();
+    expect(screen.queryByText('Homer Simpson')).not.toBeInTheDocument();
+  });
 });

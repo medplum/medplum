@@ -63,6 +63,7 @@ export interface SearchControlProps {
   onExport?: () => void;
   onDelete?: (ids: string[]) => void;
   onPatch?: (ids: string[]) => void;
+  onBulk?: (ids: string[]) => void;
 }
 
 interface SearchControlState {
@@ -289,6 +290,11 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               onClick={() => (props.onDelete as (ids: string[]) => any)(Object.keys(state.selected))}
             >
               Delete...
+            </Button>
+          )}
+          {props.onBulk && (
+            <Button size="small" onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(state.selected))}>
+              Bulk...
             </Button>
           )}
         </div>

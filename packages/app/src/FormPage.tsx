@@ -7,23 +7,24 @@ import {
   QuestionnaireResponse,
   Resource,
 } from '@medplum/fhirtypes';
-import { Document, Loading, QuestionnaireForm, TitleBar, useMedplum } from '@medplum/ui';
+import { Document, Loading, MedplumLink, QuestionnaireForm, TitleBar, useMedplum } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { PatientHeader } from './PatientHeader';
 import { ResourceHeader } from './ResourceHeader';
 import { getPatient } from './utils';
 
 export function FormPage(): JSX.Element {
-  const navigate = useNavigate();
   const { id } = useParams() as { id: string };
   const location = useLocation();
   const queryParams = Object.fromEntries(new URLSearchParams(location.search).entries()) as Record<string, string>;
   const medplum = useMedplum();
   const [loading, setLoading] = useState<boolean>(true);
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | undefined>();
+  const [subjectList, setSubjectList] = useState<string[] | undefined>();
   const [subject, setSubject] = useState<Resource | undefined>();
   const [error, setError] = useState<OperationOutcome>();
+  const [result, setResult] = useState<QuestionnaireResponse[] | undefined>();
 
   useEffect(() => {
     const requestBundle: Bundle = {
@@ -40,12 +41,16 @@ export function FormPage(): JSX.Element {
     };
 
     if ('subject' in queryParams) {
-      (requestBundle.entry as BundleEntry[]).push({
-        request: {
-          method: 'GET',
-          url: queryParams['subject'],
-        },
-      });
+      const subjectIds = queryParams.subject.split(',').filter((e) => !!e);
+      if (subjectIds.length === 1) {
+        (requestBundle.entry as BundleEntry[]).push({
+          request: {
+            method: 'GET',
+            url: subjectIds[0],
+          },
+        });
+      }
+      setSubjectList(subjectIds);
     }
 
     medplum
@@ -73,6 +78,42 @@ export function FormPage(): JSX.Element {
     );
   }
 
+  if (result) {
+    return (
+      <Document>
+        <h1>{questionnaire?.title}</h1>
+        <p>Your response has been recorded.</p>
+        <ul>
+          {result.length === 1 && (
+            <li>
+              <MedplumLink to={result[0]}>Review your answers</MedplumLink>
+            </li>
+          )}
+          {result.length > 1 && (
+            <li>
+              Review your answers:
+              <ul>
+                {result.map((response) => (
+                  <li>
+                    <MedplumLink to={response}>{getReferenceString(response)}</MedplumLink>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          )}
+          {subject && (
+            <li>
+              <MedplumLink to={subject}>Back to&nbsp;{getDisplayString(subject)}</MedplumLink>
+            </li>
+          )}
+          <li>
+            <MedplumLink to="/">Go back home</MedplumLink>
+          </li>
+        </ul>
+      </Document>
+    );
+  }
+
   if (loading || !questionnaire) {
     return <Loading />;
   }
@@ -84,19 +125,39 @@ export function FormPage(): JSX.Element {
       {patient && <PatientHeader patient={patient} />}
       {subject && subject.resourceType !== 'Patient' && <ResourceHeader resource={subject} />}
       <TitleBar>
-        <h1>{getDisplayString(questionnaire)}</h1>
+        <h1>
+          {getDisplayString(questionnaire)}
+          {subjectList && subjectList.length > 1 && <>&nbsp;(for {subjectList.length} resources)</>}
+        </h1>
       </TitleBar>
       <Document>
         <QuestionnaireForm
           questionnaire={questionnaire}
           subject={subject && createReference(subject)}
-          onSubmit={(questionnaireResponse: QuestionnaireResponse) => {
-            medplum.createResource(questionnaireResponse).then((result) => {
-              navigate(`/${getReferenceString(result)}`);
-            });
-          }}
+          onSubmit={handleSubmit}
         />
       </Document>
     </>
   );
+
+  async function handleSubmit(questionnaireResponse: QuestionnaireResponse): Promise<void> {
+    const responses = [] as QuestionnaireResponse[];
+
+    if (!subjectList || subjectList.length === 0) {
+      // If there is no subject, then simply submit the questionnaire response.
+      responses.push(await medplum.createResource(questionnaireResponse));
+    } else {
+      // Otherwise submit one questionnaire response for each subject ID.
+      for (const subjectId of subjectList) {
+        responses.push(
+          await medplum.createResource({
+            ...questionnaireResponse,
+            subject: { reference: subjectId },
+          })
+        );
+      }
+    }
+
+    setResult(responses);
+  }
 }
