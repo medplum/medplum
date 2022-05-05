@@ -19,7 +19,7 @@ import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { parseJWTPayload } from './jwt';
 import { isOk } from './outcomes';
-import { MedplumQueryPromise, MedplumRejectedPromise, ReadablePromise } from './promise';
+import { ReadablePromise } from './readablepromise';
 import { formatSearchQuery, parseSearchDefinition, SearchRequest } from './search';
 import { ClientStorage } from './storage';
 import { createSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
@@ -277,7 +277,7 @@ export class MedplumClient extends EventTarget {
     if (cached) {
       return cached;
     }
-    const promise = new MedplumQueryPromise(this.#request<T>('GET', url, options));
+    const promise = new ReadablePromise(this.#request<T>('GET', url, options));
     this.#requestCache.set(url, promise);
     return promise;
   }
@@ -668,7 +668,7 @@ export class MedplumClient extends EventTarget {
   readReference<T extends Resource>(reference: Reference<T>): ReadablePromise<T> {
     const refString = reference?.reference;
     if (!refString) {
-      return new MedplumRejectedPromise('Missing reference');
+      return new ReadablePromise(Promise.reject('Missing reference'));
     }
     const [resourceType, id] = refString.split('/');
     return this.readResource(resourceType, id);
@@ -697,7 +697,7 @@ export class MedplumClient extends EventTarget {
   readCachedReference<T extends Resource>(reference: Reference<T>): ReadablePromise<T> {
     const refString = reference?.reference;
     if (!refString) {
-      return new MedplumRejectedPromise('Missing reference');
+      return new ReadablePromise(Promise.reject('Missing reference'));
     }
     const [resourceType, id] = refString.split('/');
     return this.readCached(resourceType, id);
@@ -991,8 +991,8 @@ export class MedplumClient extends EventTarget {
       this.get('auth/me')
         .then((result) => {
           this.#profilePromise = undefined;
-          this.#profile = (result as any).profile;
-          this.#config = (result as any).config;
+          this.#profile = result.profile;
+          this.#config = result.config;
           this.dispatchEvent({ type: 'change' });
           resolve(this.#profile);
         })

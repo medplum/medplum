@@ -10,7 +10,7 @@ export function ProjectPage(): JSX.Element {
   return (
     <Document width={600}>
       <h1>Admin / Projects / {result.project.name}</h1>
-      <h3>Membersx</h3>
+      <h3>Members</h3>
       <table className="medplum-table">
         <colgroup>
           <col style={{ width: '60%' }} />
