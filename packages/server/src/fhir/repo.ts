@@ -927,7 +927,7 @@ export class Repository {
     }
 
     if (searchParam.type === 'reference') {
-      return this.#buildReferenceColumns(searchParam, value);
+      return this.#buildReferenceColumns(value);
     }
 
     if (searchParam.type === 'token') {
