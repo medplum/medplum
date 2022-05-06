@@ -1,10 +1,11 @@
 import { assertOk, badRequest } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
-import { Request, Response, Router } from 'express';
+import { json, Request, Response, Router } from 'express';
 import internal from 'stream';
 import zlib from 'zlib';
-import { sendOutcome } from '.';
 import { asyncWrap } from '../async';
+import { createPdf } from '../util/pdf';
+import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { getPresignedUrl } from './signer';
 import { getBinaryStorage } from './storage';
@@ -41,6 +42,31 @@ binaryRouter.post(
       });
     } catch (err) {
       sendOutcome(res, badRequest(err as string));
+    }
+  })
+);
+
+// Create a binary by PDF Document Definition
+binaryRouter.post(
+  '/([$]|%24)pdf',
+  json(),
+  asyncWrap(async (req: Request, res: Response) => {
+    if (!req.is('application/json')) {
+      sendOutcome(res, badRequest('Unsupported content type'));
+      return;
+    }
+
+    const filename = req.query['_filename'] as string | undefined;
+    const repo = res.locals.repo as Repository;
+
+    try {
+      const binary = await createPdf(repo, filename, req.body);
+      res.status(201).json({
+        ...binary,
+        url: getPresignedUrl(binary),
+      });
+    } catch (err) {
+      sendOutcome(res, badRequest((err as Error).message));
     }
   })
 );

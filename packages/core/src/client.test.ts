@@ -508,10 +508,34 @@ describe('Client', () => {
 
   test('Create binary', async () => {
     const client = new MedplumClient(defaultOptions);
+    const result = await client.createBinary('Hello world', undefined, 'text/plain');
+    expect(result).toBeDefined();
+    expect((result as any).request.options.method).toBe('POST');
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Binary');
+  });
+
+  test('Create binary with filename', async () => {
+    const client = new MedplumClient(defaultOptions);
     const result = await client.createBinary('Hello world', 'hello.txt', 'text/plain');
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('POST');
     expect((result as any).request.url).toBe('https://x/fhir/R4/Binary?_filename=hello.txt');
+  });
+
+  test('Create pdf', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.createPdf({ content: ['Hello world'] });
+    expect(result).toBeDefined();
+    expect((result as any).request.options.method).toBe('POST');
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Binary/$pdf');
+  });
+
+  test('Create pdf with filename', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.createPdf({ content: ['Hello world'] }, 'report.pdf');
+    expect(result).toBeDefined();
+    expect((result as any).request.options.method).toBe('POST');
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Binary/$pdf?_filename=report.pdf');
   });
 
   test('Update resource', async () => {

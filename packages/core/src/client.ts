@@ -864,11 +864,46 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
    *
-   * @param resource The FHIR resource to create.
+   * @param data The binary data to upload.
+   * @param filename Optional filename for the binary.
+   * @param contentType Content type for the binary.
    * @returns The result of the create operation.
    */
-  createBinary(data: any, filename: string, contentType: string): Promise<Binary> {
-    return this.post(this.fhirUrl('Binary') + '?_filename=' + encodeURIComponent(filename), data, contentType);
+  createBinary(data: string | File, filename: string | undefined, contentType: string): Promise<Binary> {
+    let url = this.fhirUrl('Binary');
+    if (filename) {
+      url += '?_filename=' + encodeURIComponent(filename);
+    }
+    return this.post(url, data, contentType);
+  }
+
+  /**
+   * Creates a PDF as a FHIR `Binary` resource based on pdfmake document definition.
+   *
+   * The return value is the newly created resource, including the ID and meta.
+   *
+   * The `docDefinition` parameter is a pdfmake document definition.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const result = await medplum.createPdf({
+   *   content: ['Hello world']
+   * });
+   * console.log(result.id);
+   * ```
+   *
+   * See the pdfmake document definition for full details: https://pdfmake.github.io/docs/0.1/document-definition-object/
+   *
+   * @param docDefinition The FHIR resource to create.
+   * @returns The result of the create operation.
+   */
+  createPdf(docDefinition: Record<string, unknown>, filename?: string): Promise<Binary> {
+    let url = this.fhirUrl('Binary') + '/$pdf';
+    if (filename) {
+      url += '?_filename=' + encodeURIComponent(filename);
+    }
+    return this.post(url, docDefinition, 'application/json');
   }
 
   /**
