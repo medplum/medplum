@@ -20,10 +20,9 @@ Many compainies use third party logistics (3PL) to do fulfillment.  Examples of 
 
 When we this implementation is complete, the whole workflow below will be done in an automated way with without human intervention.
 
-* Create a [ServiceRequest](https://app.medplum.com/ServiceRequest) when a package is shipped to a [Patient](https://app.medplum.com/Patient)'s home
+* Update a [ServiceRequest](https://app.medplum.com/ServiceRequest) when a package is shipped to a [Patient](https://app.medplum.com/Patient)'s home
 * Link a Tracker url (that shows the delivery history of a package) to a ServiceRequest.
-* Receive updates as that shipment is sent to the Patient via [Easypost Webhooks](https://www.easypost.com/docs/api#webhooks) and update the ServiceRequest accordingly.
-* Receive confirmation that the shipment has arrived (also via Easypost Webhooks).
+* Receive updates as that shipment moves through the mail service to the Patient via [Easypost Webhooks](https://www.easypost.com/docs/api#webhooks) and update the ServiceRequest accordingly.
 
 ## The Implementation
 
@@ -39,105 +38,74 @@ When we this implementation is complete, the whole workflow below will be done i
 
 * Linking the logistics system, Easypost, to Medplum is done through [Medplum Bots](https://app.medplum.com/Bot).
 * At a high level, webhooks are sent from Easypost to Medplum, updating data in Medplum based on the contents of the Webhook.
-* This example assumes that there is a `ServiceRequest` with an identifier that matches the Easypost `reference`.
+* This example assumes that there is a `ServiceRequest` with an identifier that matches the Easypost `shipment_id`.
+* This example assumes that the [Easypost Event JSON Object](https://www.easypost.com/docs/api#events) is posted to the Bot endpoint and serves as the data synced between systems.  As you can see from the code, it contains a `tracker` object with a `public_url`, a `tracking_code` and other details which we will use to populate the `ServiceRequest`.
 
 * Make the Easypost subscription bot that will listen for webhooks
-  * First, [create a bot](https://app.medplum.com/Bot/new) called EasyPost Shipment Handler and save it
+  * First, [create a bot](https://app.medplum.com/admin/project) called EasyPost Shipment Handler and save it
   * Paste the code below into the Bot you created and save.
 
   ```js
-  //Grab the reference and the tracker object out of the Easypost Shipment json
-  const reference = input.get('reference');
-  const tracker = input.get('tracker');
-  const status = tracker.get('status');
-  const public_url = tracker.get('public_url');
+  export async function handler(medplum, event) {
+    const input = event.input;
+    // The input is an Easypost Event https://www.easypost.com/docs/api#events
+    const reference = input['id'];
+    const status = input['status'];
+    const description = input['description'];
 
-  //Find the ServiceRequest that has the Easypost reference
-  const serviceRequest = await medplum.readResource('ServiceRequest', reference);
+    // If this is not an Easypost tracker event, let's ignore it
+    if (!description.toLowerCase().includes('tracker')) {
+        console.log(reference + ' is not a tracking event');
+        return;
+    }
 
-  if (!serviceRequest) {
-    const to_address = input.get('to_address');
-    const shipmentAddress = await medplum.createResource({
-      resourceType: 'Location',
-      identifier: [{
-        system: 'https://www.easypost.com/address',
-        value: to_address.get('id');
-      }],
-      name: to_address.get('name');
-      address: {
-        use: 'home',
-        type: 'physical',
-        line: [to_address.get('street1'), to_address.get('street2')],
-        city: to_address.get('city'),
-        state: to_address.get('state'),
-        postalCode: to_address.get('zip'),
-        country: to_address.get('country')
-      }
-    })
-    const newServiceRequest = await medplum.createResource({
-    resourceType: 'ServiceRequest',
-      identifier: [{
-        system: 'https://www.easypost.com/reference',
-        value: reference
-      }],
-      location: shipmentAddress, 
-      orderDetail: [
-        {"text": "easypost_tracker",
-        "coding": [
-          {
-            "system": "https://www.easypost.com/tracker",
-            "code": 'tracker',
-            "display": public_url
-          }
-        ]
-        },
-        {"text": "easypost_status",
-        "coding": [
-          {
-            "system": "https://www.easypost.com/status",
-            "code": 'status',
-            "display": status
-          }
-        ]
-        }
-      ] 
-    });
-  } else {
+    const {
+        shipment_id,
+        tracking_code,
+        public_url
+    } = input.result;
+
+    // Find the ServiceRequest that has the Easypost reference
+    const serviceRequest = await medplum.searchOne('ServiceRequest?identifier=' + shipment_id);
+
+    if (!serviceRequest) {
+        console.log('Shipment ServiceRequest not found');
+    }
+
     const result = await medplum.updateResource({
-    resourceType: 'ServiceRequest',
-      identifier: [{
-        system: 'https://www.easypost.com/reference',
-        value: reference
-      }],
-      orderDetail: [
-        {"text": "easypost_tracker",
-        "coding": [
-          {
-            "system": "https://www.easypost.com/tracker",
-            "code": 'tracker',
-            "display": public_url
-          }
+        ...serviceRequest,
+        orderDetail: [{
+                "text": "easypost_tracker",
+                "coding": [{
+                    "system": "https://www.easypost.com/public_url",
+                    "code": 'public_url',
+                    "display": public_url
+                }]
+            },
+            {
+                "text": "easypost_status",
+                "coding": [{
+                    "system": "https://www.easypost.com/status",
+                    "code": 'status',
+                    "display": status
+                }]
+            },
+            {
+                "text": "easypost_status",
+                "coding": [{
+                    "system": "https://www.easypost.com/tracker",
+                    "code": 'tracker',
+                    "display": tracker
+                }]
+            }
         ]
-        },
-        {"text": "easypost_status",
-        "coding": [
-          {
-            "system": "https://www.easypost.com/status",
-            "code": 'status',
-            "display": status
-          }
-        ]
-        }
-      ] 
     });
   }
-  return ok;
   ```
 
 Before moving this bot to production, you should consider the following:
 
 * You should do HMAC signature check as part of your bot to ensure that the request actually came from Easypost.
-* Use throwaway identifiers to map the ServiceRequests to the Easypost shipments.  ServiceRequests support multiple identifiers, so in this case it is recommended to make one especially for Easypost usage, or tag the ServiceRequest with the `shipment_id` as shown in this example.
 
 ### Easypost Webhook creation
 
@@ -150,4 +118,4 @@ Next stage is to create a Webhook in Easypost and configure it to connect to Med
 https://<client-application-id>:<client-secret>@api.medplum.com/fhir/R4/Bot/<bot-id>/$execute
 ```
 
-That's it, you are done!  Test a couple of requests, and you should see the data propagating through the system, with ServiceRequests getting updated as a shiment moves through the system.
+That's it, you are done!  Test a couple of requests by making labels, and you should see the data propagating through the system, with ServiceRequests getting updated as a shiment moves through the mail.
