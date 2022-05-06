@@ -1,11 +1,11 @@
 import { assertOk, badRequest } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
-import { Request, Response, Router } from 'express';
+import { json, Request, Response, Router } from 'express';
 import internal from 'stream';
 import zlib from 'zlib';
-import { sendOutcome } from '.';
 import { asyncWrap } from '../async';
 import { createPdf } from '../util/pdf';
+import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { getPresignedUrl } from './signer';
 import { getBinaryStorage } from './storage';
@@ -49,15 +49,10 @@ binaryRouter.post(
 // Create a binary by PDF Document Definition
 binaryRouter.post(
   '/([$]|%24)pdf',
+  json(),
   asyncWrap(async (req: Request, res: Response) => {
     if (!req.is('application/json')) {
       sendOutcome(res, badRequest('Unsupported content type'));
-      return;
-    }
-
-    const stream = getContentStream(req);
-    if (!stream) {
-      sendOutcome(res, badRequest('Unsupported content encoding'));
       return;
     }
 
@@ -65,9 +60,7 @@ binaryRouter.post(
     const repo = res.locals.repo as Repository;
 
     try {
-      const body = await streamToString(stream);
-      const docDefinition = JSON.parse(body);
-      const binary = await createPdf(repo, filename, docDefinition);
+      const binary = await createPdf(repo, filename, req.body);
       res.status(201).json({
         ...binary,
         url: getPresignedUrl(binary),
@@ -154,25 +147,4 @@ function getContentStream(req: Request): internal.Readable | undefined {
   }
 
   return undefined;
-}
-
-/**
- * Reads the content stream as a string.
- *
- * For most requests, this is handled automatically by Express and body-parser.
- * Unfortunately body-parser will always write the content to a temporary file on local disk.
- * For most binary types, this is not acceptable.
- *
- * Based on: https://stackoverflow.com/a/49428486
- *
- * @param stream The stream to read.
- * @returns The stream as a string.
- */
-function streamToString(stream: internal.Readable): Promise<string> {
-  const chunks = [] as Buffer[];
-  return new Promise((resolve, reject) => {
-    stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
-    stream.on('error', (err) => reject(err));
-    stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-  });
 }

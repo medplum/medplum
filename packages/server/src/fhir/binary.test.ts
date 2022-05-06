@@ -168,17 +168,6 @@ describe('Binary', () => {
     expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toEqual('Unsupported content type');
   });
 
-  test('Create PDF unsupported content encoding', async () => {
-    const res = await request(app)
-      .post('/fhir/R4/Binary/$pdf')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Encoding', 'fake')
-      .set('Content-Type', 'application/json')
-      .send({ content: ['Hello world'] });
-    expect(res.status).toBe(400);
-    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toEqual('Unsupported content encoding');
-  });
-
   test('Create PDF malformed JSON', async () => {
     const res = await request(app)
       .post('/fhir/R4/Binary/$pdf')
@@ -186,7 +175,7 @@ describe('Binary', () => {
       .set('Content-Type', 'application/json')
       .send('}');
     expect(res.status).toBe(400);
-    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toMatch(/Unexpected token/);
+    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toMatch('Content could not be parsed');
   });
 
   test('Create and read PDF', async () => {
