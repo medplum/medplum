@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import './Autocomplete.css';
 import { killEvent } from './utils/dom';
+import './Autocomplete.css';
 
 export interface AutocompleteProps<T> {
   name: string;
@@ -55,6 +55,13 @@ export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
     setValues(props.defaultValue ?? []);
   }, [props.defaultValue]);
 
+  function setValuesWrapper(newValues: T[]): void {
+    setValues(newValues);
+    if (props.onChange) {
+      props.onChange(newValues);
+    }
+  }
+
   /**
    * Adds an option to the list of selected options.
    * @param option The option.
@@ -67,13 +74,9 @@ export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
     setFocused(true);
     setDropDownVisible(false);
     setLastValue('');
-    setValues(newValues);
     setOptions([]);
     setSelectedIndex(-1);
-
-    if (props.onChange) {
-      props.onChange(newValues);
-    }
+    setValuesWrapper(newValues);
   }
 
   function handleClick(): void {
@@ -171,7 +174,7 @@ export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
       // If there are selected items,
       // then delete the last item.
       killEvent(e);
-      setValues(values.slice(0, values.length - 1));
+      setValuesWrapper(values.slice(0, values.length - 1));
     }
   }
 
