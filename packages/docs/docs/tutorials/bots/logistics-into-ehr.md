@@ -52,58 +52,54 @@ When we this implementation is complete, the whole workflow below will be done i
     const reference = input['id'];
     const status = input['status'];
     const description = input['description'];
-    
+
     // If this is not an Easypost tracker event, let's ignore it
-    if (description.toLowerCase().indexOf('tracker') === -1) {
+    if (!description.toLowerCase().includes('tracker')) {
         console.log(reference + ' is not a tracking event');
         return;
     }
-    
-    const shipment_id = input['result']['shipment_id'];
-    const tracker = input['result']['tracking_code']; 
-    const public_url = input['result']['public_url'];
-    
-    //Find the ServiceRequest that has the Easypost reference
+
+    const {
+        shipment_id,
+        tracking_code,
+        public_url
+    } = input.result;
+
+    // Find the ServiceRequest that has the Easypost reference
     const serviceRequest = await medplum.searchOne('ServiceRequest?identifier=' + shipment_id);
-    
-    if (serviceRequest) {
-      const result = await medplum.updateResource({
-          ...serviceRequest,
-        orderDetail: [
-          {"text": "easypost_tracker",
-            "coding": [
-              {
-                "system": "https://www.easypost.com/public_url",
-                "code": 'public_url',
-                "display": public_url
-              }
-            ]
-          },
-          {"text": "easypost_status",
-            "coding": [
-              {
-                "system": "https://www.easypost.com/status",
-                "code": 'status',
-                "display": status
-              }
-            ]
-          },
-          {"text": "easypost_status",
-            "coding": [
-              {
-                "system": "https://www.easypost.com/tracker",
-                "code": 'tracker',
-                "display": tracker
-              }
-            ]
-          }
-        ] 
-      });
-    } else {
-      //If the ServiceRequest was not found ignore
-      console.log('Shipment ServiceRequest not found');
+
+    if (!serviceRequest) {
+        console.log('Shipment ServiceRequest not found');
     }
-    return;
+
+    const result = await medplum.updateResource({
+        ...serviceRequest,
+        orderDetail: [{
+                "text": "easypost_tracker",
+                "coding": [{
+                    "system": "https://www.easypost.com/public_url",
+                    "code": 'public_url',
+                    "display": public_url
+                }]
+            },
+            {
+                "text": "easypost_status",
+                "coding": [{
+                    "system": "https://www.easypost.com/status",
+                    "code": 'status',
+                    "display": status
+                }]
+            },
+            {
+                "text": "easypost_status",
+                "coding": [{
+                    "system": "https://www.easypost.com/tracker",
+                    "code": 'tracker',
+                    "display": tracker
+                }]
+            }
+        ]
+    });
   }
   ```
 
