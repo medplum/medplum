@@ -9,6 +9,12 @@ describe('MockClient', () => {
     expect(result).toMatchObject(HomerSimpson);
   });
 
+  test('Handles options', async () => {
+    const client = new MockClient();
+    const result = await client.get('fhir/R4/Patient/123', { cache: 'reload' });
+    expect(result).toMatchObject(HomerSimpson);
+  });
+
   test('Profile', () => {
     const client = new MockClient();
     expect(client.getProfile()).toMatchObject({ resourceType: 'Practitioner' });

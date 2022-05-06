@@ -273,9 +273,11 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to the response content.
    */
   get<T = any>(url: string, options: RequestInit = {}): ReadablePromise<T> {
-    const cached = this.#requestCache.get(url);
-    if (cached) {
-      return cached;
+    if (!options?.cache) {
+      const cached = this.#requestCache.get(url);
+      if (cached) {
+        return cached;
+      }
     }
     const promise = new ReadablePromise(this.#request<T>('GET', url, options));
     this.#requestCache.set(url, promise);

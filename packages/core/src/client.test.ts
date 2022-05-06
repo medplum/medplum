@@ -362,6 +362,16 @@ describe('Client', () => {
     expect(client.getActiveLogin()).toBeDefined();
   });
 
+  test('HTTP GET', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const request1 = client.get('Practitioner/123');
+    const request2 = client.get('Practitioner/123');
+    expect(request2).toBe(request1);
+
+    const request3 = client.get('Practitioner/123', { cache: 'reload' });
+    expect(request3).not.toBe(request1);
+  });
+
   test('Read expired and refresh', async () => {
     tokenExpired = true;
 

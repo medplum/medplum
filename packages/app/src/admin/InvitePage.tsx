@@ -29,6 +29,7 @@ export function InvitePage(): JSX.Element {
           };
           medplum
             .post('admin/projects/' + projectId + '/invite', body)
+            .then(() => medplum.get(`admin/projects/${projectId}`, { cache: 'reload' }))
             .then(() => setSuccess(true))
             .catch(setOutcome);
         }}

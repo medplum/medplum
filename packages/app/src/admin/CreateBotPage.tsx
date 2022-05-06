@@ -27,6 +27,7 @@ export function CreateBotPage(): JSX.Element {
           };
           medplum
             .post('admin/projects/' + projectId + '/bot', body)
+            .then(() => medplum.get(`admin/projects/${projectId}`, { cache: 'reload' }))
             .then(() => setSuccess(true))
             .catch(setOutcome);
         }}

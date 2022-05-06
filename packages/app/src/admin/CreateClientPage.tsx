@@ -29,6 +29,7 @@ export function CreateClientPage(): JSX.Element {
           };
           medplum
             .post('admin/projects/' + projectId + '/client', body)
+            .then(() => medplum.get(`admin/projects/${projectId}`, { cache: 'reload' }))
             .then(() => setSuccess(true))
             .catch(setOutcome);
         }}
