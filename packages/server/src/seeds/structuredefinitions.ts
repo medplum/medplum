@@ -24,6 +24,7 @@ async function createStructureDefinitionsForBundle(structureDefinitions: Bundle)
       const [outcome, result] = await systemRepo.createResource<StructureDefinition>({
         ...resource,
         text: undefined,
+        differential: undefined,
       });
       assertOk(outcome, result);
       logger.debug('Created: ' + result.id);

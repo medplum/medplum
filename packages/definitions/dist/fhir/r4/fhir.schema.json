@@ -20726,6 +20726,13 @@
             "$ref": "#/definitions/DeviceDefinition_Material"
           },
           "type": "array"
+        },
+        "classification": {
+          "description": "What kind of device or device system this is.",
+          "items": {
+            "$ref": "#/definitions/DeviceDefinition_Classification"
+          },
+          "type": "array"
         }
       },
       "additionalProperties": false,
@@ -20997,6 +21004,38 @@
       "required": [
         "substance"
       ]
+    },
+    "DeviceDefinition_Classification": {
+      "description": "What kind of device or device system this is.",
+      "properties": {
+        "id": {
+          "description": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "$ref": "#/definitions/string"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "type": {
+          "description": "A classification or risk class of the device model.",
+          "$ref": "#/definitions/CodeableConcept"
+        },
+        "justification": {
+          "description": "Further information qualifying this classification of the device model.",
+          "$ref": "#/definitions/RelatedArtifact"
+        }
+      },
+      "additionalProperties": false
     },
     "DeviceMetric": {
       "description": "Describes a measurement, calculation or setting capability of a medical device.",
