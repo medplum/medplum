@@ -72,7 +72,6 @@ describe('Autocomplete', () => {
     render(
       <Autocomplete
         name="foo"
-        defaultValue={['y']}
         loadOptions={async () => ['x', 'y', 'z']}
         getId={(item: string) => item}
         getDisplay={(item: string) => <span>{item}</span>}
@@ -82,13 +81,26 @@ describe('Autocomplete', () => {
       />
     );
 
-    // Wait for default value to load
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+
+    // Enter "x"
     await act(async () => {
-      jest.advanceTimersByTime(1000);
-      await waitFor(() => screen.getByTestId('selected'));
+      fireEvent.change(input, { target: { value: 'x' } });
     });
 
-    expect(screen.getByTestId('selected')).toBeInTheDocument();
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    await waitFor(() => screen.getByTestId('dropdown'));
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    expect(lastValue).toEqual(['x']);
 
     // Press "Backspace"
     await act(async () => {
@@ -96,7 +108,7 @@ describe('Autocomplete', () => {
       fireEvent.keyDown(input, { key: 'Backspace', code: 'Backspace' });
     });
 
-    expect(lastValue).toBeUndefined();
+    expect(lastValue).toEqual([]);
   });
 
   test('Handles click', async () => {
