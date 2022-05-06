@@ -7,8 +7,6 @@ import fetch from 'node-fetch';
 import { resolve } from 'path';
 
 export async function main(medplum: MedplumClient, argv: string[]): Promise<void> {
-  dotenv.config();
-
   if (argv.length < 3) {
     console.log('Usage: medplum <command>');
     return;
@@ -53,13 +51,14 @@ async function deployBot(medplum: MedplumClient, argv: string[]): Promise<void> 
       ...bot,
       code: readFileSync(filePath, 'utf8'),
     });
-    console.log(JSON.stringify(result, null, 2));
+    console.log('Success! New bot version: ' + result.meta?.versionId);
   } catch (err) {
-    console.log('Patch error: ', err);
+    console.log('Update error: ', err);
   }
 }
 
 if (process.argv[1].includes('medplum') && process.argv[1].includes('cli')) {
+  dotenv.config();
   const medplum = new MedplumClient({ fetch });
   medplum
     .clientCredentials(process.env['MEDPLUM_CLIENT_ID'] as string, process.env['MEDPLUM_CLIENT_SECRET'] as string)
