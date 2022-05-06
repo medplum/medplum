@@ -4,7 +4,6 @@ export * from './format';
 export * from './hl7';
 export * from './outcomes';
 export * from './readablepromise';
-export * from './repo';
 export * from './search';
 export * from './searchparams';
 export * from './types';
