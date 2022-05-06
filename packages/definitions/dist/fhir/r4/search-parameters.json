@@ -18089,6 +18089,43 @@
     }
   },
   {
+    "fullUrl" : "http://hl7.org/fhir/SearchParameter/DeviceDefinition-classification",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "DeviceDefinition-classification",
+      "extension" : [{
+        "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
+        "valueCode" : "trial-use"
+      }],
+      "url" : "http://hl7.org/fhir/SearchParameter/DeviceDefinition-classification",
+      "version" : "5.0.0-snapshot1",
+      "name" : "classification",
+      "status" : "draft",
+      "experimental" : false,
+      "date" : "2021-12-19T08:15:41+11:00",
+      "publisher" : "Health Level Seven International (Orders and Observations)",
+      "contact" : [{
+        "telecom" : [{
+          "system" : "url",
+          "value" : "http://hl7.org/fhir"
+        }]
+      },
+      {
+        "telecom" : [{
+          "system" : "url",
+          "value" : "http://www.hl7.org/Special/committees/orders/index.cfm"
+        }]
+      }],
+      "description" : "The device component classification",
+      "code" : "classification",
+      "base" : ["DeviceDefinition"],
+      "type" : "token",
+      "expression" : "DeviceDefinition.classification.type",
+      "xpath" : "f:DeviceDefinition/f:classification/f:type",
+      "xpathUsage" : "normal"
+    }
+  },
+  {
     "fullUrl" : "http://hl7.org/fhir/SearchParameter/DeviceMetric-category",
     "resource" : {
       "resourceType" : "SearchParameter",
