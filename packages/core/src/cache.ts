@@ -33,6 +33,10 @@ export class LRUCache<T> {
     this.#cache.set(key, val);
   }
 
+  delete(key: string): void {
+    this.#cache.delete(key);
+  }
+
   #first(): string {
     // This works because the Map class maintains ordered keys.
     return this.#cache.keys().next().value;

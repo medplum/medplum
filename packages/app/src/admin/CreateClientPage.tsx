@@ -1,32 +1,19 @@
 import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Input, Loading, MedplumLink, useMedplum } from '@medplum/ui';
-import React, { useEffect, useState } from 'react';
+import { Button, Document, Form, FormSection, Input, MedplumLink, useMedplum } from '@medplum/ui';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AccessPolicyInput } from './AccessPolicyInput';
 
 export function CreateClientPage(): JSX.Element {
   const { projectId } = useParams() as { projectId: string };
   const medplum = useMedplum();
-  const [result, setResult] = useState<any>();
+  const result = medplum.get(`admin/projects/${projectId}`).read();
   const [name, setName] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [redirectUri, setRedirectUri] = useState<string>('');
   const [accessPolicy, setAccessPolicy] = useState<Reference<AccessPolicy>>();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [success, setSuccess] = useState(false);
-
-  useEffect(() => {
-    medplum
-      .get('admin/projects/' + projectId)
-      .then((response) => {
-        setResult(response);
-      })
-      .catch(setOutcome);
-  }, [medplum, projectId]);
-
-  if (!result) {
-    return <Loading />;
-  }
 
   return (
     <Document width={600}>
@@ -42,6 +29,7 @@ export function CreateClientPage(): JSX.Element {
           };
           medplum
             .post('admin/projects/' + projectId + '/client', body)
+            .then(() => medplum.get(`admin/projects/${projectId}`, { cache: 'reload' }))
             .then(() => setSuccess(true))
             .catch(setOutcome);
         }}

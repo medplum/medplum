@@ -19,6 +19,7 @@ import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { parseJWTPayload } from './jwt';
 import { isOk } from './outcomes';
+import { ReadablePromise } from './readablepromise';
 import { formatSearchQuery, parseSearchDefinition, SearchRequest } from './search';
 import { ClientStorage } from './storage';
 import { createSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
@@ -200,7 +201,7 @@ export class MedplumClient extends EventTarget {
   readonly #fetch: FetchLike;
   readonly #storage: ClientStorage;
   readonly #schema: IndexedStructureDefinition;
-  readonly #resourceCache: LRUCache<Resource | Promise<Resource>>;
+  readonly #requestCache: LRUCache<ReadablePromise<any>>;
   readonly #baseUrl: string;
   readonly #clientId: string;
   readonly #authorizeUrl: string;
@@ -229,7 +230,7 @@ export class MedplumClient extends EventTarget {
     this.#fetch = options?.fetch || window.fetch.bind(window);
     this.#storage = new ClientStorage();
     this.#schema = createSchema();
-    this.#resourceCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
+    this.#requestCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
     this.#baseUrl = options?.baseUrl || DEFAULT_BASE_URL;
     this.#clientId = options?.clientId || '';
     this.#authorizeUrl = options?.authorizeUrl || this.#baseUrl + 'oauth2/authorize';
@@ -252,7 +253,7 @@ export class MedplumClient extends EventTarget {
    */
   clear(): void {
     this.#storage.clear();
-    this.#resourceCache.clear();
+    this.#requestCache.clear();
     this.#accessToken = undefined;
     this.#refreshToken = undefined;
     this.#profile = undefined;
@@ -271,8 +272,16 @@ export class MedplumClient extends EventTarget {
    * @param options Optional fetch options.
    * @returns Promise to the response content.
    */
-  get(url: string, options: RequestInit = {}): Promise<any> {
-    return this.#request('GET', url, options);
+  get<T = any>(url: string, options: RequestInit = {}): ReadablePromise<T> {
+    if (!options?.cache) {
+      const cached = this.#requestCache.get(url);
+      if (cached) {
+        return cached;
+      }
+    }
+    const promise = new ReadablePromise(this.#request<T>('GET', url, options));
+    this.#requestCache.set(url, promise);
+    return promise;
   }
 
   /**
@@ -295,6 +304,7 @@ export class MedplumClient extends EventTarget {
     if (contentType) {
       this.#setRequestContentType(options, contentType);
     }
+    this.#requestCache.delete(url);
     return this.#request('POST', url, options);
   }
 
@@ -318,6 +328,7 @@ export class MedplumClient extends EventTarget {
     if (contentType) {
       this.#setRequestContentType(options, contentType);
     }
+    this.#requestCache.delete(url);
     return this.#request('PUT', url, options);
   }
 
@@ -336,6 +347,7 @@ export class MedplumClient extends EventTarget {
   patch(url: string, operations: Operation[], options: RequestInit = {}): Promise<any> {
     this.#setRequestBody(options, operations);
     this.#setRequestContentType(options, PATCH_CONTENT_TYPE);
+    this.#requestCache.delete(url);
     return this.#request('PATCH', url, options);
   }
 
@@ -351,6 +363,7 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to the response content.
    */
   delete(url: string, options: RequestInit = {}): Promise<any> {
+    this.#requestCache.delete(url);
     return this.#request('DELETE', url, options);
   }
 
@@ -578,11 +591,8 @@ export class MedplumClient extends EventTarget {
    * @returns The resource if it is available in the cache; undefined otherwise.
    */
   getCached<T extends Resource>(resourceType: string, id: string): T | undefined {
-    const cached = this.#resourceCache.get(resourceType + '/' + id) as T | undefined;
-    if (cached && !('then' in cached)) {
-      return cached;
-    }
-    return undefined;
+    const cached = this.#requestCache.get(this.fhirUrl(resourceType, id));
+    return cached && !cached.isPending() ? (cached.read() as T) : undefined;
   }
 
   /**
@@ -592,11 +602,9 @@ export class MedplumClient extends EventTarget {
    * @returns The resource if it is available in the cache; undefined otherwise.
    */
   getCachedReference<T extends Resource>(reference: Reference<T>): T | undefined {
-    const cached = this.#resourceCache.get(reference.reference as string) as T | undefined;
-    if (cached && !('then' in cached)) {
-      return cached;
-    }
-    return undefined;
+    const refString = reference.reference as string;
+    const [resourceType, id] = refString.split('/');
+    return this.getCached(resourceType, id);
   }
 
   /**
@@ -615,14 +623,8 @@ export class MedplumClient extends EventTarget {
    * @param id The resource ID.
    * @returns The resource if available; undefined otherwise.
    */
-  readResource<T extends Resource>(resourceType: string, id: string): Promise<T> {
-    const cacheKey = resourceType + '/' + id;
-    const promise = this.get(this.fhirUrl(resourceType, id)).then((resource: T) => {
-      this.#resourceCache.set(cacheKey, resource);
-      return resource;
-    });
-    this.#resourceCache.set(cacheKey, promise);
-    return promise;
+  readResource<T extends Resource>(resourceType: string, id: string): ReadablePromise<T> {
+    return this.get(this.fhirUrl(resourceType, id));
   }
 
   /**
@@ -643,9 +645,8 @@ export class MedplumClient extends EventTarget {
    * @param id The resource ID.
    * @returns The resource if available; undefined otherwise.
    */
-  readCached<T extends Resource>(resourceType: string, id: string): Promise<T> {
-    const cached = this.#resourceCache.get(resourceType + '/' + id) as T | Promise<T> | undefined;
-    return cached ? Promise.resolve(cached) : this.readResource(resourceType, id);
+  readCached<T extends Resource>(resourceType: string, id: string): ReadablePromise<T> {
+    return this.get(this.fhirUrl(resourceType, id));
   }
 
   /**
@@ -666,10 +667,10 @@ export class MedplumClient extends EventTarget {
    * @param reference The FHIR reference object.
    * @returns The resource if available; undefined otherwise.
    */
-  readReference<T extends Resource>(reference: Reference<T>): Promise<T> {
+  readReference<T extends Resource>(reference: Reference<T>): ReadablePromise<T> {
     const refString = reference?.reference;
     if (!refString) {
-      return Promise.reject('Missing reference');
+      return new ReadablePromise(Promise.reject('Missing reference'));
     }
     const [resourceType, id] = refString.split('/');
     return this.readResource(resourceType, id);
@@ -695,10 +696,10 @@ export class MedplumClient extends EventTarget {
    * @param reference The FHIR reference object.
    * @returns The resource if available; undefined otherwise.
    */
-  readCachedReference<T extends Resource>(reference: Reference<T>): Promise<T> {
+  readCachedReference<T extends Resource>(reference: Reference<T>): ReadablePromise<T> {
     const refString = reference?.reference;
     if (!refString) {
-      return Promise.reject('Missing reference');
+      return new ReadablePromise(Promise.reject('Missing reference'));
     }
     const [resourceType, id] = refString.split('/');
     return this.readCached(resourceType, id);
@@ -965,7 +966,7 @@ export class MedplumClient extends EventTarget {
     this.#config = undefined;
     this.#storage.setObject('activeLogin', login);
     this.#addLogin(login);
-    this.#resourceCache.clear();
+    this.#requestCache.clear();
     this.#refreshPromise = undefined;
     await this.#refreshProfile();
   }
@@ -1043,7 +1044,7 @@ export class MedplumClient extends EventTarget {
    * @param {string=} contentType
    * @param {Object=} body
    */
-  async #request(method: string, url: string, options: RequestInit = {}): Promise<any> {
+  async #request<T>(method: string, url: string, options: RequestInit = {}): Promise<T> {
     if (this.#refreshPromise) {
       await this.#refreshPromise;
     }
@@ -1063,7 +1064,7 @@ export class MedplumClient extends EventTarget {
 
     if (response.status === 204 || response.status === 304) {
       // No content or change
-      return undefined;
+      return undefined as unknown as T;
     }
 
     const obj = await response.json();

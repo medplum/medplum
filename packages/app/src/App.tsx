@@ -1,6 +1,6 @@
 import { getReferenceString } from '@medplum/core';
 import { ErrorBoundary, FooterLinks, Header, Loading, useMedplum, useMedplumProfile } from '@medplum/ui';
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 import { CreateBotPage } from './admin/CreateBotPage';
 import { CreateClientPage } from './admin/CreateClientPage';
@@ -47,29 +47,31 @@ export function App(): JSX.Element {
         />
       )}
       <ErrorBoundary>
-        <Routes>
-          <Route path="/signin" element={<SignInPage />} />
-          <Route path="/resetpassword" element={<ResetPasswordPage />} />
-          <Route path="/setpassword/:id/:secret" element={<SetPasswordPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/changepassword" element={<ChangePasswordPage />} />
-          <Route path="/batch" element={<BatchPage />} />
-          <Route path="/bulk/:resourceType" element={<BulkAppPage />} />
-          <Route path="/forms/:id" element={<FormPage />} />
-          <Route path="/admin/project" element={<ProjectPage />} />
-          <Route path="/admin/projects/:projectId/bot" element={<CreateBotPage />} />
-          <Route path="/admin/projects/:projectId/client" element={<CreateClientPage />} />
-          <Route path="/admin/projects/:projectId/invite" element={<InvitePage />} />
-          <Route path="/admin/projects/:projectId/members/:membershipId" element={<EditMembershipPage />} />
-          <Route path="/admin/super" element={<SuperAdminPage />} />
-          <Route path="/:resourceType/:id/_history/:versionId/:tab" element={<ResourceVersionPage />} />
-          <Route path="/:resourceType/:id/_history/:versionId" element={<ResourceVersionPage />} />
-          <Route path="/:resourceType/new" element={<CreateResourcePage />} />
-          <Route path="/:resourceType/:id/:tab" element={<ResourcePage />} />
-          <Route path="/:resourceType/:id" element={<ResourcePage />} />
-          <Route path="/:resourceType" element={<HomePage />} />
-          <Route path="/" element={<HomePage />} />
-        </Routes>
+        <Suspense fallback={<Loading />}>
+          <Routes>
+            <Route path="/signin" element={<SignInPage />} />
+            <Route path="/resetpassword" element={<ResetPasswordPage />} />
+            <Route path="/setpassword/:id/:secret" element={<SetPasswordPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/changepassword" element={<ChangePasswordPage />} />
+            <Route path="/batch" element={<BatchPage />} />
+            <Route path="/bulk/:resourceType" element={<BulkAppPage />} />
+            <Route path="/forms/:id" element={<FormPage />} />
+            <Route path="/admin/project" element={<ProjectPage />} />
+            <Route path="/admin/projects/:projectId/bot" element={<CreateBotPage />} />
+            <Route path="/admin/projects/:projectId/client" element={<CreateClientPage />} />
+            <Route path="/admin/projects/:projectId/invite" element={<InvitePage />} />
+            <Route path="/admin/projects/:projectId/members/:membershipId" element={<EditMembershipPage />} />
+            <Route path="/admin/super" element={<SuperAdminPage />} />
+            <Route path="/:resourceType/:id/_history/:versionId/:tab" element={<ResourceVersionPage />} />
+            <Route path="/:resourceType/:id/_history/:versionId" element={<ResourceVersionPage />} />
+            <Route path="/:resourceType/new" element={<CreateResourcePage />} />
+            <Route path="/:resourceType/:id/:tab" element={<ResourcePage />} />
+            <Route path="/:resourceType/:id" element={<ResourcePage />} />
+            <Route path="/:resourceType" element={<HomePage />} />
+            <Route path="/" element={<HomePage />} />
+          </Routes>
+        </Suspense>
       </ErrorBoundary>
       {!profile && (
         <FooterLinks>

@@ -53,7 +53,7 @@ export class MockClient extends MedplumClient {
       baseUrl: 'https://example.com/',
       clientId: 'my-client-id',
       fetch: (url: string, options: any) => {
-        const method = options.method;
+        const method = options.method || 'GET';
         const path = url.replace('https://example.com/', '');
 
         if (clientOptions?.debug) {
