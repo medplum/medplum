@@ -898,7 +898,7 @@ export class MedplumClient extends EventTarget {
    * @returns The result of the create operation.
    */
   createPdf(docDefinition: Record<string, unknown>, filename?: string): Promise<Binary> {
-    let url = this.fhirUrl('Binary') + '$pdf';
+    let url = this.fhirUrl('Binary') + '/$pdf';
     if (filename) {
       url += '?_filename=' + encodeURIComponent(filename);
     }
