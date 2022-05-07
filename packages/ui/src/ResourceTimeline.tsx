@@ -10,7 +10,7 @@ import {
   Reference,
   Resource,
 } from '@medplum/fhirtypes';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AttachmentDisplay } from './AttachmentDisplay';
 import { Button } from './Button';
 import { DiagnosticReportDisplay } from './DiagnosticReportDisplay';
@@ -25,7 +25,7 @@ import { Scrollable } from './Scrollable';
 import { Timeline, TimelineItem } from './Timeline';
 import { UploadButton } from './UploadButton';
 import { useResource } from './useResource';
-import { sortByDate } from './utils/date';
+import { sortByDateAndPriority } from './utils/date';
 
 export interface ResourceTimelineProps<T extends Resource> {
   value: T | Reference<T>;
@@ -41,23 +41,25 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   const resource = useResource(props.value);
   const [history, setHistory] = useState<Bundle>();
   const [items, setItems] = useState<Resource[]>([]);
+  const buildSearchRequests = props.buildSearchRequests;
 
   const itemsRef = useRef<Resource[]>(items);
   itemsRef.current = items;
 
-  /**
-   * Loads existing timeline resources.
-   */
-  useEffect(() => {
+  const loadTimeline = useCallback(() => {
     if (!resource) {
       setItems([]);
       setHistory({} as Bundle);
       return;
     }
 
-    const batchRequest = props.buildSearchRequests(resource);
+    const batchRequest = buildSearchRequests(resource);
     medplum.post('fhir/R4', batchRequest).then(handleBatchResponse);
-  }, [medplum, props, resource]);
+  }, [medplum, resource, buildSearchRequests]);
+
+  useEffect(() => {
+    loadTimeline();
+  }, [loadTimeline]);
 
   /**
    * Handles a batch request response.
@@ -85,7 +87,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
         }
       }
 
-      sortByDate(newItems);
+      sortByDateAndPriority(newItems);
       newItems.reverse();
     }
 
@@ -98,7 +100,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
    */
   function addResources(resources: Resource[]): void {
     const newItems = [...itemsRef.current, ...resources];
-    sortByDate(newItems);
+    sortByDateAndPriority(newItems);
     newItems.reverse();
     setItems(newItems);
   }
@@ -129,6 +131,14 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     medplum.createResource(props.createMedia(resource, sender, attachment)).then((result) => {
       addResources([result]);
     });
+  }
+
+  function pinCommunication(communication: Communication): void {
+    medplum
+      .patchResource(communication.resourceType, communication.id as string, [
+        { op: 'add', path: '/priority', value: 'stat' },
+      ])
+      .then(loadTimeline);
   }
 
   if (!resource || !history) {
@@ -168,7 +178,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
           case 'AuditEvent':
             return <AuditEventTimelineItem key={key} auditEvent={item} />;
           case 'Communication':
-            return <CommunicationTimelineItem key={key} communication={item} />;
+            return <CommunicationTimelineItem key={key} communication={item} onPin={() => pinCommunication(item)} />;
           case 'DiagnosticReport':
             return <DiagnosticReportTimelineItem key={key} diagnosticReport={item} />;
           case 'Media':
@@ -219,11 +229,14 @@ function getPrevious(history: Bundle, version: Resource): Resource | undefined {
 
 interface CommunicationTimelineItemProps {
   communication: Communication;
+  onPin: () => void;
 }
 
 function CommunicationTimelineItem(props: CommunicationTimelineItemProps): JSX.Element {
+  const routine = !props.communication.priority || props.communication.priority === 'routine';
+  const className = routine ? 'medplum-timeline-item' : 'medplum-timeline-item medplum-timeline-item-pinned';
   return (
-    <TimelineItem resource={props.communication} padding={true}>
+    <TimelineItem resource={props.communication} padding={true} className={className} onPin={props.onPin}>
       <p>{props.communication.payload?.[0]?.contentString}</p>
     </TimelineItem>
   );

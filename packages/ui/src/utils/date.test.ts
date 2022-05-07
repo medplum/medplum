@@ -1,5 +1,5 @@
 import { Patient, Resource } from '@medplum/fhirtypes';
-import { sortByDate } from './date';
+import { sortByDateAndPriority } from './date';
 
 describe('Date utils', () => {
   test('Sort by date', () => {
@@ -43,7 +43,7 @@ describe('Date utils', () => {
         },
       },
     ];
-    sortByDate(input);
+    sortByDateAndPriority(input);
     expect(input).toMatchObject(expected);
   });
 });
