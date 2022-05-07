@@ -8,10 +8,8 @@ Follow these instructions to get the complete Medplum stack running directly on 
 
 ## Prerequisites
 
-1. **Install PostgreSQL**: See [the PostgreSQL documentation](https://www.postgresql.org/download/) for instructions on installing it with your OS.
-2. **Install Redis**: See [the Redis documentation](https://redis.io/download) for instructions on installing it with your OS.
-3. **Install npm**: See [the npm documentation](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) for instructions on installing it with your OS.
-4. [Clone the Medplum repo](./clone-the-repo)
+1. **Install npm**: See [the npm documentation](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) for instructions on installing it with your OS.
+1. [Clone the Medplum repo](./clone-the-repo)
 
 ### Notes for Windows users
 
@@ -49,6 +47,21 @@ This will do the following:
 ### Background services
 
 First, make sure that PostgreSQL and Redis are running.
+
+#### Using Docker (Recommended)
+
+Use the supplied `docker-compose-background.yml` file to run PostgreSQL and Redis background services. These services will be deployed with all necessary medplum configurations and database migrations.
+
+From your root `medplum` directory run
+
+```sh
+docker-compose -f docker-compose-background.yml up
+```
+
+#### Deploying manually
+
+1. **Install PostgreSQL**: See [the PostgreSQL documentation](https://www.postgresql.org/download/) for instructions on installing it with your OS.
+2. **Install Redis**: See [the Redis documentation](https://redis.io/download) for instructions on installing it with your OS.
 
 ### Start the servers
 
