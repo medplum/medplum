@@ -13,6 +13,7 @@ import { seedDatabase } from '../seed';
 import { registerNew } from './register';
 
 jest.mock('@aws-sdk/client-sesv2');
+jest.mock('hibp');
 
 const app = express();
 const email = `multi${randomUUID()}@example.com`;
