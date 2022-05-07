@@ -2,7 +2,7 @@
 # It can be used to quickly run 2 services:
 #   1) The Postgres database
 #   2) The Redis cache
-# You can start all services by running "docker-compose up -f docker-compose-background.yml"
+# You can start all services by running "docker-compose -f docker-compose-background.yml up"
 version: '3.7'
 services:
   postgres:
