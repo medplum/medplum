@@ -1,4 +1,4 @@
-import { isOk, Operator } from '@medplum/core';
+import { assertOk, Operator } from '@medplum/core';
 import { JsonWebKey } from '@medplum/fhirtypes';
 import { randomBytes } from 'crypto';
 import {
@@ -80,16 +80,23 @@ export interface MedplumRefreshTokenClaims extends MedplumBaseClaims {
  */
 const ALG = 'RS256';
 
-let serverConfig: MedplumServerConfig | undefined;
+let issuer: string | undefined;
 const publicKeys: Record<string, KeyLike> = {};
 const jwks: { keys: JWK[] } = { keys: [] };
 let signingKey: KeyLike | undefined;
 let signingKeyId: string | undefined;
 
 export async function initKeys(config: MedplumServerConfig): Promise<void> {
-  serverConfig = config;
+  issuer = undefined;
+  signingKey = undefined;
+  signingKeyId = undefined;
+  jwks.keys = [];
 
-  const issuer = serverConfig?.issuer;
+  if (!config) {
+    throw new Error('Invalid server configuration');
+  }
+
+  issuer = config.issuer;
   if (!issuer) {
     throw new Error('Missing issuer');
   }
@@ -98,10 +105,7 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     resourceType: 'JsonWebKey',
     filters: [{ code: 'active', operator: Operator.EQUALS, value: 'true' }],
   });
-
-  if (!isOk(searchOutcome)) {
-    throw new Error('Failed to load keys');
-  }
+  assertOk(searchOutcome, searchResult);
 
   let jsonWebKeys: JsonWebKey[] | undefined;
 
@@ -119,16 +123,8 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
       active: true,
       ...jwk,
     } as JsonWebKey);
-
-    if (!isOk(createOutcome) || !createResult) {
-      throw new Error('Failed to create key');
-    }
-
+    assertOk(createOutcome, createResult);
     jsonWebKeys = [createResult];
-  }
-
-  if (!jsonWebKeys || jsonWebKeys.length === 0) {
-    throw new Error('Failed to load keys');
   }
 
   // Convert our JsonWebKey array to JWKS
@@ -165,9 +161,6 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
  * @returns Array of public keys.
  */
 export function getJwks(): { keys: JWK[] } {
-  if (!jwks) {
-    throw new Error('Public keys not initialized');
-  }
   return jwks;
 }
 
@@ -214,13 +207,8 @@ export function generateRefreshToken(claims: MedplumRefreshTokenClaims): Promise
  * @returns Promise to generate and sign the JWT.
  */
 function generateJwt(exp: '1h' | '2w', claims: JWTPayload): Promise<string> {
-  if (!signingKey) {
+  if (!signingKey || !issuer) {
     return Promise.reject('Signing key not initialized');
-  }
-
-  const issuer = serverConfig?.issuer;
-  if (!issuer) {
-    return Promise.reject('Missing issuer');
   }
 
   return new SignJWT(claims)
@@ -238,9 +226,8 @@ function generateJwt(exp: '1h' | '2w', claims: JWTPayload): Promise<string> {
  * @returns Returns the decoded claims on success.
  */
 export function verifyJwt(token: string): Promise<{ payload: JWTPayload; protectedHeader: JWSHeaderParameters }> {
-  const issuer = serverConfig?.issuer;
   if (!issuer) {
-    return Promise.reject('Missing issuer');
+    return Promise.reject('Signing key not initialized');
   }
 
   const verifyOptions: JWTVerifyOptions = {

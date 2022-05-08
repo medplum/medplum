@@ -1,11 +1,11 @@
 import {
+  assertOk,
   formatAddress,
   formatFamilyName,
   formatGivenName,
   formatHumanName,
   getDateProperty,
   getReferenceString,
-  isOk,
   ProfileResource,
 } from '@medplum/core';
 import { Request, RequestHandler, Response } from 'express';
@@ -24,10 +24,7 @@ export const userInfoHandler: RequestHandler = asyncWrap(async (_req: Request, r
   const [outcome, resource] = await systemRepo.readReference({
     reference: res.locals.profile,
   });
-  if (!isOk(outcome) || !resource) {
-    res.sendStatus(500);
-    return;
-  }
+  assertOk(outcome, resource);
 
   const profile = resource as ProfileResource;
 

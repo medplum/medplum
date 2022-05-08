@@ -21,6 +21,8 @@ import { processBatch } from './batch';
 import { getRepoForLogin, Repository, systemRepo } from './repo';
 import { parseSearchRequest } from './search';
 
+jest.mock('hibp');
+
 describe('FHIR Repo', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
