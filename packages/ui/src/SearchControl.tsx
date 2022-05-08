@@ -370,7 +370,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                         type="checkbox"
                         value="checked"
                         data-testid="row-checkbox"
-                        aria-label={resource.id}
+                        aria-label={`Checkbox for ${resource.id}`}
                         checked={!!state.selected[resource.id as string]}
                         onChange={(e) => handleSingleCheckboxClick(e, resource.id as string)}
                       />

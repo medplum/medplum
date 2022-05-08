@@ -194,10 +194,10 @@ export function ResourcePage(): JSX.Element {
 
   const tabs = getTabs(resourceType, questionnaires);
   const defaultTab = tabs[0].toLowerCase();
+  const currentTab = tab || defaultTab;
   const patient = getPatient(value);
   const specimen = getSpecimen(value);
   const statusValueSet = medplum.getUserConfiguration()?.option?.find((o) => o.id === 'statusValueSet')?.valueString;
-
   return (
     <>
       {value?.resourceType === 'ServiceRequest' && statusValueSet && (
@@ -211,36 +211,26 @@ export function ResourcePage(): JSX.Element {
       {patient && <PatientHeader patient={patient} />}
       {specimen && <SpecimenHeader specimen={specimen} />}
       {resourceType !== 'Patient' && <ResourceHeader resource={value} />}
-      <TabList value={tab || defaultTab} onChange={onTabChange}>
+      <TabList value={currentTab} onChange={onTabChange}>
         {tabs.map((t) => (
           <Tab key={t} name={t.toLowerCase()} label={t} />
         ))}
       </TabList>
       <Document>
         {error && <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>}
-        <TabSwitch value={tab || defaultTab}>
-          {tabs.map((t) => (
-            <TabPanel key={t} name={t.toLowerCase()}>
-              <ErrorBoundary>
-                <ResourceTab
-                  name={t.toLowerCase()}
-                  resource={value}
-                  resourceHistory={historyBundle}
-                  questionnaires={questionnaires as Bundle<Questionnaire>}
-                  onSubmit={onSubmit}
-                  onDelete={() => {
-                    if (window.confirm('Are you sure you want to delete this resource?')) {
-                      medplum
-                        .deleteResource(resourceType, id)
-                        .then(() => navigate(`/${resourceType}`))
-                        .catch(setError);
-                    }
-                  }}
-                  outcome={error}
-                />
-              </ErrorBoundary>
-            </TabPanel>
-          ))}
+        <TabSwitch value={currentTab}>
+          <TabPanel name={currentTab}>
+            <ErrorBoundary>
+              <ResourceTab
+                name={currentTab.toLowerCase()}
+                resource={value}
+                resourceHistory={historyBundle}
+                questionnaires={questionnaires as Bundle<Questionnaire>}
+                onSubmit={onSubmit}
+                outcome={error}
+              />
+            </ErrorBoundary>
+          </TabPanel>
         </TabSwitch>
       </Document>
     </>
@@ -253,12 +243,13 @@ interface ResourceTabProps {
   resourceHistory: Bundle;
   questionnaires: Bundle<Questionnaire>;
   onSubmit: (resource: Resource) => void;
-  onDelete: (resource: Resource) => void;
   outcome?: OperationOutcome;
 }
 
 function ResourceTab(props: ResourceTabProps): JSX.Element | null {
+  const navigate = useNavigate();
   const medplum = useMedplum();
+  const { resourceType, id } = props.resource;
   const [code, setCode] = useState<string | undefined>((props.resource as Bot)?.code);
   switch (props.name) {
     case 'details':
@@ -268,9 +259,23 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
         <ResourceForm
           defaultValue={props.resource}
           onSubmit={props.onSubmit}
-          onDelete={props.onDelete}
+          onDelete={() => navigate(`/${resourceType}/${id}/delete`)}
           outcome={props.outcome}
         />
+      );
+    case 'delete':
+      return (
+        <>
+          <p>Are you sure you want to delete this {resourceType}?</p>
+          <Button
+            danger={true}
+            onClick={() => {
+              medplum.deleteResource(resourceType, id as string).then(() => navigate(`/${resourceType}`));
+            }}
+          >
+            Delete
+          </Button>
+        </>
       );
     case 'history':
       return <ResourceHistoryTable history={props.resourceHistory} />;

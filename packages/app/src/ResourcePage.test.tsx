@@ -1,3 +1,4 @@
+import { Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -6,10 +7,11 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { HomePage } from './HomePage';
 import { ResourcePage } from './ResourcePage';
 
-const medplum = new MockClient();
+let medplum: MockClient;
 
 describe('ResourcePage', () => {
   async function setup(url: string): Promise<void> {
+    medplum = new MockClient();
     await act(async () => {
       render(
         <MedplumProvider medplum={medplum}>
@@ -44,9 +46,7 @@ describe('ResourcePage', () => {
     expect(screen.getByText('Edit')).toBeInTheDocument();
   });
 
-  test('Delete button confirm', async () => {
-    window.confirm = jest.fn(() => true);
-
+  test('Delete button on edit page', async () => {
     await setup('/Practitioner/123/edit');
     await waitFor(() => screen.getByText('Delete'));
     expect(screen.getByText('Delete')).toBeInTheDocument();
@@ -55,13 +55,17 @@ describe('ResourcePage', () => {
       fireEvent.click(screen.getByText('Delete'));
     });
 
-    expect(window.confirm).toHaveBeenCalled();
+    await waitFor(() => screen.getByText('Are you sure you want to delete this Practitioner?'));
+    expect(screen.getByText('Are you sure you want to delete this Practitioner?')).toBeInTheDocument();
   });
 
-  test('Delete button decline', async () => {
-    window.confirm = jest.fn(() => false);
+  test('Delete button confirm', async () => {
+    // Create a practitioner that we can delete
+    const practitioner = await medplum.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+    });
 
-    await setup('/Practitioner/123/edit');
+    await setup(`/Practitioner/${practitioner.id}/delete`);
     await waitFor(() => screen.getByText('Delete'));
     expect(screen.getByText('Delete')).toBeInTheDocument();
 
@@ -69,7 +73,8 @@ describe('ResourcePage', () => {
       fireEvent.click(screen.getByText('Delete'));
     });
 
-    expect(window.confirm).toHaveBeenCalled();
+    const check = await medplum.readResource('Practitioner', practitioner.id as string);
+    expect(check).toBeUndefined();
   });
 
   test('History tab renders', async () => {
