@@ -1,4 +1,5 @@
 import { allOk, badRequest, LoginState, notFound } from '@medplum/core';
+import { Patient } from '@medplum/fhirtypes';
 import { MockClient } from './client';
 import { HomerSimpson } from './mocks';
 
@@ -150,5 +151,23 @@ describe('MockClient', () => {
       title: 'test.txt',
       contentType: 'text/plain',
     });
+  });
+
+  test('Delete resource', async () => {
+    const client = new MockClient();
+
+    const resource1 = await client.createResource<Patient>({
+      resourceType: 'Patient',
+    });
+    expect(resource1).toBeDefined();
+
+    const resource2 = await client.readResource('Patient', resource1.id as string);
+    expect(resource2).toBeDefined();
+    expect(resource2.id).toEqual(resource1.id);
+
+    await client.deleteResource('Patient', resource1.id as string);
+
+    const resource3 = await client.readResource('Patient', resource1.id as string);
+    expect(resource3).toBeUndefined();
   });
 });

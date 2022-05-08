@@ -69,4 +69,20 @@ describe('Mock Repo', () => {
     expect(result).toBeDefined();
     expect(result.entry?.length).toBe(2);
   });
+
+  test('Delete resource', async () => {
+    const client = new MockClient();
+    const resource1 = await client.createResource<Patient>({
+      resourceType: 'Patient',
+    });
+
+    const resource2 = await client.readResource('Patient', resource1.id as string);
+    expect(resource2).toBeDefined();
+    expect(resource2.id).toEqual(resource1.id);
+
+    await client.deleteResource('Patient', resource1.id as string);
+
+    const resource4 = await client.readResource('Patient', resource1.id as string);
+    expect(resource4).toBeUndefined();
+  });
 });
