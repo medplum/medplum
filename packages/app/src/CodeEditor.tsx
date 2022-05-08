@@ -1,4 +1,16 @@
 import React, { Suspense } from 'react';
+import {
+  SandpackProvider,
+  SandpackLayout,
+  SandpackCodeEditor,
+  SandpackPreview,
+  Sandpack,
+  useSandpack,
+} from '@codesandbox/sandpack-react';
+
+import { useEffect } from 'react';
+
+import '@codesandbox/sandpack-react/dist/index.css';
 
 const AceEditor = React.lazy(async () => {
   await import('ace-builds/src-noconflict/ace');
@@ -17,24 +29,78 @@ export interface CodeEditorProps {
   onChange?: (value: string) => void;
 }
 
+const files = {
+  '/App.tsx': `
+  import {handler} from './handler';
+  import input from './input';
+  import {useEffect, useState} from 'react';
+  export default function App(): JSX.Element {
+    [result, setResult] = useState();
+
+    useEffect(()=> {
+      const event = {
+        input: input
+      };
+      handler(event).then(setResult)
+    }, []);
+    return (<pre>{JSON.stringify(result, null, 2)}</pre>)
+  }`,
+
+  '/handler.ts': {
+    code: `\
+export async function handler(event) {
+  return event.input;
+}`,
+    active: true,
+  },
+
+  '/input.ts': {
+    code: `\
+const input =  {
+
+};
+export default input;`,
+    active: true,
+  },
+};
+
 export function CodeEditor(props: CodeEditorProps): JSX.Element {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <AceEditor
-        mode="javascript"
-        name="code"
-        width="100%"
-        height="400px"
-        setOptions={{
-          highlightActiveLine: false,
-          showPrintMargin: false,
-          useWorker: false,
+      {/* Sandpack provider is missing "children" in it's props. Suppress errors for now
+        @ts-ignore */}
+      <SandpackProvider
+        template="react-ts"
+        customSetup={{
+          files: files,
         }}
-        style={{ border: '1px solid #ccc' }}
-        defaultValue={props.defaultValue}
-        onChange={props.onChange}
-        editorProps={{}}
-      />
+      >
+        <SandpackLayout>
+          <WrappedSandpackEditor
+            onChange={(code) => {
+              console.log('My Code!', code);
+              props.onChange && props.onChange(code);
+            }}
+            defaultValue={props.defaultValue}
+          />
+          <SandpackPreview showOpenInCodeSandbox={false} />
+        </SandpackLayout>
+      </SandpackProvider>
     </Suspense>
   );
+}
+
+function WrappedSandpackEditor(props: CodeEditorProps): JSX.Element {
+  const { sandpack } = useSandpack();
+
+  useEffect(() => {
+    console.log('Getting Default Value\n', props.defaultValue);
+    props.defaultValue && sandpack.updateFile('/handler.ts', props.defaultValue);
+  }, []);
+
+  useEffect(() => {
+    props.onChange && props.onChange(sandpack.files['/handler.ts'].code);
+  }, [sandpack.files['/handler.ts'].code]);
+
+  return <SandpackCodeEditor showLineNumbers={true} />;
 }

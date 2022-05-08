@@ -43,5 +43,8 @@
   },
   "browserslist": [
     "last 1 Chrome versions"
-  ]
+  ],
+  "dependencies": {
+    "@codesandbox/sandpack-react": "^0.19.6"
+  }
 }
