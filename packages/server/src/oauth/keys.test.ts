@@ -49,11 +49,14 @@ describe('Keys', () => {
 
   test('Generate before initialized', async () => {
     const config = await loadTestConfig();
+    expect.assertions(2);
+
     try {
       await initKeys(undefined as unknown as MedplumServerConfig);
-    } catch (err) {}
+    } catch (err) {
+      expect((err as Error).message).toEqual('Invalid server configuration');
+    }
 
-    expect.assertions(1);
     try {
       await generateIdToken({ iss: config.issuer, login_id: '123', nonce: randomUUID() });
     } catch (err) {
@@ -63,11 +66,13 @@ describe('Keys', () => {
 
   test('Missing issuer', async () => {
     const config = await loadTestConfig();
+    expect.assertions(3);
+
     try {
       await initKeys({} as unknown as MedplumServerConfig);
-    } catch (err) {}
-
-    expect.assertions(2);
+    } catch (err) {
+      expect((err as Error).message).toEqual('Missing issuer');
+    }
 
     try {
       await generateIdToken({ iss: config.issuer, login_id: '123', nonce: randomUUID() });
