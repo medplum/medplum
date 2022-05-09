@@ -6,6 +6,7 @@ import {
   SandpackPreview,
   useSandpack,
   SandpackPreviewRef,
+  SandpackFiles,
 } from '@codesandbox/sandpack-react';
 
 import { useEffect, useImperativeHandle } from 'react';
@@ -13,7 +14,7 @@ import { useEffect, useImperativeHandle } from 'react';
 import '@codesandbox/sandpack-react/dist/index.css';
 
 const BOT_CODE_PATH = '/handler.ts';
-const DEFAULT_CODE = {
+const DEFAULT_CODE: SandpackFiles = {
   '/App.tsx': `
   import {handler} from '.${BOT_CODE_PATH}';
   import input from './input';
@@ -25,18 +26,15 @@ const DEFAULT_CODE = {
       const event = {
         input: input
       };
-      handler(event).then(setResult)
+      handler({}, event)
+        .then(setResult)
+        .catch((error) => {
+          setResult("");
+          throw error;
+        })
     }, []);
     return (<pre>{JSON.stringify(result, null, 2)}</pre>)
   }`,
-
-  BOT_CODE_PATH: {
-    code: `\
-export async function handler(event) {
-  return event.input;
-}`,
-    active: true,
-  },
 
   '/input.ts': {
     code: `\
@@ -44,8 +42,16 @@ const input =  {
 
 };
 export default input;`,
-    active: true,
+    active: false,
   },
+};
+
+DEFAULT_CODE[BOT_CODE_PATH] = {
+  code: `\
+export async function handler(medplum, event) {
+
+}`,
+  active: true,
 };
 
 export interface CodeEditorProps {
@@ -73,9 +79,12 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>((props, ref
       }
       // Enable code execution, re-run compilation, and then immediately
       // disable execution
-      client.updateOptions({ ...client.options, skipEval: false });
-      client.updatePreview();
-      client.updateOptions({ ...client.options, skipEval: true });
+      try {
+        client.updateOptions({ ...client.options, skipEval: false });
+        client.updatePreview();
+      } finally {
+        client.updateOptions({ ...client.options, skipEval: true });
+      }
     },
   }));
 
@@ -113,7 +122,7 @@ function WrappedSandpackEditor(props: CodeEditorProps): JSX.Element {
   // Fire the change listener whenever the Bot's code changes
   useEffect(() => {
     props.onChange && props.onChange(sandpack.files[BOT_CODE_PATH].code);
-  }, [sandpack.files[BOT_CODE_PATH].code]);
+  }, [sandpack.files[BOT_CODE_PATH]?.code]);
 
   return <SandpackCodeEditor showLineNumbers={true} showRunButton={false} />;
 }
