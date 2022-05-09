@@ -443,6 +443,14 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Returns the base URL for API requests
+   * @returns API base url
+   */
+  baseUrl(): string {
+    return this.#baseUrl;
+  }
+
+  /**
    * Builds a FHIR URL from a collection of URL path components.
    * For example, `buildUrl('/Patient', '123')` returns `fhir/R4/Patient/123`.
    * @param path The path component of the URL.

@@ -7,26 +7,46 @@ import {
   useSandpack,
   SandpackPreviewRef,
   SandpackFiles,
+  SandpackFile,
 } from '@codesandbox/sandpack-react';
 
 import { useEffect, useImperativeHandle } from 'react';
 
 import '@codesandbox/sandpack-react/dist/index.css';
+import { useMedplum } from '@medplum/ui';
 
 const BOT_CODE_PATH = '/handler.ts';
+const AUTH_TOKEN_FILE = '/authToken.json';
+
 const DEFAULT_CODE: SandpackFiles = {
   '/App.tsx': `
-  import {handler} from '.${BOT_CODE_PATH}';
+
+  import {handler} from './${BOT_CODE_PATH}';
   import input from './input';
-  import {useEffect, useState} from 'react';
+  import {useEffect, useState, useRef} from 'react';
+  import {MedplumClient} from '@medplum/core';
+  import authToken from './${AUTH_TOKEN_FILE}';
+
   export default function App(): JSX.Element {
     [result, setResult] = useState();
+    const medplum = useRef(new MedplumClient({
+      baseUrl: authToken.baseUrl
+    }));
+
+    useEffect(() => {
+      if(!medplum.current){
+        return;
+      }
+      const {project, profile, accessToken, refreshToken} = medplum.current;
+      medplum.current.setAccessToken(accessToken);
+      console.log(medplum.current.getActiveLogin())
+    }, [medplum])
 
     useEffect(()=> {
       const event = {
         input: input
       };
-      handler({}, event)
+      handler(medplum.current, event)
         .then(setResult)
         .catch((error) => {
           setResult("");
@@ -54,6 +74,10 @@ export async function handler(medplum, event) {
   active: true,
 };
 
+DEFAULT_CODE[AUTH_TOKEN_FILE] = {
+  code: `{}`,
+};
+
 export interface CodeEditorProps {
   defaultValue?: string;
   onChange?: (value: string) => void;
@@ -68,6 +92,16 @@ export interface CodeEditorRef {
 
 export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>((props, ref) => {
   const previewRef = useRef<SandpackPreviewRef>(null);
+  const medplum = useMedplum();
+
+  // Pass the login details to the Sandpack Environment
+  useEffect(() => {
+    const clientState = {
+      baseUrl: medplum.baseUrl(),
+      ...medplum.getActiveLogin(),
+    };
+    (DEFAULT_CODE[AUTH_TOKEN_FILE] as SandpackFile).code = JSON.stringify(clientState);
+  }, []);
 
   // Expose an execute() method to the container component to manually trigger
   // code execution
@@ -96,13 +130,17 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>((props, ref
         template="react-ts"
         autorun={true}
         skipEval={true}
+        // bundlerURL={'http://localhost:3000/'}
         customSetup={{
           files: DEFAULT_CODE,
+          dependencies: {
+            '@medplum/core': '0.9.3',
+          },
         }}
       >
         <SandpackLayout>
           <WrappedSandpackEditor {...props} />
-          <SandpackPreview ref={previewRef} showOpenInCodeSandbox={false} />;
+          <SandpackPreview ref={previewRef} showOpenInCodeSandbox={false} />
         </SandpackLayout>
       </SandpackProvider>
     </>
@@ -121,7 +159,7 @@ function WrappedSandpackEditor(props: CodeEditorProps): JSX.Element {
 
   // Fire the change listener whenever the Bot's code changes
   useEffect(() => {
-    props.onChange && props.onChange(sandpack.files[BOT_CODE_PATH].code);
+    props.onChange?.(sandpack.files[BOT_CODE_PATH].code);
   }, [sandpack.files[BOT_CODE_PATH]?.code]);
 
   return <SandpackCodeEditor showLineNumbers={true} showRunButton={false} />;
