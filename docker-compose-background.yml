@@ -1,0 +1,23 @@
+# This is the docker-compose file to run Medplum's required background serivces
+# It can be used to quickly run 2 services:
+#   1) The Postgres database
+#   2) The Redis cache
+# You can start all services by running "docker-compose -f docker-compose-background.yml up"
+version: '3.7'
+services:
+  postgres:
+    image: postgres:12
+    restart: always
+    environment:
+      - POSTGRES_USER=medplum
+      - POSTGRES_PASSWORD=medplum
+    volumes:
+      - ./postgres.conf:/usr/local/etc/postgres/postgres.conf
+    command: postgres -c config_file=/usr/local/etc/postgres/postgres.conf
+    ports:
+      - '5432:5432'
+  redis:
+    image: redis:6
+    command: redis-server --requirepass medplum
+    ports:
+      - '6379:6379'
