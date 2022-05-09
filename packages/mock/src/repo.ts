@@ -78,6 +78,12 @@ export class MemoryRepository {
     };
   }
 
+  deleteResource(resourceType: string, id: string): void {
+    if (this.#resources?.[resourceType]?.[id]) {
+      delete this.#resources[resourceType][id];
+    }
+  }
+
   private generateId(): string {
     return Date.now().toString(36);
   }

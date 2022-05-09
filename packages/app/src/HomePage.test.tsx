@@ -1,3 +1,4 @@
+import { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/ui';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -5,10 +6,13 @@ import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { getDefaultFields, HomePage } from './HomePage';
 
+let medplum: MockClient;
+
 async function setup(url = '/Patient'): Promise<void> {
+  medplum = new MockClient();
   await act(async () => {
     render(
-      <MedplumProvider medplum={new MockClient()}>
+      <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
           <Routes>
             <Route path="/:resourceType/new" element={<div>Create Resource Page</div>} />
@@ -97,20 +101,26 @@ describe('HomePage', () => {
   });
 
   test('Delete button, ok', async () => {
+    // Create a practitioner that we can delete
+    const patient = await medplum.createResource<Patient>({
+      resourceType: 'Patient',
+    });
+
     window.confirm = jest.fn(() => true);
 
     await setup();
     await waitFor(() => screen.getByText('Delete...'));
 
-    // Select all
-    const checkboxes = screen.queryAllByTestId('row-checkbox');
     await act(async () => {
-      checkboxes.forEach((checkbox) => fireEvent.click(checkbox));
+      fireEvent.click(screen.getByLabelText(`Checkbox for ${patient.id}`));
     });
 
     await act(async () => {
       fireEvent.click(screen.getByText('Delete...'));
     });
+
+    const check = await medplum.readResource('Patient', patient.id as string);
+    expect(check).toBeUndefined();
   });
 
   test('Export button', async () => {

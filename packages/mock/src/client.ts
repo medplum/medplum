@@ -338,6 +338,12 @@ function mockFhirHandler(method: string, url: string, options: any): any {
     }
   } else if (method === 'PUT') {
     return mockRepo.createResource(JSON.parse(options.body));
+  } else if (method === 'DELETE') {
+    if (resourceType && id) {
+      return mockRepo.deleteResource(resourceType, id);
+    } else {
+      return notFound;
+    }
   }
 }
 
