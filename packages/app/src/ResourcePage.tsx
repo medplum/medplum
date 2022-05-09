@@ -33,9 +33,9 @@ import {
   TextArea,
   useMedplum,
 } from '@medplum/ui';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CodeEditor } from './CodeEditor';
+import { CodeEditor, CodeEditorRef } from './CodeEditor';
 import { PatientHeader } from './PatientHeader';
 import { QuickServiceRequests } from './QuickServiceRequests';
 import { QuickStatus } from './QuickStatus';
@@ -312,6 +312,7 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
         </div>
       );
     case 'editor':
+      const codeEditorRef = useRef<CodeEditorRef>(null);
       return (
         <Form
           onSubmit={() => {
@@ -321,19 +322,16 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
             });
           }}
         >
-          <CodeEditor defaultValue={(props.resource as Bot).code} onChange={setCode} />
+          <CodeEditor defaultValue={(props.resource as Bot).code} onChange={setCode} ref={codeEditorRef} />
           <div className="medplum-right">
-            <Button type="submit">OK</Button>
+            <Button type="submit">Save</Button>
             <Button
               type="button"
               onClick={() => medplum.post(medplum.fhirUrl('Bot', props.resource.id as string, '$publish'), {})}
             >
               Publish
             </Button>
-            <Button
-              type="button"
-              onClick={() => medplum.post(medplum.fhirUrl('Bot', props.resource.id as string, '$execute'), {})}
-            >
+            <Button type="button" onClick={() => codeEditorRef.current && codeEditorRef.current.execute()}>
               Execute
             </Button>
           </div>
