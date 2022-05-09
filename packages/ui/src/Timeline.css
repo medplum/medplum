@@ -38,7 +38,7 @@
 }
 
 .medplum-timeline .medplum-timeline-item-actions > a:hover {
-  background-color: var(--medplum-gray-100);
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 .medplum-timeline .medplum-timeline-item-actions > a > svg {

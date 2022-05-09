@@ -5,10 +5,10 @@ import { Button } from './Button';
 import { DateTimeDisplay } from './DateTimeDisplay';
 import { ErrorBoundary } from './ErrorBoundary';
 import { MedplumLink } from './MedplumLink';
+import { Popup } from './Popup';
 import { ResourceName } from './ResourceName';
-import './Timeline.css';
-import { TimelinePopupMenu } from './TimelinePopupMenu';
 import { killEvent } from './utils/dom';
+import './Timeline.css';
 
 export interface TimelineProps {
   children?: React.ReactNode;
@@ -25,13 +25,11 @@ export interface TimelineItemProps {
   children?: React.ReactNode;
   padding?: boolean;
   className?: string;
-  onPin?: () => void;
+  popupMenuItems?: React.ReactNode;
 }
 
 export function TimelineItem(props: TimelineItemProps): JSX.Element {
-  const [popupResource, setPopupResource] = useState<Resource | undefined>();
-  const [popupX, setPopupX] = useState<number>(0);
-  const [popupY, setPopupY] = useState<number>(0);
+  const [popupAnchor, setPopupAnchor] = useState<DOMRect | undefined>();
   const author = props.profile ?? props.resource.meta?.author;
   return (
     <article className={props.className || 'medplum-timeline-item'} data-testid="timeline-item">
@@ -49,25 +47,25 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
             <MedplumLink to={props.resource}>{props.resource.resourceType}</MedplumLink>
           </div>
         </div>
-        <div className="medplum-timeline-item-actions">
-          <a
-            href="#"
-            onClick={(e) => {
-              killEvent(e);
-              const el = e.currentTarget;
-              const rect = el.getBoundingClientRect();
-              setPopupResource(props.resource);
-              setPopupX(rect.right);
-              setPopupY(rect.bottom);
-            }}
-          >
-            <svg fill="currentColor" viewBox="0 0 20 20">
-              <g transform="translate(-446 -350)">
-                <path d="M458 360a2 2 0 1 1-4 0 2 2 0 0 1 4 0m6 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0m-12 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0"></path>
-              </g>
-            </svg>
-          </a>
-        </div>
+        {props.popupMenuItems && (
+          <div className="medplum-timeline-item-actions">
+            <a
+              href="#"
+              onClick={(e) => {
+                killEvent(e);
+                const el = e.currentTarget;
+                const rect = el.getBoundingClientRect();
+                setPopupAnchor(rect);
+              }}
+            >
+              <svg fill="currentColor" viewBox="0 0 20 20">
+                <g transform="translate(-446 -350)">
+                  <path d="M458 360a2 2 0 1 1-4 0 2 2 0 0 1 4 0m6 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0m-12 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0"></path>
+                </g>
+              </svg>
+            </a>
+          </div>
+        )}
       </div>
       <ErrorBoundary>
         {props.padding && <div style={{ padding: '2px 16px 16px 16px' }}>{props.children}</div>}
@@ -79,13 +77,11 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
           <Button borderless={true}>Comment</Button>
         </div>
       )}
-      <TimelinePopupMenu
-        resource={popupResource}
-        x={popupX}
-        y={popupY}
-        onPin={props.onPin}
-        onClose={() => setPopupResource(undefined)}
-      />
+      {props.popupMenuItems && (
+        <Popup visible={!!popupAnchor} anchor={popupAnchor} autoClose={true} onClose={() => setPopupAnchor(undefined)}>
+          {props.popupMenuItems}
+        </Popup>
+      )}
     </article>
   );
 }
