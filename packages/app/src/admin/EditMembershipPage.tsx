@@ -66,7 +66,7 @@ export function EditMembershipPage(): JSX.Element {
                 name="admin"
                 defaultChecked={admin}
                 value="true"
-                onChange={(event) => setAdmin(event.currentTarget.value === 'true')}
+                onChange={(event) => setAdmin(event.currentTarget.checked)}
               />
             </FormSection>
             <div className="medplum-signin-buttons">

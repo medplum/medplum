@@ -131,14 +131,8 @@ describe('EditMembershipPage', () => {
 
     const input = screen.getByTestId('admin-checkbox') as HTMLInputElement;
 
-    // Enter "Example Access Policy"
     await act(async () => {
       fireEvent.click(input);
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
     });
 
     await act(async () => {
@@ -151,6 +145,40 @@ describe('EditMembershipPage', () => {
       `admin/projects/123/members/456`,
       expect.objectContaining({
         admin: true,
+      })
+    );
+  });
+
+  test('Remove admin', async () => {
+    const medplumPostSpy = jest.spyOn(medplum, 'post');
+
+    await setup('/admin/projects/123/members/456');
+    await waitFor(() => screen.getByText('Save'));
+
+    expect(screen.getByText('Save')).toBeInTheDocument();
+
+    const input = screen.getByTestId('admin-checkbox') as HTMLInputElement;
+
+    // Click once to set admin
+    await act(async () => {
+      fireEvent.click(input);
+    });
+
+    // Click again to remove admin
+    await act(async () => {
+      fireEvent.click(input);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(screen.getByTestId('success')).toBeInTheDocument();
+
+    expect(medplumPostSpy).toHaveBeenCalledWith(
+      `admin/projects/123/members/456`,
+      expect.objectContaining({
+        admin: false,
       })
     );
   });
