@@ -1,4 +1,4 @@
-import { ProfileResource } from '@medplum/core';
+import { getReferenceString, ProfileResource } from '@medplum/core';
 import {
   Attachment,
   AuditEvent,
@@ -251,15 +251,37 @@ interface BaseTimelineItemProps<T extends Resource> {
 function TimelineItemPopupMenu<T extends Resource>(props: BaseTimelineItemProps<T>): JSX.Element {
   return (
     <>
-      {props.onPin && <MenuItem onClick={() => (props.onPin as (resource: T) => void)(props.resource)}>Pin</MenuItem>}
+      {props.onPin && (
+        <MenuItem
+          onClick={() => (props.onPin as (resource: T) => void)(props.resource)}
+          label={`Pin ${getReferenceString(props.resource)}`}
+        >
+          Pin
+        </MenuItem>
+      )}
       {props.onDetails && (
-        <MenuItem onClick={() => (props.onDetails as (resource: T) => void)(props.resource)}>Details</MenuItem>
+        <MenuItem
+          onClick={() => (props.onDetails as (resource: T) => void)(props.resource)}
+          label={`Details ${getReferenceString(props.resource)}`}
+        >
+          Details
+        </MenuItem>
       )}
       {props.onEdit && (
-        <MenuItem onClick={() => (props.onEdit as (resource: T) => void)(props.resource)}>Edit</MenuItem>
+        <MenuItem
+          onClick={() => (props.onEdit as (resource: T) => void)(props.resource)}
+          label={`Edit ${getReferenceString(props.resource)}`}
+        >
+          Edit
+        </MenuItem>
       )}
       {props.onDelete && (
-        <MenuItem onClick={() => (props.onDelete as (resource: T) => void)(props.resource)}>Delete</MenuItem>
+        <MenuItem
+          onClick={() => (props.onDelete as (resource: T) => void)(props.resource)}
+          label={`Delete ${getReferenceString(props.resource)}`}
+        >
+          Delete
+        </MenuItem>
       )}
     </>
   );

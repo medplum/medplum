@@ -1,3 +1,4 @@
+import { getReferenceString } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { Avatar } from './Avatar';
@@ -51,6 +52,7 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
           <div className="medplum-timeline-item-actions">
             <a
               href="#"
+              aria-label={`Actions for ${getReferenceString(props.resource)}`}
               onClick={(e) => {
                 killEvent(e);
                 const el = e.currentTarget;
