@@ -748,7 +748,7 @@ export class MedplumClient extends EventTarget {
           }
         }
       }
-      SearchParameterList(base: "${encodeURIComponent(resourceType)}") {
+      SearchParameterList(base: "${encodeURIComponent(resourceType)}", _count: 100) {
         base,
         code,
         type,
