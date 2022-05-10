@@ -37,5 +37,7 @@ describe('ProjectPage', () => {
     await setup('/admin/project');
     await waitFor(() => screen.getByText('Alice Smith'));
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+    expect(screen.getByText('Test Bot')).toBeInTheDocument();
+    expect(screen.getByText('Test Client')).toBeInTheDocument();
   });
 });
