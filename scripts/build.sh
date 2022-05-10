@@ -16,7 +16,7 @@ npm --version
 [ ! -d "node_modules" ] && npm ci
 
 # Build
-BUILD_ORDER=("definitions" "fhirpath" "core" "mock" "ui" "app" "graphiql" "server" "infra" "docs" "cli")
+BUILD_ORDER=("definitions" "fhirpath" "core" "mock" "ui" "app" "graphiql" "server" "infra" "cli")
 for PACKAGE in ${BUILD_ORDER[@]}; do
   pushd "packages/$PACKAGE"
   npm run build

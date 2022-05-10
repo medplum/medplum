@@ -1,19 +1,16 @@
-import React, { forwardRef, useRef } from 'react';
 import {
-  SandpackProvider,
-  SandpackLayout,
   SandpackCodeEditor,
-  SandpackPreview,
-  useSandpack,
-  SandpackPreviewRef,
-  SandpackFiles,
   SandpackFile,
+  SandpackFiles,
+  SandpackLayout,
+  SandpackPreview,
+  SandpackPreviewRef,
+  SandpackProvider,
+  useSandpack,
 } from '@codesandbox/sandpack-react';
-
-import { useEffect, useImperativeHandle } from 'react';
-
 import '@codesandbox/sandpack-react/dist/index.css';
 import { useMedplum } from '@medplum/ui';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
 const BOT_CODE_PATH = '/handler.ts';
 const AUTH_TOKEN_FILE = '/authToken.json';
@@ -101,7 +98,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>((props, ref
       ...medplum.getActiveLogin(),
     };
     (DEFAULT_CODE[AUTH_TOKEN_FILE] as SandpackFile).code = JSON.stringify(clientState);
-  }, []);
+  }, [medplum]);
 
   // Expose an execute() method to the container component to manually trigger
   // code execution
@@ -151,16 +148,17 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>((props, ref
 // handler function code
 function WrappedSandpackEditor(props: CodeEditorProps): JSX.Element {
   const { sandpack } = useSandpack();
+  const { defaultValue, onChange } = props;
 
   // If there was an already saved value, update the Bot's code file
   useEffect(() => {
-    props.defaultValue && sandpack.updateFile(BOT_CODE_PATH, props.defaultValue);
-  }, []);
+    defaultValue && sandpack.updateFile(BOT_CODE_PATH, defaultValue);
+  }, [sandpack, defaultValue]);
 
   // Fire the change listener whenever the Bot's code changes
   useEffect(() => {
-    props.onChange?.(sandpack.files[BOT_CODE_PATH].code);
-  }, [sandpack.files[BOT_CODE_PATH]?.code]);
+    onChange?.(sandpack.files[BOT_CODE_PATH].code);
+  }, [sandpack, onChange]);
 
   return <SandpackCodeEditor showLineNumbers={true} showRunButton={false} />;
 }

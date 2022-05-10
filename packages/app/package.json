@@ -18,6 +18,7 @@
     "test": "jest"
   },
   "devDependencies": {
+    "@codesandbox/sandpack-react": "0.19.6",
     "@medplum/core": "0.9.3",
     "@medplum/fhirtypes": "0.9.3",
     "@medplum/mock": "0.9.3",
@@ -43,8 +44,5 @@
   },
   "browserslist": [
     "last 1 Chrome versions"
-  ],
-  "dependencies": {
-    "@codesandbox/sandpack-react": "^0.19.6"
-  }
+  ]
 }

@@ -38,6 +38,7 @@
     "jest-environment-jsdom": "28.0.2",
     "npm-check-updates": "12.5.11",
     "nyc": "15.1.0",
+    "postcss": "8.4.13",
     "prettier": "2.6.2",
     "rimraf": "3.0.2",
     "rollup": "2.72.0",
