@@ -20,7 +20,7 @@ import { ResourceArrayDisplay } from './ResourceArrayDisplay';
 
 export interface ResourcePropertyDisplayProps {
   schema: IndexedStructureDefinition;
-  property: ElementDefinition;
+  property?: ElementDefinition;
   propertyType: PropertyType;
   value: any;
   arrayElement?: boolean;
@@ -32,7 +32,7 @@ export interface ResourcePropertyDisplayProps {
 export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JSX.Element {
   const { property, propertyType, value } = props;
 
-  if (property.max === '*' && !props.arrayElement) {
+  if (property?.max === '*' && !props.arrayElement) {
     if (propertyType === 'Attachment') {
       return <AttachmentArrayDisplay values={value} maxWidth={props.maxWidth} />;
     }
@@ -96,7 +96,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       return (
         <BackboneElementDisplay
           schema={props.schema}
-          typeName={buildTypeName(property.path?.split('.') as string[])}
+          typeName={buildTypeName(property?.path?.split('.') as string[])}
           value={value}
           compact={true}
           ignoreMissingValues={props.ignoreMissingValues}
