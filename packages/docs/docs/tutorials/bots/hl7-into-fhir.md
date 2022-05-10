@@ -87,7 +87,7 @@ When we this implementation is complete we will:
 You'll need your bot id (see [bot list](https://app.medplum.com/Bot) and click) to execute the bot. Once you have found it, you can attempt to execute your Bot using an HTTP message by sending the following via curl.  Note the content type.
 
 ```cURL
-curl --x POST 'https://api.medplum.com/fhir/R4/Bot/<bot-id>/$execute' \
+curl -x POST 'https://api.medplum.com/fhir/R4/Bot/<bot-id>/$execute' \
 --header 'Content-Type: x-application/hl7-v2+er7' \
 --header 'Authorization: Bearer <access_token>' \
 --data-raw 'MSH|^~\&|Primary||CL|PDMT|20200312081842|168866|ADT^A28|203598|T|2.3|||||||||||
