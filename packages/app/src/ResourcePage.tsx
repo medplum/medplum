@@ -251,6 +251,7 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
   const medplum = useMedplum();
   const { resourceType, id } = props.resource;
   const [code, setCode] = useState<string | undefined>((props.resource as Bot)?.code);
+  const codeEditorRef = useRef<CodeEditorRef>(null);
   switch (props.name) {
     case 'details':
       return <ResourceTable value={props.resource} />;
@@ -312,7 +313,6 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
         </div>
       );
     case 'editor':
-      const codeEditorRef = useRef<CodeEditorRef>(null);
       return (
         <Form
           onSubmit={() => {
