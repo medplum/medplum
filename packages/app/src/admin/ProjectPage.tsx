@@ -26,7 +26,7 @@ export function ProjectPage(): JSX.Element {
         </thead>
         <tbody>
           {result.members
-            .filter((member: any) => member.role !== 'client')
+            .filter((member: any) => member.role !== 'bot' && member.role !== 'client')
             .map((member: any) => (
               <tr key={member.profile.reference}>
                 <td>

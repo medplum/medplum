@@ -17,6 +17,7 @@ import {
   DrAliceSmithSchedule,
   DrAliceSmithSlots,
   ExampleBot,
+  ExampleClient,
   ExampleQuestionnaire,
   ExampleQuestionnaireResponse,
   ExampleSubscription,
@@ -137,6 +138,7 @@ function mockAdminHandler(_method: string, path: string): any {
       members: [
         { id: '123', profile: { reference: 'Practitioner/123', display: 'Alice Smith' }, role: 'owner' },
         { id: '888', profile: { reference: 'ClientApplication/123', display: 'Test Client' }, role: 'client' },
+        { id: '999', profile: { reference: 'Bot/123', display: 'Test Bot' }, role: 'bot' },
       ],
     };
   }
@@ -284,6 +286,7 @@ mockRepo.createResource(ExampleAccessPolicy);
 mockRepo.createResource(ExampleStatusValueSet);
 mockRepo.createResource(ExampleUserConfiguration);
 mockRepo.createResource(ExampleBot);
+mockRepo.createResource(ExampleClient);
 mockRepo.createResource(HomerDiagnosticReport);
 mockRepo.createResource(HomerEncounter);
 mockRepo.createResource(HomerCommunication);
