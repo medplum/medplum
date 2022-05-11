@@ -6,9 +6,9 @@ import { Button } from './Button';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
-import { SearchClickEvent, SearchLoadEvent } from './SearchControl';
-import './SearchControl.css';
+import { SearchClickEvent } from './SearchControl';
 import { killEvent } from './utils/dom';
+import './SearchControl.css';
 
 export interface SmartSearchField {
   readonly propertyType: PropertyType;
@@ -18,10 +18,9 @@ export interface SmartSearchField {
 
 export interface SmartSearchControlProps {
   resourceType: string;
-  gql: string;
+  query: string;
   fields: SmartSearchField[];
   checkboxesEnabled?: boolean;
-  onLoad?: (e: SearchLoadEvent) => void;
   onClick?: (e: SearchClickEvent) => void;
   onAuxClick?: (e: SearchClickEvent) => void;
   onBulk?: (ids: string[]) => void;
@@ -35,14 +34,12 @@ export interface SmartSearchResponse {
 
 /**
  * The SmartSearchControl component represents the embeddable search table control.
- * It includes the table, rows, headers, sorting, etc.
- * It does not include the field editor, filter editor, pagination buttons.
  */
 export function SmartSearchControl(props: SmartSearchControlProps): JSX.Element {
   const medplum = useMedplum();
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
-  const { gql, fields, onLoad } = props;
+  const { query, fields } = props;
   const [response, setResponse] = useState<SmartSearchResponse | undefined>();
   const [selected, setSelected] = useState<{ [id: string]: boolean }>({});
 
@@ -54,19 +51,8 @@ export function SmartSearchControl(props: SmartSearchControlProps): JSX.Element 
 
   useEffect(() => {
     setOutcome(undefined);
-    medplum
-      .graphql(gql)
-      .then((response) => {
-        setResponse(response);
-        if (onLoad) {
-          onLoad(new SearchLoadEvent(response));
-        }
-      })
-      .catch((reason) => {
-        setResponse(undefined);
-        setOutcome(reason);
-      });
-  }, [medplum, gql, onLoad]);
+    medplum.graphql(query).then(setResponse).catch(setOutcome);
+  }, [medplum, query]);
 
   function handleSingleCheckboxClick(e: React.ChangeEvent, id: string): void {
     e.stopPropagation();
@@ -112,12 +98,6 @@ export function SmartSearchControl(props: SmartSearchControlProps): JSX.Element 
     return true;
   }
 
-  /**
-   * Handles a click on a order row.
-   *
-   * @param e The click event.
-   * @param resource The FHIR resource.
-   */
   function handleRowClick(e: React.MouseEvent, resource: Resource): void {
     if (e.target instanceof HTMLInputElement && e.target.type === 'checkbox') {
       // Ignore clicks on checkboxes
@@ -149,7 +129,6 @@ export function SmartSearchControl(props: SmartSearchControlProps): JSX.Element 
   }
 
   const checkboxColumn = props.checkboxesEnabled;
-  const resources = responseRef.current?.data?.ResourceList;
 
   return (
     <div className="medplum-search-control" onContextMenu={(e) => killEvent(e)} data-testid="search-control">
@@ -174,7 +153,7 @@ export function SmartSearchControl(props: SmartSearchControlProps): JSX.Element 
           </tr>
         </thead>
         <tbody>
-          {resources?.map(
+          {response?.data?.ResourceList?.map(
             (resource) =>
               resource && (
                 <tr
@@ -209,7 +188,7 @@ export function SmartSearchControl(props: SmartSearchControlProps): JSX.Element 
           )}
         </tbody>
       </table>
-      {resources?.length === 0 && (
+      {response?.data?.ResourceList?.length === 0 && (
         <div data-testid="empty-search" className="medplum-empty-search">
           No results
         </div>
