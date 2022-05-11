@@ -82,10 +82,9 @@ The following resources are available to the Bot code, to enable it to do the fu
 
 | Name              | Type     | Description                                                                       |
 | ----------------- | -------- | --------------------------------------------------------------------------------- |
-| `medplum`       | function   | An instance of the medplum JS SDK ([documentation](https://docs.medplum.com/typedoc/core/index.html))                             |
-| `event`         | object   | The event that object that triggered the Bot |
+| `medplum`       | [MedplumClient](https://docs.medplum.com/typedoc/core/classes/MedplumClient.html)   | An instance of the medplum JS SDK ([documentation](https://docs.medplum.com/typedoc/core/index.html))                             |
+| `event`         | BotEvent   | The event that object that triggered the Bot |
 | `event.input`   | object   | The bot input, usually a FHIR object or content that was posted to a bot endpoint                                              |
-| `console`       | function | Helper function to validate the outcome of a repository call. See below.          |
 
 ### medplum
 
@@ -105,9 +104,9 @@ This is a JSON object representing the event that triggered the Lambda.
 
 This is the content that was input into the Lambda.  In this example it will be the `Patient` resource because we set up the [Subscription](https://app.medplum.com/Subscription) to fire when the `Patient` resource is edited.
 
-### console
+## Logging
 
-A `console`-like variable that can be used for logging output to AuditEvents.
+A `console`-like variable that can be used for logging output to [AuditEvent](https://docs.medplum.com/api/fhir/resources/auditevent).
 
 Example:
 
@@ -115,7 +114,7 @@ Example:
 console.log('Example');
 ```
 
-[AuditEvents](https://docs.medplum.com/api/fhir/resources/auditevent) are viewable on either the [Subscription](https://app.medplum.com/Bot) page or the [Bot](https://app.medplum.com/Bot) Page.
+AuditEvents viewable on either the [Subscription](https://app.medplum.com/Bot) page or the [Bot](https://app.medplum.com/Bot) Page.  You can view all [AuditEvents](https://app.medplum.com/AuditEvent) in the webapp as well.
 
 ## Special Topics
 

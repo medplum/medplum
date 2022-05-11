@@ -89,7 +89,7 @@ Functionally, the code above will create a new patient with the `mrnNumber` prov
 
 You'll need your bot id (see [bot list](https://app.medplum.com/Bot) and click) to execute the bot. Once you have found it, you can attempt to execute your Bot using an HTTP message by sending the following via curl.  Note the content type.
 
-```console
+```bash
 curl -x POST 'https://api.medplum.com/fhir/R4/Bot/<bot-id>/$execute' \
 --header 'Content-Type: x-application/hl7-v2+er7' \
 --header 'Authorization: Bearer <access_token>' \
@@ -103,13 +103,13 @@ PV2||||||||||||||||||||||N|||||||||||||||||||||||||||'
 
 If all goes well, you should see the following HL7 acknowldgement message in the console.
 
-```console
+```bash
 MSH|^~\\&|CL|PDMT|Primary||2022-05-10T16:19:50.244Z||ACK|1652199590244|P|2.5.1\rMSA|AA|203598|OK
 ```
 
 Alternatively, you can submit the HL7 message type to the bot as a file using the following command.
 
-```console
+```bash
 curl -x POST 'https://api.medplum.com/fhir/R4/Bot/<bot-id>/$execute' \
   --header 'Content-Type: x-application/hl7-v2+er7' \
   --header 'Authorization: Bearer <access_token>' \
