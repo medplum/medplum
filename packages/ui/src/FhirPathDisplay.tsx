@@ -7,13 +7,6 @@ import { ResourcePropertyDisplay } from '.';
 export interface FhirPathDisplayProps {
   resource: Resource;
   path: string;
-  // property?: ElementDefinition;
-  // propertyType: PropertyType;
-  // value: any;
-  // arrayElement?: boolean;
-  // maxWidth?: number;
-  // ignoreMissingValues?: boolean;
-  // link?: boolean;
 }
 
 export function FhirPathDisplay(props: FhirPathDisplayProps): JSX.Element | null {
