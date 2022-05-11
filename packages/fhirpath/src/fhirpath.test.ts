@@ -493,6 +493,65 @@ const valueset = {
   },
 };
 
+const diagnosticReport = {
+  resourceType: 'DiagnosticReport',
+  id: 'example',
+  status: 'preliminary',
+  code: {
+    coding: [
+      {
+        system: 'https://example.com',
+        code: 'example_report',
+        display: 'Example Report',
+      },
+    ],
+  },
+  result: [
+    {
+      reference: 'Observation/obs1',
+      display: 'TESTOSTERONE',
+      resource: {
+        resourceType: 'Observation',
+        id: 'obs1',
+        code: {
+          coding: [
+            {
+              system: 'https://example.com',
+              code: 'TESTOSTERONE',
+            },
+          ],
+          text: 'TESTOSTERONE',
+        },
+        valueQuantity: {
+          value: 216,
+          unit: 'ng/dL',
+        },
+      },
+    },
+    {
+      reference: 'Observation/obs2',
+      display: 'EGFR',
+      resource: {
+        resourceType: 'Observation',
+        id: 'obs2',
+        code: {
+          coding: [
+            {
+              system: 'https://example.com',
+              code: 'EGFR',
+            },
+          ],
+          text: 'EGFR',
+        },
+        valueQuantity: {
+          value: 1,
+          unit: 'ng/dL',
+        },
+      },
+    },
+  ],
+};
+
 describe('FHIRPath Test Suite', () => {
   describe('Miscellaneous accessor tests', () => {
     test('Extract birthDate', () => {
@@ -1498,6 +1557,17 @@ describe('FHIRPath Test Suite', () => {
 
     test('testSelect2', () => {
       expect(evalFhirPath('Patient.name.select(given | family).count() = 7', patient)).toEqual([true]);
+    });
+  });
+
+  describe('testResolve', () => {
+    test('testResolve1', () => {
+      expect(evalFhirPath('DiagnosticReport.result.resolve().id', diagnosticReport)).toEqual(['obs1', 'obs2']);
+    });
+    test('testResolvePolymorphism', () => {
+      expect(evalFhirPath('DiagnosticReport.result.resolve().value.as(Quantity).value', diagnosticReport)).toEqual([
+        216, 1,
+      ]);
     });
   });
 

@@ -530,6 +530,18 @@ describe('FHIRPath functions', () => {
     expect(functions.resolve(['Patient/123'])).toEqual([{ resourceType: 'Patient', id: '123' }]);
     expect(functions.resolve([{ reference: 'Patient/123' }])).toEqual([{ resourceType: 'Patient', id: '123' }]);
     expect(functions.resolve([123])).toEqual([]);
+    expect(
+      functions.resolve([
+        {
+          reference: 'Patient/123',
+          resource: {
+            resourceType: 'Patient',
+            id: '123',
+            name: [{ family: 'Simpson', given: ['Homer'] }],
+          },
+        },
+      ])
+    ).toEqual([{ resourceType: 'Patient', id: '123', name: [{ family: 'Simpson', given: ['Homer'] }] }]);
   });
 
   test('as', () => {
