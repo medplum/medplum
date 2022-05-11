@@ -2,6 +2,7 @@ import { IndexedStructureDefinition, PropertyType } from '@medplum/core';
 import { evalFhirPath } from '@medplum/fhirpath';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
+import { Button } from './Button';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
@@ -217,6 +218,11 @@ export function SmartSearchControl(props: SmartSearchControlProps): JSX.Element 
         <div data-testid="search-error" className="medplum-empty-search">
           <pre style={{ textAlign: 'left' }}>{JSON.stringify(outcome, undefined, 2)}</pre>
         </div>
+      )}
+      {props.onBulk && (
+        <Button size="small" onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(selectedRef.current))}>
+          Bulk...
+        </Button>
       )}
     </div>
   );
