@@ -1429,7 +1429,11 @@ export function resolve(input: unknown[]): unknown[] {
       if (typeof e === 'string') {
         refStr = e;
       } else if (typeof e === 'object') {
-        refStr = (e as Reference).reference;
+        const ref = e as Reference;
+        if (ref.resource) {
+          return ref.resource;
+        }
+        refStr = ref.reference;
       }
       if (!refStr) {
         return undefined;
