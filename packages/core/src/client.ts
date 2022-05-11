@@ -142,6 +142,11 @@ export interface TokenResponse {
   readonly profile: Reference<ProfileResource>;
 }
 
+export interface BotEvent {
+  readonly contentType: string;
+  readonly input: any;
+}
+
 interface SchemaGraphQLResponse {
   readonly data: {
     readonly StructureDefinitionList: StructureDefinition[];
