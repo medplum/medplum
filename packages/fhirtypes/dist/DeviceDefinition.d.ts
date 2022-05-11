@@ -5,7 +5,6 @@
 
 import { Annotation } from './Annotation';
 import { CodeableConcept } from './CodeableConcept';
-import { CodeableReference } from './CodeableReference';
 import { ContactPoint } from './ContactPoint';
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
@@ -239,7 +238,7 @@ export interface DeviceDefinition {
    * Indicates the anotomic location on the subject's body where the device
    * was used ( i.e. the target).
    */
-  bodySite?: CodeableReference;
+  bodySite?: CodeableConcept;
 }
 
 /**
