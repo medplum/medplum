@@ -4,7 +4,7 @@ import { evalFhirPath } from '@medplum/fhirpath';
 import React from 'react';
 import { ResourcePropertyDisplay } from '.';
 
-export interface SmartResourcePropertyDisplayProps {
+export interface FhirPathDisplayProps {
   resource: Resource;
   path: string;
   // property?: ElementDefinition;
@@ -16,11 +16,11 @@ export interface SmartResourcePropertyDisplayProps {
   // link?: boolean;
 }
 
-export function SmartResourcePropertyDisplay(props: SmartResourcePropertyDisplayProps): JSX.Element {
+export function FhirPathDisplay(props: FhirPathDisplayProps): JSX.Element | null {
   const value = evalFhirPath(props.path, props.resource);
 
-  if (value?.[0] && value.length === 1) {
+  if (value.length === 1) {
     return <ResourcePropertyDisplay value={value?.[0] || ''} propertyType={PropertyType.string} />;
   }
-  return <></>;
+  return null;
 }

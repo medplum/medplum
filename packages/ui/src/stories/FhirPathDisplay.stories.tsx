@@ -1,16 +1,14 @@
 import React from 'react';
-import { SmartResourcePropertyDisplay, SmartResourcePropertyDisplayProps } from '../SmartResourcePropertyDisplay';
+import { FhirPathDisplay, FhirPathDisplayProps } from '../FhirPathDisplay';
 import { HomerServiceRequest, HomerSimpson } from '@medplum/mock';
 import { ComponentStory, Meta } from '@storybook/react';
 
 export default {
-  component: SmartResourcePropertyDisplay,
+  component: FhirPathDisplay,
   title: 'Medplum/SmartResourcePropertyDisplay',
 } as Meta;
 
-const Story: ComponentStory<typeof SmartResourcePropertyDisplay> = (args: SmartResourcePropertyDisplayProps) => (
-  <SmartResourcePropertyDisplay {...args} />
-);
+const Story: ComponentStory<typeof FhirPathDisplay> = (args: FhirPathDisplayProps) => <FhirPathDisplay {...args} />;
 
 export const Id = Story.bind({});
 Id.args = {
