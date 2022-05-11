@@ -1,6 +1,8 @@
-import { createReference } from '@medplum/core';
-import { HomerServiceRequest, MockClient } from '@medplum/mock';
+import { createReference, getReferenceString } from '@medplum/core';
+import { Communication } from '@medplum/fhirtypes';
+import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { randomUUID } from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
@@ -85,5 +87,105 @@ describe('ServiceRequestTimeline', () => {
 
     const items = screen.getAllByTestId('timeline-item');
     expect(items).toBeDefined();
+  });
+
+  test('Pin comment', async () => {
+    // Create a comment
+    const comment = await medplum.createResource<Communication>({
+      resourceType: 'Communication',
+      basedOn: [createReference(HomerServiceRequest)],
+      subject: createReference(HomerSimpson),
+      payload: [{ contentString: randomUUID() }],
+    });
+
+    setup({ serviceRequest: HomerServiceRequest });
+
+    // Wait for initial load
+    await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+
+    // Click on the actions link
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+    });
+
+    // Click on the "Pin" menu item
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Pin ' + getReferenceString(comment)));
+    });
+  });
+
+  test('Comment details', async () => {
+    // Create a comment
+    const comment = await medplum.createResource<Communication>({
+      resourceType: 'Communication',
+      basedOn: [createReference(HomerServiceRequest)],
+      subject: createReference(HomerSimpson),
+      payload: [{ contentString: randomUUID() }],
+    });
+
+    setup({ serviceRequest: HomerServiceRequest });
+
+    // Wait for initial load
+    await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+
+    // Click on the actions link
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+    });
+
+    // Click on the "Details" menu item
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Details ' + getReferenceString(comment)));
+    });
+  });
+
+  test('Edit comment', async () => {
+    // Create a comment
+    const comment = await medplum.createResource<Communication>({
+      resourceType: 'Communication',
+      basedOn: [createReference(HomerServiceRequest)],
+      subject: createReference(HomerSimpson),
+      payload: [{ contentString: randomUUID() }],
+    });
+
+    setup({ serviceRequest: HomerServiceRequest });
+
+    // Wait for initial load
+    await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+
+    // Click on the actions link
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+    });
+
+    // Click on the "Edit" menu item
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Edit ' + getReferenceString(comment)));
+    });
+  });
+
+  test('Delete comment', async () => {
+    // Create a comment
+    const comment = await medplum.createResource<Communication>({
+      resourceType: 'Communication',
+      basedOn: [createReference(HomerServiceRequest)],
+      subject: createReference(HomerSimpson),
+      payload: [{ contentString: randomUUID() }],
+    });
+
+    setup({ serviceRequest: HomerServiceRequest });
+
+    // Wait for initial load
+    await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+
+    // Click on the actions link
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+    });
+
+    // Click on the "Delete" menu item
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Delete ' + getReferenceString(comment)));
+    });
   });
 });

@@ -1,4 +1,4 @@
-import { ProfileResource } from '@medplum/core';
+import { getReferenceString, ProfileResource } from '@medplum/core';
 import {
   Attachment,
   AuditEvent,
@@ -10,7 +10,8 @@ import {
   Reference,
   Resource,
 } from '@medplum/fhirtypes';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AttachmentDisplay } from './AttachmentDisplay';
 import { Button } from './Button';
 import { DiagnosticReportDisplay } from './DiagnosticReportDisplay';
@@ -18,14 +19,15 @@ import { Form } from './Form';
 import { Input } from './Input';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
+import { MenuItem } from './MenuItem';
 import { ResourceDiffTable } from './ResourceDiffTable';
 import { ResourceTable } from './ResourceTable';
-import './ResourceTimeline.css';
 import { Scrollable } from './Scrollable';
 import { Timeline, TimelineItem } from './Timeline';
 import { UploadButton } from './UploadButton';
 import { useResource } from './useResource';
-import { sortByDate } from './utils/date';
+import { sortByDateAndPriority } from './utils/date';
+import './ResourceTimeline.css';
 
 export interface ResourceTimelineProps<T extends Resource> {
   value: T | Reference<T>;
@@ -35,29 +37,32 @@ export interface ResourceTimelineProps<T extends Resource> {
 }
 
 export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProps<T>): JSX.Element {
+  const navigate = useNavigate();
   const medplum = useMedplum();
   const sender = medplum.getProfile() as ProfileResource;
   const inputRef = useRef<HTMLInputElement>(null);
   const resource = useResource(props.value);
   const [history, setHistory] = useState<Bundle>();
   const [items, setItems] = useState<Resource[]>([]);
+  const buildSearchRequests = props.buildSearchRequests;
 
   const itemsRef = useRef<Resource[]>(items);
   itemsRef.current = items;
 
-  /**
-   * Loads existing timeline resources.
-   */
-  useEffect(() => {
+  const loadTimeline = useCallback(() => {
     if (!resource) {
       setItems([]);
       setHistory({} as Bundle);
       return;
     }
 
-    const batchRequest = props.buildSearchRequests(resource);
+    const batchRequest = buildSearchRequests(resource);
     medplum.post('fhir/R4', batchRequest).then(handleBatchResponse);
-  }, [medplum, props, resource]);
+  }, [medplum, resource, buildSearchRequests]);
+
+  useEffect(() => {
+    loadTimeline();
+  }, [loadTimeline]);
 
   /**
    * Handles a batch request response.
@@ -85,7 +90,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
         }
       }
 
-      sortByDate(newItems);
+      sortByDateAndPriority(newItems);
       newItems.reverse();
     }
 
@@ -98,7 +103,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
    */
   function addResources(resources: Resource[]): void {
     const newItems = [...itemsRef.current, ...resources];
-    sortByDate(newItems);
+    sortByDateAndPriority(newItems);
     newItems.reverse();
     setItems(newItems);
   }
@@ -131,6 +136,30 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     });
   }
 
+  function onPin(communication: Communication): void {
+    medplum
+      .patchResource(communication.resourceType, communication.id as string, [
+        { op: 'add', path: '/priority', value: 'stat' },
+      ])
+      .then(loadTimeline);
+  }
+
+  function onDetails(timelineItem: Resource): void {
+    navigate(`/${timelineItem.resourceType}/${timelineItem.id}`);
+  }
+
+  function onEdit(timelineItem: Resource): void {
+    navigate(`/${timelineItem.resourceType}/${timelineItem.id}/edit`);
+  }
+
+  function onDelete(timelineItem: Resource): void {
+    navigate(`/${timelineItem.resourceType}/${timelineItem.id}/delete`);
+  }
+
+  function onVersionDetails(version: Resource): void {
+    navigate(`/${version.resourceType}/${version.id}/_history/${version.meta?.versionId}`);
+  }
+
   if (!resource || !history) {
     return <Loading />;
   }
@@ -161,18 +190,44 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       )}
       {items.map((item) => {
         if (item.resourceType === resource.resourceType && item.id === resource.id) {
-          return <HistoryTimelineItem key={item.meta?.versionId} history={history} version={item} />;
+          return (
+            <HistoryTimelineItem
+              key={item.meta?.versionId}
+              history={history}
+              resource={item}
+              onDetails={onVersionDetails}
+            />
+          );
         }
         const key = `${item.resourceType}/${item.id}`;
         switch (item.resourceType) {
           case 'AuditEvent':
-            return <AuditEventTimelineItem key={key} auditEvent={item} />;
+            return <AuditEventTimelineItem key={key} resource={item} onDetails={onDetails} />;
           case 'Communication':
-            return <CommunicationTimelineItem key={key} communication={item} />;
+            return (
+              <CommunicationTimelineItem
+                key={key}
+                resource={item}
+                onPin={onPin}
+                onDetails={onDetails}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+            );
           case 'DiagnosticReport':
-            return <DiagnosticReportTimelineItem key={key} diagnosticReport={item} />;
+            return (
+              <DiagnosticReportTimelineItem
+                key={key}
+                resource={item}
+                onDetails={onDetails}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
+            );
           case 'Media':
-            return <MediaTimelineItem key={key} media={item} />;
+            return (
+              <MediaTimelineItem key={key} resource={item} onDetails={onDetails} onEdit={onEdit} onDelete={onDelete} />
+            );
           default:
             return (
               <TimelineItem key={key} resource={item} padding={true}>
@@ -185,24 +240,70 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   );
 }
 
-interface HistoryTimelineItemProps {
+interface BaseTimelineItemProps<T extends Resource> {
+  resource: T;
+  onPin?: (resource: T) => void;
+  onDetails?: (resource: T) => void;
+  onEdit?: (resource: T) => void;
+  onDelete?: (resource: T) => void;
+}
+
+function TimelineItemPopupMenu<T extends Resource>(props: BaseTimelineItemProps<T>): JSX.Element {
+  return (
+    <>
+      {props.onPin && (
+        <MenuItem
+          onClick={() => (props.onPin as (resource: T) => void)(props.resource)}
+          label={`Pin ${getReferenceString(props.resource)}`}
+        >
+          Pin
+        </MenuItem>
+      )}
+      {props.onDetails && (
+        <MenuItem
+          onClick={() => (props.onDetails as (resource: T) => void)(props.resource)}
+          label={`Details ${getReferenceString(props.resource)}`}
+        >
+          Details
+        </MenuItem>
+      )}
+      {props.onEdit && (
+        <MenuItem
+          onClick={() => (props.onEdit as (resource: T) => void)(props.resource)}
+          label={`Edit ${getReferenceString(props.resource)}`}
+        >
+          Edit
+        </MenuItem>
+      )}
+      {props.onDelete && (
+        <MenuItem
+          onClick={() => (props.onDelete as (resource: T) => void)(props.resource)}
+          label={`Delete ${getReferenceString(props.resource)}`}
+        >
+          Delete
+        </MenuItem>
+      )}
+    </>
+  );
+}
+
+interface HistoryTimelineItemProps extends BaseTimelineItemProps<Resource> {
   history: Bundle;
-  version: Resource;
 }
 
 function HistoryTimelineItem(props: HistoryTimelineItemProps): JSX.Element {
-  const previous = getPrevious(props.history, props.version);
+  const previous = getPrevious(props.history, props.resource);
   if (previous) {
     return (
-      <TimelineItem resource={props.version} padding={true}>
-        <ResourceDiffTable original={previous} revised={props.version} />
+      <TimelineItem resource={props.resource} padding={true} popupMenuItems={<TimelineItemPopupMenu {...props} />}>
+        <ResourceDiffTable original={previous} revised={props.resource} />
       </TimelineItem>
     );
   } else {
     return (
-      <TimelineItem resource={props.version} padding={true}>
+      <TimelineItem resource={props.resource} padding={true} popupMenuItems={<TimelineItemPopupMenu {...props} />}>
         <h3>Created</h3>
-        <ResourceTable value={props.version} ignoreMissingValues={true} />
+        <ResourceTable value={props.resource} ignoreMissingValues={true} />
       </TimelineItem>
     );
   }
@@ -217,58 +318,49 @@ function getPrevious(history: Bundle, version: Resource): Resource | undefined {
   return entries[index + 1].resource;
 }
 
-interface CommunicationTimelineItemProps {
-  communication: Communication;
-}
-
-function CommunicationTimelineItem(props: CommunicationTimelineItemProps): JSX.Element {
+function CommunicationTimelineItem(props: BaseTimelineItemProps<Communication>): JSX.Element {
+  const routine = !props.resource.priority || props.resource.priority === 'routine';
+  const className = routine ? 'medplum-timeline-item' : 'medplum-timeline-item medplum-timeline-item-pinned';
   return (
-    <TimelineItem resource={props.communication} padding={true}>
-      <p>{props.communication.payload?.[0]?.contentString}</p>
+    <TimelineItem
+      resource={props.resource}
+      padding={true}
+      className={className}
+      popupMenuItems={<TimelineItemPopupMenu {...props} />}
+    >
+      <p>{props.resource.payload?.[0]?.contentString}</p>
     </TimelineItem>
   );
 }
 
-interface MediaTimelineItemProps {
-  media: Media;
-}
-
-function MediaTimelineItem(props: MediaTimelineItemProps): JSX.Element {
-  const contentType = props.media.content?.contentType;
+function MediaTimelineItem(props: BaseTimelineItemProps<Media>): JSX.Element {
+  const contentType = props.resource.content?.contentType;
   const padding =
     contentType &&
     !contentType.startsWith('image/') &&
     !contentType.startsWith('video/') &&
     contentType !== 'application/pdf';
   return (
-    <TimelineItem resource={props.media} padding={!!padding}>
-      <AttachmentDisplay value={props.media.content} />
+    <TimelineItem resource={props.resource} padding={!!padding} popupMenuItems={<TimelineItemPopupMenu {...props} />}>
+      <AttachmentDisplay value={props.resource.content} />
     </TimelineItem>
   );
 }
 
-interface AuditEventTimelineItemProps {
-  auditEvent: AuditEvent;
-}
-
-function AuditEventTimelineItem(props: AuditEventTimelineItemProps): JSX.Element {
+function AuditEventTimelineItem(props: BaseTimelineItemProps<AuditEvent>): JSX.Element {
   return (
-    <TimelineItem resource={props.auditEvent} padding={true}>
+    <TimelineItem resource={props.resource} padding={true} popupMenuItems={<TimelineItemPopupMenu {...props} />}>
       <Scrollable>
-        <pre>{props.auditEvent.outcomeDesc}</pre>
+        <pre>{props.resource.outcomeDesc}</pre>
       </Scrollable>
     </TimelineItem>
   );
 }
 
-interface DiagnosticReportTimelineItemProps {
-  diagnosticReport: DiagnosticReport;
-}
-
-function DiagnosticReportTimelineItem(props: DiagnosticReportTimelineItemProps): JSX.Element {
+function DiagnosticReportTimelineItem(props: BaseTimelineItemProps<DiagnosticReport>): JSX.Element {
   return (
-    <TimelineItem resource={props.diagnosticReport} padding={true}>
-      <DiagnosticReportDisplay value={props.diagnosticReport} />
+    <TimelineItem resource={props.resource} padding={true} popupMenuItems={<TimelineItemPopupMenu {...props} />}>
+      <DiagnosticReportDisplay value={props.resource} />
     </TimelineItem>
   );
 }
