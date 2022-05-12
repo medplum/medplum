@@ -36,7 +36,7 @@ If you found a technical bug on Medplum or have ideas for features we should imp
 
 If you find a bug on Medplum and open a PR that fixes it we'll review it as soon as possible to ensure it matches our engineering standards.
 
-If you want to implement a new feature, open an issue first to discuss what it'd look like and to ensure it fits in our roadmap and plans for the app (see [the main project board](https://github.com/medplum/medplum/projects/23) for planned and currently ongoing work).
+If you want to implement a new feature, open an issue first to discuss what it'd look like and to ensure it fits in our roadmap and plans for the app.
 
 If you want to contribute but are unsure to start, we have [a "good first issue" label](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) which is applied to newcomer-friendly issues. Take a look at [the full list of good first issues](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) and pick something you like!
 
@@ -64,6 +64,7 @@ Here is a list of all the big technologies we use:
 medplum/
 ├── packages
 │   ├── app          # Frontend web app
+│   ├── cli          # Command line interface
 │   ├── core         # Core shared library
 │   ├── definitions  # Data definitions
 │   ├── docs         # Documentation
@@ -72,6 +73,7 @@ medplum/
 │   ├── generator    # Code generator utilities
 │   ├── graphiql     # Preconfigured GraphiQL
 │   ├── infra        # Infra as code
+│   ├── mock         # Mock FHIR data for testing
 │   ├── server       # Backend API server
 │   └── ui           # React component library
 └── scripts          # Helper bash scripts
@@ -79,7 +81,7 @@ medplum/
 
 ### First time setup
 
-See developer setup documentation: https://docs.medplum.com/docs/developers/intro
+See developer setup documentation: https://docs.medplum.com/contributing/intro
 
 ## License
 
