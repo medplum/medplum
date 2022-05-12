@@ -484,7 +484,7 @@ describe('Client', () => {
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
       },
-      'Patient?name:contains=alice'
+      'name:contains=alice'
     );
     expect(result).toBeDefined();
     expect(result.id).toBe('123'); // Expect existing patient
@@ -497,7 +497,7 @@ describe('Client', () => {
         resourceType: 'Patient',
         name: [{ given: ['Bob'], family: 'Smith' }],
       },
-      'Patient?name:contains=bob'
+      'name:contains=bob'
     );
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('POST');
