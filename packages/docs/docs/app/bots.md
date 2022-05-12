@@ -78,7 +78,7 @@ Now, let's go back to our [Subscription](https://app.medplum.com/Subscription). 
 
 The JavaScript code is heavily sandboxed and runs in an AWS Lambda.  You can apply an [AccessPolicy](https://app.medplum.com/AccessPolicy) to the Bot if you want to further reduce the data it can read and write.
 
-The following resources are available to the Bot code, to enable it to do the functionality it requires.
+The following function arguments are available to the Bot code, to enable it to do the functionality it requires.
 
 | Name              | Type     | Description                                                                       |
 | ----------------- | -------- | --------------------------------------------------------------------------------- |
@@ -118,6 +118,6 @@ AuditEvents viewable on either the [Subscription](https://app.medplum.com/Bot) p
 
 ## Special Topics
 
-It is also possible to trigger Bots by posting to a Bot `$Execute` endpoint.  We won't discuss this in depth here, but you can see many examples of this in the [Bots Tutorials](https://docs.medplum.com/tutorials/bots/intro) landing page.
+It is also possible to trigger Bots by posting to a Bot `$execute` endpoint.  We won't discuss this in depth here, but you can see many examples of this in the [Bots Tutorials](https://docs.medplum.com/tutorials/bots/intro) section.
 
 Bots written using the web editor should be written in Javascript.  If you would like to develop locally, test and deploy apps as part of your software development lifecycle, you can use our [Bot CLI](https://github.com/medplum/medplum-demo-bots).
