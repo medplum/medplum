@@ -13,4 +13,4 @@ exclude_patterns:
 - "packages/docs/**/*"
 - "packages/fhirtypes/**/*"
 - "packages/generator/**/*.ts"
-- "packages/server/src/migrations/**/*.ts
+- "packages/server/src/migrations/**/*.ts"
