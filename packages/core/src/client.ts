@@ -17,6 +17,7 @@ import type { Operation } from 'fast-json-patch';
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
+import { Hl7Message } from './hl7';
 import { parseJWTPayload } from './jwt';
 import { isOk } from './outcomes';
 import { ReadablePromise } from './readablepromise';
@@ -140,6 +141,11 @@ export interface TokenResponse {
   readonly expires_in: number;
   readonly project: Reference<Project>;
   readonly profile: Reference<ProfileResource>;
+}
+
+export interface BotEvent {
+  readonly contentType: string;
+  readonly input: Resource | Hl7Message | string;
 }
 
 interface SchemaGraphQLResponse {
