@@ -43,7 +43,7 @@ When we this implementation is complete we will:
   * First, [create a bot](https://app.medplum.com/admin/project) called ADT Handler Bot and save it
   * Paste the code below into the Bot you created and save.
 
-  ```js
+```js
   export async function handler(medplum, event) {
     const input = event.input;
     // Log Message Type
@@ -80,13 +80,16 @@ When we this implementation is complete we will:
 
     // Return Ack
     return input.buildAck().toString();
-}
+  }
+```
+
+Functionally, the code above will create a new patient with the `mrnNumber` provided, assuming that patient isn't aready in this system.
 
 ### Testing your Bot
 
 You'll need your bot id (see [bot list](https://app.medplum.com/Bot) and click) to execute the bot. Once you have found it, you can attempt to execute your Bot using an HTTP message by sending the following via curl.  Note the content type.
 
-```cURL
+```bash
 curl -x POST 'https://api.medplum.com/fhir/R4/Bot/<bot-id>/$execute' \
 --header 'Content-Type: x-application/hl7-v2+er7' \
 --header 'Authorization: Bearer <access_token>' \
@@ -100,13 +103,13 @@ PV2||||||||||||||||||||||N|||||||||||||||||||||||||||'
 
 If all goes well, you should see the following HL7 acknowldgement message in the console.
 
-```hl7
+```bash
 MSH|^~\\&|CL|PDMT|Primary||2022-05-10T16:19:50.244Z||ACK|1652199590244|P|2.5.1\rMSA|AA|203598|OK
 ```
 
 Alternatively, you can submit the HL7 message type to the bot as a file using the following command.
 
-```cURL
+```bash
 curl -x POST 'https://api.medplum.com/fhir/R4/Bot/<bot-id>/$execute' \
   --header 'Content-Type: x-application/hl7-v2+er7' \
   --header 'Authorization: Bearer <access_token>' \
