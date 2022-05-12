@@ -20,6 +20,7 @@ import { ResourcePage } from './ResourcePage';
 import { ResourceVersionPage } from './ResourceVersionPage';
 import { SetPasswordPage } from './SetPasswordPage';
 import { SignInPage } from './SignInPage';
+import { SmartSearchPage } from './SmartSearchPage';
 import '@medplum/ui/defaulttheme.css';
 import '@medplum/ui/styles.css';
 import './App.css';
@@ -56,6 +57,7 @@ export function App(): JSX.Element {
             <Route path="/changepassword" element={<ChangePasswordPage />} />
             <Route path="/batch" element={<BatchPage />} />
             <Route path="/bulk/:resourceType" element={<BulkAppPage />} />
+            <Route path="/smart" element={<SmartSearchPage />} />
             <Route path="/forms/:id" element={<FormPage />} />
             <Route path="/admin/project" element={<ProjectPage />} />
             <Route path="/admin/projects/:projectId/bot" element={<CreateBotPage />} />

@@ -19,8 +19,8 @@ import { ReferenceDisplay } from './ReferenceDisplay';
 import { ResourceArrayDisplay } from './ResourceArrayDisplay';
 
 export interface ResourcePropertyDisplayProps {
-  schema: IndexedStructureDefinition;
-  property: ElementDefinition;
+  schema?: IndexedStructureDefinition;
+  property?: ElementDefinition;
   propertyType: PropertyType;
   value: any;
   arrayElement?: boolean;
@@ -32,9 +32,12 @@ export interface ResourcePropertyDisplayProps {
 export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JSX.Element {
   const { property, propertyType, value } = props;
 
-  if (property.max === '*' && !props.arrayElement) {
+  if (property?.max === '*' && !props.arrayElement) {
     if (propertyType === 'Attachment') {
       return <AttachmentArrayDisplay values={value} maxWidth={props.maxWidth} />;
+    }
+    if (!props.schema) {
+      throw Error(`Displaying property of type ${props.propertyType} requires schema to be passed`);
     }
     return (
       <ResourceArrayDisplay
@@ -93,10 +96,13 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.Reference:
       return <ReferenceDisplay value={value} link={props.link} />;
     default:
+      if (!props.schema) {
+        throw Error(`Displaying property of type ${props.propertyType} requires schema to be passed`);
+      }
       return (
         <BackboneElementDisplay
           schema={props.schema}
-          typeName={buildTypeName(property.path?.split('.') as string[])}
+          typeName={buildTypeName(property?.path?.split('.') as string[])}
           value={value}
           compact={true}
           ignoreMissingValues={props.ignoreMissingValues}

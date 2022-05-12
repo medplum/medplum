@@ -59,6 +59,7 @@ export * from './SearchUtils';
 export * from './Select';
 export * from './ServiceRequestTimeline';
 export * from './SignInForm';
+export * from './FhirPathTable';
 export * from './Tab';
 export * from './TabList';
 export * from './TabPanel';

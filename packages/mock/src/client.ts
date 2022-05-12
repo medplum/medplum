@@ -320,7 +320,7 @@ function mockFhirHandler(method: string, url: string, options: any): any {
   if (path.startsWith('fhir/R4/ValueSet/%24expand')) {
     return exampleValueSet;
   } else if (path === 'fhir/R4/%24graphql') {
-    return GraphQLSchemaResponse;
+    return mockFhirGraphqlHandler(method, path, options);
   } else if (path === 'not-found' || id === 'not-found') {
     return notFound;
   } else if (method === 'POST') {
@@ -348,6 +348,30 @@ function mockFhirHandler(method: string, url: string, options: any): any {
       return notFound;
     }
   }
+}
+
+function mockFhirGraphqlHandler(_method: string, _path: string, options: any): any {
+  const { body } = options;
+  if (body.includes('ResourceList: ServiceRequestList')) {
+    return {
+      data: {
+        ResourceList: [
+          {
+            ...HomerServiceRequest,
+            ObservationList: [
+              HomerObservation1,
+              HomerObservation2,
+              HomerObservation3,
+              HomerObservation4,
+              HomerObservation5,
+              HomerObservation6,
+            ],
+          },
+        ],
+      },
+    };
+  }
+  return GraphQLSchemaResponse;
 }
 
 function mockFhirBatchHandler(_method: string, _path: string, options: any): any {
