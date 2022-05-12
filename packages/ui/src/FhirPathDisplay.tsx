@@ -1,8 +1,8 @@
 import { PropertyType } from '@medplum/core';
-import { Resource } from '@medplum/fhirtypes';
 import { evalFhirPath } from '@medplum/fhirpath';
+import { Resource } from '@medplum/fhirtypes';
 import React from 'react';
-import { ResourcePropertyDisplay } from '.';
+import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 export interface FhirPathDisplayProps {
   resource: Resource;
@@ -14,7 +14,6 @@ export function FhirPathDisplay(props: FhirPathDisplayProps): JSX.Element {
   const value = evalFhirPath(props.path, props.resource);
 
   if (value.length > 1) {
-    console.log('Error!');
     throw new Error(
       `Component "path" for "FhirPathDisplay" must resolve to a single element. \
        Received ${value.length} elements \

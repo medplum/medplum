@@ -4,7 +4,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
-import { SmartSearchControl, SmartSearchControlProps, SmartSearchField } from './SmartSearchControl';
+import { FhirPathTable, FhirPathTableProps, SmartSearchField } from './FhirPathTable';
 
 const query = `{
   ResourceList: ServiceRequestList {
@@ -69,33 +69,33 @@ const fields: SmartSearchField[] = [
   },
   {
     name: 'Val',
-    fhirPath: 'ObservationList.valueQuantity',
+    fhirPath: 'ObservationList[0].valueQuantity',
     propertyType: PropertyType.Quantity,
   },
   {
     name: 'Int',
-    fhirPath: 'ObservationList.interpretation.coding.display',
+    fhirPath: 'ObservationList[0].interpretation.coding.display',
     propertyType: PropertyType.string,
   },
   {
     name: 'Low',
-    fhirPath: 'ObservationList.referenceRange.low',
+    fhirPath: 'ObservationList[0].referenceRange.low',
     propertyType: PropertyType.Quantity,
   },
   {
     name: 'High',
-    fhirPath: 'ObservationList.referenceRange.high',
+    fhirPath: 'ObservationList[0].referenceRange.high',
     propertyType: PropertyType.Quantity,
   },
 ];
 
-describe('SmartSearchControl', () => {
-  async function setup(args: SmartSearchControlProps): Promise<void> {
+describe('FhirPathTable', () => {
+  async function setup(args: FhirPathTableProps): Promise<void> {
     await act(async () => {
       render(
         <MemoryRouter>
           <MedplumProvider medplum={new MockClient()}>
-            <SmartSearchControl {...args} />
+            <FhirPathTable {...args} />
           </MedplumProvider>
         </MemoryRouter>
       );

@@ -15,7 +15,7 @@ export interface SmartSearchField {
   readonly fhirPath: string;
 }
 
-export interface SmartSearchControlProps {
+export interface FhirPathTableProps {
   resourceType: string;
   query: string;
   fields: SmartSearchField[];
@@ -32,9 +32,9 @@ export interface SmartSearchResponse {
 }
 
 /**
- * The SmartSearchControl component represents the embeddable search table control.
+ * The FhirPathTable component represents the embeddable search table control.
  */
-export function SmartSearchControl(props: SmartSearchControlProps): JSX.Element {
+export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
   const medplum = useMedplum();
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
@@ -204,4 +204,4 @@ export function SmartSearchControl(props: SmartSearchControlProps): JSX.Element 
   );
 }
 
-export const MemoizedSmartSearchControl = React.memo(SmartSearchControl);
+export const MemoizedFhirPathTable = React.memo(FhirPathTable);
