@@ -1,14 +1,13 @@
 import { IndexedStructureDefinition, PropertyType } from '@medplum/core';
-import { evalFhirPath } from '@medplum/fhirpath';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
-import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 import { SearchClickEvent } from './SearchControl';
 import { killEvent } from './utils/dom';
 import './SearchControl.css';
+import { FhirPathDisplay } from './FhirPathDisplay';
 
 export interface SmartSearchField {
   readonly propertyType: PropertyType;
@@ -16,7 +15,7 @@ export interface SmartSearchField {
   readonly fhirPath: string;
 }
 
-export interface SmartSearchControlProps {
+export interface FhirPathTableProps {
   resourceType: string;
   query: string;
   fields: SmartSearchField[];
@@ -33,9 +32,9 @@ export interface SmartSearchResponse {
 }
 
 /**
- * The SmartSearchControl component represents the embeddable search table control.
+ * The FhirPathTable component represents the embeddable search table control.
  */
-export function SmartSearchControl(props: SmartSearchControlProps): JSX.Element {
+export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
   const medplum = useMedplum();
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
@@ -175,11 +174,9 @@ export function SmartSearchControl(props: SmartSearchControlProps): JSX.Element 
                     </td>
                   )}
                   {fields.map((field) => {
-                    const values = evalFhirPath(field.fhirPath, resource);
-                    const value = values?.[0];
                     return (
                       <td key={field.name}>
-                        <ResourcePropertyDisplay schema={schema} propertyType={field.propertyType} value={value} />
+                        <FhirPathDisplay propertyType={field.propertyType} path={field.fhirPath} resource={resource} />
                       </td>
                     );
                   })}
@@ -207,4 +204,4 @@ export function SmartSearchControl(props: SmartSearchControlProps): JSX.Element 
   );
 }
 
-export const MemoizedSmartSearchControl = React.memo(SmartSearchControl);
+export const MemoizedFhirPathTable = React.memo(FhirPathTable);

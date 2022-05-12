@@ -69,22 +69,22 @@ const fields: SmartSearchField[] = [
   },
   {
     name: 'Value',
-    fhirPath: 'ObservationList.valueQuantity',
+    fhirPath: 'ObservationList[0].valueQuantity',
     propertyType: PropertyType.Quantity,
   },
   {
     name: 'Interpretation',
-    fhirPath: 'ObservationList.interpretation.coding.display',
+    fhirPath: 'ObservationList[0].interpretation.coding.display',
     propertyType: PropertyType.string,
   },
   {
     name: 'Low',
-    fhirPath: 'ObservationList.referenceRange.low',
+    fhirPath: 'ObservationList[0].referenceRange.low',
     propertyType: PropertyType.Quantity,
   },
   {
     name: ' High',
-    fhirPath: 'ObservationList.referenceRange.high',
+    fhirPath: 'ObservationList[0].referenceRange.high',
     propertyType: PropertyType.Quantity,
   },
 ];

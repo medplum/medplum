@@ -1,4 +1,4 @@
-import { MemoizedSmartSearchControl, SmartSearchField } from '@medplum/ui';
+import { MemoizedFhirPathTable, SmartSearchField } from '@medplum/ui';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -21,7 +21,7 @@ export function SmartSearchPage(): JSX.Element | null {
   }
 
   return (
-    <MemoizedSmartSearchControl
+    <MemoizedFhirPathTable
       resourceType={resourceType}
       checkboxesEnabled={true}
       query={query}

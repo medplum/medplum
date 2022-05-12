@@ -19,7 +19,7 @@ import { ReferenceDisplay } from './ReferenceDisplay';
 import { ResourceArrayDisplay } from './ResourceArrayDisplay';
 
 export interface ResourcePropertyDisplayProps {
-  schema: IndexedStructureDefinition;
+  schema?: IndexedStructureDefinition;
   property?: ElementDefinition;
   propertyType: PropertyType;
   value: any;
@@ -35,6 +35,9 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
   if (property?.max === '*' && !props.arrayElement) {
     if (propertyType === 'Attachment') {
       return <AttachmentArrayDisplay values={value} maxWidth={props.maxWidth} />;
+    }
+    if (!props.schema) {
+      throw Error(`Displaying property of type ${props.propertyType} requires schema to be passed`);
     }
     return (
       <ResourceArrayDisplay
@@ -93,6 +96,9 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.Reference:
       return <ReferenceDisplay value={value} link={props.link} />;
     default:
+      if (!props.schema) {
+        throw Error(`Displaying property of type ${props.propertyType} requires schema to be passed`);
+      }
       return (
         <BackboneElementDisplay
           schema={props.schema}
