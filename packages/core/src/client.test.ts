@@ -477,6 +477,33 @@ describe('Client', () => {
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient');
   });
 
+  test('Create resource if none exist returns existing', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.createResourceIfNoneExist<Patient>(
+      {
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      },
+      'name:contains=alice'
+    );
+    expect(result).toBeDefined();
+    expect(result.id).toBe('123'); // Expect existing patient
+  });
+
+  test('Create resource if none exist creates new', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.createResourceIfNoneExist<Patient>(
+      {
+        resourceType: 'Patient',
+        name: [{ given: ['Bob'], family: 'Smith' }],
+      },
+      'name:contains=bob'
+    );
+    expect(result).toBeDefined();
+    expect((result as any).request.options.method).toBe('POST');
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Patient');
+  });
+
   test('Update resource', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.updateResource({ resourceType: 'Patient', id: '123' });

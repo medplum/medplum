@@ -853,6 +853,48 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Conditionally create a new FHIR resource only if some equivalent resource does not already exist on the server.
+   *
+   * The return value is the existing resource or the newly created resource, including the ID and meta.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const result = await medplum.createResourceIfNoneExist(
+   *   'Patient?identifier=123',
+   *   {
+   *     resourceType: 'Patient',
+   *     identifier: [{
+   *      system: 'http://example.com/mrn',
+   *      value: '123'
+   *     }]
+   *     name: [{
+   *      family: 'Smith',
+   *      given: ['John']
+   *     }]
+   *   });
+   * console.log(result.id);
+   * ```
+   *
+   * This method is syntactic sugar for:
+   *
+   * ```typescript
+   * return searchOne(query) ?? createResource(resource);
+   * ```
+   *
+   * The query parameter only contains the search parameters (what would be in the URL following the "?").
+   *
+   * See the FHIR "conditional create" operation for full details: https://www.hl7.org/fhir/http.html#ccreate
+   *
+   * @param resource The FHIR resource to create.
+   * @param query The search query for an equivalent resource.
+   * @returns The result of the create operation.
+   */
+  async createResourceIfNoneExist<T extends Resource>(resource: T, query: string): Promise<T> {
+    return (await this.searchOne<T>(`${resource.resourceType}?${query}`)) ?? this.createResource<T>(resource);
+  }
+
+  /**
    * Creates a FHIR `Binary` resource with the provided data content.
    *
    * The return value is the newly created resource, including the ID and meta.
