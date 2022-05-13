@@ -4,6 +4,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "jsx": "react",
+    "newLine": "lf",
     "strict": true,
     "sourceMap": true,
     "declaration": true,

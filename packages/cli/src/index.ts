@@ -43,7 +43,6 @@ async function deployBot(medplum: MedplumClient, argv: string[]): Promise<void> 
     console.log('Error: Bot does not exist: ' + botId);
     return;
   }
-  console.log(JSON.stringify(bot, null, 2));
 
   try {
     console.log('Update bot code.....');
@@ -57,7 +56,7 @@ async function deployBot(medplum: MedplumClient, argv: string[]): Promise<void> 
   }
 }
 
-if (process.argv[1].includes('medplum') && process.argv[1].includes('cli')) {
+if (require.main === module) {
   dotenv.config();
   const medplum = new MedplumClient({ fetch });
   medplum
