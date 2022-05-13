@@ -8,7 +8,7 @@ import HomepageCallout from '@site/src/components/HomepageCallout'
 # Welcome to Medplum!
 
 <section className="homepage-grid">
-    <HomepageCallout title="Quickstart" body="Write your first medical application in 5 minutes" linkText="Read More" linkRef="/intro" />
+    <HomepageCallout title="Get Started" body="Write your first medical application in 5 minutes" linkText="Read More" linkRef="/intro" />
     <HomepageCallout title="API Docs" body="Reference documentation about Medplum's client API for reading and writing healthcare data" linkText="Read More" linkRef="/api/overview" />
     <HomepageCallout title="Use Cases" body="See how to apply Medplum against your healthcare problem" linkText="Read More" linkRef="#" />
     <HomepageCallout title="Basic Concepts" body="Learn the basic concepts behind Medplum and the FHIR standard for healthcare data" linkText="Read More" linkRef="#" />
@@ -16,7 +16,7 @@ import HomepageCallout from '@site/src/components/HomepageCallout'
 
 ## What is Medplum?
 
-Medplim is a developer platform that enables **flexible and rapid development** of healthcare apps. In consists of 3 main components
+Medplum is a developer platform that enables **flexible and rapid development** of healthcare apps. In consists of 3 main components
 
 1. **Medplum Clinical Data Repository (CDR)** - This is the the backend server that hosts your healthcare data in a secure, compliant, and standards based respository. The Medplum CDR also exposes a [FHIR-based API](/api/overview) for sending, receiving, and manipulating data
 2. **Medplum App** - This is a web application where can you can view your data, perform basic editing tasks. You can also use the Medplum App to manage basic workflows.
