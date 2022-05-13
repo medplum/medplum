@@ -38,6 +38,8 @@ const config = {
     ],
   ],
 
+  plugins: [['docusaurus-plugin-typedoc', { out: 'sdk', sidebar: { categoryLabel: 'SDK', position: 5 } }]],
+
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
