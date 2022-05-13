@@ -230,7 +230,7 @@ export async function getUserMemberships(
     filters.push({
       code: 'project',
       operator: Operator.EQUALS,
-      value: projectId,
+      value: 'Project/' + projectId,
     });
   }
 

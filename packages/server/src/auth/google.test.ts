@@ -146,4 +146,42 @@ describe('Google Auth', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.code).toBeDefined();
   });
+
+  test('Custom Google client', async () => {
+    const email = `google-client${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const googleClientId = 'google-client-id-' + randomUUID();
+
+    // Register and create a project
+    const res = await request(app).post('/auth/register').type('json').send({
+      firstName: 'Google',
+      lastName: 'Google',
+      projectName: 'Require Google Auth',
+      email,
+      password,
+      recaptchaToken: 'xyz',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.project).toBeDefined();
+
+    // As a super admin, set the google client ID
+    const projectId = resolveId(res.body.project) as string;
+    const [updateOutcome, updated] = await systemRepo.patchResource('Project', projectId, [
+      {
+        op: 'add',
+        path: '/googleClientId',
+        value: [googleClientId],
+      },
+    ]);
+    assertOk(updateOutcome, updated);
+
+    // Try to login with the custom Google client
+    // This should succeed
+    const res2 = await request(app).post('/auth/google').type('json').send({
+      clientId: googleClientId,
+      credential: email,
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.code).toBeDefined();
+  });
 });
