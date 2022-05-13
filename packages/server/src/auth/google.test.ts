@@ -9,9 +9,9 @@ import { initApp } from '../app';
 import { getConfig, loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { systemRepo } from '../fhir';
-import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
+import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 
 jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
@@ -21,14 +21,19 @@ jest.mock('jose', () => {
   const original = jest.requireActual('jose');
   return {
     ...original,
-    jwtVerify: jest.fn((credential: string) => ({
-      payload: {
-        // By convention for tests, return the credential as the email
-        // Obviously in the real world the credential would be a JWT
-        // And the Google Auth service returns the corresponding email
-        email: credential,
-      },
-    })),
+    jwtVerify: jest.fn((credential: string) => {
+      if (credential === 'invalid') {
+        throw new Error('Verification failed');
+      }
+      return {
+        payload: {
+          // By convention for tests, return the credential as the email
+          // Obviously in the real world the credential would be a JWT
+          // And the Google Auth service returns the corresponding email
+          email: credential,
+        },
+      };
+    }),
   };
 });
 
@@ -84,6 +89,16 @@ describe('Google Auth', () => {
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Missing credential');
+  });
+
+  test('Verification failed', async () => {
+    const res = await request(app).post('/auth/google').type('json').send({
+      clientId: getConfig().googleClientId,
+      credential: 'invalid',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.issue).toBeDefined();
+    expect(res.body.issue[0].details.text).toBe('Verification failed');
   });
 
   test('Success', async () => {

@@ -61087,6 +61087,13 @@
         "defaultPatientAccessPolicy": {
           "description": "The default access policy for patients using open registration.",
           "$ref": "#/definitions/Reference"
+        },
+        "googleClientId": {
+          "description": "A list of approved Google Client IDs for Google Authentication.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
         }
       },
       "required": [

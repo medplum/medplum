@@ -95,6 +95,13 @@ export interface FetchLike {
   (url: string, options?: any): Promise<any>;
 }
 
+export interface LoginRequest {
+  readonly email: string;
+  readonly password: string;
+  readonly remember?: boolean;
+  readonly projectId?: string;
+}
+
 export interface RegisterRequest {
   readonly firstName: string;
   readonly lastName: string;
@@ -108,6 +115,10 @@ export interface RegisterRequest {
 export interface GoogleCredentialResponse {
   readonly clientId: string;
   readonly credential: string;
+}
+
+export interface GoogleLoginRequest extends GoogleCredentialResponse {
+  readonly projectId?: string;
 }
 
 export interface LoginAuthenticationResponse {
@@ -385,21 +396,17 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Initiates a user login flow.
-   * @param email The email address of the user.
-   * @param password The password of the user.
-   * @param remember Optional flag to remember the user.
+   * @param loginRequest Login request including email and password.
    * @returns Promise to the authentication response.
    */
-  async startLogin(email: string, password: string, remember?: boolean): Promise<LoginAuthenticationResponse> {
+  async startLogin(loginRequest: LoginRequest): Promise<LoginAuthenticationResponse> {
     await this.#startPkce();
     return this.post('auth/login', {
+      ...loginRequest,
       clientId: this.#clientId,
       scope: DEFAULT_SCOPE,
       codeChallengeMethod: 'S256',
       codeChallenge: this.#storage.getString('codeChallenge') as string,
-      email,
-      password,
-      remember: !!remember,
     }) as Promise<LoginAuthenticationResponse>;
   }
 
@@ -407,12 +414,12 @@ export class MedplumClient extends EventTarget {
    * Tries to sign in with Google authentication.
    * The response parameter is the result of a Google authentication.
    * See: https://developers.google.com/identity/gsi/web/guides/handle-credential-responses-js-functions
-   * @param googleResponse The Google credential response.
+   * @param loginRequest Login request including Google credentials.
    * @returns Promise to the authentication response.
    */
-  async startGoogleLogin(googleResponse: GoogleCredentialResponse): Promise<LoginAuthenticationResponse> {
+  async startGoogleLogin(loginRequest: GoogleLoginRequest): Promise<LoginAuthenticationResponse> {
     await this.#startPkce();
-    return this.post('auth/google', googleResponse) as Promise<LoginAuthenticationResponse>;
+    return this.post('auth/google', loginRequest) as Promise<LoginAuthenticationResponse>;
   }
 
   /**

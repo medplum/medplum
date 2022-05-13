@@ -105,6 +105,16 @@
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
             }]
+          },
+          {
+            "id" : "Project.googleClientId",
+            "path" : "Project.googleClientId",
+            "definition" : "A list of approved Google Client IDs for Google Authentication.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "string"
+            }]
           }
         ]
       }

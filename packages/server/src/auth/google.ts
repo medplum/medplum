@@ -43,15 +43,25 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  const clientId = getConfig().googleClientId;
+  const clientId = req.body.clientId;
   if (!clientId) {
-    sendOutcome(res, badRequest('Google authentication is not enabled'));
+    sendOutcome(res, badRequest('Invalid Google Client ID'));
     return;
   }
 
-  if (req.body.clientId !== clientId) {
-    sendOutcome(res, badRequest('Invalid Google Client ID'));
-    return;
+  let projectId = req.body.projectId as string | undefined;
+
+  if (clientId !== getConfig().googleClientId) {
+    // TODO: Search for projects by clientId
+    if (clientId == '123') {
+      sendOutcome(res, badRequest('Invalid Google Client ID'));
+      return;
+    }
+
+    // TODO: Verify that the specified project is allowed
+    if (clientId === '123456') {
+      projectId = '789';
+    }
   }
 
   const googleJwt = req.body.credential as string;
@@ -62,7 +72,14 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     audience: clientId,
   };
 
-  const result = await jwtVerify(googleJwt, JWKS, verifyOptions);
+  let result;
+  try {
+    result = await jwtVerify(googleJwt, JWKS, verifyOptions);
+  } catch (err) {
+    sendOutcome(res, badRequest((err as Error).message));
+    return;
+  }
+
   const claims = result.payload as GoogleCredentialClaims;
   const [loginOutcome, login] = await tryLogin({
     authMethod: 'google',
@@ -71,6 +88,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     scope: 'openid',
     nonce: randomUUID(),
     remember: true,
+    projectId,
   });
   assertOk(loginOutcome, login);
   await sendLoginResult(res, login);
