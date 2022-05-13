@@ -117,10 +117,6 @@ export interface GoogleCredentialResponse {
   readonly credential: string;
 }
 
-export interface GoogleLoginRequest extends GoogleCredentialResponse {
-  readonly projectId?: string;
-}
-
 export interface LoginAuthenticationResponse {
   readonly login: string;
   readonly code?: string;
@@ -414,12 +410,12 @@ export class MedplumClient extends EventTarget {
    * Tries to sign in with Google authentication.
    * The response parameter is the result of a Google authentication.
    * See: https://developers.google.com/identity/gsi/web/guides/handle-credential-responses-js-functions
-   * @param loginRequest Login request including Google credentials.
+   * @param googleResponse The Google credential response.
    * @returns Promise to the authentication response.
    */
-  async startGoogleLogin(loginRequest: GoogleLoginRequest): Promise<LoginAuthenticationResponse> {
+  async startGoogleLogin(googleResponse: GoogleCredentialResponse): Promise<LoginAuthenticationResponse> {
     await this.#startPkce();
-    return this.post('auth/google', loginRequest) as Promise<LoginAuthenticationResponse>;
+    return this.post('auth/google', googleResponse) as Promise<LoginAuthenticationResponse>;
   }
 
   /**
