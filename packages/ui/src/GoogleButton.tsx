@@ -21,6 +21,7 @@ export interface GoogleButtonProps {
 
 export function GoogleButton(props: GoogleButtonProps): JSX.Element | null {
   const medplum = useMedplum();
+  const { handleAuthResponse } = props;
   const googleClientId = getGoogleClientId(props.googleClientId);
   const parentRef = useRef<HTMLDivElement>(null);
   const [scriptLoaded, setScriptLoaded] = useState<boolean>(typeof google !== 'undefined');
@@ -36,8 +37,7 @@ export function GoogleButton(props: GoogleButtonProps): JSX.Element | null {
     if (!initialized) {
       google.accounts.id.initialize({
         client_id: googleClientId,
-        callback: (response: GoogleCredentialResponse) =>
-          medplum.startGoogleLogin(response).then(props.handleAuthResponse),
+        callback: (response: GoogleCredentialResponse) => medplum.startGoogleLogin(response).then(handleAuthResponse),
       });
       setInitialized(true);
     }
@@ -46,7 +46,7 @@ export function GoogleButton(props: GoogleButtonProps): JSX.Element | null {
       google.accounts.id.renderButton(parentRef.current, {});
       setButtonRendered(true);
     }
-  }, [medplum, googleClientId, initialized, scriptLoaded, parentRef, buttonRendered, props.handleAuthResponse]);
+  }, [medplum, googleClientId, initialized, scriptLoaded, parentRef, buttonRendered, handleAuthResponse]);
 
   if (!googleClientId) {
     return null;

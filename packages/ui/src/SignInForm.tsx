@@ -18,6 +18,7 @@ import './util.css';
 export interface SignInFormProps {
   scopes?: string;
   remember?: boolean;
+  projectId?: string;
   googleClientId?: string;
   onSuccess?: () => void;
   onForgotPassword?: () => void;
@@ -76,6 +77,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
 }
 
 interface AuthenticationFormProps {
+  projectId?: string;
   googleClientId?: string;
   onForgotPassword?: () => void;
   onRegister?: () => void;
@@ -93,7 +95,11 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
       style={{ maxWidth: 400 }}
       onSubmit={(formData: Record<string, string>) => {
         medplum
-          .startLogin(formData.email, formData.password, formData.remember === 'true')
+          .startLogin({
+            email: formData.email,
+            password: formData.password,
+            remember: formData.remember === 'true',
+          })
           .then(props.handleAuthResponse)
           .catch(setOutcome);
       }}

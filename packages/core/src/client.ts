@@ -95,6 +95,13 @@ export interface FetchLike {
   (url: string, options?: any): Promise<any>;
 }
 
+export interface LoginRequest {
+  readonly email: string;
+  readonly password: string;
+  readonly remember?: boolean;
+  readonly projectId?: string;
+}
+
 export interface RegisterRequest {
   readonly firstName: string;
   readonly lastName: string;
@@ -385,21 +392,17 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Initiates a user login flow.
-   * @param email The email address of the user.
-   * @param password The password of the user.
-   * @param remember Optional flag to remember the user.
+   * @param loginRequest Login request including email and password.
    * @returns Promise to the authentication response.
    */
-  async startLogin(email: string, password: string, remember?: boolean): Promise<LoginAuthenticationResponse> {
+  async startLogin(loginRequest: LoginRequest): Promise<LoginAuthenticationResponse> {
     await this.#startPkce();
     return this.post('auth/login', {
+      ...loginRequest,
       clientId: this.#clientId,
       scope: DEFAULT_SCOPE,
       codeChallengeMethod: 'S256',
       codeChallenge: this.#storage.getString('codeChallenge') as string,
-      email,
-      password,
-      remember: !!remember,
     }) as Promise<LoginAuthenticationResponse>;
   }
 

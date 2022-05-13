@@ -65,4 +65,9 @@ export interface Project {
    * The default access policy for patients using open registration.
    */
   defaultPatientAccessPolicy?: Reference<AccessPolicy>;
+
+  /**
+   * A list of approved Google Client IDs for Google Authentication.
+   */
+  googleClientId?: string[];
 }

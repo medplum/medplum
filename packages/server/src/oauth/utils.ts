@@ -3,6 +3,7 @@ import {
   assertOk,
   badRequest,
   createReference,
+  Filter,
   getDateProperty,
   isNotFound,
   isOk,
@@ -34,6 +35,7 @@ export interface LoginRequest {
   readonly scope: string;
   readonly nonce: string;
   readonly remember: boolean;
+  readonly projectId?: string;
   readonly clientId?: string;
   readonly codeChallenge?: string;
   readonly codeChallengeMethod?: string;
@@ -133,7 +135,7 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
   // Try to get user memberships
   // If they only have one membership, set it now
   // Otherwise the application will need to prompt the user
-  const memberships = await getUserMemberships(createReference(user));
+  const memberships = await getUserMemberships(createReference(user), request.projectId);
   if (memberships.length === 1) {
     return setLoginMembership(login, memberships[0].id as string);
   } else {
@@ -205,22 +207,36 @@ async function authenticate(request: LoginRequest, user: User): Promise<Operatio
  * If there is only one profile, then automatically select it.
  * Otherwise, the user must select a profile.
  * @param user Reference to the user.
+ * @param projectId Optional project ID.
  * @returns Array of profile resources that the user has access to.
  */
-export async function getUserMemberships(user: Reference<ClientApplication | User>): Promise<ProjectMembership[]> {
+export async function getUserMemberships(
+  user: Reference<ClientApplication | User>,
+  projectId?: string
+): Promise<ProjectMembership[]> {
   if (!user.reference) {
     throw new Error('User reference is missing');
   }
 
+  const filters: Filter[] = [
+    {
+      code: 'user',
+      operator: Operator.EQUALS,
+      value: user.reference,
+    },
+  ];
+
+  if (projectId) {
+    filters.push({
+      code: 'project',
+      operator: Operator.EQUALS,
+      value: 'Project/' + projectId,
+    });
+  }
+
   const [membershipsOutcome, memberships] = await systemRepo.search<ProjectMembership>({
     resourceType: 'ProjectMembership',
-    filters: [
-      {
-        code: 'user',
-        operator: Operator.EQUALS,
-        value: user.reference,
-      },
-    ],
+    filters,
   });
   assertOk(membershipsOutcome, memberships);
   return (memberships.entry as BundleEntry<ProjectMembership>[]).map((entry) => entry.resource as ProjectMembership);
