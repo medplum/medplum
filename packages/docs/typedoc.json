@@ -1,0 +1,6 @@
+{
+  "entryPoints": ["../core/src/index.ts"],
+  "tsconfig": "../core/tsconfig.json",
+  "excludePrivate": true,
+  "excludeProtected": true
+}

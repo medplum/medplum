@@ -38,6 +38,8 @@ const config = {
     ],
   ],
 
+  plugins: [['docusaurus-plugin-typedoc', { out: 'typedoc-out' }]],
+
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
