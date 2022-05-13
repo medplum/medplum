@@ -20,7 +20,7 @@ import { SearchPopupMenu } from './SearchPopupMenu';
 import { addFilter, buildFieldNameString, getOpString, movePage, renderValue } from './SearchUtils';
 import { Select } from './Select';
 import { TitleBar } from './TitleBar';
-import { killEvent } from './utils/dom';
+import { isCheckboxCell, killEvent } from './utils/dom';
 
 export class SearchChangeEvent extends Event {
   readonly definition: SearchRequest;
@@ -196,7 +196,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
    * @param resource The FHIR resource.
    */
   function handleRowClick(e: React.MouseEvent, resource: Resource): void {
-    if (e.target instanceof HTMLInputElement && e.target.type === 'checkbox') {
+    if (isCheckboxCell(e.target as Element)) {
       // Ignore clicks on checkboxes
       return;
     }
