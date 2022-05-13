@@ -2,12 +2,12 @@ import { IndexedStructureDefinition, PropertyType } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
+import { FhirPathDisplay } from './FhirPathDisplay';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { SearchClickEvent } from './SearchControl';
-import { killEvent } from './utils/dom';
 import './SearchControl.css';
-import { FhirPathDisplay } from './FhirPathDisplay';
+import { isCheckboxCell, killEvent } from './utils/dom';
 
 export interface SmartSearchField {
   readonly propertyType: PropertyType;
@@ -98,7 +98,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
   }
 
   function handleRowClick(e: React.MouseEvent, resource: Resource): void {
-    if (e.target instanceof HTMLInputElement && e.target.type === 'checkbox') {
+    if (isCheckboxCell(e.target as Element)) {
       // Ignore clicks on checkboxes
       return;
     }
