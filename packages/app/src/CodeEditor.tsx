@@ -127,7 +127,7 @@ export const CodeEditor = forwardRef<CodeEditorRef, CodeEditorProps>((props, ref
         template="react-ts"
         autorun={true}
         skipEval={true}
-        // bundlerURL={'http://localhost:3000/'}
+        bundlerURL="https://codesandbox.medplum.com/"
         customSetup={{
           files: DEFAULT_CODE,
           dependencies: {
