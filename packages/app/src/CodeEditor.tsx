@@ -2,14 +2,14 @@ import React from 'react';
 
 export interface CodeEditorProps {
   language: 'typescript' | 'json';
-  defaultValue?: string;
+  defaultValue: string;
   className?: string;
   iframeRef?: React.RefObject<HTMLIFrameElement>;
   onChange?: (value: string) => void;
 }
 
 export function CodeEditor(props: CodeEditorProps): JSX.Element {
-  const code = props.defaultValue || '';
+  const code = props.defaultValue;
   const url = `https://codeeditor.medplum.com/${props.language}-editor.html?code=${encodeURIComponent(code)}`;
   return <iframe frameBorder="0" src={url} className={props.className} ref={props.iframeRef} />;
 }

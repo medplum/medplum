@@ -57,7 +57,7 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
 
   async function executeBot(): Promise<void> {
     const input = await getSampleInput();
-    medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$execute'), input);
+    medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$execute'), { input });
   }
 
   return (
@@ -66,7 +66,7 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
         iframeRef={codeFrameRef}
         className="medplum-bot-code-frame"
         language="typescript"
-        defaultValue={props.bot.code}
+        defaultValue={props.bot.code || ''}
         onChange={console.log}
       />
       <CodeEditor
@@ -89,7 +89,7 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
           Save
         </Button>
         <Button type="button" onClick={() => simulateBot()}>
-          Sim
+          Simulate
         </Button>
         <Button type="button" onClick={() => deployBot()}>
           Deploy
