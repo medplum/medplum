@@ -127,6 +127,6 @@ function sendCommand(frame: HTMLIFrameElement, command: any): Promise<any> {
       }
     };
 
-    frame.contentWindow?.postMessage(command, '*', [channel.port2]);
+    frame.contentWindow?.postMessage(command, 'https://codeeditor.medplum.com', [channel.port2]);
   });
 }

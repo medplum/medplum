@@ -11,7 +11,5 @@ export interface CodeEditorProps {
 export function CodeEditor(props: CodeEditorProps): JSX.Element {
   const code = props.defaultValue || '';
   const url = `https://codeeditor.medplum.com/${props.language}-editor.html?code=${encodeURIComponent(code)}`;
-  return (
-    <iframe id="typescript-iframe" frameBorder="0" src={url} className={props.className} ref={props.iframeRef}></iframe>
-  );
+  return <iframe frameBorder="0" src={url} className={props.className} ref={props.iframeRef} />;
 }

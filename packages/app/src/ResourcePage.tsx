@@ -218,14 +218,7 @@ export function ResourcePage(): JSX.Element {
       </TabList>
       {currentTab === 'editor' && (
         <ErrorBoundary>
-          <ResourceTab
-            name={currentTab.toLowerCase()}
-            resource={value}
-            resourceHistory={historyBundle}
-            questionnaires={questionnaires as Bundle<Questionnaire>}
-            onSubmit={onSubmit}
-            outcome={error}
-          />
+          <BotEditor bot={value as Bot} />
         </ErrorBoundary>
       )}
       {currentTab !== 'editor' && (
@@ -324,8 +317,6 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
             ))}
         </div>
       );
-    case 'editor':
-      return <BotEditor bot={props.resource as Bot} />;
     case 'timeline':
       switch (props.resource.resourceType) {
         case 'Encounter':
@@ -367,7 +358,7 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
  * @param resource The input resource.
  * @returns The cleaned output resource.
  */
-export function cleanResource(resource: Resource): Resource {
+function cleanResource(resource: Resource): Resource {
   let meta = resource.meta;
   if (meta) {
     meta = {
