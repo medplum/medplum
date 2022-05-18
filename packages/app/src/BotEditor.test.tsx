@@ -24,13 +24,17 @@ describe('BotEditor', () => {
   }
 
   beforeAll(() => {
-    window.MessageChannel = jest.fn(
-      () =>
-        ({
-          port1: jest.fn(),
-          port2: jest.fn(),
-        } as unknown as MessageChannel)
-    );
+    window.MessageChannel = class {
+      readonly port1 = {
+        close: () => undefined,
+      } as unknown as MessagePort;
+
+      readonly port2 = {
+        postMessage: (data: any) => {
+          this.port1.onmessage?.({ data } as unknown as MessageEvent);
+        },
+      } as unknown as MessagePort;
+    };
   });
 
   test('Bot editor', async () => {
@@ -49,8 +53,42 @@ describe('BotEditor', () => {
   });
 
   test('Simulate', async () => {
+    expect.assertions(6);
+
     await setup('/Bot/123/editor');
     await waitFor(() => screen.getByText('Simulate'));
+
+    // Mock the code frame
+    (screen.getByTestId<HTMLIFrameElement>('code-frame').contentWindow as Window).postMessage = (
+      _message: any,
+      _targetOrigin: any,
+      transfer?: Transferable[]
+    ) => {
+      (transfer?.[0] as MessagePort).postMessage({ result: 'console.log("foo");' });
+    };
+
+    // Mock the input frame
+    (screen.getByTestId<HTMLIFrameElement>('input-frame').contentWindow as Window).postMessage = (
+      _message: any,
+      _targetOrigin: any,
+      transfer?: Transferable[]
+    ) => {
+      (transfer?.[0] as MessagePort).postMessage({ result: '{"resourceType":"Patient"}' });
+    };
+
+    // Mock the bot runner frame
+    (screen.getByTestId<HTMLIFrameElement>('output-frame').contentWindow as Window).postMessage = (
+      message: any,
+      targetOrigin: any,
+      transfer?: Transferable[]
+    ) => {
+      expect(message).toBeDefined();
+      expect(message.command).toEqual('execute');
+      expect(message.code).toEqual('console.log("foo");');
+      expect(message.input).toEqual({ resourceType: 'Patient' });
+      expect(targetOrigin).toEqual('https://codeeditor.medplum.com');
+      expect(transfer).toBeDefined();
+    };
 
     await act(async () => {
       fireEvent.click(screen.getByText('Simulate'));

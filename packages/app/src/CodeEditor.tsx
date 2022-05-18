@@ -5,11 +5,14 @@ export interface CodeEditorProps {
   defaultValue: string;
   className?: string;
   iframeRef?: React.RefObject<HTMLIFrameElement>;
+  testId?: string;
   onChange?: (value: string) => void;
 }
 
 export function CodeEditor(props: CodeEditorProps): JSX.Element {
   const code = props.defaultValue;
   const url = `https://codeeditor.medplum.com/${props.language}-editor.html?code=${encodeURIComponent(code)}`;
-  return <iframe frameBorder="0" src={url} className={props.className} ref={props.iframeRef} />;
+  return (
+    <iframe frameBorder="0" src={url} className={props.className} ref={props.iframeRef} data-testid={props.testId} />
+  );
 }

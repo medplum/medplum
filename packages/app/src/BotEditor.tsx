@@ -66,6 +66,7 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
         iframeRef={codeFrameRef}
         className="medplum-bot-code-frame"
         language="typescript"
+        testId="code-frame"
         defaultValue={props.bot.code || ''}
         onChange={console.log}
       />
@@ -73,6 +74,7 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
         iframeRef={inputFrameRef}
         className="medplum-bot-input-frame"
         language="json"
+        testId="input-frame"
         defaultValue={JSON.stringify(
           {
             resourceType: 'Patient',
@@ -83,7 +85,7 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
         )}
         onChange={console.log}
       />
-      <BotRunner iframeRef={outputFrameRef} className="medplum-bot-output-frame" />
+      <BotRunner iframeRef={outputFrameRef} className="medplum-bot-output-frame" testId="output-frame" />
       <div className="medplum-bot-buttons">
         <Button type="button" onClick={() => saveBot()}>
           Save
