@@ -165,6 +165,14 @@ export function getJwks(): { keys: JWK[] } {
 }
 
 /**
+ * Returns the current signing key.
+ * @returns The current signing key.
+ */
+export function getSigningKey(): KeyLike {
+  return signingKey as KeyLike;
+}
+
+/**
  * Generates a secure random string suitable for a client secret or refresh secret.
  * @param size Size of the secret in bytes.  16 recommended for auth codes.  48 recommended for client and refresh secrets.
  * @returns Secure random string.
