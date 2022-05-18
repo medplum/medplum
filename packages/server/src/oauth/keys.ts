@@ -242,18 +242,18 @@ export function verifyJwt(token: string): Promise<{ payload: JWTPayload; protect
  * Returns a public key to verify a JWT.
  * Implements the "JWTVerifyGetKey" interface for jwtVerify.
  * @param protectedHeader The JWT protected header.
- * @returns Promise to load the public key.
+ * @returns The public key.
  */
-function getKeyForHeader(protectedHeader: JWSHeaderParameters): Promise<KeyLike> {
+function getKeyForHeader(protectedHeader: JWSHeaderParameters): KeyLike {
   const kid = protectedHeader.kid;
   if (!kid) {
-    return Promise.reject('Missing kid header');
+    throw new Error('Missing kid header');
   }
 
   const result = publicKeys[kid];
   if (!result) {
-    return Promise.reject('Key not found');
+    throw new Error('Key not found');
   }
 
-  return Promise.resolve(result);
+  return result;
 }
