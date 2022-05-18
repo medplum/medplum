@@ -47,6 +47,15 @@ describe('BotEditor', () => {
     await setup('/Bot/123/editor');
     await waitFor(() => screen.getByText('Save'));
 
+    // Mock the code frame
+    (screen.getByTestId<HTMLIFrameElement>('code-frame').contentWindow as Window).postMessage = (
+      _message: any,
+      _targetOrigin: any,
+      transfer?: Transferable[]
+    ) => {
+      (transfer?.[0] as MessagePort).postMessage({ result: 'console.log("foo");' });
+    };
+
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
     });
@@ -99,6 +108,15 @@ describe('BotEditor', () => {
     await setup('/Bot/123/editor');
     await waitFor(() => screen.getByText('Deploy'));
 
+    // Mock the code frame
+    (screen.getByTestId<HTMLIFrameElement>('code-frame').contentWindow as Window).postMessage = (
+      _message: any,
+      _targetOrigin: any,
+      transfer?: Transferable[]
+    ) => {
+      (transfer?.[0] as MessagePort).postMessage({ result: 'console.log("foo");' });
+    };
+
     await act(async () => {
       fireEvent.click(screen.getByText('Deploy'));
     });
@@ -107,6 +125,15 @@ describe('BotEditor', () => {
   test('Execute', async () => {
     await setup('/Bot/123/editor');
     await waitFor(() => screen.getByText('Execute'));
+
+    // Mock the input frame
+    (screen.getByTestId<HTMLIFrameElement>('input-frame').contentWindow as Window).postMessage = (
+      _message: any,
+      _targetOrigin: any,
+      transfer?: Transferable[]
+    ) => {
+      (transfer?.[0] as MessagePort).postMessage({ result: '{"resourceType":"Patient"}' });
+    };
 
     await act(async () => {
       fireEvent.click(screen.getByText('Execute'));
