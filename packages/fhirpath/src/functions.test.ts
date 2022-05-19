@@ -533,6 +533,33 @@ describe('FHIRPath functions', () => {
         new LiteralAtom('years')
       )
     ).toEqual([{ value: 20, unit: 'years' }]);
+
+    expect(() =>
+      functions.between(
+        undefined,
+        new LiteralAtom('xxxx-xx-xx'),
+        new LiteralAtom('2020-01-01'),
+        new LiteralAtom('years')
+      )
+    ).toThrow('Invalid start date');
+
+    expect(() =>
+      functions.between(
+        undefined,
+        new LiteralAtom('2020-01-01'),
+        new LiteralAtom('xxxx-xx-xx'),
+        new LiteralAtom('years')
+      )
+    ).toThrow('Invalid end date');
+
+    expect(() =>
+      functions.between(
+        undefined,
+        new LiteralAtom('2000-01-01'),
+        new LiteralAtom('2020-01-01'),
+        new LiteralAtom('xxxxx')
+      )
+    ).toThrow('Invalid units');
   });
 
   // Other
