@@ -4,6 +4,7 @@
 import {
   Binary,
   Bundle,
+  OperationOutcome,
   Project,
   ProjectMembership,
   Reference,
@@ -14,6 +15,7 @@ import {
   ValueSet,
 } from '@medplum/fhirtypes';
 import type { Operation } from 'fast-json-patch';
+import type Mail from 'nodemailer/lib/mailer';
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
@@ -1035,6 +1037,47 @@ export class MedplumClient extends EventTarget {
    */
   deleteResource(resourceType: string, id: string): Promise<any> {
     return this.delete(this.fhirUrl(resourceType, id));
+  }
+
+  /**
+   * Sends an email using the Medplum Email API.
+   *
+   * Builds the email using nodemailer MailComposer.
+   *
+   * Examples:
+   *
+   * Send a simple text email:
+   *
+   * ```typescript
+   * await medplum.sendEmail({
+   *   to: 'alice@example.com',
+   *   cc: 'bob@example.com',
+   *   subject: 'Hello',
+   *   text: 'Hello Alice',
+   * });
+   * ```
+   *
+   * Send an email with a `Binary` attachment:
+   *
+   * ```typescript
+   * await medplum.sendEmail({
+   *   to: 'alice@example.com',
+   *   subject: 'Email with attachment',
+   *   text: 'See the attached report',
+   *   attachments: [{
+   *     filename: 'report.pdf',
+   *     path: "Binary/" + binary.id
+   *   }]
+   * });
+   * ```
+   *
+   * See options here: https://nodemailer.com/extras/mailcomposer/
+   *
+   * @param options The MailComposer options.
+   * @returns Promise to the operation outcome.
+   */
+  sendEmail(email: Mail.Options): Promise<OperationOutcome> {
+    return this.post('email/v1/send', email);
   }
 
   graphql(query: string, options?: RequestInit): Promise<any> {

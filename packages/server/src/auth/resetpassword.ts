@@ -3,7 +3,7 @@ import { BundleEntry, PasswordChangeRequest, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { getConfig } from '../config';
-import { sendEmail } from '../email';
+import { sendEmail } from '../email/email';
 import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { generateSecret } from '../oauth';
 import { verifyRecaptcha } from './utils';
