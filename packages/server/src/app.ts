@@ -10,6 +10,7 @@ import { authRouter } from './auth';
 import { getConfig } from './config';
 import { corsOptions } from './cors';
 import { dicomRouter } from './dicom/routes';
+import { emailRouter } from './email/routes';
 import { binaryRouter, fhirRouter, sendOutcome } from './fhir';
 import { healthcheckHandler } from './healthcheck';
 import { hl7Router } from './hl7';
@@ -129,6 +130,7 @@ export async function initApp(app: Express): Promise<Express> {
   app.use('/astm/', astmRouter);
   app.use('/auth/', authRouter);
   app.use('/dicom/PS3/', dicomRouter);
+  app.use('/email/v1/', emailRouter);
   app.use('/fhir/R4/', fhirRouter);
   app.use('/hl7/v2/', hl7Router);
   app.use('/oauth2/', oauthRouter);

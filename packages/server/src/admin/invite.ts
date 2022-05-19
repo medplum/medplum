@@ -6,7 +6,7 @@ import { body, validationResult } from 'express-validator';
 import { resetPassword } from '../auth/resetpassword';
 import { createPractitioner, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config';
-import { sendEmail } from '../email';
+import { sendEmail } from '../email/email';
 import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { logger } from '../logger';
 import { generateSecret } from '../oauth';

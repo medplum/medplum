@@ -1,7 +1,7 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { simpleParser } from 'mailparser';
 import Mail from 'nodemailer/lib/mailer';
-import { loadTestConfig } from './config';
+import { loadTestConfig } from '../config';
 import { sendEmail } from './email';
 
 jest.mock('@aws-sdk/client-sesv2');

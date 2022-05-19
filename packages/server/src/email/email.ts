@@ -1,10 +1,10 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import MailComposer from 'nodemailer/lib/mail-composer';
 import Mail, { Address } from 'nodemailer/lib/mailer';
-import { getConfig } from './config';
-import { systemRepo } from './fhir';
-import { rewriteAttachments, RewriteMode } from './fhir/rewrite';
-import { logger } from './logger';
+import { getConfig } from '../config';
+import { systemRepo } from '../fhir';
+import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
+import { logger } from '../logger';
 
 /**
  * Sends an email using the AWS SES service.

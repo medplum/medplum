@@ -7,7 +7,7 @@ import Mail from 'nodemailer/lib/mailer';
 import { TextDecoder, TextEncoder } from 'util';
 import vm from 'vm';
 import { asyncWrap } from '../../async';
-import { sendEmail } from '../../email';
+import { sendEmail } from '../../email/email';
 import { generateAccessToken } from '../../oauth';
 import { AuditEventOutcome } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
