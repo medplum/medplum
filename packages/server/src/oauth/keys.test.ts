@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { generateKeyPair, SignJWT } from 'jose';
 import { loadTestConfig, MedplumServerConfig } from '../config';
 import { closeDatabase, getClient, initDatabase } from '../database';
 import { seedDatabase } from '../seed';
@@ -8,6 +9,7 @@ import {
   generateRefreshToken,
   generateSecret,
   getJwks,
+  getSigningKey,
   initKeys,
   verifyJwt,
 } from './keys';
@@ -84,6 +86,51 @@ describe('Keys', () => {
       await verifyJwt('xyz');
     } catch (err) {
       expect(err).toEqual('Signing key not initialized');
+    }
+  });
+
+  test('Missing kid', async () => {
+    expect.assertions(1);
+
+    const config = await loadTestConfig();
+    await initKeys(config);
+
+    // Construct a broken JWT with empty "kid"
+    const accessToken = await new SignJWT({})
+      .setProtectedHeader({ alg: 'RS256', kid: '', typ: 'JWT' })
+      .setIssuedAt()
+      .setIssuer(config.issuer)
+      .setAudience('my-audience')
+      .setExpirationTime('1h')
+      .sign(getSigningKey());
+
+    try {
+      await verifyJwt(accessToken);
+    } catch (err) {
+      expect((err as Error).message).toEqual('Missing kid header');
+    }
+  });
+
+  test('Key not found', async () => {
+    expect.assertions(1);
+
+    const config = await loadTestConfig();
+    await initKeys(config);
+
+    // Construct a JWT with different key
+    const { privateKey } = await generateKeyPair('RS256');
+    const accessToken = await new SignJWT({})
+      .setProtectedHeader({ alg: 'RS256', kid: 'my-kid', typ: 'JWT' })
+      .setIssuedAt()
+      .setIssuer(config.issuer)
+      .setAudience('my-audience')
+      .setExpirationTime('1h')
+      .sign(privateKey);
+
+    try {
+      await verifyJwt(accessToken);
+    } catch (err) {
+      expect((err as Error).message).toEqual('Key not found');
     }
   });
 

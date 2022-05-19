@@ -165,6 +165,14 @@ export function getJwks(): { keys: JWK[] } {
 }
 
 /**
+ * Returns the current signing key.
+ * @returns The current signing key.
+ */
+export function getSigningKey(): KeyLike {
+  return signingKey as KeyLike;
+}
+
+/**
  * Generates a secure random string suitable for a client secret or refresh secret.
  * @param size Size of the secret in bytes.  16 recommended for auth codes.  48 recommended for client and refresh secrets.
  * @returns Secure random string.
@@ -242,18 +250,18 @@ export function verifyJwt(token: string): Promise<{ payload: JWTPayload; protect
  * Returns a public key to verify a JWT.
  * Implements the "JWTVerifyGetKey" interface for jwtVerify.
  * @param protectedHeader The JWT protected header.
- * @returns Promise to load the public key.
+ * @returns The public key.
  */
-function getKeyForHeader(protectedHeader: JWSHeaderParameters): Promise<KeyLike> {
+function getKeyForHeader(protectedHeader: JWSHeaderParameters): KeyLike {
   const kid = protectedHeader.kid;
   if (!kid) {
-    return Promise.reject('Missing kid header');
+    throw new Error('Missing kid header');
   }
 
   const result = publicKeys[kid];
   if (!result) {
-    return Promise.reject('Key not found');
+    throw new Error('Key not found');
   }
 
-  return Promise.resolve(result);
+  return result;
 }
