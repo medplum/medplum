@@ -1,7 +1,7 @@
 import { Quantity, Reference, Resource } from '@medplum/fhirtypes';
 import { Atom, SymbolAtom } from './atoms';
 import { parseDateString } from './date';
-import { ensureArray, fhirPathIs, isQuantity, removeDuplicates, toJsBoolean } from './utils';
+import { calculateAge, ensureArray, fhirPathIs, isQuantity, removeDuplicates, toJsBoolean } from './utils';
 
 /*
  * Collection of FHIRPath
@@ -1371,6 +1371,31 @@ export function timeOfDay(): string[] {
  */
 export function today(): string[] {
   return [new Date().toISOString().substring(0, 10)];
+}
+
+/**
+ * Calculates the difference between two dates or date/times.
+ *
+ * This is not part of the official FHIRPath spec.
+ *
+ * IBM FHIR issue: https://github.com/IBM/FHIR/issues/1014
+ * IBM FHIR PR: https://github.com/IBM/FHIR/pull/1023
+ */
+export function between(context: unknown, startAtom: Atom, endAtom: Atom, unitsAtom: Atom): Quantity[] {
+  const startDate = toDateTime(ensureArray(startAtom.eval(context)));
+  if (startDate.length === 0) {
+    throw new Error('Invalid start date');
+  }
+  const endDate = toDateTime(ensureArray(endAtom.eval(context)));
+  if (endDate.length === 0) {
+    throw new Error('Invalid end date');
+  }
+  const unit = unitsAtom.eval(context);
+  if (unit !== 'years' && unit !== 'months' && unit !== 'days') {
+    throw new Error('Invalid units');
+  }
+  const age = calculateAge(startDate[0], endDate[0]);
+  return [{ value: age[unit], unit }];
 }
 
 /*

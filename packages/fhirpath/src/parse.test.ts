@@ -1,5 +1,5 @@
 import { readJson } from '@medplum/definitions';
-import { AuditEvent, Bundle, BundleEntry, Observation, SearchParameter } from '@medplum/fhirtypes';
+import { AuditEvent, Bundle, BundleEntry, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPath, parseFhirPath } from './parse';
 
 describe('FHIRPath parser', () => {
@@ -389,5 +389,17 @@ describe('FHIRPath parser', () => {
 
     const result = evalFhirPath('AuditEvent.entity.what.where(resolve() is Patient)', auditEvent);
     expect(result).toEqual([]);
+  });
+
+  test('Calculate patient age', () => {
+    const birthDate = new Date();
+    birthDate.setFullYear(birthDate.getFullYear() - 20);
+
+    const patient: Patient = {
+      resourceType: 'Patient',
+      birthDate: birthDate.toLocaleDateString('sv'),
+    };
+    const result = evalFhirPath("between(birthDate, now(), 'years')", patient);
+    expect(result).toEqual([{ value: 20, unit: 'years' }]);
   });
 });

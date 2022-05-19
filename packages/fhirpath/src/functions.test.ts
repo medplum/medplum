@@ -524,6 +524,17 @@ describe('FHIRPath functions', () => {
     expect(functions.today()[0]).toBeDefined();
   });
 
+  test('between', () => {
+    expect(
+      functions.between(
+        undefined,
+        new LiteralAtom('2000-01-01'),
+        new LiteralAtom('2020-01-01'),
+        new LiteralAtom('years')
+      )
+    ).toEqual([{ value: 20, unit: 'years' }]);
+  });
+
   // Other
 
   test('resolve', () => {
