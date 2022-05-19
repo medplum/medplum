@@ -5,6 +5,7 @@ import * as route53 from '@aws-cdk/aws-route53';
 import * as targets from '@aws-cdk/aws-route53-targets/lib';
 import * as s3 from '@aws-cdk/aws-s3';
 import * as cdk from '@aws-cdk/core';
+import { ServerlessClamscan } from 'cdk-serverless-clamscan';
 import { MedplumInfraConfig } from './config';
 
 /**
@@ -25,6 +26,10 @@ export class Storage extends cdk.Construct {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
+
+    // ClamAV serverless scan
+    const sc = new ServerlessClamscan(this, 'ServerlessClamscan', {});
+    sc.addSourceBucket(storageBucket);
 
     // Public key in PEM format
     const publicKey = new cloudfront.PublicKey(this, 'StoragePublicKey', {

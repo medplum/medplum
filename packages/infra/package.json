@@ -35,6 +35,7 @@
     "@aws-cdk/aws-ssm": "1.156.1",
     "@aws-cdk/core": "1.156.1",
     "aws-cdk": "2.24.1",
+    "cdk-serverless-clamscan": "1.2.6",
     "constructs": "10.1.7"
   }
 }
