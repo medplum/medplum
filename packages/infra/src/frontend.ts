@@ -4,8 +4,10 @@ import * as origins from '@aws-cdk/aws-cloudfront-origins';
 import * as route53 from '@aws-cdk/aws-route53';
 import * as targets from '@aws-cdk/aws-route53-targets/lib';
 import * as s3 from '@aws-cdk/aws-s3';
+import * as wafv2 from '@aws-cdk/aws-wafv2';
 import * as cdk from '@aws-cdk/core';
 import { MedplumInfraConfig } from './config';
+import { awsManagedRules } from './waf';
 
 /**
  * Static app infrastructure, which deploys app content to an S3 bucket.
@@ -68,6 +70,19 @@ export class FrontEnd extends cdk.Construct {
       },
     });
 
+    // WAF
+    const waf = new wafv2.CfnWebACL(this, 'FrontEndWAF', {
+      defaultAction: { allow: {} },
+      scope: 'CLOUDFRONT',
+      name: `${config.stackName}-FrontEndWAF`,
+      rules: awsManagedRules,
+      visibilityConfig: {
+        cloudWatchMetricsEnabled: true,
+        metricName: `${config.stackName}-FrontEndWAF-Metric`,
+        sampledRequestsEnabled: false,
+      },
+    });
+
     // CloudFront distribution
     const distribution = new cloudfront.Distribution(this, 'AppDistribution', {
       defaultRootObject: 'index.html',
@@ -90,6 +105,7 @@ export class FrontEnd extends cdk.Construct {
           responsePagePath: '/index.html',
         },
       ],
+      webAclId: waf.attrArn,
     });
 
     // Route53 alias record for the CloudFront distribution

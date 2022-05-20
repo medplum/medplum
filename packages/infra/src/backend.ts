@@ -11,8 +11,10 @@ import * as targets from '@aws-cdk/aws-route53-targets/lib';
 import * as s3 from '@aws-cdk/aws-s3';
 import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
 import * as ssm from '@aws-cdk/aws-ssm';
+import * as wafv2 from '@aws-cdk/aws-wafv2';
 import * as cdk from '@aws-cdk/core';
 import { MedplumInfraConfig } from './config';
+import { awsManagedRules } from './waf';
 
 /**
  * Based on: https://github.com/aws-samples/http-api-aws-fargate-cdk/blob/master/cdk/singleAccount/lib/fargate-vpclink-stack.ts
@@ -231,6 +233,25 @@ export class BackEnd extends cdk.Construct {
       defaultAction: elbv2.ListenerAction.forward([targetGroup]),
     });
 
+    // WAF
+    const waf = new wafv2.CfnWebACL(this, 'BackEndWAF', {
+      defaultAction: { allow: {} },
+      scope: 'REGIONAL',
+      name: `${config.stackName}-BackEndWAF`,
+      rules: awsManagedRules,
+      visibilityConfig: {
+        cloudWatchMetricsEnabled: true,
+        metricName: `${config.stackName}-BackEndWAF-Metric`,
+        sampledRequestsEnabled: false,
+      },
+    });
+
+    // Create an association between the load balancer and the WAF
+    const wafAssociation = new wafv2.CfnWebACLAssociation(this, 'LoadBalancerAssociation', {
+      resourceArn: loadBalancer.loadBalancerArn,
+      webAclArn: waf.attrArn,
+    });
+
     // Grant RDS access to the fargate group
     rdsCluster.connections.allowDefaultPortFrom(fargateSecurityGroup);
 
@@ -282,5 +303,7 @@ export class BackEnd extends cdk.Construct {
     console.log('RedisSecretsParameter', redisSecretsParameter.parameterArn);
     console.log('RedisCluster', redisCluster.attrPrimaryEndPointAddress);
     console.log('BotLambdaRole', botLambdaRoleParameter.stringValue);
+    console.log('WAF', waf.attrArn);
+    console.log('WAF Association', wafAssociation.node.id);
   }
 }
