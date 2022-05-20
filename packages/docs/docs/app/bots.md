@@ -39,7 +39,9 @@ Create a Bot from the [Project Admin panel](https://app.medplum.com/admin/projec
 Enter a Bot name. For the first version of our Bot, let's enter the code:
 
 ```javascript
-console.log('Hello world');
+export async function handler(medplum, event) {
+  console.log('Hello world');
+}
 ```
 
 Scroll to the bottom and click "OK".
@@ -111,7 +113,9 @@ A `console`-like variable that can be used for logging output to [AuditEvent](ht
 Example:
 
 ```javascript
-console.log('Example');
+export async function handler(medplum, event) {
+  console.log('Hello world');
+}
 ```
 
 AuditEvents viewable on either the [Subscription](https://app.medplum.com/Bot) page or the [Bot](https://app.medplum.com/Bot) Page.  You can view all [AuditEvents](https://app.medplum.com/AuditEvent) in the webapp as well.
