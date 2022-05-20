@@ -14,7 +14,30 @@ export const awsManagedRules: wafv2.CfnWebACL.RuleProperty[] = [
         name: 'AWSManagedRulesCommonRuleSet',
         // Excluding generic RFI body rule for sns notifications
         // https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-list.html
-        excludedRules: [{ name: 'GenericRFI_BODY' }, { name: 'SizeRestrictions_BODY' }],
+        excludedRules: [
+          { name: 'NoUserAgent_HEADER' },
+          { name: 'UserAgent_BadBots_HEADER' },
+          { name: 'SizeRestrictions_QUERYSTRING' },
+          { name: 'SizeRestrictions_Cookie_HEADER' },
+          { name: 'SizeRestrictions_BODY' },
+          { name: 'SizeRestrictions_URIPATH' },
+          { name: 'EC2MetaDataSSRF_BODY' },
+          { name: 'EC2MetaDataSSRF_COOKIE' },
+          { name: 'EC2MetaDataSSRF_URIPATH' },
+          { name: 'EC2MetaDataSSRF_QUERYARGUMENTS' },
+          { name: 'GenericLFI_QUERYARGUMENTS' },
+          { name: 'GenericLFI_URIPATH' },
+          { name: 'GenericLFI_BODY' },
+          { name: 'RestrictedExtensions_URIPATH' },
+          { name: 'RestrictedExtensions_QUERYARGUMENTS' },
+          { name: 'GenericRFI_QUERYARGUMENTS' },
+          { name: 'GenericRFI_BODY' },
+          { name: 'GenericRFI_URIPATH' },
+          { name: 'CrossSiteScripting_COOKIE' },
+          { name: 'CrossSiteScripting_QUERYARGUMENTS' },
+          { name: 'CrossSiteScripting_BODY' },
+          { name: 'CrossSiteScripting_URIPATH' },
+        ],
       },
     },
     overrideAction: {
@@ -35,6 +58,7 @@ export const awsManagedRules: wafv2.CfnWebACL.RuleProperty[] = [
       managedRuleGroupStatement: {
         vendorName: 'AWS',
         name: 'AWSManagedRulesAmazonIpReputationList',
+        excludedRules: [{ name: 'AWSManagedIPReputationList' }, { name: 'AWSManagedReconnaissanceList' }],
       },
     },
     overrideAction: {
@@ -63,7 +87,14 @@ export const awsManagedRules: wafv2.CfnWebACL.RuleProperty[] = [
       managedRuleGroupStatement: {
         vendorName: 'AWS',
         name: 'AWSManagedRulesSQLiRuleSet',
-        excludedRules: [],
+        excludedRules: [
+          { name: 'SQLi_QUERYARGUMENTS' },
+          { name: 'SQLiExtendedPatterns_QUERYARGUMENTS' },
+          { name: 'SQLi_BODY' },
+          { name: 'SQLiExtendedPatterns_BODY' },
+          { name: 'SQLi_COOKIE' },
+          { name: 'SQLi_URIPATH' },
+        ],
       },
     },
   },
@@ -84,7 +115,7 @@ export const awsManagedRules: wafv2.CfnWebACL.RuleProperty[] = [
       managedRuleGroupStatement: {
         vendorName: 'AWS',
         name: 'AWSManagedRulesLinuxRuleSet',
-        excludedRules: [],
+        excludedRules: [{ name: 'LFI_URIPATH' }, { name: 'LFI_QUERYSTRING' }, { name: 'LFI_COOKIE' }],
       },
     },
   },
