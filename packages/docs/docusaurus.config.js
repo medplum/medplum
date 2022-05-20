@@ -24,12 +24,11 @@ const config = {
       ({
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
-          editUrl: 'https://github.com/medplum/medplum/packages/docs/',
+          editUrl: 'https://github.com/medplum/medplum/blob/main/packages/docs/',
           routeBasePath: '/',
         },
         blog: {
           showReadingTime: true,
-          editUrl: 'https://github.com/medplum/medplum/packages/docs/',
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
