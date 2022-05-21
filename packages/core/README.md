@@ -76,34 +76,14 @@ medplum.signInWithRedirect().then((user) => console.log(user));
 Search for any resource using a [FHIR search](https://www.hl7.org/fhir/search.html) string:
 
 ```ts
-search<T extends Resource>(query: string | SearchRequest, options: RequestInit = {}): Promise<Bundle<T>>
+search<T extends Resource>(query: string | SearchRequest, options: RequestInit = {}): ReadablePromise<Bundle<T>>
 ```
 
 Example:
 
 ```ts
-medplum.search('Patient?given=eve').then((bundle) => {
-  bundle.entry.forEach((entry) => console.log(entry.resource));
-});
-```
-
-Example using a structured object:
-
-```ts
-medplum
-  .search({
-    resourceType: 'Patient',
-    filters: [
-      {
-        code: 'given',
-        operator: Operator.EQUALS,
-        value: 'eve',
-      },
-    ],
-  })
-  .then((bundle) => {
-    bundle.entry.forEach((entry) => console.log(entry.resource));
-  });
+const bundle = await medplum.search('Patient?given=eve');
+bundle.entry.forEach((entry) => console.log(entry.resource));
 ```
 
 ## Create

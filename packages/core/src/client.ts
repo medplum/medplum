@@ -519,7 +519,7 @@ export class MedplumClient extends EventTarget {
    * @param query The search query as either a string or a structured search object.
    * @returns Promise to the search result bundle.
    */
-  search<T extends Resource>(query: string | SearchRequest, options: RequestInit = {}): Promise<Bundle<T>> {
+  search<T extends Resource>(query: string | SearchRequest, options: RequestInit = {}): ReadablePromise<Bundle<T>> {
     return this.get(
       typeof query === 'string' ? 'fhir/R4/' + query : this.fhirUrl(query.resourceType) + formatSearchQuery(query),
       options
