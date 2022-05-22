@@ -2,6 +2,7 @@ import { Quantity } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { Input } from './Input';
 import { InputRow } from './InputRow';
+import { Select } from './Select';
 
 export interface QuantityInputProps {
   name: string;
@@ -21,6 +22,23 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
 
   return (
     <InputRow>
+      <Select
+        style={{ width: 80 }}
+        testid={props.name + '-comparator'}
+        defaultValue={value?.comparator}
+        onChange={(newValue) =>
+          setValueWrapper({
+            ...value,
+            comparator: newValue,
+          })
+        }
+      >
+        <option></option>
+        <option>&lt;</option>
+        <option>&lt;=</option>
+        <option>&gt;=</option>
+        <option>&gt;</option>
+      </Select>
       <Input
         name={props.name}
         type="number"

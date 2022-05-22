@@ -36,4 +36,31 @@ describe('QuantityInput', () => {
     expect(lastValue).toBeDefined();
     expect(lastValue).toMatchObject({ value: 123, unit: 'mg' });
   });
+
+  test('Set value with comparator', async () => {
+    let lastValue: Quantity | undefined = undefined;
+
+    render(<QuantityInput name="a" onChange={(value) => (lastValue = value)} />);
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('a-comparator'), {
+        target: { value: '<' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Value'), {
+        target: { value: '123' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Unit'), {
+        target: { value: 'mg' },
+      });
+    });
+
+    expect(lastValue).toBeDefined();
+    expect(lastValue).toMatchObject({ comparator: '<', value: 123, unit: 'mg' });
+  });
 });
