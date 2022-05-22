@@ -545,14 +545,13 @@ export class MedplumClient extends EventTarget {
    * @param query The search query as either a string or a structured search object.
    * @returns Promise to the search result bundle.
    */
-  async searchOne<T extends Resource>(
+  searchOne<T extends Resource>(
     query: string | SearchRequest,
     options: RequestInit = {}
-  ): Promise<T | undefined> {
+  ): ReadablePromise<T | undefined> {
     const search: SearchRequest = typeof query === 'string' ? parseSearchDefinition(query) : query;
     (search as any).count = 1;
-    const bundle = await this.search<T>(search, options);
-    return bundle.entry?.[0]?.resource;
+    return new ReadablePromise(this.search<T>(search, options).then((bundle) => bundle.entry?.[0]?.resource));
   }
 
   /**
@@ -574,9 +573,10 @@ export class MedplumClient extends EventTarget {
    * @param query The search query as either a string or a structured search object.
    * @returns Promise to the search result bundle.
    */
-  async searchResources<T extends Resource>(query: string | SearchRequest, options: RequestInit = {}): Promise<T[]> {
-    const bundle = await this.search<T>(query, options);
-    return bundle.entry?.map((entry) => entry.resource as T) ?? [];
+  searchResources<T extends Resource>(query: string | SearchRequest, options: RequestInit = {}): ReadablePromise<T[]> {
+    return new ReadablePromise(
+      this.search<T>(query, options).then((bundle) => bundle.entry?.map((entry) => entry.resource as T) ?? [])
+    );
   }
 
   /**
@@ -586,7 +586,7 @@ export class MedplumClient extends EventTarget {
    * @param filter The search string.
    * @returns Promise to expanded ValueSet.
    */
-  searchValueSet(system: string, filter: string, options: RequestInit = {}): Promise<ValueSet> {
+  searchValueSet(system: string, filter: string, options: RequestInit = {}): ReadablePromise<ValueSet> {
     return this.get(
       this.fhirUrl('ValueSet', '$expand') +
         `?url=${encodeURIComponent(system)}` +
@@ -797,9 +797,9 @@ export class MedplumClient extends EventTarget {
    *
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
-   * @returns The resource if available; undefined otherwise.
+   * @returns Promise to the resource history.
    */
-  readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>> {
+  readHistory<T extends Resource>(resourceType: string, id: string): ReadablePromise<Bundle<T>> {
     return this.get(this.fhirUrl(resourceType, id, '_history'));
   }
 
@@ -819,11 +819,11 @@ export class MedplumClient extends EventTarget {
    * @param id The resource ID.
    * @returns The resource if available; undefined otherwise.
    */
-  readVersion<T extends Resource>(resourceType: string, id: string, vid: string): Promise<T> {
+  readVersion<T extends Resource>(resourceType: string, id: string, vid: string): ReadablePromise<T> {
     return this.get(this.fhirUrl(resourceType, id, '_history', vid));
   }
 
-  readPatientEverything(id: string): Promise<Bundle> {
+  readPatientEverything(id: string): ReadablePromise<Bundle> {
     return this.get(this.fhirUrl('Patient', id, '$everything'));
   }
 
