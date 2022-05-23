@@ -274,6 +274,7 @@ export const HomerObservation6: Observation = {
 };
 
 export const HomerSimpsonSpecimen: Specimen = {
+  id: '123',
   resourceType: 'Specimen',
   subject: createReference(HomerSimpson),
   collection: {
