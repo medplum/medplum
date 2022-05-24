@@ -34,7 +34,7 @@ const LOCAL_IMPORTS: Record<string, string> = {
   'node-fetch': './fetch.mjs',
 };
 
-export const publishHandler = asyncWrap(async (req: Request, res: Response) => {
+export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
   const { id } = req.params;
   const repo = res.locals.repo as Repository;
   const [outcome, bot] = await repo.readResource<Bot>('Bot', id);

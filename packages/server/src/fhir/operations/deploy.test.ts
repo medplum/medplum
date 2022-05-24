@@ -8,7 +8,7 @@ import { closeDatabase, initDatabase } from '../../database';
 import { initKeys } from '../../oauth';
 import { seedDatabase } from '../../seed';
 import { initTestAuth } from '../../test.setup';
-import { preprocessBotCode } from './publish';
+import { preprocessBotCode } from './deploy';
 
 jest.mock('@aws-sdk/client-lambda', () => {
   const original = jest.requireActual('@aws-sdk/client-lambda');
@@ -95,7 +95,7 @@ describe('Publish', () => {
 
     // Step 2: Publish the bot
     const res2 = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id}/$publish`)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', 'application/fhir+json')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
@@ -105,7 +105,7 @@ describe('Publish', () => {
 
     // Step 3: Update the bot
     const res3 = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id}/$publish`)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', 'application/fhir+json')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
@@ -132,7 +132,7 @@ describe('Publish', () => {
 
     // Step 2: Publish the bot
     const res2 = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id}/$publish`)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', 'application/fhir+json')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
@@ -164,7 +164,7 @@ describe('Publish', () => {
 
     // Step 2: Publish the bot
     const res2 = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id}/$publish`)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', 'application/fhir+json')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
