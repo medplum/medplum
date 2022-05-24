@@ -676,6 +676,19 @@ describe('Client', () => {
     expect(result.resourceType).toBe('ValueSet');
   });
 
+  test('Send email', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.sendEmail({
+      to: 'alice@example.com',
+      subject: 'Test',
+      text: 'Hello',
+    });
+    expect(result).toBeDefined();
+    expect((result as any).request.url).toBe('https://x/email/v1/send');
+    expect((result as any).request.options.method).toBe('POST');
+    expect((result as any).request.options.headers['Content-Type']).toBe('application/json');
+  });
+
   test('Storage events', async () => {
     // Make window.location writeable
     Object.defineProperty(window, 'location', {

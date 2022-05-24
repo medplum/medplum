@@ -1077,7 +1077,7 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to the operation outcome.
    */
   sendEmail(email: Mail.Options): Promise<OperationOutcome> {
-    return this.post('email/v1/send', email);
+    return this.post('email/v1/send', email, 'application/json');
   }
 
   graphql(query: string, options?: RequestInit): Promise<any> {
