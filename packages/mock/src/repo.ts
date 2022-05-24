@@ -116,8 +116,17 @@ export function matchesSearchRequest(resource: Resource, searchRequest: SearchRe
  * @returns True if the resource satisfies the search filter.
  */
 function matchesSearchFilter(resource: Resource, filter: Filter): boolean {
+  for (const filterValue of filter.value.split(',')) {
+    if (matchesSearchFilterValue(resource, filter, filterValue)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function matchesSearchFilterValue(resource: Resource, filter: Filter, filterValue: string): boolean {
   const expression = filter.code.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
   const values = evalFhirPath(expression as string, resource);
-  const result = values.some((value) => JSON.stringify(value).toLowerCase().includes(filter.value.toLowerCase()));
+  const result = values.some((value) => JSON.stringify(value).toLowerCase().includes(filterValue.toLowerCase()));
   return filter.operator === Operator.NOT_EQUALS ? !result : result;
 }
