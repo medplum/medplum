@@ -1,10 +1,10 @@
 import { assertOk, Operator } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import { Patient, SpecimenDefinition } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../../config';
 import { closeDatabase, initDatabase } from '../../database';
-import { bundleContains } from '../../test.setup';
 import { seedDatabase } from '../../seed';
+import { bundleContains } from '../../test.setup';
 import { systemRepo } from '../repo';
 
 describe('Identifier Lookup Table', () => {
@@ -274,5 +274,29 @@ describe('Identifier Lookup Table', () => {
     expect(searchResult2?.entry?.length).toEqual(1);
     expect(bundleContains(searchResult2, patient1)).toBe(false);
     expect(bundleContains(searchResult2, patient2)).toBe(true);
+  });
+
+  test('Non-array identifier', async () => {
+    const identifier = randomUUID();
+
+    const [createOutcome, resource] = await systemRepo.createResource<SpecimenDefinition>({
+      resourceType: 'SpecimenDefinition',
+      identifier: { system: 'https://www.example.com', value: identifier },
+    });
+    assertOk(createOutcome, resource);
+
+    const [searchOutcome, searchResult] = await systemRepo.search({
+      resourceType: 'SpecimenDefinition',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value: identifier,
+        },
+      ],
+    });
+    assertOk(searchOutcome, searchResult);
+    expect(searchResult.entry?.length).toEqual(1);
+    expect(searchResult.entry?.[0]?.resource?.id).toEqual(resource?.id);
   });
 });

@@ -45,7 +45,7 @@ export class IdentifierTable extends LookupTable<Identifier> {
    * @returns Promise on completion.
    */
   async indexResource(resource: Resource): Promise<void> {
-    const identifiers = (resource as any).identifier ?? [];
+    const identifiers = this.#getIdentifiers(resource);
     const resourceId = resource.id as string;
     const existing = await this.getExistingValues(resourceId);
 
@@ -89,6 +89,14 @@ export class IdentifierTable extends LookupTable<Identifier> {
     subQuery.whereExpr(disjunction);
     selectQuery.join(joinName, 'id', 'resourceId', subQuery);
     predicate.expressions.push(new Condition(new Column(joinName, 'id'), Operator.NOT_EQUALS, null));
+  }
+
+  #getIdentifiers(resource: Resource): Identifier[] {
+    const identifier = (resource as any).identifier;
+    if (identifier) {
+      return Array.isArray(identifier) ? identifier : [identifier];
+    }
+    return [];
   }
 
   #buildWhereCondition(operator: FhirOperator, query: string): Expression {
