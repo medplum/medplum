@@ -70,6 +70,22 @@ describe('Mock Repo', () => {
     expect(result.entry?.length).toBe(2);
   });
 
+  test('Search with comma', async () => {
+    const client = new MockClient();
+    const result = await client.search<Patient>({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.CONTAINS,
+          value: 'bart,homer',
+        },
+      ],
+    });
+    expect(result).toBeDefined();
+    expect(result.entry?.length).toBe(2);
+  });
+
   test('Delete resource', async () => {
     const client = new MockClient();
     const resource1 = await client.createResource<Patient>({
