@@ -323,12 +323,12 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
         >
           <CodeEditor defaultValue={(props.resource as Bot).code} onChange={setCode} />
           <div className="medplum-right">
-            <Button type="submit">OK</Button>
+            <Button type="submit">Save</Button>
             <Button
               type="button"
-              onClick={() => medplum.post(medplum.fhirUrl('Bot', props.resource.id as string, '$publish'), {})}
+              onClick={() => medplum.post(medplum.fhirUrl('Bot', props.resource.id as string, '$deploy'), {})}
             >
-              Publish
+              Deploy
             </Button>
             <Button
               type="button"

@@ -151,7 +151,7 @@ describe('Execute', () => {
 
     // Step 2: Publish the bot
     const res2 = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id}/$publish`)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', 'application/fhir+json')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
