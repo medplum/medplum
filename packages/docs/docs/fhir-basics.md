@@ -142,7 +142,7 @@ The example `Patient` below has three identifiers: **an SSN and two MRN identifi
   "resourceType": "Patient",
   // Unique id for this resource
   "id": "j_chalmers",
-  // Paitient Name (could have multiple)
+  // Patient Name (could have multiple)
   "name": [
     {
       "use": "official",

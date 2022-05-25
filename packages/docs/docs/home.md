@@ -26,13 +26,13 @@ Medplum is a developer platform that enables **flexible and rapid development** 
 
 - The [Basic Concepts](/intro) page provides a good primer on Medplum and contains important information about the FHIR, the healthcare data standard on which Medplum is built.
 - If you're ready to start coding, use our [Quickstart Guide](/tutorials/api-basics/create-fhir-data) to get up and running
-- Our detailed tutorials go step-by-step through specific use cases. Don't see a tutorial you need? Reach out on our [Discord](https://discord.gg/UBAWwvrVeN) or send us an email at [Support@medplum.com](mailto:support@medplum.com)
+- Our detailed tutorials go step-by-step through specific use cases. Don't see a tutorial you need? Reach out on our [Discord](https://discord.gg/UBAWwvrVeN) or send us an email at [support@medplum.com](mailto:support@medplum.com)
 
 ## Common Use Cases
 
 These building blocks enable a large number of potential applications. For example:
 
-- Lab Orders and Results Reporting via API
+- At home lab testing service, with results reporting via API
 - Telemedicine web and mobile app
 - Population health analysis, clinical research and HEDIS reporting
 - External data warehousing
