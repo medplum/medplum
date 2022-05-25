@@ -4,26 +4,38 @@ sidebar_position: 1
 
 # Intro
 
-Welcome to Medplum. Building on Medplum enables **flexible and rapid development** of healthcare apps.
+Welcome to Medplum. Building on Medplum enables **flexible and rapid development** of healthcare apps.  Medplum is [open source](https://github.com/medplum/medplum).
 
 ## Basic Concepts
 
-Developing on Medplum is very similar to web development, but has built in compliance and interoperability features that are requirements for healthcare apps.
+Developing on Medplum is very similar to web development, and has built in interoperability and compliance features that are requirements for healthcare apps.
 
 The Medplum basics are as follows:
 
-- **Database**: a clinical data repository (CDR) that stores all data natively in FHIR. This includes support for binary files like images and videos.
-- **[Web Application](https://app.medplum.com)**: where users can log in and create and update data. It also has an audit log.
-- **Application Programming Interface (API)**: ability to create and update FHIR objects in the CDR programatically
-- **[User Interface Library](https://docs.medplum.com/storybook/index.html?path=/story/medplum-introduction--page)**: interface components for representing FHIR objects
+- **Datastore**: a clinical data repository (CDR) that stores all data natively in FHIR. This includes support for binary files like images and videos
+- **Application Programming Interface (API)**: ability to create and update FHIR objects in the datastore programatically
 - **Subscriptions**: notifications when objects are created or updated, this is implemented using the FHIRPath spec
-- **Identity Management and Permissions**: manage user identities and access to data
+- **Identity Management and Access Policies**: manage user identities and access to data
+- **Intgration and Workflow through Bots**: automation and interoperability tools for sending data to and from other applications
+
+Medplum offers the following tools to enhance the developer experience:
+
+- **[Web Application](https://app.medplum.com)**: where users can log in, get API keys, create and update data. It also enables account management and has an audit log
+- **[SDKs](https://docs.medplum.com/sdk)**: smooth common create, update, and search operations
+- **[User Interface Library](https://docs.medplum.com/storybook/index.html?path=/story/medplum-introduction--page)**: interface components for representing FHIR objects
+- **[Sample Code](https://github.com/medplum)**: reference implementations and sample code for many complex scenarios
+
+## System Overview
+
+The following diagram shows how all of these pieces fit together.
+
+![Medplum system overview](/img/medplum-overview.svg)
 
 ## Common Use Cases
 
 These building blocks enable a large number of potential applications. For example:
 
-- Lab Orders and Results Reporting via API
+- At home lab testing service, with results reporting via API
 - Telemedicine web and mobile app
 - Population health analysis, clinical research and HEDIS reporting
 - External data warehousing
