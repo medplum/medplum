@@ -26,7 +26,7 @@
     "@testing-library/react": "13.2.0",
     "@types/grecaptcha": "3.0.4",
     "@types/react": "18.0.9",
-    "@types/react-dom": "18.0.4",
+    "@types/react-dom": "18.0.5",
     "@types/react-router-dom": "5.3.3",
     "babel-loader": "8.2.5",
     "css-loader": "6.7.1",

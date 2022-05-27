@@ -1,18 +1,22 @@
-import * as ec2 from '@aws-cdk/aws-ec2';
-import * as ecr from '@aws-cdk/aws-ecr';
-import * as ecs from '@aws-cdk/aws-ecs';
-import * as elasticache from '@aws-cdk/aws-elasticache';
-import * as elbv2 from '@aws-cdk/aws-elasticloadbalancingv2';
-import * as iam from '@aws-cdk/aws-iam';
-import * as logs from '@aws-cdk/aws-logs';
-import * as rds from '@aws-cdk/aws-rds';
-import * as route53 from '@aws-cdk/aws-route53';
-import * as targets from '@aws-cdk/aws-route53-targets/lib';
-import * as s3 from '@aws-cdk/aws-s3';
-import * as secretsmanager from '@aws-cdk/aws-secretsmanager';
-import * as ssm from '@aws-cdk/aws-ssm';
-import * as wafv2 from '@aws-cdk/aws-wafv2';
-import * as cdk from '@aws-cdk/core';
+import {
+  aws_ec2 as ec2,
+  aws_ecr as ecr,
+  aws_ecs as ecs,
+  aws_elasticache as elasticache,
+  aws_elasticloadbalancingv2 as elbv2,
+  aws_iam as iam,
+  aws_logs as logs,
+  aws_rds as rds,
+  aws_route53 as route53,
+  aws_route53_targets as targets,
+  aws_s3 as s3,
+  aws_secretsmanager as secretsmanager,
+  aws_ssm as ssm,
+  aws_wafv2 as wafv2,
+  Duration,
+  RemovalPolicy,
+} from 'aws-cdk-lib';
+import { Construct } from 'constructs';
 import { MedplumInfraConfig } from './config';
 import { awsManagedRules } from './waf';
 
@@ -21,8 +25,8 @@ import { awsManagedRules } from './waf';
  *
  * RDS config: https://docs.aws.amazon.com/cdk/api/latest/docs/aws-rds-readme.html
  */
-export class BackEnd extends cdk.Construct {
-  constructor(scope: cdk.Construct, config: MedplumInfraConfig) {
+export class BackEnd extends Construct {
+  constructor(scope: Construct, config: MedplumInfraConfig) {
     super(scope, 'BackEnd');
 
     const name = config.name;
@@ -30,7 +34,7 @@ export class BackEnd extends cdk.Construct {
     // VPC Flow Logs
     const vpcFlowLogs = new logs.LogGroup(this, 'VpcFlowLogs', {
       logGroupName: '/medplum/flowlogs/' + name,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy: RemovalPolicy.DESTROY,
     });
 
     // VPC
@@ -60,7 +64,7 @@ export class BackEnd extends cdk.Construct {
         },
       },
       backup: {
-        retention: cdk.Duration.days(7),
+        retention: Duration.days(7),
       },
       cloudwatchLogsExports: ['postgresql'],
     });
@@ -148,7 +152,7 @@ export class BackEnd extends cdk.Construct {
     // Log Groups
     const logGroup = new logs.LogGroup(this, 'LogGroup', {
       logGroupName: '/ecs/medplum/' + name,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy: RemovalPolicy.DESTROY,
     });
 
     const logDriver = new ecs.AwsLogDriver({
@@ -197,8 +201,8 @@ export class BackEnd extends cdk.Construct {
       protocol: elbv2.ApplicationProtocol.HTTP,
       healthCheck: {
         path: '/healthcheck',
-        interval: cdk.Duration.seconds(30),
-        timeout: cdk.Duration.seconds(3),
+        interval: Duration.seconds(30),
+        timeout: Duration.seconds(3),
         healthyThresholdCount: 2,
         unhealthyThresholdCount: 5,
       },

@@ -1,6 +1,6 @@
 // Based on https://gist.github.com/statik/f1ac9d6227d98d30c7a7cec0c83f4e64
 
-import * as wafv2 from '@aws-cdk/aws-wafv2';
+import { aws_wafv2 as wafv2 } from 'aws-cdk-lib';
 
 export const awsManagedRules: wafv2.CfnWebACL.RuleProperty[] = [
   // Common Rule Set aligns with major portions of OWASP Core Rule Set
