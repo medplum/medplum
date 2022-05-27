@@ -315,7 +315,7 @@ function mockFhirHandler(method: string, url: string, options: any): any {
   const match = /fhir\/R4\/?([^/]+)?\/?([^/]+)?\/?([^/]+)?\/?([^/]+)?/.exec(path);
   const resourceType = match?.[1];
   const id = match?.[2];
-  const history = match?.[3];
+  const operation = match?.[3];
   const versionId = match?.[4];
   if (path.startsWith('fhir/R4/ValueSet/%24expand')) {
     return exampleValueSet;
@@ -324,7 +324,9 @@ function mockFhirHandler(method: string, url: string, options: any): any {
   } else if (path === 'not-found' || id === 'not-found') {
     return notFound;
   } else if (method === 'POST') {
-    if (resourceType) {
+    if (resourceType && id && operation) {
+      return {};
+    } else if (resourceType) {
       return mockRepo.createResource(JSON.parse(options.body));
     } else {
       return mockFhirBatchHandler(method, path, options);
@@ -332,7 +334,7 @@ function mockFhirHandler(method: string, url: string, options: any): any {
   } else if (method === 'GET') {
     if (resourceType && id && versionId) {
       return mockRepo.readVersion(resourceType, id, versionId);
-    } else if (resourceType && id && history) {
+    } else if (resourceType && id && operation === '_history') {
       return mockRepo.readHistory(resourceType, id);
     } else if (resourceType && id) {
       return mockRepo.readResource(resourceType, id);

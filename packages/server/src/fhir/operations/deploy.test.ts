@@ -54,7 +54,7 @@ jest.mock('@aws-sdk/client-lambda', () => {
 const app = express();
 let accessToken: string;
 
-describe('Publish', () => {
+describe('Deploy', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
@@ -93,7 +93,7 @@ describe('Publish', () => {
     expect(res1.status).toBe(201);
     const bot = res1.body as Bot;
 
-    // Step 2: Publish the bot
+    // Step 2: Deploy the bot
     const res2 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', 'application/fhir+json')
@@ -130,7 +130,7 @@ describe('Publish', () => {
     expect(res1.status).toBe(201);
     const bot = res1.body as Bot;
 
-    // Step 2: Publish the bot
+    // Step 2: Deploy the bot
     const res2 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', 'application/fhir+json')
@@ -162,7 +162,7 @@ describe('Publish', () => {
     expect(res1.status).toBe(201);
     const bot = res1.body as Bot;
 
-    // Step 2: Publish the bot
+    // Step 2: Deploy the bot
     const res2 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', 'application/fhir+json')

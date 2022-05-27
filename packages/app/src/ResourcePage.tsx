@@ -35,7 +35,7 @@ import {
 } from '@medplum/ui';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CodeEditor } from './CodeEditor';
+import { BotEditor } from './BotEditor';
 import { PatientHeader } from './PatientHeader';
 import { QuickServiceRequests } from './QuickServiceRequests';
 import { QuickStatus } from './QuickStatus';
@@ -216,23 +216,30 @@ export function ResourcePage(): JSX.Element {
           <Tab key={t} name={t.toLowerCase()} label={t} />
         ))}
       </TabList>
-      <Document>
-        {error && <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>}
-        <TabSwitch value={currentTab}>
-          <TabPanel name={currentTab}>
-            <ErrorBoundary>
-              <ResourceTab
-                name={currentTab.toLowerCase()}
-                resource={value}
-                resourceHistory={historyBundle}
-                questionnaires={questionnaires as Bundle<Questionnaire>}
-                onSubmit={onSubmit}
-                outcome={error}
-              />
-            </ErrorBoundary>
-          </TabPanel>
-        </TabSwitch>
-      </Document>
+      {currentTab === 'editor' && (
+        <ErrorBoundary>
+          <BotEditor bot={value as Bot} />
+        </ErrorBoundary>
+      )}
+      {currentTab !== 'editor' && (
+        <Document>
+          {error && <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>}
+          <TabSwitch value={currentTab}>
+            <TabPanel name={currentTab}>
+              <ErrorBoundary>
+                <ResourceTab
+                  name={currentTab.toLowerCase()}
+                  resource={value}
+                  resourceHistory={historyBundle}
+                  questionnaires={questionnaires as Bundle<Questionnaire>}
+                  onSubmit={onSubmit}
+                  outcome={error}
+                />
+              </ErrorBoundary>
+            </TabPanel>
+          </TabSwitch>
+        </Document>
+      )}
     </>
   );
 }
@@ -250,7 +257,6 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
   const navigate = useNavigate();
   const medplum = useMedplum();
   const { resourceType, id } = props.resource;
-  const [code, setCode] = useState<string | undefined>((props.resource as Bot)?.code);
   switch (props.name) {
     case 'details':
       return <ResourceTable value={props.resource} />;
@@ -310,34 +316,6 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
               </div>
             ))}
         </div>
-      );
-    case 'editor':
-      return (
-        <Form
-          onSubmit={() => {
-            props.onSubmit({
-              ...(props.resource as Bot),
-              code,
-            });
-          }}
-        >
-          <CodeEditor defaultValue={(props.resource as Bot).code} onChange={setCode} />
-          <div className="medplum-right">
-            <Button type="submit">Save</Button>
-            <Button
-              type="button"
-              onClick={() => medplum.post(medplum.fhirUrl('Bot', props.resource.id as string, '$deploy'), {})}
-            >
-              Deploy
-            </Button>
-            <Button
-              type="button"
-              onClick={() => medplum.post(medplum.fhirUrl('Bot', props.resource.id as string, '$execute'), {})}
-            >
-              Execute
-            </Button>
-          </div>
-        </Form>
       );
     case 'timeline':
       switch (props.resource.resourceType) {
