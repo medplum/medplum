@@ -45,6 +45,8 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
     const input = await getSampleInput();
     const result = await sendCommand(outputFrameRef.current as HTMLIFrameElement, {
       command: 'execute',
+      baseUrl: medplum.getBaseUrl(),
+      accessToken: medplum.getAccessToken(),
       code,
       input,
     });
@@ -52,7 +54,8 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
   }
 
   async function deployBot(): Promise<void> {
-    medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$deploy'), {});
+    const code = await getCodeOutput();
+    medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$deploy'), { code });
   }
 
   async function executeBot(): Promise<void> {

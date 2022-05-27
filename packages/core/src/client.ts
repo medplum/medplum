@@ -264,6 +264,16 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Returns the current base URL for all API requests.
+   * By default, this is set to `https://api.medplum.com/`.
+   * This can be overridden by setting the `baseUrl` option when creating the client.
+   * @returns The current base URL for all API requests.
+   */
+  getBaseUrl(): string {
+    return this.#baseUrl;
+  }
+
+  /**
    * Clears all auth state including local storage and session storage.
    */
   clear(): void {
@@ -1098,6 +1108,10 @@ export class MedplumClient extends EventTarget {
     this.#requestCache.clear();
     this.#refreshPromise = undefined;
     await this.#refreshProfile();
+  }
+
+  getAccessToken(): string | undefined {
+    return this.#accessToken;
   }
 
   setAccessToken(accessToken: string): void {

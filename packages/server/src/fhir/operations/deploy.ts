@@ -42,8 +42,17 @@ export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
 
   const client = new LambdaClient({ region: 'us-east-1' });
   const name = `medplum-bot-lambda-${bot.id}`;
+
+  // By default, use the code on the bot
+  // Allow the client to override the code
+  // This is useful for sending compiled output when the bot code is TypeScript
+  let code = bot.code;
+  if (req.body.code) {
+    code = req.body.code;
+  }
+
   try {
-    await deployLambda(client, name, bot.code as string);
+    await deployLambda(client, name, code as string);
     sendOutcome(res, allOk);
   } catch (err) {
     sendOutcome(res, badRequest((err as Error).message));
