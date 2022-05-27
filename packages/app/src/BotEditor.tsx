@@ -1,9 +1,9 @@
 import { Bot } from '@medplum/fhirtypes';
 import { Button, useMedplum } from '@medplum/ui';
 import React, { useRef } from 'react';
-import './BotEditor.css';
 import { BotRunner } from './BotRunner';
 import { CodeEditor } from './CodeEditor';
+import './BotEditor.css';
 
 export interface BotEditorProps {
   bot: Bot;

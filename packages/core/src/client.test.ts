@@ -262,6 +262,7 @@ describe('Client', () => {
     );
 
     const client = new MedplumClient(defaultOptions);
+    expect(client.getBaseUrl()).toEqual(defaultOptions.baseUrl);
     expect(client.isLoading()).toBe(true);
     expect(client.getProfile()).toBeUndefined();
     expect(client.getProfileAsync()).toBeDefined();
@@ -729,6 +730,7 @@ describe('Client', () => {
 
     const client = new MedplumClient({ fetch });
     client.setAccessToken('foo');
+    expect(client.getAccessToken()).toEqual('foo');
 
     const patient = await client.readResource('Patient', '123');
     expect(patient).toBeDefined();

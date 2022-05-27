@@ -97,6 +97,7 @@ describe('BotEditor', () => {
       expect(message.input).toEqual({ resourceType: 'Patient' });
       expect(targetOrigin).toEqual('https://codeeditor.medplum.com');
       expect(transfer).toBeDefined();
+      (transfer?.[0] as MessagePort).postMessage({ result: 'ok' });
     };
 
     await act(async () => {
