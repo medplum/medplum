@@ -1,18 +1,23 @@
-import * as acm from '@aws-cdk/aws-certificatemanager';
-import * as cloudfront from '@aws-cdk/aws-cloudfront';
-import * as origins from '@aws-cdk/aws-cloudfront-origins';
-import * as route53 from '@aws-cdk/aws-route53';
-import * as targets from '@aws-cdk/aws-route53-targets/lib';
-import * as s3 from '@aws-cdk/aws-s3';
-import * as cdk from '@aws-cdk/core';
+import {
+  aws_certificatemanager as acm,
+  aws_cloudfront as cloudfront,
+  aws_cloudfront_origins as origins,
+  aws_route53 as route53,
+  aws_route53_targets as targets,
+  aws_s3 as s3,
+  aws_wafv2 as wafv2,
+  Duration,
+} from 'aws-cdk-lib';
 import { ServerlessClamscan } from 'cdk-serverless-clamscan';
+import { Construct } from 'constructs';
 import { MedplumInfraConfig } from './config';
+import { awsManagedRules } from './waf';
 
 /**
  * Binary storage bucket and CloudFront distribution.
  */
-export class Storage extends cdk.Construct {
-  constructor(parent: cdk.Construct, config: MedplumInfraConfig) {
+export class Storage extends Construct {
+  constructor(parent: Construct, config: MedplumInfraConfig) {
     super(parent, 'Storage');
 
     const zone = route53.HostedZone.fromLookup(this, 'Zone', {
@@ -53,7 +58,7 @@ export class Storage extends cdk.Construct {
         frameOptions: { frameOption: cloudfront.HeadersFrameOption.DENY, override: true },
         referrerPolicy: { referrerPolicy: cloudfront.HeadersReferrerPolicy.NO_REFERRER, override: true },
         strictTransportSecurity: {
-          accessControlMaxAge: cdk.Duration.seconds(63072000),
+          accessControlMaxAge: Duration.seconds(63072000),
           includeSubdomains: true,
           override: true,
         },
@@ -62,6 +67,19 @@ export class Storage extends cdk.Construct {
           modeBlock: true,
           override: true,
         },
+      },
+    });
+
+    // WAF
+    const waf = new wafv2.CfnWebACL(this, 'StorageWAF', {
+      defaultAction: { allow: {} },
+      scope: 'CLOUDFRONT',
+      name: `${config.stackName}-StorageWAF`,
+      rules: awsManagedRules,
+      visibilityConfig: {
+        cloudWatchMetricsEnabled: true,
+        metricName: `${config.stackName}-StorageWAF-Metric`,
+        sampledRequestsEnabled: false,
       },
     });
 
@@ -75,6 +93,7 @@ export class Storage extends cdk.Construct {
       },
       certificate: acm.Certificate.fromCertificateArn(this, 'StorageCertificate', config.storageSslCertArn),
       domainNames: [config.storageDomainName],
+      webAclId: waf.attrArn,
     });
 
     // Route53 alias record for the CloudFront distribution

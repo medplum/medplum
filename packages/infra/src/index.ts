@@ -1,4 +1,4 @@
-import * as cdk from '@aws-cdk/core';
+import { App, Stack } from 'aws-cdk-lib';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { BackEnd } from './backend';
@@ -6,12 +6,12 @@ import { MedplumInfraConfig } from './config';
 import { FrontEnd } from './frontend';
 import { Storage } from './storage';
 
-class MedplumStack extends cdk.Stack {
+class MedplumStack extends Stack {
   backEnd: BackEnd;
   frontEnd: FrontEnd;
   storage: Storage;
 
-  constructor(scope: cdk.App, config: MedplumInfraConfig) {
+  constructor(scope: App, config: MedplumInfraConfig) {
     super(scope, config.stackName, {
       env: {
         region: config.region,
@@ -26,7 +26,7 @@ class MedplumStack extends cdk.Stack {
 }
 
 export function main(context?: Record<string, string>): void {
-  const app = new cdk.App({ context });
+  const app = new App({ context });
 
   const configFileName = app.node.tryGetContext('config');
   if (!configFileName) {

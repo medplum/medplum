@@ -16,14 +16,14 @@
     "build": "npm run clean && cross-env NODE_ENV=production webpack --mode production"
   },
   "devDependencies": {
-    "@graphiql/toolkit": "0.4.5",
+    "@graphiql/toolkit": "0.6.0",
     "@medplum/core": "0.9.6",
     "@medplum/fhirtypes": "0.9.6",
     "@medplum/ui": "0.9.6",
     "babel-loader": "8.2.5",
     "css-loader": "6.7.1",
     "dotenv-webpack": "7.1.0",
-    "graphiql": "1.8.10",
+    "graphiql": "1.9.3",
     "graphql": "16.5.0",
     "graphql-ws": "5.8.2",
     "html-webpack-plugin": "5.5.0",

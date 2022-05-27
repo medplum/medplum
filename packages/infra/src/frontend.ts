@@ -1,11 +1,15 @@
-import * as acm from '@aws-cdk/aws-certificatemanager';
-import * as cloudfront from '@aws-cdk/aws-cloudfront';
-import * as origins from '@aws-cdk/aws-cloudfront-origins';
-import * as route53 from '@aws-cdk/aws-route53';
-import * as targets from '@aws-cdk/aws-route53-targets/lib';
-import * as s3 from '@aws-cdk/aws-s3';
-import * as wafv2 from '@aws-cdk/aws-wafv2';
-import * as cdk from '@aws-cdk/core';
+import {
+  aws_certificatemanager as acm,
+  aws_cloudfront as cloudfront,
+  aws_cloudfront_origins as origins,
+  aws_route53 as route53,
+  aws_route53_targets as targets,
+  aws_s3 as s3,
+  aws_wafv2 as wafv2,
+  Duration,
+  RemovalPolicy,
+} from 'aws-cdk-lib';
+import { Construct } from 'constructs';
 import { MedplumInfraConfig } from './config';
 import { awsManagedRules } from './waf';
 
@@ -15,8 +19,8 @@ import { awsManagedRules } from './waf';
  * The app redirects from HTTP to HTTPS, using a CloudFront distribution,
  * Route53 alias record, and ACM certificate.
  */
-export class FrontEnd extends cdk.Construct {
-  constructor(parent: cdk.Construct, config: MedplumInfraConfig) {
+export class FrontEnd extends Construct {
+  constructor(parent: Construct, config: MedplumInfraConfig) {
     super(parent, 'FrontEnd');
 
     const zone = route53.HostedZone.fromLookup(this, 'Zone', {
@@ -28,7 +32,7 @@ export class FrontEnd extends cdk.Construct {
       bucketName: config.appDomainName,
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy: RemovalPolicy.DESTROY,
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
 
@@ -58,7 +62,7 @@ export class FrontEnd extends cdk.Construct {
         contentTypeOptions: { override: true },
         frameOptions: { frameOption: cloudfront.HeadersFrameOption.DENY, override: true },
         strictTransportSecurity: {
-          accessControlMaxAge: cdk.Duration.seconds(63072000),
+          accessControlMaxAge: Duration.seconds(63072000),
           includeSubdomains: true,
           override: true,
         },
