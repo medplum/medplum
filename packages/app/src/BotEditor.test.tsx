@@ -41,6 +41,14 @@ describe('BotEditor', () => {
     await setup('/Bot/123/editor');
     await waitFor(() => screen.getByText('Editor'));
     expect(screen.getByText('Editor')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.load(screen.getByTestId<HTMLIFrameElement>('code-frame'));
+    });
+
+    await act(async () => {
+      fireEvent.load(screen.getByTestId<HTMLIFrameElement>('input-frame'));
+    });
   });
 
   test('Save', async () => {

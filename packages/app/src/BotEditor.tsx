@@ -3,6 +3,7 @@ import { Button, useMedplum } from '@medplum/ui';
 import React, { useRef } from 'react';
 import { BotRunner } from './BotRunner';
 import { CodeEditor } from './CodeEditor';
+import { sendCommand } from './utils';
 import './BotEditor.css';
 
 export interface BotEditorProps {
@@ -105,33 +106,4 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
       </div>
     </div>
   );
-}
-
-/**
- * Sends a structured command to the iframe using postMessage.
- *
- * Normally postMessage implies global event listeners. This method uses
- * MessageChannel to create a message channel between the iframe and the parent.
- *
- * See: https://advancedweb.hu/how-to-use-async-await-with-postmessage/
- *
- * @param frame The receiving IFrame.
- * @param command The command to send.
- * @returns Promise to the response from the IFrame.
- */
-function sendCommand(frame: HTMLIFrameElement, command: any): Promise<any> {
-  return new Promise((resolve, reject) => {
-    const channel = new MessageChannel();
-
-    channel.port1.onmessage = ({ data }) => {
-      channel.port1.close();
-      if (data.error) {
-        reject(data.error);
-      } else {
-        resolve(data.result);
-      }
-    };
-
-    frame.contentWindow?.postMessage(command, 'https://codeeditor.medplum.com', [channel.port2]);
-  });
 }
