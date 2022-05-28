@@ -18,12 +18,10 @@
   },
   "devDependencies": {
     "@medplum/core": "0.9.6",
-    "@medplum/fhirpath": "0.9.6",
     "@medplum/fhirtypes": "0.9.6"
   },
   "peerDependencies": {
-    "@medplum/core": "0.9.6",
-    "@medplum/fhirpath": "0.9.6"
+    "@medplum/core": "0.9.6"
   },
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
