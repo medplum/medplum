@@ -13,7 +13,6 @@ const extensions = ['.ts', '.tsx'];
 
 const globals = {
   '@medplum/core': 'medplum.core',
-  '@medplum/fhirpath': 'medplum.fhirpath',
   '@medplum/mock': 'medplum.mock',
   react: 'React',
   'react-dom': 'ReactDOM',
