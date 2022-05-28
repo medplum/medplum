@@ -27,11 +27,14 @@ export function useResource<T extends Resource>(value: Reference<T> | T | undefi
     let subscribed = true;
 
     if (!resource && value && 'reference' in value && value.reference) {
-      medplum.readCachedReference(value as Reference<T>).then((r) => {
-        if (subscribed) {
-          setResource(r);
-        }
-      });
+      medplum
+        .readCachedReference(value as Reference<T>)
+        .then((r) => {
+          if (subscribed) {
+            setResource(r);
+          }
+        })
+        .catch(() => setResource(undefined));
     }
 
     return (() => (subscribed = false)) as () => void;

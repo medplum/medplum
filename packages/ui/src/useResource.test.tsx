@@ -66,4 +66,11 @@ describe('useResource', () => {
     expect(el).toBeInTheDocument();
     expect(el.innerHTML).not.toBe('');
   });
+
+  test('Handles 404 not found', () => {
+    setup({ value: { reference: 'Patient/not-found' } });
+    const el = screen.getByTestId('test-component');
+    expect(el).toBeInTheDocument();
+    expect(el.innerHTML).toBe('');
+  });
 });
