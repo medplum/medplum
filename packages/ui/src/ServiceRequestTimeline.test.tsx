@@ -112,6 +112,19 @@ describe('ServiceRequestTimeline', () => {
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Pin ' + getReferenceString(comment)));
     });
+
+    // Wait for the pin to be applied
+    await waitFor(() => screen.getByLabelText('Unpin ' + getReferenceString(comment)));
+
+    // Click on the actions link
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+    });
+
+    // Click on the "Unpin" menu item
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Unpin ' + getReferenceString(comment)));
+    });
   });
 
   test('Comment details', async () => {

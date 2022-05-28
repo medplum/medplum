@@ -29,6 +29,23 @@ function getPriorityScore(resource: Resource): number {
 }
 
 function getTime(resource: Resource): number {
+  if (resource.resourceType === 'Communication' && resource.sent) {
+    return new Date(resource.sent).getTime();
+  }
+
+  if (
+    (resource.resourceType === 'DiagnosticReport' ||
+      resource.resourceType === 'Media' ||
+      resource.resourceType === 'Observation') &&
+    resource.issued
+  ) {
+    return new Date(resource.issued).getTime();
+  }
+
+  if (resource.resourceType === 'DocumentReference' && resource.date) {
+    return new Date(resource.date).getTime();
+  }
+
   const dateTime = resource.meta?.lastUpdated;
   if (!dateTime) {
     return 0;

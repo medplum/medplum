@@ -46,6 +46,7 @@ export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.
         basedOn: [createReference(resource)],
         subject: resource.subject as Reference<Group | Patient>,
         sender: createReference(sender),
+        sent: new Date().toISOString(),
         payload: [{ contentString: text }],
       })}
       createMedia={(resource: ServiceRequest, operator: ProfileResource, content: Attachment) => ({
@@ -53,6 +54,7 @@ export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.
         basedOn: [createReference(resource)],
         subject: resource.subject,
         operator: createReference(operator),
+        issued: new Date().toISOString(),
         content,
       })}
     />
