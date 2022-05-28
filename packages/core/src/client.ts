@@ -35,59 +35,78 @@ const JSON_CONTENT_TYPE = 'application/json';
 const FHIR_CONTENT_TYPE = 'application/fhir+json';
 const PATCH_CONTENT_TYPE = 'application/json-patch+json';
 
+/**
+ * The MedplumClientOptions interface defines configuration options for MedplumClient.
+ *
+ * All configuration settings are optional.
+ */
 export interface MedplumClientOptions {
   /**
-   * The client ID.
-   * Optional.  Default is to defer to the server to use the default client.
-   * Use this to use a specific client for SMART-on-FHIR.
-   */
-  clientId?: string;
-
-  /**
    * Base server URL.
-   * Optional.  Default value is "https://api.medplum.com/".
+   *
+   * Default value is "https://api.medplum.com/".
+   *
    * Use this to point to a custom Medplum deployment.
    */
   baseUrl?: string;
 
   /**
    * OAuth2 authorize URL.
-   * Optional.  Default value is baseUrl + "/oauth2/authorize".
+   *
+   * Default value is baseUrl + "/oauth2/authorize".
+   *
    * Use this if you want to use a separate OAuth server.
    */
   authorizeUrl?: string;
 
   /**
    * OAuth2 token URL.
-   * Optional.  Default value is baseUrl + "/oauth2/token".
+   *
+   * Default value is baseUrl + "/oauth2/token".
+   *
    * Use this if you want to use a separate OAuth server.
    */
   tokenUrl?: string;
 
   /**
    * OAuth2 logout URL.
-   * Optional.  Default value is baseUrl + "/oauth2/logout".
+   *
+   * Default value is baseUrl + "/oauth2/logout".
+   *
    * Use this if you want to use a separate OAuth server.
    */
   logoutUrl?: string;
 
   /**
+   * The client ID.
+   *
+   * Client ID can be used for SMART-on-FHIR customization.
+   */
+  clientId?: string;
+
+  /**
    * Number of resources to store in the cache.
-   * Optional.  Default value is 1000.
+   *
+   * Default value is 1000.
+   *
    * Consider using this for performance of displaying Patient or Practitioner resources.
    */
   resourceCacheSize?: number;
 
   /**
-   * Optional fetch implementation.
-   * Optional.  Default is window.fetch.
+   * Fetch implementation.
+   *
+   * Default is window.fetch (if available).
+   *
    * For nodejs applications, consider the 'node-fetch' package.
    */
   fetch?: FetchLike;
 
   /**
-   * Optional callback for when the client is unauthenticated.
+   * Callback for when the client is unauthenticated.
+   *
    * Default is do nothing.
+   *
    * For client side applications, consider redirecting to a sign in page.
    */
   onUnauthenticated?: () => void;
@@ -210,7 +229,6 @@ interface SchemaGraphQLResponse {
  * const bundle = await medplum.search('Patient?name=Alice');
  * console.log(bundle.total);
  * ```
- *
  */
 export class MedplumClient extends EventTarget {
   readonly #fetch: FetchLike;
@@ -1391,7 +1409,14 @@ export class MedplumClient extends EventTarget {
     await this.#refreshPromise;
   }
 
-  async clientCredentials(clientId: string, clientSecret: string): Promise<ProfileResource> {
+  /**
+   * Starts a new OAuth2 client credentials flow.
+   * See: https://datatracker.ietf.org/doc/html/rfc6749#section-4.4
+   * @param clientId The client ID.
+   * @param clientSecret The client secret.
+   * @returns Promise that resolves to the client profile.
+   */
+  async startClientLogin(clientId: string, clientSecret: string): Promise<ProfileResource> {
     return this.#fetchTokens(
       'grant_type=client_credentials' +
         '&client_id=' +

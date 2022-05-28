@@ -363,6 +363,12 @@ describe('Client', () => {
     expect(client.getActiveLogin()).toBeDefined();
   });
 
+  test('Client credentials flow', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result1 = await client.startClientLogin('test-client-id', 'test-client-secret');
+    expect(result1).toBeDefined();
+  });
+
   test('HTTP GET', async () => {
     const client = new MedplumClient(defaultOptions);
     const request1 = client.get('Practitioner/123');
