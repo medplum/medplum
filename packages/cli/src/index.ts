@@ -60,7 +60,7 @@ if (require.main === module) {
   dotenv.config();
   const medplum = new MedplumClient({ fetch });
   medplum
-    .clientCredentials(process.env['MEDPLUM_CLIENT_ID'] as string, process.env['MEDPLUM_CLIENT_SECRET'] as string)
+    .startClientLogin(process.env['MEDPLUM_CLIENT_ID'] as string, process.env['MEDPLUM_CLIENT_SECRET'] as string)
     .then(() => {
       main(medplum, process.argv).catch((err) => console.error('Unhandled error:', err));
     });
