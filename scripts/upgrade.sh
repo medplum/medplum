@@ -6,7 +6,6 @@ npx npm-check-updates -u --packageFile packages/cli/package.json
 npx npm-check-updates -u --packageFile packages/core/package.json
 npx npm-check-updates -u --packageFile packages/definitions/package.json
 npx npm-check-updates -u --packageFile packages/docs/package.json
-npx npm-check-updates -u --packageFile packages/fhirpath/package.json
 npx npm-check-updates -u --packageFile packages/fhirtypes/package.json
 npx npm-check-updates -u --packageFile packages/generator/package.json
 npx npm-check-updates -u --packageFile packages/graphiql/package.json

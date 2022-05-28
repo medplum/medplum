@@ -1,5 +1,12 @@
-import { capitalize, Filter, IndexedStructureDefinition, Operator, PropertyType, SearchRequest } from '@medplum/core';
-import { evalFhirPath } from '@medplum/fhirpath';
+import {
+  capitalize,
+  evalFhirPath,
+  Filter,
+  IndexedStructureDefinition,
+  Operator,
+  PropertyType,
+  SearchRequest,
+} from '@medplum/core';
 import { ElementDefinition, Resource, SearchParameter } from '@medplum/fhirtypes';
 import React from 'react';
 import { DateTimeDisplay } from './DateTimeDisplay';

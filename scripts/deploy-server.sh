@@ -38,8 +38,6 @@ tar \
   packages/core/dist \
   packages/definitions/package.json \
   packages/definitions/dist \
-  packages/fhirpath/package.json \
-  packages/fhirpath/dist \
   packages/server/package.json \
   packages/server/dist \
   packages/server/fonts \
