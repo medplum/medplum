@@ -358,7 +358,7 @@ async function execBot(subscription: Subscription, resource: Resource): Promise<
   }
 
   if (!runAs) {
-    return Promise.reject('Could not find project membership for bot');
+    throw new Error('Could not find project membership for bot');
   }
 
   let outcome: AuditEventOutcome;

@@ -59,12 +59,7 @@ class FileSystemStorage implements BinaryStorage {
     contentType: string | undefined,
     stream: internal.Readable | NodeJS.ReadableStream
   ): Promise<void> {
-    if (checkFileExtension(filename)) {
-      return Promise.reject('Invalid file extension');
-    }
-    if (checkContentType(contentType)) {
-      return Promise.reject('Invalid content type');
-    }
+    checkFileMetadata(filename, contentType);
     const dir = this.#getDir(binary);
     if (!existsSync(dir)) {
       mkdirSync(dir);
@@ -135,12 +130,7 @@ class S3Storage implements BinaryStorage {
     contentType: string | undefined,
     stream: internal.Readable | NodeJS.ReadableStream
   ): Promise<void> {
-    if (checkFileExtension(filename)) {
-      return Promise.reject('Invalid file extension');
-    }
-    if (checkContentType(contentType)) {
-      return Promise.reject('Invalid content type');
-    }
+    checkFileMetadata(filename, contentType);
     const upload = new Upload({
       params: {
         Bucket: this.#bucket,
@@ -244,6 +234,21 @@ const BLOCKED_CONTENT_TYPES = [
   'application/zip',
   'text/javascript',
 ];
+
+/**
+ * Checks file metadata against blocked lists.
+ * Throws an execption if the file metadata is blocked.
+ * @param filename The input filename.
+ * @param contentType The input content type.
+ */
+function checkFileMetadata(filename: string | undefined, contentType: string | undefined): void {
+  if (checkFileExtension(filename)) {
+    throw new Error('Invalid file extension');
+  }
+  if (checkContentType(contentType)) {
+    throw new Error('Invalid content type');
+  }
+}
 
 /**
  * Checks if the file extension is blocked.

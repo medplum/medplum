@@ -26,7 +26,7 @@ jest.mock('@aws-sdk/client-lambda', () => {
             },
           };
         } else {
-          return Promise.reject('Function not found');
+          return Promise.reject(new Error('Function not found'));
         }
       }
       if (command instanceof original.CreateFunctionCommand) {

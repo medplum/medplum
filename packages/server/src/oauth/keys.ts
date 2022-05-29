@@ -214,9 +214,9 @@ export function generateRefreshToken(claims: MedplumRefreshTokenClaims): Promise
  * @param claims The key/value pairs to include in the payload section.
  * @returns Promise to generate and sign the JWT.
  */
-function generateJwt(exp: '1h' | '2w', claims: JWTPayload): Promise<string> {
+async function generateJwt(exp: '1h' | '2w', claims: JWTPayload): Promise<string> {
   if (!signingKey || !issuer) {
-    return Promise.reject('Signing key not initialized');
+    throw new Error('Signing key not initialized');
   }
 
   return new SignJWT(claims)
@@ -233,9 +233,9 @@ function generateJwt(exp: '1h' | '2w', claims: JWTPayload): Promise<string> {
  * @param jwt The jwt token / bearer token.
  * @returns Returns the decoded claims on success.
  */
-export function verifyJwt(token: string): Promise<{ payload: JWTPayload; protectedHeader: JWSHeaderParameters }> {
+export async function verifyJwt(token: string): Promise<{ payload: JWTPayload; protectedHeader: JWSHeaderParameters }> {
   if (!issuer) {
-    return Promise.reject('Signing key not initialized');
+    throw new Error('Signing key not initialized');
   }
 
   const verifyOptions: JWTVerifyOptions = {

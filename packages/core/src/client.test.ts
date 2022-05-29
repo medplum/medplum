@@ -401,10 +401,10 @@ describe('Client', () => {
     const onUnauthenticated = jest.fn();
     const client = new MedplumClient({ ...defaultOptions, onUnauthenticated });
     const loginResponse = await client.startLogin({ email: 'admin@example.com', password: 'admin' });
-    await expect(client.processCode(loginResponse.code as string)).rejects.toEqual('Failed to fetch tokens');
+    await expect(client.processCode(loginResponse.code as string)).rejects.toThrow('Failed to fetch tokens');
 
     const result = client.get('expired');
-    await expect(result).rejects.toEqual('Invalid refresh token');
+    await expect(result).rejects.toThrow('Invalid refresh token');
     expect(onUnauthenticated).toBeCalled();
   });
 
@@ -429,7 +429,7 @@ describe('Client', () => {
   test('Read empty reference', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = client.readReference({});
-    expect(result).rejects.toEqual('Missing reference');
+    expect(result).rejects.toThrow('Missing reference');
   });
 
   test('Read cached resource', async () => {
@@ -462,7 +462,7 @@ describe('Client', () => {
   test('Read cached empty reference', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = client.readCachedReference({});
-    expect(result).rejects.toEqual('Missing reference');
+    expect(result).rejects.toThrow('Missing reference');
   });
 
   test('Read history', async () => {
@@ -485,6 +485,11 @@ describe('Client', () => {
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('POST');
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient');
+  });
+
+  test('Create resource missing resourceType', async () => {
+    const client = new MedplumClient(defaultOptions);
+    expect(async () => client.createResource({} as Patient)).rejects.toThrow('Missing resourceType');
   });
 
   test('Create resource if none exist returns existing', async () => {
@@ -522,6 +527,12 @@ describe('Client', () => {
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
   });
 
+  test('Update resource validation', async () => {
+    const client = new MedplumClient(defaultOptions);
+    expect(async () => client.updateResource({} as Patient)).rejects.toThrow('Missing resourceType');
+    expect(async () => client.updateResource({ resourceType: 'Patient' })).rejects.toThrow('Missing id');
+  });
+
   test('Not modified', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.updateResource({ resourceType: 'Patient', id: '777' });
@@ -532,15 +543,6 @@ describe('Client', () => {
     const client = new MedplumClient(defaultOptions);
     const promise = client.updateResource({ resourceType: 'Patient', id: '888' });
     expect(promise).rejects.toMatchObject({});
-  });
-
-  test('Create resource', async () => {
-    const client = new MedplumClient(defaultOptions);
-    expect(client.createResource({} as Patient)).rejects.toEqual('Missing resourceType');
-    const result = await client.createResource({ resourceType: 'Patient', name: [{ family: 'Smith' }] });
-    expect(result).toBeDefined();
-    expect((result as any).request.options.method).toBe('POST');
-    expect((result as any).request.url).toBe('https://x/fhir/R4/Patient');
   });
 
   test('Create binary', async () => {
@@ -602,16 +604,6 @@ describe('Client', () => {
     expect((result as any).request.url).toBe('https://x/fhir/R4/Communication');
     expect(result.basedOn).toBeDefined();
     expect(result.subject).toBeDefined();
-  });
-
-  test('Update resource', async () => {
-    const client = new MedplumClient(defaultOptions);
-    expect(client.updateResource({} as Patient)).rejects.toEqual('Missing resourceType');
-    expect(client.updateResource({ resourceType: 'Patient' })).rejects.toEqual('Missing id');
-    const result = await client.updateResource({ resourceType: 'Patient', id: '123', name: [{ family: 'Smith' }] });
-    expect(result).toBeDefined();
-    expect((result as any).request.options.method).toBe('PUT');
-    expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
   });
 
   test('Patch resource', async () => {

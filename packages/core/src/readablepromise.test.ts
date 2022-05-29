@@ -12,11 +12,11 @@ describe('ReadablePromise', () => {
 
   test('read reject', async () => {
     expect.assertions(2);
-    const promise = new ReadablePromise(Promise.reject('x'));
+    const promise = new ReadablePromise(Promise.reject(new Error('x')));
     try {
       await promise;
     } catch (err) {
-      expect(err).toBe('x');
+      expect((err as Error).message).toBe('x');
     }
     expect(() => promise.read()).toThrow('x');
   });
@@ -30,11 +30,11 @@ describe('ReadablePromise', () => {
 
   test('catch', async () => {
     const onRejected = jest.fn();
-    const promise = new ReadablePromise(Promise.reject('x')).catch(onRejected);
+    const promise = new ReadablePromise(Promise.reject(new Error('x'))).catch(onRejected);
     try {
       await promise;
     } catch (err) {
-      expect(err).toBe('x');
+      expect((err as Error).message).toBe('x');
     }
     expect(onRejected).toHaveBeenCalled();
   });

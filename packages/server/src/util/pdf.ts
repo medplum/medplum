@@ -12,11 +12,11 @@ export async function createPdf(
   docDefinition: TDocumentDefinitions
 ): Promise<Binary> {
   if (!repo) {
-    return Promise.reject('Missing repository');
+    throw new Error('Missing repository');
   }
 
   if (!docDefinition) {
-    return Promise.reject('Missing document definition');
+    throw new Error('Missing document definition');
   }
 
   // Setup standard fonts
