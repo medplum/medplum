@@ -493,9 +493,7 @@ export class MedplumClient extends EventTarget {
    * @returns The well-formed FHIR URL.
    */
   fhirUrl(...path: string[]): URL {
-    const builder = [this.#baseUrl, 'fhir/R4'];
-    path.forEach((p) => builder.push('/', p));
-    return new URL(builder.join(''));
+    return new URL(this.#baseUrl + 'fhir/R4/' + path.join('/'));
   }
 
   /**
@@ -1369,7 +1367,7 @@ export class MedplumClient extends EventTarget {
       return Promise.reject('Invalid PCKE code verifier');
     }
 
-    const formBody = new FormData();
+    const formBody = new URLSearchParams();
     formBody.set('grant_type', 'authorization_code');
     formBody.set('client_id', this.#clientId);
     formBody.set('code_verifier', codeVerifier);
@@ -1392,7 +1390,7 @@ export class MedplumClient extends EventTarget {
       return Promise.reject('Invalid refresh token');
     }
 
-    const formBody = new FormData();
+    const formBody = new URLSearchParams();
     formBody.set('grant_type', 'refresh_token');
     formBody.set('client_id', this.#clientId);
     formBody.set('refresh_token', this.#refreshToken);
@@ -1408,7 +1406,7 @@ export class MedplumClient extends EventTarget {
    * @returns Promise that resolves to the client profile.
    */
   async startClientLogin(clientId: string, clientSecret: string): Promise<ProfileResource> {
-    const formBody = new FormData();
+    const formBody = new URLSearchParams();
     formBody.set('grant_type', 'client_credentials');
     formBody.set('client_id', clientId);
     formBody.set('client_secret', clientSecret);
@@ -1420,7 +1418,7 @@ export class MedplumClient extends EventTarget {
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
    * @param formBody Token parameters in URL encoded format.
    */
-  async #fetchTokens(formBody: FormData): Promise<ProfileResource> {
+  async #fetchTokens(formBody: URLSearchParams): Promise<ProfileResource> {
     if (!this.#tokenUrl) {
       return Promise.reject('Missing token URL');
     }
