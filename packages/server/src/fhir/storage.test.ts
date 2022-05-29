@@ -151,7 +151,7 @@ describe('Storage', () => {
 
     const binary = null as unknown as Binary;
     const stream = null as unknown as internal.Readable;
-    expect(storage.writeBinary(binary, 'test.exe', 'text/plain', stream)).rejects.toEqual('Invalid file extension');
+    expect(storage.writeBinary(binary, 'test.exe', 'text/plain', stream)).rejects.toThrow('Invalid file extension');
     expect(Upload).not.toHaveBeenCalled();
   });
 
@@ -164,7 +164,7 @@ describe('Storage', () => {
 
     const binary = null as unknown as Binary;
     const stream = null as unknown as internal.Readable;
-    expect(storage.writeBinary(binary, 'test.sh', 'application/x-sh', stream)).rejects.toEqual('Invalid content type');
+    expect(storage.writeBinary(binary, 'test.sh', 'application/x-sh', stream)).rejects.toThrow('Invalid content type');
     expect(Upload).not.toHaveBeenCalled();
   });
 });

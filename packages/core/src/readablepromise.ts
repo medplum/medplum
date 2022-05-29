@@ -8,7 +8,7 @@ export class ReadablePromise<T> implements Promise<T> {
   #suspender: Promise<T>;
   #status: 'pending' | 'error' | 'success' = 'pending';
   #response: T | undefined;
-  #error: any;
+  #error: Error | undefined;
 
   constructor(requestPromise: Promise<T>) {
     this.#suspender = requestPromise.then(

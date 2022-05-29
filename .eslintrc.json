@@ -23,6 +23,7 @@
         "argsIgnorePattern": "^_",
         "varsIgnorePattern": "^_"
       }
-    ]
+    ],
+    "prefer-promise-reject-errors": "error"
   }
 }

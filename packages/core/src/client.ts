@@ -713,7 +713,7 @@ export class MedplumClient extends EventTarget {
   readReference<T extends Resource>(reference: Reference<T>): ReadablePromise<T> {
     const refString = reference?.reference;
     if (!refString) {
-      return new ReadablePromise(Promise.reject('Missing reference'));
+      return new ReadablePromise(Promise.reject(new Error('Missing reference')));
     }
     const [resourceType, id] = refString.split('/');
     return this.readResource(resourceType, id);
@@ -742,7 +742,7 @@ export class MedplumClient extends EventTarget {
   readCachedReference<T extends Resource>(reference: Reference<T>): ReadablePromise<T> {
     const refString = reference?.reference;
     if (!refString) {
-      return new ReadablePromise(Promise.reject('Missing reference'));
+      return new ReadablePromise(Promise.reject(new Error('Missing reference')));
     }
     const [resourceType, id] = refString.split('/');
     return this.readCached(resourceType, id);
@@ -884,7 +884,7 @@ export class MedplumClient extends EventTarget {
    */
   createResource<T extends Resource>(resource: T): Promise<T> {
     if (!resource.resourceType) {
-      return Promise.reject('Missing resourceType');
+      throw new Error('Missing resourceType');
     }
     return this.post(this.fhirUrl(resource.resourceType), resource);
   }
@@ -1056,10 +1056,10 @@ export class MedplumClient extends EventTarget {
    */
   updateResource<T extends Resource>(resource: T): Promise<T> {
     if (!resource.resourceType) {
-      return Promise.reject('Missing resourceType');
+      throw new Error('Missing resourceType');
     }
     if (!resource.id) {
-      return Promise.reject('Missing id');
+      throw new Error('Missing id');
     }
     return this.put(this.fhirUrl(resource.resourceType, resource.id), resource);
   }
@@ -1373,11 +1373,7 @@ export class MedplumClient extends EventTarget {
    * Clears all auth state including local storage and session storage.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
    */
-  async #requestAuthorization(): Promise<void> {
-    if (!this.#authorizeUrl) {
-      return Promise.reject('Missing authorize URL');
-    }
-
+  #requestAuthorization(): void {
     this.#startPkce();
 
     const url = new URL(this.#authorizeUrl);
@@ -1400,13 +1396,13 @@ export class MedplumClient extends EventTarget {
     const pkceState = this.#storage.getString('pkceState');
     if (!pkceState) {
       this.clear();
-      return Promise.reject('Invalid PCKE state');
+      throw new Error('Invalid PCKE state');
     }
 
     const codeVerifier = this.#storage.getString('codeVerifier');
     if (!codeVerifier) {
       this.clear();
-      return Promise.reject('Invalid PCKE code verifier');
+      throw new Error('Invalid PCKE code verifier');
     }
 
     const formBody = new URLSearchParams();
@@ -1429,7 +1425,7 @@ export class MedplumClient extends EventTarget {
 
     if (!this.#refreshToken) {
       this.clear();
-      return Promise.reject('Invalid refresh token');
+      throw new Error('Invalid refresh token');
     }
 
     const formBody = new URLSearchParams();
@@ -1461,10 +1457,6 @@ export class MedplumClient extends EventTarget {
    * @param formBody Token parameters in URL encoded format.
    */
   async #fetchTokens(formBody: URLSearchParams): Promise<ProfileResource> {
-    if (!this.#tokenUrl) {
-      return Promise.reject('Missing token URL');
-    }
-
     return this.#fetch(this.#tokenUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -1472,7 +1464,7 @@ export class MedplumClient extends EventTarget {
     })
       .then((response) => {
         if (!response.ok) {
-          return Promise.reject('Failed to fetch tokens');
+          throw new Error('Failed to fetch tokens');
         }
         return response.json();
       })
@@ -1493,13 +1485,13 @@ export class MedplumClient extends EventTarget {
     const tokenPayload = parseJWTPayload(token);
     if (Date.now() >= (tokenPayload.exp as number) * 1000) {
       this.clear();
-      return Promise.reject('Token expired');
+      throw new Error('Token expired');
     }
 
     // Verify app_client_id
     if (this.#clientId && tokenPayload.client_id !== this.#clientId) {
       this.clear();
-      return Promise.reject('Token was not issued for this audience');
+      throw new Error('Token was not issued for this audience');
     }
 
     await this.setActiveLogin({

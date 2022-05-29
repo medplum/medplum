@@ -62,7 +62,7 @@ describe('Keys', () => {
     try {
       await generateIdToken({ iss: config.issuer, login_id: '123', nonce: randomUUID() });
     } catch (err) {
-      expect(err).toEqual('Signing key not initialized');
+      expect((err as Error).message).toEqual('Signing key not initialized');
     }
   });
 
@@ -79,13 +79,13 @@ describe('Keys', () => {
     try {
       await generateIdToken({ iss: config.issuer, login_id: '123', nonce: randomUUID() });
     } catch (err) {
-      expect(err).toEqual('Signing key not initialized');
+      expect((err as Error).message).toEqual('Signing key not initialized');
     }
 
     try {
       await verifyJwt('xyz');
     } catch (err) {
-      expect(err).toEqual('Signing key not initialized');
+      expect((err as Error).message).toEqual('Signing key not initialized');
     }
   });
 
