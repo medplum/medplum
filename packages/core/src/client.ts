@@ -4,7 +4,10 @@
 import {
   Binary,
   Bundle,
+  Communication,
+  Encounter,
   OperationOutcome,
+  Patient,
   Project,
   ProjectMembership,
   Reference,
@@ -26,7 +29,7 @@ import { ReadablePromise } from './readablepromise';
 import { formatSearchQuery, parseSearchDefinition, SearchRequest } from './search';
 import { ClientStorage } from './storage';
 import { createSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
-import { arrayBufferToBase64, ProfileResource, stringify } from './utils';
+import { arrayBufferToBase64, createReference, ProfileResource, stringify } from './utils';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_SCOPE = 'launch/patient openid fhirUser offline_access user/*.*';
@@ -985,6 +988,45 @@ export class MedplumClient extends EventTarget {
       url += '?_filename=' + encodeURIComponent(filename);
     }
     return this.post(url, docDefinition, 'application/json');
+  }
+
+  /**
+   * Creates a FHIR `Communication` resource with the provided data content.
+   *
+   * This is a convenience method to handle commmon cases where a `Communication` resource is created with a `payload`.
+   *
+   * @param resource The FHIR resource to comment on.
+   * @param text The text of the comment.
+   * @returns The result of the create operation.
+   */
+  createComment(resource: Resource, text: string): Promise<Communication> {
+    const profile = this.getProfile();
+    let encounter: Reference<Encounter> | undefined = undefined;
+    let subject: Reference<Patient> | undefined = undefined;
+
+    if (resource.resourceType === 'Encounter') {
+      encounter = createReference(resource);
+      subject = resource.subject as Reference<Patient> | undefined;
+    }
+
+    if (resource.resourceType === 'ServiceRequest') {
+      encounter = resource.encounter;
+      subject = resource.subject as Reference<Patient> | undefined;
+    }
+
+    if (resource.resourceType === 'Patient') {
+      subject = createReference(resource);
+    }
+
+    return this.createResource<Communication>({
+      resourceType: 'Communication',
+      basedOn: [createReference(resource)],
+      encounter,
+      subject,
+      sender: profile ? createReference(profile) : undefined,
+      sent: new Date().toISOString(),
+      payload: [{ contentString: text }],
+    });
   }
 
   /**

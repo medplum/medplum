@@ -166,6 +166,9 @@ function mockFetch(url: string, options: any): Promise<any> {
     };
   } else if (method === 'POST' && url.endsWith('fhir/R4/%24graphql')) {
     result = schemaResponse;
+  } else if (method === 'POST' && options.headers['Content-Type'] === 'application/fhir+json') {
+    // Default "create" operation returns the body
+    result = JSON.parse(options.body);
   }
 
   const response: any = {
@@ -570,6 +573,35 @@ describe('Client', () => {
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('POST');
     expect((result as any).request.url).toBe('https://x/fhir/R4/Binary/$pdf?_filename=report.pdf');
+  });
+
+  test('Create comment on Encounter', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.createComment({ resourceType: 'Encounter', id: '999' }, 'Hello world');
+    expect(result).toBeDefined();
+    expect((result as any).request.options.method).toBe('POST');
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Communication');
+    expect(result.basedOn).toBeDefined();
+    expect(result.encounter).toBeDefined();
+  });
+
+  test('Create comment on ServiceRequest', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.createComment({ resourceType: 'ServiceRequest', id: '999' }, 'Hello world');
+    expect(result).toBeDefined();
+    expect((result as any).request.options.method).toBe('POST');
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Communication');
+    expect(result.basedOn).toBeDefined();
+  });
+
+  test('Create comment on Patient', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.createComment({ resourceType: 'Patient', id: '999' }, 'Hello world');
+    expect(result).toBeDefined();
+    expect((result as any).request.options.method).toBe('POST');
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Communication');
+    expect(result.basedOn).toBeDefined();
+    expect(result.subject).toBeDefined();
   });
 
   test('Update resource', async () => {

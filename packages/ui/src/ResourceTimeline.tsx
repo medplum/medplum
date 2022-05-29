@@ -136,12 +136,16 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     });
   }
 
+  function setPriority(communication: Communication, priority: string): Promise<Communication> {
+    return medplum.updateResource({ ...communication, priority });
+  }
+
   function onPin(communication: Communication): void {
-    medplum
-      .patchResource(communication.resourceType, communication.id as string, [
-        { op: 'add', path: '/priority', value: 'stat' },
-      ])
-      .then(loadTimeline);
+    setPriority(communication, 'stat').then(loadTimeline);
+  }
+
+  function onUnpin(communication: Communication): void {
+    setPriority(communication, 'routine').then(loadTimeline);
   }
 
   function onDetails(timelineItem: Resource): void {
@@ -208,7 +212,8 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
               <CommunicationTimelineItem
                 key={key}
                 resource={item}
-                onPin={onPin}
+                onPin={item.priority !== 'stat' ? onPin : undefined}
+                onUnpin={item.priority === 'stat' ? onUnpin : undefined}
                 onDetails={onDetails}
                 onEdit={onEdit}
                 onDelete={onDelete}
@@ -243,6 +248,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
 interface BaseTimelineItemProps<T extends Resource> {
   resource: T;
   onPin?: (resource: T) => void;
+  onUnpin?: (resource: T) => void;
   onDetails?: (resource: T) => void;
   onEdit?: (resource: T) => void;
   onDelete?: (resource: T) => void;
@@ -257,6 +263,14 @@ function TimelineItemPopupMenu<T extends Resource>(props: BaseTimelineItemProps<
           label={`Pin ${getReferenceString(props.resource)}`}
         >
           Pin
+        </MenuItem>
+      )}
+      {props.onUnpin && (
+        <MenuItem
+          onClick={() => (props.onUnpin as (resource: T) => void)(props.resource)}
+          label={`Unpin ${getReferenceString(props.resource)}`}
+        >
+          Unpin
         </MenuItem>
       )}
       {props.onDetails && (
@@ -324,6 +338,7 @@ function CommunicationTimelineItem(props: BaseTimelineItemProps<Communication>):
   return (
     <TimelineItem
       resource={props.resource}
+      profile={props.resource.sender}
       padding={true}
       className={className}
       popupMenuItems={<TimelineItemPopupMenu {...props} />}

@@ -35,12 +35,14 @@ export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
         resourceType: 'Communication',
         subject: createReference(resource),
         sender: createReference(sender),
+        sent: new Date().toISOString(),
         payload: [{ contentString: text }],
       })}
       createMedia={(resource: Patient, operator: ProfileResource, content: Attachment) => ({
         resourceType: 'Media',
         subject: createReference(resource),
         operator: createReference(operator),
+        issued: new Date().toISOString(),
         content,
       })}
     />

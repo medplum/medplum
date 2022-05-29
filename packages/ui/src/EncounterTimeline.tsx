@@ -40,6 +40,7 @@ export function EncounterTimeline(props: EncounterTimelineProps): JSX.Element {
         encounter: createReference(resource),
         subject: resource.subject,
         sender: createReference(sender),
+        sent: new Date().toISOString(),
         payload: [{ contentString: text }],
       })}
       createMedia={(resource: Encounter, operator: ProfileResource, content: Attachment) => ({
@@ -47,6 +48,7 @@ export function EncounterTimeline(props: EncounterTimelineProps): JSX.Element {
         encounter: createReference(resource),
         subject: resource.subject,
         operator: createReference(operator),
+        issued: new Date().toISOString(),
         content,
       })}
     />
