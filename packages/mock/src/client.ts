@@ -317,9 +317,9 @@ function mockFhirHandler(method: string, url: string, options: any): any {
   const id = match?.[2];
   const operation = match?.[3];
   const versionId = match?.[4];
-  if (path.startsWith('fhir/R4/ValueSet/%24expand')) {
+  if (path.startsWith('fhir/R4/ValueSet/$expand')) {
     return exampleValueSet;
-  } else if (path === 'fhir/R4/%24graphql') {
+  } else if (path === 'fhir/R4/$graphql') {
     return mockFhirGraphqlHandler(method, path, options);
   } else if (path === 'not-found' || id === 'not-found') {
     return notFound;

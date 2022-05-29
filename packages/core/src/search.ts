@@ -217,7 +217,7 @@ export function formatSearchQuery(definition: SearchRequest): string {
   }
 
   if (definition.total !== undefined) {
-    params.push('_total=' + encodeURIComponent(definition.total));
+    params.push('_total=' + definition.total);
   }
 
   if (params.length === 0) {
