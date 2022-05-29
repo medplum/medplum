@@ -1,4 +1,4 @@
-import { Button, Document, Form, FormSection, Input, useMedplum } from '@medplum/ui';
+import { Button, Document, Form, FormSection, Input, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 
 export function SuperAdminPage(): JSX.Element {

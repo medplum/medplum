@@ -17,14 +17,13 @@ packages/core/docs/
 packages/definitions/dist/**/*.js
 packages/definitions/dist/**/*.js.map
 packages/definitions/dist/**/*.d.ts
-packages/fhirpath/dist/
 packages/generator/dist/
 packages/graphiql/dist/
 packages/infra/dist/
 packages/mock/dist/
 packages/seeder/dist/
+packages/react/dist/
 packages/server/dist/
-packages/ui/dist/
 
 # Storybook output
 storybook-static/

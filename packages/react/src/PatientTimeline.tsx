@@ -27,7 +27,7 @@ export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
         entry: searches.map((search) => ({
           request: {
             method: 'GET',
-            url: search.replace('$', getReferenceString(resource)),
+            url: search.replaceAll('$', getReferenceString(resource)),
           },
         })),
       })}

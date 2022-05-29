@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-pushd packages/ui
+pushd packages/react
 npm run storybook
 aws s3 cp storybook-static/ s3://medplum-docs/storybook/ \
   --region us-east-1 \

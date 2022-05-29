@@ -1,6 +1,6 @@
 import { createReference } from '@medplum/core';
 import { AccessPolicy, Reference } from '@medplum/fhirtypes';
-import { ResourceInput } from '@medplum/ui';
+import { ResourceInput } from '@medplum/react';
 import React from 'react';
 
 export interface AccessPolicyInputProps {

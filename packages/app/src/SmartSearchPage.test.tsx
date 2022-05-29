@@ -1,6 +1,6 @@
 import { PropertyType } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider, SmartSearchField } from '@medplum/ui';
+import { MedplumProvider, SmartSearchField } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';

@@ -7,7 +7,7 @@ import {
   SortRule,
 } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
-import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/ui';
+import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 

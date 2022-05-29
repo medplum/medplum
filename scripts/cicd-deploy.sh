@@ -62,7 +62,7 @@ if [[ "$FILES_CHANGED" =~ packages/server ]]; then
   DEPLOY_SERVER=true
 fi
 
-if [[ "$FILES_CHANGED" =~ packages/ui ]]; then
+if [[ "$FILES_CHANGED" =~ packages/react ]]; then
   DEPLOY_APP=true
   DEPLOY_STORYBOOK=true
 fi

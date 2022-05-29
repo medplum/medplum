@@ -19,7 +19,7 @@
     "@graphiql/toolkit": "0.6.0",
     "@medplum/core": "0.9.6",
     "@medplum/fhirtypes": "0.9.6",
-    "@medplum/ui": "0.9.6",
+    "@medplum/react": "0.9.6",
     "babel-loader": "8.2.5",
     "css-loader": "6.7.1",
     "dotenv-webpack": "7.1.0",

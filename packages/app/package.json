@@ -21,7 +21,7 @@
     "@medplum/core": "0.9.6",
     "@medplum/fhirtypes": "0.9.6",
     "@medplum/mock": "0.9.6",
-    "@medplum/ui": "0.9.6",
+    "@medplum/react": "0.9.6",
     "@testing-library/jest-dom": "5.16.4",
     "@testing-library/react": "13.2.0",
     "@types/grecaptcha": "3.0.4",

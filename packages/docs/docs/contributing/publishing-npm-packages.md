@@ -61,7 +61,6 @@ If the PR is approved, then you can take the final step of actually publishing p
 This will publish new versions of all of our publicly available NPM packages:
 * [@medplum/core](https://www.npmjs.com/package/@medplum/core) - Core library and FHIR client
 * [@medplum/definitions](https://www.npmjs.com/package/@medplum/definitions) - FHIR data definitions in JSON form
-* [@medplum/fhirpath](https://www.npmjs.com/package/@medplum/fhirpath) - FHIRPath implementation
 * [@medplum/fhirtypes](https://www.npmjs.com/package/@medplum/fhirtypes) - FHIR definitions as TypeScript .d.ts
 * [@medplum/mock](https://www.npmjs.com/package/@medplum/mock) - Mock FHIR data and mock Medplum client
-* [@medplum/ui](https://www.npmjs.com/package/@medplum/ui) - React component library
+* [@medplum/react](https://www.npmjs.com/package/@medplum/react) - React component library

@@ -18,7 +18,7 @@ set_version () {
   sed -i "s_\"@medplum/core\": \"$OLD_VERSION\"_\"@medplum/core\": \"$NEW_VERSION\"_g" "$1"
   sed -i "s_\"@medplum/fhirtypes\": \"$OLD_VERSION\"_\"@medplum/fhirtypes\": \"$NEW_VERSION\"_g" "$1"
   sed -i "s_\"@medplum/mock\": \"$OLD_VERSION\"_\"@medplum/mock\": \"$NEW_VERSION\"_g" "$1"
-  sed -i "s_\"@medplum/ui\": \"$OLD_VERSION\"_\"@medplum/ui\": \"$NEW_VERSION\"_g" "$1"
+  sed -i "s_\"@medplum/react\": \"$OLD_VERSION\"_\"@medplum/react\": \"$NEW_VERSION\"_g" "$1"
 }
 
 # Update package.json files
@@ -34,7 +34,7 @@ set_version "packages/graphiql/package.json"
 set_version "packages/infra/package.json"
 set_version "packages/mock/package.json"
 set_version "packages/server/package.json"
-set_version "packages/ui/package.json"
+set_version "packages/react/package.json"
 
 # Update sonar-project.properties
 sed -i "s/sonar.projectVersion=$OLD_VERSION/sonar.projectVersion=$NEW_VERSION/g" "sonar-project.properties"

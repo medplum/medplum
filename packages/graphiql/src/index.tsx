@@ -1,11 +1,11 @@
 import { MedplumClient } from '@medplum/core';
-import { MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/ui';
+import { MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/react';
 import GraphiQL from 'graphiql';
 import React from 'react';
 import { render } from 'react-dom';
 import 'regenerator-runtime/runtime.js';
-import '@medplum/ui/defaulttheme.css';
-import '@medplum/ui/styles.css';
+import '@medplum/react/defaulttheme.css';
+import '@medplum/react/styles.css';
 import 'graphiql/graphiql.css';
 
 const HELP_TEXT = `# Welcome to Medplum GraphiQL

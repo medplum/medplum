@@ -1,5 +1,5 @@
 import { Reference, ValueSet } from '@medplum/fhirtypes';
-import { Select, useResource } from '@medplum/ui';
+import { Select, useResource } from '@medplum/react';
 import React from 'react';
 import './QuickStatus.css';
 

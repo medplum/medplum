@@ -1,5 +1,5 @@
 import { resolveId } from '@medplum/core';
-import { Document, MedplumLink, ResourceBadge, useMedplum } from '@medplum/ui';
+import { Document, MedplumLink, ResourceBadge, useMedplum } from '@medplum/react';
 import React from 'react';
 
 export function ProjectPage(): JSX.Element {

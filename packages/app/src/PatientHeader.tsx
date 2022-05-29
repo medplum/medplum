@@ -1,6 +1,6 @@
 import { calculateAgeString } from '@medplum/core';
 import { Patient, Reference } from '@medplum/fhirtypes';
-import { Avatar, HumanNameDisplay, MedplumLink, Scrollable, useResource } from '@medplum/ui';
+import { Avatar, HumanNameDisplay, MedplumLink, Scrollable, useResource } from '@medplum/react';
 import React from 'react';
 import './PatientHeader.css';
 

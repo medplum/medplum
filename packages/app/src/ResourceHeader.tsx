@@ -1,6 +1,6 @@
 import { getDisplayString, getReferenceString } from '@medplum/core';
 import { CodeableConcept, Identifier, Reference, Resource } from '@medplum/fhirtypes';
-import { Scrollable, useResource } from '@medplum/ui';
+import { Scrollable, useResource } from '@medplum/react';
 import React from 'react';
 import './ResourceHeader.css';
 
