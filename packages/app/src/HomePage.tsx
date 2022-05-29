@@ -59,7 +59,7 @@ export function HomePage(): JSX.Element {
             }
       }
       onExport={() => {
-        const url = medplum.fhirUrl(search.resourceType) + '/$csv' + formatSearchQuery(search);
+        const url = medplum.fhirUrl(search.resourceType, '$csv') + formatSearchQuery(search);
         medplum.download(url).then((blob) => {
           window.open(window.URL.createObjectURL(blob), '_blank');
         });

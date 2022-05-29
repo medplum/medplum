@@ -318,7 +318,8 @@ export class MedplumClient extends EventTarget {
    * @param options Optional fetch options.
    * @returns Promise to the response content.
    */
-  get<T = any>(url: string, options: RequestInit = {}): ReadablePromise<T> {
+  get<T = any>(url: URL | string, options: RequestInit = {}): ReadablePromise<T> {
+    url = url.toString();
     if (!options?.cache) {
       const cached = this.#requestCache.get(url);
       if (cached) {
@@ -343,7 +344,8 @@ export class MedplumClient extends EventTarget {
    * @param options Optional fetch options.
    * @returns Promise to the response content.
    */
-  post(url: string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
+  post(url: URL | string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
+    url = url.toString();
     if (body) {
       this.#setRequestBody(options, body);
     }
@@ -367,7 +369,8 @@ export class MedplumClient extends EventTarget {
    * @param options Optional fetch options.
    * @returns Promise to the response content.
    */
-  put(url: string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
+  put(url: URL | string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
+    url = url.toString();
     if (body) {
       this.#setRequestBody(options, body);
     }
@@ -390,7 +393,8 @@ export class MedplumClient extends EventTarget {
    * @param options Optional fetch options.
    * @returns Promise to the response content.
    */
-  patch(url: string, operations: Operation[], options: RequestInit = {}): Promise<any> {
+  patch(url: URL | string, operations: Operation[], options: RequestInit = {}): Promise<any> {
+    url = url.toString();
     this.#setRequestBody(options, operations);
     this.#setRequestContentType(options, PATCH_CONTENT_TYPE);
     this.#requestCache.delete(url);
@@ -408,7 +412,8 @@ export class MedplumClient extends EventTarget {
    * @param options Optional fetch options.
    * @returns Promise to the response content.
    */
-  delete(url: string, options: RequestInit = {}): Promise<any> {
+  delete(url: URL | string, options: RequestInit = {}): Promise<any> {
+    url = url.toString();
     this.#requestCache.delete(url);
     return this.#request('DELETE', url, options);
   }
@@ -490,10 +495,8 @@ export class MedplumClient extends EventTarget {
    * @param path The path component of the URL.
    * @returns The well-formed FHIR URL.
    */
-  fhirUrl(...path: string[]): string {
-    const builder = [this.#baseUrl, 'fhir/R4'];
-    path.forEach((p) => builder.push('/', encodeURIComponent(p)));
-    return builder.join('');
+  fhirUrl(...path: string[]): URL {
+    return new URL(this.#baseUrl + 'fhir/R4/' + path.join('/'));
   }
 
   /**
@@ -618,12 +621,10 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to expanded ValueSet.
    */
   searchValueSet(system: string, filter: string, options: RequestInit = {}): ReadablePromise<ValueSet> {
-    return this.get(
-      this.fhirUrl('ValueSet', '$expand') +
-        `?url=${encodeURIComponent(system)}` +
-        `&filter=${encodeURIComponent(filter)}`,
-      options
-    );
+    const url = this.fhirUrl('ValueSet', '$expand');
+    url.searchParams.set('url', system);
+    url.searchParams.set('filter', filter);
+    return this.get(url.toString(), options);
   }
 
   /**
@@ -633,7 +634,7 @@ export class MedplumClient extends EventTarget {
    * @returns The resource if it is available in the cache; undefined otherwise.
    */
   getCached<T extends Resource>(resourceType: string, id: string): T | undefined {
-    const cached = this.#requestCache.get(this.fhirUrl(resourceType, id));
+    const cached = this.#requestCache.get(this.fhirUrl(resourceType, id).toString());
     return cached && !cached.isPending() ? (cached.read() as T) : undefined;
   }
 
@@ -770,7 +771,7 @@ export class MedplumClient extends EventTarget {
     }
 
     const query = `{
-      StructureDefinitionList(name: "${encodeURIComponent(resourceType)}") {
+      StructureDefinitionList(name: "${resourceType}") {
         name,
         description,
         snapshot {
@@ -790,7 +791,7 @@ export class MedplumClient extends EventTarget {
           }
         }
       }
-      SearchParameterList(base: "${encodeURIComponent(resourceType)}", _count: 100) {
+      SearchParameterList(base: "${resourceType}", _count: 100) {
         base,
         code,
         type,
@@ -954,9 +955,9 @@ export class MedplumClient extends EventTarget {
    * @returns The result of the create operation.
    */
   createBinary(data: string | File, filename: string | undefined, contentType: string): Promise<Binary> {
-    let url = this.fhirUrl('Binary');
+    const url = this.fhirUrl('Binary');
     if (filename) {
-      url += '?_filename=' + encodeURIComponent(filename);
+      url.searchParams.set('_filename', filename);
     }
     return this.post(url, data, contentType);
   }
@@ -983,9 +984,9 @@ export class MedplumClient extends EventTarget {
    * @returns The result of the create operation.
    */
   createPdf(docDefinition: Record<string, unknown>, filename?: string): Promise<Binary> {
-    let url = this.fhirUrl('Binary') + '/$pdf';
+    const url = this.fhirUrl('Binary', '$pdf');
     if (filename) {
-      url += '?_filename=' + encodeURIComponent(filename);
+      url.searchParams.set('_filename', filename);
     }
     return this.post(url, docDefinition, 'application/json');
   }
@@ -1231,12 +1232,12 @@ export class MedplumClient extends EventTarget {
    * @param url The URL to request.
    * @returns Promise to the response body as a blob.
    */
-  async download(url: string, options: RequestInit = {}): Promise<Blob> {
+  async download(url: URL | string, options: RequestInit = {}): Promise<Blob> {
     if (this.#refreshPromise) {
       await this.#refreshPromise;
     }
     this.#addFetchOptionsDefaults(options);
-    const response = await this.#fetch(url, options);
+    const response = await this.#fetch(url.toString(), options);
     return response.blob();
   }
 
@@ -1379,21 +1380,15 @@ export class MedplumClient extends EventTarget {
 
     this.#startPkce();
 
-    window.location.assign(
-      this.#authorizeUrl +
-        '?response_type=code' +
-        '&state=' +
-        encodeURIComponent(this.#storage.getString('pkceState') as string) +
-        '&client_id=' +
-        encodeURIComponent(this.#clientId) +
-        '&redirect_uri=' +
-        encodeURIComponent(getBaseUrl()) +
-        '&scope=' +
-        encodeURIComponent(DEFAULT_SCOPE) +
-        '&code_challenge_method=S256' +
-        '&code_challenge=' +
-        encodeURIComponent(this.#storage.getString('codeChallenge') as string)
-    );
+    const url = new URL(this.#authorizeUrl);
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('state', this.#storage.getString('pkceState') as string);
+    url.searchParams.set('client_id', this.#clientId);
+    url.searchParams.set('redirect_uri', getBaseUrl());
+    url.searchParams.set('scope', DEFAULT_SCOPE);
+    url.searchParams.set('code_challenge_method', 'S256');
+    url.searchParams.set('code_challenge', this.#storage.getString('codeChallenge') as string);
+    window.location.assign(url.toString());
   }
 
   /**
@@ -1414,16 +1409,13 @@ export class MedplumClient extends EventTarget {
       return Promise.reject('Invalid PCKE code verifier');
     }
 
-    return this.#fetchTokens(
-      'grant_type=authorization_code' +
-        (this.#clientId ? '&client_id=' + encodeURIComponent(this.#clientId) : '') +
-        '&code_verifier=' +
-        encodeURIComponent(codeVerifier) +
-        '&redirect_uri=' +
-        encodeURIComponent(getBaseUrl()) +
-        '&code=' +
-        encodeURIComponent(code)
-    );
+    const formBody = new URLSearchParams();
+    formBody.set('grant_type', 'authorization_code');
+    formBody.set('client_id', this.#clientId);
+    formBody.set('code_verifier', codeVerifier);
+    formBody.set('code', code);
+    formBody.set('redirect_uri', getBaseUrl());
+    return this.#fetchTokens(formBody);
   }
 
   /**
@@ -1440,14 +1432,11 @@ export class MedplumClient extends EventTarget {
       return Promise.reject('Invalid refresh token');
     }
 
-    this.#refreshPromise = this.#fetchTokens(
-      'grant_type=refresh_token' +
-        '&client_id=' +
-        encodeURIComponent(this.#clientId) +
-        '&refresh_token=' +
-        encodeURIComponent(this.#refreshToken)
-    );
-
+    const formBody = new URLSearchParams();
+    formBody.set('grant_type', 'refresh_token');
+    formBody.set('client_id', this.#clientId);
+    formBody.set('refresh_token', this.#refreshToken);
+    this.#refreshPromise = this.#fetchTokens(formBody);
     await this.#refreshPromise;
   }
 
@@ -1459,13 +1448,11 @@ export class MedplumClient extends EventTarget {
    * @returns Promise that resolves to the client profile.
    */
   async startClientLogin(clientId: string, clientSecret: string): Promise<ProfileResource> {
-    return this.#fetchTokens(
-      'grant_type=client_credentials' +
-        '&client_id=' +
-        encodeURIComponent(clientId) +
-        '&client_secret=' +
-        encodeURIComponent(clientSecret)
-    );
+    const formBody = new URLSearchParams();
+    formBody.set('grant_type', 'client_credentials');
+    formBody.set('client_id', clientId);
+    formBody.set('client_secret', clientSecret);
+    return this.#fetchTokens(formBody);
   }
 
   /**
@@ -1473,7 +1460,7 @@ export class MedplumClient extends EventTarget {
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
    * @param formBody Token parameters in URL encoded format.
    */
-  async #fetchTokens(formBody: string): Promise<ProfileResource> {
+  async #fetchTokens(formBody: URLSearchParams): Promise<ProfileResource> {
     if (!this.#tokenUrl) {
       return Promise.reject('Missing token URL');
     }

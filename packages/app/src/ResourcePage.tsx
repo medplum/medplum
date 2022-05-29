@@ -118,7 +118,7 @@ export function ResourcePage(): JSX.Element {
         {
           request: {
             method: 'GET',
-            url: `Questionnaire?subject-type=${encodeURIComponent(resourceType)}`,
+            url: `Questionnaire?subject-type=${resourceType}`,
           },
         },
       ],
@@ -306,9 +306,7 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
             .map((questionnaire) => (
               <div key={questionnaire.id}>
                 <h3>
-                  <MedplumLink
-                    to={`/forms/${questionnaire?.id}?subject=${encodeURIComponent(getReferenceString(props.resource))}`}
-                  >
+                  <MedplumLink to={`/forms/${questionnaire?.id}?subject=${getReferenceString(props.resource)}`}>
                     {questionnaire.name}
                   </MedplumLink>
                 </h3>

@@ -14,9 +14,7 @@ export function BulkAppPage(): JSX.Element {
   const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>();
 
   useEffect(() => {
-    medplum
-      .searchResources<Questionnaire>(`Questionnaire?subject-type=${encodeURIComponent(resourceType)}`)
-      .then(setQuestionnaires);
+    medplum.searchResources<Questionnaire>(`Questionnaire?subject-type=${resourceType}`).then(setQuestionnaires);
   }, [medplum, resourceType]);
 
   if (!questionnaires) {
@@ -39,9 +37,7 @@ export function BulkAppPage(): JSX.Element {
           <div key={questionnaire.id}>
             <h3>
               <MedplumLink
-                to={`/forms/${questionnaire?.id}?subject=${encodeURIComponent(
-                  ids.map((id) => `${resourceType}/${id}`).join(',')
-                )}`}
+                to={`/forms/${questionnaire?.id}?subject=` + ids.map((id) => `${resourceType}/${id}`).join(',')}
               >
                 {questionnaire.name}
               </MedplumLink>

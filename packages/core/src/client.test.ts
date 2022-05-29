@@ -160,11 +160,11 @@ function mockFetch(url: string, options: any): Promise<any> {
       resourceType: 'OperationOutcome',
       id: 'bad-request',
     };
-  } else if (method === 'GET' && url.endsWith('ValueSet/%24expand?url=system&filter=filter')) {
+  } else if (method === 'GET' && url.endsWith('ValueSet/$expand?url=system&filter=filter')) {
     result = {
       resourceType: 'ValueSet',
     };
-  } else if (method === 'POST' && url.endsWith('fhir/R4/%24graphql')) {
+  } else if (method === 'POST' && url.endsWith('fhir/R4/$graphql')) {
     result = schemaResponse;
   } else if (method === 'POST' && options.headers['Content-Type'] === 'application/fhir+json') {
     // Default "create" operation returns the body
@@ -476,7 +476,7 @@ describe('Client', () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.readPatientEverything('123');
     expect(result).toBeDefined();
-    expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123/%24everything');
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123/$everything');
   });
 
   test('Create resource', async () => {
