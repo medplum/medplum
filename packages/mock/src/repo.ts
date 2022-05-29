@@ -1,5 +1,4 @@
-import { Filter, Operator, SearchRequest } from '@medplum/core';
-import { evalFhirPath } from '@medplum/fhirpath';
+import { evalFhirPath, Filter, Operator, SearchRequest } from '@medplum/core';
 import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
 
 export class MemoryRepository {

@@ -1,7 +1,8 @@
 import { Quantity, Reference, Resource } from '@medplum/fhirtypes';
+import { calculateAge } from '../utils';
 import { Atom, SymbolAtom } from './atoms';
 import { parseDateString } from './date';
-import { calculateAge, ensureArray, fhirPathIs, isQuantity, removeDuplicates, toJsBoolean } from './utils';
+import { ensureArray, fhirPathIs, isQuantity, removeDuplicates, toJsBoolean } from './utils';
 
 /*
  * Collection of FHIRPath

@@ -1,5 +1,11 @@
-import { Filter, getSearchParameterDetails, Operator, SearchParameterType, SearchRequest } from '@medplum/core';
-import { evalFhirPath } from '@medplum/fhirpath';
+import {
+  evalFhirPath,
+  Filter,
+  getSearchParameterDetails,
+  Operator,
+  SearchParameterType,
+  SearchRequest,
+} from '@medplum/core';
 import { Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { getSearchParameter, getStructureDefinitions } from '../structure';
 

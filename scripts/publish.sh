@@ -6,7 +6,7 @@ if [[ -z "$OTP" ]]; then
   exit 1
 fi
 
-PACKAGES=("cli" "core" "definitions" "fhirpath" "fhirtypes" "mock" "ui")
+PACKAGES=("cli" "core" "definitions" "fhirtypes" "mock" "ui")
 for package in ${PACKAGES[@]}; do
   echo "Publish $package"
   pushd packages/$package

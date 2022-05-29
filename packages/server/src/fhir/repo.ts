@@ -6,6 +6,7 @@ import {
   created,
   deepEquals,
   DEFAULT_SEARCH_COUNT,
+  evalFhirPath,
   Filter,
   formatSearchQuery,
   getSearchParameterDetails,
@@ -23,7 +24,6 @@ import {
   SortRule,
   stringify,
 } from '@medplum/core';
-import { evalFhirPath } from '@medplum/fhirpath';
 import {
   AccessPolicy,
   AccessPolicyResource,

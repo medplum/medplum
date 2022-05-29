@@ -1,5 +1,4 @@
-import { assertOk, badRequest, formatAddress, formatHumanName } from '@medplum/core';
-import { evalFhirPath } from '@medplum/fhirpath';
+import { assertOk, badRequest, evalFhirPath, formatAddress, formatHumanName } from '@medplum/core';
 import { Address, BundleEntry, CodeableConcept, ContactPoint, HumanName, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { sendOutcome } from './outcomes';

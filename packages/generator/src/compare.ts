@@ -1,4 +1,4 @@
-import { evalFhirPath } from '@medplum/fhirpath';
+import { evalFhirPath } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import { XMLParser } from 'fast-xml-parser';
 import fhirpath from 'fhirpath';

@@ -1,5 +1,6 @@
 export * from './cache';
 export * from './client';
+export * from './fhirpath';
 export * from './format';
 export * from './hl7';
 export * from './outcomes';

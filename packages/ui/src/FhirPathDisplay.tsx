@@ -1,5 +1,4 @@
-import { PropertyType } from '@medplum/core';
-import { evalFhirPath } from '@medplum/fhirpath';
+import { evalFhirPath, PropertyType } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import React from 'react';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';

@@ -49,11 +49,6 @@ if [[ "$FILES_CHANGED" =~ packages/docs ]]; then
   DEPLOY_DOCS=true
 fi
 
-if [[ "$FILES_CHANGED" =~ packages/fhirpath ]]; then
-  DEPLOY_APP=true
-  DEPLOY_SERVER=true
-fi
-
 if [[ "$FILES_CHANGED" =~ packages/fhirtypes ]]; then
   DEPLOY_APP=true
   DEPLOY_SERVER=true
