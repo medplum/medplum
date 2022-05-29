@@ -47,6 +47,29 @@ export const NoCheckboxes = (): JSX.Element => {
   );
 };
 
+export const AllButtons = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Patient',
+    fields: ['id', '_lastUpdated', 'name'],
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      onLoad={(e) => console.log('onLoad', e)}
+      onClick={(e) => console.log('onClick', e)}
+      onNew={() => console.log('onNew')}
+      onExport={() => console.log('onExport')}
+      onDelete={() => console.log('onDelete')}
+      onBulk={() => console.log('onBulk')}
+      onChange={(e) => {
+        console.log('onChange', e);
+        setSearch(e.definition);
+      }}
+    />
+  );
+};
+
 export const ExtraFields = (): JSX.Element => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Patient',

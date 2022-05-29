@@ -3,6 +3,14 @@
   overflow: auto;
   text-align: left;
   margin-bottom: 20px;
+  background: var(--medplum-surface);
+}
+
+.medplum-search-control .medplum-search-summary {
+  line-height: 28px;
+  padding: 2px 6px;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 /*
@@ -53,6 +61,14 @@
   background-color: var(--medplum-gray-100);
   text-align: center;
   color: var(--medplum-gray-600);
+}
+
+.medplum-search-control > table thead th svg {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
 }
 
 /* Body cells */

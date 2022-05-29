@@ -298,15 +298,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         </div>
         {lastResult && (
           <div>
-            <span
-              style={{
-                lineHeight: '28px',
-                padding: '2px 6px',
-                fontSize: '12px',
-              }}
-            >
+            <span className="medplum-search-summary">
               {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of{' '}
-              {lastResult.total}
+              {lastResult.total?.toLocaleString()}
             </span>
             <Button testid="prev-page-button" size="small" onClick={() => emitSearchChange(movePage(search, -1))}>
               &lt;&lt;
@@ -521,9 +515,8 @@ function FilterIcon(): JSX.Element {
       className="h-6 w-6"
       fill="none"
       viewBox="0 0 24 24"
-      stroke="currentColor"
+      stroke="rgba(0, 0, 0, 0.3)"
       strokeWidth={2}
-      style={{ width: 14, height: 14, float: 'right', verticalAlign: 'text-top' }}
     >
       <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16m-7 6h7" />
     </svg>
