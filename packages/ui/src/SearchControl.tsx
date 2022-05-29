@@ -303,10 +303,11 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 lineHeight: '28px',
                 padding: '2px 6px',
                 fontSize: '12px',
+                whiteSpace: 'nowrap',
               }}
             >
               {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of{' '}
-              {lastResult.total}
+              {lastResult.total?.toLocaleString()}
             </span>
             <Button testid="prev-page-button" size="small" onClick={() => emitSearchChange(movePage(search, -1))}>
               &lt;&lt;

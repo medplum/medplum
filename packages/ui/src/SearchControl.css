@@ -3,6 +3,7 @@
   overflow: auto;
   text-align: left;
   margin-bottom: 20px;
+  background: var(--medplum-surface);
 }
 
 /*
