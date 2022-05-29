@@ -315,7 +315,8 @@ export class MedplumClient extends EventTarget {
    * @param options Optional fetch options.
    * @returns Promise to the response content.
    */
-  get<T = any>(url: string, options: RequestInit = {}): ReadablePromise<T> {
+  get<T = any>(url: URL | string, options: RequestInit = {}): ReadablePromise<T> {
+    url = url.toString();
     if (!options?.cache) {
       const cached = this.#requestCache.get(url);
       if (cached) {
@@ -340,7 +341,8 @@ export class MedplumClient extends EventTarget {
    * @param options Optional fetch options.
    * @returns Promise to the response content.
    */
-  post(url: string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
+  post(url: URL | string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
+    url = url.toString();
     if (body) {
       this.#setRequestBody(options, body);
     }
@@ -364,7 +366,8 @@ export class MedplumClient extends EventTarget {
    * @param options Optional fetch options.
    * @returns Promise to the response content.
    */
-  put(url: string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
+  put(url: URL | string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
+    url = url.toString();
     if (body) {
       this.#setRequestBody(options, body);
     }
@@ -387,7 +390,8 @@ export class MedplumClient extends EventTarget {
    * @param options Optional fetch options.
    * @returns Promise to the response content.
    */
-  patch(url: string, operations: Operation[], options: RequestInit = {}): Promise<any> {
+  patch(url: URL | string, operations: Operation[], options: RequestInit = {}): Promise<any> {
+    url = url.toString();
     this.#setRequestBody(options, operations);
     this.#setRequestContentType(options, PATCH_CONTENT_TYPE);
     this.#requestCache.delete(url);
@@ -405,7 +409,8 @@ export class MedplumClient extends EventTarget {
    * @param options Optional fetch options.
    * @returns Promise to the response content.
    */
-  delete(url: string, options: RequestInit = {}): Promise<any> {
+  delete(url: URL | string, options: RequestInit = {}): Promise<any> {
+    url = url.toString();
     this.#requestCache.delete(url);
     return this.#request('DELETE', url, options);
   }
@@ -487,10 +492,10 @@ export class MedplumClient extends EventTarget {
    * @param path The path component of the URL.
    * @returns The well-formed FHIR URL.
    */
-  fhirUrl(...path: string[]): string {
+  fhirUrl(...path: string[]): URL {
     const builder = [this.#baseUrl, 'fhir/R4'];
     path.forEach((p) => builder.push('/', p));
-    return builder.join('');
+    return new URL(builder.join(''));
   }
 
   /**
@@ -615,7 +620,7 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to expanded ValueSet.
    */
   searchValueSet(system: string, filter: string, options: RequestInit = {}): ReadablePromise<ValueSet> {
-    const url = new URL(this.fhirUrl('ValueSet', '$expand'));
+    const url = this.fhirUrl('ValueSet', '$expand');
     url.searchParams.set('url', system);
     url.searchParams.set('filter', filter);
     return this.get(url.toString(), options);
@@ -628,7 +633,7 @@ export class MedplumClient extends EventTarget {
    * @returns The resource if it is available in the cache; undefined otherwise.
    */
   getCached<T extends Resource>(resourceType: string, id: string): T | undefined {
-    const cached = this.#requestCache.get(this.fhirUrl(resourceType, id));
+    const cached = this.#requestCache.get(this.fhirUrl(resourceType, id).toString());
     return cached && !cached.isPending() ? (cached.read() as T) : undefined;
   }
 
@@ -949,9 +954,9 @@ export class MedplumClient extends EventTarget {
    * @returns The result of the create operation.
    */
   createBinary(data: string | File, filename: string | undefined, contentType: string): Promise<Binary> {
-    let url = this.fhirUrl('Binary');
+    const url = this.fhirUrl('Binary');
     if (filename) {
-      url += '?_filename=' + encodeURIComponent(filename);
+      url.searchParams.set('_filename', filename);
     }
     return this.post(url, data, contentType);
   }
@@ -978,9 +983,9 @@ export class MedplumClient extends EventTarget {
    * @returns The result of the create operation.
    */
   createPdf(docDefinition: Record<string, unknown>, filename?: string): Promise<Binary> {
-    let url = this.fhirUrl('Binary') + '/$pdf';
+    const url = this.fhirUrl('Binary', '$pdf');
     if (filename) {
-      url += '?_filename=' + encodeURIComponent(filename);
+      url.searchParams.set('_filename', filename);
     }
     return this.post(url, docDefinition, 'application/json');
   }
@@ -1187,12 +1192,12 @@ export class MedplumClient extends EventTarget {
    * @param url The URL to request.
    * @returns Promise to the response body as a blob.
    */
-  async download(url: string, options: RequestInit = {}): Promise<Blob> {
+  async download(url: URL | string, options: RequestInit = {}): Promise<Blob> {
     if (this.#refreshPromise) {
       await this.#refreshPromise;
     }
     this.#addFetchOptionsDefaults(options);
-    const response = await this.#fetch(url, options);
+    const response = await this.#fetch(url.toString(), options);
     return response.blob();
   }
 
