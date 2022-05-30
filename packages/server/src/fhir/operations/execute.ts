@@ -176,7 +176,7 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
  * @returns The parsed log result.
  */
 function parseLambdaLog(logResult: string): string {
-  const logBuffer = Buffer.from(logResult as string, 'base64');
+  const logBuffer = Buffer.from(logResult, 'base64');
   const log = logBuffer.toString('ascii');
   if (!log.startsWith('START RequestId: ')) {
     return log;
