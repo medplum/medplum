@@ -147,12 +147,11 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
   // Execute the command
   try {
     const response = await client.send(command);
-    const logBuffer = Buffer.from(response.LogResult as string, 'base64');
     const responseStr = response.Payload ? new TextDecoder().decode(response.Payload) : undefined;
     const returnValue = responseStr && isJsonContentType(contentType) ? JSON.parse(responseStr) : responseStr;
     return {
-      success: true,
-      logResult: logBuffer.toString('ascii'),
+      success: !response.FunctionError,
+      logResult: parseLambdaLog(response.LogResult as string),
       returnValue,
     };
   } catch (err) {
@@ -161,6 +160,51 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
       logResult: (err as Error).message,
     };
   }
+}
+
+/**
+ * Parses the AWS Lambda log result.
+ *
+ * The raw logs include markup metadata such as timestamps and billing information.
+ *
+ * We only want to include the actual log contents in the AuditEvent,
+ * so we attempt to scrub away all of that extra metadata.
+ *
+ * See: https://docs.aws.amazon.com/lambda/latest/dg/nodejs-logging.html
+ *
+ * @param logResult The raw log result from the AWS lambda event.
+ * @returns The parsed log result.
+ */
+function parseLambdaLog(logResult: string): string {
+  const logBuffer = Buffer.from(logResult, 'base64');
+  const log = logBuffer.toString('ascii');
+  if (!log.startsWith('START RequestId: ')) {
+    return log;
+  }
+  const lines = log.split('\n');
+  const requestId = lines[0].split(' ')[2];
+  const requestRegex = new RegExp(`${requestId}\\s+\\w+`);
+  const result = [];
+  for (const line of lines) {
+    if (
+      line.startsWith(`START RequestId: ${requestId}`) ||
+      line.startsWith(`END RequestId: ${requestId}`) ||
+      line.startsWith(`REPORT RequestId: ${requestId}`)
+    ) {
+      // Ignore the metadata lines
+      continue;
+    }
+    const match = requestRegex.exec(line);
+    if (match) {
+      const trimmed = line.substring(match.index + match[0].length).trimStart();
+      if (!trimmed.startsWith('Invoke Error')) {
+        result.push(trimmed);
+      }
+    } else {
+      result.push(line);
+    }
+  }
+  return result.join('\n');
 }
 
 /**

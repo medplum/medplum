@@ -4,17 +4,22 @@ import request from 'supertest';
 import { initApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { closeDatabase, initDatabase } from '../../database';
-import { initTestAuth } from '../../test.setup';
 import { initKeys } from '../../oauth';
 import { seedDatabase } from '../../seed';
+import { initTestAuth } from '../../test.setup';
 
 jest.mock('@aws-sdk/client-lambda', () => {
   const original = jest.requireActual('@aws-sdk/client-lambda');
 
   class LambdaClient {
     async send(): Promise<any> {
+      // LogResult:
+      // START RequestId: 146fcfcf-c32b-43f5-82a6-ee0f3132d873 Version: $LATEST
+      // 2022-05-30T16:12:22.685Z	146fcfcf-c32b-43f5-82a6-ee0f3132d873	INFO test
+      // END RequestId: 146fcfcf-c32b-43f5-82a6-ee0f3132d873
+      // REPORT RequestId: 146fcfcf-c32b-43f5-82a6-ee0f3132d873
       return {
-        LogResult: '',
+        LogResult: `U1RBUlQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMgVmVyc2lvbjogJExBVEVTVAoyMDIyLTA1LTMwVDE2OjEyOjIyLjY4NVoJMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODczCUlORk8gdGVzdApFTkQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMKUkVQT1JUIFJlcXVlc3RJZDogMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODcz`,
         Payload: '',
       };
     }
