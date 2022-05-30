@@ -22,10 +22,19 @@ export async function handler(event, context) {
   const { accessToken, input, contentType } = event;
   const medplum = new MedplumClient({ fetch });
   medplum.setAccessToken(accessToken);
-  return userCode.handler(medplum, {
-    input: contentType === 'x-application/hl7-v2+er7' ? Hl7Message.parse(input) : input,
-    contentType,
-  });
+  try {
+    return await userCode.handler(medplum, {
+      input: contentType === 'x-application/hl7-v2+er7' ? Hl7Message.parse(input) : input,
+      contentType,
+    });
+  } catch (err) {
+    if (err instanceof Error) {
+      console.log('Unhandled error: ' + err.message + '\\n' + err.stack);
+    } else {
+      console.log('Unhandled error: ' + err);
+    }
+    throw err;
+  }
 }
 `;
 

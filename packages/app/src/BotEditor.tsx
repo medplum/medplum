@@ -61,7 +61,11 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
 
   async function executeBot(): Promise<void> {
     const input = await getSampleInput();
-    medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$execute'), { input });
+    const result = await medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$execute'), input);
+    await sendCommand(outputFrameRef.current as HTMLIFrameElement, {
+      command: 'setValue',
+      value: result,
+    });
   }
 
   return (
