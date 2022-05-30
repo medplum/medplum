@@ -37,16 +37,16 @@ export class HumanNameTable extends LookupTable<HumanName> {
   }
 
   /**
-   * Returns true if the search parameter is an "" parameter.
+   * Returns true if the search parameter is an HumanName parameter.
    * @param searchParam The search parameter.
-   * @returns True if the search parameter is an "identifier" parameter.
+   * @returns True if the search parameter is an HumanName parameter.
    */
   isIndexed(searchParam: SearchParameter): boolean {
     return HumanNameTable.#knownParams.has(searchParam.id as string);
   }
 
   /**
-   * Indexes a resource identifier values.
+   * Indexes a resource HumanName values.
    * Attempts to reuse existing identifiers if they are correct.
    * @param resource The resource to index.
    * @returns Promise on completion.

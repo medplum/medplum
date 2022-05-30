@@ -1,4 +1,4 @@
-import { Patient } from '@medplum/fhirtypes';
+import { Patient, Resource } from '@medplum/fhirtypes';
 import {
   arrayBufferToBase64,
   arrayBufferToHex,
@@ -10,6 +10,7 @@ import {
   getDateProperty,
   getDisplayString,
   getExtensionValue,
+  getIdentifier,
   getImageSrc,
   getQuestionnaireAnswers,
   isLowerCase,
@@ -243,6 +244,26 @@ describe('Core Utils', () => {
         ],
       })
     ).toMatchObject({ q1: { valueString: 'xyz' } });
+  });
+
+  test('Get identifier', () => {
+    expect(getIdentifier({} as unknown as Resource, 'x')).toBeUndefined();
+    expect(getIdentifier({ identifier: null } as unknown as Resource, 'x')).toBeUndefined();
+    expect(getIdentifier({ identifier: undefined } as unknown as Resource, 'x')).toBeUndefined();
+    expect(getIdentifier({ identifier: [] } as unknown as Resource, 'x')).toBeUndefined();
+    expect(getIdentifier({ identifier: {} } as unknown as Resource, 'x')).toBeUndefined();
+
+    expect(getIdentifier({ resourceType: 'Patient', identifier: [] }, 'x')).toBeUndefined();
+    expect(getIdentifier({ resourceType: 'Patient', identifier: [{ system: 'x', value: 'y' }] }, 'x')).toEqual('y');
+    expect(getIdentifier({ resourceType: 'Patient', identifier: [{ system: 'y', value: 'y' }] }, 'x')).toBeUndefined();
+
+    expect(getIdentifier({ resourceType: 'SpecimenDefinition', identifier: {} }, 'x')).toBeUndefined();
+    expect(getIdentifier({ resourceType: 'SpecimenDefinition', identifier: { system: 'x', value: 'y' } }, 'x')).toEqual(
+      'y'
+    );
+    expect(
+      getIdentifier({ resourceType: 'SpecimenDefinition', identifier: { system: 'y', value: 'y' } }, 'x')
+    ).toBeUndefined();
   });
 
   test('Get extension value', () => {

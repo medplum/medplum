@@ -7,8 +7,8 @@ import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
 /**
- * The AddressTable class is used to index and search "name" properties on "Person" resources.
- * Each name is represented as a separate row in the "Address" table.
+ * The AddressTable class is used to index and search Address properties.
+ * Each Address is represented as a separate row in the "Address" table.
  */
 export class AddressTable extends LookupTable<Address> {
   static readonly #knownParams: Set<string> = new Set<string>([
@@ -66,17 +66,17 @@ export class AddressTable extends LookupTable<Address> {
   }
 
   /**
-   * Returns true if the search parameter is an "" parameter.
+   * Returns true if the search parameter is an Address parameter.
    * @param searchParam The search parameter.
-   * @returns True if the search parameter is an "identifier" parameter.
+   * @returns True if the search parameter is an Address parameter.
    */
   isIndexed(searchParam: SearchParameter): boolean {
     return AddressTable.#knownParams.has(searchParam.id as string);
   }
 
   /**
-   * Indexes a resource identifier values.
-   * Attempts to reuse existing identifiers if they are correct.
+   * Indexes a resource Address values.
+   * Attempts to reuse existing Addresses if they are correct.
    * @param resource The resource to index.
    * @returns Promise on completion.
    */

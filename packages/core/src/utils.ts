@@ -2,6 +2,7 @@ import {
   Attachment,
   Device,
   Extension,
+  Identifier,
   Patient,
   Practitioner,
   QuestionnaireResponse,
@@ -250,6 +251,31 @@ function buildQuestionnaireAnswerItems(
       buildQuestionnaireAnswerItems(item.item, result);
     }
   }
+}
+
+/**
+ * Returns the resource identifier for the given system.
+ *
+ * If multiple identifiers exist with the same system, the first one is returned.
+ *
+ * If the system is not found, then returns undefined.
+ *
+ * @param resource The resource to check.
+ * @param system The identifier system.
+ * @returns The identifier value if found; otherwise undefined.
+ */
+export function getIdentifier(resource: Resource, system: string): string | undefined {
+  const identifiers = (resource as any).identifier as Identifier[] | Identifier | undefined;
+  if (!identifiers) {
+    return undefined;
+  }
+  const array = Array.isArray(identifiers) ? identifiers : [identifiers];
+  for (const identifier of array) {
+    if (identifier.system === system) {
+      return identifier.value;
+    }
+  }
+  return undefined;
 }
 
 /**
