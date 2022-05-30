@@ -14,7 +14,10 @@ jest.mock('@aws-sdk/client-lambda', () => {
   class LambdaClient {
     async send(): Promise<any> {
       return {
-        LogResult: '',
+        LogResult: `START RequestId: 146fcfcf-c32b-43f5-82a6-ee0f3132d873 Version: $LATEST
+2022-05-30T16:12:22.685Z	146fcfcf-c32b-43f5-82a6-ee0f3132d873	INFO test
+END RequestId: 146fcfcf-c32b-43f5-82a6-ee0f3132d873
+REPORT RequestId: 146fcfcf-c32b-43f5-82a6-ee0f3132d873`,
         Payload: '',
       };
     }
