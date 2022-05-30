@@ -7,8 +7,8 @@ import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
 /**
- * The ContactPointTable class is used to index and search "name" properties on "Person" resources.
- * Each name is represented as a separate row in the "ContactPoint" table.
+ * The ContactPointTable class is used to index and search ContactPoint properties.
+ * Each ContactPoint is represented as a separate row in the "ContactPoint" table.
  */
 export class ContactPointTable extends LookupTable<ContactPoint> {
   static readonly #knownParams: Set<string> = new Set<string>([
@@ -36,16 +36,16 @@ export class ContactPointTable extends LookupTable<ContactPoint> {
   }
 
   /**
-   * Returns true if the search parameter is an "" parameter.
+   * Returns true if the search parameter is an ContactPoint parameter.
    * @param searchParam The search parameter.
-   * @returns True if the search parameter is an "identifier" parameter.
+   * @returns True if the search parameter is an ContactPoint parameter.
    */
   isIndexed(searchParam: SearchParameter): boolean {
     return ContactPointTable.#knownParams.has(searchParam.id as string);
   }
 
   /**
-   * Indexes a resource identifier values.
+   * Indexes a resource ContactPoint values.
    * Attempts to reuse existing identifiers if they are correct.
    * @param resource The resource to index.
    * @returns Promise on completion.
