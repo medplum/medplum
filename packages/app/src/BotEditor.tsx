@@ -1,5 +1,5 @@
 import { Bot } from '@medplum/fhirtypes';
-import { Button, useMedplum } from '@medplum/ui';
+import { Button, useMedplum } from '@medplum/react';
 import React, { useRef } from 'react';
 import { BotRunner } from './BotRunner';
 import { CodeEditor } from './CodeEditor';

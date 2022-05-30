@@ -18,7 +18,6 @@ npm install @medplum/mock
 
 Note the following peer dependencies:
 - [@medplum/core](https://www.npmjs.com/package/@medplum/core)
-- [@medplum/fhirpath](https://www.npmjs.com/package/@medplum/fhirpath)
 
 ## Usage
 

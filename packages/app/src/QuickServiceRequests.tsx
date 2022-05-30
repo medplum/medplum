@@ -1,6 +1,6 @@
 import { getReferenceString, Operator } from '@medplum/core';
 import { BundleEntry, Patient, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
-import { MedplumLink, sortByDateAndPriority, useMedplum, useResource } from '@medplum/ui';
+import { MedplumLink, sortByDateAndPriority, useMedplum, useResource } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { getPatient } from './utils';
 import './QuickServiceRequests.css';

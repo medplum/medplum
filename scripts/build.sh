@@ -16,7 +16,7 @@ npm --version
 [ ! -d "node_modules" ] && npm ci
 
 # Build
-BUILD_ORDER=("definitions" "core" "mock" "ui" "app" "graphiql" "server" "infra" "docs" "cli")
+BUILD_ORDER=("definitions" "core" "mock" "react" "app" "graphiql" "server" "infra" "docs" "cli")
 for PACKAGE in ${BUILD_ORDER[@]}; do
   pushd "packages/$PACKAGE"
   npm run build
@@ -24,7 +24,7 @@ for PACKAGE in ${BUILD_ORDER[@]}; do
 done
 
 # Test
-TEST_ORDER=("core" "mock" "ui" "app" "infra" "cli" "server")
+TEST_ORDER=("core" "mock" "react" "app" "infra" "cli" "server")
 for PACKAGE in ${TEST_ORDER[@]}; do
   pushd "packages/$PACKAGE"
   node --expose-gc --trace-uncaught --max_old_space_size=4096 ../../node_modules/jest/bin/jest.js --runInBand --logHeapUsage --coverage
@@ -40,8 +40,8 @@ cp packages/core/coverage/coverage-final.json coverage/packages/coverage-core.js
 cp packages/cli/coverage/coverage-final.json coverage/packages/coverage-cli.json
 cp packages/infra/coverage/coverage-final.json coverage/packages/coverage-infra.json
 cp packages/mock/coverage/coverage-final.json coverage/packages/coverage-mock.json
+cp packages/react/coverage/coverage-final.json coverage/packages/coverage-react.json
 cp packages/server/coverage/coverage-final.json coverage/packages/coverage-server.json
-cp packages/ui/coverage/coverage-final.json coverage/packages/coverage-ui.json
 npx nyc merge coverage/packages coverage/combined/coverage.json
 npx nyc report -t coverage/combined --report-dir coverage --reporter=lcov
 

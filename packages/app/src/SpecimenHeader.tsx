@@ -1,5 +1,5 @@
 import { Reference, Specimen } from '@medplum/fhirtypes';
-import { DateTimeDisplay, Scrollable, useResource } from '@medplum/ui';
+import { DateTimeDisplay, Scrollable, useResource } from '@medplum/react';
 import React from 'react';
 
 export interface SpecimenHeaderProps {

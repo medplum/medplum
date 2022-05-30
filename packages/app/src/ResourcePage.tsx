@@ -32,7 +32,7 @@ import {
   TabSwitch,
   TextArea,
   useMedplum,
-} from '@medplum/ui';
+} from '@medplum/react';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { BotEditor } from './BotEditor';

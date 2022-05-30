@@ -1,4 +1,4 @@
-import { Logo, SignInForm } from '@medplum/ui';
+import { Logo, SignInForm } from '@medplum/react';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 

@@ -21,6 +21,7 @@ describe('ErrorBoundary', () => {
   });
 
   test('Handles error', () => {
+    console.error = jest.fn();
     render(
       <div>
         <div>outside</div>
@@ -33,5 +34,6 @@ describe('ErrorBoundary', () => {
     expect(screen.getByText('outside')).toBeInTheDocument();
     expect(screen.queryByText('inside')).toBeNull();
     expect(screen.getByText('Something went wrong.')).toBeInTheDocument();
+    expect(console.error).toHaveBeenCalled();
   });
 });

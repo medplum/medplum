@@ -1,5 +1,5 @@
 import { getReferenceString } from '@medplum/core';
-import { ErrorBoundary, FooterLinks, Header, Loading, useMedplum, useMedplumProfile } from '@medplum/ui';
+import { ErrorBoundary, FooterLinks, Header, Loading, useMedplum, useMedplumProfile } from '@medplum/react';
 import React, { Suspense } from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 import { CreateBotPage } from './admin/CreateBotPage';
@@ -21,8 +21,8 @@ import { ResourceVersionPage } from './ResourceVersionPage';
 import { SetPasswordPage } from './SetPasswordPage';
 import { SignInPage } from './SignInPage';
 import { SmartSearchPage } from './SmartSearchPage';
-import '@medplum/ui/defaulttheme.css';
-import '@medplum/ui/styles.css';
+import '@medplum/react/defaulttheme.css';
+import '@medplum/react/styles.css';
 import './App.css';
 
 export function App(): JSX.Element {

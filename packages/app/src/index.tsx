@@ -1,5 +1,5 @@
 import { MedplumClient } from '@medplum/core';
-import { MedplumProvider } from '@medplum/ui';
+import { MedplumProvider } from '@medplum/react';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';

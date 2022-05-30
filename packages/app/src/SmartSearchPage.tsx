@@ -1,4 +1,4 @@
-import { MemoizedFhirPathTable, SmartSearchField } from '@medplum/ui';
+import { MemoizedFhirPathTable, SmartSearchField } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 

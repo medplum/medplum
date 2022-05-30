@@ -11,5 +11,5 @@ npx npm-check-updates -u --packageFile packages/generator/package.json
 npx npm-check-updates -u --packageFile packages/graphiql/package.json
 npx npm-check-updates -u --packageFile packages/infra/package.json
 npx npm-check-updates -u --packageFile packages/server/package.json
-npx npm-check-updates -u --packageFile packages/ui/package.json
+npx npm-check-updates -u --packageFile packages/react/package.json
 

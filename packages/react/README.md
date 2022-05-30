@@ -20,12 +20,11 @@ Check out a live demo: [https://docs.medplum.com/storybook/index.html](https://d
 Add as a dependency:
 
 ```
-npm install @medplum/ui
+npm install @medplum/react
 ```
 
 Note the following peer dependencies:
 - [@medplum/core](https://www.npmjs.com/package/@medplum/core)
-- [@medplum/fhirpath](https://www.npmjs.com/package/@medplum/fhirpath)
 - [react](https://www.npmjs.com/package/react)
 - [react-dom](https://www.npmjs.com/package/react-dom)
 - [react-router-dom](https://www.npmjs.com/package/react-router-dom)
@@ -34,7 +33,7 @@ Note the following peer dependencies:
 
 ```tsx
 import { MedplumClient } from '@medplum/core';
-import { MedplumProvider } from '@medplum/ui';
+import { MedplumProvider } from '@medplum/react';
 
 const medplum = new MedplumClient();
 

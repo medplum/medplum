@@ -78,11 +78,11 @@ Go back to the terminal. Stop the Node JS process using Ctrl+C.
 
 Next let's add Medplum dependencies.
 
-npm install @medplum/core @medplum/ui
+npm install @medplum/core @medplum/react
 
 The @medplum/core package includes the basic Medplum client and utilities.
 
-The @medplum/ui package includes the React components.
+The @medplum/react package includes the React components.
 
 ## Add Medplum authentication
 
@@ -94,7 +94,7 @@ First we need to connect our Medplum account. Open "src/index.tsx". Add a couple
 
 ```tsx
 import { MedplumClient } from '@medplum/core';
-import { MedplumProvider } from '@medplum/ui';
+import { MedplumProvider } from '@medplum/react';
 ```
 
 Add the Medplum client using the Client Application ID from before. Be sure to replace `YOUR_CLIENT_ID_HERE` with the actual client ID.
@@ -119,7 +119,7 @@ When you're done, src/index.tsx should look like this:
 
 ```tsx
 import { MedplumClient } from '@medplum/core';
-import { MedplumProvider } from '@medplum/ui';
+import { MedplumProvider } from '@medplum/react';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
@@ -152,7 +152,7 @@ Let's add a patient timeline to the app. Open "src/App.tsx".
 Add a few Medplum imports:
 
 ```tsx
-import { PatientTimeline, SignInForm, useMedplumProfile } from '@medplum/ui';
+import { PatientTimeline, SignInForm, useMedplumProfile } from '@medplum/react';
 ```
 
 Replace the App function with the following. Be sure to replace `YOUR_PATIENT_ID_HERE` with the actual patient ID.

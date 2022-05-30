@@ -1,5 +1,5 @@
 import { Patient, Reference, Resource, Specimen } from '@medplum/fhirtypes';
-import { createScriptTag } from '@medplum/ui';
+import { createScriptTag } from '@medplum/react';
 
 export function getPatient(resource: Resource): Patient | Reference<Patient> | undefined {
   if (resource.resourceType === 'Patient') {

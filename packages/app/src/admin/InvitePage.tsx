@@ -1,5 +1,5 @@
 import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Input, MedplumLink, useMedplum } from '@medplum/ui';
+import { Button, Document, Form, FormSection, Input, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AccessPolicyInput } from './AccessPolicyInput';
