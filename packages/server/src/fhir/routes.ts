@@ -2,14 +2,13 @@ import { assertOk, badRequest, getStatus } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { Operation } from 'fast-json-patch';
-import { DocumentNode, execute, parse, validate } from 'graphql';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
 import { authenticateToken } from '../oauth';
 import { processBatch } from './batch';
 import { csvHandler } from './csv';
 import { expandOperator } from './expand';
-import { getRootSchema } from './graphql';
+import { graphqlHandler } from './graphql';
 import { getCapabilityStatement } from './metadata';
 import { deployHandler } from './operations/deploy';
 import { executeHandler } from './operations/execute';
@@ -108,43 +107,7 @@ protectedRoutes.post('/Bot/:id/([$]|%24)execute', executeHandler);
 protectedRoutes.post('/Bot/:id/([$]|%24)deploy', deployHandler);
 
 // GraphQL
-protectedRoutes.post(
-  '/([$]|%24)graphql',
-  asyncWrap(async (req: Request, res: Response) => {
-    const query = req.body.query;
-    if (!query) {
-      res.status(400).json({ text: 'Must provide query string.' });
-      return;
-    }
-
-    let document: DocumentNode;
-    try {
-      document = parse(query);
-    } catch (err) {
-      res.status(400).json({ text: 'GraphQL syntax error.' });
-      return;
-    }
-
-    const schema = getRootSchema();
-    const validationErrors = validate(schema, document);
-    if (validationErrors.length > 0) {
-      res.status(400).json({ text: 'GraphQL validation error.' });
-      return;
-    }
-
-    try {
-      const result = await execute({
-        schema,
-        document,
-        contextValue: { res },
-      });
-      res.status(result.data ? 200 : 400).json(result);
-    } catch (err) {
-      console.log('graphql err', err);
-      res.sendStatus(500);
-    }
-  })
-);
+protectedRoutes.post('/([$]|%24)graphql', graphqlHandler);
 
 // Create batch
 protectedRoutes.post(
@@ -331,7 +294,7 @@ function isFhirJsonContentType(req: Request): boolean {
   return !!(req.is('application/json') || req.is('application/fhir+json'));
 }
 
-export async function sendResponse(res: Response, outcome: OperationOutcome, body: any): Promise<void> {
+async function sendResponse(res: Response, outcome: OperationOutcome, body: any): Promise<void> {
   const repo = res.locals.repo as Repository;
   res.status(getStatus(outcome)).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, body));
 }
