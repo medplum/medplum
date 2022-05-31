@@ -1,6 +1,9 @@
-import { assertOk, Filter, getReferenceString, Operator, SearchRequest } from '@medplum/core';
+import { assertOk, badRequest, Filter, getReferenceString, Operator, SearchRequest } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
+import { Request, Response } from 'express';
 import {
+  DocumentNode,
+  execute,
   GraphQLBoolean,
   GraphQLEnumType,
   GraphQLEnumValueConfigMap,
@@ -18,9 +21,14 @@ import {
   GraphQLSchema,
   GraphQLString,
   GraphQLUnionType,
+  parse,
+  validate,
 } from 'graphql';
 import { JSONSchema4 } from 'json-schema';
+import { asyncWrap } from '../async';
+import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
+import { rewriteAttachments, RewriteMode } from './rewrite';
 import { getResourceTypes, getSchemaDefinition } from './schema';
 import { parseSearchRequest } from './search';
 import { getSearchParameters } from './structure';
@@ -49,7 +57,49 @@ const typeCache: Record<string, GraphQLOutputType | undefined> = {
 
 let rootSchema: GraphQLSchema | undefined;
 
-export function getRootSchema(): GraphQLSchema {
+/**
+ * Handles FHIR GraphQL requests.
+ *
+ * See: https://www.hl7.org/fhir/graphql.html
+ */
+export const graphqlHandler = asyncWrap(async (req: Request, res: Response) => {
+  const query = req.body.query;
+  if (!query) {
+    sendOutcome(res, badRequest('Must provide query.'));
+    return;
+  }
+
+  let document: DocumentNode;
+  try {
+    document = parse(query);
+  } catch (err) {
+    sendOutcome(res, badRequest('GraphQL syntax error.'));
+    return;
+  }
+
+  const schema = getRootSchema();
+  const validationErrors = validate(schema, document);
+  if (validationErrors.length > 0) {
+    sendOutcome(res, badRequest('GraphQL validation error.'));
+    return;
+  }
+
+  try {
+    const result = await execute({
+      schema,
+      document,
+      contextValue: { res },
+    });
+    const status = result.data ? 200 : 400;
+    const repo = res.locals.repo as Repository;
+    res.status(status).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, result));
+  } catch (err) {
+    console.log('graphql err', err);
+    res.sendStatus(500);
+  }
+});
+
+function getRootSchema(): GraphQLSchema {
   if (!rootSchema) {
     rootSchema = buildRootSchema();
   }

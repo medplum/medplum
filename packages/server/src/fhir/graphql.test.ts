@@ -1,17 +1,22 @@
 import { createReference, getReferenceString } from '@medplum/core';
-import { Encounter, Patient, ServiceRequest } from '@medplum/fhirtypes';
+import { Binary, Encounter, Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import { mkdtempSync, rmSync } from 'fs';
+import { sep } from 'path';
 import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { initTestAuth } from '../test.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
+import { initTestAuth } from '../test.setup';
+import { initBinaryStorage } from './storage';
 
 const app = express();
+const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
 let accessToken: string;
+let binary: Binary;
 let patient: Patient;
 let serviceRequest: ServiceRequest;
 let encounter1: Encounter;
@@ -23,8 +28,20 @@ describe('GraphQL', () => {
     await initDatabase(config.database);
     await seedDatabase();
     await initApp(app);
+    await initBinaryStorage('file:' + binaryDir);
     await initKeys(config);
     accessToken = await initTestAuth();
+
+    // Create a profile picture
+    const res0 = await request(app)
+      .post(`/fhir/R4/Binary`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Binary',
+      });
+    expect(res0.status).toBe(201);
+    binary = res0.body as Binary;
 
     // Creat a simple patient
     const res1 = await request(app)
@@ -37,6 +54,12 @@ describe('GraphQL', () => {
           {
             given: ['Alice'],
             family: 'Smith',
+          },
+        ],
+        photo: [
+          {
+            contentType: 'image/jpeg',
+            url: getReferenceString(binary),
           },
         ],
       });
@@ -94,6 +117,7 @@ describe('GraphQL', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    rmSync(binaryDir, { recursive: true, force: true });
   });
 
   test('Get schema', async () => {
@@ -211,12 +235,15 @@ describe('GraphQL', () => {
         Patient(id: "${patient.id}") {
           id
           name { given }
+          photo { url }
         }
       }
     `,
       });
     expect(res.status).toBe(200);
     expect(res.body.data.Patient).toBeDefined();
+    expect(res.body.data.Patient.photo[0].url).toBeDefined();
+    expect(res.body.data.Patient.photo[0].url).toMatch(/^http/);
   });
 
   test('Read by ID not found', async () => {

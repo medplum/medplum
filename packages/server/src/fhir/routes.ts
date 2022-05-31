@@ -1,7 +1,6 @@
 import { assertOk, badRequest, getStatus } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
-import { graphqlHTTP } from 'express-graphql';
 import { Operation } from 'fast-json-patch';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
@@ -9,10 +8,10 @@ import { authenticateToken } from '../oauth';
 import { processBatch } from './batch';
 import { csvHandler } from './csv';
 import { expandOperator } from './expand';
-import { getRootSchema } from './graphql';
+import { graphqlHandler } from './graphql';
 import { getCapabilityStatement } from './metadata';
-import { executeHandler } from './operations/execute';
 import { deployHandler } from './operations/deploy';
+import { executeHandler } from './operations/execute';
 import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
@@ -108,12 +107,7 @@ protectedRoutes.post('/Bot/:id/([$]|%24)execute', executeHandler);
 protectedRoutes.post('/Bot/:id/([$]|%24)deploy', deployHandler);
 
 // GraphQL
-protectedRoutes.use(
-  '/([$]|%24)graphql',
-  graphqlHTTP(() => ({
-    schema: getRootSchema(),
-  }))
-);
+protectedRoutes.post('/([$]|%24)graphql', graphqlHandler);
 
 // Create batch
 protectedRoutes.post(
@@ -300,7 +294,7 @@ function isFhirJsonContentType(req: Request): boolean {
   return !!(req.is('application/json') || req.is('application/fhir+json'));
 }
 
-export async function sendResponse(res: Response, outcome: OperationOutcome, body: any): Promise<void> {
+async function sendResponse(res: Response, outcome: OperationOutcome, body: any): Promise<void> {
   const repo = res.locals.repo as Repository;
   res.status(getStatus(outcome)).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, body));
 }
