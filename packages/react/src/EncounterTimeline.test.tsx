@@ -9,18 +9,20 @@ import { MedplumProvider } from './MedplumProvider';
 const medplum = new MockClient();
 
 describe('EncounterTimeline', () => {
-  function setup(args: EncounterTimelineProps): void {
-    render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <EncounterTimeline {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
-    );
+  async function setup(args: EncounterTimelineProps): Promise<void> {
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <EncounterTimeline {...args} />
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+    });
   }
 
   test('Renders reference', async () => {
-    setup({ encounter: createReference(HomerEncounter) });
+    await setup({ encounter: createReference(HomerEncounter) });
 
     await waitFor(() => screen.getAllByTestId('timeline-item'));
 
@@ -29,7 +31,7 @@ describe('EncounterTimeline', () => {
   });
 
   test('Renders resource', async () => {
-    setup({ encounter: HomerEncounter });
+    await setup({ encounter: HomerEncounter });
 
     await waitFor(() => screen.getAllByTestId('timeline-item'));
 
@@ -38,7 +40,7 @@ describe('EncounterTimeline', () => {
   });
 
   test('Create comment', async () => {
-    setup({ encounter: HomerEncounter });
+    await setup({ encounter: HomerEncounter });
 
     // Wait for initial load
     await waitFor(() => screen.getAllByTestId('timeline-item'));
@@ -65,7 +67,7 @@ describe('EncounterTimeline', () => {
   });
 
   test('Upload media', async () => {
-    setup({ encounter: HomerEncounter });
+    await setup({ encounter: HomerEncounter });
 
     // Wait for initial load
     await waitFor(() => screen.getAllByTestId('timeline-item'));

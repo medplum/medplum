@@ -11,20 +11,20 @@ import { ServiceRequestTimeline, ServiceRequestTimelineProps } from './ServiceRe
 const medplum = new MockClient();
 
 describe('ServiceRequestTimeline', () => {
-  function setup(args: ServiceRequestTimelineProps): void {
-    render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <ServiceRequestTimeline {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
-    );
+  async function setup(args: ServiceRequestTimelineProps): Promise<void> {
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <ServiceRequestTimeline {...args} />
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+    });
   }
 
   test('Renders reference', async () => {
-    setup({
-      serviceRequest: createReference(HomerServiceRequest),
-    });
+    await setup({ serviceRequest: createReference(HomerServiceRequest) });
 
     await waitFor(() => screen.getAllByTestId('timeline-item'));
 
@@ -33,7 +33,7 @@ describe('ServiceRequestTimeline', () => {
   });
 
   test('Renders resource', async () => {
-    setup({ serviceRequest: HomerServiceRequest });
+    await setup({ serviceRequest: HomerServiceRequest });
 
     await waitFor(() => screen.getAllByTestId('timeline-item'));
 
@@ -42,7 +42,7 @@ describe('ServiceRequestTimeline', () => {
   });
 
   test('Create comment', async () => {
-    setup({ serviceRequest: HomerServiceRequest });
+    await setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
     await waitFor(() => screen.getAllByTestId('timeline-item'));
@@ -69,7 +69,7 @@ describe('ServiceRequestTimeline', () => {
   });
 
   test('Upload media', async () => {
-    setup({ serviceRequest: HomerServiceRequest });
+    await setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
     await waitFor(() => screen.getAllByTestId('timeline-item'));
@@ -98,7 +98,7 @@ describe('ServiceRequestTimeline', () => {
       payload: [{ contentString: randomUUID() }],
     });
 
-    setup({ serviceRequest: HomerServiceRequest });
+    await setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
     await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
@@ -136,7 +136,7 @@ describe('ServiceRequestTimeline', () => {
       payload: [{ contentString: randomUUID() }],
     });
 
-    setup({ serviceRequest: HomerServiceRequest });
+    await setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
     await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
@@ -161,7 +161,7 @@ describe('ServiceRequestTimeline', () => {
       payload: [{ contentString: randomUUID() }],
     });
 
-    setup({ serviceRequest: HomerServiceRequest });
+    await setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
     await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
@@ -186,7 +186,7 @@ describe('ServiceRequestTimeline', () => {
       payload: [{ contentString: randomUUID() }],
     });
 
-    setup({ serviceRequest: HomerServiceRequest });
+    await setup({ serviceRequest: HomerServiceRequest });
 
     // Wait for initial load
     await waitFor(() => screen.getByLabelText('Actions for ' + getReferenceString(comment)));
