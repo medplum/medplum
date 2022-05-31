@@ -19,9 +19,8 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Elem
   return (
     <>
       {values.map((v: any, index: number) => (
-        <div>
+        <div key={`${index}-${values.length}`}>
           <ResourcePropertyDisplay
-            key={`${index}-${values.length}`}
             arrayElement={true}
             schema={props.schema}
             property={property}
