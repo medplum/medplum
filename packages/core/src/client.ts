@@ -29,7 +29,7 @@ import { ReadablePromise } from './readablepromise';
 import { formatSearchQuery, parseSearchDefinition, SearchRequest } from './search';
 import { ClientStorage } from './storage';
 import { createSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
-import { arrayBufferToBase64, createReference, ProfileResource, stringify } from './utils';
+import { arrayBufferToBase64, createReference, ProfileResource } from './utils';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_SCOPE = 'launch/patient openid fhirUser offline_access user/*.*';
@@ -1327,7 +1327,7 @@ export class MedplumClient extends EventTarget {
     if (typeof data === 'string' || (typeof File !== 'undefined' && data instanceof File)) {
       options.body = data;
     } else if (data) {
-      options.body = stringify(data);
+      options.body = JSON.stringify(data);
     }
   }
 
