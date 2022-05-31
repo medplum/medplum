@@ -58,6 +58,8 @@ Linking the Eligibility Check Service to Medplum is done through [Medplum Bots](
 
 Opkit will respond with the results of the eligibility check. Request data is stored in Medplum as a `CoverageEligibilityRequest`. Response data is stored as a `CoverageEligibilityResponse`. If the policy holder's plan is inactive, an email alert is triggered.
 
+Full [bot source code](https://github.com/medplum/medplum-demo-bots/blob/main/src/eligibility-check-opkit.ts) and [tests](https://github.com/medplum/medplum-demo-bots/blob/main/src/eligibility-check-opkit.test.ts) are available on [online](https://github.com/medplum/medplum-demo-bots).
+
 - Here's how to create a bot that will listen for `Coverage` object changes:
   - First, [create a bot](https://app.medplum.com/admin/project) called Coverage Eligibility Bot. Save the `id`.
   - Then, clone [demo bot repo](https://github.com/medplum/medplum-demo-bots), create a .env file in the root directory and put the ClientId and ClientSecret in the .env file.
