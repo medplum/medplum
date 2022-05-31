@@ -1,8 +1,8 @@
 import { assertOk, badRequest, getStatus } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
-import { graphqlHTTP } from 'express-graphql';
 import { Operation } from 'fast-json-patch';
+import { DocumentNode, execute, parse, validate } from 'graphql';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
 import { authenticateToken } from '../oauth';
@@ -11,8 +11,8 @@ import { csvHandler } from './csv';
 import { expandOperator } from './expand';
 import { getRootSchema } from './graphql';
 import { getCapabilityStatement } from './metadata';
-import { executeHandler } from './operations/execute';
 import { deployHandler } from './operations/deploy';
+import { executeHandler } from './operations/execute';
 import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
@@ -108,11 +108,42 @@ protectedRoutes.post('/Bot/:id/([$]|%24)execute', executeHandler);
 protectedRoutes.post('/Bot/:id/([$]|%24)deploy', deployHandler);
 
 // GraphQL
-protectedRoutes.use(
+protectedRoutes.post(
   '/([$]|%24)graphql',
-  graphqlHTTP(() => ({
-    schema: getRootSchema(),
-  }))
+  asyncWrap(async (req: Request, res: Response) => {
+    const query = req.body.query;
+    if (!query) {
+      res.status(400).json({ text: 'Must provide query string.' });
+      return;
+    }
+
+    let document: DocumentNode;
+    try {
+      document = parse(query);
+    } catch (err) {
+      res.status(400).json({ text: 'GraphQL syntax error.' });
+      return;
+    }
+
+    const schema = getRootSchema();
+    const validationErrors = validate(schema, document);
+    if (validationErrors.length > 0) {
+      res.status(400).json({ text: 'GraphQL validation error.' });
+      return;
+    }
+
+    try {
+      const result = await execute({
+        schema,
+        document,
+        contextValue: { res },
+      });
+      res.status(result.data ? 200 : 400).json(result);
+    } catch (err) {
+      console.log('graphql err', err);
+      res.sendStatus(500);
+    }
+  })
 );
 
 // Create batch
