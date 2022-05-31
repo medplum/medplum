@@ -563,10 +563,11 @@ describe('Client', () => {
 
   test('Create pdf', async () => {
     const client = new MedplumClient(defaultOptions);
-    const result = await client.createPdf({ content: ['Hello world'] });
+    const result = await client.createPdf({ content: ['Hello world', { text: '' }] });
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('POST');
     expect((result as any).request.url).toBe('https://x/fhir/R4/Binary/$pdf');
+    expect((result as any).request.options.body).toBe('{"content":["Hello world",{"text":""}]}');
   });
 
   test('Create pdf with filename', async () => {
