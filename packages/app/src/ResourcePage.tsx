@@ -47,6 +47,7 @@ function getTabs(resourceType: string, questionnaires?: Bundle): string[] {
   const result = [];
 
   if (
+    resourceType === 'DiagnosticReport' ||
     resourceType === 'Encounter' ||
     resourceType === 'Patient' ||
     resourceType === 'Subscription' ||
