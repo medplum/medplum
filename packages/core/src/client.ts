@@ -17,8 +17,6 @@ import {
   UserConfiguration,
   ValueSet,
 } from '@medplum/fhirtypes';
-import type { Operation } from 'fast-json-patch';
-import type Mail from 'nodemailer/lib/mailer';
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
@@ -177,6 +175,67 @@ export interface TokenResponse {
 export interface BotEvent {
   readonly contentType: string;
   readonly input: Resource | Hl7Message | string;
+}
+
+/**
+ * JSONPatch patch operation.
+ * Compatible with fast-json-patch Operation.
+ */
+export interface PatchOperation {
+  readonly op: string;
+  readonly path: string;
+  readonly value?: any;
+}
+
+/**
+ * Email address definition.
+ * Compatible with nodemailer Mail.Address.
+ */
+export interface MailAddress {
+  readonly name: string;
+  readonly address: string;
+}
+
+/**
+ * Email attachment definition.
+ * Compatible with nodemailer Mail.Options.
+ */
+export interface MailAttachment {
+  /** String, Buffer or a Stream contents for the attachmentent */
+  readonly content?: string;
+  /** path to a file or an URL (data uris are allowed as well) if you want to stream the file instead of including it (better for larger attachments) */
+  readonly path?: string;
+  /** filename to be reported as the name of the attached file, use of unicode is allowed. If you do not want to use a filename, set this value as false, otherwise a filename is generated automatically */
+  readonly filename?: string | false;
+  /** optional content type for the attachment, if not set will be derived from the filename property */
+  readonly contentType?: string;
+}
+
+/**
+ * Email message definition.
+ * Compatible with nodemailer Mail.Options.
+ */
+export interface MailOptions {
+  /** The e-mail address of the sender. All e-mail addresses can be plain 'sender@server.com' or formatted 'Sender Name <sender@server.com>' */
+  readonly from?: string | MailAddress;
+  /** An e-mail address that will appear on the Sender: field */
+  readonly sender?: string | MailAddress;
+  /** Comma separated list or an array of recipients e-mail addresses that will appear on the To: field */
+  readonly to?: string | MailAddress | string[] | MailAddress[];
+  /** Comma separated list or an array of recipients e-mail addresses that will appear on the Cc: field */
+  readonly cc?: string | MailAddress | string[] | MailAddress[];
+  /** Comma separated list or an array of recipients e-mail addresses that will appear on the Bcc: field */
+  readonly bcc?: string | MailAddress | string[] | MailAddress[];
+  /** An e-mail address that will appear on the Reply-To: field */
+  readonly replyTo?: string | MailAddress;
+  /** The subject of the e-mail */
+  readonly subject?: string;
+  /** The plaintext version of the message */
+  readonly text?: string;
+  /** The HTML version of the message */
+  readonly html?: string;
+  /** An array of attachment objects */
+  readonly attachments?: MailAttachment[];
 }
 
 interface SchemaGraphQLResponse {
@@ -393,7 +452,7 @@ export class MedplumClient extends EventTarget {
    * @param options Optional fetch options.
    * @returns Promise to the response content.
    */
-  patch(url: URL | string, operations: Operation[], options: RequestInit = {}): Promise<any> {
+  patch(url: URL | string, operations: PatchOperation[], options: RequestInit = {}): Promise<any> {
     url = url.toString();
     this.#setRequestBody(options, operations);
     this.#setRequestContentType(options, PATCH_CONTENT_TYPE);
@@ -1087,7 +1146,7 @@ export class MedplumClient extends EventTarget {
    * @param operations The JSONPatch operations.
    * @returns The result of the patch operations.
    */
-  patchResource<T extends Resource>(resourceType: string, id: string, operations: Operation[]): Promise<T> {
+  patchResource<T extends Resource>(resourceType: string, id: string, operations: PatchOperation[]): Promise<T> {
     return this.patch(this.fhirUrl(resourceType, id), operations);
   }
 
@@ -1147,7 +1206,7 @@ export class MedplumClient extends EventTarget {
    * @param options The MailComposer options.
    * @returns Promise to the operation outcome.
    */
-  sendEmail(email: Mail.Options): Promise<OperationOutcome> {
+  sendEmail(email: MailOptions): Promise<OperationOutcome> {
     return this.post('email/v1/send', email, 'application/json');
   }
 
