@@ -1,10 +1,21 @@
 #!/usr/bin/env node
 import { MedplumClient } from '@medplum/core';
-import { Bot } from '@medplum/fhirtypes';
+import { Bot, OperationOutcome } from '@medplum/fhirtypes';
 import dotenv from 'dotenv';
 import { existsSync, readFileSync } from 'fs';
 import fetch from 'node-fetch';
 import { resolve } from 'path';
+
+interface MedplumConfig {
+  readonly bots?: MedplumBotConfig[];
+}
+
+interface MedplumBotConfig {
+  readonly name: string;
+  readonly id: string;
+  readonly source: string;
+  readonly dist?: string;
+}
 
 export async function main(medplum: MedplumClient, argv: string[]): Promise<void> {
   if (argv.length < 3) {
@@ -13,47 +24,97 @@ export async function main(medplum: MedplumClient, argv: string[]): Promise<void
   }
 
   const command = argv[2];
-  if (command === 'deploy-bot') {
-    await deployBot(medplum, argv);
+  if (command === 'save-bot') {
+    await runBotCommands(medplum, argv, ['save']);
+  } else if (command === 'deploy-bot') {
+    await runBotCommands(medplum, argv, ['save', 'deploy']);
   } else {
     console.log(`Unknown command: ${command}`);
   }
 }
 
-async function deployBot(medplum: MedplumClient, argv: string[]): Promise<void> {
-  if (argv.length < 5) {
-    console.log('Usage: medplum deploy-bot <bot-name> <bot-id>');
+async function runBotCommands(medplum: MedplumClient, argv: string[], commands: string[]): Promise<void> {
+  if (argv.length < 4) {
+    console.log(`Usage: medplum ${argv[2]} <bot-name>`);
     return;
   }
 
-  const botId = argv[4];
-  if (!botId) {
-    console.log('Error: Bot ID is not set');
+  const botName = argv[3];
+  const botConfig = readBotConfig(botName);
+  if (!botConfig) {
+    console.log(`Error: ${botName} not found`);
     return;
   }
 
-  const filePath = resolve(process.cwd(), argv[3]);
-  if (!existsSync(filePath)) {
-    console.log('Error: Bot file does not exist: ' + filePath);
-    return;
-  }
-
-  const bot = await medplum.readResource<Bot>('Bot', botId);
+  const bot = await medplum.readResource<Bot>('Bot', botConfig.id);
   if (!bot) {
-    console.log('Error: Bot does not exist: ' + botId);
+    console.log('Error: Bot does not exist: ' + botConfig.id);
+    return;
+  }
+
+  if (commands.includes('save')) {
+    await saveBot(medplum, botConfig, bot);
+  }
+
+  if (commands.includes('deploy')) {
+    await deployBot(medplum, botConfig, bot);
+  }
+}
+
+async function saveBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bot: Bot): Promise<void> {
+  const code = readFileContents(botConfig.source);
+  if (!code) {
     return;
   }
 
   try {
     console.log('Update bot code.....');
-    const result = await medplum.updateResource({
+    const updateResult = await medplum.updateResource({
       ...bot,
-      code: readFileSync(filePath, 'utf8'),
+      code,
     });
-    console.log('Success! New bot version: ' + result.meta?.versionId);
+    console.log('Success! New bot version: ' + updateResult.meta?.versionId);
   } catch (err) {
     console.log('Update error: ', err);
   }
+}
+
+async function deployBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bot: Bot): Promise<void> {
+  const code = readFileContents(botConfig.dist ?? botConfig.source);
+  if (!code) {
+    return;
+  }
+
+  try {
+    console.log('Deploying bot...');
+    const deployResult = (await medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$deploy'), {
+      code,
+    })) as OperationOutcome;
+    console.log('Deploy result: ' + deployResult.issue?.[0]?.details?.text);
+  } catch (err) {
+    console.log('Deploy error: ', err);
+  }
+}
+
+function readBotConfig(botName: string): MedplumBotConfig | undefined {
+  return readConfig()?.bots?.find((b) => b.name === botName);
+}
+
+function readConfig(): MedplumConfig | undefined {
+  const content = readFileContents('medplum.config.json');
+  if (!content) {
+    return undefined;
+  }
+  return JSON.parse(content);
+}
+
+function readFileContents(fileName: string): string | undefined {
+  const path = resolve(process.cwd(), fileName);
+  if (!existsSync(path)) {
+    console.log('Error: File does not exist: ' + path);
+    return '';
+  }
+  return readFileSync(path, 'utf8');
 }
 
 if (require.main === module) {

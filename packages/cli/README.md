@@ -10,6 +10,31 @@ Add as a dependency:
 npm install @medplum/cli
 ```
 
+## Config file
+
+Create a Medplum config file called `medplum.config.json`:
+
+```json
+{
+  "bots": [
+    {
+      "name": "hello-world",
+      "id": "f0465c2e-11d4-4c36-b834-8e86f7472b4b",
+      "source": "src/index.ts",
+      "dist": "dist/index.js"
+    }
+  ]
+}
+```
+
+The `name` property is a friendly name you can use to reference the Bot in commands.
+
+The `id` property refers to the Bot ID in your Medplum project.
+
+The `source` property is the file path to the original source. When you "save" the Bot, the contents of this file will be saved to the Bot `code` property. This file can be JavaScript or TypeScript.
+
+The `dist` property is the optional file path to the compiled source. When you "deploy" the Bot, the contents of this file will be deployed to the Bot runtime. This file must be JavaScript.
+
 ## Usage
 
 Syntax:
@@ -18,72 +43,96 @@ Syntax:
 medplum <command> <args>
 ```
 
-At present, there is only one command called `deploy-bot`.  Syntax:
+### save-bot
+
+Updates the `code` value on a `Bot` resource
+
+Syntax:
 
 ```bash
-medplum deploy-bot <filename> <bot-id>
+medplum save-bot <bot name>
 ```
 
 Example:
 
 ```bash
-medplum deploy-bot dist/hello-world.js e54fa800-02ab-41be-8d48-8c027dd85ccc
+medplum save-bot hello-world
 ```
 
-In practice, consider adding the command to the `"scripts"` section of your package.json:
+### deploy-bot
 
-```json
-  "scripts": {
-    "build": "tsc",
-    "deploy:hello-world": "medplum deploy-bot dist/hello-world.js e54fa800-02ab-41be-8d48-8c0200000000"
-  },
-```
+Deploys the Bot code
 
-Then, from the command line, run:
+Syntax:
 
 ```bash
-npm run deploy:hello-world
+medplum deploy-bot <bot name>
 ```
 
-Authentication requires client credentials in the form of environment variables `MEDPLUM_CLIENT_ID` and `MEDPLUM_CLIENT_SECRET`.  This supports most use cases, including secrets from CI/CD.  `dotenv` is enabled, so you could store them in `.env` file.
+Example:
+
+```bash
+medplum-deploy-bot <bot name>
+```
+
+## Authentication
+
+Authentication requires client credentials in environment variables `MEDPLUM_CLIENT_ID` and `MEDPLUM_CLIENT_SECRET`. This supports most use cases, including secrets from CI/CD. `dotenv` is enabled, so you can store them in a `.env` file.
 
 ## Example
 
-Write your bot.  This can be TypeScript.  It can reference `@medplum/core` and `node-fetch`:
+Create a Medplum config file `medplum.config.json`:
+
+```json
+{
+  "bots": [
+    {
+      "name": "hello-world",
+      "id": "f0465c2e-11d4-4c36-b834-8e86f7472b4b",
+      "source": "src/hello-world.ts",
+      "dist": "dist/hello-world.js"
+    }
+  ]
+}
+```
+
+Replace the sample `id` with your Bot's ID.
+
+Write your bot in `src/hello-world.ts`. This can be TypeScript. It can reference `@medplum/core` and `node-fetch`:
 
 ```ts
 import { MedplumClient } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 
-export async function handler(medplum: MedplumClient, input: Resource): Promise<any> {
+export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   console.log('Hello world');
 }
 ```
 
-Compile with vanilla `tsc` (no build tools required)
+You can use the Medplum CLI to save it:
+
+```bash
+npx medplum save-bot hello-world
+```
+
+Compile with vanilla `tsc` (no bundler required)
 
 ```bash
 npx tsc
 ```
 
-Or:
-
-```bash
-npm run build
-```
-
-You get sensible plain old JavaScript output:
+The result will be JavaScript output in `dist/hello-world.js`:
 
 ```javascript
 export async function handler(medplum, input) {
-    console.log('Hello world');
+  console.log('Hello world');
 }
 ```
 
 You can then use the Medplum CLI to deploy it.
 
 ```bash
-npm run deploy:hello-world
+npx medplum deploy-bot hello-world
 ```
 
 ## About Medplum
