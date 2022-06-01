@@ -2,9 +2,39 @@ import { assertOk } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { resolve } from 'path';
 import PdfPrinter from 'pdfmake';
-import { TDocumentDefinitions } from 'pdfmake/interfaces';
+import { ContentTable, CustomTableLayout, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { PassThrough } from 'stream';
 import { getBinaryStorage, Repository } from '../fhir';
+
+const tableLayouts: { [key: string]: CustomTableLayout } = {
+  medplumNoBorders: {
+    hLineWidth: () => 0,
+    vLineWidth: () => 0,
+    paddingLeft: () => 0,
+    paddingRight: () => 0,
+    paddingTop: () => 0,
+    paddingBottom: () => 0,
+  },
+  medplumMetadata: {
+    hLineWidth: () => 1,
+    vLineWidth: () => 0,
+    hLineColor: (i: number) => (i === 0 ? 'black' : 'white'),
+    paddingLeft: () => 0,
+    paddingRight: () => 0,
+    paddingTop: () => 1,
+    paddingBottom: () => 1,
+  },
+  medplumObservations: {
+    hLineWidth: (i: number, node: ContentTable) => (i === 0 || i === node.table?.body.length ? 2 : 1),
+    vLineWidth: () => 0,
+    hLineColor: (i: number, node: ContentTable) => (i <= 1 || i === node.table?.body.length ? 'black' : '#999'),
+    fillColor: (row: number) => (row > 0 ? '#eee' : null),
+    paddingLeft: () => 0,
+    paddingRight: () => 0,
+    paddingTop: () => 0,
+    paddingBottom: () => 0,
+  },
+};
 
 export async function createPdf(
   repo: Repository,
@@ -60,7 +90,7 @@ export async function createPdf(
   // Start the stream producer
   // This will print the PDF to the stream buffer
   const printer = new PdfPrinter(fonts);
-  const pdfDoc = printer.createPdfKitDocument(docDefinition, {});
+  const pdfDoc = printer.createPdfKitDocument(docDefinition, { tableLayouts });
   pdfDoc.pipe(stream);
   pdfDoc.end();
 
