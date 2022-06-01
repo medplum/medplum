@@ -174,6 +174,7 @@ async function createLambda(client: LambdaClient, name: string, zipFile: Uint8Ar
       ZipFile: zipFile,
     },
     Publish: true,
+    Timeout: 10, // seconds
   });
   const response = await client.send(command);
   logger.info('Created lambda for bot', response.FunctionArn);
