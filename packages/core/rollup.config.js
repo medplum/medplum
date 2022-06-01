@@ -1,5 +1,6 @@
 import resolve from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
+import { mkdirSync, writeFileSync } from 'fs';
 import { terser } from 'rollup-plugin-terser';
 
 const extensions = ['.ts'];
@@ -32,5 +33,16 @@ export default {
       sourcemap: true,
     },
   ],
-  plugins: [resolve({ extensions }), typescript()],
+  plugins: [
+    resolve({ extensions }),
+    typescript(),
+    {
+      buildEnd: () => {
+        mkdirSync('./dist/cjs', { recursive: true });
+        mkdirSync('./dist/esm', { recursive: true });
+        writeFileSync('./dist/cjs/package.json', '{"type": "commonjs"}');
+        writeFileSync('./dist/esm/package.json', '{"type": "module"}');
+      },
+    },
+  ],
 };
