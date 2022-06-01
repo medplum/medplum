@@ -1,6 +1,7 @@
 import json from '@rollup/plugin-json';
 import resolve from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
+import { mkdirSync, writeFileSync } from 'fs';
 import { terser } from 'rollup-plugin-terser';
 
 const extensions = ['.ts'];
@@ -39,6 +40,18 @@ export default {
       },
     },
   ],
-  plugins: [resolve({ extensions }), typescript(), json()],
+  plugins: [
+    resolve({ extensions }),
+    typescript(),
+    json(),
+    {
+      buildEnd: () => {
+        mkdirSync('./dist/cjs', { recursive: true });
+        mkdirSync('./dist/esm', { recursive: true });
+        writeFileSync('./dist/cjs/package.json', '{"type": "commonjs"}');
+        writeFileSync('./dist/esm/package.json', '{"type": "module"}');
+      },
+    },
+  ],
   external: ['@medplum/core'],
 };

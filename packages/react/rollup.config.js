@@ -2,6 +2,7 @@ import resolve from '@rollup/plugin-node-resolve';
 import replace from '@rollup/plugin-replace';
 import typescript from '@rollup/plugin-typescript';
 import dotenv from 'dotenv';
+import { mkdirSync, writeFileSync } from 'fs';
 import copy from 'rollup-plugin-copy';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
 import postcss from 'rollup-plugin-postcss';
@@ -68,6 +69,14 @@ export default {
         { src: 'src/defaulttheme.css', dest: 'dist/cjs/' },
       ],
     }),
+    {
+      buildEnd: () => {
+        mkdirSync('./dist/cjs', { recursive: true });
+        mkdirSync('./dist/esm', { recursive: true });
+        writeFileSync('./dist/cjs/package.json', '{"type": "commonjs"}');
+        writeFileSync('./dist/esm/package.json', '{"type": "module"}');
+      },
+    },
   ],
   external: Object.keys(globals),
 };
