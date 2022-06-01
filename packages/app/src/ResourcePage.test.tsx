@@ -34,7 +34,7 @@ describe('ResourcePage', () => {
   });
 
   test('Details tab renders', async () => {
-    await setup('/Practitioner/123');
+    await setup('/Practitioner/123/details');
     await waitFor(() => screen.queryAllByText('Name'));
     expect(screen.queryAllByText('Name')[0]).toBeInTheDocument();
     expect(screen.getByText('Gender')).toBeInTheDocument();
@@ -205,7 +205,7 @@ describe('ResourcePage', () => {
   test('Left click on tab', async () => {
     window.open = jest.fn();
 
-    await setup('/Practitioner/123');
+    await setup('/Practitioner/123/details');
     await waitFor(() => screen.getByText('Name'));
 
     await act(async () => {
@@ -222,7 +222,7 @@ describe('ResourcePage', () => {
   test('Middle click on tab', async () => {
     window.open = jest.fn();
 
-    await setup('/Practitioner/123');
+    await setup('/Practitioner/123/details');
     await waitFor(() => screen.getByText('Name'));
 
     await act(async () => {

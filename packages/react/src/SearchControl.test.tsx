@@ -178,7 +178,7 @@ describe('SearchControl', () => {
     const props = {
       search: {
         resourceType: 'Patient',
-        fields: ['id', '_lastUpdated', 'name', 'birthDate', 'active', 'telecom', 'email', 'phone'],
+        fields: ['id', '_lastUpdated', 'name', 'birthDate', 'active', 'email', 'phone'],
       },
       onLoad: jest.fn(),
     };

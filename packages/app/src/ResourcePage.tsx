@@ -44,19 +44,10 @@ import { SpecimenHeader } from './SpecimenHeader';
 import { getPatient, getSpecimen } from './utils';
 
 function getTabs(resourceType: string, questionnaires?: Bundle): string[] {
-  const result = [];
-
-  if (
-    resourceType === 'Encounter' ||
-    resourceType === 'Patient' ||
-    resourceType === 'Subscription' ||
-    resourceType === 'ServiceRequest'
-  ) {
-    result.push('Timeline');
-  }
+  const result = ['Timeline'];
 
   if (resourceType === 'Bot') {
-    result.push('Timeline', 'Editor');
+    result.push('Editor');
   }
 
   if (resourceType === 'Questionnaire') {
