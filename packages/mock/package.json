@@ -1,6 +1,6 @@
 {
   "name": "@medplum/mock",
-  "version": "0.9.6",
+  "version": "0.9.7",
   "description": "Medplum Mock Client",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -17,11 +17,11 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/core": "0.9.6",
-    "@medplum/fhirtypes": "0.9.6"
+    "@medplum/core": "0.9.7",
+    "@medplum/fhirtypes": "0.9.7"
   },
   "peerDependencies": {
-    "@medplum/core": "0.9.6"
+    "@medplum/core": "0.9.7"
   },
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
