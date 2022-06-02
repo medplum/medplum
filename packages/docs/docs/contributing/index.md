@@ -6,14 +6,14 @@ sidebar_position: 1
 
 ### Setup
 
-These are instructions for developers who wish to contribute to the Medplum project. If you want to _use_ the Medplum project, check out the [App](../app/intro) or [API](../api/overview) docs instead.
+These are instructions for developers who wish to contribute to the Medplum project. If you want to _use_ the Medplum project, check out the [App](../app) or [API](../api) docs instead.
 
-First things first, you need to [Clone the repo](./clone-the-repo).
+First things first, you need to [Clone the repo](/contributing/clone-the-repo).
 
 After that, you need to build the project. There are two methods for running and developing locally:
 
-1. [Dev on the host](./dev-on-host) including running Postgres and Redis on the host
-2. [Dev on docker](./dev-on-docker) without running any services directly on the host
+1. [Dev on the host](/contributing/dev-on-host) including running Postgres and Redis on the host
+2. [Dev on docker](/contributing/dev-on-docker) without running any services directly on the host
 
 ### Which one should you choose?
 

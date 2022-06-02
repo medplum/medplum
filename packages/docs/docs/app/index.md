@@ -10,9 +10,9 @@ While Medplum is most powerful when used as an API, you can accomplish many task
 
 ## Guides
 
-1. [Register](./register) a new account and project
-2. [Invite](./invite) another user to your project
-3. [Create a patient](./create-a-patient)
+1. [Register](https://app.medplum.com/register) a new account and project
+2. [Invite](/app/invite) another user to your project
+3. [Create a patient](app/create-a-patient)
 4. Create an Access Policy
 5. Create a Subscription
 6. Create a Questionnaire
