@@ -33,14 +33,14 @@ The `id` property refers to the Bot ID in your Medplum project.
 
 The `source` property is the file path to the original source. When you "save" the Bot, the contents of this file will be saved to the Bot `code` property. This file can be JavaScript or TypeScript.
 
-The `dist` property is the optional file path to the compiled source. When you "deploy" the Bot, the contents of this file will be deployed to the Bot runtime. This file must be JavaScript.
+The `dist` property is the optional file path to the compiled source. If omitted, the command falls back to using the `source` property. When you "deploy" the Bot, the contents of this file will be deployed to the Bot runtime. This file must be JavaScript.
 
 ## Usage
 
 Syntax:
 
 ```bash
-medplum <command> <args>
+npx medplum <command> <args>
 ```
 
 ### save-bot
@@ -50,13 +50,13 @@ Updates the `code` value on a `Bot` resource
 Syntax:
 
 ```bash
-medplum save-bot <bot name>
+npx medplum save-bot <bot name>
 ```
 
 Example:
 
 ```bash
-medplum save-bot hello-world
+npx medplum save-bot hello-world
 ```
 
 ### deploy-bot
@@ -66,13 +66,13 @@ Deploys the Bot code
 Syntax:
 
 ```bash
-medplum deploy-bot <bot name>
+npx medplum deploy-bot <bot name>
 ```
 
 Example:
 
 ```bash
-medplum-deploy-bot <bot name>
+npx medplum-deploy-bot <bot name>
 ```
 
 ## Authentication
