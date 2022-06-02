@@ -99,7 +99,7 @@ export const graphqlHandler = asyncWrap(async (req: Request, res: Response) => {
   }
 });
 
-function getRootSchema(): GraphQLSchema {
+export function getRootSchema(): GraphQLSchema {
   if (!rootSchema) {
     rootSchema = buildRootSchema();
   }
