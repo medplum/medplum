@@ -11,8 +11,8 @@ const config = {
   url: 'https://docs.medplum.com',
   baseUrl: '/',
   trailingSlash: false,
-  onBrokenLinks: 'warn',
-  onBrokenMarkdownLinks: 'warn',
+  onBrokenLinks: 'error',
+  onBrokenMarkdownLinks: 'error',
   favicon: 'img/favicon.ico',
   organizationName: 'medplum', // Usually your GitHub org/user name.
   projectName: 'medplum', // Usually your repo name.
@@ -53,20 +53,20 @@ const config = {
             type: 'doc',
             docId: 'home',
             position: 'left',
-            label: 'Home',
+            label: 'Docs',
           },
           {
-            to: '/tutorials/intro',
+            to: '/tutorials',
             label: 'Tutorials',
             position: 'left',
           },
           {
-            to: '/api/overview',
+            to: '/api',
             label: 'API',
             position: 'left',
           },
           {
-            to: '/contributing/intro',
+            to: '/contributing',
             label: 'Contributing',
             position: 'left',
           },
@@ -90,7 +90,7 @@ const config = {
             items: [
               {
                 label: 'Tutorial',
-                to: '/tutorials/intro',
+                to: '/tutorials',
               },
             ],
           },
