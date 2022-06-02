@@ -30,10 +30,16 @@ export class Storage extends Construct {
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.S3_MANAGED,
+      enforceSSL: true,
     });
 
     // ClamAV serverless scan
-    const sc = new ServerlessClamscan(this, 'ServerlessClamscan', {});
+    const sc = new ServerlessClamscan(this, 'ServerlessClamscan', {
+      defsBucketAccessLogsConfig: {
+        logsBucket: s3.Bucket.fromBucketName(this, 'LoggingBucket', config.clamscanLoggingBucket),
+        logsPrefix: config.clamscanLoggingPrefix,
+      },
+    });
     sc.addSourceBucket(storageBucket);
 
     // Public key in PEM format

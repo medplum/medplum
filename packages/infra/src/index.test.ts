@@ -31,6 +31,10 @@ describe('Infra', () => {
         desiredServerCount: 1,
         serverMemory: 512,
         serverCpu: 256,
+        loadBalancerLoggingBucket: 'medplum-logs-us-east-1',
+        loadBalancerLoggingPrefix: 'elb',
+        clamscanLoggingBucket: 'medplum-logs-us-east-1',
+        clamscanLoggingPrefix: 'clamscan',
       }),
       { encoding: 'utf-8' }
     );
