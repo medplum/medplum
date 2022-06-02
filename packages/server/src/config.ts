@@ -28,6 +28,7 @@ export interface MedplumServerConfig {
   maxJsonSize: string;
   corsMode: string;
   botLambdaRoleArn: string;
+  botLambdaLayerName: string;
 }
 
 /**

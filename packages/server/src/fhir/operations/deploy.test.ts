@@ -8,7 +8,6 @@ import { closeDatabase, initDatabase } from '../../database';
 import { initKeys } from '../../oauth';
 import { seedDatabase } from '../../seed';
 import { initTestAuth } from '../../test.setup';
-import { preprocessBotCode } from './deploy';
 
 jest.mock('@aws-sdk/client-lambda', () => {
   const original = jest.requireActual('@aws-sdk/client-lambda');
@@ -172,39 +171,5 @@ describe('Deploy', () => {
     expect((res2.body as OperationOutcome).issue?.[0]?.details?.text).toBe('Unsupported import: xyz');
     expect((LambdaClient as any).created).toBe(false);
     expect((LambdaClient as any).updated).toBe(false);
-  });
-
-  test('Import @medplum/core', () => {
-    expect(
-      preprocessBotCode(`
-      import { createReference } from '@medplum/core';
-      export async function handler(medplum, event) {
-        console.log('input', event.input);
-        return input;
-      }
-    `)
-    ).toBe(`
-      import { createReference } from './medplum.mjs';
-      export async function handler(medplum, event) {
-        console.log('input', event.input);
-        return input;
-      }
-    `);
-  });
-
-  test('Import node-fetch', () => {
-    expect(
-      preprocessBotCode(`
-      import fetch from 'node-fetch';
-      export async function handler(medplum, event) {
-        await fetch('https://example.com');
-      }
-    `)
-    ).toBe(`
-      import fetch from './fetch.mjs';
-      export async function handler(medplum, event) {
-        await fetch('https://example.com');
-      }
-    `);
   });
 });
