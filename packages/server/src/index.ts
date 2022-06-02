@@ -3,6 +3,7 @@ import { initApp } from './app';
 import { loadConfig } from './config';
 import { initDatabase } from './database';
 import { initBinaryStorage } from './fhir';
+import { getRootSchema } from './fhir/graphql';
 import { logger } from './logger';
 import { initKeys } from './oauth';
 import { initRedis } from './redis';
@@ -24,6 +25,7 @@ async function main(): Promise<void> {
   await seedDatabase();
   initBinaryStorage(config.binaryStorage);
   initWorkers(config.redis);
+  getRootSchema();
 
   const app = await initApp(express());
   app.listen(5000);
