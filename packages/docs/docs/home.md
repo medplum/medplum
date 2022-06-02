@@ -16,17 +16,13 @@ import HomepageCallout from '@site/src/components/HomepageCallout'
 
 ## What is Medplum?
 
-Medplum is a developer platform that enables **flexible and rapid development** of healthcare apps. In consists of 3 main components
+Medplum is a **developer platform** that enables **flexible and rapid development** of healthcare apps. In consists of the following components:
 
-1. **Medplum Clinical Data Repository (CDR)** - This is the the backend server that hosts your healthcare data in a secure, compliant, and standards based respository. The Medplum CDR also exposes a [FHIR-based API](/api/overview) for sending, receiving, and manipulating data
-2. **Medplum App** - This is a web application where can you can view your data, perform basic editing tasks. You can also use the Medplum App to manage basic workflows.
-3. **UI Component Library** - Medplum ships with a system of [React components](/tutorials/react-hello-world/hello-world-part-1) designed to help you quickly develop custom healthcare applications
-
-## Getting Started
-
-- The [Basic Concepts](/intro) page provides a good primer on Medplum and contains important information about the FHIR, the healthcare data standard on which Medplum is built.
-- If you're ready to start coding, use our [Quickstart Guide](/tutorials/api-basics/create-fhir-data) to get up and running
-- Our detailed tutorials go step-by-step through specific use cases. Don't see a tutorial you need? Reach out on our [Discord](https://discord.gg/UBAWwvrVeN) or send us an email at [support@medplum.com](mailto:support@medplum.com)
+1. **Medplum Clinical Data Repository (CDR)** - This is the the backend server and data store that hosts your healthcare data in a secure, compliant, and standards based respository.
+2. **Medplum API** - The Medplum CDR also exposes a **[FHIR-based API](/api/overview)** for sending, receiving, and manipulating healthcare data. This includes support for binary files like images, videos, and pdfs.
+3. **Medplum SDK** - This is a set of client libraries that simplify the process of interacting with the **Medplum API**. Currently, we only offer a **Typescript** library, but are planning to support more languages in the future. If there's a language you'd like supported, feel free to open a [Github Issue](https://github.com/medplum/medplum/issues).
+4. **Medplum App** - This is a web application where can you can view your data, perform basic editing tasks. You can also use the Medplum App to manage basic workflows.
+5. **UI Component Library** - Medplum ships with a system of [React components](/tutorials/react-hello-world/hello-world-part-1) designed to help you quickly develop custom healthcare applications
 
 ## Common Use Cases
 
@@ -40,6 +36,25 @@ These building blocks enable a large number of potential applications. For examp
 - Adding a FHIR API to an existing medical application
 
 Stay tuned: we will post detailed implementation guides for all of these scenarios, including sample code.
+
+## Key Features
+
+- **[Subscriptions](fhir-basics#subscriptions-listening-for-changes)**: notifications when objects are created or updated, this is implemented using the FHIRPath spec
+- **[Identity Management and Access Policies](app/access-control)**: manage user identities and access to data
+- **[Integration and Workflow Automation](tutorials/bots/intro)**: Bots are powerful automation and interoperability tools for sending data to and from other applications
+
+## System Overview
+
+The following diagram shows how all of these pieces fit together.
+
+![Medplum system overview](/img/medplum-overview.svg)
+
+## Getting Started
+
+- Get started right away, you can [register here](https://app.medplum.com/register). If needed, Medplum also supports [self-hosting](self_hosting), get the [source code](https://github.com/medplum/medplum) on Github.
+- The [Basic Concepts](/intro) page provides a good primer on Medplum and contains important information about the FHIR, the healthcare data standard on which Medplum is built.
+- If you're ready to start coding, use our [Quickstart Guide](/tutorials/api-basics/create-fhir-data) to get up and running
+- Our detailed tutorials go step-by-step through specific use cases. Don't see a tutorial you need? Reach out on our [Discord](https://discord.gg/UBAWwvrVeN) or send us an email at [support@medplum.com](mailto:support@medplum.com)
 
 ## Community
 
