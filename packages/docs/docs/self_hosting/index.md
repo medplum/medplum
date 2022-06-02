@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# Intro
+# Self-hosting
 
 Medplum is a free and open source application. Use these guides to install Medplum in your own environment for self hosting.
 

@@ -1,4 +1,10 @@
 {
   "label": "React Hello World",
-  "position": 5
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "title": "React Hello World",
+    "description": "Learn about Medplum's React Component library",
+    "keywords": ["guides"]
+  }
 }
