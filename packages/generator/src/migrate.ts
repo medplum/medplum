@@ -46,7 +46,7 @@ function writeMigrations(): void {
   const b = new FileBuilder();
   buildMigrationUp(b);
   // writeFileSync(resolve(__dirname, '../../server/src/migrations/init.ts'), b.toString(), 'utf8');
-  writeFileSync(resolve(__dirname, '../../server/src/migrations/v14.ts'), builder.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../server/src/migrations/v17.ts'), builder.toString(), 'utf8');
 }
 
 function buildMigrationUp(b: FileBuilder): void {
@@ -107,12 +107,6 @@ function buildCreateTables(b: FileBuilder, resourceType: string, fhirType: TypeS
     '"compartments" UUID[] NOT NULL',
   ];
 
-  builder.append(`await client.query('CREATE INDEX ON "${resourceType}" ("lastUpdated")');`);
-  builder.append(`await client.query('CREATE INDEX ON "${resourceType}" USING GIN("compartments")');`);
-  builder.append(`await client.query('CREATE INDEX ON "${resourceType}_History" ("id")');`);
-  builder.append(`await client.query('CREATE INDEX ON "${resourceType}_History" ("lastUpdated")');`);
-  builder.newLine();
-
   columns.push(...buildSearchColumns(resourceType));
 
   b.newLine();
@@ -123,6 +117,12 @@ function buildCreateTables(b: FileBuilder, resourceType: string, fhirType: TypeS
   }
   b.indentCount--;
   b.append(')`);');
+  b.newLine();
+
+  b.append(`await client.query('CREATE INDEX ON "${resourceType}" ("lastUpdated")');`);
+  b.append(`await client.query('CREATE INDEX ON "${resourceType}" USING GIN("compartments")');`);
+  b.append(`await client.query('CREATE INDEX ON "${resourceType}_History" ("id")');`);
+  b.append(`await client.query('CREATE INDEX ON "${resourceType}_History" ("lastUpdated")');`);
   b.newLine();
 
   buildSearchIndexes(b, resourceType);
@@ -153,6 +153,18 @@ function buildSearchColumns(resourceType: string): string[] {
     const columnName = details.columnName;
     const newColumnType = getColumnType(details);
     result.push(`"${columnName}" ${newColumnType}`);
+
+    if (searchParam.type === 'date' && details.type === SearchParameterType.DATETIME) {
+      if (details.array) {
+        builder.append(
+          `await client.query('ALTER TABLE "${resourceType}" ALTER COLUMN "${columnName}" TYPE ${newColumnType} USING \\'{}\\'::TIMESTAMP WITH TIME ZONE[]');`
+        );
+      } else {
+        builder.append(
+          `await client.query('ALTER TABLE "${resourceType}" ALTER COLUMN "${columnName}" TYPE ${newColumnType} USING NULL');`
+        );
+      }
+    }
   }
   return result;
 }
@@ -211,6 +223,9 @@ function getColumnType(details: SearchParameterDetails): string {
       break;
     case SearchParameterType.DATE:
       baseColumnType = 'DATE';
+      break;
+    case SearchParameterType.DATETIME:
+      baseColumnType = 'TIMESTAMP WITH TIME ZONE';
       break;
     case SearchParameterType.NUMBER:
     case SearchParameterType.QUANTITY:
