@@ -31,8 +31,6 @@ import { wellKnownRouter } from './wellknown';
 function standardHeaders(_req: Request, res: Response, next: NextFunction): void {
   // Disables all caching
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-  res.set('Expires', 'Wed, 21 Oct 2015 07:28:00 GMT');
-  res.set('Pragma', 'no-cache');
 
   if (getConfig().baseUrl.startsWith('https://')) {
     // Only connect to this site and subdomains via HTTPS for the next two years

@@ -109,6 +109,7 @@ export const graphqlHandler = asyncWrap(async (req: Request, res: Response) => {
 
     if (introspection) {
       introspectionResults.set(query, result);
+      res.set('Cache-Control', 'public, max-age=31536000');
     } else {
       const repo = res.locals.repo as Repository;
       result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, result);
