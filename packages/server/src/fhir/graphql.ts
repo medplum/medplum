@@ -97,7 +97,7 @@ export const graphqlHandler = asyncWrap(async (req: Request, res: Response) => {
   }
 
   try {
-    const introspection = query.includes('query IntrospectionQuery');
+    const introspection = isIntrospectionQuery(query);
     let result = introspection && introspectionResults.get(query);
     if (!result) {
       result = await execute({
@@ -122,6 +122,20 @@ export const graphqlHandler = asyncWrap(async (req: Request, res: Response) => {
     res.sendStatus(500);
   }
 });
+
+/**
+ * Returns true if the query is a GraphQL introspection query.
+ *
+ * Introspection queries ask for the schema, which is expensive.
+ *
+ * See: https://graphql.org/learn/introspection/
+ *
+ * @param query The GraphQL query.
+ * @returns True if the query is an introspection query.
+ */
+function isIntrospectionQuery(query: string): boolean {
+  return query.includes('query IntrospectionQuery') || query.includes('__schema') || query.includes('__type');
+}
 
 export function getRootSchema(): GraphQLSchema {
   if (!rootSchema) {
