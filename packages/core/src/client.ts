@@ -367,6 +367,28 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Invalidates any cached values or cached requests for the given URL.
+   * @param url The URL to invalidate.
+   */
+  invalidateUrl(url: URL | string): void {
+    url = url.toString();
+    this.#requestCache.delete(url);
+  }
+
+  /**
+   * Invalidates all cached search results or cached requests for the given resourceType.
+   * @param resourceType The resource type to invalidate.
+   */
+  invalidateSearches(resourceType: string): void {
+    const url = 'fhir/R4/' + resourceType;
+    for (const key of this.#requestCache.keys()) {
+      if (key.endsWith(url) || key.includes(url + '?')) {
+        this.#requestCache.delete(key);
+      }
+    }
+  }
+
+  /**
    * Makes an HTTP GET request to the specified URL.
    *
    * This is a lower level method for custom requests.
@@ -411,7 +433,7 @@ export class MedplumClient extends EventTarget {
     if (contentType) {
       this.#setRequestContentType(options, contentType);
     }
-    this.#requestCache.delete(url);
+    this.invalidateUrl(url);
     return this.#request('POST', url, options);
   }
 
@@ -436,7 +458,7 @@ export class MedplumClient extends EventTarget {
     if (contentType) {
       this.#setRequestContentType(options, contentType);
     }
-    this.#requestCache.delete(url);
+    this.invalidateUrl(url);
     return this.#request('PUT', url, options);
   }
 
@@ -456,7 +478,7 @@ export class MedplumClient extends EventTarget {
     url = url.toString();
     this.#setRequestBody(options, operations);
     this.#setRequestContentType(options, PATCH_CONTENT_TYPE);
-    this.#requestCache.delete(url);
+    this.invalidateUrl(url);
     return this.#request('PATCH', url, options);
   }
 
@@ -473,7 +495,7 @@ export class MedplumClient extends EventTarget {
    */
   delete(url: URL | string, options: RequestInit = {}): Promise<any> {
     url = url.toString();
-    this.#requestCache.delete(url);
+    this.invalidateUrl(url);
     return this.#request('DELETE', url, options);
   }
 
@@ -730,28 +752,6 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
-   * Reads a resource by resource type and ID using the in-memory resource cache.
-   *
-   * If the resource is not available in the cache, it will be read from the server.
-   *
-   * Example:
-   *
-   * ```typescript
-   * const patient = await medplum.readCached('Patient', '123');
-   * console.log(patient);
-   * ```
-   *
-   * See the FHIR "read" operation for full details: https://www.hl7.org/fhir/http.html#read
-   *
-   * @param resourceType The FHIR resource type.
-   * @param id The resource ID.
-   * @returns The resource if available; undefined otherwise.
-   */
-  readCached<T extends Resource>(resourceType: string, id: string): ReadablePromise<T> {
-    return this.get(this.fhirUrl(resourceType, id));
-  }
-
-  /**
    * Reads a resource by `Reference`.
    *
    * This is a convenience method for `readResource()` that accepts a `Reference` object.
@@ -776,35 +776,6 @@ export class MedplumClient extends EventTarget {
     }
     const [resourceType, id] = refString.split('/');
     return this.readResource(resourceType, id);
-  }
-
-  /**
-   * Reads a resource by `Reference` using the in-memory resource cache.
-   *
-   * This is a convenience method for `readResource()` that accepts a `Reference` object.
-   *
-   * If the resource is not available in the cache, it will be read from the server.
-   *
-   * Example:
-   *
-   * ```typescript
-   * const serviceRequest = await medplum.readResource('ServiceRequest', '123');
-   * const patient = await medplum.readCachedReference(serviceRequest.subject);
-   * console.log(patient);
-   * ```
-   *
-   * See the FHIR "read" operation for full details: https://www.hl7.org/fhir/http.html#read
-   *
-   * @param reference The FHIR reference object.
-   * @returns The resource if available; undefined otherwise.
-   */
-  readCachedReference<T extends Resource>(reference: Reference<T>): ReadablePromise<T> {
-    const refString = reference?.reference;
-    if (!refString) {
-      return new ReadablePromise(Promise.reject(new Error('Missing reference')));
-    }
-    const [resourceType, id] = refString.split('/');
-    return this.readCached(resourceType, id);
   }
 
   /**
@@ -945,6 +916,7 @@ export class MedplumClient extends EventTarget {
     if (!resource.resourceType) {
       throw new Error('Missing resourceType');
     }
+    this.invalidateSearches(resource.resourceType);
     return this.post(this.fhirUrl(resource.resourceType), resource);
   }
 
@@ -1120,6 +1092,7 @@ export class MedplumClient extends EventTarget {
     if (!resource.id) {
       throw new Error('Missing id');
     }
+    this.invalidateSearches(resource.resourceType);
     return this.put(this.fhirUrl(resource.resourceType, resource.id), resource);
   }
 
@@ -1147,6 +1120,7 @@ export class MedplumClient extends EventTarget {
    * @returns The result of the patch operations.
    */
   patchResource<T extends Resource>(resourceType: string, id: string, operations: PatchOperation[]): Promise<T> {
+    this.invalidateSearches(resourceType);
     return this.patch(this.fhirUrl(resourceType, id), operations);
   }
 
@@ -1166,6 +1140,7 @@ export class MedplumClient extends EventTarget {
    * @returns The result of the delete operation.
    */
   deleteResource(resourceType: string, id: string): Promise<any> {
+    this.invalidateSearches(resourceType);
     return this.delete(this.fhirUrl(resourceType, id));
   }
 
