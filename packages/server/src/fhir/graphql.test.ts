@@ -121,70 +121,69 @@ describe('GraphQL', () => {
   });
 
   test('Get schema', async () => {
-    const res = await request(app)
-      .post('/fhir/R4/$graphql')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
-      .send({
-        operationName: 'IntrospectionQuery',
-        query: `
-      query IntrospectionQuery {
-        __schema {
-          queryType { name }
-          mutationType { name }
-          subscriptionType { name }
-          types {
-            ...FullType
-          }
-          directives {
-            name
-            description
-            locations
-            args {
-              ...InputValue
-            }
-          }
+    const introspectionRequest = {
+      operationName: 'IntrospectionQuery',
+      query: `
+    query IntrospectionQuery {
+      __schema {
+        queryType { name }
+        mutationType { name }
+        subscriptionType { name }
+        types {
+          ...FullType
         }
-      }
-      fragment FullType on __Type {
-        kind
-        name
-        description
-        fields(includeDeprecated: true) {
+        directives {
           name
           description
+          locations
           args {
             ...InputValue
           }
-          type {
-            ...TypeRef
-          }
-          isDeprecated
-          deprecationReason
-        }
-        inputFields {
-          ...InputValue
-        }
-        interfaces {
-          ...TypeRef
-        }
-        enumValues(includeDeprecated: true) {
-          name
-          description
-          isDeprecated
-          deprecationReason
-        }
-        possibleTypes {
-          ...TypeRef
         }
       }
-      fragment InputValue on __InputValue {
+    }
+    fragment FullType on __Type {
+      kind
+      name
+      description
+      fields(includeDeprecated: true) {
         name
         description
-        type { ...TypeRef }
-        defaultValue
+        args {
+          ...InputValue
+        }
+        type {
+          ...TypeRef
+        }
+        isDeprecated
+        deprecationReason
       }
-      fragment TypeRef on __Type {
+      inputFields {
+        ...InputValue
+      }
+      interfaces {
+        ...TypeRef
+      }
+      enumValues(includeDeprecated: true) {
+        name
+        description
+        isDeprecated
+        deprecationReason
+      }
+      possibleTypes {
+        ...TypeRef
+      }
+    }
+    fragment InputValue on __InputValue {
+      name
+      description
+      type { ...TypeRef }
+      defaultValue
+    }
+    fragment TypeRef on __Type {
+      kind
+      name
+      ofType {
         kind
         name
         ofType {
@@ -205,10 +204,6 @@ describe('GraphQL', () => {
                   ofType {
                     kind
                     name
-                    ofType {
-                      kind
-                      name
-                    }
                   }
                 }
               }
@@ -216,12 +211,28 @@ describe('GraphQL', () => {
           }
         }
       }
-    `,
-      });
-    expect(res.status).toBe(200);
-    expect(res.text).toMatch(/_count/);
-    expect(res.text).toMatch(/_sort/);
-    expect(res.text).toMatch(/_lastUpdated/);
+    }
+  `,
+    };
+
+    const res1 = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send(introspectionRequest);
+    expect(res1.status).toBe(200);
+    expect(res1.headers['cache-control']).toBe('public, max-age=31536000');
+    expect(res1.text).toMatch(/_count/);
+    expect(res1.text).toMatch(/_sort/);
+    expect(res1.text).toMatch(/_lastUpdated/);
+
+    const res2 = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send(introspectionRequest);
+    expect(res2.status).toBe(200);
+    expect(res2.text).toEqual(res1.text);
   });
 
   test('Read by ID', async () => {

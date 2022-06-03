@@ -1,9 +1,10 @@
-import { assertOk, badRequest, Filter, getReferenceString, Operator, SearchRequest } from '@medplum/core';
+import { assertOk, badRequest, Filter, getReferenceString, LRUCache, Operator, SearchRequest } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import {
   DocumentNode,
   execute,
+  ExecutionResult,
   GraphQLBoolean,
   GraphQLEnumType,
   GraphQLEnumValueConfigMap,
@@ -55,6 +56,17 @@ const typeCache: Record<string, GraphQLOutputType | undefined> = {
   xhtml: GraphQLString,
 };
 
+/**
+ * Cache of "introspection" query results.
+ * Common case is the standard schema query from GraphiQL and Insomnia.
+ * The result is big and somewhat computationally expensive.
+ */
+const introspectionResults = new LRUCache<ExecutionResult>();
+
+/**
+ * Cached GraphQL schema.
+ * This should be initialized at server startup.
+ */
 let rootSchema: GraphQLSchema | undefined;
 
 /**
@@ -63,7 +75,7 @@ let rootSchema: GraphQLSchema | undefined;
  * See: https://www.hl7.org/fhir/graphql.html
  */
 export const graphqlHandler = asyncWrap(async (req: Request, res: Response) => {
-  const query = req.body.query;
+  const query = req.body.query as string | undefined;
   if (!query) {
     sendOutcome(res, badRequest('Must provide query.'));
     return;
@@ -85,16 +97,28 @@ export const graphqlHandler = asyncWrap(async (req: Request, res: Response) => {
   }
 
   try {
-    const result = await execute({
-      schema,
-      document,
-      contextValue: { res },
-    });
+    const introspection = query.includes('query IntrospectionQuery');
+    let result = introspection && introspectionResults.get(query);
+    if (!result) {
+      result = await execute({
+        schema,
+        document,
+        contextValue: { res },
+      });
+    }
+
+    if (introspection) {
+      introspectionResults.set(query, result);
+      res.set('Cache-Control', 'public, max-age=31536000');
+    } else {
+      const repo = res.locals.repo as Repository;
+      result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, result);
+    }
+
     const status = result.data ? 200 : 400;
-    const repo = res.locals.repo as Repository;
-    res.status(status).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, result));
+    res.status(status).json(result);
   } catch (err) {
-    console.log('graphql err', err);
+    console.log('Unhandled graphql error', err);
     res.sendStatus(500);
   }
 });
