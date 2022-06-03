@@ -120,7 +120,7 @@ describe('GraphQL', () => {
     rmSync(binaryDir, { recursive: true, force: true });
   });
 
-  test('Get schema', async () => {
+  test('IntrospectionQuery', async () => {
     const introspectionRequest = {
       operationName: 'IntrospectionQuery',
       query: `
@@ -233,6 +233,45 @@ describe('GraphQL', () => {
       .send(introspectionRequest);
     expect(res2.status).toBe(200);
     expect(res2.text).toEqual(res1.text);
+  });
+
+  test('Get __schema', async () => {
+    // https://graphql.org/learn/introspection/
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        operationName: 'IntrospectionQuery',
+        query: `{
+          __schema {
+            types {
+              name
+            }
+          }
+        }`,
+      });
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toBe('public, max-age=31536000');
+  });
+
+  test('Get __type', async () => {
+    // https://graphql.org/learn/introspection/
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        operationName: 'IntrospectionQuery',
+        query: `{
+          __type(name: "Patient") {
+            name
+            kind
+          }
+        }`,
+      });
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toBe('public, max-age=31536000');
   });
 
   test('Read by ID', async () => {
