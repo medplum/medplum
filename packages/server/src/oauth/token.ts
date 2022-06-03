@@ -55,12 +55,23 @@ export const tokenHandler: RequestHandler = asyncWrap(async (req: Request, res: 
  * @returns Async promise to the response.
  */
 async function handleClientCredentials(req: Request, res: Response): Promise<Response> {
-  const clientId = req.body.client_id;
+  let clientId = req.body.client_id;
+  let clientSecret = req.body.client_secret;
+
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    if (!authHeader.startsWith('Basic ')) {
+      return sendTokenError(res, 'invalid_request', 'Invalid authorization header');
+    }
+    const base64Credentials = authHeader.split(' ')[1];
+    const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
+    [clientId, clientSecret] = credentials.split(':');
+  }
+
   if (!clientId) {
     return sendTokenError(res, 'invalid_request', 'Missing client_id');
   }
 
-  const clientSecret = req.body.client_secret;
   if (!clientSecret) {
     return sendTokenError(res, 'invalid_request', 'Missing client_secret');
   }

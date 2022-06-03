@@ -114,6 +114,28 @@ describe('OAuth2 Token', () => {
     expect(res.body.error_description).toBe('Invalid secret');
   });
 
+  test('Token for client credentials authentication header success', async () => {
+    const res = await request(app)
+      .post('/oauth2/token')
+      .type('form')
+      .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'))
+      .send({
+        grant_type: 'client_credentials',
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.error).toBeUndefined();
+    expect(res.body.access_token).toBeDefined();
+  });
+
+  test('Token for client credentials wrong authentication header', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').set('Authorization', 'Bearer xyz').send({
+      grant_type: 'client_credentials',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid authorization header');
+  });
+
   test('Token for client empty secret', async () => {
     // Create a client without an secret
     const [outcome, badClient] = await systemRepo.createResource<ClientApplication>({
