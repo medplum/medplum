@@ -22,11 +22,11 @@ const LAMBDA_RUNTIME = 'nodejs16.x';
 
 const LAMBDA_HANDLER = 'index.handler';
 
-const WRAPPER_CODE = `import { Hl7Message, MedplumClient } from "@medplum/core";
-import fetch from "node-fetch";
-import * as userCode from "./user.mjs";
+const WRAPPER_CODE = `const { Hl7Message, MedplumClient } = require("@medplum/core");
+const fetch = require("node-fetch");
+const userCode = require("./user.cjs");
 
-export async function handler(event, context) {
+exports.handler = async (event, context) => {
   const { accessToken, input, contentType } = event;
   const medplum = new MedplumClient({ fetch });
   medplum.setAccessToken(accessToken);
@@ -46,7 +46,7 @@ export async function handler(event, context) {
     }
     throw err;
   }
-}
+};
 `;
 
 export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
@@ -89,8 +89,8 @@ export async function deployLambda(client: LambdaClient, name: string, code: str
 
 async function createZipFile(code: string): Promise<Uint8Array> {
   const zip = new JSZip();
-  zip.file('user.mjs', code);
-  zip.file('index.mjs', WRAPPER_CODE);
+  zip.file('user.cjs', code);
+  zip.file('index.cjs', WRAPPER_CODE);
   return zip.generateAsync({ type: 'uint8array' });
 }
 
@@ -134,22 +134,6 @@ async function createLambda(client: LambdaClient, name: string, zipFile: Uint8Ar
       Timeout: 10, // seconds
     })
   );
-
-  // const command = new CreateFunctionCommand({
-  //   FunctionName: name,
-  //   Role: getConfig().botLambdaRoleArn,
-  //   Runtime: 'nodejs16.x',
-  //   Handler: 'index.handler',
-  //   PackageType: PackageType.Zip,
-  //   Layers: [layerVersion],
-  //   Code: {
-  //     ZipFile: zipFile,
-  //   },
-  //   Publish: true,
-  //   Timeout: 10, // seconds
-  // });
-  // const response = await client.send(command);
-  // logger.info('Created lambda for bot', response.FunctionArn);
 }
 
 /**

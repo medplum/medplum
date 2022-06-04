@@ -74,6 +74,7 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
         iframeRef={codeFrameRef}
         className="medplum-bot-code-frame"
         language="typescript"
+        module="commonjs"
         testId="code-frame"
         defaultValue={props.bot.code || ''}
         onChange={console.log}
