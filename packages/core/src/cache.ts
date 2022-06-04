@@ -11,10 +11,18 @@ export class LRUCache<T> {
     this.#cache = new Map();
   }
 
+  /**
+   * Deletes all values from the cache.
+   */
   clear(): void {
     this.#cache.clear();
   }
 
+  /**
+   * Returns the value for the given key.
+   * @param key The key to retrieve.
+   * @returns The value if found; undefined otherwise.
+   */
   get(key: string): T | undefined {
     const item = this.#cache.get(key);
     if (item) {
@@ -24,6 +32,11 @@ export class LRUCache<T> {
     return item;
   }
 
+  /**
+   * Sets the value for the given key.
+   * @param key The key to set.
+   * @param val The value to set.
+   */
   set(key: string, val: T): void {
     if (this.#cache.has(key)) {
       this.#cache.delete(key);
@@ -33,8 +46,20 @@ export class LRUCache<T> {
     this.#cache.set(key, val);
   }
 
+  /**
+   * Deletes the value for the given key.
+   * @param key The key to delete.
+   */
   delete(key: string): void {
     this.#cache.delete(key);
+  }
+
+  /**
+   * Returns the list of all keys in the cache.
+   * @returns The array of keys in the cache.
+   */
+  keys(): IterableIterator<string> {
+    return this.#cache.keys();
   }
 
   #first(): string {

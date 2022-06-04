@@ -28,7 +28,7 @@ export function useResource<T extends Resource>(value: Reference<T> | T | undefi
 
     if (!resource && value && 'reference' in value && value.reference) {
       medplum
-        .readCachedReference(value as Reference<T>)
+        .readReference(value as Reference<T>)
         .then((r) => {
           if (subscribed) {
             setResource(r);

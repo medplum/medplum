@@ -435,7 +435,7 @@ describe('Client', () => {
   test('Read cached resource', async () => {
     const client = new MedplumClient(defaultOptions);
     expect(client.getCached('Patient', '123')).toBeUndefined(); // Nothing in the cache
-    const readPromise = client.readCached('Patient', '123');
+    const readPromise = client.readResource('Patient', '123');
     expect(client.getCached('Patient', '123')).toBeUndefined(); // Promise in the cache
     const result = await readPromise;
     expect(result).toBeDefined();
@@ -449,7 +449,7 @@ describe('Client', () => {
     const client = new MedplumClient(defaultOptions);
     const reference = { reference: 'Patient/123' };
     expect(client.getCachedReference(reference)).toBeUndefined();
-    const readPromise = client.readCachedReference(reference);
+    const readPromise = client.readReference(reference);
     expect(client.getCachedReference(reference)).toBeUndefined(); // Promise in the cache
     const result = await readPromise;
     expect(result).toBeDefined();
@@ -457,12 +457,6 @@ describe('Client', () => {
     expect(result.resourceType).toBe('Patient');
     expect(result.id).toBe('123');
     expect(client.getCachedReference(reference)).toBe(result);
-  });
-
-  test('Read cached empty reference', async () => {
-    const client = new MedplumClient(defaultOptions);
-    const result = client.readCachedReference({});
-    expect(result).rejects.toThrow('Missing reference');
   });
 
   test('Read history', async () => {
