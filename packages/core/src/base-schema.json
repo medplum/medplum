@@ -1,0 +1,4868 @@
+{
+  "types": {
+    "Element": {
+      "display": "Element",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        }
+      }
+    },
+    "BackboneElement": {
+      "display": "BackboneElement",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "modifierExtension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        }
+      }
+    },
+    "Address": {
+      "display": "Address",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "use": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "type": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "text": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "line": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "city": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "district": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "state": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "postalCode": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "country": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "period": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Period"
+            }
+          ]
+        }
+      }
+    },
+    "Age": {
+      "display": "Age",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "value": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "decimal"
+            }
+          ]
+        },
+        "comparator": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "unit": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "system": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        "code": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        }
+      }
+    },
+    "Annotation": {
+      "display": "Annotation",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "author[x]": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson",
+                "http://hl7.org/fhir/StructureDefinition/Organization"
+              ]
+            },
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "time": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        },
+        "text": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "markdown"
+            }
+          ]
+        }
+      }
+    },
+    "Attachment": {
+      "display": "Attachment",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "contentType": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "language": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "data": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "base64Binary"
+            }
+          ]
+        },
+        "url": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "url"
+            }
+          ]
+        },
+        "size": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "unsignedInt"
+            }
+          ]
+        },
+        "hash": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "base64Binary"
+            }
+          ]
+        },
+        "title": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "creation": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        }
+      }
+    },
+    "CodeableConcept": {
+      "display": "CodeableConcept",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "coding": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Coding"
+            }
+          ]
+        },
+        "text": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        }
+      }
+    },
+    "Coding": {
+      "display": "Coding",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "system": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        "version": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "code": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "display": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "userSelected": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        }
+      }
+    },
+    "ContactDetail": {
+      "display": "ContactDetail",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "name": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "telecom": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "ContactPoint"
+            }
+          ]
+        }
+      }
+    },
+    "ContactPoint": {
+      "display": "ContactPoint",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "system": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "value": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "use": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "rank": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "positiveInt"
+            }
+          ]
+        },
+        "period": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Period"
+            }
+          ]
+        }
+      }
+    },
+    "Contributor": {
+      "display": "Contributor",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "type": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "name": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "contact": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "ContactDetail"
+            }
+          ]
+        }
+      }
+    },
+    "Count": {
+      "display": "Count",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "value": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "decimal"
+            }
+          ]
+        },
+        "comparator": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "unit": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "system": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        "code": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        }
+      }
+    },
+    "DataRequirement": {
+      "display": "DataRequirement",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "type": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "profile": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "canonical",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/StructureDefinition"
+              ]
+            }
+          ]
+        },
+        "subject[x]": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            },
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Group"
+              ]
+            }
+          ]
+        },
+        "mustSupport": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "codeFilter": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Element"
+            }
+          ]
+        },
+        "dateFilter": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Element"
+            }
+          ]
+        },
+        "limit": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "positiveInt"
+            }
+          ]
+        },
+        "sort": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Element"
+            }
+          ]
+        }
+      }
+    },
+    "DataRequirementCodeFilter": {
+      "display": "DataRequirementCodeFilter",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "path": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "searchParam": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "valueSet": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "canonical",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/ValueSet"
+              ]
+            }
+          ]
+        },
+        "code": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Coding"
+            }
+          ]
+        }
+      },
+      "parentType": "DataRequirement"
+    },
+    "DataRequirementDateFilter": {
+      "display": "DataRequirementDateFilter",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "path": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "searchParam": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "value[x]": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "Period"
+            },
+            {
+              "code": "Duration"
+            }
+          ]
+        }
+      },
+      "parentType": "DataRequirement"
+    },
+    "DataRequirementSort": {
+      "display": "DataRequirementSort",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "path": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "direction": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        }
+      },
+      "parentType": "DataRequirement"
+    },
+    "Distance": {
+      "display": "Distance",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "value": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "decimal"
+            }
+          ]
+        },
+        "comparator": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "unit": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "system": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        "code": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        }
+      }
+    },
+    "Dosage": {
+      "display": "Dosage",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "modifierExtension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "sequence": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "integer"
+            }
+          ]
+        },
+        "text": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "additionalInstruction": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        "patientInstruction": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "timing": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Timing"
+            }
+          ]
+        },
+        "asNeeded[x]": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            },
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        "site": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        "route": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        "method": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        "doseAndRate": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Element"
+            }
+          ]
+        },
+        "maxDosePerPeriod": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Ratio"
+            }
+          ]
+        },
+        "maxDosePerAdministration": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity",
+              "profile": [
+                "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
+              ]
+            }
+          ]
+        },
+        "maxDosePerLifetime": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity",
+              "profile": [
+                "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "DosageDoseAndRate": {
+      "display": "DosageDoseAndRate",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "type": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        "dose[x]": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Range"
+            },
+            {
+              "code": "Quantity",
+              "profile": [
+                "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
+              ]
+            }
+          ]
+        },
+        "rate[x]": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Ratio"
+            },
+            {
+              "code": "Range"
+            },
+            {
+              "code": "Quantity",
+              "profile": [
+                "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
+              ]
+            }
+          ]
+        }
+      },
+      "parentType": "Dosage"
+    },
+    "Duration": {
+      "display": "Duration",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "value": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "decimal"
+            }
+          ]
+        },
+        "comparator": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "unit": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "system": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        "code": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        }
+      }
+    },
+    "ElementDefinition": {
+      "display": "ElementDefinition",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "modifierExtension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "path": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "representation": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "sliceName": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "sliceIsConstraining": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        "label": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "code": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Coding"
+            }
+          ]
+        },
+        "slicing": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Element"
+            }
+          ]
+        },
+        "short": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "definition": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "markdown"
+            }
+          ]
+        },
+        "comment": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "markdown"
+            }
+          ]
+        },
+        "requirements": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "markdown"
+            }
+          ]
+        },
+        "alias": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "min": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "unsignedInt"
+            }
+          ]
+        },
+        "max": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "base": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Element"
+            }
+          ]
+        },
+        "contentReference": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        "type": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Element"
+            }
+          ]
+        },
+        "defaultValue[x]": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "base64Binary"
+            },
+            {
+              "code": "boolean"
+            },
+            {
+              "code": "canonical"
+            },
+            {
+              "code": "code"
+            },
+            {
+              "code": "date"
+            },
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "decimal"
+            },
+            {
+              "code": "id"
+            },
+            {
+              "code": "instant"
+            },
+            {
+              "code": "integer"
+            },
+            {
+              "code": "markdown"
+            },
+            {
+              "code": "oid"
+            },
+            {
+              "code": "positiveInt"
+            },
+            {
+              "code": "string"
+            },
+            {
+              "code": "time"
+            },
+            {
+              "code": "unsignedInt"
+            },
+            {
+              "code": "uri"
+            },
+            {
+              "code": "url"
+            },
+            {
+              "code": "uuid"
+            },
+            {
+              "code": "Address"
+            },
+            {
+              "code": "Age"
+            },
+            {
+              "code": "Annotation"
+            },
+            {
+              "code": "Attachment"
+            },
+            {
+              "code": "CodeableConcept"
+            },
+            {
+              "code": "Coding"
+            },
+            {
+              "code": "ContactPoint"
+            },
+            {
+              "code": "Count"
+            },
+            {
+              "code": "Distance"
+            },
+            {
+              "code": "Duration"
+            },
+            {
+              "code": "HumanName"
+            },
+            {
+              "code": "Identifier"
+            },
+            {
+              "code": "Money"
+            },
+            {
+              "code": "Period"
+            },
+            {
+              "code": "Quantity"
+            },
+            {
+              "code": "Range"
+            },
+            {
+              "code": "Ratio"
+            },
+            {
+              "code": "Reference"
+            },
+            {
+              "code": "SampledData"
+            },
+            {
+              "code": "Signature"
+            },
+            {
+              "code": "Timing"
+            },
+            {
+              "code": "ContactDetail"
+            },
+            {
+              "code": "Contributor"
+            },
+            {
+              "code": "DataRequirement"
+            },
+            {
+              "code": "Expression"
+            },
+            {
+              "code": "ParameterDefinition"
+            },
+            {
+              "code": "RelatedArtifact"
+            },
+            {
+              "code": "TriggerDefinition"
+            },
+            {
+              "code": "UsageContext"
+            },
+            {
+              "code": "Dosage"
+            },
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        "meaningWhenMissing": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "markdown"
+            }
+          ]
+        },
+        "orderMeaning": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "fixed[x]": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "base64Binary"
+            },
+            {
+              "code": "boolean"
+            },
+            {
+              "code": "canonical"
+            },
+            {
+              "code": "code"
+            },
+            {
+              "code": "date"
+            },
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "decimal"
+            },
+            {
+              "code": "id"
+            },
+            {
+              "code": "instant"
+            },
+            {
+              "code": "integer"
+            },
+            {
+              "code": "markdown"
+            },
+            {
+              "code": "oid"
+            },
+            {
+              "code": "positiveInt"
+            },
+            {
+              "code": "string"
+            },
+            {
+              "code": "time"
+            },
+            {
+              "code": "unsignedInt"
+            },
+            {
+              "code": "uri"
+            },
+            {
+              "code": "url"
+            },
+            {
+              "code": "uuid"
+            },
+            {
+              "code": "Address"
+            },
+            {
+              "code": "Age"
+            },
+            {
+              "code": "Annotation"
+            },
+            {
+              "code": "Attachment"
+            },
+            {
+              "code": "CodeableConcept"
+            },
+            {
+              "code": "Coding"
+            },
+            {
+              "code": "ContactPoint"
+            },
+            {
+              "code": "Count"
+            },
+            {
+              "code": "Distance"
+            },
+            {
+              "code": "Duration"
+            },
+            {
+              "code": "HumanName"
+            },
+            {
+              "code": "Identifier"
+            },
+            {
+              "code": "Money"
+            },
+            {
+              "code": "Period"
+            },
+            {
+              "code": "Quantity"
+            },
+            {
+              "code": "Range"
+            },
+            {
+              "code": "Ratio"
+            },
+            {
+              "code": "Reference"
+            },
+            {
+              "code": "SampledData"
+            },
+            {
+              "code": "Signature"
+            },
+            {
+              "code": "Timing"
+            },
+            {
+              "code": "ContactDetail"
+            },
+            {
+              "code": "Contributor"
+            },
+            {
+              "code": "DataRequirement"
+            },
+            {
+              "code": "Expression"
+            },
+            {
+              "code": "ParameterDefinition"
+            },
+            {
+              "code": "RelatedArtifact"
+            },
+            {
+              "code": "TriggerDefinition"
+            },
+            {
+              "code": "UsageContext"
+            },
+            {
+              "code": "Dosage"
+            },
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        "pattern[x]": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "base64Binary"
+            },
+            {
+              "code": "boolean"
+            },
+            {
+              "code": "canonical"
+            },
+            {
+              "code": "code"
+            },
+            {
+              "code": "date"
+            },
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "decimal"
+            },
+            {
+              "code": "id"
+            },
+            {
+              "code": "instant"
+            },
+            {
+              "code": "integer"
+            },
+            {
+              "code": "markdown"
+            },
+            {
+              "code": "oid"
+            },
+            {
+              "code": "positiveInt"
+            },
+            {
+              "code": "string"
+            },
+            {
+              "code": "time"
+            },
+            {
+              "code": "unsignedInt"
+            },
+            {
+              "code": "uri"
+            },
+            {
+              "code": "url"
+            },
+            {
+              "code": "uuid"
+            },
+            {
+              "code": "Address"
+            },
+            {
+              "code": "Age"
+            },
+            {
+              "code": "Annotation"
+            },
+            {
+              "code": "Attachment"
+            },
+            {
+              "code": "CodeableConcept"
+            },
+            {
+              "code": "Coding"
+            },
+            {
+              "code": "ContactPoint"
+            },
+            {
+              "code": "Count"
+            },
+            {
+              "code": "Distance"
+            },
+            {
+              "code": "Duration"
+            },
+            {
+              "code": "HumanName"
+            },
+            {
+              "code": "Identifier"
+            },
+            {
+              "code": "Money"
+            },
+            {
+              "code": "Period"
+            },
+            {
+              "code": "Quantity"
+            },
+            {
+              "code": "Range"
+            },
+            {
+              "code": "Ratio"
+            },
+            {
+              "code": "Reference"
+            },
+            {
+              "code": "SampledData"
+            },
+            {
+              "code": "Signature"
+            },
+            {
+              "code": "Timing"
+            },
+            {
+              "code": "ContactDetail"
+            },
+            {
+              "code": "Contributor"
+            },
+            {
+              "code": "DataRequirement"
+            },
+            {
+              "code": "Expression"
+            },
+            {
+              "code": "ParameterDefinition"
+            },
+            {
+              "code": "RelatedArtifact"
+            },
+            {
+              "code": "TriggerDefinition"
+            },
+            {
+              "code": "UsageContext"
+            },
+            {
+              "code": "Dosage"
+            },
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        "example": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Element"
+            }
+          ]
+        },
+        "minValue[x]": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "date"
+            },
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "instant"
+            },
+            {
+              "code": "time"
+            },
+            {
+              "code": "decimal"
+            },
+            {
+              "code": "integer"
+            },
+            {
+              "code": "positiveInt"
+            },
+            {
+              "code": "unsignedInt"
+            },
+            {
+              "code": "Quantity"
+            }
+          ]
+        },
+        "maxValue[x]": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "date"
+            },
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "instant"
+            },
+            {
+              "code": "time"
+            },
+            {
+              "code": "decimal"
+            },
+            {
+              "code": "integer"
+            },
+            {
+              "code": "positiveInt"
+            },
+            {
+              "code": "unsignedInt"
+            },
+            {
+              "code": "Quantity"
+            }
+          ]
+        },
+        "maxLength": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "integer"
+            }
+          ]
+        },
+        "condition": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "id"
+            }
+          ]
+        },
+        "constraint": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Element"
+            }
+          ]
+        },
+        "mustSupport": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        "isModifier": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        "isModifierReason": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "isSummary": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        "binding": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Element"
+            }
+          ]
+        },
+        "mapping": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Element"
+            }
+          ]
+        }
+      }
+    },
+    "ElementDefinitionSlicing": {
+      "display": "ElementDefinitionSlicing",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "discriminator": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Element"
+            }
+          ]
+        },
+        "description": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "ordered": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        "rules": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        }
+      },
+      "parentType": "ElementDefinition"
+    },
+    "ElementDefinitionSlicingDiscriminator": {
+      "display": "ElementDefinitionSlicingDiscriminator",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "type": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "path": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        }
+      },
+      "parentType": "ElementDefinitionSlicing"
+    },
+    "ElementDefinitionBase": {
+      "display": "ElementDefinitionBase",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "path": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "min": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "unsignedInt"
+            }
+          ]
+        },
+        "max": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        }
+      },
+      "parentType": "ElementDefinition"
+    },
+    "ElementDefinitionType": {
+      "display": "ElementDefinitionType",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "code": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        "profile": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "canonical",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/StructureDefinition",
+                "http://hl7.org/fhir/StructureDefinition/ImplementationGuide"
+              ]
+            }
+          ]
+        },
+        "targetProfile": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "canonical",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/StructureDefinition",
+                "http://hl7.org/fhir/StructureDefinition/ImplementationGuide"
+              ]
+            }
+          ]
+        },
+        "aggregation": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "versioning": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        }
+      },
+      "parentType": "ElementDefinition"
+    },
+    "ElementDefinitionExample": {
+      "display": "ElementDefinitionExample",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "label": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "value[x]": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "base64Binary"
+            },
+            {
+              "code": "boolean"
+            },
+            {
+              "code": "canonical"
+            },
+            {
+              "code": "code"
+            },
+            {
+              "code": "date"
+            },
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "decimal"
+            },
+            {
+              "code": "id"
+            },
+            {
+              "code": "instant"
+            },
+            {
+              "code": "integer"
+            },
+            {
+              "code": "markdown"
+            },
+            {
+              "code": "oid"
+            },
+            {
+              "code": "positiveInt"
+            },
+            {
+              "code": "string"
+            },
+            {
+              "code": "time"
+            },
+            {
+              "code": "unsignedInt"
+            },
+            {
+              "code": "uri"
+            },
+            {
+              "code": "url"
+            },
+            {
+              "code": "uuid"
+            },
+            {
+              "code": "Address"
+            },
+            {
+              "code": "Age"
+            },
+            {
+              "code": "Annotation"
+            },
+            {
+              "code": "Attachment"
+            },
+            {
+              "code": "CodeableConcept"
+            },
+            {
+              "code": "Coding"
+            },
+            {
+              "code": "ContactPoint"
+            },
+            {
+              "code": "Count"
+            },
+            {
+              "code": "Distance"
+            },
+            {
+              "code": "Duration"
+            },
+            {
+              "code": "HumanName"
+            },
+            {
+              "code": "Identifier"
+            },
+            {
+              "code": "Money"
+            },
+            {
+              "code": "Period"
+            },
+            {
+              "code": "Quantity"
+            },
+            {
+              "code": "Range"
+            },
+            {
+              "code": "Ratio"
+            },
+            {
+              "code": "Reference"
+            },
+            {
+              "code": "SampledData"
+            },
+            {
+              "code": "Signature"
+            },
+            {
+              "code": "Timing"
+            },
+            {
+              "code": "ContactDetail"
+            },
+            {
+              "code": "Contributor"
+            },
+            {
+              "code": "DataRequirement"
+            },
+            {
+              "code": "Expression"
+            },
+            {
+              "code": "ParameterDefinition"
+            },
+            {
+              "code": "RelatedArtifact"
+            },
+            {
+              "code": "TriggerDefinition"
+            },
+            {
+              "code": "UsageContext"
+            },
+            {
+              "code": "Dosage"
+            },
+            {
+              "code": "Meta"
+            }
+          ]
+        }
+      },
+      "parentType": "ElementDefinition"
+    },
+    "ElementDefinitionConstraint": {
+      "display": "ElementDefinitionConstraint",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "key": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "id"
+            }
+          ]
+        },
+        "requirements": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "severity": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "human": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "expression": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "xpath": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "source": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "canonical",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/StructureDefinition"
+              ]
+            }
+          ]
+        }
+      },
+      "parentType": "ElementDefinition"
+    },
+    "ElementDefinitionBinding": {
+      "display": "ElementDefinitionBinding",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "strength": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "description": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "valueSet": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "canonical",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/ValueSet"
+              ]
+            }
+          ]
+        }
+      },
+      "parentType": "ElementDefinition"
+    },
+    "ElementDefinitionMapping": {
+      "display": "ElementDefinitionMapping",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "identity": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "id"
+            }
+          ]
+        },
+        "language": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "map": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "comment": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        }
+      },
+      "parentType": "ElementDefinition"
+    },
+    "Expression": {
+      "display": "Expression",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "description": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "name": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "id"
+            }
+          ]
+        },
+        "language": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "expression": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "reference": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        }
+      }
+    },
+    "Extension": {
+      "display": "Extension",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "url": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "value[x]": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "base64Binary"
+            },
+            {
+              "code": "boolean"
+            },
+            {
+              "code": "canonical"
+            },
+            {
+              "code": "code"
+            },
+            {
+              "code": "date"
+            },
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "decimal"
+            },
+            {
+              "code": "id"
+            },
+            {
+              "code": "instant"
+            },
+            {
+              "code": "integer"
+            },
+            {
+              "code": "markdown"
+            },
+            {
+              "code": "oid"
+            },
+            {
+              "code": "positiveInt"
+            },
+            {
+              "code": "string"
+            },
+            {
+              "code": "time"
+            },
+            {
+              "code": "unsignedInt"
+            },
+            {
+              "code": "uri"
+            },
+            {
+              "code": "url"
+            },
+            {
+              "code": "uuid"
+            },
+            {
+              "code": "Address"
+            },
+            {
+              "code": "Age"
+            },
+            {
+              "code": "Annotation"
+            },
+            {
+              "code": "Attachment"
+            },
+            {
+              "code": "CodeableConcept"
+            },
+            {
+              "code": "Coding"
+            },
+            {
+              "code": "ContactPoint"
+            },
+            {
+              "code": "Count"
+            },
+            {
+              "code": "Distance"
+            },
+            {
+              "code": "Duration"
+            },
+            {
+              "code": "HumanName"
+            },
+            {
+              "code": "Identifier"
+            },
+            {
+              "code": "Money"
+            },
+            {
+              "code": "Period"
+            },
+            {
+              "code": "Quantity"
+            },
+            {
+              "code": "Range"
+            },
+            {
+              "code": "Ratio"
+            },
+            {
+              "code": "Reference"
+            },
+            {
+              "code": "SampledData"
+            },
+            {
+              "code": "Signature"
+            },
+            {
+              "code": "Timing"
+            },
+            {
+              "code": "ContactDetail"
+            },
+            {
+              "code": "Contributor"
+            },
+            {
+              "code": "DataRequirement"
+            },
+            {
+              "code": "Expression"
+            },
+            {
+              "code": "ParameterDefinition"
+            },
+            {
+              "code": "RelatedArtifact"
+            },
+            {
+              "code": "TriggerDefinition"
+            },
+            {
+              "code": "UsageContext"
+            },
+            {
+              "code": "Dosage"
+            },
+            {
+              "code": "Meta"
+            }
+          ]
+        }
+      }
+    },
+    "HumanName": {
+      "display": "HumanName",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "use": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "text": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "family": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "given": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "prefix": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "suffix": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "period": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Period"
+            }
+          ]
+        }
+      }
+    },
+    "Identifier": {
+      "display": "Identifier",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "use": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "type": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        "system": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        "value": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "period": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        "assigner": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Organization"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "MarketingStatus": {
+      "display": "MarketingStatus",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "modifierExtension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "country": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        "jurisdiction": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        "status": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        "dateRange": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        "restoreDate": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        }
+      }
+    },
+    "Meta": {
+      "display": "Meta",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "versionId": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "id"
+            }
+          ]
+        },
+        "lastUpdated": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "instant"
+            }
+          ]
+        },
+        "source": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        "profile": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "canonical",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/StructureDefinition"
+              ]
+            }
+          ]
+        },
+        "security": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Coding"
+            }
+          ]
+        },
+        "tag": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Coding"
+            }
+          ]
+        },
+        "project": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        "author": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference"
+            }
+          ]
+        },
+        "account": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference"
+            }
+          ]
+        }
+      }
+    },
+    "Money": {
+      "display": "Money",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "value": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "decimal"
+            }
+          ]
+        },
+        "currency": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        }
+      }
+    },
+    "Narrative": {
+      "display": "Narrative",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "status": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "div": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "xhtml"
+            }
+          ]
+        }
+      }
+    },
+    "ParameterDefinition": {
+      "display": "ParameterDefinition",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "name": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "use": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "min": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "integer"
+            }
+          ]
+        },
+        "max": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "documentation": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "type": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "profile": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "canonical",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/StructureDefinition"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "Period": {
+      "display": "Period",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "start": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        },
+        "end": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        }
+      }
+    },
+    "Population": {
+      "display": "Population",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "modifierExtension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "age[x]": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Range"
+            },
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        "gender": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        "race": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        "physiologicalCondition": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        }
+      }
+    },
+    "ProdCharacteristic": {
+      "display": "ProdCharacteristic",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "modifierExtension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "height": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            }
+          ]
+        },
+        "width": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            }
+          ]
+        },
+        "depth": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            }
+          ]
+        },
+        "weight": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            }
+          ]
+        },
+        "nominalVolume": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            }
+          ]
+        },
+        "externalDiameter": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            }
+          ]
+        },
+        "shape": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "color": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "imprint": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "image": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Attachment"
+            }
+          ]
+        },
+        "scoring": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        }
+      }
+    },
+    "ProductShelfLife": {
+      "display": "ProductShelfLife",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "modifierExtension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "identifier": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        "type": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        "period": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            }
+          ]
+        },
+        "specialPrecautionsForStorage": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        }
+      }
+    },
+    "Quantity": {
+      "display": "Quantity",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "value": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "decimal"
+            }
+          ]
+        },
+        "comparator": {
+          "min": 0,
+          "max": "0",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "unit": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "system": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        "code": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        }
+      }
+    },
+    "Range": {
+      "display": "Range",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "low": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity",
+              "profile": [
+                "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
+              ]
+            }
+          ]
+        },
+        "high": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity",
+              "profile": [
+                "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "Ratio": {
+      "display": "Ratio",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "numerator": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            }
+          ]
+        },
+        "denominator": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            }
+          ]
+        }
+      }
+    },
+    "Reference": {
+      "display": "Reference",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "reference": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "type": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        "identifier": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        "display": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        }
+      }
+    },
+    "RelatedArtifact": {
+      "display": "RelatedArtifact",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "type": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "label": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "display": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "citation": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "markdown"
+            }
+          ]
+        },
+        "url": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "url"
+            }
+          ]
+        },
+        "document": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Attachment"
+            }
+          ]
+        },
+        "resource": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "canonical",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Resource"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "SampledData": {
+      "display": "SampledData",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "origin": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity",
+              "profile": [
+                "http://hl7.org/fhir/StructureDefinition/SimpleQuantity"
+              ]
+            }
+          ]
+        },
+        "period": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "decimal"
+            }
+          ]
+        },
+        "factor": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "decimal"
+            }
+          ]
+        },
+        "lowerLimit": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "decimal"
+            }
+          ]
+        },
+        "upperLimit": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "decimal"
+            }
+          ]
+        },
+        "dimensions": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "positiveInt"
+            }
+          ]
+        },
+        "data": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        }
+      }
+    },
+    "Signature": {
+      "display": "Signature",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "type": {
+          "min": 1,
+          "max": "*",
+          "type": [
+            {
+              "code": "Coding"
+            }
+          ]
+        },
+        "when": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "instant"
+            }
+          ]
+        },
+        "who": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson",
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Device",
+                "http://hl7.org/fhir/StructureDefinition/Organization"
+              ]
+            }
+          ]
+        },
+        "onBehalfOf": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson",
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Device",
+                "http://hl7.org/fhir/StructureDefinition/Organization"
+              ]
+            }
+          ]
+        },
+        "targetFormat": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "sigFormat": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "data": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "base64Binary"
+            }
+          ]
+        }
+      }
+    },
+    "SubstanceAmount": {
+      "display": "SubstanceAmount",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "modifierExtension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "amount[x]": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            },
+            {
+              "code": "Range"
+            },
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "amountType": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        "amountText": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "referenceRange": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Element"
+            }
+          ]
+        }
+      }
+    },
+    "SubstanceAmountReferenceRange": {
+      "display": "SubstanceAmountReferenceRange",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "lowLimit": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            }
+          ]
+        },
+        "highLimit": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Quantity"
+            }
+          ]
+        }
+      },
+      "parentType": "SubstanceAmount"
+    },
+    "Timing": {
+      "display": "Timing",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "modifierExtension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "event": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        },
+        "repeat": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Element"
+            }
+          ]
+        },
+        "code": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        }
+      }
+    },
+    "TimingRepeat": {
+      "display": "TimingRepeat",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "bounds[x]": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Duration"
+            },
+            {
+              "code": "Range"
+            },
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        "count": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "positiveInt"
+            }
+          ]
+        },
+        "countMax": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "positiveInt"
+            }
+          ]
+        },
+        "duration": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "decimal"
+            }
+          ]
+        },
+        "durationMax": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "decimal"
+            }
+          ]
+        },
+        "durationUnit": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "frequency": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "positiveInt"
+            }
+          ]
+        },
+        "frequencyMax": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "positiveInt"
+            }
+          ]
+        },
+        "period": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "decimal"
+            }
+          ]
+        },
+        "periodMax": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "decimal"
+            }
+          ]
+        },
+        "periodUnit": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "dayOfWeek": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "timeOfDay": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "time"
+            }
+          ]
+        },
+        "when": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "offset": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "unsignedInt"
+            }
+          ]
+        }
+      },
+      "parentType": "Timing"
+    },
+    "TriggerDefinition": {
+      "display": "TriggerDefinition",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "type": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        "name": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "timing[x]": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Timing"
+            },
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Schedule"
+              ]
+            },
+            {
+              "code": "date"
+            },
+            {
+              "code": "dateTime"
+            }
+          ]
+        },
+        "data": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "DataRequirement"
+            }
+          ]
+        },
+        "condition": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Expression"
+            }
+          ]
+        }
+      }
+    },
+    "UsageContext": {
+      "display": "UsageContext",
+      "properties": {
+        "id": {
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        "extension": {
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        "code": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "Coding"
+            }
+          ]
+        },
+        "value[x]": {
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "CodeableConcept"
+            },
+            {
+              "code": "Quantity"
+            },
+            {
+              "code": "Range"
+            },
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/PlanDefinition",
+                "http://hl7.org/fhir/StructureDefinition/ResearchStudy",
+                "http://hl7.org/fhir/StructureDefinition/InsurancePlan",
+                "http://hl7.org/fhir/StructureDefinition/HealthcareService",
+                "http://hl7.org/fhir/StructureDefinition/Group",
+                "http://hl7.org/fhir/StructureDefinition/Location",
+                "http://hl7.org/fhir/StructureDefinition/Organization"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}

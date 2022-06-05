@@ -18,7 +18,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
-import './SearchControl.css';
 import { getFieldDefinitions } from './SearchControlField';
 import { SearchFieldEditor } from './SearchFieldEditor';
 import { SearchFilterEditor } from './SearchFilterEditor';
@@ -29,6 +28,7 @@ import { addFilter, buildFieldNameString, getOpString, movePage, renderValue } f
 import { Select } from './Select';
 import { TitleBar } from './TitleBar';
 import { isCheckboxCell, killEvent } from './utils/dom';
+import './SearchControl.css';
 
 export class SearchChangeEvent extends Event {
   readonly definition: SearchRequest;
@@ -379,7 +379,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                     </td>
                   )}
                   {fields.map((field) => (
-                    <td key={field.name}>{renderValue(schema, resource, field)}</td>
+                    <td key={field.name}>{renderValue(resource, field)}</td>
                   ))}
                 </tr>
               )

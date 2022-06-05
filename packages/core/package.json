@@ -17,6 +17,7 @@
     "test": "jest"
   },
   "devDependencies": {
+    "@medplum/definitions": "0.9.16",
     "@medplum/fhirtypes": "0.9.16"
   },
   "peerDependencies": {

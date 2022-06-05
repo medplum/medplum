@@ -27,9 +27,7 @@ export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
 
   return (
     <BackboneElementDisplay
-      schema={schema}
-      typeName={value.resourceType}
-      value={value}
+      value={{ type: value.resourceType, value }}
       ignoreMissingValues={props.ignoreMissingValues}
     />
   );

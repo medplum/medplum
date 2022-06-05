@@ -72,7 +72,7 @@ export const PatientSearchParameters: SearchParameter[] = [
     base: ['Patient', 'Practitioner'],
     code: 'address-city',
     name: 'address-city',
-    type: 'token',
+    type: 'string',
     expression: 'Patient.address.city | Practitioner.address.city',
   },
   {

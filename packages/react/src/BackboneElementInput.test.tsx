@@ -1,4 +1,4 @@
-import { IndexedStructureDefinition } from '@medplum/core';
+import { globalSchema } from '@medplum/core';
 import { ElementDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { render, screen } from '@testing-library/react';
@@ -6,42 +6,6 @@ import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { BackboneElementInput, BackboneElementInputProps } from './BackboneElementInput';
 import { MedplumProvider } from './MedplumProvider';
-
-const contactProperty: ElementDefinition = {
-  id: 'Patient.contact',
-  path: 'Patient.contact',
-  type: [
-    {
-      code: 'BackboneElement',
-    },
-  ],
-  min: 0,
-  max: '*',
-};
-
-const idProperty: ElementDefinition = {
-  id: 'Patient.contact.id',
-  path: 'Patient.contact.id',
-  type: [
-    {
-      code: 'string',
-    },
-  ],
-  min: 0,
-  max: '1',
-};
-
-const nameProperty: ElementDefinition = {
-  id: 'Patient.contact.name',
-  path: 'Patient.contact.name',
-  type: [
-    {
-      code: 'HumanName',
-    },
-  ],
-  min: 0,
-  max: '1',
-};
 
 const valueSetComposeProperty: ElementDefinition = {
   id: 'ValueSet.compose',
@@ -87,34 +51,18 @@ const valueSetComposeExcludeProperty: ElementDefinition = {
   contentReference: '#ValueSet.compose.include',
 };
 
-const schema: IndexedStructureDefinition = {
-  types: {
-    Patient: {
-      display: 'Patient',
-      properties: {
-        contact: contactProperty,
-      },
-    },
-    PatientContact: {
-      display: 'Patient Contact',
-      properties: {
-        id: idProperty,
-        name: nameProperty,
-      },
-    },
-    ValueSet: {
-      display: 'Value Set',
-      properties: {
-        compose: valueSetComposeProperty,
-      },
-    },
-    ValueSetCompose: {
-      display: 'Value Set Compose',
-      properties: {
-        lockedDate: valueSetComposeLockedDateProperty,
-        exclude: valueSetComposeExcludeProperty,
-      },
-    },
+globalSchema.types['ValueSet'] = {
+  display: 'Value Set',
+  properties: {
+    compose: valueSetComposeProperty,
+  },
+};
+
+globalSchema.types['ValueSetCompose'] = {
+  display: 'Value Set Compose',
+  properties: {
+    lockedDate: valueSetComposeLockedDateProperty,
+    exclude: valueSetComposeExcludeProperty,
   },
 };
 
@@ -131,19 +79,19 @@ describe('BackboneElementInput', () => {
     );
   }
 
-  test('Renders', () => {
+  test('Renders', async () => {
+    await medplum.requestSchema('Patient');
     setup({
-      schema,
-      property: contactProperty,
+      property: globalSchema.types['Patient'].properties['contact'],
       name: 'contact',
     });
     expect(screen.getByText('Name')).toBeDefined();
   });
 
-  test('Handles content reference', () => {
+  test('Handles content reference', async () => {
+    await medplum.requestSchema('ValueSet');
     setup({
-      schema,
-      property: valueSetComposeProperty,
+      property: globalSchema.types['ValueSet'].properties['compose'],
       name: 'compose',
     });
     expect(screen.getByText('Locked Date')).toBeInTheDocument();
@@ -152,7 +100,6 @@ describe('BackboneElementInput', () => {
 
   test('Not implemented', () => {
     setup({
-      schema,
       property: {
         path: 'foo',
       },

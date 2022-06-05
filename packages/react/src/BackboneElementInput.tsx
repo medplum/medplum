@@ -1,4 +1,4 @@
-import { buildTypeName, getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/core';
+import { buildTypeName, getPropertyDisplayName, globalSchema } from '@medplum/core';
 import { ElementDefinition, OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { DEFAULT_IGNORED_PROPERTIES } from './constants';
@@ -8,7 +8,6 @@ import { getValueAndType } from './ResourcePropertyDisplay';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 
 export interface BackboneElementInputProps {
-  schema: IndexedStructureDefinition;
   property: ElementDefinition;
   name: string;
   defaultValue?: any;
@@ -27,7 +26,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
   }
 
   const typeName = buildTypeName(props.property.path?.split('.') as string[]);
-  const typeSchema = props.schema.types[typeName];
+  const typeSchema = globalSchema.types[typeName];
   if (!typeSchema) {
     return <div>{typeName}&nbsp;not implemented</div>;
   }
@@ -43,17 +42,16 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
         if (!property.type) {
           return null;
         }
-        const [propertyValue, propertyType] = getValueAndType(value, property);
+        const [propertyValue, propertyType] = getValueAndType(value, key);
         return (
           <FormSection
             key={key}
-            title={getPropertyDisplayName(property)}
+            title={getPropertyDisplayName(key)}
             description={property.definition}
             htmlFor={key}
             outcome={props.outcome}
           >
             <ResourcePropertyInput
-              schema={props.schema}
               property={property}
               name={key}
               defaultValue={propertyValue}

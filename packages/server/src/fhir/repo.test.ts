@@ -4,6 +4,7 @@ import {
   Bundle,
   Communication,
   Encounter,
+  Observation,
   Patient,
   Questionnaire,
   QuestionnaireResponse,
@@ -1327,6 +1328,73 @@ describe('FHIR Repo', () => {
     expect(bundleContains(bundle3, serviceRequest1)).toEqual(false);
     expect(bundleContains(bundle3, serviceRequest2)).toEqual(false);
     expect(bundleContains(bundle3, serviceRequest3)).toEqual(true);
+  });
+
+  test('Filter by Quantity.value', async () => {
+    const code = randomUUID();
+
+    const [outcome0, patient] = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['John'], family: 'Quantity' }],
+    });
+    assertOk(outcome0, patient);
+
+    const [outcome1, observation1] = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      subject: createReference(patient),
+      code: { coding: [{ code }] },
+      valueQuantity: { value: 1, unit: 'mg' },
+    });
+    assertOk(outcome1, observation1);
+
+    const [outcome2, observation2] = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      subject: createReference(patient),
+      code: { coding: [{ code }] },
+      valueQuantity: { value: 5, unit: 'mg' },
+    });
+    assertOk(outcome2, observation2);
+
+    const [outcome3, observation3] = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      subject: createReference(patient),
+      code: { coding: [{ code }] },
+      valueQuantity: { value: 10, unit: 'mg' },
+    });
+    assertOk(outcome3, observation3);
+
+    const [outcome4, bundle1] = await systemRepo.search<Observation>({
+      resourceType: 'Observation',
+      filters: [{ code: 'code', operator: Operator.EQUALS, value: code }],
+      sortRules: [{ code: 'value-quantity', descending: false }],
+    });
+    assertOk(outcome4, bundle1);
+    expect(bundle1.entry?.length).toEqual(3);
+    expect(bundle1.entry?.[0]?.resource?.id).toEqual(observation1.id);
+    expect(bundle1.entry?.[1]?.resource?.id).toEqual(observation2.id);
+    expect(bundle1.entry?.[2]?.resource?.id).toEqual(observation3.id);
+
+    const [outcome5, bundle2] = await systemRepo.search<Observation>({
+      resourceType: 'Observation',
+      filters: [{ code: 'code', operator: Operator.EQUALS, value: code }],
+      sortRules: [{ code: 'value-quantity', descending: true }],
+    });
+    assertOk(outcome5, bundle2);
+    expect(bundle2.entry?.length).toEqual(3);
+    expect(bundle2.entry?.[0]?.resource?.id).toEqual(observation3.id);
+    expect(bundle2.entry?.[1]?.resource?.id).toEqual(observation2.id);
+    expect(bundle2.entry?.[2]?.resource?.id).toEqual(observation1.id);
+
+    const [outcome6, bundle3] = await systemRepo.search<Observation>({
+      resourceType: 'Observation',
+      filters: [
+        { code: 'code', operator: Operator.EQUALS, value: code },
+        { code: 'value-quantity', operator: Operator.GREATER_THAN, value: '8' },
+      ],
+    });
+    assertOk(outcome6, bundle3);
+    expect(bundle3.entry?.length).toEqual(1);
+    expect(bundle3.entry?.[0]?.resource?.id).toEqual(observation3.id);
   });
 
   test('Reindex resource type as non-admin', async () => {

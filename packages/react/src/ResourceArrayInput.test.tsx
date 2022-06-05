@@ -1,12 +1,7 @@
-import { IndexedStructureDefinition } from '@medplum/core';
 import { ElementDefinition } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { ResourceArrayInput } from './ResourceArrayInput';
-
-const schema: IndexedStructureDefinition = {
-  types: {},
-};
 
 const property: ElementDefinition = {
   type: [
@@ -18,19 +13,19 @@ const property: ElementDefinition = {
 
 describe('ResourceArrayInput', () => {
   test('Renders default', () => {
-    render(<ResourceArrayInput schema={schema} property={property} name="myProp" />);
+    render(<ResourceArrayInput property={property} name="myProp" />);
 
     expect(screen.getByText('Add')).toBeInTheDocument();
   });
 
   test('Renders empty', () => {
-    render(<ResourceArrayInput schema={schema} property={property} name="myProp" defaultValue={[]} />);
+    render(<ResourceArrayInput property={property} name="myProp" defaultValue={[]} />);
 
     expect(screen.getByText('Add')).toBeInTheDocument();
   });
 
   test('Renders elements', () => {
-    render(<ResourceArrayInput schema={schema} property={property} name="myProp" defaultValue={['foo', 'bar']} />);
+    render(<ResourceArrayInput property={property} name="myProp" defaultValue={['foo', 'bar']} />);
 
     expect(screen.getByDisplayValue('foo')).toBeInTheDocument();
     expect(screen.getByDisplayValue('bar')).toBeInTheDocument();
@@ -39,7 +34,7 @@ describe('ResourceArrayInput', () => {
   });
 
   test('Click add button', async () => {
-    render(<ResourceArrayInput schema={schema} property={property} name="myProp" defaultValue={[]} />);
+    render(<ResourceArrayInput property={property} name="myProp" defaultValue={[]} />);
 
     expect(screen.getByText('Add')).toBeInTheDocument();
 
@@ -51,7 +46,7 @@ describe('ResourceArrayInput', () => {
   });
 
   test('Click remove button', async () => {
-    render(<ResourceArrayInput schema={schema} property={property} name="myProp" defaultValue={['foo', 'bar']} />);
+    render(<ResourceArrayInput property={property} name="myProp" defaultValue={['foo', 'bar']} />);
 
     await act(async () => {
       fireEvent.click(screen.getAllByText('Remove')[0]);
@@ -64,15 +59,7 @@ describe('ResourceArrayInput', () => {
   test('Change value', async () => {
     const onChange = jest.fn();
 
-    render(
-      <ResourceArrayInput
-        schema={schema}
-        property={property}
-        name="myProp"
-        defaultValue={['foo', 'bar']}
-        onChange={onChange}
-      />
-    );
+    render(<ResourceArrayInput property={property} name="myProp" defaultValue={['foo', 'bar']} onChange={onChange} />);
 
     await act(async () => {
       fireEvent.change(screen.getByDisplayValue('foo'), {

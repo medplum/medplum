@@ -52,6 +52,7 @@ export function getSearchParameterDetails(
     return { columnName, type: SearchParameterType.TEXT };
   }
 
+  const defaultType = getSearchParameterType(searchParam);
   let baseType = resourceType;
   let elementDefinition = undefined;
   let propertyType = undefined;
@@ -59,11 +60,11 @@ export function getSearchParameterDetails(
 
   for (let i = 1; i < expression.length; i++) {
     const propertyName = expression[i];
-    elementDefinition = structureDefinitions.types[baseType]?.properties?.[propertyName];
+    elementDefinition =
+      structureDefinitions.types[baseType]?.properties?.[propertyName] ??
+      structureDefinitions.types[baseType]?.properties?.[propertyName + '[x]'];
     if (!elementDefinition) {
-      // This happens on complex properties such as "collected[x]"/"collectedDateTime"/"collectedPeriod"
-      // In the future, explore returning multiple column definitions
-      return { columnName, type: SearchParameterType.TEXT, array };
+      throw new Error(`Element definition not found for ${resourceType} ${searchParam.code}`);
     }
 
     if (elementDefinition.max === '*') {
@@ -74,7 +75,7 @@ export function getSearchParameterDetails(
     if (!propertyType) {
       // This happens when one of parent properties uses contentReference
       // In the future, explore following the reference
-      return { columnName, type: SearchParameterType.TEXT, array };
+      return { columnName, type: defaultType, array };
     }
 
     if (i < expression.length - 1) {
@@ -99,7 +100,7 @@ function convertCodeToColumnName(code: string): string {
   return code.split('-').reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
 }
 
-function getSearchParameterType(searchParam: SearchParameter, propertyType: PropertyType): SearchParameterType {
+function getSearchParameterType(searchParam: SearchParameter, propertyType?: PropertyType): SearchParameterType {
   let type = SearchParameterType.TEXT;
   switch (searchParam.type) {
     case 'date':
@@ -130,12 +131,19 @@ function getSearchParameterType(searchParam: SearchParameter, propertyType: Prop
 export function getExpressionForResourceType(resourceType: string, expression: string): string | undefined {
   const expressions = expression.split(' | ');
   for (const e of expressions) {
+    if (isIgnoredExpression(e)) {
+      continue;
+    }
     const simplified = simplifyExpression(e);
     if (simplified.startsWith(resourceType + '.')) {
       return simplified;
     }
   }
   return undefined;
+}
+
+function isIgnoredExpression(input: string): boolean {
+  return input.includes(' as Period') || input.includes(' as SampledDate');
 }
 
 function simplifyExpression(input: string): string {
@@ -145,12 +153,15 @@ function simplifyExpression(input: string): string {
     result = result.substring(1, result.length - 1);
   }
 
-  if (result.includes(' as ')) {
-    result = result.substring(0, result.indexOf(' as '));
+  if (result.includes('[0]')) {
+    result = result.replaceAll('[0]', '');
   }
 
-  if (result.includes('.where(')) {
-    result = result.substring(0, result.indexOf('.where('));
+  const stopStrings = [' != ', ' as ', '.as(', '.exists(', '.where('];
+  for (const stopString of stopStrings) {
+    if (result.includes(stopString)) {
+      result = result.substring(0, result.indexOf(stopString));
+    }
   }
 
   return result;

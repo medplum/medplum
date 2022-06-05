@@ -1,12 +1,4 @@
-import {
-  capitalize,
-  evalFhirPath,
-  Filter,
-  IndexedStructureDefinition,
-  Operator,
-  PropertyType,
-  SearchRequest,
-} from '@medplum/core';
+import { capitalize, evalFhirPathTyped, Filter, Operator, PropertyType, SearchRequest } from '@medplum/core';
 import { ElementDefinition, Resource, SearchParameter } from '@medplum/fhirtypes';
 import React from 'react';
 import { DateTimeDisplay } from './DateTimeDisplay';
@@ -504,16 +496,11 @@ export function buildFieldNameString(key: string): string {
 
 /**
  * Returns a fragment to be displayed in the search table for the value.
- * @param schema The currently indexed schema.
  * @param resource The parent resource.
  * @param key The search code or FHIRPath expression.
  * @returns The fragment to display.
  */
-export function renderValue(
-  schema: IndexedStructureDefinition,
-  resource: Resource,
-  field: SearchControlField
-): string | JSX.Element | null | undefined {
+export function renderValue(resource: Resource, field: SearchControlField): string | JSX.Element | null | undefined {
   const key = field.name;
   if (key === 'id') {
     return resource.id;
@@ -527,12 +514,14 @@ export function renderValue(
     return <DateTimeDisplay value={resource.meta?.lastUpdated} />;
   }
 
+  // Priority 1: ElementDefinition by exact match
   if (field.elementDefinition && `${resource.resourceType}.${field.name}` === field.elementDefinition.path) {
-    return renderPropertyValue(schema, resource, field.elementDefinition);
+    return renderPropertyValue(resource, field.elementDefinition);
   }
 
+  // Priority 2: SearchParameter by exact match
   if (field.searchParam && field.name === field.searchParam.code) {
-    return renderSearchParameterValue(schema, resource, field.searchParam, field.elementDefinition);
+    return renderSearchParameterValue(resource, field.searchParam, field.elementDefinition);
   }
 
   // We don't know how to render this field definition
@@ -541,24 +530,19 @@ export function renderValue(
 
 /**
  * Returns a fragment to be displayed in the search table for a resource property.
- * @param schema The currently indexed schema.
  * @param resource The parent resource.
  * @param elementDefinition The property element definition.
  * @returns A React element or null.
  */
-function renderPropertyValue(
-  schema: IndexedStructureDefinition,
-  resource: Resource,
-  elementDefinition: ElementDefinition
-): JSX.Element | null {
-  const [value, propertyType] = getValueAndType(resource, elementDefinition);
+function renderPropertyValue(resource: Resource, elementDefinition: ElementDefinition): JSX.Element | null {
+  const path = elementDefinition.path?.split('.')?.pop()?.replaceAll('[x]', '') || '';
+  const [value, propertyType] = getValueAndType({ type: resource.resourceType, value: resource }, path);
   if (!value) {
     return null;
   }
 
   return (
     <ResourcePropertyDisplay
-      schema={schema}
       property={elementDefinition}
       propertyType={propertyType}
       value={value}
@@ -571,19 +555,17 @@ function renderPropertyValue(
 
 /**
  * Returns a fragment to be displayed in the search table for a search parameter.
- * @param schema The currently indexed schema.
  * @param resource The parent resource.
  * @param searchParam The search parameter.
  * @param elementDefinition Optional element definition.
  * @returns A React element or null.
  */
 function renderSearchParameterValue(
-  schema: IndexedStructureDefinition,
   resource: Resource,
   searchParam: SearchParameter,
   elementDefinition: ElementDefinition | undefined
 ): JSX.Element | null {
-  const value = evalFhirPath(searchParam.expression as string, resource);
+  const value = evalFhirPathTyped(searchParam.expression as string, [{ type: resource.resourceType, value: resource }]);
   if (!value || value.length === 0) {
     return null;
   }
@@ -591,10 +573,8 @@ function renderSearchParameterValue(
   if (elementDefinition) {
     return (
       <ResourcePropertyDisplay
-        schema={schema}
-        property={elementDefinition}
-        propertyType={elementDefinition.type?.[0]?.code as PropertyType}
-        value={value}
+        propertyType={value[0].type as PropertyType}
+        value={value[0].value}
         maxWidth={200}
         ignoreMissingValues={true}
       />

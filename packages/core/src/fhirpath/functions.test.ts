@@ -1,6 +1,6 @@
 import { PropertyType } from '../types';
 import { Atom, LiteralAtom, TypedValue } from './atoms';
-import { functions } from './functions';
+import { FhirPathFunction, functions } from './functions';
 import { booleanToTypedValue, toTypedValue } from './utils';
 
 const isEven: Atom = {
@@ -411,10 +411,10 @@ describe('FHIRPath functions', () => {
   });
 
   test('toString', () => {
-    const toString = functions.toString as unknown as (input: unknown[]) => string[];
+    const toString = functions.toString as unknown as FhirPathFunction;
     expect(toString([])).toEqual([]);
-    expect(() => toString([null])).toThrow();
-    expect(() => toString([undefined])).toThrow();
+    expect(() => toString([null as unknown as TypedValue])).toThrow();
+    expect(() => toString([undefined as unknown as TypedValue])).toThrow();
     expect(() => toString([TYPED_1, TYPED_2])).toThrow();
     expect(toString([TYPED_TRUE])).toEqual([toTypedValue('true')]);
     expect(toString([TYPED_FALSE])).toEqual([toTypedValue('false')]);

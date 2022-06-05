@@ -1,11 +1,13 @@
 import { Resource } from '@medplum/fhirtypes';
 import { PropertyType } from '../types';
+import { FhirPathFunction } from './functions';
 import {
   booleanToTypedValue,
   fhirPathArrayEquals,
   fhirPathArrayEquivalent,
   fhirPathIs,
   fhirPathNot,
+  getTypedPropertyValue,
   isQuantity,
   removeDuplicates,
   toJsBoolean,
@@ -13,7 +15,7 @@ import {
 } from './utils';
 
 export interface TypedValue {
-  readonly type: PropertyType;
+  readonly type: string;
   readonly value: any;
 }
 
@@ -29,7 +31,7 @@ export class FhirPathAtom implements Atom {
       if (context.length > 0) {
         return context.map((e) => this.child.eval([e])).flat();
       } else {
-        return this.child.eval(context);
+        return this.child.eval([]);
       }
     } catch (error) {
       throw new Error(`FhirPathError on "${this.original}": ${error}`);
@@ -66,26 +68,7 @@ export class SymbolAtom implements Atom {
       return typedValue;
     }
 
-    let result: any = undefined;
-    if (this.name in input) {
-      result = (input as { [key: string]: unknown })[this.name];
-    } else {
-      const propertyName = Object.keys(input).find((k) => k.startsWith(this.name));
-      if (propertyName) {
-        result = (input as { [key: string]: unknown })[propertyName];
-      }
-    }
-
-    if (result === undefined) {
-      return undefined;
-    }
-
-    // TODO: Get the PropertyType from the choice of type
-    if (Array.isArray(result)) {
-      return result.map(toTypedValue);
-    } else {
-      return [toTypedValue(result)];
-    }
+    return getTypedPropertyValue(typedValue, this.name);
   }
 }
 
@@ -311,11 +294,7 @@ export class XorAtom implements Atom {
 }
 
 export class FunctionAtom implements Atom {
-  constructor(
-    public readonly name: string,
-    public readonly args: Atom[],
-    public readonly impl: (context: TypedValue[], ...a: Atom[]) => TypedValue[]
-  ) {}
+  constructor(public readonly name: string, public readonly args: Atom[], public readonly impl: FhirPathFunction) {}
   eval(context: TypedValue[]): TypedValue[] {
     return this.impl(context, ...this.args);
   }

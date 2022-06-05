@@ -366,7 +366,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns A collection containing all but the first item in the input collection.
    */
   skip: (input: TypedValue[], num: Atom): TypedValue[] => {
-    const numValue = num.eval([])[0]?.value;
+    const numValue = num.eval(input)[0]?.value;
     if (typeof numValue !== 'number') {
       throw new Error('Expected a number for skip(num)');
     }
@@ -391,7 +391,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns A collection containing the first num items in the input collection.
    */
   take: (input: TypedValue[], num: Atom): TypedValue[] => {
-    const numValue = num.eval([])[0]?.value;
+    const numValue = num.eval(input)[0]?.value;
     if (typeof numValue !== 'number') {
       throw new Error('Expected a number for take(num)');
     }
@@ -415,7 +415,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (!other) {
       return input;
     }
-    const otherArray = other.eval([]);
+    const otherArray = other.eval(input);
     const result: TypedValue[] = [];
     for (const value of input) {
       if (!result.some((e) => e.value === value.value) && otherArray.some((e) => e.value === value.value)) {
@@ -437,7 +437,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (!other) {
       return input;
     }
-    const otherArray = other.eval([]);
+    const otherArray = other.eval(input);
     const result: TypedValue[] = [];
     for (const value of input) {
       if (!otherArray.some((e) => e.value === value.value)) {
@@ -466,7 +466,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (!other) {
       return input;
     }
-    const otherArray = other.eval([]);
+    const otherArray = other.eval(input);
     return removeDuplicates([...input, ...otherArray]);
   },
 
@@ -483,7 +483,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (!other) {
       return input;
     }
-    const otherArray = other.eval([]);
+    const otherArray = other.eval(input);
     return [...input, ...otherArray];
   },
 
@@ -1408,16 +1408,16 @@ export const functions: Record<string, FhirPathFunction> = {
    * IBM FHIR issue: https://github.com/IBM/FHIR/issues/1014
    * IBM FHIR PR: https://github.com/IBM/FHIR/pull/1023
    */
-  between: (context: TypedValue[], startAtom: Atom, endAtom: Atom, unitsAtom: Atom): TypedValue[] => {
-    const startDate = functions.toDateTime(startAtom.eval(context));
+  between: (input: TypedValue[], startAtom: Atom, endAtom: Atom, unitsAtom: Atom): TypedValue[] => {
+    const startDate = functions.toDateTime(startAtom.eval(input));
     if (startDate.length === 0) {
       throw new Error('Invalid start date');
     }
-    const endDate = functions.toDateTime(endAtom.eval(context));
+    const endDate = functions.toDateTime(endAtom.eval(input));
     if (endDate.length === 0) {
       throw new Error('Invalid end date');
     }
-    const unit = unitsAtom.eval(context)[0].value as string;
+    const unit = unitsAtom.eval(input)[0]?.value as string;
     if (unit !== 'years' && unit !== 'months' && unit !== 'days') {
       throw new Error('Invalid units');
     }
@@ -1492,7 +1492,7 @@ export const functions: Record<string, FhirPathFunction> = {
         } else if (typeof value === 'object') {
           const ref = value as Reference;
           if (ref.resource) {
-            return { type: PropertyType.BackboneElement, value: ref.resource };
+            return toTypedValue(ref.resource);
           }
           refStr = ref.reference;
         }
@@ -1507,11 +1507,11 @@ export const functions: Record<string, FhirPathFunction> = {
 
   /**
    * The as operator can be used to treat a value as a specific type.
-   * @param context The context value.
+   * @param input The input value.
    * @returns The value as the specific type.
    */
-  as: (context: TypedValue[]): TypedValue[] => {
-    return context;
+  as: (input: TypedValue[]): TypedValue[] => {
+    return input;
   },
 
   /*
@@ -1551,7 +1551,7 @@ export const functions: Record<string, FhirPathFunction> = {
   },
 
   conformsTo: (input: TypedValue[], systemAtom: Atom): TypedValue[] => {
-    const system = systemAtom.eval([])[0].value as string;
+    const system = systemAtom.eval(input)[0].value as string;
     if (!system.startsWith('http://hl7.org/fhir/StructureDefinition/')) {
       throw new Error('Expected a StructureDefinition URL');
     }
@@ -1603,7 +1603,7 @@ function applyMathFunc(
   if (typeof numberInput !== 'number') {
     throw new Error('Math function cannot be called with non-number');
   }
-  const result = func(numberInput, ...argsAtoms.map((atom) => atom.eval([])?.[0]?.value));
+  const result = func(numberInput, ...argsAtoms.map((atom) => atom.eval(input)?.[0]?.value));
   const type = quantity ? PropertyType.Quantity : input[0].type;
   const returnValue = quantity ? { ...value, value: result } : result;
   return [{ type, value: returnValue }];

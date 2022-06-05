@@ -29,7 +29,7 @@ import { Hl7Message } from './hl7';
 import { parseJWTPayload } from './jwt';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
-import { createSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
+import { globalSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
 import { arrayBufferToBase64, createReference, ProfileResource } from './utils';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
@@ -371,7 +371,6 @@ export class MedplumClient extends EventTarget {
   readonly #fetch: FetchLike;
   readonly #createPdf?: CreatePdfFunction;
   readonly #storage: ClientStorage;
-  readonly #schema: IndexedStructureDefinition;
   readonly #requestCache: LRUCache<RequestCacheEntry>;
   readonly #cacheTime: number;
   readonly #baseUrl: string;
@@ -402,7 +401,6 @@ export class MedplumClient extends EventTarget {
     this.#fetch = options?.fetch || window.fetch.bind(window);
     this.#createPdf = options?.createPdf;
     this.#storage = new ClientStorage();
-    this.#schema = createSchema();
     this.#requestCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
     this.#cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
     this.#baseUrl = options?.baseUrl || DEFAULT_BASE_URL;
@@ -895,9 +893,10 @@ export class MedplumClient extends EventTarget {
    * It is assumed that a client will call requestSchema before using this method.
    * @param resourceType The FHIR resource type.
    * @returns The schema if immediately available, undefined otherwise.
+   * @deprecated Use globalSchema instead.
    */
   getSchema(): IndexedStructureDefinition {
-    return this.#schema;
+    return globalSchema;
   }
 
   /**
@@ -907,8 +906,8 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to a schema with the requested resource type.
    */
   async requestSchema(resourceType: string): Promise<IndexedStructureDefinition> {
-    if (resourceType in this.#schema.types) {
-      return Promise.resolve(this.#schema);
+    if (resourceType in globalSchema.types) {
+      return globalSchema;
     }
 
     const query = `{
@@ -944,14 +943,14 @@ export class MedplumClient extends EventTarget {
     const response = (await this.graphql(query)) as SchemaGraphQLResponse;
 
     for (const structureDefinition of response.data.StructureDefinitionList) {
-      indexStructureDefinition(this.#schema, structureDefinition);
+      indexStructureDefinition(globalSchema, structureDefinition);
     }
 
     for (const searchParameter of response.data.SearchParameterList) {
-      indexSearchParameter(this.#schema, searchParameter);
+      indexSearchParameter(globalSchema, searchParameter);
     }
 
-    return this.#schema;
+    return globalSchema;
   }
 
   /**

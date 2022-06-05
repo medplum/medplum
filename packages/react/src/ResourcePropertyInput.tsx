@@ -1,4 +1,4 @@
-import { capitalize, IndexedStructureDefinition, PropertyType } from '@medplum/core';
+import { capitalize, PropertyType } from '@medplum/core';
 import { ElementDefinition, ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { AddressInput } from './AddressInput';
@@ -26,7 +26,6 @@ import { Select } from './Select';
 import { TextArea } from './TextArea';
 
 export interface ResourcePropertyInputProps {
-  schema: IndexedStructureDefinition;
   property: ElementDefinition;
   name: string;
   defaultPropertyType?: PropertyType;
@@ -46,15 +45,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
     if (propertyType === 'Attachment') {
       return <AttachmentArrayInput name={name} defaultValue={value} onChange={props.onChange} />;
     }
-    return (
-      <ResourceArrayInput
-        schema={props.schema}
-        property={property}
-        name={name}
-        defaultValue={value}
-        onChange={props.onChange}
-      />
-    );
+    return <ResourceArrayInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
   }
 
   const propertyTypes = property.type as ElementDefinitionType[];
@@ -71,10 +62,11 @@ export interface ElementDefinitionSelectorProps extends ResourcePropertyInputPro
 
 export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorProps): JSX.Element {
   const propertyTypes = props.elementDefinitionTypes;
-  let initialPropertyType: ElementDefinitionType;
+  let initialPropertyType: ElementDefinitionType | undefined = undefined;
   if (props.defaultPropertyType) {
     initialPropertyType = propertyTypes.find((t) => t.code === props.defaultPropertyType) as ElementDefinitionType;
-  } else {
+  }
+  if (!initialPropertyType) {
     initialPropertyType = propertyTypes[0];
   }
   const [selectedType, setSelectedType] = useState(initialPropertyType);
@@ -82,7 +74,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
     <InputRow>
       <Select
         style={{ width: '200px' }}
-        defaultValue={selectedType.code}
+        defaultValue={selectedType?.code}
         onChange={(newValue) => {
           setSelectedType(
             propertyTypes.find((type: ElementDefinitionType) => type.code === newValue) as ElementDefinitionType
@@ -239,7 +231,6 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     default:
       return (
         <BackboneElementInput
-          schema={props.schema}
           property={property}
           name={name}
           defaultValue={value}
