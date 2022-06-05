@@ -1,5 +1,5 @@
 import { ElementDefinition, SearchParameter } from '@medplum/fhirtypes';
-import { IndexedStructureDefinition } from './types';
+import { IndexedStructureDefinition, PropertyType } from './types';
 import { capitalize } from './utils';
 
 export enum SearchParameterType {
@@ -86,7 +86,7 @@ export function getSearchParameterDetails(
     }
   }
 
-  const type = getSearchParameterType(searchParam, propertyType as string);
+  const type = getSearchParameterType(searchParam, propertyType as PropertyType);
   return { columnName, type, elementDefinition, array };
 }
 
@@ -99,11 +99,15 @@ function convertCodeToColumnName(code: string): string {
   return code.split('-').reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
 }
 
-function getSearchParameterType(searchParam: SearchParameter, propertyType: string): SearchParameterType {
+function getSearchParameterType(searchParam: SearchParameter, propertyType: PropertyType): SearchParameterType {
   let type = SearchParameterType.TEXT;
   switch (searchParam.type) {
     case 'date':
-      type = SearchParameterType.DATE;
+      if (propertyType === PropertyType.dateTime || propertyType === PropertyType.instant) {
+        type = SearchParameterType.DATETIME;
+      } else {
+        type = SearchParameterType.DATE;
+      }
       break;
     case 'number':
       type = SearchParameterType.NUMBER;

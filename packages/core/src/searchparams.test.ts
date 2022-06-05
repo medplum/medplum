@@ -59,6 +59,21 @@ describe('SearchParameterDetails', () => {
     expect(details.array).toEqual(false);
   });
 
+  test('Date/Time param', () => {
+    const authoredParam: SearchParameter = {
+      resourceType: 'SearchParameter',
+      code: 'authored',
+      type: 'date',
+      expression: 'ServiceRequest.authoredOn',
+    };
+
+    const details = getSearchParameterDetails(structureDefinitions, 'ServiceRequest', authoredParam);
+    expect(details).toBeDefined();
+    expect(details.columnName).toEqual('authored');
+    expect(details.type).toEqual(SearchParameterType.DATETIME);
+    expect(details.array).toEqual(false);
+  });
+
   test('Get nested details', () => {
     const missingExpressionParam: SearchParameter = {
       resourceType: 'SearchParameter',

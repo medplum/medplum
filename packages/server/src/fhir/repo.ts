@@ -900,9 +900,9 @@ export class Repository {
 
     if (values.length > 0) {
       if (details.array) {
-        columns[details.columnName] = values.map((v) => this.#buildColumnValue(searchParam, v));
+        columns[details.columnName] = values.map((v) => this.#buildColumnValue(searchParam, details, v));
       } else {
-        columns[details.columnName] = this.#buildColumnValue(searchParam, values[0]);
+        columns[details.columnName] = this.#buildColumnValue(searchParam, details, values[0]);
       }
     } else {
       columns[details.columnName] = null;
@@ -914,16 +914,21 @@ export class Repository {
    * If the search parameter is an array, then this method will be called for each element.
    * If the search parameter is not an array, then this method will be called for the value.
    * @param searchParam The search parameter definition.
+   * @param details The extra search parameter details.
    * @param value The FHIR resource value.
    * @returns The column value.
    */
-  #buildColumnValue(searchParam: SearchParameter, value: any): any {
-    if (searchParam.type === 'boolean') {
+  #buildColumnValue(searchParam: SearchParameter, details: SearchParameterDetails, value: any): any {
+    if (details.type === SearchParameterType.BOOLEAN) {
       return value === 'true';
     }
 
-    if (searchParam.type === 'date') {
+    if (details.type === SearchParameterType.DATE) {
       return this.#buildDateColumn(value);
+    }
+
+    if (details.type === SearchParameterType.DATETIME) {
+      return this.#buildDateTimeColumn(value);
     }
 
     if (searchParam.type === 'reference') {
@@ -949,6 +954,25 @@ export class Repository {
       try {
         const date = new Date(value);
         return date.toISOString().substring(0, 10);
+      } catch (ex) {
+        // Silent ignore
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Builds the column value for a date/time parameter.
+   * Tries to parse the date string.
+   * Silently ignores failure.
+   * @param value The FHIRPath result.
+   * @returns The date/time string if parsed; undefined otherwise.
+   */
+  #buildDateTimeColumn(value: any): string | undefined {
+    if (typeof value === 'string') {
+      try {
+        const date = new Date(value);
+        return date.toISOString();
       } catch (ex) {
         // Silent ignore
       }
