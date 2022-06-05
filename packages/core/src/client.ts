@@ -581,6 +581,20 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Builds a FHIR search URL from a search query or structured query object.
+   * @param query The FHIR search query or structured query object.
+   * @returns The well-formed FHIR URL.
+   */
+  fhirSearchUrl(query: string | SearchRequest): URL {
+    if (typeof query === 'string') {
+      return this.fhirUrl(query);
+    }
+    const url = this.fhirUrl(query.resourceType);
+    url.search = formatSearchQuery(query);
+    return url;
+  }
+
+  /**
    * Sends a FHIR search request.
    *
    * Example using a FHIR search string:
@@ -635,10 +649,7 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to the search result bundle.
    */
   search<T extends Resource>(query: string | SearchRequest, options: RequestInit = {}): ReadablePromise<Bundle<T>> {
-    return this.get(
-      typeof query === 'string' ? 'fhir/R4/' + query : this.fhirUrl(query.resourceType) + formatSearchQuery(query),
-      options
-    );
+    return this.get(this.fhirSearchUrl(query), options);
   }
 
   /**
@@ -666,7 +677,16 @@ export class MedplumClient extends EventTarget {
   ): ReadablePromise<T | undefined> {
     const search: SearchRequest = typeof query === 'string' ? parseSearchDefinition(query) : query;
     (search as any).count = 1;
-    return new ReadablePromise(this.search<T>(search, options).then((bundle) => bundle.entry?.[0]?.resource));
+    const cacheKey = this.fhirSearchUrl(query).toString() + '-searchOne';
+    if (!options?.cache) {
+      const cached = this.#requestCache.get(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    }
+    const promise = new ReadablePromise(this.search<T>(search, options).then((b) => b.entry?.[0]?.resource));
+    this.#requestCache.set(cacheKey, promise);
+    return promise;
   }
 
   /**
@@ -689,9 +709,18 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to the search result bundle.
    */
   searchResources<T extends Resource>(query: string | SearchRequest, options: RequestInit = {}): ReadablePromise<T[]> {
-    return new ReadablePromise(
-      this.search<T>(query, options).then((bundle) => bundle.entry?.map((entry) => entry.resource as T) ?? [])
+    const cacheKey = this.fhirSearchUrl(query).toString() + '-searchResources';
+    if (!options?.cache) {
+      const cached = this.#requestCache.get(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    }
+    const promise = new ReadablePromise(
+      this.search<T>(query, options).then((b) => b.entry?.map((e) => e.resource as T) ?? [])
     );
+    this.#requestCache.set(cacheKey, promise);
+    return promise;
   }
 
   /**

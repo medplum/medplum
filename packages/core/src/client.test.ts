@@ -673,6 +673,18 @@ describe('Client', () => {
     expect(result?.resourceType).toBe('Patient');
   });
 
+  test('Search one ReadablePromise', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const promise1 = client.searchOne('Patient?name:contains=alice');
+    expect(() => promise1.read()).toThrow();
+    const promise2 = client.searchOne('Patient?name:contains=alice');
+    expect(promise2).toBe(promise1);
+    await promise1;
+    const result = promise1.read();
+    expect(result).toBeDefined();
+    expect(result?.resourceType).toBe('Patient');
+  });
+
   test('Search resources', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.searchResources({
@@ -691,6 +703,19 @@ describe('Client', () => {
     const result = await client.searchResources('Patient?_count=1&name:contains=alice');
     expect(result).toBeDefined();
     expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBe(1);
+    expect(result[0].resourceType).toBe('Patient');
+  });
+
+  test('Search resources ReadablePromise', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const promise1 = client.searchResources('Patient?_count=1&name:contains=alice');
+    expect(() => promise1.read()).toThrow();
+    const promise2 = client.searchResources('Patient?_count=1&name:contains=alice');
+    expect(promise2).toBe(promise1);
+    await promise1;
+    const result = promise1.read();
+    expect(result).toBeDefined();
     expect(result.length).toBe(1);
     expect(result[0].resourceType).toBe('Patient');
   });
