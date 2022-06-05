@@ -109,9 +109,7 @@ describe('SearchParameterDetails', () => {
       expression: 'Patient.unknown',
     };
 
-    const details = getSearchParameterDetails(structureDefinitions, 'Patient', missingExpressionParam);
-    expect(details).toBeDefined();
-    expect(details.columnName).toEqual('test');
+    expect(() => getSearchParameterDetails(structureDefinitions, 'Patient', missingExpressionParam)).toThrow();
   });
 
   test('Subtype not found', () => {
@@ -119,12 +117,25 @@ describe('SearchParameterDetails', () => {
       resourceType: 'SearchParameter',
       code: 'test',
       type: 'string',
-      expression: 'Patient.unknown',
+      expression: 'Patient.name.unknown',
     };
 
-    const details = getSearchParameterDetails(structureDefinitions, 'Patient', missingExpressionParam);
+    expect(() => getSearchParameterDetails(structureDefinitions, 'Patient', missingExpressionParam)).toThrow();
+  });
+
+  test('Observation-value-quantity', () => {
+    const valueQuantityParam: SearchParameter = {
+      resourceType: 'SearchParameter',
+      id: 'Observation-value-quantity',
+      code: 'value-quantity',
+      type: 'quantity',
+      expression: '(Observation.value as Quantity) | (Observation.value as SampledData)',
+    };
+
+    const details = getSearchParameterDetails(structureDefinitions, 'Observation', valueQuantityParam);
     expect(details).toBeDefined();
-    expect(details.columnName).toEqual('test');
+    expect(details.columnName).toEqual('valueQuantity');
+    expect(details.elementDefinition).toBeDefined();
   });
 
   test('Everything', () => {

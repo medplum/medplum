@@ -527,7 +527,7 @@ export function renderValue(
     return <DateTimeDisplay value={resource.meta?.lastUpdated} />;
   }
 
-  if (field.elementDefinition && `${resource.resourceType}.${field.name}` === field.elementDefinition.path) {
+  if (field.elementDefinition) {
     return renderPropertyValue(schema, resource, field.elementDefinition);
   }
 

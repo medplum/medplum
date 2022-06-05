@@ -162,6 +162,10 @@ export const HomerDiagnosticReport: DiagnosticReport = {
 export const HomerObservation1: Observation = {
   resourceType: 'Observation',
   id: '1',
+  subject: {
+    reference: 'Patient/123',
+    display: 'Homer Simpson',
+  },
   code: {
     text: 'Test 1',
   },
@@ -171,6 +175,10 @@ export const HomerObservation1: Observation = {
 export const HomerObservation2: Observation = {
   resourceType: 'Observation',
   id: '2',
+  subject: {
+    reference: 'Patient/123',
+    display: 'Homer Simpson',
+  },
   code: {
     text: 'Test 2',
   },
@@ -190,6 +198,10 @@ export const HomerObservation2: Observation = {
 export const HomerObservation3: Observation = {
   resourceType: 'Observation',
   id: '3',
+  subject: {
+    reference: 'Patient/123',
+    display: 'Homer Simpson',
+  },
   code: {
     text: 'Test 3',
   },
@@ -209,6 +221,10 @@ export const HomerObservation3: Observation = {
 export const HomerObservation4: Observation = {
   resourceType: 'Observation',
   id: '4',
+  subject: {
+    reference: 'Patient/123',
+    display: 'Homer Simpson',
+  },
   code: {
     text: 'Test 4',
   },
@@ -239,6 +255,10 @@ export const HomerObservation4: Observation = {
 export const HomerObservation5: Observation = {
   resourceType: 'Observation',
   id: '5',
+  subject: {
+    reference: 'Patient/123',
+    display: 'Homer Simpson',
+  },
   code: {
     text: 'Test 5',
   },
@@ -253,6 +273,10 @@ export const HomerObservation5: Observation = {
 export const HomerObservation6: Observation = {
   resourceType: 'Observation',
   id: '6',
+  subject: {
+    reference: 'Patient/123',
+    display: 'Homer Simpson',
+  },
   code: {
     text: 'Test 6',
   },

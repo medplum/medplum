@@ -25,6 +25,10 @@ export class MemoryRepository {
       result.meta.versionId = this.generateId();
     }
 
+    if (!result.meta?.lastUpdated) {
+      result.meta.lastUpdated = new Date().toISOString();
+    }
+
     const { resourceType, id } = resource as { resourceType: string; id: string };
 
     if (!(resourceType in this.#resources)) {

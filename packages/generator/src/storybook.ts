@@ -4,6 +4,7 @@ import { writeFileSync } from 'fs';
 import { resolve } from 'path';
 
 const resourceTypes = [
+  'Address',
   'Patient',
   'Organization',
   'Practitioner',
@@ -31,10 +32,13 @@ const properties = [
   'binding',
   'valueSet',
   'definition',
+  'address',
+  'city',
 ];
 
 export function main(): void {
   const output: StructureDefinition[] = [];
+  addStructureDefinitions('fhir/r4/profiles-types.json', output);
   addStructureDefinitions('fhir/r4/profiles-resources.json', output);
   addStructureDefinitions('fhir/r4/profiles-medplum.json', output);
   console.log(JSON.stringify(output, keyReplacer, 2));
