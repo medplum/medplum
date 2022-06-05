@@ -527,12 +527,12 @@ export function renderValue(
     return <DateTimeDisplay value={resource.meta?.lastUpdated} />;
   }
 
-  if (field.elementDefinition) {
-    return renderPropertyValue(schema, resource, field.elementDefinition);
-  }
-
   if (field.searchParam && field.name === field.searchParam.code) {
     return renderSearchParameterValue(schema, resource, field.searchParam, field.elementDefinition);
+  }
+
+  if (field.elementDefinition) {
+    return renderPropertyValue(schema, resource, field.elementDefinition);
   }
 
   // We don't know how to render this field definition
