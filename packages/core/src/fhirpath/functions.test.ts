@@ -1,205 +1,231 @@
-import { Atom, LiteralAtom } from './atoms';
-import * as functions from './functions';
+import { PropertyType } from '../types';
+import { Atom, LiteralAtom, TypedValue } from './atoms';
+import { functions } from './functions';
+import { booleanToTypedValue, toTypedValue } from './utils';
 
 const isEven: Atom = {
-  eval: (num) => [(num as number) % 2 === 0],
+  eval: (num: TypedValue[]) => booleanToTypedValue((num[0].value as number) % 2 === 0),
 };
+
+const TYPED_TRUE = toTypedValue(true);
+const TYPED_FALSE = toTypedValue(false);
+const TYPED_0 = toTypedValue(0);
+const TYPED_1 = toTypedValue(1);
+const TYPED_2 = toTypedValue(2);
+const TYPED_3 = toTypedValue(3);
+const TYPED_4 = toTypedValue(4);
+const TYPED_A = toTypedValue('a');
+const TYPED_B = toTypedValue('b');
+const TYPED_X = toTypedValue('x');
+const TYPED_Y = toTypedValue('y');
+const TYPED_Z = toTypedValue('z');
+const TYPED_APPLE = toTypedValue('apple');
+const TYPED_XYZ = toTypedValue('xyz');
+
+const LITERAL_TRUE = new LiteralAtom(TYPED_TRUE);
+const LITERAL_FALSE = new LiteralAtom(TYPED_FALSE);
+const LITERAL_X = new LiteralAtom(TYPED_X);
+const LITERAL_Y = new LiteralAtom(TYPED_Y);
 
 describe('FHIRPath functions', () => {
   // 5.1 Existence
 
   test('empty', () => {
-    expect(functions.empty([])).toEqual([true]);
-    expect(functions.empty([1])).toEqual([false]);
-    expect(functions.empty([1, 2])).toEqual([false]);
+    expect(functions.empty([])).toEqual([TYPED_TRUE]);
+    expect(functions.empty([TYPED_1])).toEqual([TYPED_FALSE]);
+    expect(functions.empty([TYPED_1, TYPED_2])).toEqual([TYPED_FALSE]);
   });
 
   test('exists', () => {
-    expect(functions.exists([])).toEqual([false]);
-    expect(functions.exists([1])).toEqual([true]);
-    expect(functions.exists([1, 2])).toEqual([true]);
-    expect(functions.exists([], isEven)).toEqual([false]);
-    expect(functions.exists([1], isEven)).toEqual([false]);
-    expect(functions.exists([1, 2], isEven)).toEqual([true]);
+    expect(functions.exists([])).toEqual([TYPED_FALSE]);
+    expect(functions.exists([TYPED_1])).toEqual([TYPED_TRUE]);
+    expect(functions.exists([TYPED_1, TYPED_2])).toEqual([TYPED_TRUE]);
+    expect(functions.exists([], isEven)).toEqual([TYPED_FALSE]);
+    expect(functions.exists([TYPED_1], isEven)).toEqual([TYPED_FALSE]);
+    expect(functions.exists([TYPED_1, TYPED_2], isEven)).toEqual([TYPED_TRUE]);
   });
 
   test('all', () => {
-    expect(functions.all([], isEven)).toEqual([true]);
-    expect(functions.all([1], isEven)).toEqual([false]);
-    expect(functions.all([2], isEven)).toEqual([true]);
-    expect(functions.all([1, 2], isEven)).toEqual([false]);
-    expect(functions.all([2, 4], isEven)).toEqual([true]);
+    expect(functions.all([], isEven)).toEqual([TYPED_TRUE]);
+    expect(functions.all([TYPED_1], isEven)).toEqual([TYPED_FALSE]);
+    expect(functions.all([TYPED_2], isEven)).toEqual([TYPED_TRUE]);
+    expect(functions.all([TYPED_1, TYPED_2], isEven)).toEqual([TYPED_FALSE]);
+    expect(functions.all([TYPED_2, TYPED_4], isEven)).toEqual([TYPED_TRUE]);
   });
 
   test('allTrue', () => {
-    expect(functions.allTrue([])).toEqual([true]);
-    expect(functions.allTrue([true])).toEqual([true]);
-    expect(functions.allTrue([false])).toEqual([false]);
-    expect(functions.allTrue([true, false])).toEqual([false]);
-    expect(functions.allTrue([true, true])).toEqual([true]);
-    expect(functions.allTrue([false, false])).toEqual([false]);
+    expect(functions.allTrue([])).toEqual([TYPED_TRUE]);
+    expect(functions.allTrue([TYPED_TRUE])).toEqual([TYPED_TRUE]);
+    expect(functions.allTrue([TYPED_FALSE])).toEqual([TYPED_FALSE]);
+    expect(functions.allTrue([TYPED_TRUE, TYPED_FALSE])).toEqual([TYPED_FALSE]);
+    expect(functions.allTrue([TYPED_TRUE, TYPED_TRUE])).toEqual([TYPED_TRUE]);
+    expect(functions.allTrue([TYPED_FALSE, TYPED_FALSE])).toEqual([TYPED_FALSE]);
   });
 
   test('anyTrue', () => {
-    expect(functions.anyTrue([])).toEqual([false]);
-    expect(functions.anyTrue([true])).toEqual([true]);
-    expect(functions.anyTrue([false])).toEqual([false]);
-    expect(functions.anyTrue([true, false])).toEqual([true]);
-    expect(functions.anyTrue([true, true])).toEqual([true]);
-    expect(functions.anyTrue([false, false])).toEqual([false]);
+    expect(functions.anyTrue([])).toEqual([TYPED_FALSE]);
+    expect(functions.anyTrue([TYPED_TRUE])).toEqual([TYPED_TRUE]);
+    expect(functions.anyTrue([TYPED_FALSE])).toEqual([TYPED_FALSE]);
+    expect(functions.anyTrue([TYPED_TRUE, TYPED_FALSE])).toEqual([TYPED_TRUE]);
+    expect(functions.anyTrue([TYPED_TRUE, TYPED_TRUE])).toEqual([TYPED_TRUE]);
+    expect(functions.anyTrue([TYPED_FALSE, TYPED_FALSE])).toEqual([TYPED_FALSE]);
   });
 
   test('allFalse', () => {
-    expect(functions.allFalse([])).toEqual([true]);
-    expect(functions.allFalse([true])).toEqual([false]);
-    expect(functions.allFalse([false])).toEqual([true]);
-    expect(functions.allFalse([true, false])).toEqual([false]);
-    expect(functions.allFalse([true, true])).toEqual([false]);
-    expect(functions.allFalse([false, false])).toEqual([true]);
+    expect(functions.allFalse([])).toEqual([TYPED_TRUE]);
+    expect(functions.allFalse([TYPED_TRUE])).toEqual([TYPED_FALSE]);
+    expect(functions.allFalse([TYPED_FALSE])).toEqual([TYPED_TRUE]);
+    expect(functions.allFalse([TYPED_TRUE, TYPED_FALSE])).toEqual([TYPED_FALSE]);
+    expect(functions.allFalse([TYPED_TRUE, TYPED_TRUE])).toEqual([TYPED_FALSE]);
+    expect(functions.allFalse([TYPED_FALSE, TYPED_FALSE])).toEqual([TYPED_TRUE]);
   });
 
   test('anyFalse', () => {
-    expect(functions.anyFalse([])).toEqual([false]);
-    expect(functions.anyFalse([true])).toEqual([false]);
-    expect(functions.anyFalse([false])).toEqual([true]);
-    expect(functions.anyFalse([true, false])).toEqual([true]);
-    expect(functions.anyFalse([true, true])).toEqual([false]);
-    expect(functions.anyFalse([false, false])).toEqual([true]);
+    expect(functions.anyFalse([])).toEqual([TYPED_FALSE]);
+    expect(functions.anyFalse([TYPED_TRUE])).toEqual([TYPED_FALSE]);
+    expect(functions.anyFalse([TYPED_FALSE])).toEqual([TYPED_TRUE]);
+    expect(functions.anyFalse([TYPED_TRUE, TYPED_FALSE])).toEqual([TYPED_TRUE]);
+    expect(functions.anyFalse([TYPED_TRUE, TYPED_TRUE])).toEqual([TYPED_FALSE]);
+    expect(functions.anyFalse([TYPED_FALSE, TYPED_FALSE])).toEqual([TYPED_TRUE]);
   });
 
   test('count', () => {
-    expect(functions.count([])).toEqual([0]);
-    expect(functions.count([1])).toEqual([1]);
-    expect(functions.count([1, 2])).toEqual([2]);
+    expect(functions.count([])).toEqual([TYPED_0]);
+    expect(functions.count([TYPED_1])).toEqual([TYPED_1]);
+    expect(functions.count([TYPED_1, TYPED_2])).toEqual([TYPED_2]);
   });
 
   test('distinct', () => {
     expect(functions.distinct([])).toEqual([]);
-    expect(functions.distinct([1])).toEqual([1]);
-    expect(functions.distinct([1, 2])).toEqual([1, 2]);
-    expect(functions.distinct([1, 1])).toEqual([1]);
-    expect(functions.distinct(['a'])).toEqual(['a']);
-    expect(functions.distinct(['a', 'b'])).toEqual(['a', 'b']);
-    expect(functions.distinct(['a', 'a'])).toEqual(['a']);
+    expect(functions.distinct([TYPED_1])).toEqual([TYPED_1]);
+    expect(functions.distinct([TYPED_1, TYPED_2])).toEqual([TYPED_1, TYPED_2]);
+    expect(functions.distinct([TYPED_1, TYPED_1])).toEqual([TYPED_1]);
+    expect(functions.distinct([TYPED_A])).toEqual([TYPED_A]);
+    expect(functions.distinct([TYPED_A, TYPED_B])).toEqual([TYPED_A, TYPED_B]);
+    expect(functions.distinct([TYPED_A, TYPED_A])).toEqual([TYPED_A]);
   });
 
   test('isDistinct', () => {
-    expect(functions.isDistinct([])).toEqual([true]);
-    expect(functions.isDistinct([1])).toEqual([true]);
-    expect(functions.isDistinct([1, 2])).toEqual([true]);
-    expect(functions.isDistinct([1, 1])).toEqual([false]);
-    expect(functions.isDistinct(['a'])).toEqual([true]);
-    expect(functions.isDistinct(['a', 'b'])).toEqual([true]);
-    expect(functions.isDistinct(['a', 'a'])).toEqual([false]);
+    expect(functions.isDistinct([])).toEqual([TYPED_TRUE]);
+    expect(functions.isDistinct([TYPED_1])).toEqual([TYPED_TRUE]);
+    expect(functions.isDistinct([TYPED_1, TYPED_2])).toEqual([TYPED_TRUE]);
+    expect(functions.isDistinct([TYPED_1, TYPED_1])).toEqual([TYPED_FALSE]);
+    expect(functions.isDistinct([TYPED_A])).toEqual([TYPED_TRUE]);
+    expect(functions.isDistinct([TYPED_A, TYPED_B])).toEqual([TYPED_TRUE]);
+    expect(functions.isDistinct([TYPED_A, TYPED_A])).toEqual([TYPED_FALSE]);
   });
 
   // 5.2. Filtering and projection
 
   test('where', () => {
     expect(functions.where([], isEven)).toEqual([]);
-    expect(functions.where([1], isEven)).toEqual([]);
-    expect(functions.where([1, 2], isEven)).toEqual([2]);
-    expect(functions.where([1, 2, 3, 4], isEven)).toEqual([2, 4]);
+    expect(functions.where([TYPED_1], isEven)).toEqual([]);
+    expect(functions.where([TYPED_1, TYPED_2], isEven)).toEqual([TYPED_2]);
+    expect(functions.where([TYPED_1, TYPED_2, TYPED_3, TYPED_4], isEven)).toEqual([TYPED_2, TYPED_4]);
   });
 
   // 5.3 Subsetting
 
   test('single', () => {
     expect(functions.single([])).toEqual([]);
-    expect(functions.single([1])).toEqual([1]);
-    expect(() => functions.single([1, 2])).toThrowError('Expected input length one for single()');
+    expect(functions.single([TYPED_1])).toEqual([TYPED_1]);
+    expect(() => functions.single([TYPED_1, TYPED_2])).toThrowError('Expected input length one for single()');
   });
 
   test('first', () => {
     expect(functions.first([])).toEqual([]);
-    expect(functions.first([1])).toEqual([1]);
-    expect(functions.first([1, 2])).toEqual([1]);
-    expect(functions.first([1, 2, 3])).toEqual([1]);
-    expect(functions.first([1, 2, 3, 4])).toEqual([1]);
+    expect(functions.first([TYPED_1])).toEqual([TYPED_1]);
+    expect(functions.first([TYPED_1, TYPED_2])).toEqual([TYPED_1]);
+    expect(functions.first([TYPED_1, TYPED_2, TYPED_3])).toEqual([TYPED_1]);
+    expect(functions.first([TYPED_1, TYPED_2, TYPED_3, TYPED_4])).toEqual([TYPED_1]);
   });
 
   test('last', () => {
     expect(functions.last([])).toEqual([]);
-    expect(functions.last([1])).toEqual([1]);
-    expect(functions.last([1, 2])).toEqual([2]);
-    expect(functions.last([1, 2, 3])).toEqual([3]);
-    expect(functions.last([1, 2, 3, 4])).toEqual([4]);
+    expect(functions.last([TYPED_1])).toEqual([TYPED_1]);
+    expect(functions.last([TYPED_1, TYPED_2])).toEqual([TYPED_2]);
+    expect(functions.last([TYPED_1, TYPED_2, TYPED_3])).toEqual([TYPED_3]);
+    expect(functions.last([TYPED_1, TYPED_2, TYPED_3, TYPED_4])).toEqual([TYPED_4]);
   });
 
   test('tail', () => {
     expect(functions.tail([])).toEqual([]);
-    expect(functions.tail([1])).toEqual([]);
-    expect(functions.tail([1, 2])).toEqual([2]);
-    expect(functions.tail([1, 2, 3])).toEqual([2, 3]);
-    expect(functions.tail([1, 2, 3, 4])).toEqual([2, 3, 4]);
+    expect(functions.tail([TYPED_1])).toEqual([]);
+    expect(functions.tail([TYPED_1, TYPED_2])).toEqual([TYPED_2]);
+    expect(functions.tail([TYPED_1, TYPED_2, TYPED_3])).toEqual([TYPED_2, TYPED_3]);
+    expect(functions.tail([TYPED_1, TYPED_2, TYPED_3, TYPED_4])).toEqual([TYPED_2, TYPED_3, TYPED_4]);
   });
 
   test('skip', () => {
-    const nonNumber: Atom = { eval: () => 'xyz' };
-    expect(() => functions.skip([1, 2, 3], nonNumber)).toThrowError('Expected a number for skip(num)');
+    const nonNumber: Atom = { eval: () => [TYPED_XYZ] };
+    expect(() => functions.skip([TYPED_1, TYPED_2, TYPED_3], nonNumber)).toThrowError(
+      'Expected a number for skip(num)'
+    );
 
-    const num0: Atom = { eval: () => 0 };
+    const num0: Atom = { eval: () => [TYPED_0] };
     expect(functions.skip([], num0)).toEqual([]);
-    expect(functions.skip([1], num0)).toEqual([1]);
-    expect(functions.skip([1, 2], num0)).toEqual([1, 2]);
-    expect(functions.skip([1, 2, 3], num0)).toEqual([1, 2, 3]);
+    expect(functions.skip([TYPED_1], num0)).toEqual([TYPED_1]);
+    expect(functions.skip([TYPED_1, TYPED_2], num0)).toEqual([TYPED_1, TYPED_2]);
+    expect(functions.skip([TYPED_1, TYPED_2, TYPED_3], num0)).toEqual([TYPED_1, TYPED_2, TYPED_3]);
 
-    const num1: Atom = { eval: () => 1 };
+    const num1: Atom = { eval: () => [TYPED_1] };
     expect(functions.skip([], num1)).toEqual([]);
-    expect(functions.skip([1], num1)).toEqual([]);
-    expect(functions.skip([1, 2], num1)).toEqual([2]);
-    expect(functions.skip([1, 2, 3], num1)).toEqual([2, 3]);
+    expect(functions.skip([TYPED_1], num1)).toEqual([]);
+    expect(functions.skip([TYPED_1, TYPED_2], num1)).toEqual([TYPED_2]);
+    expect(functions.skip([TYPED_1, TYPED_2, TYPED_3], num1)).toEqual([TYPED_2, TYPED_3]);
 
-    const num2: Atom = { eval: () => 2 };
+    const num2: Atom = { eval: () => [TYPED_2] };
     expect(functions.skip([], num2)).toEqual([]);
-    expect(functions.skip([1], num2)).toEqual([]);
-    expect(functions.skip([1, 2], num2)).toEqual([]);
-    expect(functions.skip([1, 2, 3], num2)).toEqual([3]);
+    expect(functions.skip([TYPED_1], num2)).toEqual([]);
+    expect(functions.skip([TYPED_1, TYPED_2], num2)).toEqual([]);
+    expect(functions.skip([TYPED_1, TYPED_2, TYPED_3], num2)).toEqual([TYPED_3]);
   });
 
   test('take', () => {
-    const nonNumber: Atom = { eval: () => 'xyz' };
-    expect(() => functions.take([1, 2, 3], nonNumber)).toThrowError('Expected a number for take(num)');
+    const nonNumber: Atom = { eval: () => [TYPED_XYZ] };
+    expect(() => functions.take([TYPED_1, TYPED_2, TYPED_3], nonNumber)).toThrowError(
+      'Expected a number for take(num)'
+    );
 
-    const num0: Atom = { eval: () => 0 };
+    const num0: Atom = { eval: () => [TYPED_0] };
     expect(functions.take([], num0)).toEqual([]);
-    expect(functions.take([1], num0)).toEqual([]);
-    expect(functions.take([1, 2], num0)).toEqual([]);
-    expect(functions.take([1, 2, 3], num0)).toEqual([]);
+    expect(functions.take([TYPED_1], num0)).toEqual([]);
+    expect(functions.take([TYPED_1, TYPED_2], num0)).toEqual([]);
+    expect(functions.take([TYPED_1, TYPED_2, TYPED_3], num0)).toEqual([]);
 
-    const num1: Atom = { eval: () => 1 };
+    const num1: Atom = { eval: () => [TYPED_1] };
     expect(functions.take([], num1)).toEqual([]);
-    expect(functions.take([1], num1)).toEqual([1]);
-    expect(functions.take([1, 2], num1)).toEqual([1]);
-    expect(functions.take([1, 2, 3], num1)).toEqual([1]);
+    expect(functions.take([TYPED_1], num1)).toEqual([TYPED_1]);
+    expect(functions.take([TYPED_1, TYPED_2], num1)).toEqual([TYPED_1]);
+    expect(functions.take([TYPED_1, TYPED_2, TYPED_3], num1)).toEqual([TYPED_1]);
 
-    const num2: Atom = { eval: () => 2 };
+    const num2: Atom = { eval: () => [TYPED_2] };
     expect(functions.take([], num2)).toEqual([]);
-    expect(functions.take([1], num2)).toEqual([1]);
-    expect(functions.take([1, 2], num2)).toEqual([1, 2]);
-    expect(functions.take([1, 2, 3], num2)).toEqual([1, 2]);
+    expect(functions.take([TYPED_1], num2)).toEqual([TYPED_1]);
+    expect(functions.take([TYPED_1, TYPED_2], num2)).toEqual([TYPED_1, TYPED_2]);
+    expect(functions.take([TYPED_1, TYPED_2, TYPED_3], num2)).toEqual([TYPED_1, TYPED_2]);
   });
 
   test('intersect', () => {
     expect(functions.intersect([], undefined as unknown as Atom)).toEqual([]);
     expect(functions.intersect([], null as unknown as Atom)).toEqual([]);
 
-    const num1: Atom = { eval: () => 1 };
+    const num1: Atom = { eval: () => [TYPED_1] };
     expect(functions.intersect([], num1)).toEqual([]);
-    expect(functions.intersect([1], num1)).toEqual([1]);
-    expect(functions.intersect([1, 2], num1)).toEqual([1]);
-    expect(functions.intersect([1, 1, 3], num1)).toEqual([1]);
+    expect(functions.intersect([TYPED_1], num1)).toEqual([TYPED_1]);
+    expect(functions.intersect([TYPED_1, TYPED_2], num1)).toEqual([TYPED_1]);
+    expect(functions.intersect([TYPED_1, TYPED_1, TYPED_3], num1)).toEqual([TYPED_1]);
   });
 
   test('exclude', () => {
     expect(functions.exclude([], undefined as unknown as Atom)).toEqual([]);
     expect(functions.exclude([], null as unknown as Atom)).toEqual([]);
 
-    const num1: Atom = { eval: () => 1 };
+    const num1: Atom = { eval: () => [TYPED_1] };
     expect(functions.exclude([], num1)).toEqual([]);
-    expect(functions.exclude([1], num1)).toEqual([]);
-    expect(functions.exclude([1, 2], num1)).toEqual([2]);
-    expect(functions.exclude([1, 2, 3], num1)).toEqual([2, 3]);
+    expect(functions.exclude([TYPED_1], num1)).toEqual([]);
+    expect(functions.exclude([TYPED_1, TYPED_2], num1)).toEqual([TYPED_2]);
+    expect(functions.exclude([TYPED_1, TYPED_2, TYPED_3], num1)).toEqual([TYPED_2, TYPED_3]);
   });
 
   // 5.4. Combining
@@ -208,304 +234,328 @@ describe('FHIRPath functions', () => {
     expect(functions.union([], undefined as unknown as Atom)).toEqual([]);
     expect(functions.union([], null as unknown as Atom)).toEqual([]);
 
-    const num1: Atom = { eval: () => 1 };
-    expect(functions.union([], num1)).toEqual([1]);
-    expect(functions.union([1], num1)).toEqual([1]);
-    expect(functions.union([1, 2], num1)).toEqual([1, 2]);
-    expect(functions.union([1, 2, 3], num1)).toEqual([1, 2, 3]);
+    const num1: Atom = { eval: () => [TYPED_1] };
+    expect(functions.union([], num1)).toEqual([TYPED_1]);
+    expect(functions.union([TYPED_1], num1)).toEqual([TYPED_1]);
+    expect(functions.union([TYPED_1, TYPED_2], num1)).toEqual([TYPED_1, TYPED_2]);
+    expect(functions.union([TYPED_1, TYPED_2, TYPED_3], num1)).toEqual([TYPED_1, TYPED_2, TYPED_3]);
   });
 
   test('combine', () => {
     expect(functions.combine([], undefined as unknown as Atom)).toEqual([]);
     expect(functions.combine([], null as unknown as Atom)).toEqual([]);
 
-    const num1: Atom = { eval: () => 1 };
-    expect(functions.combine([], num1)).toEqual([1]);
-    expect(functions.combine([1], num1)).toEqual([1, 1]);
-    expect(functions.combine([1, 2], num1)).toEqual([1, 2, 1]);
-    expect(functions.combine([1, 2, 3], num1)).toEqual([1, 2, 3, 1]);
+    const num1: Atom = { eval: () => [TYPED_1] };
+    expect(functions.combine([], num1)).toEqual([TYPED_1]);
+    expect(functions.combine([TYPED_1], num1)).toEqual([TYPED_1, TYPED_1]);
+    expect(functions.combine([TYPED_1, TYPED_2], num1)).toEqual([TYPED_1, TYPED_2, TYPED_1]);
+    expect(functions.combine([TYPED_1, TYPED_2, TYPED_3], num1)).toEqual([TYPED_1, TYPED_2, TYPED_3, TYPED_1]);
   });
 
   // 5.5. Conversion
 
   test('iif', () => {
-    expect(functions.iif([], new LiteralAtom(true), new LiteralAtom('x'))).toEqual(['x']);
-    expect(functions.iif([], new LiteralAtom(false), new LiteralAtom('x'))).toEqual([]);
-    expect(functions.iif([], new LiteralAtom(true), new LiteralAtom('x'), new LiteralAtom('y'))).toEqual(['x']);
-    expect(functions.iif([], new LiteralAtom(false), new LiteralAtom('x'), new LiteralAtom('y'))).toEqual(['y']);
+    expect(functions.iif([], LITERAL_TRUE, LITERAL_X)).toEqual([TYPED_X]);
+    expect(functions.iif([], LITERAL_FALSE, LITERAL_X)).toEqual([]);
+    expect(functions.iif([], LITERAL_TRUE, LITERAL_X, LITERAL_Y)).toEqual([TYPED_X]);
+    expect(functions.iif([], LITERAL_FALSE, LITERAL_X, LITERAL_Y)).toEqual([TYPED_Y]);
   });
 
   test('toBoolean', () => {
     expect(functions.toBoolean([])).toEqual([]);
-    expect(functions.toBoolean([true])).toEqual([true]);
-    expect(functions.toBoolean([false])).toEqual([false]);
-    expect(functions.toBoolean([1])).toEqual([true]);
-    expect(() => functions.toBoolean([1, 2])).toThrow();
-    expect(functions.toBoolean(['true'])).toEqual([true]);
-    expect(functions.toBoolean(['false'])).toEqual([false]);
-    expect(functions.toBoolean(['xyz'])).toEqual([]);
-    expect(functions.toBoolean([{}])).toEqual([]);
+    expect(functions.toBoolean([TYPED_TRUE])).toEqual([TYPED_TRUE]);
+    expect(functions.toBoolean([TYPED_FALSE])).toEqual([TYPED_FALSE]);
+    expect(functions.toBoolean([TYPED_1])).toEqual([TYPED_TRUE]);
+    expect(() => functions.toBoolean([TYPED_1, TYPED_2])).toThrow();
+    expect(functions.toBoolean([toTypedValue('true')])).toEqual([TYPED_TRUE]);
+    expect(functions.toBoolean([toTypedValue('false')])).toEqual([TYPED_FALSE]);
+    expect(functions.toBoolean([toTypedValue('xyz')])).toEqual([]);
+    expect(functions.toBoolean([toTypedValue({})])).toEqual([]);
   });
 
   test('convertsToBoolean', () => {
     expect(functions.convertsToBoolean([])).toEqual([]);
-    expect(functions.convertsToBoolean([true])).toEqual([true]);
-    expect(functions.convertsToBoolean([false])).toEqual([true]);
-    expect(functions.convertsToBoolean([1])).toEqual([true]);
-    expect(() => functions.convertsToBoolean([1, 2])).toThrow();
-    expect(functions.convertsToBoolean(['true'])).toEqual([true]);
-    expect(functions.convertsToBoolean(['false'])).toEqual([true]);
-    expect(functions.convertsToBoolean(['xyz'])).toEqual([false]);
-    expect(functions.convertsToBoolean([{}])).toEqual([false]);
+    expect(functions.convertsToBoolean([TYPED_TRUE])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToBoolean([TYPED_FALSE])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToBoolean([TYPED_1])).toEqual([TYPED_TRUE]);
+    expect(() => functions.convertsToBoolean([TYPED_1, TYPED_2])).toThrow();
+    expect(functions.convertsToBoolean([toTypedValue('true')])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToBoolean([toTypedValue('false')])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToBoolean([toTypedValue('xyz')])).toEqual([TYPED_FALSE]);
+    expect(functions.convertsToBoolean([toTypedValue({})])).toEqual([TYPED_FALSE]);
   });
 
   test('toInteger', () => {
     expect(functions.toInteger([])).toEqual([]);
-    expect(functions.toInteger([true])).toEqual([1]);
-    expect(functions.toInteger([false])).toEqual([0]);
-    expect(functions.toInteger([0])).toEqual([0]);
-    expect(functions.toInteger([1])).toEqual([1]);
-    expect(() => functions.toInteger([1, 2])).toThrow();
-    expect(functions.toInteger(['1'])).toEqual([1]);
-    expect(functions.toInteger(['true'])).toEqual([]);
-    expect(functions.toInteger(['false'])).toEqual([]);
-    expect(functions.toInteger(['xyz'])).toEqual([]);
-    expect(functions.toInteger([{}])).toEqual([]);
+    expect(functions.toInteger([TYPED_TRUE])).toEqual([TYPED_1]);
+    expect(functions.toInteger([TYPED_FALSE])).toEqual([TYPED_0]);
+    expect(functions.toInteger([TYPED_0])).toEqual([TYPED_0]);
+    expect(functions.toInteger([TYPED_1])).toEqual([TYPED_1]);
+    expect(() => functions.toInteger([TYPED_1, TYPED_2])).toThrow();
+    expect(functions.toInteger([toTypedValue('1')])).toEqual([TYPED_1]);
+    expect(functions.toInteger([toTypedValue('true')])).toEqual([]);
+    expect(functions.toInteger([toTypedValue('false')])).toEqual([]);
+    expect(functions.toInteger([toTypedValue('xyz')])).toEqual([]);
+    expect(functions.toInteger([toTypedValue({})])).toEqual([]);
   });
 
   test('convertsToInteger', () => {
     expect(functions.convertsToInteger([])).toEqual([]);
-    expect(functions.convertsToInteger([true])).toEqual([true]);
-    expect(functions.convertsToInteger([false])).toEqual([true]);
-    expect(functions.convertsToInteger([0])).toEqual([true]);
-    expect(functions.convertsToInteger([1])).toEqual([true]);
-    expect(() => functions.convertsToInteger([1, 2])).toThrow();
-    expect(functions.convertsToInteger(['1'])).toEqual([true]);
-    expect(functions.convertsToInteger(['true'])).toEqual([false]);
-    expect(functions.convertsToInteger(['false'])).toEqual([false]);
-    expect(functions.convertsToInteger(['xyz'])).toEqual([false]);
-    expect(functions.convertsToInteger([{}])).toEqual([false]);
+    expect(functions.convertsToInteger([TYPED_TRUE])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToInteger([TYPED_FALSE])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToInteger([TYPED_0])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToInteger([TYPED_1])).toEqual([TYPED_TRUE]);
+    expect(() => functions.convertsToInteger([TYPED_1, TYPED_2])).toThrow();
+    expect(functions.convertsToInteger([toTypedValue('1')])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToInteger([toTypedValue('true')])).toEqual([TYPED_FALSE]);
+    expect(functions.convertsToInteger([toTypedValue('false')])).toEqual([TYPED_FALSE]);
+    expect(functions.convertsToInteger([toTypedValue('xyz')])).toEqual([TYPED_FALSE]);
+    expect(functions.convertsToInteger([toTypedValue({})])).toEqual([TYPED_FALSE]);
   });
 
   test('toDate', () => {
     expect(functions.toDate([])).toEqual([]);
-    expect(() => functions.toDate([1, 2])).toThrow();
-    expect(functions.toDate(['2020-01-01'])).toEqual(['2020-01-01']);
-    expect(functions.toDate([1])).toEqual([]);
-    expect(functions.toDate([true])).toEqual([]);
+    expect(() => functions.toDate([TYPED_1, TYPED_2])).toThrow();
+    expect(functions.toDate([toTypedValue('2020-01-01')])).toEqual([{ type: PropertyType.date, value: '2020-01-01' }]);
+    expect(functions.toDate([TYPED_1])).toEqual([]);
+    expect(functions.toDate([TYPED_TRUE])).toEqual([]);
   });
 
   test('convertsToDate', () => {
     expect(functions.convertsToDate([])).toEqual([]);
-    expect(() => functions.convertsToDate([1, 2])).toThrow();
-    expect(functions.convertsToDate(['2020-01-01'])).toEqual([true]);
-    expect(functions.convertsToDate([1])).toEqual([false]);
-    expect(functions.convertsToDate([true])).toEqual([false]);
+    expect(() => functions.convertsToDate([TYPED_1, TYPED_2])).toThrow();
+    expect(functions.convertsToDate([toTypedValue('2020-01-01')])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToDate([TYPED_1])).toEqual([TYPED_FALSE]);
+    expect(functions.convertsToDate([TYPED_TRUE])).toEqual([TYPED_FALSE]);
   });
 
   test('toDateTime', () => {
     expect(functions.toDateTime([])).toEqual([]);
-    expect(() => functions.toDateTime([1, 2])).toThrow();
-    expect(functions.toDateTime(['2020-01-01'])).toEqual(['2020-01-01']);
-    expect(functions.toDateTime(['2020-01-01T12:00:00Z'])).toEqual(['2020-01-01T12:00:00.000Z']);
-    expect(functions.toDateTime([1])).toEqual([]);
-    expect(functions.toDateTime([true])).toEqual([]);
+    expect(() => functions.toDateTime([TYPED_1, TYPED_2])).toThrow();
+    expect(functions.toDateTime([toTypedValue('2020-01-01')])).toEqual([
+      { type: PropertyType.dateTime, value: '2020-01-01' },
+    ]);
+    expect(functions.toDateTime([toTypedValue('2020-01-01T12:00:00Z')])).toEqual([
+      { type: PropertyType.dateTime, value: '2020-01-01T12:00:00.000Z' },
+    ]);
+    expect(functions.toDateTime([TYPED_1])).toEqual([]);
+    expect(functions.toDateTime([TYPED_TRUE])).toEqual([]);
   });
 
   test('convertsToDateTime', () => {
     expect(functions.convertsToDateTime([])).toEqual([]);
-    expect(() => functions.convertsToDateTime([1, 2])).toThrow();
-    expect(functions.convertsToDateTime(['2020-01-01'])).toEqual([true]);
-    expect(functions.convertsToDateTime(['2020-01-01T12:00:00Z'])).toEqual([true]);
-    expect(functions.convertsToDateTime([1])).toEqual([false]);
-    expect(functions.convertsToDateTime([true])).toEqual([false]);
+    expect(() => functions.convertsToDateTime([TYPED_1, TYPED_2])).toThrow();
+    expect(functions.convertsToDateTime([toTypedValue('2020-01-01')])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToDateTime([toTypedValue('2020-01-01T12:00:00Z')])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToDateTime([TYPED_1])).toEqual([TYPED_FALSE]);
+    expect(functions.convertsToDateTime([TYPED_TRUE])).toEqual([TYPED_FALSE]);
   });
 
   test('toDecimal', () => {
     expect(functions.toDecimal([])).toEqual([]);
-    expect(functions.toDecimal([true])).toEqual([1]);
-    expect(functions.toDecimal([false])).toEqual([0]);
-    expect(functions.toDecimal([0])).toEqual([0]);
-    expect(functions.toDecimal([1])).toEqual([1]);
-    expect(() => functions.toDecimal([1, 2])).toThrow();
-    expect(functions.toDecimal(['1'])).toEqual([1]);
-    expect(functions.toDecimal(['true'])).toEqual([]);
-    expect(functions.toDecimal(['false'])).toEqual([]);
-    expect(functions.toDecimal(['xyz'])).toEqual([]);
-    expect(functions.toDecimal([{}])).toEqual([]);
+    expect(functions.toDecimal([TYPED_TRUE])).toEqual([{ type: PropertyType.decimal, value: 1 }]);
+    expect(functions.toDecimal([TYPED_FALSE])).toEqual([{ type: PropertyType.decimal, value: 0 }]);
+    expect(functions.toDecimal([TYPED_0])).toEqual([{ type: PropertyType.decimal, value: 0 }]);
+    expect(functions.toDecimal([TYPED_1])).toEqual([{ type: PropertyType.decimal, value: 1 }]);
+    expect(() => functions.toDecimal([TYPED_1, TYPED_2])).toThrow();
+    expect(functions.toDecimal([toTypedValue('1')])).toEqual([{ type: PropertyType.decimal, value: 1 }]);
+    expect(functions.toDecimal([toTypedValue('true')])).toEqual([]);
+    expect(functions.toDecimal([toTypedValue('false')])).toEqual([]);
+    expect(functions.toDecimal([toTypedValue('xyz')])).toEqual([]);
+    expect(functions.toDecimal([toTypedValue({})])).toEqual([]);
   });
 
   test('convertsToDecimal', () => {
     expect(functions.convertsToDecimal([])).toEqual([]);
-    expect(functions.convertsToDecimal([true])).toEqual([true]);
-    expect(functions.convertsToDecimal([false])).toEqual([true]);
-    expect(functions.convertsToDecimal([0])).toEqual([true]);
-    expect(functions.convertsToDecimal([1])).toEqual([true]);
-    expect(() => functions.convertsToDecimal([1, 2])).toThrow();
-    expect(functions.convertsToDecimal(['1'])).toEqual([true]);
-    expect(functions.convertsToDecimal(['true'])).toEqual([false]);
-    expect(functions.convertsToDecimal(['false'])).toEqual([false]);
-    expect(functions.convertsToDecimal(['xyz'])).toEqual([false]);
-    expect(functions.convertsToDecimal([{}])).toEqual([false]);
+    expect(functions.convertsToDecimal([TYPED_TRUE])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToDecimal([TYPED_FALSE])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToDecimal([TYPED_0])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToDecimal([TYPED_1])).toEqual([TYPED_TRUE]);
+    expect(() => functions.convertsToDecimal([TYPED_1, TYPED_2])).toThrow();
+    expect(functions.convertsToDecimal([toTypedValue('1')])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToDecimal([toTypedValue('true')])).toEqual([TYPED_FALSE]);
+    expect(functions.convertsToDecimal([toTypedValue('false')])).toEqual([TYPED_FALSE]);
+    expect(functions.convertsToDecimal([toTypedValue('xyz')])).toEqual([TYPED_FALSE]);
+    expect(functions.convertsToDecimal([toTypedValue({})])).toEqual([TYPED_FALSE]);
   });
 
   test('toQuantity', () => {
     expect(functions.toQuantity([])).toEqual([]);
-    expect(functions.toQuantity([{ value: 123, unit: 'mg' }])).toEqual([{ value: 123, unit: 'mg' }]);
-    expect(functions.toQuantity([true])).toEqual([{ value: 1, unit: '1' }]);
-    expect(functions.toQuantity([false])).toEqual([{ value: 0, unit: '1' }]);
-    expect(functions.toQuantity([0])).toEqual([{ value: 0, unit: '1' }]);
-    expect(functions.toQuantity([1])).toEqual([{ value: 1, unit: '1' }]);
-    expect(() => functions.toQuantity([1, 2])).toThrow();
-    expect(functions.toQuantity(['1'])).toEqual([{ value: 1, unit: '1' }]);
-    expect(functions.toQuantity(['true'])).toEqual([]);
-    expect(functions.toQuantity(['false'])).toEqual([]);
-    expect(functions.toQuantity(['xyz'])).toEqual([]);
-    expect(functions.toQuantity([{}])).toEqual([]);
+    expect(functions.toQuantity([toTypedValue({ value: 123, unit: 'mg' })])).toEqual([
+      toTypedValue({ value: 123, unit: 'mg' }),
+    ]);
+    expect(functions.toQuantity([TYPED_TRUE])).toEqual([toTypedValue({ value: 1, unit: '1' })]);
+    expect(functions.toQuantity([TYPED_FALSE])).toEqual([toTypedValue({ value: 0, unit: '1' })]);
+    expect(functions.toQuantity([TYPED_0])).toEqual([toTypedValue({ value: 0, unit: '1' })]);
+    expect(functions.toQuantity([TYPED_1])).toEqual([toTypedValue({ value: 1, unit: '1' })]);
+    expect(() => functions.toQuantity([TYPED_1, TYPED_2])).toThrow();
+    expect(functions.toQuantity([toTypedValue('1')])).toEqual([toTypedValue({ value: 1, unit: '1' })]);
+    expect(functions.toQuantity([toTypedValue('true')])).toEqual([]);
+    expect(functions.toQuantity([toTypedValue('false')])).toEqual([]);
+    expect(functions.toQuantity([toTypedValue('xyz')])).toEqual([]);
+    expect(functions.toQuantity([toTypedValue({})])).toEqual([]);
   });
 
   test('convertsToQuantity', () => {
     expect(functions.convertsToQuantity([])).toEqual([]);
-    expect(functions.convertsToQuantity([true])).toEqual([true]);
-    expect(functions.convertsToQuantity([false])).toEqual([true]);
-    expect(functions.convertsToQuantity([0])).toEqual([true]);
-    expect(functions.convertsToQuantity([1])).toEqual([true]);
-    expect(() => functions.convertsToQuantity([1, 2])).toThrow();
-    expect(functions.convertsToQuantity(['1'])).toEqual([true]);
-    expect(functions.convertsToQuantity(['true'])).toEqual([false]);
-    expect(functions.convertsToQuantity(['false'])).toEqual([false]);
-    expect(functions.convertsToQuantity(['xyz'])).toEqual([false]);
-    expect(functions.convertsToQuantity([{}])).toEqual([false]);
+    expect(functions.convertsToQuantity([TYPED_TRUE])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToQuantity([TYPED_FALSE])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToQuantity([TYPED_0])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToQuantity([TYPED_1])).toEqual([TYPED_TRUE]);
+    expect(() => functions.convertsToQuantity([TYPED_1, TYPED_2])).toThrow();
+    expect(functions.convertsToQuantity([toTypedValue('1')])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToQuantity([toTypedValue('true')])).toEqual([TYPED_FALSE]);
+    expect(functions.convertsToQuantity([toTypedValue('false')])).toEqual([TYPED_FALSE]);
+    expect(functions.convertsToQuantity([toTypedValue('xyz')])).toEqual([TYPED_FALSE]);
+    expect(functions.convertsToQuantity([toTypedValue({})])).toEqual([TYPED_FALSE]);
   });
 
   test('toString', () => {
     const toString = functions.toString as unknown as (input: unknown[]) => string[];
     expect(toString([])).toEqual([]);
-    expect(toString([null])).toEqual([]);
-    expect(toString([undefined])).toEqual([]);
-    expect(() => toString([1, 2])).toThrow();
-    expect(toString([true])).toEqual(['true']);
-    expect(toString([false])).toEqual(['false']);
-    expect(toString([0])).toEqual(['0']);
-    expect(toString([1])).toEqual(['1']);
-    expect(toString(['1'])).toEqual(['1']);
-    expect(toString(['true'])).toEqual(['true']);
-    expect(toString(['false'])).toEqual(['false']);
-    expect(toString(['xyz'])).toEqual(['xyz']);
+    expect(() => toString([null])).toThrow();
+    expect(() => toString([undefined])).toThrow();
+    expect(() => toString([TYPED_1, TYPED_2])).toThrow();
+    expect(toString([TYPED_TRUE])).toEqual([toTypedValue('true')]);
+    expect(toString([TYPED_FALSE])).toEqual([toTypedValue('false')]);
+    expect(toString([TYPED_0])).toEqual([toTypedValue('0')]);
+    expect(toString([TYPED_1])).toEqual([toTypedValue('1')]);
+    expect(toString([toTypedValue(null)])).toEqual([]);
+    expect(toString([toTypedValue(undefined)])).toEqual([]);
+    expect(toString([toTypedValue('1')])).toEqual([toTypedValue('1')]);
+    expect(toString([toTypedValue('true')])).toEqual([toTypedValue('true')]);
+    expect(toString([toTypedValue('false')])).toEqual([toTypedValue('false')]);
+    expect(toString([toTypedValue('xyz')])).toEqual([toTypedValue('xyz')]);
   });
 
   test('convertsToString', () => {
     expect(functions.convertsToString([])).toEqual([]);
-    expect(() => functions.convertsToString([1, 2])).toThrow();
-    expect(functions.convertsToString([true])).toEqual([true]);
-    expect(functions.convertsToString([false])).toEqual([true]);
-    expect(functions.convertsToString([0])).toEqual([true]);
-    expect(functions.convertsToString([1])).toEqual([true]);
-    expect(functions.convertsToString(['1'])).toEqual([true]);
-    expect(functions.convertsToString(['true'])).toEqual([true]);
-    expect(functions.convertsToString(['false'])).toEqual([true]);
-    expect(functions.convertsToString(['xyz'])).toEqual([true]);
-    expect(functions.convertsToString([{}])).toEqual([true]);
+    expect(() => functions.convertsToString([TYPED_1, TYPED_2])).toThrow();
+    expect(functions.convertsToString([TYPED_TRUE])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToString([TYPED_FALSE])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToString([TYPED_0])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToString([TYPED_1])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToString([toTypedValue('1')])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToString([toTypedValue('true')])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToString([toTypedValue('false')])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToString([toTypedValue('xyz')])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToString([toTypedValue({})])).toEqual([TYPED_TRUE]);
   });
 
   test('toTime', () => {
     expect(functions.toTime([])).toEqual([]);
-    expect(() => functions.toTime([1, 2])).toThrow();
-    expect(functions.toTime(['12:00:00'])).toEqual(['T12:00:00.000Z']);
-    expect(functions.toTime(['T12:00:00'])).toEqual(['T12:00:00.000Z']);
-    expect(functions.toTime(['foo'])).toEqual([]);
-    expect(functions.toTime([1])).toEqual([]);
-    expect(functions.toTime([true])).toEqual([]);
+    expect(() => functions.toTime([TYPED_1, TYPED_2])).toThrow();
+    expect(functions.toTime([toTypedValue('12:00:00')])).toEqual([
+      { type: PropertyType.time, value: 'T12:00:00.000Z' },
+    ]);
+    expect(functions.toTime([toTypedValue('T12:00:00')])).toEqual([
+      { type: PropertyType.time, value: 'T12:00:00.000Z' },
+    ]);
+    expect(functions.toTime([toTypedValue('foo')])).toEqual([]);
+    expect(functions.toTime([TYPED_1])).toEqual([]);
+    expect(functions.toTime([TYPED_TRUE])).toEqual([]);
   });
 
   test('convertsToTime', () => {
     expect(functions.convertsToTime([])).toEqual([]);
-    expect(() => functions.convertsToTime([1, 2])).toThrow();
-    expect(functions.convertsToTime(['12:00:00'])).toEqual([true]);
-    expect(functions.convertsToTime(['T12:00:00'])).toEqual([true]);
-    expect(functions.convertsToTime(['foo'])).toEqual([false]);
-    expect(functions.convertsToTime([1])).toEqual([false]);
-    expect(functions.convertsToTime([true])).toEqual([false]);
+    expect(() => functions.convertsToTime([TYPED_1, TYPED_2])).toThrow();
+    expect(functions.convertsToTime([toTypedValue('12:00:00')])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToTime([toTypedValue('T12:00:00')])).toEqual([TYPED_TRUE]);
+    expect(functions.convertsToTime([toTypedValue('foo')])).toEqual([TYPED_FALSE]);
+    expect(functions.convertsToTime([TYPED_1])).toEqual([TYPED_FALSE]);
+    expect(functions.convertsToTime([TYPED_TRUE])).toEqual([TYPED_FALSE]);
   });
 
   // 5.6. String Manipulation.
 
   test('indexOf', () => {
-    expect(functions.indexOf(['apple'], new LiteralAtom('a'))).toEqual([0]);
+    expect(functions.indexOf([TYPED_APPLE], new LiteralAtom(toTypedValue('a')))).toEqual([TYPED_0]);
   });
 
   test('substring', () => {
-    expect(functions.substring([], new LiteralAtom(0))).toEqual([]);
-    expect(() => functions.substring([1], new LiteralAtom(0))).toThrow();
-    expect(functions.substring(['apple'], new LiteralAtom(-1))).toEqual([]);
-    expect(functions.substring(['apple'], new LiteralAtom(6))).toEqual([]);
-    expect(functions.substring(['apple'], new LiteralAtom(0))).toEqual(['apple']);
-    expect(functions.substring(['apple'], new LiteralAtom(2))).toEqual(['ple']);
+    expect(functions.substring([], new LiteralAtom(toTypedValue(0)))).toEqual([]);
+    expect(() => functions.substring([TYPED_1], new LiteralAtom(toTypedValue(0)))).toThrow();
+    expect(functions.substring([TYPED_APPLE], new LiteralAtom(toTypedValue(-1)))).toEqual([]);
+    expect(functions.substring([TYPED_APPLE], new LiteralAtom(toTypedValue(6)))).toEqual([]);
+    expect(functions.substring([TYPED_APPLE], new LiteralAtom(toTypedValue(0)))).toEqual([TYPED_APPLE]);
+    expect(functions.substring([TYPED_APPLE], new LiteralAtom(toTypedValue(2)))).toEqual([toTypedValue('ple')]);
   });
 
   test('startsWith', () => {
-    expect(functions.startsWith(['apple'], new LiteralAtom('app'))).toEqual([true]);
-    expect(functions.startsWith(['apple'], new LiteralAtom('ple'))).toEqual([false]);
+    expect(functions.startsWith([TYPED_APPLE], new LiteralAtom(toTypedValue('app')))).toEqual([TYPED_TRUE]);
+    expect(functions.startsWith([TYPED_APPLE], new LiteralAtom(toTypedValue('ple')))).toEqual([TYPED_FALSE]);
   });
 
   test('endsWith', () => {
-    expect(functions.endsWith(['apple'], new LiteralAtom('app'))).toEqual([false]);
-    expect(functions.endsWith(['apple'], new LiteralAtom('ple'))).toEqual([true]);
+    expect(functions.endsWith([TYPED_APPLE], new LiteralAtom(toTypedValue('app')))).toEqual([TYPED_FALSE]);
+    expect(functions.endsWith([TYPED_APPLE], new LiteralAtom(toTypedValue('ple')))).toEqual([TYPED_TRUE]);
   });
 
   test('contains', () => {
-    expect(functions.contains(['apple'], new LiteralAtom('app'))).toEqual([true]);
-    expect(functions.contains(['apple'], new LiteralAtom('ple'))).toEqual([true]);
-    expect(functions.contains(['apple'], new LiteralAtom('ppl'))).toEqual([true]);
-    expect(functions.contains(['apple'], new LiteralAtom('xyz'))).toEqual([false]);
+    expect(functions.contains([TYPED_APPLE], new LiteralAtom(toTypedValue('app')))).toEqual([TYPED_TRUE]);
+    expect(functions.contains([TYPED_APPLE], new LiteralAtom(toTypedValue('ple')))).toEqual([TYPED_TRUE]);
+    expect(functions.contains([TYPED_APPLE], new LiteralAtom(toTypedValue('ppl')))).toEqual([TYPED_TRUE]);
+    expect(functions.contains([TYPED_APPLE], new LiteralAtom(toTypedValue('xyz')))).toEqual([TYPED_FALSE]);
   });
 
   test('upper', () => {
-    expect(functions.upper(['apple'])).toEqual(['APPLE']);
-    expect(functions.upper(['Apple'])).toEqual(['APPLE']);
-    expect(functions.upper(['APPLE'])).toEqual(['APPLE']);
+    expect(functions.upper([toTypedValue('apple')])).toEqual([toTypedValue('APPLE')]);
+    expect(functions.upper([toTypedValue('Apple')])).toEqual([toTypedValue('APPLE')]);
+    expect(functions.upper([toTypedValue('APPLE')])).toEqual([toTypedValue('APPLE')]);
   });
 
   test('lower', () => {
-    expect(functions.lower(['apple'])).toEqual(['apple']);
-    expect(functions.lower(['Apple'])).toEqual(['apple']);
-    expect(functions.lower(['APPLE'])).toEqual(['apple']);
+    expect(functions.lower([TYPED_APPLE])).toEqual([TYPED_APPLE]);
+    expect(functions.lower([toTypedValue('Apple')])).toEqual([TYPED_APPLE]);
+    expect(functions.lower([toTypedValue('APPLE')])).toEqual([TYPED_APPLE]);
   });
 
   test('replace', () => {
-    expect(functions.replace(['banana'], new LiteralAtom('nana'), new LiteralAtom('tman'))).toEqual(['batman']);
+    expect(
+      functions.replace(
+        [toTypedValue('banana')],
+        new LiteralAtom(toTypedValue('nana')),
+        new LiteralAtom(toTypedValue('tman'))
+      )
+    ).toEqual([toTypedValue('batman')]);
   });
 
   test('matches', () => {
-    expect(functions.matches(['apple'], new LiteralAtom('a'))).toEqual([true]);
+    expect(functions.matches([TYPED_APPLE], new LiteralAtom(TYPED_A))).toEqual([TYPED_TRUE]);
   });
 
   test('replaceMatches', () => {
-    expect(functions.replaceMatches(['banana'], new LiteralAtom('nana'), new LiteralAtom('tman'))).toEqual(['batman']);
+    expect(
+      functions.replaceMatches(
+        [toTypedValue('banana')],
+        new LiteralAtom(toTypedValue('nana')),
+        new LiteralAtom(toTypedValue('tman'))
+      )
+    ).toEqual([toTypedValue('batman')]);
   });
 
   test('length', () => {
-    expect(functions.length([''])).toEqual([0]);
-    expect(functions.length(['x'])).toEqual([1]);
-    expect(functions.length(['xy'])).toEqual([2]);
-    expect(functions.length(['xyz'])).toEqual([3]);
+    expect(functions.length([toTypedValue('')])).toEqual([TYPED_0]);
+    expect(functions.length([toTypedValue('x')])).toEqual([TYPED_1]);
+    expect(functions.length([toTypedValue('xy')])).toEqual([TYPED_2]);
+    expect(functions.length([toTypedValue('xyz')])).toEqual([TYPED_3]);
   });
 
   test('toChars', () => {
-    expect(functions.toChars([''])).toEqual([]);
-    expect(functions.toChars(['x'])).toEqual([['x']]);
-    expect(functions.toChars(['xy'])).toEqual([['x', 'y']]);
-    expect(functions.toChars(['xyz'])).toEqual([['x', 'y', 'z']]);
+    expect(functions.toChars([toTypedValue('')])).toEqual([]);
+    expect(functions.toChars([toTypedValue('x')])).toEqual([TYPED_X]);
+    expect(functions.toChars([toTypedValue('xy')])).toEqual([TYPED_X, TYPED_Y]);
+    expect(functions.toChars([toTypedValue('xyz')])).toEqual([TYPED_X, TYPED_Y, TYPED_Z]);
   });
 
   // 5.7. Math
 
   test('abs', () => {
-    expect(() => functions.abs(['xyz'])).toThrow();
+    expect(() => functions.abs([toTypedValue('xyz')])).toThrow();
     expect(functions.abs([])).toEqual([]);
-    expect(functions.abs([-1])).toEqual([1]);
-    expect(functions.abs([0])).toEqual([0]);
-    expect(functions.abs([1])).toEqual([1]);
+    expect(functions.abs([toTypedValue(-1)])).toEqual([TYPED_1]);
+    expect(functions.abs([TYPED_0])).toEqual([TYPED_0]);
+    expect(functions.abs([TYPED_1])).toEqual([TYPED_1]);
   });
 
   // 5.8. Tree navigation
@@ -513,51 +563,56 @@ describe('FHIRPath functions', () => {
   // 5.9. Utility functions
 
   test('now', () => {
-    expect(functions.now()[0]).toBeDefined();
+    expect(functions.now([])[0]).toBeDefined();
   });
 
   test('timeOfDay', () => {
-    expect(functions.timeOfDay()[0]).toBeDefined();
+    expect(functions.timeOfDay([])[0]).toBeDefined();
   });
 
   test('today', () => {
-    expect(functions.today()[0]).toBeDefined();
+    expect(functions.today([])[0]).toBeDefined();
   });
 
   test('between', () => {
     expect(
       functions.between(
-        undefined,
-        new LiteralAtom('2000-01-01'),
-        new LiteralAtom('2020-01-01'),
-        new LiteralAtom('years')
+        [],
+        new LiteralAtom(toTypedValue('2000-01-01')),
+        new LiteralAtom(toTypedValue('2020-01-01')),
+        new LiteralAtom(toTypedValue('years'))
       )
-    ).toEqual([{ value: 20, unit: 'years' }]);
+    ).toEqual([
+      {
+        type: PropertyType.Quantity,
+        value: { value: 20, unit: 'years' },
+      },
+    ]);
 
     expect(() =>
       functions.between(
-        undefined,
-        new LiteralAtom('xxxx-xx-xx'),
-        new LiteralAtom('2020-01-01'),
-        new LiteralAtom('years')
+        [],
+        new LiteralAtom(toTypedValue('xxxx-xx-xx')),
+        new LiteralAtom(toTypedValue('2020-01-01')),
+        new LiteralAtom(toTypedValue('years'))
       )
     ).toThrow('Invalid start date');
 
     expect(() =>
       functions.between(
-        undefined,
-        new LiteralAtom('2020-01-01'),
-        new LiteralAtom('xxxx-xx-xx'),
-        new LiteralAtom('years')
+        [],
+        new LiteralAtom(toTypedValue('2020-01-01')),
+        new LiteralAtom(toTypedValue('xxxx-xx-xx')),
+        new LiteralAtom(toTypedValue('years'))
       )
     ).toThrow('Invalid end date');
 
     expect(() =>
       functions.between(
-        undefined,
-        new LiteralAtom('2000-01-01'),
-        new LiteralAtom('2020-01-01'),
-        new LiteralAtom('xxxxx')
+        [],
+        new LiteralAtom(toTypedValue('2000-01-01')),
+        new LiteralAtom(toTypedValue('2020-01-01')),
+        new LiteralAtom(toTypedValue('xxxxx'))
       )
     ).toThrow('Invalid units');
   });
@@ -565,33 +620,46 @@ describe('FHIRPath functions', () => {
   // Other
 
   test('resolve', () => {
-    expect(functions.resolve(['Patient/123'])).toEqual([{ resourceType: 'Patient', id: '123' }]);
-    expect(functions.resolve([{ reference: 'Patient/123' }])).toEqual([{ resourceType: 'Patient', id: '123' }]);
-    expect(functions.resolve([123])).toEqual([]);
+    expect(functions.resolve([toTypedValue('Patient/123')])).toEqual([
+      {
+        type: PropertyType.BackboneElement,
+        value: { resourceType: 'Patient', id: '123' },
+      },
+    ]);
+    expect(functions.resolve([{ type: PropertyType.Reference, value: { reference: 'Patient/123' } }])).toEqual([
+      {
+        type: PropertyType.BackboneElement,
+        value: { resourceType: 'Patient', id: '123' },
+      },
+    ]);
+    expect(functions.resolve([toTypedValue(123)])).toEqual([]);
     expect(
       functions.resolve([
-        {
+        toTypedValue({
           reference: 'Patient/123',
           resource: {
             resourceType: 'Patient',
             id: '123',
             name: [{ family: 'Simpson', given: ['Homer'] }],
           },
-        },
+        }),
       ])
-    ).toEqual([{ resourceType: 'Patient', id: '123', name: [{ family: 'Simpson', given: ['Homer'] }] }]);
+    ).toEqual([toTypedValue({ resourceType: 'Patient', id: '123', name: [{ family: 'Simpson', given: ['Homer'] }] })]);
   });
 
   test('as', () => {
-    expect(functions.as([{ resourceType: 'Patient', id: '123' }])).toEqual([{ resourceType: 'Patient', id: '123' }]);
+    expect(functions.as([toTypedValue({ resourceType: 'Patient', id: '123' })])).toEqual([
+      toTypedValue({ resourceType: 'Patient', id: '123' }),
+    ]);
   });
 
   // 12. Formal Specifications
 
   test('type', () => {
-    expect(functions.type([true])).toEqual([{ namespace: 'System', name: 'Boolean' }]);
-    expect(functions.type([123])).toEqual([{ namespace: 'System', name: 'Integer' }]);
-    expect(functions.type([{ resourceType: 'Patient', id: '123' }])).toEqual([{ namespace: 'FHIR', name: 'Patient' }]);
-    expect(functions.type([{}])).toEqual([null]);
+    expect(functions.type([TYPED_TRUE])).toEqual([toTypedValue({ namespace: 'System', name: 'Boolean' })]);
+    expect(functions.type([toTypedValue(123)])).toEqual([toTypedValue({ namespace: 'System', name: 'Integer' })]);
+    expect(functions.type([toTypedValue({ resourceType: 'Patient', id: '123' })])).toEqual([
+      toTypedValue({ namespace: 'FHIR', name: 'Patient' }),
+    ]);
   });
 });

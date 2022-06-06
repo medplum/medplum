@@ -1,38 +1,39 @@
-import { applyMaybeArray, fhirPathEquals, fhirPathIs, toJsBoolean } from './utils';
+import { PropertyType } from '../types';
+import { fhirPathEquals, fhirPathIs, toJsBoolean } from './utils';
+
+const TYPED_TRUE = { type: PropertyType.boolean, value: true };
+const TYPED_FALSE = { type: PropertyType.boolean, value: false };
+const TYPED_1 = { type: PropertyType.integer, value: 1 };
+const TYPED_2 = { type: PropertyType.integer, value: 2 };
 
 describe('FHIRPath utils', () => {
-  test('applyMaybeArray', () => {
-    expect(applyMaybeArray(undefined, (e) => e)).toBeUndefined();
-    expect(applyMaybeArray(123, (e) => e)).toEqual(123);
-    expect(applyMaybeArray([1, 2, 3], (e) => e)).toEqual([1, 2, 3]);
-    expect(applyMaybeArray([1, undefined, 3], (e) => e)).toEqual([1, 3]);
-  });
-
   test('toJsBoolean', () => {
-    expect(toJsBoolean(undefined)).toEqual(false);
-    expect(toJsBoolean(null)).toEqual(false);
-    expect(toJsBoolean(false)).toEqual(false);
-    expect(toJsBoolean(true)).toEqual(true);
-    expect(toJsBoolean('')).toEqual(false);
-    expect(toJsBoolean('hi')).toEqual(true);
-    expect(toJsBoolean([])).toEqual(false);
-    expect(toJsBoolean(['hi'])).toEqual(true);
+    expect(toJsBoolean([{ type: PropertyType.BackboneElement, value: undefined }])).toEqual(false);
+    expect(toJsBoolean([{ type: PropertyType.BackboneElement, value: null }])).toEqual(false);
+    expect(toJsBoolean([{ type: PropertyType.boolean, value: false }])).toEqual(false);
+    expect(toJsBoolean([{ type: PropertyType.boolean, value: true }])).toEqual(true);
+    expect(toJsBoolean([{ type: PropertyType.string, value: '' }])).toEqual(false);
+    expect(toJsBoolean([{ type: PropertyType.string, value: 'hi' }])).toEqual(true);
   });
 
   test('fhirPathIs', () => {
-    expect(fhirPathIs(undefined, 'string')).toEqual(false);
-    expect(fhirPathIs({}, 'Patient')).toEqual(false);
-    expect(fhirPathIs({ resourceType: 'Patient' }, 'Patient')).toEqual(true);
-    expect(fhirPathIs({ resourceType: 'Observation' }, 'Patient')).toEqual(false);
-    expect(fhirPathIs(true, 'Boolean')).toEqual(true);
-    expect(fhirPathIs(false, 'Boolean')).toEqual(true);
-    expect(fhirPathIs(100, 'Boolean')).toEqual(false);
-    expect(fhirPathIs({}, 'Boolean')).toEqual(false);
+    expect(fhirPathIs({ type: PropertyType.string, value: undefined }, 'string')).toEqual(false);
+    expect(fhirPathIs({ type: PropertyType.BackboneElement, value: {} }, 'Patient')).toEqual(false);
+    expect(fhirPathIs({ type: PropertyType.BackboneElement, value: { resourceType: 'Patient' } }, 'Patient')).toEqual(
+      true
+    );
+    expect(
+      fhirPathIs({ type: PropertyType.BackboneElement, value: { resourceType: 'Observation' } }, 'Patient')
+    ).toEqual(false);
+    expect(fhirPathIs({ type: PropertyType.boolean, value: true }, 'Boolean')).toEqual(true);
+    expect(fhirPathIs({ type: PropertyType.boolean, value: false }, 'Boolean')).toEqual(true);
+    expect(fhirPathIs({ type: PropertyType.integer, value: 100 }, 'Boolean')).toEqual(false);
+    expect(fhirPathIs({ type: PropertyType.BackboneElement, value: {} }, 'Boolean')).toEqual(false);
   });
 
   test('fhirPathEquals', () => {
-    expect(fhirPathEquals(1, 1)).toEqual(true);
-    expect(fhirPathEquals(1, 2)).toEqual(false);
-    expect(fhirPathEquals(2, 1)).toEqual(false);
+    expect(fhirPathEquals(TYPED_1, TYPED_1)).toEqual([TYPED_TRUE]);
+    expect(fhirPathEquals(TYPED_1, TYPED_2)).toEqual([TYPED_FALSE]);
+    expect(fhirPathEquals(TYPED_2, TYPED_1)).toEqual([TYPED_FALSE]);
   });
 });

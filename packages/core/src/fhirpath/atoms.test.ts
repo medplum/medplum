@@ -1,18 +1,20 @@
+import { PropertyType } from '../types';
 import { LiteralAtom } from './atoms';
 import { evalFhirPath } from './parse';
 
 describe('Atoms', () => {
   test('LiteralAtom', () => {
-    expect(new LiteralAtom('a').eval()).toEqual('a');
+    const a = { type: PropertyType.string, value: 'a' };
+    expect(new LiteralAtom(a).eval()).toEqual([a]);
   });
 
   test('ConcatAtom', () => {
-    expect(evalFhirPath('{} & {}', null)).toEqual([]);
-    expect(evalFhirPath('x & y', null)).toEqual([]);
+    expect(evalFhirPath('{} & {}', [])).toEqual([]);
+    expect(evalFhirPath('x & y', [])).toEqual([]);
   });
 
   test('UnionAtom', () => {
-    expect(evalFhirPath('{} | {}', null)).toEqual([]);
-    expect(evalFhirPath('x | y', null)).toEqual([]);
+    expect(evalFhirPath('{} | {}', [])).toEqual([]);
+    expect(evalFhirPath('x | y', [])).toEqual([]);
   });
 });

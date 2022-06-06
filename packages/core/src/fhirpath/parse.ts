@@ -1,4 +1,5 @@
 import { Quantity } from '@medplum/fhirtypes';
+import { PropertyType } from '../types';
 import {
   AndAtom,
   ArithemticOperatorAtom,
@@ -13,8 +14,8 @@ import {
   EquivalentAtom,
   FhirPathAtom,
   FunctionAtom,
-  IndexerAtom,
   InAtom,
+  IndexerAtom,
   IsAtom,
   LiteralAtom,
   NotEqualsAtom,
@@ -26,7 +27,7 @@ import {
   XorAtom,
 } from './atoms';
 import { parseDateString } from './date';
-import * as functions from './functions';
+import { functions } from './functions';
 import { Token, tokenize } from './tokenize';
 
 interface PrefixParselet {
@@ -222,11 +223,7 @@ const FUNCTION_CALL_PARSELET: InfixParselet = {
       parser.match(',');
     }
 
-    return new FunctionAtom(
-      left.name,
-      args,
-      (functions as Record<string, (context: unknown[], ...a: Atom[]) => unknown[]>)[left.name]
-    );
+    return new FunctionAtom(left.name, args, functions[left.name]);
   },
   precedence: Precedence.FunctionCall,
 };
@@ -245,24 +242,24 @@ function parseQuantity(str: string): Quantity {
 
 const parserBuilder = new ParserBuilder()
   .registerPrefix('String', {
-    parse: (_, token) => new LiteralAtom(token.value),
+    parse: (_, token) => new LiteralAtom({ type: PropertyType.string, value: token.value }),
   })
   .registerPrefix('DateTime', {
-    parse: (_, token) => new LiteralAtom(parseDateString(token.value)),
+    parse: (_, token) => new LiteralAtom({ type: PropertyType.dateTime, value: parseDateString(token.value) }),
   })
   .registerPrefix('Quantity', {
-    parse: (_, token) => new LiteralAtom(parseQuantity(token.value)),
+    parse: (_, token) => new LiteralAtom({ type: PropertyType.Quantity, value: parseQuantity(token.value) }),
   })
   .registerPrefix('Number', {
-    parse: (_, token) => new LiteralAtom(parseFloat(token.value)),
+    parse: (_, token) => new LiteralAtom({ type: PropertyType.decimal, value: parseFloat(token.value) }),
   })
   .registerPrefix('Symbol', {
     parse: (_, token) => {
       if (token.value === 'false') {
-        return new LiteralAtom(false);
+        return new LiteralAtom({ type: PropertyType.boolean, value: false });
       }
       if (token.value === 'true') {
-        return new LiteralAtom(true);
+        return new LiteralAtom({ type: PropertyType.boolean, value: true });
       }
       return new SymbolAtom(token.value);
     },
@@ -331,6 +328,7 @@ const parserBuilder = new ParserBuilder()
  */
 export function parseFhirPath(input: string): FhirPathAtom {
   try {
+    // console.log(parserBuilder.construct(input).consumeAndParse());
     return new FhirPathAtom(input, parserBuilder.construct(input).consumeAndParse());
   } catch (error) {
     throw new Error(`FhirPathError on "${input}": ${error}`);
@@ -344,5 +342,19 @@ export function parseFhirPath(input: string): FhirPathAtom {
  * @returns The result of the FHIRPath expression against the resource or object.
  */
 export function evalFhirPath(input: string, context: unknown): unknown[] {
-  return parseFhirPath(input).eval(context);
+  // eval requires a TypedValue array
+  // As a convenience, we can accept array or non-array, and TypedValue or unknown value
+  if (!Array.isArray(context)) {
+    context = [context];
+  }
+  const array = Array.isArray(context) ? context : [context];
+  for (let i = 0; i < array.length; i++) {
+    const el = array[i];
+    if (!(typeof el === 'object' && 'type' in el && 'value' in el)) {
+      array[i] = { type: PropertyType.BackboneElement, value: el };
+    }
+  }
+  return parseFhirPath(input)
+    .eval(array)
+    .map((e) => e.value);
 }
