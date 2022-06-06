@@ -939,6 +939,10 @@ export class Repository {
       return this.#buildTokenColumn(value);
     }
 
+    if (searchParam.type === 'quantity') {
+      return this.#buildQuantityColumn(value);
+    }
+
     return typeof value === 'string' ? value : stringify(value);
   }
 
@@ -1057,6 +1061,23 @@ export class Repository {
       return value.text as string;
     }
 
+    return undefined;
+  }
+
+  /**
+   * Builds a Quantity column value.
+   * @param value The property value of the quantity.
+   * @returns The numeric value if available; undefined otherwise.
+   */
+  #buildQuantityColumn(value: any): number | undefined {
+    if (typeof value === 'object') {
+      if ('value' in value) {
+        const num = value.value;
+        if (typeof num === 'number') {
+          return num;
+        }
+      }
+    }
     return undefined;
   }
 

@@ -527,10 +527,17 @@ export function renderValue(
     return <DateTimeDisplay value={resource.meta?.lastUpdated} />;
   }
 
+  // Priority 1: ElementDefinition by exact match
+  if (field.elementDefinition && `${resource.resourceType}.${field.name}` === field.elementDefinition.path) {
+    return renderPropertyValue(schema, resource, field.elementDefinition);
+  }
+
+  // Priority 2: SearchParameter by exact match
   if (field.searchParam && field.name === field.searchParam.code) {
     return renderSearchParameterValue(schema, resource, field.searchParam, field.elementDefinition);
   }
 
+  // Priority 3: Any matching ElementDefinition
   if (field.elementDefinition) {
     return renderPropertyValue(schema, resource, field.elementDefinition);
   }
@@ -584,6 +591,7 @@ function renderSearchParameterValue(
   elementDefinition: ElementDefinition | undefined
 ): JSX.Element | null {
   const value = evalFhirPath(searchParam.expression as string, resource);
+  console.log('evalFhirPath', searchParam.expression, value);
   if (!value || value.length === 0) {
     return null;
   }
