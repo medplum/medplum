@@ -2,9 +2,10 @@ import { Resource } from '@medplum/fhirtypes';
 import { PropertyType } from '../types';
 import {
   booleanToTypedValue,
-  fhirPathEquals,
-  fhirPathEquivalent,
+  fhirPathArrayEquals,
+  fhirPathArrayEquivalent,
   fhirPathIs,
+  fhirPathNot,
   isQuantity,
   removeDuplicates,
   toJsBoolean,
@@ -227,7 +228,7 @@ export class EqualsAtom implements Atom {
   eval(context: TypedValue[]): TypedValue[] {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
-    return fhirPathEquals(leftValue, rightValue);
+    return fhirPathArrayEquals(leftValue, rightValue);
   }
 }
 
@@ -237,7 +238,7 @@ export class NotEqualsAtom implements Atom {
   eval(context: TypedValue[]): TypedValue[] {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
-    return booleanToTypedValue(!toJsBoolean(fhirPathEquals(leftValue, rightValue)));
+    return fhirPathNot(fhirPathArrayEquals(leftValue, rightValue));
   }
 }
 
@@ -247,7 +248,7 @@ export class EquivalentAtom implements Atom {
   eval(context: TypedValue[]): TypedValue[] {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
-    return fhirPathEquivalent(leftValue, rightValue);
+    return fhirPathArrayEquivalent(leftValue, rightValue);
   }
 }
 
@@ -257,7 +258,7 @@ export class NotEquivalentAtom implements Atom {
   eval(context: TypedValue[]): TypedValue[] {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
-    return booleanToTypedValue(!toJsBoolean(fhirPathEquivalent(leftValue, rightValue)));
+    return fhirPathNot(fhirPathArrayEquivalent(leftValue, rightValue));
   }
 }
 

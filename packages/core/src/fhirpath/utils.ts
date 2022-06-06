@@ -2,9 +2,21 @@ import { Period, Quantity } from '@medplum/fhirtypes';
 import { PropertyType } from '../types';
 import { TypedValue } from './atoms';
 
-export const booleanToTypedValue = (value: boolean): TypedValue[] => [{ type: PropertyType.boolean, value }];
+/**
+ * Returns a single element array with a typed boolean value.
+ * @param value The primitive boolean value.
+ * @returns Single element array with a typed boolean value.
+ */
+export function booleanToTypedValue(value: boolean): [TypedValue] {
+  return [{ type: PropertyType.boolean, value }];
+}
 
-export function toTypedValue(value: any): TypedValue {
+/**
+ * Returns a "best guess" TypedValue for a given value.
+ * @param value The unknown value to check.
+ * @returns A "best guess" TypedValue for the given value.
+ */
+export function toTypedValue(value: unknown): TypedValue {
   if (typeof value === 'number') {
     return { type: PropertyType.integer, value };
   } else if (typeof value === 'boolean') {
@@ -16,19 +28,6 @@ export function toTypedValue(value: any): TypedValue {
   } else {
     return { type: PropertyType.BackboneElement, value };
   }
-}
-
-/**
- * Determines if the input is an empty array.
- * @param obj Any value or array of values.
- * @returns True if the input is an empty array.
- */
-export function isEmptyArray(obj: unknown): boolean {
-  return Array.isArray(obj) && obj.length === 0;
-}
-
-export function isFalsy(obj: unknown): boolean {
-  return !obj || isEmptyArray(obj);
 }
 
 /**
@@ -65,33 +64,42 @@ export function removeDuplicates(arr: TypedValue[]): TypedValue[] {
 }
 
 /**
+ * Returns a negated FHIRPath boolean expression.
+ * @param input The input array.
+ * @returns The negated type value array.
+ */
+export function fhirPathNot(input: TypedValue[]): TypedValue[] {
+  return booleanToTypedValue(!toJsBoolean(input));
+}
+
+/**
+ * Determines if two arrays are equal according to FHIRPath equality rules.
+ * @param x The first array.
+ * @param y The second array.
+ * @returns FHIRPath true if the arrays are equal.
+ */
+export function fhirPathArrayEquals(x: TypedValue[], y: TypedValue[]): TypedValue[] {
+  if (x.length === 0 || y.length === 0) {
+    return [];
+  }
+  if (x.length !== y.length) {
+    return booleanToTypedValue(false);
+  }
+  return booleanToTypedValue(x.every((val, index) => toJsBoolean(fhirPathEquals(val, y[index]))));
+}
+
+/**
  * Determines if two values are equal according to FHIRPath equality rules.
  * @param x The first value.
  * @param y The second value.
  * @returns True if equal.
  */
-export function fhirPathEquals(x: TypedValue | TypedValue[], y: TypedValue | TypedValue[]): TypedValue[] {
-  const xArray = Array.isArray(x);
-  const yArray = Array.isArray(y);
-  if (xArray && yArray) {
-    if (isEmptyArray(x) || isEmptyArray(y)) {
-      return [];
-    }
-    return booleanToTypedValue(
-      x.length === y.length && x.every((val, index) => toJsBoolean(fhirPathEquals(val, y[index])))
-    );
-  }
-  if (isFalsy(x) && isFalsy(y)) {
+export function fhirPathEquals(x: TypedValue, y: TypedValue): TypedValue[] {
+  if (!x && !y) {
     return booleanToTypedValue(true);
   }
-  if (isEmptyArray(x) || isEmptyArray(y)) {
-    return [];
-  }
-  if (xArray || yArray) {
-    return [];
-  }
-  const xValue = (x as TypedValue).value;
-  const yValue = (y as TypedValue).value;
+  const xValue = x.value;
+  const yValue = y.value;
   if (typeof xValue === 'number' && typeof yValue === 'number') {
     return booleanToTypedValue(Math.abs(xValue - yValue) < 1e-8);
   }
@@ -105,39 +113,32 @@ export function fhirPathEquals(x: TypedValue | TypedValue[], y: TypedValue | Typ
 }
 
 /**
- * Determines if two values are equal according to FHIRPath equality rules.
- * @param x The first value.
- * @param y The second value.
- * @returns True if equal.
+ * Determines if two arrays are equivalent according to FHIRPath equality rules.
+ * @param x The first array.
+ * @param y The second array.
+ * @returns FHIRPath true if the arrays are equivalent.
  */
-export function fhirPathEquivalent(x: TypedValue | TypedValue[], y: TypedValue | TypedValue[]): TypedValue[] {
-  const xArray = Array.isArray(x);
-  const yArray = Array.isArray(y);
-  if (xArray && yArray) {
-    if (isEmptyArray(x) && isEmptyArray(y)) {
-      // Note that this implies that if the collections have a different number of items to compare,
-      // or if one input is a value and the other is empty ({ }), the result will be false.
-      // return false;
-      return booleanToTypedValue(true);
-    }
-
-    if (isEmptyArray(x) || isEmptyArray(y)) {
-      // Note that this implies that if the collections have a different number of items to compare,
-      // or if one input is a value and the other is empty ({ }), the result will be false.
-      // return false;
-      return booleanToTypedValue(false);
-    }
-    x.sort(fhirPathEquivalentCompare);
-    y.sort(fhirPathEquivalentCompare);
-    return booleanToTypedValue(
-      x.length === y.length && x.every((val, index) => toJsBoolean(fhirPathEquivalent(val, y[index])))
-    );
-  }
-  if (isFalsy(x) && isFalsy(y)) {
+export function fhirPathArrayEquivalent(x: TypedValue[], y: TypedValue[]): TypedValue[] {
+  if (x.length === 0 && y.length === 0) {
     return booleanToTypedValue(true);
   }
-  if (xArray || yArray) {
-    return [];
+  if (x.length !== y.length) {
+    return booleanToTypedValue(false);
+  }
+  x.sort(fhirPathEquivalentCompare);
+  y.sort(fhirPathEquivalentCompare);
+  return booleanToTypedValue(x.every((val, index) => toJsBoolean(fhirPathEquivalent(val, y[index]))));
+}
+
+/**
+ * Determines if two values are equivalent according to FHIRPath equality rules.
+ * @param x The first value.
+ * @param y The second value.
+ * @returns True if equivalent.
+ */
+export function fhirPathEquivalent(x: TypedValue, y: TypedValue): TypedValue[] {
+  if (!x && !y) {
+    return booleanToTypedValue(true);
   }
   const xValue = (x as TypedValue).value;
   const yValue = (y as TypedValue).value;
@@ -161,6 +162,12 @@ export function fhirPathEquivalent(x: TypedValue | TypedValue[], y: TypedValue |
   return booleanToTypedValue(xValue === yValue);
 }
 
+/**
+ * Returns the sort order of two values for FHIRPath array equivalence.
+ * @param a The first value.
+ * @param b The second value.
+ * @returns The sort order of the values.
+ */
 function fhirPathEquivalentCompare(a: TypedValue, b: TypedValue): number {
   const aVal = a.value;
   const bVal = b.value;
@@ -173,6 +180,12 @@ function fhirPathEquivalentCompare(a: TypedValue, b: TypedValue): number {
   return 0;
 }
 
+/**
+ * Determines if the typed value is the desired type.
+ * @param typedValue The typed value to check.
+ * @param desiredType The desired type name.
+ * @returns True if the typed value is of the desired type.
+ */
 export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean {
   const { value } = typedValue;
   if (value === undefined || value === null) {
