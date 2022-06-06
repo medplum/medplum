@@ -1,4 +1,4 @@
-import { Period, Quantity, Resource } from '@medplum/fhirtypes';
+import { Period, Quantity } from '@medplum/fhirtypes';
 import { PropertyType } from '../types';
 import { TypedValue } from './atoms';
 
@@ -196,7 +196,7 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
     case 'Quantity':
       return isQuantity(value);
     default:
-      return typeof value === 'object' && (value as Resource | undefined)?.resourceType === desiredType;
+      return typeof value === 'object' && value?.resourceType === desiredType;
   }
 }
 

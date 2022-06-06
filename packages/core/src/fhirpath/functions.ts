@@ -1558,7 +1558,7 @@ export const functions: Record<string, FhirPathFunction> = {
     const expectedResourceType = system.replace('http://hl7.org/fhir/StructureDefinition/', '');
     return input.map((value) => ({
       type: PropertyType.boolean,
-      value: (value.value as Resource | undefined)?.resourceType === expectedResourceType,
+      value: value.value?.resourceType === expectedResourceType,
     }));
   },
 };

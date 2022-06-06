@@ -328,7 +328,6 @@ const parserBuilder = new ParserBuilder()
  */
 export function parseFhirPath(input: string): FhirPathAtom {
   try {
-    // console.log(parserBuilder.construct(input).consumeAndParse());
     return new FhirPathAtom(input, parserBuilder.construct(input).consumeAndParse());
   } catch (error) {
     throw new Error(`FhirPathError on "${input}": ${error}`);

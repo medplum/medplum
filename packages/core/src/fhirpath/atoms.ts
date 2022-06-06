@@ -8,6 +8,7 @@ import {
   isQuantity,
   removeDuplicates,
   toJsBoolean,
+  toTypedValue,
 } from './utils';
 
 export interface TypedValue {
@@ -49,34 +50,42 @@ export class SymbolAtom implements Atom {
       return context;
     }
     return context
-      .map((e: TypedValue) => {
-        const input = e.value;
-        let result: any = undefined;
-        if (input && typeof input === 'object') {
-          if ('resourceType' in input && (input as Resource).resourceType === this.name) {
-            return e;
-          }
-          if (this.name in input) {
-            // TODO: Get PropertyType from the schema
-            result = (input as { [key: string]: unknown })[this.name];
-          }
-          const propertyName = Object.keys(input).find((k) => k.startsWith(this.name));
-          if (propertyName) {
-            // TODO: Get the PropertyType from the choice of type
-            result = (input as { [key: string]: unknown })[propertyName];
-          }
-        }
-        // TODO: Get the PropertyType from the choice of type
-        if (result === undefined) {
-          return { type: PropertyType.string, value: undefined };
-        } else if (Array.isArray(result)) {
-          return result.map((e) => ({ type: PropertyType.string, value: e }));
-        } else {
-          return [{ type: PropertyType.string, value: result }];
-        }
-      })
+      .map((e) => this.#evalValue(e))
       .flat()
-      .filter((e) => e.value !== undefined);
+      .filter((e) => e?.value !== undefined) as TypedValue[];
+  }
+
+  #evalValue(typedValue: TypedValue): TypedValue[] | TypedValue | undefined {
+    const input = typedValue.value;
+    if (!input || typeof input !== 'object') {
+      return undefined;
+    }
+
+    if ('resourceType' in input && (input as Resource).resourceType === this.name) {
+      return typedValue;
+    }
+
+    let result: any = undefined;
+    if (this.name in input) {
+      result = (input as { [key: string]: unknown })[this.name];
+    } else {
+      const propertyName = Object.keys(input).find((k) => k.startsWith(this.name));
+      if (propertyName) {
+        // TODO: Get the PropertyType from the choice of type
+        result = (input as { [key: string]: unknown })[propertyName];
+      }
+    }
+
+    if (result === undefined) {
+      return undefined;
+    }
+
+    // TODO: Get the PropertyType from the choice of type
+    if (Array.isArray(result)) {
+      return result.map(toTypedValue);
+    } else {
+      return [toTypedValue(result)];
+    }
   }
 }
 
