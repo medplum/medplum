@@ -24,7 +24,7 @@ const LAMBDA_HANDLER = 'index.handler';
 
 const WRAPPER_CODE = `const { Hl7Message, MedplumClient } = require("@medplum/core");
 const fetch = require("node-fetch");
-const userCode = require("./user.cjs");
+const userCode = require("./user.js");
 
 exports.handler = async (event, context) => {
   const { accessToken, input, contentType } = event;
@@ -89,8 +89,8 @@ export async function deployLambda(client: LambdaClient, name: string, code: str
 
 async function createZipFile(code: string): Promise<Uint8Array> {
   const zip = new JSZip();
-  zip.file('user.cjs', code);
-  zip.file('index.cjs', WRAPPER_CODE);
+  zip.file('user.js', code);
+  zip.file('index.js', WRAPPER_CODE);
   return zip.generateAsync({ type: 'uint8array' });
 }
 
@@ -144,29 +144,18 @@ async function createLambda(client: LambdaClient, name: string, zipFile: Uint8Ar
  */
 async function updateLambda(client: LambdaClient, name: string, zipFile: Uint8Array): Promise<void> {
   const layerVersion = await getLayerVersion(client);
-  console.log('layerVersion: ' + layerVersion);
 
-  console.log('get function config...');
   const functionConfig = await client.send(
     new GetFunctionConfigurationCommand({
       FunctionName: name,
     })
   );
-  console.log(JSON.stringify(functionConfig, null, 2));
 
   if (
     functionConfig.Runtime !== LAMBDA_RUNTIME ||
     functionConfig.Handler !== LAMBDA_HANDLER ||
     functionConfig.Layers?.[0].Arn !== layerVersion
   ) {
-    console.log('function config out of date:');
-    console.log('Runtime: ' + functionConfig.Runtime + ' (expected ' + LAMBDA_RUNTIME + ')');
-    console.log('  check: ' + (functionConfig.Runtime === LAMBDA_RUNTIME));
-    console.log('Handler: ' + functionConfig.Handler + ' (expected ' + LAMBDA_HANDLER + ')');
-    console.log('  check: ' + (functionConfig.Handler === LAMBDA_HANDLER));
-    console.log('Layer: ' + functionConfig.Layers?.[0].Arn + ' (expected ' + layerVersion + ')');
-    console.log('  check: ' + (functionConfig.Layers?.[0].Arn === layerVersion));
-
     await client.send(
       new UpdateFunctionConfigurationCommand({
         FunctionName: name,
@@ -179,7 +168,6 @@ async function updateLambda(client: LambdaClient, name: string, zipFile: Uint8Ar
     );
   }
 
-  console.log('Update function code...');
   await client.send(
     new UpdateFunctionCodeCommand({
       FunctionName: name,
@@ -187,7 +175,6 @@ async function updateLambda(client: LambdaClient, name: string, zipFile: Uint8Ar
       Publish: true,
     })
   );
-  console.log('done');
 }
 
 /**

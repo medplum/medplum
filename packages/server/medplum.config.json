@@ -19,9 +19,8 @@
   "adminClientId": "2a4b77f2-4d4e-43c6-9b01-330eb5ca772f",
   "maxJsonSize": "1mb",
   "maxUploadSize": "10mb",
-  "botLambdaRoleArn": "arn:aws:iam::647991932601:role/cody-lambda-test-role",
+  "botLambdaRoleArn": "",
   "botLambdaLayerName": "medplum-bot-layer",
-  "corsMode": "open",
   "database": {
     "host": "localhost",
     "port": 5432,
