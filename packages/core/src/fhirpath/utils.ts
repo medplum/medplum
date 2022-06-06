@@ -95,9 +95,6 @@ export function fhirPathArrayEquals(x: TypedValue[], y: TypedValue[]): TypedValu
  * @returns True if equal.
  */
 export function fhirPathEquals(x: TypedValue, y: TypedValue): TypedValue[] {
-  if (!x && !y) {
-    return booleanToTypedValue(true);
-  }
   const xValue = x.value;
   const yValue = y.value;
   if (typeof xValue === 'number' && typeof yValue === 'number') {
@@ -137,11 +134,8 @@ export function fhirPathArrayEquivalent(x: TypedValue[], y: TypedValue[]): Typed
  * @returns True if equivalent.
  */
 export function fhirPathEquivalent(x: TypedValue, y: TypedValue): TypedValue[] {
-  if (!x && !y) {
-    return booleanToTypedValue(true);
-  }
-  const xValue = (x as TypedValue).value;
-  const yValue = (y as TypedValue).value;
+  const xValue = x.value;
+  const yValue = y.value;
   if (typeof xValue === 'number' && typeof yValue === 'number') {
     // Use more generous threshold than equality
     // Decimal: values must be equal, comparison is done on values rounded to the precision of the least precise operand.
@@ -164,18 +158,18 @@ export function fhirPathEquivalent(x: TypedValue, y: TypedValue): TypedValue[] {
 
 /**
  * Returns the sort order of two values for FHIRPath array equivalence.
- * @param a The first value.
- * @param b The second value.
+ * @param x The first value.
+ * @param y The second value.
  * @returns The sort order of the values.
  */
-function fhirPathEquivalentCompare(a: TypedValue, b: TypedValue): number {
-  const aVal = a.value;
-  const bVal = b.value;
-  if (typeof aVal === 'number' && typeof bVal === 'number') {
-    return aVal - bVal;
+function fhirPathEquivalentCompare(x: TypedValue, y: TypedValue): number {
+  const xValue = x.value;
+  const yValue = y.value;
+  if (typeof xValue === 'number' && typeof yValue === 'number') {
+    return xValue - yValue;
   }
-  if (typeof aVal === 'string' && typeof bVal === 'string') {
-    return aVal.localeCompare(bVal);
+  if (typeof xValue === 'string' && typeof yValue === 'string') {
+    return xValue.localeCompare(yValue);
   }
   return 0;
 }

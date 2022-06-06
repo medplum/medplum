@@ -72,7 +72,6 @@ export class SymbolAtom implements Atom {
     } else {
       const propertyName = Object.keys(input).find((k) => k.startsWith(this.name));
       if (propertyName) {
-        // TODO: Get the PropertyType from the choice of type
         result = (input as { [key: string]: unknown })[propertyName];
       }
     }
