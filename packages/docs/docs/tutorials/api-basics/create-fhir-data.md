@@ -65,9 +65,11 @@ async function authenticate() {
   }
 
   const data = await response.json();
-  accessToken = data.access_token;
   console.log('Success!');
+  return data.access_token;
 }
+
+const accessToken = await authenticate();
 ```
 
 ## Using a FHIR batch request to write data
@@ -172,6 +174,8 @@ async function createServiceRequest() {
   // Return the patient and service request IDs as reference strings.
   return [data.entry[0].response.location, data.entry[1].response.location];
 }
+
+const [patientId, serviceRequestId] = await createServiceRequest();
 ```
 
 The behavior of the the `Patient.identifier` field is important to note. `Patient.identifier` usually has a reference string or URL that describes which system that identifier came from. [Identifiers](http://www.hl7.org/fhir/datatypes.html#Identifier) are a concept in FHIR which describe the context in which that identifier is generated, for example, and identifier could be a Social Security Number (SSN) or be created by a health system for their own internal purposes. Here is an example of an identifier scheme for the [Australian Healthcare system](https://namespaces.digitalhealth.gov.au/id/hi/ihi/1.0/).
@@ -321,6 +325,7 @@ async function createReport(patientId, serviceRequestId) {
   // Return the DiagnosticReport IDs as reference strings.
   return [data.entry[2].response.location];
 }
+const [reportId] = await createReport(serviceRequestId, patientId);
 ```
 
 This will create a `DiagnosticReport` that is linked to the `ServiceRequest` and to the `Patient`. If you are using hosted Medplum, you can view all `DiagnosticReports` [here](https://app.medplum.com/DiagnosticReport).
