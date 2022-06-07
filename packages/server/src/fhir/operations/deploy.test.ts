@@ -1,5 +1,5 @@
 import { LambdaClient } from '@aws-sdk/client-lambda';
-import { Bot, OperationOutcome } from '@medplum/fhirtypes';
+import { Bot } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp } from '../../app';
@@ -38,9 +38,6 @@ jest.mock('@aws-sdk/client-lambda', () => {
               Arn: 'arn:aws:lambda:us-east-1:123456789012:layer:test-layer:1',
             },
           ],
-          // functionConfig.Runtime !== LAMBDA_RUNTIME ||
-          // functionConfig.Handler !== LAMBDA_HANDLER ||
-          // functionConfig.Layers?.[0].Arn !== layerVersion
         };
       }
       if (command instanceof original.CreateFunctionCommand) {
@@ -134,66 +131,5 @@ describe('Deploy', () => {
       .send({});
     expect(res3.status).toBe(200);
     expect((LambdaClient as any).updated).toBe(true);
-  });
-
-  test.skip('Missing handler export', async () => {
-    // Step 1: Create a bot
-    const res1 = await request(app)
-      .post(`/fhir/R4/Bot`)
-      .set('Content-Type', 'application/fhir+json')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Bot',
-        name: 'Test Bot',
-        runtimeVersion: 'awslambda',
-        code: `
-        console.log('Hello world');
-        `,
-      });
-    expect(res1.status).toBe(201);
-    const bot = res1.body as Bot;
-
-    // Step 2: Deploy the bot
-    const res2 = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
-      .set('Content-Type', 'application/fhir+json')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({});
-    expect(res2.status).toBe(400);
-    expect((res2.body as OperationOutcome).issue?.[0]?.details?.text).toBe('Missing handler export');
-    expect((LambdaClient as any).created).toBe(false);
-    expect((LambdaClient as any).updated).toBe(false);
-  });
-
-  test.skip('Unsuppored import', async () => {
-    // Step 1: Create a bot
-    const res1 = await request(app)
-      .post(`/fhir/R4/Bot`)
-      .set('Content-Type', 'application/fhir+json')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        resourceType: 'Bot',
-        name: 'Test Bot',
-        runtimeVersion: 'awslambda',
-        code: `
-        import xyz from 'xyz';
-        export async function handler(medplum, event) {
-          await xyz('https://example.com');
-        }
-        `,
-      });
-    expect(res1.status).toBe(201);
-    const bot = res1.body as Bot;
-
-    // Step 2: Deploy the bot
-    const res2 = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
-      .set('Content-Type', 'application/fhir+json')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({});
-    expect(res2.status).toBe(400);
-    expect((res2.body as OperationOutcome).issue?.[0]?.details?.text).toBe('Unsupported import: xyz');
-    expect((LambdaClient as any).created).toBe(false);
-    expect((LambdaClient as any).updated).toBe(false);
   });
 });
