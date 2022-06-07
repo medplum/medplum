@@ -13,13 +13,11 @@ import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'p
 
 /**
  * Optional pdfmake global.
+ * On client-side, the user is expected to have loaded pdfmake via <script> tag.
+ * If pdfmake is avaiable, this global will be defined.
  * See: https://www.npmjs.com/package/pdfmake
  */
-declare const pdfMake:
-  | {
-      createPdf: typeof createPdf;
-    }
-  | undefined;
+declare const pdfMake: { createPdf: typeof createPdf };
 
 export async function generatePdf(
   docDefinition: TDocumentDefinitions,
@@ -36,7 +34,7 @@ export async function generatePdf(
   docDefinition.defaultStyle.fontSize = docDefinition.defaultStyle.fontSize || 11;
   docDefinition.defaultStyle.lineHeight = docDefinition.defaultStyle.lineHeight || 2.0;
 
-  if (typeof window === 'undefined') {
+  if (typeof pdfMake === 'undefined') {
     return generatePdfServerSide(docDefinition, tableLayouts, fonts);
   } else {
     return generatePdfClientSide(docDefinition, tableLayouts, fonts);
@@ -85,9 +83,6 @@ async function generatePdfClientSide(
   tableLayouts?: { [name: string]: CustomTableLayout },
   fonts?: TFontDictionary
 ): Promise<Blob> {
-  if (typeof pdfMake === 'undefined') {
-    throw new Error('pdfMake is not loaded');
-  }
   if (!fonts) {
     fonts = {
       Helvetica: {
@@ -108,10 +103,6 @@ async function generatePdfClientSide(
     };
   }
   return new Promise((resolve: (blob: Blob) => void) => {
-    // pdfMake.createPdf(docDefinition, tableLayouts, fonts).getBlob(resolve);
-    pdfMake.createPdf(docDefinition, tableLayouts, fonts).getBlob((blob: Blob) => {
-      console.log('getBlob:', blob);
-      resolve(blob);
-    });
+    pdfMake.createPdf(docDefinition, tableLayouts, fonts).getBlob(resolve);
   });
 }
