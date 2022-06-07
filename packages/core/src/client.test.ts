@@ -555,21 +555,36 @@ describe('Client', () => {
     expect((result as any).request.url).toBe('https://x/fhir/R4/Binary?_filename=hello.txt');
   });
 
-  test('Create pdf', async () => {
+  test('Create pdf pdfmake not loaded', async () => {
+    expect.assertions(1);
     const client = new MedplumClient(defaultOptions);
-    const result = await client.createPdf({ content: ['Hello world', { text: '' }] });
+    expect(async () => client.createPdf({ content: [] })).rejects.toThrow('pdfMake is not loaded');
+  });
+
+  test('Create pdf success', async () => {
+    const getBlob = jest.fn((cb: (blob: Blob) => void) => cb(new Blob()));
+    const createPdf = jest.fn(() => ({ getBlob }));
+    (global as any).pdfMake = { createPdf };
+
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.createPdf({ content: ['Hello world'] });
     expect(result).toBeDefined();
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Binary');
     expect((result as any).request.options.method).toBe('POST');
-    expect((result as any).request.url).toBe('https://x/fhir/R4/Binary/$pdf');
-    expect((result as any).request.options.body).toBe('{"content":["Hello world",{"text":""}]}');
+    expect((result as any).request.options.headers['Content-Type']).toBe('application/pdf');
   });
 
   test('Create pdf with filename', async () => {
+    const getBlob = jest.fn((cb: (blob: Blob) => void) => cb(new Blob()));
+    const createPdf = jest.fn(() => ({ getBlob }));
+    (global as any).pdfMake = { createPdf };
+
     const client = new MedplumClient(defaultOptions);
     const result = await client.createPdf({ content: ['Hello world'] }, 'report.pdf');
     expect(result).toBeDefined();
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Binary?_filename=report.pdf');
     expect((result as any).request.options.method).toBe('POST');
-    expect((result as any).request.url).toBe('https://x/fhir/R4/Binary/$pdf?_filename=report.pdf');
+    expect((result as any).request.options.headers['Content-Type']).toBe('application/pdf');
   });
 
   test('Create comment on Encounter', async () => {

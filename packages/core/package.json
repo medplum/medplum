@@ -19,6 +19,14 @@
   "devDependencies": {
     "@medplum/fhirtypes": "0.9.7"
   },
+  "peerDependencies": {
+    "pdfmake": "0.2.5"
+  },
+  "peerDependenciesMeta": {
+    "pdfmake": {
+      "optional": true
+    }
+  },
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
   "exports": {
