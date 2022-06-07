@@ -591,7 +591,6 @@ function renderSearchParameterValue(
   elementDefinition: ElementDefinition | undefined
 ): JSX.Element | null {
   const value = evalFhirPath(searchParam.expression as string, resource);
-  console.log('evalFhirPath', searchParam.expression, value);
   if (!value || value.length === 0) {
     return null;
   }

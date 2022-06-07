@@ -153,28 +153,15 @@ function simplifyExpression(input: string): string {
     result = result.substring(1, result.length - 1);
   }
 
-  if (result.includes(' != ')) {
-    result = result.substring(0, result.indexOf(' != '));
-  }
-
-  if (result.includes(' as ')) {
-    result = result.substring(0, result.indexOf(' as '));
-  }
-
-  if (result.includes('.as(')) {
-    result = result.substring(0, result.indexOf('.as('));
-  }
-
-  if (result.includes('.exists(')) {
-    result = result.substring(0, result.indexOf('.exists('));
-  }
-
-  if (result.includes('.where(')) {
-    result = result.substring(0, result.indexOf('.where('));
-  }
-
   if (result.includes('[0]')) {
     result = result.replaceAll('[0]', '');
+  }
+
+  const stopStrings = [' != ', ' as ', '.as(', '.exists(', '.where('];
+  for (const stopString of stopStrings) {
+    if (result.includes(stopString)) {
+      result = result.substring(0, result.indexOf(stopString));
+    }
   }
 
   return result;
