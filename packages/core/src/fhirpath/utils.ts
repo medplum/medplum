@@ -17,8 +17,10 @@ export function booleanToTypedValue(value: boolean): [TypedValue] {
  * @returns A "best guess" TypedValue for the given value.
  */
 export function toTypedValue(value: unknown): TypedValue {
-  if (typeof value === 'number') {
+  if (Number.isSafeInteger(value)) {
     return { type: PropertyType.integer, value };
+  } else if (typeof value === 'number') {
+    return { type: PropertyType.decimal, value };
   } else if (typeof value === 'boolean') {
     return { type: PropertyType.boolean, value };
   } else if (typeof value === 'string') {

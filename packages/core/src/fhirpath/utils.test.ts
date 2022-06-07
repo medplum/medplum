@@ -24,6 +24,18 @@ describe('FHIRPath utils', () => {
     expect(toJsBoolean([{ type: PropertyType.string, value: 'hi' }])).toEqual(true);
   });
 
+  test('toTypedValue', () => {
+    expect(toTypedValue(1)).toEqual(TYPED_1);
+    expect(toTypedValue(1.5)).toEqual({ type: PropertyType.decimal, value: 1.5 });
+    expect(toTypedValue(true)).toEqual(TYPED_TRUE);
+    expect(toTypedValue(false)).toEqual(TYPED_FALSE);
+    expect(toTypedValue('xyz')).toEqual({ type: PropertyType.string, value: 'xyz' });
+    expect(toTypedValue({ value: 123, unit: 'mg' })).toEqual({
+      type: PropertyType.Quantity,
+      value: { value: 123, unit: 'mg' },
+    });
+  });
+
   test('fhirPathIs', () => {
     expect(fhirPathIs({ type: PropertyType.string, value: undefined }, 'string')).toEqual(false);
     expect(fhirPathIs({ type: PropertyType.BackboneElement, value: {} }, 'Patient')).toEqual(false);
