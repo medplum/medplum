@@ -5,7 +5,6 @@ import {
   ArithemticOperatorAtom,
   AsAtom,
   Atom,
-  ComparisonOperatorAtom,
   ConcatAtom,
   ContainsAtom,
   DotAtom,
@@ -280,17 +279,17 @@ const parserBuilder = new ParserBuilder()
   .infixLeft('!=', Precedence.Equals, (left, _, right) => new NotEqualsAtom(left, right))
   .infixLeft('~', Precedence.Equivalent, (left, _, right) => new EquivalentAtom(left, right))
   .infixLeft('!~', Precedence.NotEquivalent, (left, _, right) => new NotEquivalentAtom(left, right))
-  .infixLeft('<', Precedence.LessThan, (left, _, right) => new ComparisonOperatorAtom(left, right, (x, y) => x < y))
+  .infixLeft('<', Precedence.LessThan, (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x < y))
   .infixLeft(
     '<=',
     Precedence.LessThanOrEquals,
-    (left, _, right) => new ComparisonOperatorAtom(left, right, (x, y) => x <= y)
+    (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x <= y)
   )
-  .infixLeft('>', Precedence.GreaterThan, (left, _, right) => new ComparisonOperatorAtom(left, right, (x, y) => x > y))
+  .infixLeft('>', Precedence.GreaterThan, (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x > y))
   .infixLeft(
     '>=',
     Precedence.GreaterThanOrEquals,
-    (left, _, right) => new ComparisonOperatorAtom(left, right, (x, y) => x >= y)
+    (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x >= y)
   )
   .infixLeft('&', Precedence.Ampersand, (left, _, right) => new ConcatAtom(left, right))
   .infixLeft('Symbol', Precedence.Is, (left: Atom, symbol: Token, right: Atom) => {

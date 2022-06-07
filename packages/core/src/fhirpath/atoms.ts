@@ -115,7 +115,7 @@ export class ArithemticOperatorAtom implements Atom {
   constructor(
     public readonly left: Atom,
     public readonly right: Atom,
-    public readonly impl: (x: number, y: number) => number
+    public readonly impl: (x: number, y: number) => number | boolean
   ) {}
 
   eval(context: TypedValue[]): TypedValue[] {
@@ -129,44 +129,15 @@ export class ArithemticOperatorAtom implements Atom {
     }
     const leftValue = leftEvalResult[0].value;
     const rightValue = rightEvalResult[0].value;
-    if (isQuantity(leftValue) && isQuantity(rightValue)) {
-      return [
-        {
-          type: PropertyType.Quantity,
-          value: {
-            ...leftValue,
-            value: this.impl(leftValue.value as number, rightValue.value as number),
-          },
-        },
-      ];
+    const leftNumber = isQuantity(leftValue) ? leftValue.value : leftValue;
+    const rightNumber = isQuantity(rightValue) ? rightValue.value : rightValue;
+    const result = this.impl(leftNumber, rightNumber);
+    if (typeof result === 'boolean') {
+      return booleanToTypedValue(result);
+    } else if (isQuantity(leftValue)) {
+      return [{ type: PropertyType.Quantity, value: { ...leftValue, value: result } }];
     } else {
-      return [{ type: leftEvalResult[0].type, value: this.impl(leftValue as number, rightValue as number) }];
-    }
-  }
-}
-
-export class ComparisonOperatorAtom implements Atom {
-  constructor(
-    public readonly left: Atom,
-    public readonly right: Atom,
-    public readonly impl: (x: number, y: number) => boolean
-  ) {}
-
-  eval(context: TypedValue[]): TypedValue[] {
-    const leftEvalResult = this.left.eval(context);
-    if (leftEvalResult.length !== 1) {
-      return [];
-    }
-    const rightEvalResult = this.right.eval(context);
-    if (rightEvalResult.length !== 1) {
-      return [];
-    }
-    const leftValue = leftEvalResult[0].value;
-    const rightValue = rightEvalResult[0].value;
-    if (isQuantity(leftValue) && isQuantity(rightValue)) {
-      return booleanToTypedValue(this.impl(leftValue.value as number, rightValue.value as number));
-    } else {
-      return booleanToTypedValue(this.impl(leftValue as number, rightValue as number));
+      return [toTypedValue(result)];
     }
   }
 }
