@@ -1,25 +1,26 @@
 import { readJson } from '@medplum/definitions';
 import { AuditEvent, Bundle, BundleEntry, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPath, parseFhirPath } from './parse';
+import { toTypedValue } from './utils';
 
 describe('FHIRPath parser', () => {
   test('Parser can build a arithmetic parser with correct order of operations', () => {
-    const result = evalFhirPath('3 / 3 + 4 * 9 - 1', 0);
+    const result = evalFhirPath('3 / 3 + 4 * 9 - 1', []);
     expect(result).toEqual([36]);
   });
 
   test('Parser can build a arithmetic parser with parentheses', () => {
-    const result = evalFhirPath('(3 / 3 + 4 * 3)', 0);
+    const result = evalFhirPath('(3 / 3 + 4 * 3)', []);
     expect(result).toEqual([13]);
   });
 
   test('Parser can build a arithmetic parser with correct associativity', () => {
-    const result = evalFhirPath('5 - 4 - 3 - 2 - 1 + 512', 0);
+    const result = evalFhirPath('5 - 4 - 3 - 2 - 1 + 512', []);
     expect(result).toEqual([507]);
   });
 
   test('Parser can build an arithmetic parser with prefix operators', () => {
-    const result = evalFhirPath('-4 + -(4 + 5 - -4)', 0);
+    const result = evalFhirPath('-4 + -(4 + 5 - -4)', []);
     expect(result).toEqual([-17]);
   });
 
@@ -36,43 +37,17 @@ describe('FHIRPath parser', () => {
   });
 
   test('Function minus number', () => {
-    expect(evalFhirPath("'Peter'.length()-3", 0)).toEqual([2]);
+    expect(evalFhirPath("'Peter'.length()-3", [])).toEqual([2]);
   });
 
   test('Evaluate FHIRPath Patient.name.given on empty resource', () => {
-    const result = evalFhirPath('Patient.name.given', {});
+    const result = evalFhirPath('Patient.name.given', [toTypedValue({})]);
     expect(result).toEqual([]);
   });
 
   test('Evaluate FHIRPath Patient.name.given', () => {
-    const result = evalFhirPath('Patient.name.given', {
-      resourceType: 'Patient',
-      name: [
-        {
-          given: ['Alice'],
-          family: 'Smith',
-        },
-      ],
-    });
-    expect(result).toEqual(['Alice']);
-  });
-
-  test('Evaluate FHIRPath string concatenation', () => {
-    const result = evalFhirPath("Patient.name.given + ' ' + Patient.name.family", {
-      resourceType: 'Patient',
-      name: [
-        {
-          given: ['Alice'],
-          family: 'Smith',
-        },
-      ],
-    });
-    expect(result).toEqual(['Alice Smith']);
-  });
-
-  test('Evaluate FHIRPath Patient.name.given on array of resources', () => {
     const result = evalFhirPath('Patient.name.given', [
-      {
+      toTypedValue({
         resourceType: 'Patient',
         name: [
           {
@@ -80,8 +55,38 @@ describe('FHIRPath parser', () => {
             family: 'Smith',
           },
         ],
-      },
-      {
+      }),
+    ]);
+    expect(result).toEqual(['Alice']);
+  });
+
+  test('Evaluate FHIRPath string concatenation', () => {
+    const result = evalFhirPath("Patient.name.given + ' ' + Patient.name.family", [
+      toTypedValue({
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Alice'],
+            family: 'Smith',
+          },
+        ],
+      }),
+    ]);
+    expect(result).toEqual(['Alice Smith']);
+  });
+
+  test('Evaluate FHIRPath Patient.name.given on array of resources', () => {
+    const result = evalFhirPath('Patient.name.given', [
+      toTypedValue({
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Alice'],
+            family: 'Smith',
+          },
+        ],
+      }),
+      toTypedValue({
         resourceType: 'Patient',
         name: [
           {
@@ -89,14 +94,14 @@ describe('FHIRPath parser', () => {
             family: 'Jones',
           },
         ],
-      },
+      }),
     ]);
     expect(result).toEqual(['Alice', 'Bob']);
   });
 
   test('Evaluate FHIRPath Patient.name[1].given', () => {
     const result = evalFhirPath('Patient.name[1].given', [
-      {
+      toTypedValue({
         resourceType: 'Patient',
         name: [
           {
@@ -108,14 +113,14 @@ describe('FHIRPath parser', () => {
             family: 'Jones',
           },
         ],
-      },
+      }),
     ]);
     expect(result).toEqual(['Robert']);
   });
 
   test('Evaluate FHIRPath Patient.name[ (10 - 8) / 2].given', () => {
     const result = evalFhirPath('Patient.name[ (10 - 8) / 2].given', [
-      {
+      toTypedValue({
         resourceType: 'Patient',
         name: [
           {
@@ -127,14 +132,14 @@ describe('FHIRPath parser', () => {
             family: 'Jones',
           },
         ],
-      },
+      }),
     ]);
     expect(result).toEqual(['Robert']);
   });
 
   test('Evaluate FHIRPath Patient.name.select(given[0])', () => {
     const result = evalFhirPath('Patient.name.select(given[0])', [
-      {
+      toTypedValue({
         resourceType: 'Patient',
         name: [
           {
@@ -146,14 +151,14 @@ describe('FHIRPath parser', () => {
             family: 'Jones',
           },
         ],
-      },
+      }),
     ]);
     expect(result).toEqual(['Bob', 'Robert']);
   });
 
   test('Evaluate FHIRPath Patient.name.select(given[1])', () => {
     const result = evalFhirPath('Patient.name.select(given[1])', [
-      {
+      toTypedValue({
         resourceType: 'Patient',
         name: [
           {
@@ -165,14 +170,14 @@ describe('FHIRPath parser', () => {
             family: 'Jones',
           },
         ],
-      },
+      }),
     ]);
     expect(result).toEqual(['Adam']);
   });
 
   test('Evaluate FHIRPath string concatenation on array of resources', () => {
     const result = evalFhirPath("Patient.name.given + ' ' + Patient.name.family", [
-      {
+      toTypedValue({
         resourceType: 'Patient',
         name: [
           {
@@ -180,8 +185,8 @@ describe('FHIRPath parser', () => {
             family: 'Smith',
           },
         ],
-      },
-      {
+      }),
+      toTypedValue({
         resourceType: 'Patient',
         name: [
           {
@@ -189,14 +194,14 @@ describe('FHIRPath parser', () => {
             family: 'Jones',
           },
         ],
-      },
+      }),
     ]);
     expect(result).toEqual(['Alice Smith', 'Bob Jones']);
   });
 
   test('Evaluate FHIRPath Patient.name.given on array of resources', () => {
     const result = evalFhirPath('Patient.name.given', [
-      {
+      toTypedValue({
         resourceType: 'Practitioner',
         name: [
           {
@@ -204,8 +209,8 @@ describe('FHIRPath parser', () => {
             family: 'Smith',
           },
         ],
-      },
-      {
+      }),
+      toTypedValue({
         resourceType: 'Patient',
         name: [
           {
@@ -213,27 +218,14 @@ describe('FHIRPath parser', () => {
             family: 'Jones',
           },
         ],
-      },
+      }),
     ]);
     expect(result).toEqual(['Bob']);
   });
 
   test('Evaluate FHIRPath union', () => {
-    const result = evalFhirPath('Practitioner.name.given | Patient.name.given', {
-      resourceType: 'Patient',
-      name: [
-        {
-          given: ['Alice'],
-          family: 'Smith',
-        },
-      ],
-    });
-    expect(result).toEqual(['Alice']);
-  });
-
-  test('Evaluate FHIRPath union to combine results', () => {
     const result = evalFhirPath('Practitioner.name.given | Patient.name.given', [
-      {
+      toTypedValue({
         resourceType: 'Patient',
         name: [
           {
@@ -241,8 +233,23 @@ describe('FHIRPath parser', () => {
             family: 'Smith',
           },
         ],
-      },
-      {
+      }),
+    ]);
+    expect(result).toEqual(['Alice']);
+  });
+
+  test('Evaluate FHIRPath union to combine results', () => {
+    const result = evalFhirPath('Practitioner.name.given | Patient.name.given', [
+      toTypedValue({
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Alice'],
+            family: 'Smith',
+          },
+        ],
+      }),
+      toTypedValue({
         resourceType: 'Practitioner',
         name: [
           {
@@ -250,14 +257,14 @@ describe('FHIRPath parser', () => {
             family: 'Jones',
           },
         ],
-      },
+      }),
     ]);
     expect(result).toEqual(['Alice', 'Bob']);
   });
 
   test('Evaluate FHIRPath double union', () => {
     const result = evalFhirPath('Patient.name.given | Patient.name.given', [
-      {
+      toTypedValue({
         resourceType: 'Patient',
         name: [
           {
@@ -265,8 +272,8 @@ describe('FHIRPath parser', () => {
             family: 'Smith',
           },
         ],
-      },
-      {
+      }),
+      toTypedValue({
         resourceType: 'Patient',
         name: [
           {
@@ -274,54 +281,58 @@ describe('FHIRPath parser', () => {
             family: 'Jones',
           },
         ],
-      },
+      }),
     ]);
     expect(result).toEqual(['Alice', 'Bob']);
   });
 
   test('Evaluate ignores non-objects', () => {
-    const result = evalFhirPath('foo.bar', {
-      foo: 1,
-    });
+    const result = evalFhirPath('foo.bar', [
+      toTypedValue({
+        foo: 1,
+      }),
+    ]);
     expect(result).toEqual([]);
   });
 
   test('Evaluate fails on function parentheses after non-symbol', () => {
-    expect(() => evalFhirPath('1()', 0)).toThrowError('Unexpected parentheses');
+    expect(() => evalFhirPath('1()', [])).toThrowError('Unexpected parentheses');
   });
 
   test('Evaluate fails on unrecognized function', () => {
-    expect(() => evalFhirPath('asdf()', 0)).toThrowError('Unrecognized function');
+    expect(() => evalFhirPath('asdf()', [])).toThrowError('Unrecognized function');
   });
 
   test('Evaluate FHIRPath where function', () => {
-    const result = evalFhirPath("Patient.telecom.where(system='email')", {
-      resourceType: 'Patient',
-      name: [
-        {
-          given: ['Alice'],
-          family: 'Smith',
-        },
-      ],
-      telecom: [
-        {
-          system: 'a',
-          value: 'a',
-        },
-        {
-          system: 'b',
-          value: 'b',
-        },
-        {
-          system: 'email',
-          value: 'alice@example.com',
-        },
-        {
-          system: 'c',
-          value: 'c',
-        },
-      ],
-    });
+    const result = evalFhirPath("Patient.telecom.where(system='email')", [
+      toTypedValue({
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Alice'],
+            family: 'Smith',
+          },
+        ],
+        telecom: [
+          {
+            system: 'a',
+            value: 'a',
+          },
+          {
+            system: 'b',
+            value: 'b',
+          },
+          {
+            system: 'email',
+            value: 'alice@example.com',
+          },
+          {
+            system: 'c',
+            value: 'c',
+          },
+        ],
+      }),
+    ]);
     expect(result).toMatchObject([
       {
         system: 'email',
@@ -349,7 +360,7 @@ describe('FHIRPath parser', () => {
       },
     };
 
-    const result = evalFhirPath('Observation.subject.resolve()', observation);
+    const result = evalFhirPath('Observation.subject.resolve()', [toTypedValue(observation)]);
 
     expect(result).toMatchObject([
       {
@@ -371,7 +382,7 @@ describe('FHIRPath parser', () => {
       ],
     };
 
-    const result = evalFhirPath('AuditEvent.entity.what.where(resolve() is Patient)', auditEvent);
+    const result = evalFhirPath('AuditEvent.entity.what.where(resolve() is Patient)', [toTypedValue(auditEvent)]);
     expect(result).toEqual([{ reference: 'Patient/123' }]);
   });
 
@@ -387,7 +398,7 @@ describe('FHIRPath parser', () => {
       ],
     };
 
-    const result = evalFhirPath('AuditEvent.entity.what.where(resolve() is Patient)', auditEvent);
+    const result = evalFhirPath('AuditEvent.entity.what.where(resolve() is Patient)', [toTypedValue(auditEvent)]);
     expect(result).toEqual([]);
   });
 
@@ -399,7 +410,7 @@ describe('FHIRPath parser', () => {
       resourceType: 'Patient',
       birthDate: birthDate.toLocaleDateString('sv'),
     };
-    const result = evalFhirPath("between(birthDate, now(), 'years')", patient);
+    const result = evalFhirPath("between(birthDate, now(), 'years')", [toTypedValue(patient)]);
     expect(result).toEqual([{ value: 20, unit: 'years' }]);
   });
 });

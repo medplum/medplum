@@ -1,48 +1,35 @@
-import { Period, Quantity, Resource } from '@medplum/fhirtypes';
+import { Period, Quantity } from '@medplum/fhirtypes';
+import { PropertyType } from '../types';
+import { TypedValue } from './atoms';
 
 /**
- * Ensures that the value is wrapped in an array.
- * @param input The input as a an array or a value.
- * @returns The input as an array.
+ * Returns a single element array with a typed boolean value.
+ * @param value The primitive boolean value.
+ * @returns Single element array with a typed boolean value.
  */
-export function ensureArray(input: unknown): unknown[] {
-  if (input === null || input === undefined) {
-    return [];
-  }
-  return Array.isArray(input) ? input : [input];
+export function booleanToTypedValue(value: boolean): [TypedValue] {
+  return [{ type: PropertyType.boolean, value }];
 }
 
 /**
- * Applies a function to single value or an array of values.
- * @param context The context which will be passed to the function.
- * @param fn The function to apply.
- * @returns The result of the function.
+ * Returns a "best guess" TypedValue for a given value.
+ * @param value The unknown value to check.
+ * @returns A "best guess" TypedValue for the given value.
  */
-export function applyMaybeArray(context: unknown, fn: (context: unknown) => unknown): unknown {
-  if (context === undefined) {
-    return undefined;
-  }
-  if (Array.isArray(context)) {
-    return context
-      .map((e) => fn(e))
-      .filter((e) => !!e)
-      .flat();
+export function toTypedValue(value: unknown): TypedValue {
+  if (Number.isSafeInteger(value)) {
+    return { type: PropertyType.integer, value };
+  } else if (typeof value === 'number') {
+    return { type: PropertyType.decimal, value };
+  } else if (typeof value === 'boolean') {
+    return { type: PropertyType.boolean, value };
+  } else if (typeof value === 'string') {
+    return { type: PropertyType.string, value };
+  } else if (isQuantity(value)) {
+    return { type: PropertyType.Quantity, value };
   } else {
-    return fn(context);
+    return { type: PropertyType.BackboneElement, value };
   }
-}
-
-/**
- * Determines if the input is an empty array.
- * @param obj Any value or array of values.
- * @returns True if the input is an empty array.
- */
-export function isEmptyArray(obj: unknown): boolean {
-  return Array.isArray(obj) && obj.length === 0;
-}
-
-export function isFalsy(obj: unknown): boolean {
-  return !obj || isEmptyArray(obj);
 }
 
 /**
@@ -52,11 +39,8 @@ export function isFalsy(obj: unknown): boolean {
  * @param obj Any value or array of values.
  * @returns The converted boolean value according to FHIRPath rules.
  */
-export function toJsBoolean(obj: unknown): boolean {
-  if (Array.isArray(obj)) {
-    return obj.length === 0 ? false : !!obj[0];
-  }
-  return !!obj;
+export function toJsBoolean(obj: TypedValue[]): boolean {
+  return obj.length === 0 ? false : !!obj[0].value;
 }
 
 /**
@@ -64,12 +48,12 @@ export function toJsBoolean(obj: unknown): boolean {
  * @param arr The input array.
  * @returns The result array with duplicates removed.
  */
-export function removeDuplicates(arr: unknown[]): unknown[] {
-  const result: unknown[] = [];
+export function removeDuplicates(arr: TypedValue[]): TypedValue[] {
+  const result: TypedValue[] = [];
   for (const i of arr) {
     let found = false;
     for (const j of result) {
-      if (fhirPathEquals(i, j)) {
+      if (toJsBoolean(fhirPathEquals(i, j))) {
         found = true;
         break;
       }
@@ -82,31 +66,28 @@ export function removeDuplicates(arr: unknown[]): unknown[] {
 }
 
 /**
- * Determines if two values are equal according to FHIRPath equality rules.
- * @param x The first value.
- * @param y The second value.
- * @returns True if equal.
+ * Returns a negated FHIRPath boolean expression.
+ * @param input The input array.
+ * @returns The negated type value array.
  */
-export function fhirPathEquals(x: unknown, y: unknown): boolean | [] {
-  if (isFalsy(x) && isFalsy(y)) {
-    return true;
-  }
-  if (isEmptyArray(x) || isEmptyArray(y)) {
+export function fhirPathNot(input: TypedValue[]): TypedValue[] {
+  return booleanToTypedValue(!toJsBoolean(input));
+}
+
+/**
+ * Determines if two arrays are equal according to FHIRPath equality rules.
+ * @param x The first array.
+ * @param y The second array.
+ * @returns FHIRPath true if the arrays are equal.
+ */
+export function fhirPathArrayEquals(x: TypedValue[], y: TypedValue[]): TypedValue[] {
+  if (x.length === 0 || y.length === 0) {
     return [];
   }
-  if (typeof x === 'number' && typeof y === 'number') {
-    return Math.abs(x - y) < 1e-8;
+  if (x.length !== y.length) {
+    return booleanToTypedValue(false);
   }
-  if (isQuantity(x) && isQuantity(y)) {
-    return isQuantityEquivalent(x, y);
-  }
-  if (Array.isArray(x) && Array.isArray(y)) {
-    return x.length === y.length && x.every((val, index) => fhirPathEquals(val, y[index]));
-  }
-  if (typeof x === 'object' && typeof y === 'object') {
-    return deepEquals(x, y);
-  }
-  return x === y;
+  return booleanToTypedValue(x.every((val, index) => toJsBoolean(fhirPathEquals(val, y[index]))));
 }
 
 /**
@@ -115,44 +96,94 @@ export function fhirPathEquals(x: unknown, y: unknown): boolean | [] {
  * @param y The second value.
  * @returns True if equal.
  */
-export function fhirPathEquivalent(x: unknown, y: unknown): boolean | [] {
-  if (isFalsy(x) && isFalsy(y)) {
-    return true;
+export function fhirPathEquals(x: TypedValue, y: TypedValue): TypedValue[] {
+  const xValue = x.value;
+  const yValue = y.value;
+  if (typeof xValue === 'number' && typeof yValue === 'number') {
+    return booleanToTypedValue(Math.abs(xValue - yValue) < 1e-8);
   }
-  if (isEmptyArray(x) || isEmptyArray(y)) {
-    // Note that this implies that if the collections have a different number of items to compare,
-    // or if one input is a value and the other is empty ({ }), the result will be false.
-    return false;
+  if (isQuantity(xValue) && isQuantity(yValue)) {
+    return booleanToTypedValue(isQuantityEquivalent(xValue, yValue));
   }
-  if (typeof x === 'number' && typeof y === 'number') {
+  if (typeof xValue === 'object' && typeof yValue === 'object') {
+    return booleanToTypedValue(deepEquals(x, y));
+  }
+  return booleanToTypedValue(xValue === yValue);
+}
+
+/**
+ * Determines if two arrays are equivalent according to FHIRPath equality rules.
+ * @param x The first array.
+ * @param y The second array.
+ * @returns FHIRPath true if the arrays are equivalent.
+ */
+export function fhirPathArrayEquivalent(x: TypedValue[], y: TypedValue[]): TypedValue[] {
+  if (x.length === 0 && y.length === 0) {
+    return booleanToTypedValue(true);
+  }
+  if (x.length !== y.length) {
+    return booleanToTypedValue(false);
+  }
+  x.sort(fhirPathEquivalentCompare);
+  y.sort(fhirPathEquivalentCompare);
+  return booleanToTypedValue(x.every((val, index) => toJsBoolean(fhirPathEquivalent(val, y[index]))));
+}
+
+/**
+ * Determines if two values are equivalent according to FHIRPath equality rules.
+ * @param x The first value.
+ * @param y The second value.
+ * @returns True if equivalent.
+ */
+export function fhirPathEquivalent(x: TypedValue, y: TypedValue): TypedValue[] {
+  const xValue = x.value;
+  const yValue = y.value;
+  if (typeof xValue === 'number' && typeof yValue === 'number') {
     // Use more generous threshold than equality
     // Decimal: values must be equal, comparison is done on values rounded to the precision of the least precise operand.
     // Trailing zeroes after the decimal are ignored in determining precision.
-    return Math.abs(x - y) < 0.01;
+    return booleanToTypedValue(Math.abs(xValue - yValue) < 0.01);
   }
-  if (isQuantity(x) && isQuantity(y)) {
-    return isQuantityEquivalent(x, y);
+  if (isQuantity(xValue) && isQuantity(yValue)) {
+    return booleanToTypedValue(isQuantityEquivalent(xValue, yValue));
   }
-  if (Array.isArray(x) && Array.isArray(y)) {
-    // If both operands are collections with multiple items:
-    //   1) Each item must be equivalent
-    //   2) Comparison is not order dependent
-    x.sort();
-    y.sort();
-    return x.length === y.length && x.every((val: unknown, index: number) => fhirPathEquals(val, y[index]));
+  if (typeof xValue === 'object' && typeof yValue === 'object') {
+    return booleanToTypedValue(deepEquals(xValue, yValue));
   }
-  if (typeof x === 'object' && typeof y === 'object') {
-    return deepEquals(x, y);
-  }
-  if (typeof x === 'string' && typeof y === 'string') {
+  if (typeof xValue === 'string' && typeof yValue === 'string') {
     // String: the strings must be the same, ignoring case and locale, and normalizing whitespace
     // (see String Equivalence for more details).
-    return x.toLowerCase() === y.toLowerCase();
+    return booleanToTypedValue(xValue.toLowerCase() === yValue.toLowerCase());
   }
-  return x === y;
+  return booleanToTypedValue(xValue === yValue);
 }
 
-export function fhirPathIs(value: unknown, desiredType: unknown): boolean {
+/**
+ * Returns the sort order of two values for FHIRPath array equivalence.
+ * @param x The first value.
+ * @param y The second value.
+ * @returns The sort order of the values.
+ */
+function fhirPathEquivalentCompare(x: TypedValue, y: TypedValue): number {
+  const xValue = x.value;
+  const yValue = y.value;
+  if (typeof xValue === 'number' && typeof yValue === 'number') {
+    return xValue - yValue;
+  }
+  if (typeof xValue === 'string' && typeof yValue === 'string') {
+    return xValue.localeCompare(yValue);
+  }
+  return 0;
+}
+
+/**
+ * Determines if the typed value is the desired type.
+ * @param typedValue The typed value to check.
+ * @param desiredType The desired type name.
+ * @returns True if the typed value is of the desired type.
+ */
+export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean {
+  const { value } = typedValue;
   if (value === undefined || value === null) {
     return false;
   }
@@ -174,7 +205,7 @@ export function fhirPathIs(value: unknown, desiredType: unknown): boolean {
     case 'Quantity':
       return isQuantity(value);
     default:
-      return typeof value === 'object' && (value as Resource | undefined)?.resourceType === desiredType;
+      return typeof value === 'object' && value?.resourceType === desiredType;
   }
 }
 
