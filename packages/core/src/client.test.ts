@@ -556,28 +556,23 @@ describe('Client', () => {
   });
 
   test('Create pdf success', async () => {
-    const getBlob = jest.fn((cb: (blob: Blob) => void) => cb(new Blob()));
-    const createPdf = jest.fn(() => ({ getBlob }));
-    window.pdfMake = { createPdf } as any;
-
     const client = new MedplumClient(defaultOptions);
+    const footer = jest.fn(() => 'footer');
     const result = await client.createPdf({
       content: ['Hello World'],
       defaultStyle: {
         font: 'Helvetica',
       },
+      footer,
     });
     expect(result).toBeDefined();
     expect((result as any).request.url).toBe('https://x/fhir/R4/Binary');
     expect((result as any).request.options.method).toBe('POST');
     expect((result as any).request.options.headers['Content-Type']).toBe('application/pdf');
+    expect(footer).toHaveBeenCalled();
   });
 
   test('Create pdf with filename', async () => {
-    const getBlob = jest.fn((cb: (blob: Blob) => void) => cb(new Blob()));
-    const createPdf = jest.fn(() => ({ getBlob }));
-    (global as any).pdfMake = { createPdf };
-
     const client = new MedplumClient(defaultOptions);
     const result = await client.createPdf({ content: ['Hello world'] }, 'report.pdf');
     expect(result).toBeDefined();
