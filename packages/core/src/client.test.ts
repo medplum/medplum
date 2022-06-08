@@ -555,19 +555,18 @@ describe('Client', () => {
     expect((result as any).request.url).toBe('https://x/fhir/R4/Binary?_filename=hello.txt');
   });
 
-  test('Create pdf pdfmake not loaded', async () => {
-    expect.assertions(1);
-    const client = new MedplumClient(defaultOptions);
-    expect(async () => client.createPdf({ content: [] })).rejects.toThrow('pdfMake is not loaded');
-  });
-
   test('Create pdf success', async () => {
     const getBlob = jest.fn((cb: (blob: Blob) => void) => cb(new Blob()));
     const createPdf = jest.fn(() => ({ getBlob }));
-    (global as any).pdfMake = { createPdf };
+    window.pdfMake = { createPdf } as any;
 
     const client = new MedplumClient(defaultOptions);
-    const result = await client.createPdf({ content: ['Hello world'] });
+    const result = await client.createPdf({
+      content: ['Hello World'],
+      defaultStyle: {
+        font: 'Helvetica',
+      },
+    });
     expect(result).toBeDefined();
     expect((result as any).request.url).toBe('https://x/fhir/R4/Binary');
     expect((result as any).request.options.method).toBe('POST');
