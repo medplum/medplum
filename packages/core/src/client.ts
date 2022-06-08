@@ -17,12 +17,16 @@ import {
   UserConfiguration,
   ValueSet,
 } from '@medplum/fhirtypes';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { Hl7Message } from './hl7';
 import { parseJWTPayload } from './jwt';
 import { isOk } from './outcomes';
+import { generatePdf } from './pdf';
 import { ReadablePromise } from './readablepromise';
 import { formatSearchQuery, parseSearchDefinition, SearchRequest } from './search';
 import { ClientStorage } from './storage';
@@ -1014,7 +1018,11 @@ export class MedplumClient extends EventTarget {
    * @param contentType Content type for the binary.
    * @returns The result of the create operation.
    */
-  createBinary(data: string | File, filename: string | undefined, contentType: string): Promise<Binary> {
+  createBinary(
+    data: string | File | Blob | Buffer,
+    filename: string | undefined,
+    contentType: string
+  ): Promise<Binary> {
     const url = this.fhirUrl('Binary');
     if (filename) {
       url.searchParams.set('_filename', filename);
@@ -1040,15 +1048,17 @@ export class MedplumClient extends EventTarget {
    *
    * See the pdfmake document definition for full details: https://pdfmake.github.io/docs/0.1/document-definition-object/
    *
-   * @param docDefinition The FHIR resource to create.
+   * @param docDefinition The PDF document definition.
    * @returns The result of the create operation.
    */
-  createPdf(docDefinition: Record<string, unknown>, filename?: string): Promise<Binary> {
-    const url = this.fhirUrl('Binary', '$pdf');
-    if (filename) {
-      url.searchParams.set('_filename', filename);
-    }
-    return this.post(url, docDefinition, 'application/json');
+  async createPdf(
+    docDefinition: TDocumentDefinitions,
+    filename?: string,
+    tableLayouts?: { [name: string]: CustomTableLayout },
+    fonts?: TFontDictionary
+  ): Promise<Binary> {
+    const blob = await generatePdf(docDefinition, tableLayouts, fonts);
+    return this.createBinary(blob, filename, 'application/pdf');
   }
 
   /**
@@ -1387,7 +1397,12 @@ export class MedplumClient extends EventTarget {
    * @param data The new content body.
    */
   #setRequestBody(options: RequestInit, data: any): void {
-    if (typeof data === 'string' || (typeof File !== 'undefined' && data instanceof File)) {
+    if (
+      typeof data === 'string' ||
+      (typeof Blob !== 'undefined' && data instanceof Blob) ||
+      (typeof Buffer !== 'undefined' && data instanceof Buffer) ||
+      (typeof File !== 'undefined' && data instanceof File)
+    ) {
       options.body = data;
     } else if (data) {
       options.body = JSON.stringify(data);

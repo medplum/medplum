@@ -5,6 +5,11 @@ import { terser } from 'rollup-plugin-terser';
 
 const extensions = ['.ts'];
 
+const globals = {
+  pdfmake: 'pdfmake',
+  stream: 'stream',
+};
+
 export default {
   input: 'src/index.ts',
   output: [
@@ -24,6 +29,7 @@ export default {
       format: 'umd',
       name: 'medplum.core',
       sourcemap: true,
+      globals,
     },
     {
       file: 'dist/cjs/index.min.js',
@@ -31,6 +37,7 @@ export default {
       name: 'medplum.core',
       plugins: [terser()],
       sourcemap: true,
+      globals,
     },
   ],
   plugins: [
@@ -45,4 +52,5 @@ export default {
       },
     },
   ],
+  external: Object.keys(globals),
 };
