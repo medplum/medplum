@@ -24,6 +24,7 @@ set_version () {
 # Update package.json files
 set_version "package-lock.json"
 set_version "packages/app/package.json"
+set_version "packages/bot-layer/package.json"
 set_version "packages/cli/package.json"
 set_version "packages/core/package.json"
 set_version "packages/definitions/package.json"
