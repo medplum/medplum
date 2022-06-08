@@ -13,6 +13,7 @@ import {
 export const HomerSimpson: Patient = {
   resourceType: 'Patient',
   id: '123',
+  gender: 'male',
   meta: {
     versionId: '2',
     lastUpdated: '2020-01-02T00:00:00.000Z',
