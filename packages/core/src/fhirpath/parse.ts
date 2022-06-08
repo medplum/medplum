@@ -21,6 +21,7 @@ import {
   NotEquivalentAtom,
   OrAtom,
   SymbolAtom,
+  TypedValue,
   UnaryOperatorAtom,
   UnionAtom,
   XorAtom,
@@ -352,7 +353,15 @@ export function evalFhirPath(input: string, context: unknown): unknown[] {
       array[i] = { type: PropertyType.BackboneElement, value: el };
     }
   }
-  return parseFhirPath(input)
-    .eval(array)
-    .map((e) => e.value);
+  return evalFhirPathTyped(input, array).map((e) => e.value);
+}
+
+/**
+ * Evaluates a FHIRPath expression against a resource or other object.
+ * @param input The FHIRPath expression to parse.
+ * @param context The resource or object to evaluate the expression against.
+ * @returns The result of the FHIRPath expression against the resource or object.
+ */
+export function evalFhirPathTyped(input: string, context: TypedValue[]): TypedValue[] {
+  return parseFhirPath(input).eval(context);
 }

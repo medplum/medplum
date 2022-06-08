@@ -537,11 +537,6 @@ export function renderValue(
     return renderSearchParameterValue(schema, resource, field.searchParam, field.elementDefinition);
   }
 
-  // Priority 3: Any matching ElementDefinition
-  if (field.elementDefinition) {
-    return renderPropertyValue(schema, resource, field.elementDefinition);
-  }
-
   // We don't know how to render this field definition
   return null;
 }
