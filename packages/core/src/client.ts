@@ -18,7 +18,7 @@ import {
   ValueSet,
 } from '@medplum/fhirtypes';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
+/** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
@@ -1019,7 +1019,7 @@ export class MedplumClient extends EventTarget {
    * @returns The result of the create operation.
    */
   createBinary(
-    data: string | File | Blob | Buffer,
+    data: string | File | Blob | Uint8Array,
     filename: string | undefined,
     contentType: string
   ): Promise<Binary> {
@@ -1400,8 +1400,8 @@ export class MedplumClient extends EventTarget {
     if (
       typeof data === 'string' ||
       (typeof Blob !== 'undefined' && data instanceof Blob) ||
-      (typeof Buffer !== 'undefined' && data instanceof Buffer) ||
-      (typeof File !== 'undefined' && data instanceof File)
+      (typeof File !== 'undefined' && data instanceof File) ||
+      (typeof Uint8Array !== 'undefined' && data instanceof Uint8Array)
     ) {
       options.body = data;
     } else if (data) {

@@ -5,10 +5,10 @@
  */
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
+/** @ts-ignore */
 import type { createPdf } from 'pdfmake/build/pdfmake';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
+/** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 
 /**
@@ -23,7 +23,7 @@ export async function generatePdf(
   docDefinition: TDocumentDefinitions,
   tableLayouts?: { [name: string]: CustomTableLayout },
   fonts?: TFontDictionary
-): Promise<Blob | Buffer> {
+): Promise<Blob | Uint8Array> {
   // Setup sane defaults
   // See: https://pdfmake.github.io/docs/0.1/document-definition-object/styling/
   docDefinition.pageSize = docDefinition.pageSize || 'LETTER';
@@ -45,7 +45,7 @@ async function generatePdfServerSide(
   docDefinition: TDocumentDefinitions,
   tableLayouts?: { [name: string]: CustomTableLayout },
   fonts?: TFontDictionary
-): Promise<Buffer> {
+): Promise<Uint8Array> {
   if (!fonts) {
     fonts = {
       Helvetica: {
@@ -65,14 +65,14 @@ async function generatePdfServerSide(
       },
     };
   }
-  return new Promise<Buffer>((resolve, reject) => {
+  return new Promise<Uint8Array>((resolve, reject) => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const PdfPrinter = require('pdfmake');
     const printer = new PdfPrinter(fonts);
     const pdfDoc = printer.createPdfKitDocument(docDefinition, { tableLayouts });
     const chunks: Uint8Array[] = [];
     pdfDoc.on('data', (chunk: Uint8Array) => chunks.push(chunk));
-    pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
+    pdfDoc.on('end', () => resolve(concat(chunks)));
     pdfDoc.on('error', reject);
     pdfDoc.end();
   });
@@ -105,4 +105,23 @@ async function generatePdfClientSide(
   return new Promise((resolve: (blob: Blob) => void) => {
     pdfMake.createPdf(docDefinition, tableLayouts, fonts).getBlob(resolve);
   });
+}
+
+/**
+ * Concatenates an array of Uint8Arrays into a single Uint8Array.
+ * @param arrays An array of arrays of bytes.
+ * @returns A single array of bytes.
+ */
+function concat(arrays: Uint8Array[]): Uint8Array {
+  let len = 0;
+  for (const array of arrays) {
+    len += array.length;
+  }
+  const result = new Uint8Array(len);
+  let index = 0;
+  for (const array of arrays) {
+    result.set(array, index);
+    index += array.length;
+  }
+  return result;
 }
