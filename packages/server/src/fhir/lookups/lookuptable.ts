@@ -52,7 +52,7 @@ export abstract class LookupTable<T> {
     const disjunction = new Disjunction([]);
     for (const option of filter.value.split(',')) {
       if (filter.operator === FhirOperator.EXACT) {
-        disjunction.expressions.push(new Condition(new Column(tableName, columnName), Operator.EQUALS, option));
+        disjunction.expressions.push(new Condition(new Column(tableName, columnName), Operator.EQUALS, option?.trim()));
       } else {
         const conjunction = new Conjunction([]);
         for (const chunk of option.split(/\s+/)) {
