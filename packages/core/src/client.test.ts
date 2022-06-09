@@ -110,7 +110,10 @@ function mockFetch(url: string, options: any): Promise<any> {
       resourceType: 'Patient',
       id: '123',
     };
-  } else if (method === 'GET' && url.endsWith('Patient?_count=1&name:contains=alice')) {
+  } else if (
+    method === 'GET' &&
+    (url.endsWith('Patient?_count=1&name:contains=alice') || url.endsWith('Patient?_count=1&name%3Acontains=alice'))
+  ) {
     result = {
       resourceType: 'Bundle',
       entry: [

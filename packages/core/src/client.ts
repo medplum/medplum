@@ -590,7 +590,7 @@ export class MedplumClient extends EventTarget {
    * @param query The FHIR search query or structured query object.
    * @returns The well-formed FHIR URL.
    */
-  fhirSearchUrl(resourceType: ResourceType, query: URLSearchParams | Record<string, string> | string): URL {
+  fhirSearchUrl(resourceType: ResourceType, query: URLSearchParams | string): URL {
     const url = this.fhirUrl(resourceType);
     url.search = query.toString();
     return url;
@@ -652,7 +652,7 @@ export class MedplumClient extends EventTarget {
    */
   search<K extends ResourceType>(
     resourceType: K,
-    query: string,
+    query: URLSearchParams | string,
     options: RequestInit = {}
   ): ReadablePromise<Bundle<ExtractResource<K>>> {
     return this.get(this.fhirSearchUrl(resourceType, query), options);
@@ -679,11 +679,12 @@ export class MedplumClient extends EventTarget {
    */
   searchOne<K extends ResourceType>(
     resourceType: K,
-    query: string,
+    query: URLSearchParams | string,
     options: RequestInit = {}
   ): ReadablePromise<ExtractResource<K> | undefined> {
     const url = this.fhirSearchUrl(resourceType, query);
     url.searchParams.set('_count', '1');
+    url.searchParams.sort();
     const cacheKey = url.toString() + '-searchOne';
     if (!options?.cache) {
       const cached = this.#requestCache.get(cacheKey);
@@ -692,7 +693,7 @@ export class MedplumClient extends EventTarget {
       }
     }
     const promise = new ReadablePromise(
-      this.search<K>(resourceType, query, options).then((b) => b.entry?.[0]?.resource)
+      this.search<K>(resourceType, url.searchParams, options).then((b) => b.entry?.[0]?.resource)
     );
     this.#requestCache.set(cacheKey, promise);
     return promise;
@@ -719,7 +720,7 @@ export class MedplumClient extends EventTarget {
    */
   searchResources<K extends ResourceType>(
     resourceType: K,
-    query: string,
+    query: URLSearchParams | string,
     options: RequestInit = {}
   ): ReadablePromise<ExtractResource<K>[]> {
     const url = this.fhirSearchUrl(resourceType, query);
