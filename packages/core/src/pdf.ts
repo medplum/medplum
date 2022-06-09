@@ -34,11 +34,15 @@ export async function generatePdf(
   docDefinition.defaultStyle.fontSize = docDefinition.defaultStyle.fontSize || 11;
   docDefinition.defaultStyle.lineHeight = docDefinition.defaultStyle.lineHeight || 2.0;
 
-  if (typeof pdfMake === 'undefined') {
-    return generatePdfServerSide(docDefinition, tableLayouts, fonts);
-  } else {
+  if (typeof window !== 'undefined' && typeof pdfMake !== 'undefined') {
     return generatePdfClientSide(docDefinition, tableLayouts, fonts);
   }
+
+  if (typeof process !== 'undefined' && typeof require !== 'undefined') {
+    return generatePdfServerSide(docDefinition, tableLayouts, fonts);
+  }
+
+  throw new Error('Unable to determine PDF environment');
 }
 
 async function generatePdfServerSide(
@@ -54,27 +58,22 @@ async function generatePdfServerSide(
         italics: 'Helvetica-Oblique',
         bolditalics: 'Helvetica-BoldOblique',
       },
-      Roboto: {
-        normal: 'https://static.medplum.com/fonts/Roboto-Regular.ttf',
-        bold: 'https://static.medplum.com/fonts/Roboto-Medium.ttf',
-        italics: 'https://static.medplum.com/fonts/Roboto-Italic.ttf',
-        bolditalics: 'https://static.medplum.com/fonts/Roboto-MediumItalic.ttf',
-      },
-      Avenir: {
-        normal: 'https://static.medplum.com/fonts/avenir.ttf',
-      },
     };
   }
   return new Promise<Uint8Array>((resolve, reject) => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const PdfPrinter = require('pdfmake');
-    const printer = new PdfPrinter(fonts);
-    const pdfDoc = printer.createPdfKitDocument(docDefinition, { tableLayouts });
-    const chunks: Uint8Array[] = [];
-    pdfDoc.on('data', (chunk: Uint8Array) => chunks.push(chunk));
-    pdfDoc.on('end', () => resolve(concat(chunks)));
-    pdfDoc.on('error', reject);
-    pdfDoc.end();
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const PdfPrinter = require('pdfmake');
+      const printer = new PdfPrinter(fonts);
+      const pdfDoc = printer.createPdfKitDocument(docDefinition, { tableLayouts });
+      const chunks: Uint8Array[] = [];
+      pdfDoc.on('data', (chunk: Uint8Array) => chunks.push(chunk));
+      pdfDoc.on('end', () => resolve(concat(chunks)));
+      pdfDoc.on('error', reject);
+      pdfDoc.end();
+    } catch (err) {
+      reject(err);
+    }
   });
 }
 
