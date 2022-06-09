@@ -1,4 +1,3 @@
-import { Operator } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { MockClient } from './client';
@@ -56,32 +55,14 @@ describe('Mock Repo', () => {
 
   test('Search by name', async () => {
     const client = new MockClient();
-    const result = await client.search<Patient>({
-      resourceType: 'Patient',
-      filters: [
-        {
-          code: 'name',
-          operator: Operator.CONTAINS,
-          value: 'Simpson',
-        },
-      ],
-    });
+    const result = await client.search('Patient', 'name:contains=Simpson');
     expect(result).toBeDefined();
     expect(result.entry?.length).toBe(2);
   });
 
   test('Search with comma', async () => {
     const client = new MockClient();
-    const result = await client.search<Patient>({
-      resourceType: 'Patient',
-      filters: [
-        {
-          code: 'name',
-          operator: Operator.CONTAINS,
-          value: 'bart,homer',
-        },
-      ],
-    });
+    const result = await client.search('Patient', 'name:contains=Homer,Simpson');
     expect(result).toBeDefined();
     expect(result.entry?.length).toBe(2);
   });

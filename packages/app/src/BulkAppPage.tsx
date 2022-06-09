@@ -14,7 +14,7 @@ export function BulkAppPage(): JSX.Element {
   const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>();
 
   useEffect(() => {
-    medplum.searchResources<Questionnaire>(`Questionnaire?subject-type=${resourceType}`).then(setQuestionnaires);
+    medplum.searchResources('Questionnaire', `subject-type=${resourceType}`).then(setQuestionnaires);
   }, [medplum, resourceType]);
 
   if (!questionnaires) {

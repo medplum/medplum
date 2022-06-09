@@ -6,12 +6,14 @@ import {
   Bundle,
   Communication,
   Encounter,
+  ExtractResource,
   OperationOutcome,
   Patient,
   Project,
   ProjectMembership,
   Reference,
   Resource,
+  ResourceType,
   SearchParameter,
   StructureDefinition,
   UserConfiguration,
@@ -28,7 +30,6 @@ import { parseJWTPayload } from './jwt';
 import { isOk } from './outcomes';
 import { generatePdf } from './pdf';
 import { ReadablePromise } from './readablepromise';
-import { formatSearchQuery, parseSearchDefinition, SearchRequest } from './search';
 import { ClientStorage } from './storage';
 import { createSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
 import { arrayBufferToBase64, createReference, ProfileResource } from './utils';
@@ -383,7 +384,7 @@ export class MedplumClient extends EventTarget {
    * Invalidates all cached search results or cached requests for the given resourceType.
    * @param resourceType The resource type to invalidate.
    */
-  invalidateSearches(resourceType: string): void {
+  invalidateSearches<K extends ResourceType>(resourceType: K): void {
     const url = 'fhir/R4/' + resourceType;
     for (const key of this.#requestCache.keys()) {
       if (key.endsWith(url) || key.includes(url + '?')) {
@@ -589,12 +590,9 @@ export class MedplumClient extends EventTarget {
    * @param query The FHIR search query or structured query object.
    * @returns The well-formed FHIR URL.
    */
-  fhirSearchUrl(query: string | SearchRequest): URL {
-    if (typeof query === 'string') {
-      return this.fhirUrl(query);
-    }
-    const url = this.fhirUrl(query.resourceType);
-    url.search = formatSearchQuery(query);
+  fhirSearchUrl(resourceType: ResourceType, query: URLSearchParams | string): URL {
+    const url = this.fhirUrl(resourceType);
+    url.search = query.toString();
     return url;
   }
 
@@ -652,8 +650,12 @@ export class MedplumClient extends EventTarget {
    * @param query The search query as either a string or a structured search object.
    * @returns Promise to the search result bundle.
    */
-  search<T extends Resource>(query: string | SearchRequest, options: RequestInit = {}): ReadablePromise<Bundle<T>> {
-    return this.get(this.fhirSearchUrl(query), options);
+  search<K extends ResourceType>(
+    resourceType: K,
+    query: URLSearchParams | string,
+    options: RequestInit = {}
+  ): ReadablePromise<Bundle<ExtractResource<K>>> {
+    return this.get(this.fhirSearchUrl(resourceType, query), options);
   }
 
   /**
@@ -675,20 +677,24 @@ export class MedplumClient extends EventTarget {
    * @param query The search query as either a string or a structured search object.
    * @returns Promise to the search result bundle.
    */
-  searchOne<T extends Resource>(
-    query: string | SearchRequest,
+  searchOne<K extends ResourceType>(
+    resourceType: K,
+    query: URLSearchParams | string,
     options: RequestInit = {}
-  ): ReadablePromise<T | undefined> {
-    const search: SearchRequest = typeof query === 'string' ? parseSearchDefinition(query) : query;
-    (search as any).count = 1;
-    const cacheKey = this.fhirSearchUrl(query).toString() + '-searchOne';
+  ): ReadablePromise<ExtractResource<K> | undefined> {
+    const url = this.fhirSearchUrl(resourceType, query);
+    url.searchParams.set('_count', '1');
+    url.searchParams.sort();
+    const cacheKey = url.toString() + '-searchOne';
     if (!options?.cache) {
       const cached = this.#requestCache.get(cacheKey);
       if (cached) {
         return cached;
       }
     }
-    const promise = new ReadablePromise(this.search<T>(search, options).then((b) => b.entry?.[0]?.resource));
+    const promise = new ReadablePromise(
+      this.search<K>(resourceType, url.searchParams, options).then((b) => b.entry?.[0]?.resource)
+    );
     this.#requestCache.set(cacheKey, promise);
     return promise;
   }
@@ -712,8 +718,13 @@ export class MedplumClient extends EventTarget {
    * @param query The search query as either a string or a structured search object.
    * @returns Promise to the search result bundle.
    */
-  searchResources<T extends Resource>(query: string | SearchRequest, options: RequestInit = {}): ReadablePromise<T[]> {
-    const cacheKey = this.fhirSearchUrl(query).toString() + '-searchResources';
+  searchResources<K extends ResourceType>(
+    resourceType: K,
+    query: URLSearchParams | string,
+    options: RequestInit = {}
+  ): ReadablePromise<ExtractResource<K>[]> {
+    const url = this.fhirSearchUrl(resourceType, query);
+    const cacheKey = url.toString() + '-searchResources';
     if (!options?.cache) {
       const cached = this.#requestCache.get(cacheKey);
       if (cached) {
@@ -721,7 +732,9 @@ export class MedplumClient extends EventTarget {
       }
     }
     const promise = new ReadablePromise(
-      this.search<T>(query, options).then((b) => b.entry?.map((e) => e.resource as T) ?? [])
+      this.search<K>(resourceType, query, options).then(
+        (b) => b.entry?.map((e) => e.resource as ExtractResource<K>) ?? []
+      )
     );
     this.#requestCache.set(cacheKey, promise);
     return promise;
@@ -747,9 +760,9 @@ export class MedplumClient extends EventTarget {
    * @param id The FHIR resource ID.
    * @returns The resource if it is available in the cache; undefined otherwise.
    */
-  getCached<T extends Resource>(resourceType: string, id: string): T | undefined {
+  getCached<K extends ResourceType>(resourceType: K, id: string): ExtractResource<K> | undefined {
     const cached = this.#requestCache.get(this.fhirUrl(resourceType, id).toString());
-    return cached && !cached.isPending() ? (cached.read() as T) : undefined;
+    return cached && !cached.isPending() ? (cached.read() as ExtractResource<K>) : undefined;
   }
 
   /**
@@ -761,7 +774,7 @@ export class MedplumClient extends EventTarget {
   getCachedReference<T extends Resource>(reference: Reference<T>): T | undefined {
     const refString = reference.reference as string;
     const [resourceType, id] = refString.split('/');
-    return this.getCached(resourceType, id);
+    return this.getCached(resourceType as ResourceType, id) as T | undefined;
   }
 
   /**
@@ -780,8 +793,8 @@ export class MedplumClient extends EventTarget {
    * @param id The resource ID.
    * @returns The resource if available; undefined otherwise.
    */
-  readResource<T extends Resource>(resourceType: string, id: string): ReadablePromise<T> {
-    return this.get(this.fhirUrl(resourceType, id));
+  readResource<K extends ResourceType>(resourceType: K, id: string): ReadablePromise<ExtractResource<K>> {
+    return this.get<ExtractResource<K>>(this.fhirUrl(resourceType, id));
   }
 
   /**
@@ -808,7 +821,7 @@ export class MedplumClient extends EventTarget {
       return new ReadablePromise(Promise.reject(new Error('Missing reference')));
     }
     const [resourceType, id] = refString.split('/');
-    return this.readResource(resourceType, id);
+    return this.readResource(resourceType as ResourceType, id) as ReadablePromise<T>;
   }
 
   /**
@@ -894,7 +907,7 @@ export class MedplumClient extends EventTarget {
    * @param id The resource ID.
    * @returns Promise to the resource history.
    */
-  readHistory<T extends Resource>(resourceType: string, id: string): ReadablePromise<Bundle<T>> {
+  readHistory<K extends ResourceType>(resourceType: K, id: string): ReadablePromise<Bundle<ExtractResource<K>>> {
     return this.get(this.fhirUrl(resourceType, id, '_history'));
   }
 
@@ -914,7 +927,7 @@ export class MedplumClient extends EventTarget {
    * @param id The resource ID.
    * @returns The resource if available; undefined otherwise.
    */
-  readVersion<T extends Resource>(resourceType: string, id: string, vid: string): ReadablePromise<T> {
+  readVersion<K extends ResourceType>(resourceType: K, id: string, vid: string): ReadablePromise<ExtractResource<K>> {
     return this.get(this.fhirUrl(resourceType, id, '_history', vid));
   }
 
@@ -992,7 +1005,7 @@ export class MedplumClient extends EventTarget {
    * @returns The result of the create operation.
    */
   async createResourceIfNoneExist<T extends Resource>(resource: T, query: string): Promise<T> {
-    return (await this.searchOne<T>(`${resource.resourceType}?${query}`)) ?? this.createResource<T>(resource);
+    return ((await this.searchOne(resource.resourceType, query)) ?? this.createResource(resource)) as Promise<T>;
   }
 
   /**
@@ -1158,7 +1171,11 @@ export class MedplumClient extends EventTarget {
    * @param operations The JSONPatch operations.
    * @returns The result of the patch operations.
    */
-  patchResource<T extends Resource>(resourceType: string, id: string, operations: PatchOperation[]): Promise<T> {
+  patchResource<K extends ResourceType>(
+    resourceType: K,
+    id: string,
+    operations: PatchOperation[]
+  ): Promise<ExtractResource<K>> {
     this.invalidateSearches(resourceType);
     return this.patch(this.fhirUrl(resourceType, id), operations);
   }
@@ -1178,7 +1195,7 @@ export class MedplumClient extends EventTarget {
    * @param id The resource ID.
    * @returns The result of the delete operation.
    */
-  deleteResource(resourceType: string, id: string): Promise<any> {
+  deleteResource(resourceType: ResourceType, id: string): Promise<any> {
     this.invalidateSearches(resourceType);
     return this.delete(this.fhirUrl(resourceType, id));
   }

@@ -1,11 +1,19 @@
 import {
   DEFAULT_SEARCH_COUNT,
   Filter,
+  formatSearchQuery,
   IndexedStructureDefinition,
   parseSearchDefinition,
   SearchRequest,
 } from '@medplum/core';
-import { Bundle, OperationOutcome, Resource, SearchParameter, UserConfiguration } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  OperationOutcome,
+  Resource,
+  ResourceType,
+  SearchParameter,
+  UserConfiguration,
+} from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Loading } from './Loading';
@@ -107,7 +115,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   useEffect(() => {
     setOutcome(undefined);
     medplum
-      .search({ ...search, total: 'accurate' })
+      .search(search.resourceType as ResourceType, formatSearchQuery({ ...search, total: 'accurate' }))
       .then((response) => {
         setState({ ...stateRef.current, searchResponse: response });
         if (onLoad) {
@@ -213,7 +221,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   }
 
   useEffect(() => {
-    medplum.requestSchema(props.search.resourceType).then((newSchema) => {
+    medplum.requestSchema(props.search.resourceType as ResourceType).then((newSchema) => {
       // The schema could have the same object identity,
       // so need to use the spread operator to kick React re-render.
       setSchema({ ...newSchema });

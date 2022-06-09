@@ -1,3 +1,5 @@
+import { ResourceType } from '@medplum/fhirtypes';
+
 export const DEFAULT_SEARCH_COUNT = 20;
 
 export interface SearchRequest {
@@ -92,7 +94,7 @@ export function parseSearchDefinition(url: string): SearchRequest {
   const resourceType = location.pathname
     .replace(/(^\/)|(\/$)/g, '') // Remove leading and trailing slashes
     .split('/')
-    .pop() as string;
+    .pop() as ResourceType;
   const params = new URLSearchParams(location.search);
   let filters: Filter[] | undefined = undefined;
   let sortRules: SortRule[] | undefined = undefined;

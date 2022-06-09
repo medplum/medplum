@@ -1,4 +1,4 @@
-import { getReferenceString, Operator } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import { BundleEntry, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Avatar } from './Avatar';
@@ -30,20 +30,9 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
 
   useEffect(() => {
     if (schedule) {
-      medplum
-        .search({
-          resourceType: 'Slot',
-          filters: [
-            {
-              code: 'schedule',
-              operator: Operator.EQUALS,
-              value: getReferenceString(schedule),
-            },
-          ],
-        })
-        .then((bundle) => {
-          setSlots((bundle.entry as BundleEntry<Slot>[]).map((entry) => entry.resource as Slot));
-        });
+      medplum.search('Slot', 'schedule=' + getReferenceString(schedule)).then((bundle) => {
+        setSlots((bundle.entry as BundleEntry<Slot>[]).map((entry) => entry.resource as Slot));
+      });
     } else {
       setSlots(undefined);
     }

@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry, OperationOutcome, Resource } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import {
   Document,
   Loading,
@@ -31,7 +31,7 @@ export function ResourceVersionPage(): JSX.Element {
     setError(undefined);
     setLoading(true);
     medplum
-      .readHistory(resourceType, id)
+      .readHistory(resourceType as ResourceType, id)
       .then((result) => setHistoryBundle(result))
       .then(() => setLoading(false))
       .catch((reason) => {

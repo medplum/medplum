@@ -102,7 +102,7 @@ describe('CLI', () => {
 
     await main(medplum, ['node', 'index.js', 'save-bot', 'hello-world']);
     expect(console.log).toBeCalledWith(expect.stringMatching(/Success/));
-    const check = await medplum.readResource<Bot>('Bot', bot.id as string);
+    const check = await medplum.readResource('Bot', bot.id as string);
     expect(check.code).toBeDefined();
     expect(check.code).not.toEqual('');
   });
@@ -131,7 +131,7 @@ describe('CLI', () => {
 
     await main(medplum, ['node', 'index.js', 'deploy-bot', 'hello-world']);
     expect(console.log).toBeCalledWith(expect.stringMatching(/Success/));
-    const check = await medplum.readResource<Bot>('Bot', bot.id as string);
+    const check = await medplum.readResource('Bot', bot.id as string);
     expect(check.code).toBeDefined();
     expect(check.code).not.toEqual('');
   });

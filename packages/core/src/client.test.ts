@@ -2,7 +2,6 @@ import { Bundle, Patient, SearchParameter, StructureDefinition } from '@medplum/
 import crypto, { randomUUID } from 'crypto';
 import { TextEncoder } from 'util';
 import { MedplumClient } from './client';
-import { Operator } from './search';
 import { ProfileResource, stringify } from './utils';
 
 const defaultOptions = {
@@ -111,7 +110,10 @@ function mockFetch(url: string, options: any): Promise<any> {
       resourceType: 'Patient',
       id: '123',
     };
-  } else if (method === 'GET' && url.endsWith('Patient?_count=1&name:contains=alice')) {
+  } else if (
+    method === 'GET' &&
+    (url.endsWith('Patient?_count=1&name:contains=alice') || url.endsWith('Patient?_count=1&name%3Acontains=alice'))
+  ) {
     result = {
       resourceType: 'Bundle',
       entry: [
@@ -648,18 +650,7 @@ describe('Client', () => {
 
   test('Search', async () => {
     const client = new MedplumClient(defaultOptions);
-    const result = await client.search({
-      resourceType: 'Patient',
-      filters: [{ code: 'name', operator: Operator.CONTAINS, value: 'alice' }],
-    });
-    expect(result).toBeDefined();
-    expect((result as any).request.options.method).toBe('GET');
-    expect((result as any).request.url).toBe('https://x/fhir/R4/Patient?name:contains=alice');
-  });
-
-  test('Search by query', async () => {
-    const client = new MedplumClient(defaultOptions);
-    const result = await client.search('Patient?name:contains=alice');
+    const result = await client.search('Patient', 'name:contains=alice');
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('GET');
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient?name:contains=alice');
@@ -667,26 +658,16 @@ describe('Client', () => {
 
   test('Search one', async () => {
     const client = new MedplumClient(defaultOptions);
-    const result = await client.searchOne({
-      resourceType: 'Patient',
-      filters: [{ code: 'name', operator: Operator.CONTAINS, value: 'alice' }],
-    });
-    expect(result).toBeDefined();
-    expect(result?.resourceType).toBe('Patient');
-  });
-
-  test('Search one by query', async () => {
-    const client = new MedplumClient(defaultOptions);
-    const result = await client.searchOne('Patient?name:contains=alice');
+    const result = await client.searchOne('Patient', 'name:contains=alice');
     expect(result).toBeDefined();
     expect(result?.resourceType).toBe('Patient');
   });
 
   test('Search one ReadablePromise', async () => {
     const client = new MedplumClient(defaultOptions);
-    const promise1 = client.searchOne('Patient?name:contains=alice');
+    const promise1 = client.searchOne('Patient', 'name:contains=alice');
     expect(() => promise1.read()).toThrow();
-    const promise2 = client.searchOne('Patient?name:contains=alice');
+    const promise2 = client.searchOne('Patient', 'name:contains=alice');
     expect(promise2).toBe(promise1);
     await promise1;
     const result = promise1.read();
@@ -696,20 +677,7 @@ describe('Client', () => {
 
   test('Search resources', async () => {
     const client = new MedplumClient(defaultOptions);
-    const result = await client.searchResources({
-      resourceType: 'Patient',
-      count: 1,
-      filters: [{ code: 'name', operator: Operator.CONTAINS, value: 'alice' }],
-    });
-    expect(result).toBeDefined();
-    expect(Array.isArray(result)).toBe(true);
-    expect(result.length).toBe(1);
-    expect(result[0].resourceType).toBe('Patient');
-  });
-
-  test('Search resources by query', async () => {
-    const client = new MedplumClient(defaultOptions);
-    const result = await client.searchResources('Patient?_count=1&name:contains=alice');
+    const result = await client.searchResources('Patient', '_count=1&name:contains=alice');
     expect(result).toBeDefined();
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBe(1);
@@ -718,9 +686,9 @@ describe('Client', () => {
 
   test('Search resources ReadablePromise', async () => {
     const client = new MedplumClient(defaultOptions);
-    const promise1 = client.searchResources('Patient?_count=1&name:contains=alice');
+    const promise1 = client.searchResources('Patient', '_count=1&name:contains=alice');
     expect(() => promise1.read()).toThrow();
-    const promise2 = client.searchResources('Patient?_count=1&name:contains=alice');
+    const promise2 = client.searchResources('Patient', '_count=1&name:contains=alice');
     expect(promise2).toBe(promise1);
     await promise1;
     const result = promise1.read();

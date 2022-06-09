@@ -1,4 +1,4 @@
-import { getReferenceString, Operator } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import { BundleEntry, Patient, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { MedplumLink, sortByDateAndPriority, useMedplum, useResource } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
@@ -23,18 +23,13 @@ export function QuickServiceRequests(props: QuickServiceRequestsProps): JSX.Elem
       return;
     }
     const patientRefStr = 'reference' in patient ? patient.reference : getReferenceString(patient as Patient);
-    medplum
-      .search<ServiceRequest>({
-        resourceType: 'ServiceRequest',
-        filters: [{ code: 'subject', operator: Operator.EQUALS, value: patientRefStr as string }],
-      })
-      .then((bundle) => {
-        const entries = bundle.entry as BundleEntry<ServiceRequest>[];
-        const resources = entries.map((e) => e.resource as ServiceRequest);
-        sortByDateAndPriority(resources);
-        resources.reverse();
-        setServiceRequests(resources);
-      });
+    medplum.search('ServiceRequest', 'subject=' + patientRefStr).then((bundle) => {
+      const entries = bundle.entry as BundleEntry<ServiceRequest>[];
+      const resources = entries.map((e) => e.resource as ServiceRequest);
+      sortByDateAndPriority(resources);
+      resources.reverse();
+      setServiceRequests(resources);
+    });
   }, [medplum, resource]);
 
   if (!serviceRequests) {
