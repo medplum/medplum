@@ -1,4 +1,4 @@
-import { Bundle, Resource } from '@medplum/fhirtypes';
+import { Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { InputRow } from './InputRow';
 import { MedplumLink } from './MedplumLink';
@@ -9,7 +9,7 @@ import './ResourceBlame.css';
 
 export interface ResourceBlameProps {
   history?: Bundle;
-  resourceType?: string;
+  resourceType?: ResourceType;
   id?: string;
 }
 

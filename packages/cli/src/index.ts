@@ -46,7 +46,7 @@ async function runBotCommands(medplum: MedplumClient, argv: string[], commands: 
     return;
   }
 
-  const bot = await medplum.readResource<Bot>('Bot', botConfig.id);
+  const bot = await medplum.readResource('Bot', botConfig.id);
   if (!bot) {
     console.log('Error: Bot does not exist: ' + botConfig.id);
     return;

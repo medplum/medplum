@@ -1,4 +1,4 @@
-import { Bundle, Resource } from '@medplum/fhirtypes';
+import { Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { DateTimeDisplay } from './DateTimeDisplay';
 import { MedplumLink } from './MedplumLink';
@@ -18,7 +18,7 @@ export function ResourceHistoryTable(props: ResourceHistoryTableProps): JSX.Elem
 
   useEffect(() => {
     if (!props.history && props.resourceType && props.id) {
-      medplum.readHistory(props.resourceType, props.id).then((result) => setValue(result));
+      medplum.readHistory(props.resourceType as ResourceType, props.id).then((result) => setValue(result));
     }
   }, [medplum, props.history, props.resourceType, props.id]);
 

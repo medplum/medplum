@@ -1,5 +1,5 @@
 import { IndexedStructureDefinition, PropertyType } from '@medplum/core';
-import { OperationOutcome, Resource } from '@medplum/fhirtypes';
+import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { FhirPathDisplay } from './FhirPathDisplay';

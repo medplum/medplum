@@ -1,5 +1,4 @@
-import { Operator } from '@medplum/core';
-import { Bundle, BundleEntry, Reference, Resource } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Autocomplete } from './Autocomplete';
 import { Avatar } from './Avatar';
@@ -39,16 +38,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
     <Autocomplete
       loadOptions={(input: string): Promise<T[]> => {
         return medplum
-          .search({
-            resourceType: resourceTypeRef.current,
-            filters: [
-              {
-                code: 'name',
-                operator: Operator.EQUALS,
-                value: input,
-              },
-            ],
-          })
+          .search(resourceTypeRef.current as ResourceType, 'name=' + encodeURIComponent(input))
           .then((bundle: Bundle) => (bundle.entry as BundleEntry[]).map((entry) => entry.resource as T));
       }}
       getId={(item: T) => {
