@@ -1,13 +1,13 @@
 import { IndexedStructureDefinition, PropertyType } from '@medplum/core';
-import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
+import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { FhirPathDisplay } from './FhirPathDisplay';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { SearchClickEvent } from './SearchControl';
-import './SearchControl.css';
 import { isCheckboxCell, killEvent } from './utils/dom';
+import './SearchControl.css';
 
 export interface SmartSearchField {
   readonly propertyType: PropertyType;
