@@ -678,6 +678,14 @@ describe('Client', () => {
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient?name:contains=alice');
   });
 
+  test('Search no filters', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.search('Patient');
+    expect(result).toBeDefined();
+    expect((result as any).request.options.method).toBe('GET');
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Patient');
+  });
+
   test('Search one', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.searchOne('Patient', 'name:contains=alice');
