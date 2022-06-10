@@ -1,0 +1,26 @@
+{
+  "type": "module",
+  "name": "@medplum/bot-layer",
+  "version": "0.9.10",
+  "description": "Medplum Bot Lambda Layer",
+  "author": "Medplum <hello@medplum.com>",
+  "license": "Apache-2.0",
+  "homepage": "https://www.medplum.com/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/medplum/medplum.git",
+    "directory": "packages/bot-layer"
+  },
+  "dependencies": {
+    "@medplum/core": "0.9.10",
+    "node-fetch": "2.6.7",
+    "pdfmake": "0.2.5"
+  },
+  "keywords": [
+    "medplum",
+    "aws",
+    "lambda",
+    "bot",
+    "layer"
+  ]
+}
