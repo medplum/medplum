@@ -82,8 +82,8 @@ export class ContactPointTable extends LookupTable<ContactPoint> {
           resourceId,
           index: i,
           content: stringify(contactPoint),
-          system: contactPoint.system,
-          value: contactPoint.value,
+          system: contactPoint.system?.trim(),
+          value: contactPoint.value?.trim(),
         }).execute(client);
       }
     }
@@ -100,12 +100,12 @@ export class ContactPointTable extends LookupTable<ContactPoint> {
     const joinName = selectQuery.getNextJoinAlias();
     const subQuery = new SelectQuery(tableName)
       .raw(`DISTINCT ON ("${tableName}"."resourceId") *`)
-      .where({ tableName, columnName: 'value' }, Operator.EQUALS, filter.value)
+      .where({ tableName, columnName: 'value' }, Operator.EQUALS, filter.value?.trim())
       .orderBy('resourceId');
 
     if (filter.code !== 'telecom') {
       // filter.code can be "email" or "phone"
-      subQuery.where({ tableName, columnName: 'system' }, Operator.EQUALS, filter.code);
+      subQuery.where({ tableName, columnName: 'system' }, Operator.EQUALS, filter.code?.trim());
     }
 
     selectQuery.join(joinName, 'id', 'resourceId', subQuery);

@@ -299,4 +299,28 @@ describe('Identifier Lookup Table', () => {
     expect(searchResult.entry?.length).toEqual(1);
     expect(searchResult.entry?.[0]?.resource?.id).toEqual(resource?.id);
   });
+
+  test('Leading whitespace', async () => {
+    const identifier = randomUUID();
+
+    const [createOutcome, resource] = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      identifier: [{ system: 'https://www.example.com', value: ' ' + identifier }],
+    });
+    assertOk(createOutcome, resource);
+
+    const [searchOutcome, searchResult] = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value: identifier,
+        },
+      ],
+    });
+    assertOk(searchOutcome, searchResult);
+    expect(searchResult.entry?.length).toEqual(1);
+    expect(searchResult.entry?.[0]?.resource?.id).toEqual(resource?.id);
+  });
 });

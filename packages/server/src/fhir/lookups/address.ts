@@ -104,11 +104,11 @@ export class AddressTable extends LookupTable<Address> {
           index: i,
           content: stringify(address),
           address: formatAddress(address),
-          city: address.city,
-          country: address.country,
-          postalCode: address.postalCode,
-          state: address.state,
-          use: address.use,
+          city: address.city?.trim(),
+          country: address.country?.trim(),
+          postalCode: address.postalCode?.trim(),
+          state: address.state?.trim(),
+          use: address.use?.trim(),
         }).execute(client);
       }
     }

@@ -63,8 +63,8 @@ export class IdentifierTable extends LookupTable<Identifier> {
           resourceId,
           index: i,
           content: stringify(identifier),
-          system: identifier.system,
-          value: identifier.value,
+          system: identifier.system?.trim(),
+          value: identifier.value?.trim(),
         }).execute(client);
       }
     }
@@ -114,9 +114,9 @@ export class IdentifierTable extends LookupTable<Identifier> {
   #buildValueCondition(operator: FhirOperator, value: string): Condition {
     const column = new Column(IDENTIFIER_TABLE_NAME, 'value');
     if (operator === FhirOperator.EXACT) {
-      return new Condition(column, Operator.EQUALS, value);
+      return new Condition(column, Operator.EQUALS, value.trim());
     } else {
-      return new Condition(column, Operator.LIKE, value + '%');
+      return new Condition(column, Operator.LIKE, value.trim() + '%');
     }
   }
 }
