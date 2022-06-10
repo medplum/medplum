@@ -345,7 +345,7 @@ interface SchemaGraphQLResponse {
  * Search for a `Patient` by name:
  *
  * ```typescript
- * const bundle = await medplum.search('Patient?name=Alice');
+ * const bundle = await medplum.search('Patient', 'name=Alice');
  * console.log(bundle.total);
  * ```
  */
@@ -656,21 +656,7 @@ export class MedplumClient extends EventTarget {
    * Example using a FHIR search string:
    *
    * ```typescript
-   * const bundle = await client.search('Patient?name=Alice');
-   * console.log(bundle);
-   * ```
-   *
-   * Example using a structured search:
-   *
-   * ```typescript
-   * const bundle = await client.search({
-   *   resourceType: 'Patient',
-   *   filters: [{
-   *     code: 'name',
-   *     operator: 'eq',
-   *     value: 'Alice',
-   *   }]
-   * });
+   * const bundle = await client.search('Patient', 'name=Alice');
    * console.log(bundle);
    * ```
    *
@@ -720,7 +706,7 @@ export class MedplumClient extends EventTarget {
    * Example using a FHIR search string:
    *
    * ```typescript
-   * const patient = await client.searchOne('Patient?identifier=123');
+   * const patient = await client.searchOne('Patient', 'identifier=123');
    * console.log(patient);
    * ```
    *
@@ -761,7 +747,7 @@ export class MedplumClient extends EventTarget {
    * Example using a FHIR search string:
    *
    * ```typescript
-   * const patients = await client.searchResources('Patient?name=Alice');
+   * const patients = await client.searchResources('Patient', 'name=Alice');
    * console.log(patients);
    * ```
    *

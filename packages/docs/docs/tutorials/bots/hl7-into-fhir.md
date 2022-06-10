@@ -57,7 +57,7 @@ When we this implementation is complete we will:
     // Get patient ID
     const mrnNumber = input.get('PID').get(3).get(4);
 
-    var patient = await medplum.searchOne('Patient?identifier=' + mrnNumber);
+    const patient = await medplum.searchOne('Patient', 'identifier=' + mrnNumber);
 
     if (patient) {
         console.log('Patient already in the system');

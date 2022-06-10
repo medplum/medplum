@@ -66,7 +66,7 @@ When we this implementation is complete, the whole workflow below will be done i
     } = input.result;
 
     // Find the ServiceRequest that has the Easypost reference
-    const serviceRequest = await medplum.searchOne('ServiceRequest?identifier=' + shipment_id);
+    const serviceRequest = await medplum.searchOne('ServiceRequest', 'identifier=' + shipment_id);
 
     if (!serviceRequest) {
         console.log('Shipment ServiceRequest not found');
