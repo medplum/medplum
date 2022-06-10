@@ -24,11 +24,12 @@ const LAMBDA_HANDLER = 'index.handler';
 
 const WRAPPER_CODE = `const { Hl7Message, MedplumClient } = require("@medplum/core");
 const fetch = require("node-fetch");
+const PdfPrinter = require("pdfmake");
 const userCode = require("./user.js");
 
 exports.handler = async (event, context) => {
   const { accessToken, input, contentType } = event;
-  const medplum = new MedplumClient({ fetch });
+  const medplum = new MedplumClient({ fetch, createPdf });
   medplum.setAccessToken(accessToken);
   try {
     return await userCode.handler(medplum, {
@@ -47,6 +48,28 @@ exports.handler = async (event, context) => {
     throw err;
   }
 };
+
+function createPdf(docDefinition, tableLayouts, fonts) {
+  if (!fonts) {
+    fonts = {
+      Helvetica: {
+        normal: 'Helvetica',
+        bold: 'Helvetica-Bold',
+        italics: 'Helvetica-Oblique',
+        bolditalics: 'Helvetica-BoldOblique',
+      },
+    };
+  }
+  return new Promise((resolve, reject) => {
+    const printer = new PdfPrinter(fonts);
+    const pdfDoc = printer.createPdfKitDocument(docDefinition, { tableLayouts });
+    const chunks = [];
+    pdfDoc.on('data', (chunk) => chunks.push(chunk));
+    pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
+    pdfDoc.on('error', reject);
+    pdfDoc.end();
+  });
+}
 `;
 
 export const deployHandler = asyncWrap(async (req: Request, res: Response) => {

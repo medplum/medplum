@@ -1,5 +1,7 @@
 import { Bundle, Patient, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import crypto, { randomUUID } from 'crypto';
+import PdfPrinter from 'pdfmake';
+import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
 import { MedplumClient } from './client';
 import { ProfileResource, stringify } from './utils';
@@ -557,16 +559,31 @@ describe('Client', () => {
     expect((result as any).request.url).toBe('https://x/fhir/R4/Binary?_filename=hello.txt');
   });
 
-  test('Create pdf success', async () => {
+  test('Create pdf not enabled', async () => {
+    expect.assertions(1);
     const client = new MedplumClient(defaultOptions);
+    try {
+      await client.createPdf({ content: ['Hello world'] });
+    } catch (err) {
+      expect((err as Error).message).toEqual('PDF creation not enabled');
+    }
+  });
+
+  test('Create pdf success', async () => {
+    const client = new MedplumClient({ ...defaultOptions, createPdf });
     const footer = jest.fn(() => 'footer');
-    const result = await client.createPdf({
-      content: ['Hello World'],
-      defaultStyle: {
-        font: 'Helvetica',
+    const result = await client.createPdf(
+      {
+        content: ['Hello World'],
+        defaultStyle: {
+          font: 'Helvetica',
+        },
+        footer,
       },
-      footer,
-    });
+      undefined,
+      undefined,
+      fonts
+    );
     expect(result).toBeDefined();
     expect((result as any).request.url).toBe('https://x/fhir/R4/Binary');
     expect((result as any).request.options.method).toBe('POST');
@@ -575,8 +592,13 @@ describe('Client', () => {
   });
 
   test('Create pdf with filename', async () => {
-    const client = new MedplumClient(defaultOptions);
-    const result = await client.createPdf({ content: ['Hello world'] }, 'report.pdf');
+    const client = new MedplumClient({ ...defaultOptions, createPdf });
+    const result = await client.createPdf(
+      { content: ['Hello world'], defaultStyle: { font: 'Helvetica' } },
+      'report.pdf',
+      undefined,
+      fonts
+    );
     expect(result).toBeDefined();
     expect((result as any).request.url).toBe('https://x/fhir/R4/Binary?_filename=report.pdf');
     expect((result as any).request.options.method).toBe('POST');
@@ -765,3 +787,28 @@ describe('Client', () => {
     expect((fetch.mock.calls[0] as any[])[1].headers.Authorization).toBe('Bearer foo');
   });
 });
+
+function createPdf(
+  docDefinition: TDocumentDefinitions,
+  tableLayouts?: { [name: string]: CustomTableLayout },
+  fonts?: TFontDictionary
+): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const printer = new PdfPrinter(fonts || {});
+    const pdfDoc = printer.createPdfKitDocument(docDefinition, { tableLayouts });
+    const chunks: Uint8Array[] = [];
+    pdfDoc.on('data', (chunk: Uint8Array) => chunks.push(chunk));
+    pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
+    pdfDoc.on('error', reject);
+    pdfDoc.end();
+  });
+}
+
+const fonts: TFontDictionary = {
+  Helvetica: {
+    normal: 'Helvetica',
+    bold: 'Helvetica-Bold',
+    italics: 'Helvetica-Oblique',
+    bolditalics: 'Helvetica-BoldOblique',
+  },
+};

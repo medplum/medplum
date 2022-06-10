@@ -28,7 +28,6 @@ import { EventTarget } from './eventtarget';
 import { Hl7Message } from './hl7';
 import { parseJWTPayload } from './jwt';
 import { isOk } from './outcomes';
-import { generatePdf } from './pdf';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
 import { createSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
@@ -109,6 +108,47 @@ export interface MedplumClientOptions {
   fetch?: FetchLike;
 
   /**
+   * Create PDF implementation.
+   *
+   * Default is none, and PDF generation is disabled.
+   *
+   * In browser environments, import the client-side pdfmake library.
+   *
+   * ```html
+   * <script src="pdfmake.min.js"></script>
+   * <script>
+   * async function createPdf(docDefinition, tableLayouts, fonts) {
+   *   return new Promise((resolve) => {
+   *     pdfMake.createPdf(docDefinition, tableLayouts, fonts).getBlob(resolve);
+   *   });
+   * }
+   * </script>
+   * ```
+   *
+   * In nodejs applications:
+   *
+   * ```ts
+   * import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
+   * function createPdf(
+   *   docDefinition: TDocumentDefinitions,
+   *   tableLayouts?: { [name: string]: CustomTableLayout },
+   *   fonts?: TFontDictionary
+   * ): Promise<Buffer> {
+   *   return new Promise((resolve, reject) => {
+   *     const printer = new PdfPrinter(fonts || {});
+   *     const pdfDoc = printer.createPdfKitDocument(docDefinition, { tableLayouts });
+   *     const chunks: Uint8Array[] = [];
+   *     pdfDoc.on('data', (chunk: Uint8Array) => chunks.push(chunk));
+   *     pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
+   *     pdfDoc.on('error', reject);
+   *     pdfDoc.end();
+   *   });
+   * }
+   * ```
+   */
+  createPdf?: CreatePdfFunction;
+
+  /**
    * Callback for when the client is unauthenticated.
    *
    * Default is do nothing.
@@ -120,6 +160,18 @@ export interface MedplumClientOptions {
 
 export interface FetchLike {
   (url: string, options?: any): Promise<any>;
+}
+
+export interface CreatePdfFunction {
+  (
+    docDefinition: TDocumentDefinitions,
+    tableLayouts?:
+      | {
+          [name: string]: CustomTableLayout;
+        }
+      | undefined,
+    fonts?: TFontDictionary | undefined
+  ): Promise<any>;
 }
 
 export interface LoginRequest {
@@ -299,6 +351,7 @@ interface SchemaGraphQLResponse {
  */
 export class MedplumClient extends EventTarget {
   readonly #fetch: FetchLike;
+  readonly #createPdf?: CreatePdfFunction;
   readonly #storage: ClientStorage;
   readonly #schema: IndexedStructureDefinition;
   readonly #requestCache: LRUCache<ReadablePromise<any>>;
@@ -328,6 +381,7 @@ export class MedplumClient extends EventTarget {
     }
 
     this.#fetch = options?.fetch || window.fetch.bind(window);
+    this.#createPdf = options?.createPdf;
     this.#storage = new ClientStorage();
     this.#schema = createSchema();
     this.#requestCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
@@ -1070,7 +1124,10 @@ export class MedplumClient extends EventTarget {
     tableLayouts?: { [name: string]: CustomTableLayout },
     fonts?: TFontDictionary
   ): Promise<Binary> {
-    const blob = await generatePdf(docDefinition, tableLayouts, fonts);
+    if (!this.#createPdf) {
+      throw new Error('PDF creation not enabled');
+    }
+    const blob = await this.#createPdf(docDefinition, tableLayouts, fonts);
     return this.createBinary(blob, filename, 'application/pdf');
   }
 
