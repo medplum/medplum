@@ -3,6 +3,7 @@ import { SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
+import { vi } from 'vitest';
 import { convertIsoToLocal } from './DateTimeInput';
 import { MedplumProvider } from './MedplumProvider';
 import { SearchFilterValueInput } from './SearchFilterValueInput';
@@ -22,18 +23,15 @@ describe('SearchFilterValueInput', () => {
   });
 
   beforeEach(async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
-    act(() => {
-      jest.runOnlyPendingTimers();
-    });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Text input', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup(
       <SearchFilterValueInput
@@ -52,7 +50,7 @@ describe('SearchFilterValueInput', () => {
   });
 
   test('Boolean input', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup(
       <SearchFilterValueInput
@@ -79,7 +77,7 @@ describe('SearchFilterValueInput', () => {
   });
 
   test('Date input', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup(
       <SearchFilterValueInput
@@ -100,7 +98,7 @@ describe('SearchFilterValueInput', () => {
   test('Date/Time input', async () => {
     const isoString = '2020-01-01T00:00:00.000Z';
     const localString = convertIsoToLocal(isoString);
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup(
       <SearchFilterValueInput
@@ -119,7 +117,7 @@ describe('SearchFilterValueInput', () => {
   });
 
   test('Quantity input', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup(
       <SearchFilterValueInput
@@ -141,7 +139,7 @@ describe('SearchFilterValueInput', () => {
     // Warm up the default value
     await medplum.readResource('Organization', '123');
 
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup(
       <SearchFilterValueInput
@@ -165,7 +163,7 @@ describe('SearchFilterValueInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     await waitFor(() => screen.getByTestId('dropdown'));

@@ -7,17 +7,18 @@ import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
+import { SpyInstance, vi } from 'vitest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { systemRepo } from '../fhir';
-import { createTestClient, setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+import { systemRepo } from '../fhir/repo';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
+import { createTestClient, setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 
-jest.mock('@aws-sdk/client-sesv2');
-jest.mock('hibp');
-jest.mock('node-fetch');
+vi.mock('@aws-sdk/client-sesv2');
+vi.mock('hibp');
+vi.mock('node-fetch');
 
 const app = express();
 let client: ClientApplication;
@@ -37,12 +38,12 @@ describe('Login', () => {
   });
 
   beforeEach(() => {
-    (SESv2Client as unknown as jest.Mock).mockClear();
-    (SendEmailCommand as unknown as jest.Mock).mockClear();
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    (SESv2Client as unknown as SpyInstance).mockClear();
+    (SendEmailCommand as unknown as SpyInstance).mockClear();
+    (fetch as unknown as SpyInstance).mockClear();
+    (pwnedPassword as unknown as SpyInstance).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as SpyInstance, 0);
+    setupRecaptchaMock(fetch as unknown as SpyInstance, true);
   });
 
   test('Invalid client UUID', async () => {
@@ -191,7 +192,7 @@ describe('Login', () => {
     expect(SendEmailCommand).toHaveBeenCalledTimes(1);
 
     // Parse the email for the "set password" link
-    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
+    const args = (SendEmailCommand as unknown as SpyInstance).mock.calls[0][0];
     const parsed = await simpleParser(args.Content.Raw.Data);
     const content = parsed.text as string;
     const url = /(https?:\/\/[^\s]+)/g.exec(content)?.[0] as string;

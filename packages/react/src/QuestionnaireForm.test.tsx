@@ -1,4 +1,3 @@
-import { PropertyType } from '@medplum/core';
 import {
   Questionnaire,
   QuestionnaireResponse,
@@ -8,9 +7,9 @@ import {
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { randomUUID } from 'crypto';
-import each from 'jest-each';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { vi } from 'vitest';
 import { MedplumProvider } from './MedplumProvider';
 import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 import { QuestionnaireItemType } from './QuestionnaireUtils';
@@ -35,13 +34,13 @@ describe('QuestionnaireForm', () => {
       questionnaire: {
         resourceType: 'Questionnaire',
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
     expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
   });
 
   test('Groups', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -120,7 +119,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Handles submit', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -195,7 +194,7 @@ describe('QuestionnaireForm', () => {
     expect(getAnswer(response, 'q6')).toMatchObject({ valueString: 'initial answer' });
   });
 
-  each([
+  test.each([
     [QuestionnaireItemType.decimal, 'number', '123.456'],
     [QuestionnaireItemType.integer, 'number', '123'],
     [QuestionnaireItemType.date, 'date', '2020-01-01'],
@@ -205,7 +204,7 @@ describe('QuestionnaireForm', () => {
     [QuestionnaireItemType.text, 'textarea', 'lorem ipsum'],
     [QuestionnaireItemType.url, 'url', 'https://example.com/'],
     [QuestionnaireItemType.quantity, 'number', '123'],
-  ]).test('%s question', async (propertyType: PropertyType, inputType: string, value: string) => {
+  ])('%s question', async (propertyType: QuestionnaireItemType, inputType: string, value: string) => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
@@ -217,7 +216,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     const input = screen.getByLabelText('q1') as HTMLInputElement;
@@ -246,7 +245,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     const input = screen.getByLabelText('q1') as HTMLInputElement;
@@ -260,7 +259,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Choice input', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -312,7 +311,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Choice valueReference default value', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {
@@ -382,7 +381,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit: vi.fn(),
     });
 
     expect(screen.getByText('q1')).toBeInTheDocument();
@@ -425,7 +424,7 @@ describe('QuestionnaireForm', () => {
       ],
     };
 
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({ questionnaire, onSubmit });
 
@@ -449,7 +448,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Reference input', async () => {
-    const onSubmit = jest.fn();
+    const onSubmit = vi.fn();
 
     await setup({
       questionnaire: {

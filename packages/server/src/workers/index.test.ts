@@ -1,10 +1,11 @@
+import { vi } from 'vitest';
 import { closeWorkers, initWorkers } from '.';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { initBinaryStorage } from '../fhir';
+import { initBinaryStorage } from '../fhir/storage';
 import { seedDatabase } from '../seed';
 
-jest.mock('bullmq');
+vi.mock('bullmq');
 
 describe('Workers', () => {
   test('Init and close', async () => {

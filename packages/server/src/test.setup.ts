@@ -1,7 +1,8 @@
 import { assertOk, createReference, isOk } from '@medplum/core';
 import { Bundle, ClientApplication, Login, Project, ProjectMembership, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { systemRepo } from './fhir';
+import { SpyInstance } from 'vitest';
+import { systemRepo } from './fhir/repo';
 import { generateAccessToken } from './oauth';
 
 export async function createTestProject(): Promise<{
@@ -79,7 +80,7 @@ export async function initTestAuth(): Promise<string> {
  * @param pwnedPassword The pwnedPassword mock.
  * @param numPwns The mock value to return. Zero is a safe password.
  */
-export function setupPwnedPasswordMock(pwnedPassword: jest.Mock, numPwns: number): void {
+export function setupPwnedPasswordMock(pwnedPassword: SpyInstance, numPwns: number): void {
   pwnedPassword.mockImplementation(async () => numPwns);
 }
 
@@ -88,7 +89,7 @@ export function setupPwnedPasswordMock(pwnedPassword: jest.Mock, numPwns: number
  * @param fetch The fetch mock.
  * @param success Whether the mock should return a successful response.
  */
-export function setupRecaptchaMock(fetch: jest.Mock, success: boolean): void {
+export function setupRecaptchaMock(fetch: SpyInstance, success: boolean): void {
   fetch.mockImplementation(() => ({
     status: 200,
     json: () => ({ success }),

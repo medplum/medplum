@@ -1,6 +1,7 @@
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
+import { vi } from 'vitest';
 import { AnnotationInput, AnnotationInputProps } from './AnnotationInput';
 import { MedplumProvider } from './MedplumProvider';
 
@@ -33,7 +34,7 @@ describe('AnnotationInput', () => {
   });
 
   test('Set value', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup({
       name: 'a',
@@ -70,7 +71,7 @@ describe('AnnotationInput', () => {
   });
 
   test('Clear value', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup({
       name: 'a',

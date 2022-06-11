@@ -1,6 +1,7 @@
 import { MedplumClient } from '@medplum/core';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
+import { vi } from 'vitest';
 import { AttachmentDisplay, AttachmentDisplayProps } from './AttachmentDisplay';
 import { MedplumProvider } from './MedplumProvider';
 
@@ -39,7 +40,7 @@ async function setup(args?: AttachmentDisplayProps): Promise<void> {
 
 describe('AttachmentDisplay', () => {
   beforeAll(async () => {
-    global.URL.createObjectURL = jest.fn(() => 'details');
+    global.URL.createObjectURL = vi.fn(() => 'details');
   });
 
   test('Renders empty', () => {

@@ -2,6 +2,7 @@ import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { vi } from 'vitest';
 import { FooterLinks } from './FooterLinks';
 import { MedplumLink } from './MedplumLink';
 import { MedplumProvider } from './MedplumProvider';
@@ -10,7 +11,7 @@ const medplum = new MockClient();
 
 describe('FooterLinks', () => {
   test('Renders', async () => {
-    const onHelp = jest.fn();
+    const onHelp = vi.fn();
 
     render(
       <MemoryRouter>

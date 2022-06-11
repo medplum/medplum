@@ -4,7 +4,8 @@ import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { pwnedPassword } from 'hibp';
-import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { systemRepo } from '../fhir/repo';
 
 export const setPasswordValidators = [
   body('id').isUUID().withMessage('Invalid request ID'),

@@ -1,13 +1,14 @@
 import { SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { SSMClient } from '@aws-sdk/client-ssm';
+import { SpyInstance, vi } from 'vitest';
 import { getConfig, loadConfig } from './config';
 
-jest.mock('@aws-sdk/client-secrets-manager');
-jest.mock('@aws-sdk/client-ssm');
+vi.mock('@aws-sdk/client-secrets-manager');
+vi.mock('@aws-sdk/client-ssm');
 
 describe('Config', () => {
   beforeAll(() => {
-    (SSMClient as unknown as jest.Mock).mockImplementation(() => {
+    (SSMClient as unknown as SpyInstance).mockImplementation(() => {
       return {
         send: () => {
           return {
@@ -21,7 +22,7 @@ describe('Config', () => {
       };
     });
 
-    (SecretsManagerClient as unknown as jest.Mock).mockImplementation(() => {
+    (SecretsManagerClient as unknown as SpyInstance).mockImplementation(() => {
       return {
         send: () => {
           return {
@@ -33,8 +34,8 @@ describe('Config', () => {
   });
 
   beforeEach(() => {
-    (SSMClient as unknown as jest.Mock).mockClear();
-    (SecretsManagerClient as unknown as jest.Mock).mockClear();
+    (SSMClient as unknown as SpyInstance).mockClear();
+    (SecretsManagerClient as unknown as SpyInstance).mockClear();
   });
 
   test('Unrecognized config', async () => {

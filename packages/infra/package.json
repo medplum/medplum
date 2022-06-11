@@ -14,7 +14,7 @@
     "clean": "rimraf dist cdk.out",
     "build": "npm run clean && tsc",
     "cdk": "cdk",
-    "test": "jest"
+    "test": "vitest run"
   },
   "dependencies": {
     "aws-cdk-lib": "2.25.0",

@@ -3,17 +3,18 @@ import { Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
+import { vi } from 'vitest';
 import { inviteUser } from '../admin/invite';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { systemRepo } from '../fhir';
+import { systemRepo } from '../fhir/repo';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 import { registerNew } from './register';
 
-jest.mock('@aws-sdk/client-sesv2');
-jest.mock('hibp');
+vi.mock('@aws-sdk/client-sesv2');
+vi.mock('hibp');
 
 const app = express();
 const email = `multi${randomUUID()}@example.com`;

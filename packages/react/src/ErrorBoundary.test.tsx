@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import React from 'react';
+import { vi } from 'vitest';
 import { ErrorBoundary } from './ErrorBoundary';
 
 function ErrorComponent(): JSX.Element {
@@ -21,7 +22,7 @@ describe('ErrorBoundary', () => {
   });
 
   test('Handles error', () => {
-    console.error = jest.fn();
+    console.error = vi.fn();
     render(
       <div>
         <div>outside</div>

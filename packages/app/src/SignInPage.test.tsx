@@ -21,7 +21,7 @@ describe('SignInPage', () => {
   test('Renders', async () => {
     setup();
 
-    const input = screen.getByTestId('submit') as HTMLButtonElement;
+    const input = screen.getByText('Sign in') as HTMLButtonElement;
     expect(input.innerHTML).toBe('Sign in');
   });
 
@@ -29,7 +29,7 @@ describe('SignInPage', () => {
     setup();
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByText('Sign in'));
     });
   });
 

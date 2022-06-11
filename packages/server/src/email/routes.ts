@@ -3,7 +3,8 @@ import { Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { body, check, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
-import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { systemRepo } from '../fhir/repo';
 import { authenticateToken } from '../oauth';
 import { sendEmail } from './email';
 

@@ -1,5 +1,6 @@
 import { allOk, badRequest, LoginState, notFound } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
+import { vi } from 'vitest';
 import { MockClient } from './client';
 import { HomerSimpson } from './mocks';
 
@@ -135,7 +136,7 @@ describe('MockClient', () => {
   });
 
   test('Debug mode', async () => {
-    console.log = jest.fn();
+    console.log = vi.fn();
     const client = new MockClient({ debug: true });
     await client.get('not-found');
     expect(console.log).toHaveBeenCalledTimes(3);

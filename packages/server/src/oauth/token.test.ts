@@ -7,9 +7,9 @@ import { URL, URLSearchParams } from 'url';
 import { initApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { systemRepo } from '../fhir';
-import { createTestClient } from '../test.setup';
+import { systemRepo } from '../fhir/repo';
 import { seedDatabase } from '../seed';
+import { createTestClient } from '../test.setup';
 import { generateSecret, initKeys } from './keys';
 import { hashCode } from './token';
 

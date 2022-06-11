@@ -4,7 +4,8 @@ import { resolve } from 'path';
 import PdfPrinter from 'pdfmake';
 import { ContentTable, CustomTableLayout, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { PassThrough } from 'stream';
-import { getBinaryStorage, Repository } from '../fhir';
+import { Repository } from '../fhir/repo';
+import { getBinaryStorage } from '../fhir/storage';
 
 const tableLayouts: { [key: string]: CustomTableLayout } = {
   medplumNoBorders: {

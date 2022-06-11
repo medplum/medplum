@@ -4,6 +4,7 @@ import { HomerEncounter, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { vi } from 'vitest';
 import { MedplumProvider } from './MedplumProvider';
 import { ResourceTimeline, ResourceTimelineProps } from './ResourceTimeline';
 
@@ -114,7 +115,7 @@ describe('ResourceTimeline', () => {
     await setup({
       value: HomerEncounter,
       buildSearchRequests: buildEncounterSearch,
-      createCommunication: jest.fn(),
+      createCommunication: vi.fn(),
       createMedia: (resource: Encounter, operator: ProfileResource, content: Attachment) => ({
         resourceType: 'Media',
         encounter: createReference(resource),

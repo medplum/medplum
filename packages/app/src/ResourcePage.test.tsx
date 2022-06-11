@@ -4,6 +4,7 @@ import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { vi } from 'vitest';
 import { HomePage } from './HomePage';
 import { ResourcePage } from './ResourcePage';
 
@@ -183,7 +184,7 @@ describe('ResourcePage', () => {
 
     expect(screen.getByText('Preview')).toBeInTheDocument();
 
-    window.alert = jest.fn();
+    window.alert = vi.fn();
     fireEvent.click(screen.getByText('OK'));
     expect(window.alert).toHaveBeenCalledWith('You submitted the preview');
   });
@@ -203,7 +204,7 @@ describe('ResourcePage', () => {
   });
 
   test('Left click on tab', async () => {
-    window.open = jest.fn();
+    window.open = vi.fn();
 
     await setup('/Practitioner/123/details');
     await waitFor(() => screen.getByText('Name'));
@@ -220,7 +221,7 @@ describe('ResourcePage', () => {
   });
 
   test('Middle click on tab', async () => {
-    window.open = jest.fn();
+    window.open = vi.fn();
 
     await setup('/Practitioner/123/details');
     await waitFor(() => screen.getByText('Name'));

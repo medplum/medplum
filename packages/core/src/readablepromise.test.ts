@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { ReadablePromise } from './readablepromise';
 
 describe('ReadablePromise', () => {
@@ -22,14 +23,14 @@ describe('ReadablePromise', () => {
   });
 
   test('then', async () => {
-    const onFulfilled = jest.fn();
+    const onFulfilled = vi.fn();
     const readable = new ReadablePromise(Promise.resolve('x')).then(onFulfilled);
     await readable;
     expect(onFulfilled).toHaveBeenCalled();
   });
 
   test('catch', async () => {
-    const onRejected = jest.fn();
+    const onRejected = vi.fn();
     const promise = new ReadablePromise(Promise.reject(new Error('x'))).catch(onRejected);
     try {
       await promise;
@@ -40,7 +41,7 @@ describe('ReadablePromise', () => {
   });
 
   test('finally', async () => {
-    const onFinally = jest.fn();
+    const onFinally = vi.fn();
     const readable = new ReadablePromise(Promise.resolve('x')).finally(onFinally);
     await readable;
     expect(onFinally).toHaveBeenCalled();

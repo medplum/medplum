@@ -2,6 +2,7 @@ import { MedplumClient } from '@medplum/core';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { vi } from 'vitest';
 import { MedplumProvider } from './MedplumProvider';
 import { Popup } from './Popup';
 
@@ -22,7 +23,7 @@ function setup(children: React.ReactNode): void {
 describe('Popup', () => {
   test('Hidden', () => {
     setup(
-      <Popup visible={false} onClose={jest.fn()}>
+      <Popup visible={false} onClose={vi.fn()}>
         test
       </Popup>
     );
@@ -31,7 +32,7 @@ describe('Popup', () => {
 
   test('Visible', () => {
     setup(
-      <Popup visible={true} onClose={jest.fn()}>
+      <Popup visible={true} onClose={vi.fn()}>
         test
       </Popup>
     );
@@ -39,7 +40,7 @@ describe('Popup', () => {
   });
 
   test('Auto close on click outside of popup', async () => {
-    const onClose = jest.fn();
+    const onClose = vi.fn();
     setup(
       <Popup visible={true} autoClose={true} onClose={onClose}>
         test
@@ -54,7 +55,7 @@ describe('Popup', () => {
   });
 
   test('Disabled auto close', async () => {
-    const onClose = jest.fn();
+    const onClose = vi.fn();
     setup(
       <Popup visible={true} autoClose={false} onClose={onClose}>
         test
@@ -80,7 +81,7 @@ describe('Popup', () => {
     const anchor = { left: 10, right: 20, top: 10, bottom: 20 } as DOMRectReadOnly;
 
     setup(
-      <Popup visible={true} anchor={anchor} onClose={jest.fn()}>
+      <Popup visible={true} anchor={anchor} onClose={vi.fn()}>
         test
       </Popup>
     );
@@ -103,7 +104,7 @@ describe('Popup', () => {
     const anchor = { left: 1400, right: 1500, top: 10, bottom: 20 } as DOMRectReadOnly;
 
     setup(
-      <Popup visible={true} anchor={anchor} onClose={jest.fn()}>
+      <Popup visible={true} anchor={anchor} onClose={vi.fn()}>
         test
       </Popup>
     );
@@ -121,7 +122,7 @@ describe('Popup', () => {
     const anchor = { left: 10, right: 20, top: 800, bottom: 900 } as DOMRectReadOnly;
 
     setup(
-      <Popup visible={true} anchor={anchor} onClose={jest.fn()}>
+      <Popup visible={true} anchor={anchor} onClose={vi.fn()}>
         test
       </Popup>
     );

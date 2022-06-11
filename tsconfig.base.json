@@ -22,7 +22,8 @@
     "inlineSources": true,
     "experimentalDecorators": true,
     "strictPropertyInitialization": true,
-    "allowJs": true
+    "allowJs": true,
+    "types": ["vitest/globals"]
   },
   "exclude": ["node_modules"]
 }

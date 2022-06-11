@@ -1,7 +1,7 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import crypto from 'crypto';
+import { webcrypto } from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';
@@ -26,7 +26,7 @@ describe('RegisterPage', () => {
     });
 
     Object.defineProperty(global, 'crypto', {
-      value: crypto.webcrypto,
+      value: webcrypto,
     });
   });
 

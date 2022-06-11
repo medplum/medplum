@@ -2,11 +2,12 @@ import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
+import { vi } from 'vitest';
 import { HeaderSearchInput, HeaderSearchInputProps } from './HeaderSearchInput';
 import { MedplumProvider } from './MedplumProvider';
 
 const medplum = new MockClient();
-medplum.graphql = jest.fn((query: string) => {
+medplum.graphql = vi.fn((query: string) => {
   const data: Record<string, unknown> = {};
   if (query.includes('"Simpson"')) {
     data.Patients1 = [HomerSimpson];
@@ -85,20 +86,17 @@ function setup(args: HeaderSearchInputProps): void {
 
 describe('HeaderSearchInput', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(async () => {
-    act(() => {
-      jest.runOnlyPendingTimers();
-    });
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   test('Renders empty', () => {
     setup({
       name: 'foo',
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     });
     expect(screen.getByTestId('autocomplete')).toBeInTheDocument();
   });
@@ -106,7 +104,7 @@ describe('HeaderSearchInput', () => {
   test('Use autocomplete', async () => {
     setup({
       name: 'foo',
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     });
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
@@ -118,7 +116,7 @@ describe('HeaderSearchInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     await waitFor(() => screen.getByTestId('dropdown'));
@@ -134,7 +132,7 @@ describe('HeaderSearchInput', () => {
   test('Search by UUID', async () => {
     setup({
       name: 'foo',
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     });
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
@@ -146,7 +144,7 @@ describe('HeaderSearchInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     await waitFor(() => screen.getByTestId('dropdown'));
@@ -160,7 +158,7 @@ describe('HeaderSearchInput', () => {
   });
 
   test.each(['Simpson', 'hom sim', 'abc', '9001'])('onChange with %s', async (query) => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     setup({
       name: 'foo',
@@ -177,7 +175,7 @@ describe('HeaderSearchInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     await waitFor(() => screen.getByTestId('dropdown'));
@@ -193,7 +191,7 @@ describe('HeaderSearchInput', () => {
   test('Sort by relevance', async () => {
     setup({
       name: 'foo',
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     });
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
@@ -205,7 +203,7 @@ describe('HeaderSearchInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     await waitFor(() => screen.getByTestId('dropdown'));
@@ -218,7 +216,7 @@ describe('HeaderSearchInput', () => {
   test('Max results', async () => {
     setup({
       name: 'foo',
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     });
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
@@ -230,7 +228,7 @@ describe('HeaderSearchInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     await waitFor(() => screen.getByTestId('dropdown'));
@@ -243,7 +241,7 @@ describe('HeaderSearchInput', () => {
   test('Empty strings', async () => {
     setup({
       name: 'foo',
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     });
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
@@ -255,7 +253,7 @@ describe('HeaderSearchInput', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(1000);
     });
 
     await waitFor(() => screen.getByTestId('dropdown'));

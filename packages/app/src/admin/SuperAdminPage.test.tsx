@@ -3,6 +3,7 @@ import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { vi } from 'vitest';
 import { SuperAdminPage } from './SuperAdminPage';
 
 const medplum = new MockClient();
@@ -21,7 +22,7 @@ function setup(): void {
 
 describe('SuperAdminPage', () => {
   test('Rebuild StructureDefinitions', async () => {
-    window.alert = jest.fn();
+    window.alert = vi.fn();
 
     setup();
 
@@ -33,7 +34,7 @@ describe('SuperAdminPage', () => {
   });
 
   test('Rebuild SearchParameters', async () => {
-    window.alert = jest.fn();
+    window.alert = vi.fn();
 
     setup();
 
@@ -45,7 +46,7 @@ describe('SuperAdminPage', () => {
   });
 
   test('Rebuild ValueSets', async () => {
-    window.alert = jest.fn();
+    window.alert = vi.fn();
 
     setup();
 
@@ -57,7 +58,7 @@ describe('SuperAdminPage', () => {
   });
 
   test('Reindex resource type', async () => {
-    window.alert = jest.fn();
+    window.alert = vi.fn();
 
     setup();
 

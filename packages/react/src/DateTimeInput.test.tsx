@@ -1,6 +1,7 @@
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
+import { vi } from 'vitest';
 import { convertIsoToLocal, convertLocalToIso, DateTimeInput } from './DateTimeInput';
 
 describe('DateTimeInput', () => {
@@ -48,7 +49,7 @@ describe('DateTimeInput', () => {
   });
 
   test('onChange with listener', async () => {
-    const onChange = jest.fn();
+    const onChange = vi.fn();
 
     const date = new Date();
     date.setMilliseconds(0); // datetime-local does not support milliseconds

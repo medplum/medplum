@@ -3,7 +3,8 @@ import { sep } from 'path';
 import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { initBinaryStorage, Repository, systemRepo } from '../fhir';
+import { Repository, systemRepo } from '../fhir/repo';
+import { initBinaryStorage } from '../fhir/storage';
 import { createPdf } from './pdf';
 
 const binaryDir = mkdtempSync(__dirname + sep + 'binary-');

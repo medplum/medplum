@@ -3,8 +3,9 @@ import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { MedplumProvider } from './MedplumProvider';
+import { vi } from 'vitest';
 import { FhirPathTable, FhirPathTableProps, SmartSearchField } from './FhirPathTable';
+import { MedplumProvider } from './MedplumProvider';
 
 const query = `{
   ResourceList: ServiceRequestList {
@@ -139,7 +140,7 @@ describe('FhirPathTable', () => {
   });
 
   test('Bulk button', async () => {
-    const onBulk = jest.fn();
+    const onBulk = vi.fn();
 
     await setup({
       resourceType: 'ServiceRequest',
@@ -164,8 +165,8 @@ describe('FhirPathTable', () => {
       resourceType: 'ServiceRequest',
       query,
       fields,
-      onClick: jest.fn(),
-      onAuxClick: jest.fn(),
+      onClick: vi.fn(),
+      onAuxClick: vi.fn(),
     };
 
     await setup(props);
@@ -192,8 +193,8 @@ describe('FhirPathTable', () => {
       resourceType: 'ServiceRequest',
       query,
       fields,
-      onClick: jest.fn(),
-      onAuxClick: jest.fn(),
+      onClick: vi.fn(),
+      onAuxClick: vi.fn(),
     };
 
     await setup(props);

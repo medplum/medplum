@@ -12,8 +12,8 @@
   },
   "scripts": {
     "clean": "rimraf dist",
-    "build": "npm run clean && tsc",
-    "test": "jest"
+    "build": "tsc",
+    "test": "vitest run"
   },
   "dependencies": {
     "@medplum/core": "0.9.11",

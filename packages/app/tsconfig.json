@@ -1,9 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "module": "esnext",
     "outDir": "dist",
     "lib": ["esnext", "dom", "dom.iterable"],
-    "noEmit": true,
+    "types": ["vite/client", "vitest/globals"],
+    "noEmit": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "./jest.setup.ts"]
 }

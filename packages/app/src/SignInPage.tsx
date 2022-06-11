@@ -10,7 +10,7 @@ export function SignInPage(): JSX.Element {
       onSuccess={() => navigate('/')}
       onForgotPassword={() => navigate('/resetpassword')}
       onRegister={() => navigate('/register')}
-      googleClientId={process.env.GOOGLE_CLIENT_ID}
+      googleClientId={import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined}
     >
       <Logo size={32} />
       <h1>Sign in to Medplum</h1>

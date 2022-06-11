@@ -11,10 +11,11 @@ import { closeDatabase, initDatabase } from '../database';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
+import { SpyInstance, vi } from 'vitest';
 
-jest.mock('@aws-sdk/client-sesv2');
-jest.mock('hibp');
-jest.mock('node-fetch');
+vi.mock('@aws-sdk/client-sesv2');
+vi.mock('hibp');
+vi.mock('node-fetch');
 
 const app = express();
 
@@ -32,12 +33,12 @@ describe('Reset Password', () => {
   });
 
   beforeEach(() => {
-    (SESv2Client as unknown as jest.Mock).mockClear();
-    (SendEmailCommand as unknown as jest.Mock).mockClear();
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    (SESv2Client as unknown as SpyInstance).mockClear();
+    (SendEmailCommand as unknown as SpyInstance).mockClear();
+    (fetch as unknown as SpyInstance).mockClear();
+    (pwnedPassword as unknown as SpyInstance).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as SpyInstance, 0);
+    setupRecaptchaMock(fetch as unknown as SpyInstance, true);
   });
 
   test('Blank email address', async () => {
@@ -60,7 +61,7 @@ describe('Reset Password', () => {
   });
 
   test('Incorrect recaptcha', async () => {
-    setupRecaptchaMock(fetch as unknown as jest.Mock, false);
+    setupRecaptchaMock(fetch as unknown as SpyInstance, false);
 
     const res = await request(app).post('/auth/resetpassword').type('json').send({
       email: 'admin@example.com',
@@ -105,7 +106,7 @@ describe('Reset Password', () => {
     expect(SESv2Client).toHaveBeenCalledTimes(1);
     expect(SendEmailCommand).toHaveBeenCalledTimes(1);
 
-    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
+    const args = (SendEmailCommand as unknown as SpyInstance).mock.calls[0][0];
     expect(args.Destination.ToAddresses[0]).toBe(email);
 
     const parsed = await simpleParser(args.Content.Raw.Data);

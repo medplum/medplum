@@ -1,11 +1,12 @@
 import { Slot } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
+import { vi } from 'vitest';
 import { CalendarInput, getMonthString, getStartMonth } from './CalendarInput';
 
 describe('CalendarInput', () => {
   test('Renders', () => {
-    const onClick = jest.fn();
+    const onClick = vi.fn();
     render(<CalendarInput slots={[]} onClick={onClick} />);
     expect(screen.getByText(getMonthString(new Date()))).toBeDefined();
     expect(screen.getByText('SUN')).toBeDefined();
@@ -13,14 +14,14 @@ describe('CalendarInput', () => {
   });
 
   test('Disabled days', () => {
-    const onClick = jest.fn();
+    const onClick = vi.fn();
     render(<CalendarInput slots={[]} onClick={onClick} />);
     expect(screen.getByText('4')).toBeDefined();
     expect((screen.queryByText('4') as HTMLButtonElement).disabled).toBe(true);
   });
 
   test('Change months', async () => {
-    const onClick = jest.fn();
+    const onClick = vi.fn();
     render(<CalendarInput slots={[]} onClick={onClick} />);
 
     const nextMonth = getStartMonth();
@@ -55,7 +56,7 @@ describe('CalendarInput', () => {
       },
     ];
 
-    const onClick = jest.fn();
+    const onClick = vi.fn();
     render(<CalendarInput slots={slots} onClick={onClick} />);
 
     // Move forward one month

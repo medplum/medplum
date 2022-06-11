@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { JSONSchema4 } from 'json-schema';
 import { ComponentsObject, OpenAPIObject, ReferenceObject, SchemaObject, TagObject } from 'openapi3-ts';
 import { getConfig } from './config';
-import { getSchemaDefinitions } from './fhir';
+import { getSchemaDefinitions } from './fhir/schema';
 
 type SchemaMap = { [schema: string]: SchemaObject | ReferenceObject };
 
