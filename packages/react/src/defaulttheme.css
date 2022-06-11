@@ -3,10 +3,8 @@
   --medplum-surface: #ffffff;
   --medplum-foreground: #424242;
   --medplum-navbar: #5b2876;
-  --medplum-navbar-textbox: #7a4696;
-  --medplum-navbar-icon: #5b2876;
-  --medplum-navbar-placeholder: #ddc4eb;
-  --medplum-navbar-hover: #5d5d85;
+  --medplum-navbar-textbox: rgba(255, 255, 255, 0.2);
+  --medplum-navbar-placeholder: rgba(255, 255, 255, 0.6);
   --medplum-shadow: rgba(0, 0, 0, 0.1);
   /* font sizes */
   --medplum-font-small: 12px;
@@ -97,10 +95,8 @@
     --medplum-surface: #000;
     --medplum-foreground: #eee;
     --medplum-navbar: #5b2876;
-    --medplum-navbar-textbox: #7a4696;
-    --medplum-navbar-icon: #5b2876;
-    --medplum-navbar-placeholder: #ddc4eb;
-    --medplum-navbar-hover: #5d5d85;
+    --medplum-navbar-textbox: rgba(255, 255, 255, 0.2);
+    --medplum-navbar-placeholder: rgba(255, 255, 255, 0.6);
     --medplum-shadow: rgba(0, 0, 0, 0.2);
     /* gray */
     --medplum-gray-900: #fafafa;

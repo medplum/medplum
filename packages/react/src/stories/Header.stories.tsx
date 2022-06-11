@@ -15,6 +15,30 @@ const manyLinks: UserConfigurationMenuLink[] = new Array(50).fill(0).map((el, in
 }));
 
 export const Basic = (args: HeaderProps): JSX.Element => {
+  return <Header {...args} />;
+};
+
+export const CustomColor = (args: HeaderProps): JSX.Element => {
+  return (
+    <>
+      <Header title="Medplum" {...args} />
+      <Spacer />
+      <Header title="AWS" bgColor="#232f3e" {...args} />
+      <Spacer />
+      <Header title="Facebook" bgColor="#4267B2" {...args} />
+      <Spacer />
+      <Header title="GitHub" bgColor="#161b22" {...args} />
+      <Spacer />
+      <Header title="GitLab" bgColor="#292961" {...args} />
+      <Spacer />
+      <Header title="Google Cloud" bgColor="#1a73e8" {...args} />
+      <Spacer />
+      <Header title="Gradient" bgColor="linear-gradient(to right, #e66465, #9198e5)" {...args} />
+    </>
+  );
+};
+
+export const Search = (args: HeaderProps): JSX.Element => {
   const ctx = useMedplumContext();
   const medplum = ctx.medplum;
 
@@ -77,3 +101,7 @@ export const Basic = (args: HeaderProps): JSX.Element => {
     />
   );
 };
+
+function Spacer(): JSX.Element {
+  return <div style={{ height: 50, minHeight: 50 }} />;
+}
