@@ -2,11 +2,11 @@ import { CodeableConcept } from '@medplum/fhirtypes';
 import React from 'react';
 import { CodingDisplay } from './CodingDisplay';
 
-export interface CodeableConceptInputProps {
+export interface CodeableConceptDisplayProps {
   value?: CodeableConcept;
 }
 
-export function CodeableConceptDisplay(props: CodeableConceptInputProps): JSX.Element | null {
+export function CodeableConceptDisplay(props: CodeableConceptDisplayProps): JSX.Element | null {
   const value = props.value;
   if (!value) {
     return null;

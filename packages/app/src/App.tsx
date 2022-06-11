@@ -14,6 +14,8 @@ import { ChangePasswordPage } from './ChangePasswordPage';
 import { CreateResourcePage } from './CreateResourcePage';
 import { FormPage } from './FormPage';
 import { HomePage } from './HomePage';
+import { AssaysPage } from './lab/AssaysPage';
+import { PanelsPage } from './lab/PanelsPage';
 import { RegisterPage } from './RegisterPage';
 import { ResetPasswordPage } from './ResetPasswordPage';
 import { ResourcePage } from './ResourcePage';
@@ -65,6 +67,8 @@ export function App(): JSX.Element {
             <Route path="/admin/projects/:projectId/invite" element={<InvitePage />} />
             <Route path="/admin/projects/:projectId/members/:membershipId" element={<EditMembershipPage />} />
             <Route path="/admin/super" element={<SuperAdminPage />} />
+            <Route path="/lab/assays" element={<AssaysPage />} />
+            <Route path="/lab/panels" element={<PanelsPage />} />
             <Route path="/:resourceType/:id/_history/:versionId/:tab" element={<ResourceVersionPage />} />
             <Route path="/:resourceType/:id/_history/:versionId" element={<ResourceVersionPage />} />
             <Route path="/:resourceType/new" element={<CreateResourcePage />} />

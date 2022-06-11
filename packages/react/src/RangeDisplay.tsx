@@ -1,40 +1,27 @@
 import { Range } from '@medplum/fhirtypes';
 import React from 'react';
-import { QuantityDisplay } from './QuantityDisplay';
+import { formatQuantityString } from './QuantityDisplay';
 
 export interface RangeDisplayProps {
   value?: Range;
 }
 
 export function RangeDisplay(props: RangeDisplayProps): JSX.Element | null {
-  const value = props.value;
-  if (!value || (!value.low && !value.high)) {
-    return null;
+  return <>{formatRangeString(props.value)}</>;
+}
+
+export function formatRangeString(range: Range | undefined): string {
+  if (!range || (!range.low && !range.high)) {
+    return '';
   }
 
-  if (value.low && !value.high) {
-    return (
-      <span>
-        &gt;=&nbsp;
-        <QuantityDisplay value={value.low} />
-      </span>
-    );
+  if (range.low && !range.high) {
+    return `>= ${formatQuantityString(range.low)}`;
   }
 
-  if (!value.low && value.high) {
-    return (
-      <span>
-        &lt;=&nbsp;
-        <QuantityDisplay value={value.high} />
-      </span>
-    );
+  if (!range.low && range.high) {
+    return `<= ${formatQuantityString(range.high)}`;
   }
 
-  return (
-    <span>
-      <QuantityDisplay value={value.low} />
-      &nbsp;-&nbsp;
-      <QuantityDisplay value={value.high} />
-    </span>
-  );
+  return `${formatQuantityString(range.low)} - ${formatQuantityString(range.high)}`;
 }

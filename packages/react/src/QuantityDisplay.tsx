@@ -14,7 +14,11 @@ export function QuantityDisplay(props: QuantityDisplayProps): JSX.Element | null
   return <>{formatQuantityString(value)}</>;
 }
 
-export function formatQuantityString(quantity: Quantity): string {
+export function formatQuantityString(quantity: Quantity | undefined): string {
+  if (!quantity) {
+    return '';
+  }
+
   const result = [];
 
   if (quantity.comparator) {
