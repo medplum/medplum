@@ -12,10 +12,12 @@ import { Popup } from './Popup';
 import './Header.css';
 
 export interface HeaderProps {
-  onLogo?: () => void;
-  onProfile?: () => void;
-  onSignOut?: () => void;
-  config?: UserConfiguration;
+  readonly title?: string;
+  readonly bgColor?: string;
+  readonly onLogo?: () => void;
+  readonly onProfile?: () => void;
+  readonly onSignOut?: () => void;
+  readonly config?: UserConfiguration;
 }
 
 export function Header(props: HeaderProps): JSX.Element {
@@ -29,7 +31,7 @@ export function Header(props: HeaderProps): JSX.Element {
 
   return (
     <>
-      <header role="banner" data-testid="header">
+      <header role="banner" data-testid="header" style={{ background: props.bgColor }}>
         <div>
           <MedplumLink
             label="Toggle sidebar"
@@ -50,7 +52,7 @@ export function Header(props: HeaderProps): JSX.Element {
             </svg>
           </MedplumLink>
           <MedplumLink id="medplum-header-logo" testid="header-logo" onClick={props.onLogo}>
-            Medplum
+            {props.title || 'Medplum'}
           </MedplumLink>
           {context.profile && (
             <HeaderSearchInput

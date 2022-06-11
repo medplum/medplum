@@ -41,6 +41,13 @@ describe('Header', () => {
   test('Renders', () => {
     setup();
     expect(screen.getByTestId('header')).toBeInTheDocument();
+    expect(screen.getByText('Medplum')).toBeInTheDocument();
+  });
+
+  test('Custom title', () => {
+    setup({ title: 'Custom title' });
+    expect(screen.getByTestId('header')).toBeInTheDocument();
+    expect(screen.getByText('Custom title')).toBeInTheDocument();
   });
 
   test('Renders sidebar links', async () => {
