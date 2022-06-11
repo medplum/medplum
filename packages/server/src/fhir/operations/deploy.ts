@@ -58,6 +58,15 @@ function createPdf(docDefinition, tableLayouts, fonts) {
         italics: 'Helvetica-Oblique',
         bolditalics: 'Helvetica-BoldOblique',
       },
+      Roboto: {
+        normal: '/opt/fonts/Roboto/Roboto-Regular.ttf',
+        bold: '/opt/fonts/Roboto/Roboto-Medium.ttf',
+        italics: '/opt/fonts/Roboto/Roboto-Italic.ttf',
+        bolditalics: '/opt/fonts/Roboto/Roboto-MediumItalic.ttf'
+      },
+      Avenir: {
+        normal: '/opt/fonts/Avenir/Avenir.ttf'
+      }
     };
   }
   return new Promise((resolve, reject) => {

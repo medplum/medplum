@@ -18,6 +18,9 @@ mkdir -p tmp/nodejs/
 # Copy package.json into the temporary directory
 cp packages/bot-layer/package.json tmp/nodejs/
 
+# Copy the fonts
+cp -r packages/bot-layer/fonts tmp/
+
 # Move into the temporary directory
 cd tmp/nodejs/
 
@@ -29,7 +32,7 @@ npm install --omit=dev --omit=optional
 cd ..
 
 # Create the zip file
-zip -r medplum-bot-layer.zip .
+zip -r -q medplum-bot-layer.zip .
 
 # Publish the bot layer
 aws lambda publish-layer-version \
