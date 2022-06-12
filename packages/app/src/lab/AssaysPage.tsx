@@ -1,7 +1,7 @@
 import { capitalize } from '@medplum/core';
 import { ObservationDefinition, ObservationDefinitionQualifiedInterval } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, formatRangeString, RangeDisplay, useMedplum } from '@medplum/react';
-import React from 'react';
+import React, { Fragment } from 'react';
 
 export function AssaysPage(): JSX.Element {
   const medplum = useMedplum();
@@ -59,12 +59,12 @@ function IntervalsDisplay(props: IntervalsDisplayProps): JSX.Element | null {
     return (
       <>
         {genders.map((gender) => (
-          <>
+          <Fragment key={gender}>
             <div>
               <strong>{capitalize(gender)}</strong>
             </div>
             <IntervalsDisplay ranges={props.ranges?.filter((r) => r.gender === gender)} />
-          </>
+          </Fragment>
         ))}
       </>
     );
@@ -76,12 +76,12 @@ function IntervalsDisplay(props: IntervalsDisplayProps): JSX.Element | null {
     return (
       <>
         {ages.map((age) => (
-          <>
+          <Fragment key={age}>
             <div>
               <strong>{capitalize(age)}</strong>
             </div>
             <IntervalsDisplay ranges={props.ranges?.filter((r) => formatRangeString(r.age) === age)} />
-          </>
+          </Fragment>
         ))}
       </>
     );
@@ -89,8 +89,8 @@ function IntervalsDisplay(props: IntervalsDisplayProps): JSX.Element | null {
 
   return (
     <>
-      {ranges.map((range: ObservationDefinitionQualifiedInterval) => (
-        <table>
+      {ranges.map((range: ObservationDefinitionQualifiedInterval, index: number) => (
+        <table key={`range-${index}`}>
           <tbody>
             <tr>
               <td>{range.condition}</td>

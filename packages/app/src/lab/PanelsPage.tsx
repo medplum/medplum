@@ -14,7 +14,7 @@ export function PanelsPage(): JSX.Element {
           <th>Category</th>
           <th>Assay</th>
           {panels.map((panel) => (
-            <th>{panel.name}</th>
+            <th key={panel.id}>{panel.name}</th>
           ))}
         </tr>
       </thead>
@@ -28,7 +28,7 @@ export function PanelsPage(): JSX.Element {
               <CodeableConceptDisplay value={assay.code} />
             </td>
             {panels.map((panel) => (
-              <td>
+              <td key={panel.id}>
                 {panel.observationResultRequirement?.find((r) => r.reference?.includes(assay.id as string)) ? '✅' : ''}
               </td>
             ))}

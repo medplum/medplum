@@ -6,12 +6,7 @@ export interface QuantityDisplayProps {
 }
 
 export function QuantityDisplay(props: QuantityDisplayProps): JSX.Element | null {
-  const value = props.value;
-  if (!value) {
-    return null;
-  }
-
-  return <>{formatQuantityString(value)}</>;
+  return <>{formatQuantityString(props.value)}</>;
 }
 
 export function formatQuantityString(quantity: Quantity | undefined): string {
