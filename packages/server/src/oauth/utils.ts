@@ -308,6 +308,7 @@ export async function getAuthTokens(
     client_id: clientId,
     login_id: login.id as string,
     fhirUser: profile.reference,
+    aud: clientId,
     sub: userId,
     nonce: login.nonce as string,
     auth_time: (getDateProperty(login.authTime) as Date).getTime() / 1000,

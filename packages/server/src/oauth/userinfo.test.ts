@@ -1,17 +1,14 @@
-import { ClientApplication, ContactPoint } from '@medplum/fhirtypes';
+import { ContactPoint } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import { URL, URLSearchParams } from 'url';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
-import { createTestClient } from '../test.setup';
 
 const app = express();
-let client: ClientApplication;
 
 describe('OAuth2 UserInfo', () => {
   beforeAll(async () => {
@@ -20,7 +17,6 @@ describe('OAuth2 UserInfo', () => {
     await seedDatabase();
     await initApp(app);
     await initKeys(config);
-    client = await createTestClient();
   });
 
   afterAll(async () => {
@@ -28,37 +24,18 @@ describe('OAuth2 UserInfo', () => {
   });
 
   test('Get userinfo with profile email', async () => {
-    const params = new URLSearchParams({
-      response_type: 'code',
-      client_id: client.id as string,
-      redirect_uri: client.redirectUri as string,
+    const res = await request(app).post('/auth/login').type('json').send({
+      email: 'admin@example.com',
+      password: 'medplum_admin',
       scope: 'openid profile email phone address',
-      code_challenge: 'xyz',
-      code_challenge_method: 'plain',
     });
-    const res = await request(app)
-      .post('/oauth2/authorize?' + params.toString())
-      .type('form')
-      .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
-        nonce: 'asdf',
-        state: 'xyz',
-      });
-    expect(res.status).toBe(302);
-    expect(res.headers.location).toBeDefined();
+    expect(res.status).toBe(200);
 
-    const location = new URL(res.headers.location);
-    expect(location.searchParams.get('error')).toBeNull();
-
-    const res2 = await request(app)
-      .post('/oauth2/token')
-      .type('form')
-      .send({
-        grant_type: 'authorization_code',
-        code: location.searchParams.get('code'),
-        code_verifier: 'xyz',
-      });
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
     expect(res2.status).toBe(200);
     expect(res2.body.access_token).toBeDefined();
 
@@ -75,37 +52,18 @@ describe('OAuth2 UserInfo', () => {
   });
 
   test('Get userinfo with phone', async () => {
-    const params = new URLSearchParams({
-      response_type: 'code',
-      client_id: client.id as string,
-      redirect_uri: client.redirectUri as string,
+    const res = await request(app).post('/auth/login').type('json').send({
+      email: 'admin@example.com',
+      password: 'medplum_admin',
       scope: 'openid profile email phone address',
-      code_challenge: 'xyz',
-      code_challenge_method: 'plain',
     });
-    const res = await request(app)
-      .post('/oauth2/authorize?' + params.toString())
-      .type('form')
-      .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
-        nonce: 'asdf',
-        state: 'xyz',
-      });
-    expect(res.status).toBe(302);
-    expect(res.headers.location).toBeDefined();
+    expect(res.status).toBe(200);
 
-    const location = new URL(res.headers.location);
-    expect(location.searchParams.get('error')).toBeNull();
-
-    const res2 = await request(app)
-      .post('/oauth2/token')
-      .type('form')
-      .send({
-        grant_type: 'authorization_code',
-        code: location.searchParams.get('code'),
-        code_verifier: 'xyz',
-      });
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
     expect(res2.status).toBe(200);
     expect(res2.body.access_token).toBeDefined();
 
@@ -141,37 +99,18 @@ describe('OAuth2 UserInfo', () => {
   });
 
   test('Get userinfo with address', async () => {
-    const params = new URLSearchParams({
-      response_type: 'code',
-      client_id: client.id as string,
-      redirect_uri: client.redirectUri as string,
+    const res = await request(app).post('/auth/login').type('json').send({
+      email: 'admin@example.com',
+      password: 'medplum_admin',
       scope: 'openid profile email phone address',
-      code_challenge: 'xyz',
-      code_challenge_method: 'plain',
     });
-    const res = await request(app)
-      .post('/oauth2/authorize?' + params.toString())
-      .type('form')
-      .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
-        nonce: 'asdf',
-        state: 'xyz',
-      });
-    expect(res.status).toBe(302);
-    expect(res.headers.location).toBeDefined();
+    expect(res.status).toBe(200);
 
-    const location = new URL(res.headers.location);
-    expect(location.searchParams.get('error')).toBeNull();
-
-    const res2 = await request(app)
-      .post('/oauth2/token')
-      .type('form')
-      .send({
-        grant_type: 'authorization_code',
-        code: location.searchParams.get('code'),
-        code_verifier: 'xyz',
-      });
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
     expect(res2.status).toBe(200);
     expect(res2.body.access_token).toBeDefined();
 
@@ -201,37 +140,18 @@ describe('OAuth2 UserInfo', () => {
   });
 
   test('Get userinfo with only openid', async () => {
-    const params = new URLSearchParams({
-      response_type: 'code',
-      client_id: client.id as string,
-      redirect_uri: client.redirectUri as string,
+    const res = await request(app).post('/auth/login').type('json').send({
+      email: 'admin@example.com',
+      password: 'medplum_admin',
       scope: 'openid',
-      code_challenge: 'xyz',
-      code_challenge_method: 'plain',
     });
-    const res = await request(app)
-      .post('/oauth2/authorize?' + params.toString())
-      .type('form')
-      .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
-        nonce: 'asdf',
-        state: 'xyz',
-      });
-    expect(res.status).toBe(302);
-    expect(res.headers.location).toBeDefined();
+    expect(res.status).toBe(200);
 
-    const location = new URL(res.headers.location);
-    expect(location.searchParams.get('error')).toBeNull();
-
-    const res2 = await request(app)
-      .post('/oauth2/token')
-      .type('form')
-      .send({
-        grant_type: 'authorization_code',
-        code: location.searchParams.get('code'),
-        code_verifier: 'xyz',
-      });
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
     expect(res2.status).toBe(200);
     expect(res2.body.access_token).toBeDefined();
 

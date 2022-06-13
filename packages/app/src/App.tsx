@@ -17,6 +17,7 @@ import { FormPage } from './FormPage';
 import { HomePage } from './HomePage';
 import { AssaysPage } from './lab/AssaysPage';
 import { PanelsPage } from './lab/PanelsPage';
+import { OAuthPage } from './OAuthPage';
 import { RegisterPage } from './RegisterPage';
 import { ResetPasswordPage } from './ResetPasswordPage';
 import { ResourcePage } from './ResourcePage';
@@ -64,6 +65,7 @@ export function App(): JSX.Element {
         <Suspense fallback={<Loading />}>
           <Routes>
             <Route path="/signin" element={<SignInPage />} />
+            <Route path="/oauth" element={<OAuthPage />} />
             <Route path="/resetpassword" element={<ResetPasswordPage />} />
             <Route path="/setpassword/:id/:secret" element={<SetPasswordPage />} />
             <Route path="/register" element={<RegisterPage />} />

@@ -307,8 +307,8 @@ describe('Client', () => {
   test('Sign in with Google', async () => {
     const client = new MedplumClient(defaultOptions);
     const result1 = await client.startGoogleLogin({
-      clientId: 'google-client-id',
-      credential: 'google-credential',
+      googleClientId: 'google-client-id',
+      googleCredential: 'google-credential',
     });
     expect(result1).toBeDefined();
     expect(result1.login).toBeDefined();

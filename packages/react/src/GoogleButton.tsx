@@ -1,4 +1,4 @@
-import { GoogleCredentialResponse, LoginAuthenticationResponse } from '@medplum/core';
+import { GoogleCredentialResponse } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
 import { useMedplum } from './MedplumProvider';
 import { createScriptTag } from './utils';
@@ -15,13 +15,13 @@ interface GoogleApi {
 declare const google: GoogleApi;
 
 export interface GoogleButtonProps {
-  googleClientId?: string;
-  handleAuthResponse: (response: LoginAuthenticationResponse) => void;
+  readonly googleClientId?: string;
+  readonly handleGoogleCredential: (response: GoogleCredentialResponse) => void;
 }
 
 export function GoogleButton(props: GoogleButtonProps): JSX.Element | null {
   const medplum = useMedplum();
-  const { handleAuthResponse } = props;
+  const { handleGoogleCredential } = props;
   const googleClientId = getGoogleClientId(props.googleClientId);
   const parentRef = useRef<HTMLDivElement>(null);
   const [scriptLoaded, setScriptLoaded] = useState<boolean>(typeof google !== 'undefined');
@@ -37,7 +37,7 @@ export function GoogleButton(props: GoogleButtonProps): JSX.Element | null {
     if (!initialized) {
       google.accounts.id.initialize({
         client_id: googleClientId,
-        callback: (response: GoogleCredentialResponse) => medplum.startGoogleLogin(response).then(handleAuthResponse),
+        callback: handleGoogleCredential,
       });
       setInitialized(true);
     }
@@ -46,7 +46,7 @@ export function GoogleButton(props: GoogleButtonProps): JSX.Element | null {
       google.accounts.id.renderButton(parentRef.current, {});
       setButtonRendered(true);
     }
-  }, [medplum, googleClientId, initialized, scriptLoaded, parentRef, buttonRendered, handleAuthResponse]);
+  }, [medplum, googleClientId, initialized, scriptLoaded, parentRef, buttonRendered, handleGoogleCredential]);
 
   if (!googleClientId) {
     return null;

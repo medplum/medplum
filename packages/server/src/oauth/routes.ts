@@ -1,13 +1,11 @@
-import cookieParser from 'cookie-parser';
 import { Request, Response, Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { authorizeGetHandler, authorizePostHandler } from './authorize';
+import { authorizeGetHandler } from './authorize';
 import { authenticateToken } from './middleware';
 import { tokenHandler } from './token';
 import { userInfoHandler } from './userinfo';
 
 export const oauthRouter = Router();
-oauthRouter.use(cookieParser()); // lgtm [js/missing-token-validation]
 oauthRouter.use(
   rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -16,7 +14,6 @@ oauthRouter.use(
 );
 
 oauthRouter.get('/authorize', authorizeGetHandler);
-oauthRouter.post('/authorize', authorizePostHandler);
 oauthRouter.post('/token', tokenHandler);
 oauthRouter.get('/userinfo', authenticateToken, userInfoHandler);
 oauthRouter.post('/userinfo', authenticateToken, userInfoHandler);

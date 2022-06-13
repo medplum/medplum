@@ -19,15 +19,17 @@
   "adminClientId": "2a4b77f2-4d4e-43c6-9b01-330eb5ca772f",
   "maxJsonSize": "1mb",
   "maxUploadSize": "10mb",
+  "botLambdaRoleArn": "",
+  "botLambdaLayerName": "medplum-bot-layer",
   "database": {
-    "host": "host.docker.internal",
+    "host": "localhost",
     "port": 5432,
     "dbname": "medplum",
     "username": "medplum",
     "password": "medplum"
   },
   "redis": {
-    "host": "host.docker.internal",
+    "host": "localhost",
     "port": 6379,
     "password": "medplum"
   }

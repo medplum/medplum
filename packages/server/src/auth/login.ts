@@ -20,13 +20,13 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
 
   const [loginOutcome, login] = await tryLogin({
     authMethod: 'password',
-    clientId: req.body.clientId,
-    scope: req.body.scope,
+    clientId: req.body.clientId || undefined,
+    scope: req.body.scope || 'openid',
+    nonce: req.body.nonce || randomUUID(),
     codeChallenge: req.body.codeChallenge,
     codeChallengeMethod: req.body.codeChallengeMethod,
     email: req.body.email,
     password: req.body.password,
-    nonce: randomUUID(),
     remember: req.body.remember,
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),

@@ -63,38 +63,38 @@ describe('Google Auth', () => {
 
   test('Missing client ID', async () => {
     const res = await request(app).post('/auth/google').type('json').send({
-      clientId: '',
-      credential: 'admin@example.com',
+      googleClientId: '',
+      googleCredential: 'admin@example.com',
     });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
-    expect(res.body.issue[0].details.text).toBe('Missing clientId');
+    expect(res.body.issue[0].details.text).toBe('Missing googleClientId');
   });
 
   test('Invalid client ID', async () => {
     const res = await request(app).post('/auth/google').type('json').send({
-      clientId: '123',
-      credential: 'admin@example.com',
+      googleClientId: '123',
+      googleCredential: 'admin@example.com',
     });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
-    expect(res.body.issue[0].details.text).toBe('Invalid Google Client ID');
+    expect(res.body.issue[0].details.text).toBe('Invalid googleClientId');
   });
 
-  test('Missing credential', async () => {
+  test('Missing googleCredential', async () => {
     const res = await request(app).post('/auth/google').type('json').send({
-      clientId: getConfig().googleClientId,
-      credential: '',
+      googleClientId: getConfig().googleClientId,
+      googleCredential: '',
     });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
-    expect(res.body.issue[0].details.text).toBe('Missing credential');
+    expect(res.body.issue[0].details.text).toBe('Missing googleCredential');
   });
 
   test('Verification failed', async () => {
     const res = await request(app).post('/auth/google').type('json').send({
-      clientId: getConfig().googleClientId,
-      credential: 'invalid',
+      googleClientId: getConfig().googleClientId,
+      googleCredential: 'invalid',
     });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
@@ -103,8 +103,8 @@ describe('Google Auth', () => {
 
   test('Success', async () => {
     const res = await request(app).post('/auth/google').type('json').send({
-      clientId: getConfig().googleClientId,
-      credential: 'admin@example.com',
+      googleClientId: getConfig().googleClientId,
+      googleCredential: 'admin@example.com',
     });
     expect(res.status).toBe(200);
     expect(res.body.code).toBeDefined();
@@ -140,8 +140,8 @@ describe('Google Auth', () => {
     // Then try to login with Google auth
     // This should succeed
     const res2 = await request(app).post('/auth/google').type('json').send({
-      clientId: getConfig().googleClientId,
-      credential: email,
+      googleClientId: getConfig().googleClientId,
+      googleCredential: email,
     });
     expect(res2.status).toBe(200);
     expect(res2.body.code).toBeDefined();
@@ -178,8 +178,8 @@ describe('Google Auth', () => {
     // Try to login with the custom Google client
     // This should succeed
     const res2 = await request(app).post('/auth/google').type('json').send({
-      clientId: googleClientId,
-      credential: email,
+      googleClientId: googleClientId,
+      googleCredential: email,
     });
     expect(res2.status).toBe(200);
     expect(res2.body.code).toBeDefined();
