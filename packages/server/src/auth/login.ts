@@ -21,6 +21,7 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
   const [loginOutcome, login] = await tryLogin({
     authMethod: 'password',
     clientId: req.body.clientId || undefined,
+    projectId: req.body.projectId || undefined,
     scope: req.body.scope || 'openid',
     nonce: req.body.nonce || randomUUID(),
     codeChallenge: req.body.codeChallenge,

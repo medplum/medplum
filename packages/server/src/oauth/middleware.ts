@@ -7,30 +7,35 @@ import { MedplumAccessTokenClaims, verifyJwt } from './keys';
 import { getUserMemberships, timingSafeEqualStr } from './utils';
 
 export async function authenticateToken(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const [tokenType, token] = req.headers.authorization?.split(' ') ?? [];
-  if (!tokenType || !token) {
-    res.sendStatus(401);
-    return;
-  }
-
-  if (tokenType === 'Bearer') {
-    await authenticateBearerToken(res, next, token);
-  } else if (tokenType === 'Basic') {
-    await authenticateBasicAuth(res, next, token);
+  if (await authenticateTokenImpl(req, res)) {
+    next();
   } else {
     res.sendStatus(401);
-    return;
   }
 }
 
-async function authenticateBearerToken(res: Response, next: NextFunction, token: string): Promise<void> {
+export async function authenticateTokenImpl(req: Request, res: Response): Promise<boolean> {
+  const [tokenType, token] = req.headers.authorization?.split(' ') ?? [];
+  if (!tokenType || !token) {
+    return false;
+  }
+
+  if (tokenType === 'Bearer') {
+    return authenticateBearerToken(res, token);
+  } else if (tokenType === 'Basic') {
+    return authenticateBasicAuth(res, token);
+  } else {
+    return false;
+  }
+}
+
+async function authenticateBearerToken(res: Response, token: string): Promise<boolean> {
   try {
     const verifyResult = await verifyJwt(token);
     const claims = verifyResult.payload as MedplumAccessTokenClaims;
     const [loginOutcome, login] = await systemRepo.readResource<Login>('Login', claims.login_id);
     if (!isOk(loginOutcome) || !login || !login.membership || login.revoked) {
-      res.sendStatus(401);
-      return;
+      return false;
     }
 
     const [membershipOutcome, membership] = await systemRepo.readReference<ProjectMembership>(login.membership);
@@ -42,32 +47,27 @@ async function authenticateBearerToken(res: Response, next: NextFunction, token:
     res.locals.profile = claims.profile;
     res.locals.scope = claims.scope;
     res.locals.repo = await getRepoForLogin(login, membership);
-
-    next();
+    return true;
   } catch (err) {
     logger.error('verify error', err);
-    res.sendStatus(401);
-    return;
+    return false;
   }
 }
 
-async function authenticateBasicAuth(res: Response, next: NextFunction, token: string): Promise<void> {
+async function authenticateBasicAuth(res: Response, token: string): Promise<boolean> {
   const credentials = Buffer.from(token, 'base64').toString('ascii');
   const [username, password] = credentials.split(':');
   if (!username || !password) {
-    res.sendStatus(401);
-    return;
+    return false;
   }
 
   const [outcome, client] = await systemRepo.readResource<ClientApplication>('ClientApplication', username);
   if (!isOk(outcome) || !client) {
-    res.sendStatus(401);
-    return;
+    return false;
   }
 
   if (!timingSafeEqualStr(client.secret as string, password)) {
-    res.sendStatus(401);
-    return;
+    return false;
   }
 
   const login: Login = {
@@ -76,8 +76,7 @@ async function authenticateBasicAuth(res: Response, next: NextFunction, token: s
 
   const memberships = await getUserMemberships(createReference(client));
   if (memberships.length !== 1) {
-    res.sendStatus(401);
-    return;
+    return false;
   }
 
   const membership = memberships[0];
@@ -88,5 +87,5 @@ async function authenticateBasicAuth(res: Response, next: NextFunction, token: s
   res.locals.profile = getReferenceString(client);
   res.locals.scope = 'openid';
   res.locals.repo = await getRepoForLogin(login, membership);
-  next();
+  return true;
 }

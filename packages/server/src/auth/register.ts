@@ -8,8 +8,32 @@ import { pwnedPassword } from 'hibp';
 import { createClient } from '../admin/client';
 import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { logger } from '../logger';
-import { getAuthTokens, tryLogin } from '../oauth';
+import { authenticateTokenImpl, getAuthTokens, tryLogin } from '../oauth';
 import { createPatient, createPractitioner, createProjectMembership, verifyRecaptcha } from './utils';
+
+/*
+ * Possible registration flows:
+ * 1) New user, new project
+ * 2) Existing user, new project
+ * 3) New user, existing project
+ * 4) Existing user, existing project
+ *
+ * Registration is a multistep process:
+ * 1) Authenticate
+ *   a) Either as existing user or new user
+ *   b) Create a Login without project or profile assigned
+ * 2) Determine project
+ *   a) Either existing project or new project
+ *   b) If new project, create initial ClientApplication and ProjectMembership
+ *   c) If existing project, ensure the Project supports open registration
+ * 3) Create resources
+ *   a) Create new Practitioner or Patient
+ *   b) Create ProjectMembership
+ * 4) Login
+ *   a) Update the Login from step 1 with the project from step 2
+ *   b) Update the Login from step 1 with the profile from step 3
+ *   c) Return access tokens
+ */
 
 export interface RegisterRequest {
   readonly firstName: string;
@@ -44,6 +68,21 @@ export const registerValidators = [
  * @param res The HTTP response.
  */
 export async function registerHandler(req: Request, res: Response): Promise<void> {
+  if (req.headers.authorization) {
+    await registerAuthenticated(req, res);
+  } else {
+    await registerUnauthenticated(req, res);
+  }
+}
+
+async function registerAuthenticated(req: Request, res: Response): Promise<void> {
+  if (!(await authenticateTokenImpl(req, res))) {
+    res.sendStatus(401);
+    return;
+  }
+}
+
+async function registerUnauthenticated(req: Request, res: Response): Promise<void> {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     sendOutcome(res, invalidRequest(errors));
@@ -59,6 +98,8 @@ export async function registerHandler(req: Request, res: Response): Promise<void
     const result = await registerNew(req.body as RegisterRequest);
     const { email, password } = req.body;
     const scope = req.body.scope ?? 'launch/patient openid fhirUser offline_access user/*.*';
+
+    // TODO: Add project
     const [loginOutcome, login] = await tryLogin({
       authMethod: 'password',
       email: email,
