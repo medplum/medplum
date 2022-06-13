@@ -131,6 +131,26 @@ const config = {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
       },
+      algolia: {
+        // The application ID provided by Algolia
+        appId: '6A1DXS603N',
+
+        // Public API key: it is safe to commit it
+        apiKey: '75b991071ef4ef1145d63c0a4d0d4665',
+
+        indexName: 'medplum',
+
+        // Optional: see doc section below
+        contextualSearch: true,
+
+        // Optional: Algolia search parameters
+        searchParameters: {},
+
+        // Optional: path for search page that enabled by default (`false` to disable it)
+        searchPagePath: 'search',
+
+        //... other Algolia params
+      },
     }),
 };
 
