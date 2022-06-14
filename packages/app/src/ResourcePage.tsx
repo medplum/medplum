@@ -83,7 +83,6 @@ export function ResourcePage(): JSX.Element {
   const [error, setError] = useState<OperationOutcome | undefined>();
 
   const loadResource = useCallback(() => {
-    // function loadResource(): Promise<void> {
     setError(undefined);
     setLoading(true);
 
@@ -152,15 +151,10 @@ export function ResourcePage(): JSX.Element {
   }
 
   function onSubmit(newResource: Resource): void {
-    // medplum.updateResource(cleanResource(newResource)).then(loadResource).catch(setError);
     medplum
       .updateResource(cleanResource(newResource))
       .then(loadResource)
-      .then(() => {
-        toast.success('Success Notification !', {
-          position: toast.POSITION.TOP_CENTER,
-        });
-      })
+      .then(() => toast.success('Success'))
       .catch(setError);
   }
 

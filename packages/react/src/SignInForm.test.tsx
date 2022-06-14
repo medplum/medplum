@@ -49,6 +49,7 @@ function mockFetch(url: string, options: any): Promise<any> {
         ],
       };
     } else {
+      status = 400;
       result = {
         resourceType: 'OperationOutcome',
         issue: [
@@ -61,11 +62,13 @@ function mockFetch(url: string, options: any): Promise<any> {
       };
     }
   } else if (options.method === 'POST' && url.endsWith('auth/google')) {
+    status = 200;
     result = {
       login: '1',
       code: '1',
     };
   } else if (options.method === 'POST' && url.endsWith('auth/profile')) {
+    status = 200;
     result = {
       login: '1',
       code: '1',
@@ -111,6 +114,7 @@ function mockFetch(url: string, options: any): Promise<any> {
   };
 
   return Promise.resolve({
+    status,
     ok: status < 400,
     json: () => Promise.resolve(response),
   });

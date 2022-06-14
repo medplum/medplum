@@ -2,6 +2,7 @@ import {
   allOk,
   badRequest,
   getStatus,
+  isOk,
   LoginState,
   MedplumClient,
   notFound,
@@ -85,6 +86,10 @@ export class MockClient extends MedplumClient {
 
         if (clientOptions?.debug) {
           console.log('MockClient', JSON.stringify(response, null, 2));
+        }
+
+        if (response?.resourceType === 'OperationOutcome' && !isOk(response)) {
+          return Promise.reject(response);
         }
 
         return Promise.resolve({

@@ -8,7 +8,6 @@ export interface CodeEditorProps {
   className?: string;
   iframeRef?: React.RefObject<HTMLIFrameElement>;
   testId?: string;
-  onChange?: (value: string) => void;
 }
 
 export function CodeEditor(props: CodeEditorProps): JSX.Element {
