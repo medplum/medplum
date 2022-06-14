@@ -83,7 +83,7 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
         command: 'setValue',
         value: result,
       });
-      toast.success('Deployed');
+      toast.success('Success');
     } catch (err) {
       if (err && typeof err === 'object') {
         if ('errorMessage' in err) {
