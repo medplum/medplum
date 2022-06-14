@@ -1,8 +1,10 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import crypto from 'crypto';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { TextEncoder } from 'util';
 import { OAuthPage } from './OAuthPage';
 
 const medplum = new MockClient();
@@ -24,17 +26,49 @@ describe('OAuthPage', () => {
     });
   }
 
+  beforeAll(() => {
+    Object.defineProperty(global, 'TextEncoder', {
+      value: TextEncoder,
+    });
+
+    Object.defineProperty(global.self, 'crypto', {
+      value: crypto.webcrypto,
+    });
+  });
+
   test('Missing clientId', async () => {
     await setup('/oauth');
     expect(screen.queryByTestId('submit')).toBeNull();
   });
 
   test('Success', async () => {
-    await setup('/oauth?client_id=123');
+    Object.defineProperty(window, 'location', {
+      writable: true,
+      value: { assign: jest.fn() },
+    });
+
+    await setup(
+      '/oauth?client_id=123&redirect_uri=https://example.com/callback&scope=openid+profile&state=abc&nonce=xyz'
+    );
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('email'), {
+        target: { value: 'admin@example.com' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('password'), {
+        target: { value: 'password' },
+      });
+    });
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('submit'));
     });
+
+    await waitFor(() => expect(window.location.assign).toHaveBeenCalled());
+    expect(window.location.assign).toHaveBeenCalled();
   });
 
   test('Forgot password', async () => {

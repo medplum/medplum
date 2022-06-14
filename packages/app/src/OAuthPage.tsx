@@ -19,7 +19,7 @@ export function OAuthPage(): JSX.Element | null {
       }
     }
     redirectUrl.searchParams.set('code', code);
-    window.location.href = redirectUrl.toString();
+    window.location.assign(redirectUrl.toString());
   }
 
   return (

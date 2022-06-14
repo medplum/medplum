@@ -192,6 +192,33 @@ describe('SignInForm', () => {
     expect(success).toBe(true);
   });
 
+  test('Submit success with onCode', async () => {
+    let code: string | undefined = undefined;
+
+    await setup({
+      onCode: (c) => (code = c),
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('email'), {
+        target: { value: 'admin@example.com' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('password'), {
+        target: { value: 'admin' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('submit'));
+    });
+
+    await waitFor(() => expect(code).toBeDefined());
+    expect(code).toBeDefined();
+  });
+
   test('Submit success without callback', async () => {
     await setup({});
     expect(medplum.getProfile()).toBeUndefined();
