@@ -9,6 +9,9 @@ import {
   ProfileResource,
 } from '@medplum/core';
 import { Binary, Bundle, BundleEntry, Practitioner } from '@medplum/fhirtypes';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+/** @ts-ignore */
+import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import {
   BartSimpson,
   DifferentOrganization,
@@ -53,6 +56,19 @@ export class MockClient extends MedplumClient {
     super({
       baseUrl: 'https://example.com/',
       clientId: 'my-client-id',
+      createPdf: (
+        docDefinition: TDocumentDefinitions,
+        tableLayouts?: { [name: string]: CustomTableLayout },
+        fonts?: TFontDictionary | undefined
+      ) => {
+        if (clientOptions?.debug) {
+          console.log(`Mock Client: createPdf(`);
+          console.log(`  ${JSON.stringify(docDefinition, null, 2)},`);
+          console.log(`  ${JSON.stringify(tableLayouts, null, 2)},`);
+          console.log(`  ${JSON.stringify(fonts, null, 2)});`);
+        }
+        return Promise.resolve(new Blob());
+      },
       fetch: (url: string, options: any) => {
         const method = options.method || 'GET';
         const path = url.replace('https://example.com/', '');
@@ -106,7 +122,7 @@ export class MockClient extends MedplumClient {
   }
 
   createBinary(_data: any, filename: string, contentType: string): Promise<Binary> {
-    if (filename.endsWith('.exe')) {
+    if (filename?.endsWith('.exe')) {
       return Promise.reject(badRequest('Invalid file type'));
     }
 

@@ -153,6 +153,18 @@ describe('MockClient', () => {
     });
   });
 
+  test('Create PDF', async () => {
+    const client = new MockClient();
+    const result = await client.createPdf({ content: ['Hello World'] });
+    expect(result).toBeDefined();
+
+    console.log = jest.fn();
+    const client2 = new MockClient({ debug: true });
+    const result2 = await client2.createPdf({ content: ['Hello World'] });
+    expect(result2).toBeDefined();
+    expect(console.log).toHaveBeenCalledTimes(4);
+  });
+
   test('Delete resource', async () => {
     const client = new MockClient();
 
