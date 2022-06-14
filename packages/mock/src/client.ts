@@ -8,6 +8,7 @@ import {
   parseSearchDefinition,
   ProfileResource,
 } from '@medplum/core';
+import type { TFontDictionary, CustomTableLayout, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { Binary, Bundle, BundleEntry, Practitioner } from '@medplum/fhirtypes';
 import {
   BartSimpson,
@@ -53,6 +54,16 @@ export class MockClient extends MedplumClient {
     super({
       baseUrl: 'https://example.com/',
       clientId: 'my-client-id',
+      createPdf: (docDefinition: TDocumentDefinitions,
+        tableLayouts?: {
+        [name: string]: CustomTableLayout;
+    } | undefined,
+    fonts?: TFontDictionary | undefined) => {
+        if(clientOptions?.debug) {
+          console.log(`Mock Client: createPdf(${JSON.stringify(docDefinition, null, 2)})`);
+        }
+        return Promise.resolve(docDefinition);
+      },
       fetch: (url: string, options: any) => {
         const method = options.method || 'GET';
         const path = url.replace('https://example.com/', '');
