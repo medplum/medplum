@@ -3,8 +3,8 @@ table.medplum-table {
   width: 100%;
 }
 
-table.medplum-table th,
-table.medplum-table td {
+table.medplum-table > thead > tr > th,
+table.medplum-table > tbody > tr > td {
   border: 0.1px solid var(--medplum-gray-400);
   padding: 4px 6px;
 }

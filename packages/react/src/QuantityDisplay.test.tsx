@@ -16,4 +16,19 @@ describe('QuantityDisplay', () => {
     render(<QuantityDisplay value={{ comparator: '<', value: 1, unit: 'mg' }} />);
     expect(screen.getByText('< 1 mg')).toBeInTheDocument();
   });
+
+  test('Missing value', () => {
+    render(<QuantityDisplay value={{ unit: 'mg' }} />);
+    expect(screen.getByText('mg')).toBeInTheDocument();
+  });
+
+  test('Missing unit', () => {
+    render(<QuantityDisplay value={{ value: 123 }} />);
+    expect(screen.getByText('123')).toBeInTheDocument();
+  });
+
+  test('Percent spacing', () => {
+    render(<QuantityDisplay value={{ value: 50, unit: '%' }} />);
+    expect(screen.getByText('50%')).toBeInTheDocument();
+  });
 });
