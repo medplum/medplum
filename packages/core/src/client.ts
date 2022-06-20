@@ -815,7 +815,13 @@ export class MedplumClient extends EventTarget {
    */
   getCachedReference<T extends Resource>(reference: Reference<T>): T | undefined {
     const refString = reference.reference as string;
+    if (!refString) {
+      return undefined;
+    }
     const [resourceType, id] = refString.split('/');
+    if (!resourceType || !id) {
+      return undefined;
+    }
     return this.getCached(resourceType as ResourceType, id) as T | undefined;
   }
 
@@ -863,6 +869,9 @@ export class MedplumClient extends EventTarget {
       return new ReadablePromise(Promise.reject(new Error('Missing reference')));
     }
     const [resourceType, id] = refString.split('/');
+    if (!resourceType || !id) {
+      return new ReadablePromise(Promise.reject(new Error('Invalid reference')));
+    }
     return this.readResource(resourceType as ResourceType, id) as ReadablePromise<T>;
   }
 
