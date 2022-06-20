@@ -428,6 +428,10 @@ describe('Client', () => {
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
     expect(result.resourceType).toBe('Patient');
     expect(result.id).toBe('123');
+    expect(() => client.readReference({})).rejects.toThrow();
+    expect(() => client.readReference({ reference: '' })).rejects.toThrow();
+    expect(() => client.readReference({ reference: 'xyz' })).rejects.toThrow();
+    expect(() => client.readReference({ reference: 'xyz?abc' })).rejects.toThrow();
   });
 
   test('Read empty reference', async () => {
@@ -461,6 +465,10 @@ describe('Client', () => {
     expect(result.resourceType).toBe('Patient');
     expect(result.id).toBe('123');
     expect(client.getCachedReference(reference)).toBe(result);
+    expect(client.getCachedReference({})).toBeUndefined();
+    expect(client.getCachedReference({ reference: '' })).toBeUndefined();
+    expect(client.getCachedReference({ reference: 'xyz' })).toBeUndefined();
+    expect(client.getCachedReference({ reference: 'xyz?abc' })).toBeUndefined();
   });
 
   test('Read history', async () => {
