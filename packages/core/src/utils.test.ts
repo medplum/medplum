@@ -490,6 +490,35 @@ describe('Core Utils', () => {
     expect(findObservationInterval(def2, patient, 10)?.condition).toBe('H');
   });
 
+  test('findObservationInterval by category', () => {
+    const def: ObservationDefinition = {
+      resourceType: 'ObservationDefinition',
+      qualifiedInterval: [
+        {
+          category: 'absolute',
+          range: { low: { value: 1, unit: 'mg' }, high: { value: 3, unit: 'mg' } },
+        },
+        {
+          category: 'critical',
+          range: { low: { value: 1, unit: 'mg' }, high: { value: 3, unit: 'mg' } },
+        },
+        {
+          category: 'reference',
+          condition: 'N',
+          range: { low: { value: 1, unit: 'mg' }, high: { value: 3, unit: 'mg' } },
+        },
+      ],
+    };
+
+    const patient: Patient = {
+      resourceType: 'Patient',
+    };
+
+    expect(findObservationInterval(def, patient, 2, 'absolute')?.category).toBe('absolute');
+    expect(findObservationInterval(def, patient, 2, 'critical')?.category).toBe('critical');
+    expect(findObservationInterval(def, patient, 2, 'reference')?.category).toBe('reference');
+  });
+
   test('findObservationInterval with decimal precision', () => {
     const def: ObservationDefinition = {
       resourceType: 'ObservationDefinition',

@@ -522,12 +522,14 @@ export function setCodeBySystem(concept: CodeableConcept, system: string, code: 
 export function findObservationInterval(
   definition: ObservationDefinition,
   patient: Patient,
-  value: number
+  value: number,
+  category?: 'reference' | 'critical' | 'absolute'
 ): ObservationDefinitionQualifiedInterval | undefined {
   return definition.qualifiedInterval?.find(
     (interval) =>
       observationIntervalMatchesPatient(interval, patient) &&
-      observationIntervalMatchesValue(interval, value, definition.quantitativeDetails?.decimalPrecision)
+      observationIntervalMatchesValue(interval, value, definition.quantitativeDetails?.decimalPrecision) &&
+      (category === undefined || interval.category === category)
   );
 }
 
