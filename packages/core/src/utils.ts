@@ -1,13 +1,17 @@
 import {
   Attachment,
+  CodeableConcept,
   Device,
   Extension,
   Identifier,
+  ObservationDefinition,
+  ObservationDefinitionQualifiedInterval,
   Patient,
   Practitioner,
   QuestionnaireResponse,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
+  Range,
   Reference,
   RelatedPerson,
   Resource,
@@ -478,4 +482,182 @@ export function capitalize(word: string): string {
 
 export function isLowerCase(c: string): boolean {
   return c === c.toLowerCase();
+}
+
+/**
+ * Tries to find a code string for a given system within a given codeable concept.
+ * @param concept The codeable concept.
+ * @param system The system string.
+ * @returns The code if found; otherwise undefined.
+ */
+export function getCodeBySystem(concept: CodeableConcept, system: string): string | undefined {
+  return concept?.coding?.find((coding) => coding.system === system)?.code;
+}
+
+/**
+ * Sets a code for a given system within a given codeable concept.
+ * @param concept The codeable concept.
+ * @param system The system string.
+ * @param code The code value.
+ */
+export function setCodeBySystem(concept: CodeableConcept, system: string, code: string): void {
+  if (!concept.coding) {
+    concept.coding = [];
+  }
+  const coding = concept.coding?.find((c) => c.system === system);
+  if (coding) {
+    coding.code = code;
+  } else {
+    concept.coding?.push({ system, code });
+  }
+}
+
+/**
+ * Tries to find an observation interval for the given patient and value.
+ * @param definition The observation definition.
+ * @param patient The patient.
+ * @param value The observation value.
+ * @returns The observation interval if found; otherwise undefined.
+ */
+export function findObservationInterval(
+  definition: ObservationDefinition,
+  patient: Patient,
+  value: number,
+  category?: 'reference' | 'critical' | 'absolute'
+): ObservationDefinitionQualifiedInterval | undefined {
+  return definition.qualifiedInterval?.find(
+    (interval) =>
+      observationIntervalMatchesPatient(interval, patient) &&
+      observationIntervalMatchesValue(interval, value, definition.quantitativeDetails?.decimalPrecision) &&
+      (category === undefined || interval.category === category)
+  );
+}
+
+/**
+ * Returns true if the patient matches the observation interval.
+ * @param interval The observation interval.
+ * @param patient The patient.
+ * @returns True if the patient matches the observation interval.
+ */
+function observationIntervalMatchesPatient(
+  interval: ObservationDefinitionQualifiedInterval,
+  patient: Patient
+): boolean {
+  return observationIntervalMatchesGender(interval, patient) && observationIntervalMatchesAge(interval, patient);
+}
+
+/**
+ * Returns true if the patient gender matches the observation interval.
+ * @param interval The observation interval.
+ * @param patient The patient.
+ * @returns True if the patient gender matches the observation interval.
+ */
+function observationIntervalMatchesGender(interval: ObservationDefinitionQualifiedInterval, patient: Patient): boolean {
+  return !interval.gender || interval.gender === patient.gender;
+}
+
+/**
+ * Returns true if the patient age matches the observation interval.
+ * @param interval The observation interval.
+ * @param patient The patient.
+ * @returns True if the patient age matches the observation interval.
+ */
+function observationIntervalMatchesAge(interval: ObservationDefinitionQualifiedInterval, patient: Patient): boolean {
+  return !interval.age || matchesRange(calculateAge(patient.birthDate as string).years, interval.age);
+}
+
+/**
+ * Returns true if the value matches the observation interval.
+ * @param interval The observation interval.
+ * @param value The observation value.
+ * @param precision Optional precision in number of digits.
+ * @returns True if the value matches the observation interval.
+ */
+function observationIntervalMatchesValue(
+  interval: ObservationDefinitionQualifiedInterval,
+  value: number,
+  precision?: number
+): boolean {
+  return !!interval.range && matchesRange(value, interval.range, precision);
+}
+
+/**
+ * Returns true if the value is in the range accounting for precision.
+ * @param value The numeric value.
+ * @param range The numeric range.
+ * @param precision Optional precision in number of digits.
+ * @returns True if the value is within the range.
+ */
+export function matchesRange(value: number, range: Range, precision?: number): boolean {
+  return (
+    (range.low?.value === undefined || preciseGreaterThanOrEquals(value, range.low.value, precision)) &&
+    (range.high?.value === undefined || preciseLessThanOrEquals(value, range.high.value, precision))
+  );
+}
+
+/**
+ * Returns true if the two numbers are equal to the given precision.
+ * @param a The first number.
+ * @param b The second number.
+ * @param precision Optional precision in number of digits.
+ * @returns True if the two numbers are equal to the given precision.
+ */
+export function preciseEquals(a: number, b: number, precision?: number): boolean {
+  if (precision) {
+    return Math.abs(a - b) < Math.pow(10, -precision);
+  } else {
+    return a === b;
+  }
+}
+
+/**
+ * Returns true if the first number is less than the second number to the given precision.
+ * @param a The first number.
+ * @param b The second number.
+ * @param precision Optional precision in number of digits.
+ * @returns True if the first number is less than the second number to the given precision.
+ */
+export function preciseLessThan(a: number, b: number, precision?: number): boolean {
+  if (precision) {
+    return a < b && Math.abs(a - b) > Math.pow(10, -precision);
+  } else {
+    return a < b;
+  }
+}
+
+/**
+ * Returns true if the first number is greater than the second number to the given precision.
+ * @param a The first number.
+ * @param b The second number.
+ * @param precision Optional precision in number of digits.
+ * @returns True if the first number is greater than the second number to the given precision.
+ */
+export function preciseGreaterThan(a: number, b: number, precision?: number): boolean {
+  if (precision) {
+    return a > b && Math.abs(a - b) > Math.pow(10, -precision);
+  } else {
+    return a > b;
+  }
+}
+
+/**
+ * Returns true if the first number is less than or equal to the second number to the given precision.
+ * @param a The first number.
+ * @param b The second number.
+ * @param precision Optional precision in number of digits.
+ * @returns True if the first number is less than or equal to the second number to the given precision.
+ */
+export function preciseLessThanOrEquals(a: number, b: number, precision?: number): boolean {
+  return preciseLessThan(a, b, precision) || preciseEquals(a, b, precision);
+}
+
+/**
+ * Returns true if the first number is greater than or equal to the second number to the given precision.
+ * @param a The first number.
+ * @param b The second number.
+ * @param precision Optional precision in number of digits.
+ * @returns True if the first number is greater than or equal to the second number to the given precision.
+ */
+export function preciseGreaterThanOrEquals(a: number, b: number, precision?: number): boolean {
+  return preciseGreaterThan(a, b, precision) || preciseEquals(a, b, precision);
 }

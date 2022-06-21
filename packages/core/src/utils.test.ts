@@ -1,4 +1,4 @@
-import { Patient, Resource } from '@medplum/fhirtypes';
+import { CodeableConcept, ObservationDefinition, Patient, Resource } from '@medplum/fhirtypes';
 import {
   arrayBufferToBase64,
   arrayBufferToHex,
@@ -7,6 +7,8 @@ import {
   capitalize,
   createReference,
   deepEquals,
+  findObservationInterval,
+  getCodeBySystem,
   getDateProperty,
   getDisplayString,
   getExtensionValue,
@@ -17,6 +19,7 @@ import {
   isProfileResource,
   isUUID,
   resolveId,
+  setCodeBySystem,
   stringify,
 } from './utils';
 
@@ -420,5 +423,213 @@ describe('Core Utils', () => {
     expect(isUUID('00000000-0000-0000-0000-000000000000x')).toBe(false);
     expect(isUUID('9066a96e-cbcd-11ec-9d64-0242ac120002x')).toBe(false);
     expect(isUUID('a1b3c259-1c48-4fda-9805-fc518da00094x')).toBe(false);
+  });
+
+  test('getCodeBySystem', () => {
+    expect(getCodeBySystem({}, 'x')).toBe(undefined);
+    expect(getCodeBySystem({ coding: [] }, 'x')).toBe(undefined);
+    expect(getCodeBySystem({ coding: [{ system: 'y' }] }, 'x')).toBe(undefined);
+    expect(getCodeBySystem({ coding: [{ system: 'x' }] }, 'x')).toBe(undefined);
+    expect(getCodeBySystem({ coding: [{ system: 'x', code: '1' }] }, 'x')).toBe('1');
+    expect(getCodeBySystem({ coding: [{ system: 'y' }, { system: 'x', code: '1' }] }, 'x')).toBe('1');
+  });
+
+  test('setCodeBySystem', () => {
+    const c1: CodeableConcept = {};
+    setCodeBySystem(c1, 'x', '1');
+    expect(c1).toMatchObject({ coding: [{ system: 'x', code: '1' }] });
+
+    const c2: CodeableConcept = { coding: [] };
+    setCodeBySystem(c2, 'x', '1');
+    expect(c2).toMatchObject({ coding: [{ system: 'x', code: '1' }] });
+
+    const c3: CodeableConcept = { coding: [{ system: 'x', code: '2' }] };
+    setCodeBySystem(c3, 'x', '1');
+    expect(c3).toMatchObject({ coding: [{ system: 'x', code: '1' }] });
+
+    const c4: CodeableConcept = { coding: [{ system: 'y', code: '2' }] };
+    setCodeBySystem(c4, 'x', '1');
+    expect(c4).toMatchObject({
+      coding: [
+        { system: 'y', code: '2' },
+        { system: 'x', code: '1' },
+      ],
+    });
+  });
+
+  test('findObservationInterval', () => {
+    const def1: ObservationDefinition = {
+      resourceType: 'ObservationDefinition',
+    };
+
+    const def2: ObservationDefinition = {
+      resourceType: 'ObservationDefinition',
+      qualifiedInterval: [
+        { condition: 'L', range: { low: { value: 1, unit: 'mg' }, high: { value: 3, unit: 'mg' } } },
+        { condition: 'N', range: { low: { value: 4, unit: 'mg' }, high: { value: 6, unit: 'mg' } } },
+        { condition: 'H', range: { low: { value: 7, unit: 'mg' }, high: { value: 10, unit: 'mg' } } },
+      ],
+    };
+
+    const patient: Patient = {
+      resourceType: 'Patient',
+    };
+
+    expect(findObservationInterval(def1, patient, 0)).toBe(undefined);
+    expect(findObservationInterval(def2, patient, 0)).toBe(undefined);
+
+    expect(findObservationInterval(def2, patient, 1)?.condition).toBe('L');
+    expect(findObservationInterval(def2, patient, 2)?.condition).toBe('L');
+    expect(findObservationInterval(def2, patient, 3)?.condition).toBe('L');
+    expect(findObservationInterval(def2, patient, 4)?.condition).toBe('N');
+    expect(findObservationInterval(def2, patient, 5)?.condition).toBe('N');
+    expect(findObservationInterval(def2, patient, 6)?.condition).toBe('N');
+    expect(findObservationInterval(def2, patient, 7)?.condition).toBe('H');
+    expect(findObservationInterval(def2, patient, 8)?.condition).toBe('H');
+    expect(findObservationInterval(def2, patient, 9)?.condition).toBe('H');
+    expect(findObservationInterval(def2, patient, 10)?.condition).toBe('H');
+  });
+
+  test('findObservationInterval by category', () => {
+    const def: ObservationDefinition = {
+      resourceType: 'ObservationDefinition',
+      qualifiedInterval: [
+        {
+          category: 'absolute',
+          range: { low: { value: 1, unit: 'mg' }, high: { value: 3, unit: 'mg' } },
+        },
+        {
+          category: 'critical',
+          range: { low: { value: 1, unit: 'mg' }, high: { value: 3, unit: 'mg' } },
+        },
+        {
+          category: 'reference',
+          condition: 'N',
+          range: { low: { value: 1, unit: 'mg' }, high: { value: 3, unit: 'mg' } },
+        },
+      ],
+    };
+
+    const patient: Patient = {
+      resourceType: 'Patient',
+    };
+
+    expect(findObservationInterval(def, patient, 2, 'absolute')?.category).toBe('absolute');
+    expect(findObservationInterval(def, patient, 2, 'critical')?.category).toBe('critical');
+    expect(findObservationInterval(def, patient, 2, 'reference')?.category).toBe('reference');
+  });
+
+  test('findObservationInterval with decimal precision', () => {
+    const def: ObservationDefinition = {
+      resourceType: 'ObservationDefinition',
+      quantitativeDetails: {
+        decimalPrecision: 1,
+      },
+      qualifiedInterval: [
+        { condition: 'L', range: { low: { value: 1.0, unit: 'mg' }, high: { value: 1.9, unit: 'mg' } } },
+        { condition: 'N', range: { low: { value: 2.0, unit: 'mg' }, high: { value: 3.0, unit: 'mg' } } },
+        { condition: 'H', range: { low: { value: 3.1, unit: 'mg' }, high: { value: 4.0, unit: 'mg' } } },
+      ],
+    };
+
+    const patient: Patient = {
+      resourceType: 'Patient',
+    };
+
+    expect(findObservationInterval(def, patient, 0.89)?.condition).toBeUndefined();
+    expect(findObservationInterval(def, patient, 0.91)?.condition).toBe('L');
+    expect(findObservationInterval(def, patient, 0.99)?.condition).toBe('L');
+    expect(findObservationInterval(def, patient, 1.0)?.condition).toBe('L');
+    expect(findObservationInterval(def, patient, 1.9)?.condition).toBe('L');
+    expect(findObservationInterval(def, patient, 2.0)?.condition).toBe('N');
+    expect(findObservationInterval(def, patient, 2.5)?.condition).toBe('N');
+    expect(findObservationInterval(def, patient, 3.0)?.condition).toBe('N');
+    expect(findObservationInterval(def, patient, 3.1)?.condition).toBe('H');
+    expect(findObservationInterval(def, patient, 4.0)?.condition).toBe('H');
+    expect(findObservationInterval(def, patient, 5.0)?.condition).toBeUndefined();
+  });
+
+  test('findObservationInterval by gender and age', () => {
+    const def: ObservationDefinition = {
+      resourceType: 'ObservationDefinition',
+      qualifiedInterval: [
+        {
+          gender: 'male',
+          age: { high: { value: 25, unit: 'years' } },
+          condition: 'L',
+          range: { low: { value: 1, unit: 'mg' }, high: { value: 2, unit: 'mg' } },
+        },
+        {
+          gender: 'male',
+          age: { high: { value: 25, unit: 'years' } },
+          condition: 'N',
+          range: { low: { value: 3, unit: 'mg' }, high: { value: 4, unit: 'mg' } },
+        },
+        {
+          gender: 'male',
+          age: { low: { value: 26, unit: 'years' } },
+          condition: 'L',
+          range: { low: { value: 5, unit: 'mg' }, high: { value: 6, unit: 'mg' } },
+        },
+        {
+          gender: 'male',
+          age: { low: { value: 26, unit: 'years' } },
+          condition: 'N',
+          range: { low: { value: 7, unit: 'mg' }, high: { value: 8, unit: 'mg' } },
+        },
+        {
+          gender: 'female',
+          age: { high: { value: 25, unit: 'years' } },
+          condition: 'L',
+          range: { low: { value: 1, unit: 'mg' }, high: { value: 2, unit: 'mg' } },
+        },
+        {
+          gender: 'female',
+          age: { high: { value: 25, unit: 'years' } },
+          condition: 'N',
+          range: { low: { value: 3, unit: 'mg' }, high: { value: 4, unit: 'mg' } },
+        },
+        {
+          gender: 'female',
+          age: { low: { value: 26, unit: 'years' } },
+          condition: 'L',
+          range: { low: { value: 5, unit: 'mg' }, high: { value: 6, unit: 'mg' } },
+        },
+        {
+          gender: 'female',
+          age: { low: { value: 26, unit: 'years' } },
+          condition: 'N',
+          range: { low: { value: 7, unit: 'mg' }, high: { value: 8, unit: 'mg' } },
+        },
+      ],
+    };
+
+    const getBirthDate = (age: number): string => {
+      const date = new Date();
+      date.setFullYear(date.getFullYear() - age);
+      return date.toISOString().substring(0, 10);
+    };
+
+    const homer: Patient = {
+      resourceType: 'Patient',
+      gender: 'male',
+      birthDate: getBirthDate(50),
+    };
+
+    const marge: Patient = {
+      resourceType: 'Patient',
+      gender: 'female',
+      birthDate: getBirthDate(50),
+    };
+
+    const bart: Patient = {
+      resourceType: 'Patient',
+      gender: 'male',
+      birthDate: getBirthDate(15),
+    };
+
+    expect(findObservationInterval(def, homer, 7)?.condition).toBe('N');
+    expect(findObservationInterval(def, marge, 7)?.condition).toBe('N');
+    expect(findObservationInterval(def, bart, 3)?.condition).toBe('N');
   });
 });
