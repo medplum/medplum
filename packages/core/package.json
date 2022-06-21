@@ -1,6 +1,6 @@
 {
   "name": "@medplum/core",
-  "version": "0.9.12",
+  "version": "0.9.13",
   "description": "Medplum TS/JS Library",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -17,7 +17,7 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "0.9.12"
+    "@medplum/fhirtypes": "0.9.13"
   },
   "peerDependencies": {
     "pdfmake": "0.2.5"
