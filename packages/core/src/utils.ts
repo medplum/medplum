@@ -504,7 +504,7 @@ export function setCodeBySystem(concept: CodeableConcept, system: string, code: 
   if (!concept.coding) {
     concept.coding = [];
   }
-  const coding = concept.coding?.find((coding) => coding.system === system);
+  const coding = concept.coding?.find((c) => c.system === system);
   if (coding) {
     coding.code = code;
   } else {
