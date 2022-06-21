@@ -599,7 +599,7 @@ describe('Core Utils', () => {
       birthDate: getBirthDate(15),
     };
 
-    expect(findObservationInterval(def, homer, 5)?.condition).toBe('N');
+    expect(findObservationInterval(def, homer, 7)?.condition).toBe('N');
     expect(findObservationInterval(def, marge, 7)?.condition).toBe('N');
     expect(findObservationInterval(def, bart, 3)?.condition).toBe('N');
   });
