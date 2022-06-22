@@ -8,7 +8,6 @@ const extensions = ['.ts'];
 
 const globals = {
   '@medplum/core': 'medplum.core',
-  crypto: 'crypto',
 };
 
 export default {

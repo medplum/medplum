@@ -1,6 +1,5 @@
 import { evalFhirPath, Filter, Operator, SearchRequest } from '@medplum/core';
 import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 
 export class MemoryRepository {
   readonly #resources: Record<string, Record<string, Resource>>;
@@ -85,7 +84,15 @@ export class MemoryRepository {
   }
 
   private generateId(): string {
-    return randomUUID();
+    // Cross platform random UUID generator
+    // Note that this is not intended for production use, but rather for testing
+    // This should be replaced when crypto.randomUUID is fully supported
+    // https://stackoverflow.com/revisions/2117523/28
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
   }
 }
 
