@@ -6,6 +6,11 @@ import { terser } from 'rollup-plugin-terser';
 
 const extensions = ['.ts'];
 
+const globals = {
+  '@medplum/core': 'medplum.core',
+  crypto: 'crypto',
+};
+
 export default {
   input: 'src/index.ts',
   output: [
@@ -25,9 +30,7 @@ export default {
       format: 'umd',
       name: 'medplum.mock',
       sourcemap: true,
-      globals: {
-        '@medplum/core': 'medplum.core',
-      },
+      globals,
     },
     {
       file: 'dist/cjs/index.min.js',
@@ -35,9 +38,7 @@ export default {
       name: 'medplum.mock',
       plugins: [terser()],
       sourcemap: true,
-      globals: {
-        '@medplum/core': 'medplum.core',
-      },
+      globals,
     },
   ],
   plugins: [
@@ -53,5 +54,5 @@ export default {
       },
     },
   ],
-  external: ['@medplum/core'],
+  external: Object.keys(globals),
 };
