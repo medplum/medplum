@@ -540,13 +540,73 @@ describe('Batch', () => {
     expect(results[0].response?.status).toEqual('400');
   });
 
-  test('Process batch missing request', async () => {
+  test('Process batch patch', async () => {
+    const [patientOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+    });
+    assertOk(patientOutcome, patient);
+
     const [outcome, bundle] = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
         {
-          // Empty entry
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + patient?.id,
+          },
+          resource: {
+            resourceType: 'Binary',
+            contentType: 'application/json-patch+json',
+            data: Buffer.from(JSON.stringify([{ op: 'add', path: '/active', value: true }]), 'utf8').toString('base64'),
+          },
+        },
+      ],
+    });
+
+    expect(isOk(outcome)).toBe(true);
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
+
+    const results = bundle?.entry as BundleEntry[];
+    expect(results.length).toEqual(1);
+    expect(results[0].response?.status).toEqual('200');
+  });
+
+  test('Process batch patch invalid url', async () => {
+    const [outcome, bundle] = await processBatch(repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'PATCH',
+            url: 'Patient',
+          },
+        },
+      ],
+    });
+
+    expect(isOk(outcome)).toBe(true);
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
+
+    const results = bundle?.entry as BundleEntry[];
+    expect(results.length).toEqual(1);
+    expect(results[0].response?.status).toEqual('404');
+    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual('Not found');
+  });
+
+  test('Process batch patch missing resource', async () => {
+    const [outcome, bundle] = await processBatch(repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + randomUUID(),
+          },
         },
       ],
     });
@@ -559,7 +619,65 @@ describe('Batch', () => {
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
-      'Missing entry.request'
+      'Missing entry.resource'
+    );
+  });
+
+  test('Process batch patch wrong pach type', async () => {
+    const [outcome, bundle] = await processBatch(repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + randomUUID(),
+          },
+          resource: {
+            resourceType: 'Patient',
+          },
+        },
+      ],
+    });
+
+    expect(isOk(outcome)).toBe(true);
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
+
+    const results = bundle?.entry as BundleEntry[];
+    expect(results.length).toEqual(1);
+    expect(results[0].response?.status).toEqual('400');
+    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+      'Patch resource must be a Binary'
+    );
+  });
+
+  test('Process batch patch wrong pach type', async () => {
+    const [outcome, bundle] = await processBatch(repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + randomUUID(),
+          },
+          resource: {
+            resourceType: 'Binary',
+          },
+        },
+      ],
+    });
+
+    expect(isOk(outcome)).toBe(true);
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
+
+    const results = bundle?.entry as BundleEntry[];
+    expect(results.length).toEqual(1);
+    expect(results[0].response?.status).toEqual('400');
+    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+      'Missing entry.resource.data'
     );
   });
 
@@ -612,6 +730,29 @@ describe('Batch', () => {
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('404');
+  });
+
+  test('Process batch missing request', async () => {
+    const [outcome, bundle] = await processBatch(repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          // Empty entry
+        },
+      ],
+    });
+
+    expect(isOk(outcome)).toBe(true);
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
+
+    const results = bundle?.entry as BundleEntry[];
+    expect(results.length).toEqual(1);
+    expect(results[0].response?.status).toEqual('400');
+    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+      'Missing entry.request'
+    );
   });
 
   test('Process batch missing request.method', async () => {
