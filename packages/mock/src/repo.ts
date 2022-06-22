@@ -1,5 +1,6 @@
 import { evalFhirPath, Filter, Operator, SearchRequest } from '@medplum/core';
 import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 
 export class MemoryRepository {
   readonly #resources: Record<string, Record<string, Resource>>;
@@ -84,7 +85,7 @@ export class MemoryRepository {
   }
 
   private generateId(): string {
-    return Date.now().toString(36);
+    return randomUUID();
   }
 }
 
