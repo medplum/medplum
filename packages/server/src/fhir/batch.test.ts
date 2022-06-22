@@ -563,6 +563,62 @@ describe('Batch', () => {
     );
   });
 
+  test('Process batch patch', async () => {
+    const [patientOutcome, patient] = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+    });
+    assertOk(patientOutcome, patient);
+
+    const [outcome, bundle] = await processBatch(repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + patient?.id,
+          },
+          resource: {
+            resourceType: 'Binary',
+            contentType: 'application/json-patch+json',
+            data: Buffer.from(JSON.stringify([{ op: 'add', path: '/active', value: true }]), 'utf8').toString('base64'),
+          },
+        },
+      ],
+    });
+
+    expect(isOk(outcome)).toBe(true);
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
+
+    const results = bundle?.entry as BundleEntry[];
+    expect(results.length).toEqual(1);
+    expect(results[0].response?.status).toEqual('200');
+  });
+
+  test('Process batch patch missing resource', async () => {
+    const [outcome, bundle] = await processBatch(repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + randomUUID(),
+          },
+        },
+      ],
+    });
+
+    expect(isOk(outcome)).toBe(true);
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
+
+    const results = bundle?.entry as BundleEntry[];
+    expect(results.length).toEqual(1);
+    expect(results[0].response?.status).toEqual('400');
+  });
+
   test('Process batch delete', async () => {
     const [patientOutcome, patient] = await repo.createResource<Patient>({
       resourceType: 'Patient',

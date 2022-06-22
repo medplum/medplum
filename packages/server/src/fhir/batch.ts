@@ -1,5 +1,6 @@
 import { allOk, badRequest, getReferenceString, getStatus, isOk, notFound } from '@medplum/core';
 import { Bundle, BundleEntry, OperationOutcome, Resource } from '@medplum/fhirtypes';
+import { Operation } from 'fast-json-patch';
 import { URL } from 'url';
 import { Repository, RepositoryResult } from './repo';
 import { parseSearchUrl } from './search';
@@ -101,6 +102,9 @@ class BatchProcessor {
       case 'PUT':
         return this.#processPut(entry, url);
 
+      case 'PATCH':
+        return this.#processPatch(entry, url);
+
       case 'DELETE':
         return this.#processDelete(url);
 
@@ -142,7 +146,6 @@ class BatchProcessor {
 
   /**
    * Process a batch read request.
-   * @param repo The FHIR respostory.
    * @param resourceType The FHIR resource type.
    * @param id The FHIR resource ID.
    * @returns The bundle entry response.
@@ -154,7 +157,6 @@ class BatchProcessor {
 
   /**
    * Process a batch read history request.
-   * @param repo The FHIR respostory.
    * @param resourceType The FHIR resource type.
    * @param id The FHIR resource ID.
    * @returns The bundle entry response.
@@ -259,6 +261,47 @@ class BatchProcessor {
       return buildBundleResponse(badRequest('Missing entry.resource'));
     }
     const [outcome, result] = await this.repo.updateResource(resource);
+    return buildBundleResponse(outcome, result);
+  }
+
+  /**
+   * Process a batch PATCH request.
+   * This dispatches to patch resource, etc.
+   * @param entry The bundle entry.
+   * @param url The entry request URL.
+   * @returns The bundle entry response.
+   */
+  async #processPatch(entry: BundleEntry, url: URL): Promise<BundleEntry> {
+    const path = url.pathname.split('/');
+    if (path.length === 3) {
+      return this.#processPatchResource(path[1], path[2], entry.resource);
+    }
+    return buildBundleResponse(notFound);
+  }
+
+  /**
+   * Process a batch patch request.
+   * @param resourceType The FHIR resource type.
+   * @param id The FHIR resource ID.
+   * @param patchResource The FHIR resource.
+   * @returns The bundle entry response.
+   */
+  async #processPatchResource(
+    resourceType: string,
+    id: string,
+    patchResource: Resource | undefined
+  ): Promise<BundleEntry> {
+    if (!patchResource) {
+      return buildBundleResponse(badRequest('Missing entry.resource'));
+    }
+    if (patchResource.resourceType !== 'Binary') {
+      return buildBundleResponse(badRequest('Patch resource must be a Binary'));
+    }
+    if (!patchResource.data) {
+      return buildBundleResponse(badRequest('Missing entry.resource.data'));
+    }
+    const patch: Operation[] = JSON.parse(Buffer.from(patchResource.data, 'base64').toString('utf8'));
+    const [outcome, result] = await this.repo.patchResource(resourceType, id, patch);
     return buildBundleResponse(outcome, result);
   }
 
