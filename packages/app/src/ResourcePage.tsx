@@ -35,6 +35,7 @@ import {
 } from '@medplum/react';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { BotEditor } from './BotEditor';
 import { PatientHeader } from './PatientHeader';
 import { QuickServiceRequests } from './QuickServiceRequests';
@@ -82,7 +83,6 @@ export function ResourcePage(): JSX.Element {
   const [error, setError] = useState<OperationOutcome | undefined>();
 
   const loadResource = useCallback(() => {
-    // function loadResource(): Promise<void> {
     setError(undefined);
     setLoading(true);
 
@@ -151,7 +151,11 @@ export function ResourcePage(): JSX.Element {
   }
 
   function onSubmit(newResource: Resource): void {
-    medplum.updateResource(cleanResource(newResource)).then(loadResource).catch(setError);
+    medplum
+      .updateResource(cleanResource(newResource))
+      .then(loadResource)
+      .then(() => toast.success('Success'))
+      .catch(setError);
   }
 
   function onStatusChange(status: string): void {

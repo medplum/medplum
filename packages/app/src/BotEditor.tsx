@@ -1,6 +1,7 @@
-import { Bot } from '@medplum/fhirtypes';
+import { Bot, OperationOutcome } from '@medplum/fhirtypes';
 import { Button, useMedplum } from '@medplum/react';
 import React, { useRef } from 'react';
+import { toast } from 'react-toastify';
 import { BotRunner } from './BotRunner';
 import { CodeEditor } from './CodeEditor';
 import { sendCommand } from './utils';
@@ -31,41 +32,69 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
   }
 
   async function saveBot(): Promise<void> {
-    const code = await getCode();
-    medplum.patchResource('Bot', bot.id as string, [
-      {
-        op: 'replace',
-        path: '/code',
-        value: code,
-      },
-    ]);
+    try {
+      const code = await getCode();
+      await medplum.patchResource('Bot', bot.id as string, [
+        {
+          op: 'replace',
+          path: '/code',
+          value: code,
+        },
+      ]);
+      toast.success('Saved');
+    } catch (err) {
+      toast.error((err as OperationOutcome).issue?.[0]?.details?.text);
+    }
   }
 
   async function simulateBot(): Promise<void> {
-    const code = await getCodeOutput();
-    const input = await getSampleInput();
-    const result = await sendCommand(outputFrameRef.current as HTMLIFrameElement, {
-      command: 'execute',
-      baseUrl: medplum.getBaseUrl(),
-      accessToken: medplum.getAccessToken(),
-      code,
-      input,
-    });
-    console.log(result);
+    try {
+      const code = await getCodeOutput();
+      const input = await getSampleInput();
+      const result = await sendCommand(outputFrameRef.current as HTMLIFrameElement, {
+        command: 'execute',
+        baseUrl: medplum.getBaseUrl(),
+        accessToken: medplum.getAccessToken(),
+        code,
+        input,
+      });
+      console.log(result);
+      toast.success('Done');
+    } catch (err) {
+      toast.error((err as OperationOutcome).issue?.[0]?.details?.text);
+    }
   }
 
   async function deployBot(): Promise<void> {
-    const code = await getCodeOutput();
-    medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$deploy'), { code });
+    try {
+      const code = await getCodeOutput();
+      await medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$deploy'), { code });
+      toast.success('Deployed');
+    } catch (err) {
+      toast.error((err as OperationOutcome).issue?.[0]?.details?.text);
+    }
   }
 
   async function executeBot(): Promise<void> {
-    const input = await getSampleInput();
-    const result = await medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$execute'), input);
-    await sendCommand(outputFrameRef.current as HTMLIFrameElement, {
-      command: 'setValue',
-      value: result,
-    });
+    try {
+      const input = await getSampleInput();
+      const result = await medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$execute'), input);
+      await sendCommand(outputFrameRef.current as HTMLIFrameElement, {
+        command: 'setValue',
+        value: result,
+      });
+      toast.success('Success');
+    } catch (err) {
+      if (err && typeof err === 'object') {
+        if ('errorMessage' in err) {
+          toast.error((err as any).errorMessage);
+        } else {
+          toast.error((err as OperationOutcome).issue?.[0]?.details?.text);
+        }
+      } else {
+        toast.error(JSON.stringify(err));
+      }
+    }
   }
 
   return (
@@ -77,7 +106,6 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
         module="commonjs"
         testId="code-frame"
         defaultValue={props.bot.code || ''}
-        onChange={console.log}
       />
       <CodeEditor
         iframeRef={inputFrameRef}
@@ -92,7 +120,6 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
           null,
           2
         )}
-        onChange={console.log}
       />
       <BotRunner iframeRef={outputFrameRef} className="medplum-bot-output-frame" testId="output-frame" />
       <div className="medplum-bot-buttons">

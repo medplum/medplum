@@ -27,7 +27,6 @@ import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { Hl7Message } from './hl7';
 import { parseJWTPayload } from './jwt';
-import { isOk } from './outcomes';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
 import { createSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
@@ -1416,8 +1415,8 @@ export class MedplumClient extends EventTarget {
     }
 
     const obj = await response.json();
-    if (obj?.resourceType === 'OperationOutcome' && !isOk(obj)) {
-      return Promise.reject(obj);
+    if (response.status >= 400) {
+      throw obj;
     }
     return obj;
   }

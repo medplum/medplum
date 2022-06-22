@@ -1,9 +1,18 @@
+import { badRequest } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { ResourcePage } from './ResourcePage';
+
+jest.mock('react-toastify', () => ({
+  toast: {
+    success: jest.fn(),
+    error: jest.fn(),
+  },
+}));
 
 let medplum: MockClient;
 
@@ -37,6 +46,11 @@ describe('BotEditor', () => {
     };
   });
 
+  beforeEach(() => {
+    (toast.success as unknown as jest.Mock).mockClear();
+    (toast.error as unknown as jest.Mock).mockClear();
+  });
+
   test('Bot editor', async () => {
     await setup('/Bot/123/editor');
     await waitFor(() => screen.getByText('Editor'));
@@ -51,7 +65,7 @@ describe('BotEditor', () => {
     });
   });
 
-  test('Save', async () => {
+  test('Save success', async () => {
     await setup('/Bot/123/editor');
     await waitFor(() => screen.getByText('Save'));
 
@@ -67,10 +81,34 @@ describe('BotEditor', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
     });
+
+    expect(toast.success).toHaveBeenCalledWith('Saved');
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
-  test('Simulate', async () => {
-    expect.assertions(6);
+  test('Save error', async () => {
+    await setup('/Bot/123/editor');
+    await waitFor(() => screen.getByText('Save'));
+
+    // Mock the code frame
+    (screen.getByTestId<HTMLIFrameElement>('code-frame').contentWindow as Window).postMessage = (
+      _message: any,
+      _targetOrigin: any,
+      transfer?: Transferable[]
+    ) => {
+      (transfer?.[0] as MessagePort).postMessage({ error: badRequest('Error') });
+    };
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(toast.error).toHaveBeenCalledWith('Error');
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  test('Simulate success', async () => {
+    expect.assertions(8);
 
     await setup('/Bot/123/editor');
     await waitFor(() => screen.getByText('Simulate'));
@@ -111,9 +149,59 @@ describe('BotEditor', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Simulate'));
     });
+
+    expect(toast.success).toHaveBeenCalledWith('Done');
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
-  test('Deploy', async () => {
+  test('Simulate error', async () => {
+    expect.assertions(8);
+
+    await setup('/Bot/123/editor');
+    await waitFor(() => screen.getByText('Simulate'));
+
+    // Mock the code frame
+    (screen.getByTestId<HTMLIFrameElement>('code-frame').contentWindow as Window).postMessage = (
+      _message: any,
+      _targetOrigin: any,
+      transfer?: Transferable[]
+    ) => {
+      (transfer?.[0] as MessagePort).postMessage({ result: 'console.log("foo");' });
+    };
+
+    // Mock the input frame
+    (screen.getByTestId<HTMLIFrameElement>('input-frame').contentWindow as Window).postMessage = (
+      _message: any,
+      _targetOrigin: any,
+      transfer?: Transferable[]
+    ) => {
+      (transfer?.[0] as MessagePort).postMessage({ result: '{"resourceType":"Patient"}' });
+    };
+
+    // Mock the bot runner frame
+    (screen.getByTestId<HTMLIFrameElement>('output-frame').contentWindow as Window).postMessage = (
+      message: any,
+      targetOrigin: any,
+      transfer?: Transferable[]
+    ) => {
+      expect(message).toBeDefined();
+      expect(message.command).toEqual('execute');
+      expect(message.code).toEqual('console.log("foo");');
+      expect(message.input).toEqual({ resourceType: 'Patient' });
+      expect(targetOrigin).toEqual('https://codeeditor.medplum.com');
+      expect(transfer).toBeDefined();
+      (transfer?.[0] as MessagePort).postMessage({ error: badRequest('Error') });
+    };
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Simulate'));
+    });
+
+    expect(toast.error).toHaveBeenCalledWith('Error');
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  test('Deploy success', async () => {
     await setup('/Bot/123/editor');
     await waitFor(() => screen.getByText('Deploy'));
 
@@ -129,9 +217,33 @@ describe('BotEditor', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Deploy'));
     });
+
+    expect(toast.success).toHaveBeenCalledWith('Deployed');
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
-  test('Execute', async () => {
+  test('Deploy error', async () => {
+    await setup('/Bot/123/editor');
+    await waitFor(() => screen.getByText('Deploy'));
+
+    // Mock the code frame
+    (screen.getByTestId<HTMLIFrameElement>('code-frame').contentWindow as Window).postMessage = (
+      _message: any,
+      _targetOrigin: any,
+      transfer?: Transferable[]
+    ) => {
+      (transfer?.[0] as MessagePort).postMessage({ error: badRequest('Error') });
+    };
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Deploy'));
+    });
+
+    expect(toast.error).toHaveBeenCalledWith('Error');
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  test('Execute success', async () => {
     await setup('/Bot/123/editor');
     await waitFor(() => screen.getByText('Execute'));
 
@@ -144,8 +256,50 @@ describe('BotEditor', () => {
       (transfer?.[0] as MessagePort).postMessage({ result: '{"resourceType":"Patient"}' });
     };
 
+    // Mock the output frame
+    (screen.getByTestId<HTMLIFrameElement>('output-frame').contentWindow as Window).postMessage = (
+      _message: any,
+      _targetOrigin: any,
+      transfer?: Transferable[]
+    ) => {
+      (transfer?.[0] as MessagePort).postMessage({ result: 'ok' });
+    };
+
     await act(async () => {
       fireEvent.click(screen.getByText('Execute'));
     });
+
+    expect(toast.success).toHaveBeenCalledWith('Success');
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  test('Execute error', async () => {
+    await setup('/Bot/123/editor');
+    await waitFor(() => screen.getByText('Execute'));
+
+    // Mock the input frame
+    (screen.getByTestId<HTMLIFrameElement>('input-frame').contentWindow as Window).postMessage = (
+      _message: any,
+      _targetOrigin: any,
+      transfer?: Transferable[]
+    ) => {
+      (transfer?.[0] as MessagePort).postMessage({ result: '{"resourceType":"Patient"}' });
+    };
+
+    // Mock the output frame
+    (screen.getByTestId<HTMLIFrameElement>('output-frame').contentWindow as Window).postMessage = (
+      _message: any,
+      _targetOrigin: any,
+      transfer?: Transferable[]
+    ) => {
+      (transfer?.[0] as MessagePort).postMessage({ error: badRequest('Error') });
+    };
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Execute'));
+    });
+
+    expect(toast.error).toHaveBeenCalledWith('Error');
+    expect(toast.success).not.toHaveBeenCalled();
   });
 });

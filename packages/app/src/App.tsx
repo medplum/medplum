@@ -2,6 +2,7 @@ import { getReferenceString } from '@medplum/core';
 import { ErrorBoundary, FooterLinks, Header, Loading, useMedplum, useMedplumProfile } from '@medplum/react';
 import React, { Suspense } from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
+import { Slide, ToastContainer } from 'react-toastify';
 import { CreateBotPage } from './admin/CreateBotPage';
 import { CreateClientPage } from './admin/CreateClientPage';
 import { EditMembershipPage } from './admin/EditMembershipPage';
@@ -25,6 +26,7 @@ import { SignInPage } from './SignInPage';
 import { SmartSearchPage } from './SmartSearchPage';
 import '@medplum/react/defaulttheme.css';
 import '@medplum/react/styles.css';
+import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 
 export function App(): JSX.Element {
@@ -38,6 +40,15 @@ export function App(): JSX.Element {
 
   return (
     <>
+      <ToastContainer
+        position="top-right"
+        transition={Slide}
+        autoClose={3000}
+        hideProgressBar
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
       {profile && (
         <Header
           onLogo={() => navigate('/')}
