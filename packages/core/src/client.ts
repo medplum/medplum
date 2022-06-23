@@ -35,6 +35,7 @@ import { arrayBufferToBase64, createReference, ProfileResource } from './utils';
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_SCOPE = 'launch/patient openid fhirUser offline_access user/*.*';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
+const DEFAULT_CACHE_TIME = 10000; // 10 seconds
 const JSON_CONTENT_TYPE = 'application/json';
 const FHIR_CONTENT_TYPE = 'application/fhir+json';
 const PATCH_CONTENT_TYPE = 'application/json-patch+json';
@@ -96,6 +97,19 @@ export interface MedplumClientOptions {
    * Consider using this for performance of displaying Patient or Practitioner resources.
    */
   resourceCacheSize?: number;
+
+  /**
+   * The length of time in milliseconds to cache resources.
+   *
+   * Default value is 10000 (10 seconds).
+   *
+   * Cache time of zero disables all caching.
+   *
+   * For any individual request, the cache behavior can be overridden by setting the cache property on request options.
+   *
+   * See: https://developer.mozilla.org/en-US/docs/Web/API/Request/cache
+   */
+  cacheTime?: number;
 
   /**
    * Fetch implementation.
@@ -301,6 +315,11 @@ interface SchemaGraphQLResponse {
   };
 }
 
+interface RequestCacheEntry {
+  readonly requestTime: number;
+  readonly value: ReadablePromise<any>;
+}
+
 /**
  * The MedplumClient class provides a client for the Medplum FHIR server.
  *
@@ -353,7 +372,8 @@ export class MedplumClient extends EventTarget {
   readonly #createPdf?: CreatePdfFunction;
   readonly #storage: ClientStorage;
   readonly #schema: IndexedStructureDefinition;
-  readonly #requestCache: LRUCache<ReadablePromise<any>>;
+  readonly #requestCache: LRUCache<RequestCacheEntry>;
+  readonly #cacheTime: number;
   readonly #baseUrl: string;
   readonly #clientId: string;
   readonly #authorizeUrl: string;
@@ -384,6 +404,7 @@ export class MedplumClient extends EventTarget {
     this.#storage = new ClientStorage();
     this.#schema = createSchema();
     this.#requestCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
+    this.#cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
     this.#baseUrl = options?.baseUrl || DEFAULT_BASE_URL;
     this.#clientId = options?.clientId || '';
     this.#authorizeUrl = options?.authorizeUrl || this.#baseUrl + 'oauth2/authorize';
@@ -459,14 +480,12 @@ export class MedplumClient extends EventTarget {
    */
   get<T = any>(url: URL | string, options: RequestInit = {}): ReadablePromise<T> {
     url = url.toString();
-    if (!options?.cache) {
-      const cached = this.#requestCache.get(url);
-      if (cached) {
-        return cached;
-      }
+    const cached = this.#getCacheEntry(url, options);
+    if (cached) {
+      return cached.value;
     }
     const promise = new ReadablePromise(this.#request<T>('GET', url, options));
-    this.#requestCache.set(url, promise);
+    this.#setCacheEntry(url, promise);
     return promise;
   }
 
@@ -727,16 +746,14 @@ export class MedplumClient extends EventTarget {
     url.searchParams.set('_count', '1');
     url.searchParams.sort();
     const cacheKey = url.toString() + '-searchOne';
-    if (!options?.cache) {
-      const cached = this.#requestCache.get(cacheKey);
-      if (cached) {
-        return cached;
-      }
+    const cached = this.#getCacheEntry(cacheKey, options);
+    if (cached) {
+      return cached.value;
     }
     const promise = new ReadablePromise(
       this.search<K>(resourceType, url.searchParams, options).then((b) => b.entry?.[0]?.resource)
     );
-    this.#requestCache.set(cacheKey, promise);
+    this.#setCacheEntry(cacheKey, promise);
     return promise;
   }
 
@@ -766,18 +783,16 @@ export class MedplumClient extends EventTarget {
   ): ReadablePromise<ExtractResource<K>[]> {
     const url = this.fhirSearchUrl(resourceType, query);
     const cacheKey = url.toString() + '-searchResources';
-    if (!options?.cache) {
-      const cached = this.#requestCache.get(cacheKey);
-      if (cached) {
-        return cached;
-      }
+    const cached = this.#getCacheEntry(cacheKey, options);
+    if (cached) {
+      return cached.value;
     }
     const promise = new ReadablePromise(
       this.search<K>(resourceType, query, options).then(
         (b) => b.entry?.map((e) => e.resource as ExtractResource<K>) ?? []
       )
     );
-    this.#requestCache.set(cacheKey, promise);
+    this.#setCacheEntry(cacheKey, promise);
     return promise;
   }
 
@@ -802,7 +817,7 @@ export class MedplumClient extends EventTarget {
    * @returns The resource if it is available in the cache; undefined otherwise.
    */
   getCached<K extends ResourceType>(resourceType: K, id: string): ExtractResource<K> | undefined {
-    const cached = this.#requestCache.get(this.fhirUrl(resourceType, id).toString());
+    const cached = this.#requestCache.get(this.fhirUrl(resourceType, id).toString())?.value;
     return cached && !cached.isPending() ? (cached.read() as ExtractResource<K>) : undefined;
   }
 
@@ -1382,6 +1397,38 @@ export class MedplumClient extends EventTarget {
     this.#addFetchOptionsDefaults(options);
     const response = await this.#fetch(url.toString(), options);
     return response.blob();
+  }
+
+  //
+  // Private helpers
+  //
+
+  /**
+   * Returns the cache entry if available and not expired.
+   * @param key The cache key to retrieve.
+   * @param options Optional fetch options for cache settings.
+   * @returns The cached entry if found.
+   */
+  #getCacheEntry(key: string, options: RequestInit | undefined): RequestCacheEntry | undefined {
+    if (this.#cacheTime <= 0 || options?.cache === 'no-cache' || options?.cache === 'reload') {
+      return undefined;
+    }
+    const entry = this.#requestCache.get(key);
+    if (!entry || entry.requestTime + this.#cacheTime < Date.now()) {
+      return undefined;
+    }
+    return entry;
+  }
+
+  /**
+   * Adds a readable promise to the cache.
+   * @param key The cache key to store.
+   * @param value The readable promise to store.
+   */
+  #setCacheEntry(key: string, value: ReadablePromise<any>): void {
+    if (this.#cacheTime > 0) {
+      this.#requestCache.set(key, { requestTime: Date.now(), value });
+    }
   }
 
   /**

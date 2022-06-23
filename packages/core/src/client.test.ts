@@ -471,6 +471,19 @@ describe('Client', () => {
     expect(client.getCachedReference({ reference: 'xyz?abc' })).toBeUndefined();
   });
 
+  test('Disabled cache read cached resource', async () => {
+    const client = new MedplumClient({ ...defaultOptions, cacheTime: 0 });
+    expect(client.getCached('Patient', '123')).toBeUndefined(); // Nothing in the cache
+    const readPromise = client.readResource('Patient', '123');
+    expect(client.getCached('Patient', '123')).toBeUndefined(); // Cache is disabled
+    const result = await readPromise;
+    expect(result).toBeDefined();
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
+    expect(result.resourceType).toBe('Patient');
+    expect(result.id).toBe('123');
+    expect(client.getCached('Patient', '123')).toBeUndefined(); // Cache is disabled
+  });
+
   test('Read history', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.readHistory('Patient', '123');
