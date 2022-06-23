@@ -6,7 +6,7 @@ import {
   SearchRequest,
   SortRule,
 } from '@medplum/core';
-import { UserConfiguration } from '@medplum/fhirtypes';
+import { ResourceType, UserConfiguration } from '@medplum/fhirtypes';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -66,6 +66,7 @@ export function HomePage(): JSX.Element {
       }}
       onDelete={(ids: string[]) => {
         if (window.confirm('Are you sure you want to delete these resources?')) {
+          medplum.invalidateSearches(search.resourceType as ResourceType);
           medplum
             .post('fhir/R4', {
               resourceType: 'Bundle',
