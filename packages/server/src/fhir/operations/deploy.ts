@@ -195,7 +195,6 @@ async function updateLambda(client: LambdaClient, name: string, zipFile: Uint8Ar
         Runtime: LAMBDA_RUNTIME,
         Handler: LAMBDA_HANDLER,
         Layers: [layerVersion],
-        Timeout: 10, // seconds
       })
     );
   }
