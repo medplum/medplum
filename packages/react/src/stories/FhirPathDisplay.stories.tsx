@@ -15,6 +15,7 @@ export const Id = Story.bind({});
 Id.args = {
   path: 'id',
   resource: HomerServiceRequest,
+  propertyType: PropertyType.string,
 };
 
 export const ArrayElement = Story.bind({});
