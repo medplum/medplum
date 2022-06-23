@@ -109,6 +109,10 @@ describe('HomePage', () => {
     window.confirm = jest.fn(() => true);
 
     await setup();
+
+    // Make sure the patient is on the screen
+    await waitFor(() => screen.getByText(patient.id as string));
+
     await waitFor(() => screen.getByText('Delete...'));
 
     await act(async () => {
@@ -121,6 +125,9 @@ describe('HomePage', () => {
 
     const check = await medplum.readResource('Patient', patient.id as string);
     expect(check).toBeUndefined();
+
+    // Make sure the patient is *not* on the screen
+    await waitFor(() => screen.queryByText(patient.id as string) === null);
   });
 
   test('Export button', async () => {
