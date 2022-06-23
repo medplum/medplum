@@ -68,7 +68,7 @@ export class MockClient extends MedplumClient {
           console.log(`  ${JSON.stringify(tableLayouts, null, 2)},`);
           console.log(`  ${JSON.stringify(fonts, null, 2)});`);
         }
-        return Promise.resolve(new Blob());
+        return Promise.resolve({});
       },
       fetch: (url: string, options: any) => {
         const method = options.method || 'GET';
