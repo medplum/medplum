@@ -130,12 +130,11 @@ You can find the `id` of your Bot by clicking on the **Details** tab of the Bot 
 
 #### `CONTENT_TYPE`
 
-| Content-Type               | Description |
-| -------------------------- | ----------- |
-| `application/fhir+json`    |             |
-| `text/plain`               |             |
-| `x-application/hl7-v2+er7` |             |
-| `application/json`         |             |
+| Content-Type               | typeof `event.input`                    | Description                                                                                                                                                         |
+| -------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `application/fhir+json`    | [`Resource`](/category/resources)       | `<INPUT_DATA>` is parsed as a [FHIR Resource](/fhir-basics#resources) encoded as a JSON string                                                                      |
+| `text/plain`               | `string`                                | `<INPUT_DATA>` is parsed as plaintext string                                                                                                                        |
+| `x-application/hl7-v2+er7` | [`HL7Message`](/sdk/classes/Hl7Message) | `<INPUT_DATA>` is a string that should be parsed as a pipe-delimited HL7v2 message. HL7v2 is a common text-based message protocol used in legacy healthcare systems |
 
 ## Triggering a Bot
 
@@ -170,6 +169,16 @@ With our [Bot](https://app.medplum.com/Bot) and [Subscription](https://app.medpl
 Now, let's go back to our [Subscription](https://app.medplum.com/Subscription). On the Timeline, you should see an AuditEvent with the outcome of the JavaScript code execution. If everything worked as expected, you should see "Hello world" logged as part of the AuditEvent. If you want to see all AuditEvents sorted by most recent, you can use [this link](https://app.medplum.com/AuditEvent?_count=20&_fields=id,_lastUpdated&_offset=0&_sort=-_lastUpdated).
 
 ## Bot sandbox
+
+The JavaScript code is heavily sandboxed and runs in an AWS Lambda. You can apply an [AccessPolicy](https://app.medplum.com/AccessPolicy) to the Bot if you want to further reduce the data it can read and write.
+
+The following function arguments are available to the Bot code, to enable it to do the functionality it requires.
+
+| Name          | Type                                                                              | Description                                                                                           |
+| ------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `medplum`     | [MedplumClient](https://docs.medplum.com/typedoc/core/classes/MedplumClient.html) | An instance of the medplum JS SDK ([documentation](https://docs.medplum.com/typedoc/core/index.html)) |
+| `event`       | BotEvent                                                                          | The event that object that triggered the Bot                                                          |
+| `event.input` | object                                                                            | The bot input, usually a FHIR object or content that was posted to a bot endpoint                     |
 
 ### medplum
 
