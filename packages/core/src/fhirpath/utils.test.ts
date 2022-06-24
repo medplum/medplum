@@ -99,5 +99,10 @@ describe('FHIRPath utils', () => {
     expect(getTypedPropertyValue({ type: '', value: null }, 'x')).toBeUndefined();
     expect(getTypedPropertyValue({ type: 'x', value: {} }, 'x')).toBeUndefined();
     expect(getTypedPropertyValue({ type: 'integer', value: 123 }, 'x')).toBeUndefined();
+
+    // Support missing schemas
+    expect(getTypedPropertyValue({ type: 'Foo', value: { x: 1 } }, 'x')).toEqual(TYPED_1);
+    expect(getTypedPropertyValue({ type: 'Foo', value: { x: [1] } }, 'x')).toEqual([TYPED_1]);
+    expect(getTypedPropertyValue({ type: 'Foo', value: { valueInteger: 1 } }, 'value')).toEqual(TYPED_1);
   });
 });
