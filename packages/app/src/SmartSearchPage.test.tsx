@@ -1,10 +1,11 @@
 import { PropertyType } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider, FhirPathTableField } from '@medplum/react';
+import { FhirPathTableField, MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
+import React, { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from './AppRoutes';
+import { Loading } from './components/Loading';
 
 const query = `{
 ResourceList: ServiceRequestList {
@@ -97,7 +98,9 @@ async function setup(url = '/Patient'): Promise<void> {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
-          <AppRoutes />
+          <Suspense fallback={<Loading />}>
+            <AppRoutes />
+          </Suspense>
         </MemoryRouter>
       </MedplumProvider>
     );

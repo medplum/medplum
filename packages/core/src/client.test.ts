@@ -1,10 +1,11 @@
-import { Bundle, Patient, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Patient, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import { webcrypto } from 'crypto';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { URLSearchParams } from 'url';
 import { TextEncoder } from 'util';
 import { MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
+import { getStatus, notFound } from './outcomes';
 import { ProfileResource, stringify } from './utils';
 
 const defaultOptions = {
@@ -59,7 +60,16 @@ let tokenExpired = false;
 
 function mockFetch(url: string, options: any): Promise<any> {
   const { method } = options;
+  const response = mockHandler(method, url, options);
+  return Promise.resolve({
+    ok: response.status === 200 || response.status === undefined,
+    status: response.status,
+    blob: () => Promise.resolve(response),
+    json: () => Promise.resolve(response),
+  });
+}
 
+function mockHandler(method: string, url: string, options: any): any {
   let result: any;
 
   if (method === 'POST' && url.endsWith('auth/login')) {
@@ -168,25 +178,41 @@ function mockFetch(url: string, options: any): Promise<any> {
     };
   } else if (method === 'POST' && url.endsWith('fhir/R4/$graphql')) {
     result = schemaResponse;
-  } else if (method === 'POST' && options.headers['Content-Type'] === 'application/fhir+json') {
+  } else if (method === 'POST' && url.endsWith('fhir/R4')) {
+    result = mockFhirBatchHandler(method, url, options);
+  } else if (method === 'POST' && options?.headers?.['Content-Type'] === 'application/fhir+json') {
     // Default "create" operation returns the body
     result = JSON.parse(options.body);
   }
 
-  const response: any = {
+  return {
     request: {
       url,
       options,
     },
     ...result,
   };
+}
 
-  return Promise.resolve({
-    ok: response.status === 200 || response.status === undefined,
-    status: response.status,
-    blob: () => Promise.resolve(response),
-    json: () => Promise.resolve(response),
-  });
+function mockFhirBatchHandler(_method: string, _path: string, options: any): Bundle {
+  const { body } = options;
+  const request = JSON.parse(body) as Bundle;
+  return {
+    resourceType: 'Bundle',
+    type: 'batch-response',
+    entry: request.entry?.map((e: BundleEntry) => {
+      const url = 'fhir/R4/' + e?.request?.url;
+      const method = e?.request?.method as string;
+      const resource = mockHandler(method, url, null);
+      if (resource?.resourceType === 'OperationOutcome') {
+        return { resource, response: { status: getStatus(resource).toString() } };
+      } else if (resource) {
+        return { resource, response: { status: '200' } };
+      } else {
+        return { resource: notFound, response: { status: '404' } };
+      }
+    }),
+  };
 }
 
 describe('Client', () => {

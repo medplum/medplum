@@ -1,5 +1,5 @@
-import { createReference, getReferenceString, ProfileResource } from '@medplum/core';
-import { Attachment, Patient, Reference, Resource } from '@medplum/fhirtypes';
+import { createReference, getReferenceString, MedplumClient, ProfileResource } from '@medplum/core';
+import { Attachment, Patient, Reference } from '@medplum/fhirtypes';
 import React from 'react';
 import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
@@ -7,30 +7,21 @@ export interface PatientTimelineProps {
   patient: Patient | Reference<Patient>;
 }
 
-const searches = [
-  '$/_history',
-  'Communication?subject=$',
-  'Device?patient=$',
-  'DeviceRequest?patient=$',
-  'DiagnosticReport?subject=$',
-  'Media?subject=$',
-  'ServiceRequest?subject=$',
-];
-
 export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
   return (
     <ResourceTimeline
       value={props.patient}
-      buildSearchRequests={(resource: Resource) => ({
-        resourceType: 'Bundle',
-        type: 'batch',
-        entry: searches.map((search) => ({
-          request: {
-            method: 'GET',
-            url: search.replaceAll('$', getReferenceString(resource)),
-          },
-        })),
-      })}
+      loadTimelineResources={async (medplum: MedplumClient, resource: Patient) => {
+        return Promise.all([
+          medplum.readHistory('Patient', resource.id as string),
+          medplum.search('Communication', 'subject=' + getReferenceString(resource)),
+          medplum.search('Device', 'patient=' + getReferenceString(resource)),
+          medplum.search('DeviceRequest', 'patient=' + getReferenceString(resource)),
+          medplum.search('DiagnosticReport', 'subject=' + getReferenceString(resource)),
+          medplum.search('Media', 'subject=' + getReferenceString(resource)),
+          medplum.search('ServiceRequest', 'subject=' + getReferenceString(resource)),
+        ]);
+      }}
       createCommunication={(resource: Patient, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
         status: 'completed',

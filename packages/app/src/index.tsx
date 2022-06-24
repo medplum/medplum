@@ -25,6 +25,8 @@ if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
 const medplum = new MedplumClient({
   baseUrl: process.env.MEDPLUM_BASE_URL as string,
   clientId: process.env.MEDPLUM_CLIENT_ID as string,
+  cacheTime: 60000,
+  autoBatchTime: 100,
   onUnauthenticated: () => {
     if (window.location.pathname !== '/signin' && window.location.pathname !== '/oauth') {
       window.location.href = '/signin?next=' + encodeURIComponent(window.location.pathname + window.location.search);

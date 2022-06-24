@@ -1,4 +1,4 @@
-import { createReference, getReferenceString, ProfileResource } from '@medplum/core';
+import { createReference, getReferenceString, MedplumClient, ProfileResource } from '@medplum/core';
 import { Attachment, Bundle, Encounter, Resource } from '@medplum/fhirtypes';
 import { HomerEncounter, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -9,31 +9,12 @@ import { ResourceTimeline, ResourceTimelineProps } from './ResourceTimeline';
 
 const medplum = new MockClient();
 
-function buildEncounterSearch(encounter: Resource): Bundle {
-  return {
-    resourceType: 'Bundle',
-    type: 'batch',
-    entry: [
-      {
-        request: {
-          method: 'GET',
-          url: `${getReferenceString(encounter)}/_history`,
-        },
-      },
-      {
-        request: {
-          method: 'GET',
-          url: `Communication?encounter=${getReferenceString(encounter)}`,
-        },
-      },
-      {
-        request: {
-          method: 'GET',
-          url: `Media?encounter=${getReferenceString(encounter)}`,
-        },
-      },
-    ],
-  };
+async function loadTimelineResources(medplum: MedplumClient, resource: Resource): Promise<Bundle[]> {
+  return Promise.all([
+    medplum.readHistory(resource.resourceType, resource.id as string),
+    medplum.search('Communication', 'encounter=' + getReferenceString(resource)),
+    medplum.search('Media', 'encounter=' + getReferenceString(resource)),
+  ]);
 }
 
 describe('ResourceTimeline', () => {
@@ -52,7 +33,7 @@ describe('ResourceTimeline', () => {
   test('Renders reference', async () => {
     await setup({
       value: createReference(HomerEncounter),
-      buildSearchRequests: buildEncounterSearch,
+      loadTimelineResources,
     });
 
     await waitFor(() => screen.getAllByTestId('timeline-item'));
@@ -64,7 +45,7 @@ describe('ResourceTimeline', () => {
   test('Renders resource', async () => {
     await setup({
       value: HomerEncounter,
-      buildSearchRequests: buildEncounterSearch,
+      loadTimelineResources,
     });
 
     await waitFor(() => screen.getAllByTestId('timeline-item'));
@@ -76,7 +57,7 @@ describe('ResourceTimeline', () => {
   test('Create comment', async () => {
     await setup({
       value: HomerEncounter,
-      buildSearchRequests: buildEncounterSearch,
+      loadTimelineResources,
       createCommunication: (resource: Encounter, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
         status: 'completed',
@@ -114,7 +95,7 @@ describe('ResourceTimeline', () => {
   test('Upload media', async () => {
     await setup({
       value: HomerEncounter,
-      buildSearchRequests: buildEncounterSearch,
+      loadTimelineResources,
       createCommunication: jest.fn(),
       createMedia: (resource: Encounter, operator: ProfileResource, content: Attachment) => ({
         resourceType: 'Media',

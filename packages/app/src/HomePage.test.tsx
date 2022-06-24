@@ -2,9 +2,10 @@ import { OperationOutcome, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
+import React, { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from './AppRoutes';
+import { Loading } from './components/Loading';
 import { getDefaultFields } from './HomePage';
 
 async function setup(url = '/Patient', medplum = new MockClient()): Promise<void> {
@@ -12,7 +13,9 @@ async function setup(url = '/Patient', medplum = new MockClient()): Promise<void
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
-          <AppRoutes />
+          <Suspense fallback={<Loading />}>
+            <AppRoutes />
+          </Suspense>
         </MemoryRouter>
       </MedplumProvider>
     );

@@ -1,5 +1,5 @@
-import { createReference, getReferenceString, ProfileResource } from '@medplum/core';
-import { Attachment, Encounter, Reference, Resource } from '@medplum/fhirtypes';
+import { createReference, getReferenceString, MedplumClient, ProfileResource } from '@medplum/core';
+import { Attachment, Encounter, Reference } from '@medplum/fhirtypes';
 import React from 'react';
 import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
@@ -11,30 +11,13 @@ export function EncounterTimeline(props: EncounterTimelineProps): JSX.Element {
   return (
     <ResourceTimeline
       value={props.encounter}
-      buildSearchRequests={(resource: Resource) => ({
-        resourceType: 'Bundle',
-        type: 'batch',
-        entry: [
-          {
-            request: {
-              method: 'GET',
-              url: `${getReferenceString(resource)}/_history`,
-            },
-          },
-          {
-            request: {
-              method: 'GET',
-              url: `Communication?encounter=${getReferenceString(resource)}`,
-            },
-          },
-          {
-            request: {
-              method: 'GET',
-              url: `Media?encounter=${getReferenceString(resource)}`,
-            },
-          },
-        ],
-      })}
+      loadTimelineResources={async (medplum: MedplumClient, resource: Encounter) => {
+        return Promise.all([
+          medplum.readHistory('Encounter', resource.id as string),
+          medplum.search('Communication', 'encounter=' + getReferenceString(resource)),
+          medplum.search('Media', 'encounter=' + getReferenceString(resource)),
+        ]);
+      }}
       createCommunication={(resource: Encounter, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
         status: 'completed',

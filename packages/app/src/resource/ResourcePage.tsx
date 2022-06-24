@@ -20,7 +20,6 @@ import {
   Document,
   EncounterTimeline,
   ErrorBoundary,
-  MedplumLink,
   PatientTimeline,
   PlanDefinitionBuilder,
   QuestionnaireBuilder,
@@ -35,7 +34,7 @@ import {
   useMedplum,
 } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Loading } from '../components/Loading';
 import { PatientHeader } from '../components/PatientHeader';
@@ -83,34 +82,57 @@ function getTabs(resourceType: string): string[] {
 }
 
 export function ResourcePage(): JSX.Element {
-  const navigate = useNavigate();
-  const { resourceType, id, tab } = useParams() as {
-    resourceType: string;
+  const { resourceType, id } = useParams() as {
+    resourceType: ResourceType;
     id: string;
-    tab: string;
   };
   const medplum = useMedplum();
-  const [loading, setLoading] = useState<boolean>(true);
   const [value, setValue] = useState<Resource | undefined>();
   const [historyBundle, setHistoryBundle] = useState<Bundle | undefined>();
-  const [error, setError] = useState<OperationOutcome | undefined>();
+  const [questionnaires, setQuestionnaires] = useState<Bundle<Questionnaire> | undefined>();
 
-  const loadResource = useCallback(() => {
-    setError(undefined);
-    setLoading(true);
+  function handleError(error: unknown): void {
+    showNotification({ color: 'red', message: normalizeErrorString(error) });
+  }
 
+  useEffect(() => {
+    medplum.readResource(resourceType, id).then(setValue).catch(handleError);
+    medplum.readHistory(resourceType, id).then(setHistoryBundle).catch(handleError);
     medplum
-      .readResource(resourceType as ResourceType, id)
-      .then(setValue)
-      .catch(setError)
-      .finally(() => setLoading(false));
-
-    medplum
-      .readHistory(resourceType as ResourceType, id)
-      .then(setHistoryBundle)
-      .catch(setError)
-      .finally(() => setLoading(false));
+      .search('Questionnaire', 'subject-type=' + resourceType)
+      .then(setQuestionnaires)
+      .catch(handleError);
   }, [medplum, resourceType, id]);
+
+  if (!value || !historyBundle) {
+    return <Loading />;
+  }
+
+  return (
+    <ResourcePageBody
+      resourceType={resourceType}
+      id={id}
+      value={value}
+      historyBundle={historyBundle}
+      questionnaires={questionnaires}
+    />
+  );
+}
+
+interface ResourcePageBodyProps {
+  resourceType: ResourceType;
+  id: string;
+  value: Resource;
+  historyBundle: Bundle;
+  questionnaires: Bundle<Questionnaire> | undefined;
+}
+
+function ResourcePageBody(props: ResourcePageBodyProps): JSX.Element {
+  const { resourceType, id, value, historyBundle } = props;
+  const navigate = useNavigate();
+  const medplum = useMedplum();
+  const { tab } = useParams() as { tab: string };
+  const [error, setError] = useState<OperationOutcome | undefined>();
 
   /**
    * Handles a tab change event.
@@ -123,9 +145,11 @@ export function ResourcePage(): JSX.Element {
   function onSubmit(newResource: Resource): void {
     medplum
       .updateResource(cleanResource(newResource))
-      .then(loadResource)
       .then(() => showNotification({ color: 'green', message: 'Success' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      .catch((err) => {
+        setError(err);
+        showNotification({ color: 'red', message: normalizeErrorString(err) });
+      });
   }
 
   function restoreResource(): void {
@@ -149,14 +173,6 @@ export function ResourcePage(): JSX.Element {
     }
   }
 
-  useEffect(() => {
-    loadResource();
-  }, [loadResource]);
-
-  if (loading) {
-    return <Loading />;
-  }
-
   if (error && isGone(error)) {
     return (
       <Document>
@@ -165,15 +181,6 @@ export function ResourcePage(): JSX.Element {
         <Button color="red" onClick={restoreResource}>
           Restore
         </Button>
-      </Document>
-    );
-  }
-
-  if (!value || !historyBundle) {
-    return (
-      <Document>
-        <Title>Resource not found</Title>
-        <MedplumLink to={`/${resourceType}`}>Return to search page</MedplumLink>
       </Document>
     );
   }
