@@ -57,6 +57,9 @@ export enum Operator {
   IN = 'in',
   NOT_IN = 'not-in',
   OF_TYPE = 'of-type',
+
+  // All
+  MISSING = 'missing',
 }
 
 const MODIFIER_OPERATORS: Operator[] = [
@@ -68,6 +71,7 @@ const MODIFIER_OPERATORS: Operator[] = [
   Operator.IN,
   Operator.NOT_IN,
   Operator.OF_TYPE,
+  Operator.MISSING,
 ];
 
 const PREFIX_OPERATORS: Operator[] = [

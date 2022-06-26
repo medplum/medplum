@@ -60,6 +60,7 @@ const operatorNames: Record<Operator, string> = {
   in: 'in',
   'not-in': 'not in',
   'of-type': 'of type',
+  missing: 'missing',
 };
 
 /**
