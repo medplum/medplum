@@ -645,7 +645,7 @@ describe('SearchControl', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Search'));
+      fireEvent.click(screen.getByText('Contains...'));
     });
 
     await act(async () => {

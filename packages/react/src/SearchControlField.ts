@@ -31,7 +31,7 @@ import { ElementDefinition, SearchParameter } from '@medplum/fhirtypes';
 export interface SearchControlField {
   readonly name: string;
   readonly elementDefinition?: ElementDefinition;
-  readonly searchParam?: SearchParameter;
+  readonly searchParams?: SearchParameter[];
 }
 
 /**
@@ -66,28 +66,32 @@ function getFieldDefinition(
   if (name === '_lastUpdated') {
     return {
       name: '_lastUpdated',
-      searchParam: {
-        resourceType: 'SearchParameter',
-        base: ['Resource'],
-        code: '_lastUpdated',
-        name: '_lastUpdated',
-        type: 'date',
-        expression: 'Resource.meta.lastUpdated',
-      },
+      searchParams: [
+        {
+          resourceType: 'SearchParameter',
+          base: ['Resource'],
+          code: '_lastUpdated',
+          name: '_lastUpdated',
+          type: 'date',
+          expression: 'Resource.meta.lastUpdated',
+        },
+      ],
     };
   }
 
   if (name === 'meta.versionId') {
     return {
       name: 'meta.versionId',
-      searchParam: {
-        resourceType: 'SearchParameter',
-        base: ['Resource'],
-        code: '_versionId',
-        name: '_versionId',
-        type: 'token',
-        expression: 'Resource.meta.versionId',
-      },
+      searchParams: [
+        {
+          resourceType: 'SearchParameter',
+          base: ['Resource'],
+          code: '_versionId',
+          name: '_versionId',
+          type: 'token',
+          expression: 'Resource.meta.versionId',
+        },
+      ],
     };
   }
 
@@ -95,25 +99,30 @@ function getFieldDefinition(
 
   // Get the element definition
   // If there is an exact match, use that
-  let elementDefinition: ElementDefinition | undefined = typeSchema.properties[name];
+  const exactElementDefinition: ElementDefinition | undefined = typeSchema.properties[name];
+  if (exactElementDefinition) {
+    let searchParams: SearchParameter[] | undefined = undefined;
+    if (typeSchema.searchParams) {
+      // Try to find a search parameter based on the property
+      // For example, name="birthDate", try to find searchParam="birthdate"
+      const path = `${resourceType}.${name.replaceAll('[x]', '')}`;
+      searchParams = Object.values(typeSchema.searchParams).filter((p) => p.expression?.includes(path));
+      if (searchParams.length === 0) {
+        searchParams = undefined;
+      }
+    }
+    return { name, elementDefinition: exactElementDefinition, searchParams };
+  }
 
   // Get the search parameter
   // If there is an exact match, use that
-  let searchParam: SearchParameter | undefined = typeSchema.searchParams?.[name];
-
-  if (elementDefinition && !searchParam && typeSchema.searchParams) {
-    // Try to find a search parameter based on the property
-    // For example, name="birthDate", try to find searchParam="birthdate"
-    const path = `${resourceType}.${name}`;
-    searchParam = Object.values(typeSchema.searchParams).find((p) => p.expression?.includes(path));
-  }
-
-  if (!elementDefinition && searchParam?.expression) {
+  const exactSearchParam: SearchParameter | undefined = typeSchema.searchParams?.[name];
+  if (exactSearchParam) {
     // Try to find an element definition based on the search parameter
     // For example, name="email", try to find elementDefinition="telecom"
-    const details = getSearchParameterDetails(schema, resourceType, searchParam);
-    elementDefinition = details.elementDefinition;
+    const details = getSearchParameterDetails(schema, resourceType, exactSearchParam);
+    return { name, elementDefinition: details.elementDefinition, searchParams: [exactSearchParam] };
   }
 
-  return { name, elementDefinition, searchParam };
+  return { name };
 }

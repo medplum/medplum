@@ -80,11 +80,12 @@ interface SearchControlState {
   popupVisible: boolean;
   popupX: number;
   popupY: number;
-  popupSearchParam?: SearchParameter;
+  popupSearchParams?: SearchParameter[];
   fieldEditorVisible: boolean;
   filterEditorVisible: boolean;
   filterDialogVisible: boolean;
   filterDialogFilter?: Filter;
+  filterDialogSearchParam?: SearchParameter;
 }
 
 /**
@@ -103,7 +104,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     popupVisible: false,
     popupX: 0,
     popupY: 0,
-    popupSearchParam: undefined,
+    popupSearchParams: undefined,
     fieldEditorVisible: false,
     filterEditorVisible: false,
     filterDialogVisible: false,
@@ -177,13 +178,13 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
    * @param e The click event.
    * @param key The field key.
    */
-  function handleSortClick(e: React.MouseEvent, searchParam: SearchParameter | undefined): void {
+  function handleSortClick(e: React.MouseEvent, searchParams: SearchParameter[] | undefined): void {
     setState({
       ...stateRef.current,
       popupVisible: true,
       popupX: e.clientX,
       popupY: e.clientY,
-      popupSearchParam: searchParam,
+      popupSearchParams: searchParams,
     });
   }
 
@@ -335,9 +336,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               </th>
             )}
             {fields.map((field) => (
-              <th key={field.name} onClick={(e) => handleSortClick(e, field.searchParam)}>
+              <th key={field.name} onClick={(e) => handleSortClick(e, field.searchParams)}>
                 {buildFieldNameString(field.name)}
-                {field.searchParam && <FilterIcon />}
+                {field.searchParams && <FilterIcon />}
               </th>
             ))}
           </tr>
@@ -345,10 +346,10 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             {checkboxColumn && <th className="filters medplum-search-icon-cell" />}
             {fields.map((field) => (
               <th key={field.name} className="filters">
-                {field.searchParam && (
+                {field.searchParams && (
                   <FilterDescription
                     resourceType={resourceType}
-                    searchParam={field.searchParam}
+                    searchParams={field.searchParams}
                     filters={props.search.filters}
                   />
                 )}
@@ -402,12 +403,13 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         visible={state.popupVisible}
         x={state.popupX}
         y={state.popupY}
-        searchParam={state.popupSearchParam}
-        onPrompt={(filter) => {
+        searchParams={state.popupSearchParams}
+        onPrompt={(searchParam, filter) => {
           setState({
             ...stateRef.current,
             popupVisible: false,
             filterDialogVisible: true,
+            filterDialogSearchParam: searchParam,
             filterDialogFilter: filter,
           });
         }}
@@ -416,14 +418,14 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           setState({
             ...stateRef.current,
             popupVisible: false,
-            popupSearchParam: undefined,
+            popupSearchParams: undefined,
           });
         }}
         onClose={() => {
           setState({
             ...stateRef.current,
             popupVisible: false,
-            popupSearchParam: undefined,
+            popupSearchParams: undefined,
           });
         }}
       />
@@ -468,7 +470,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         title={'Input'}
         schema={schema}
         resourceType={resourceType}
-        searchParam={state.popupSearchParam}
+        searchParam={state.filterDialogSearchParam}
         filter={state.filterDialogFilter}
         defaultValue={''}
         onOk={(filter) => {
@@ -493,12 +495,12 @@ export const MemoizedSearchControl = React.memo(SearchControl);
 
 interface FilterDescriptionProps {
   readonly resourceType: string;
-  readonly searchParam: SearchParameter;
+  readonly searchParams: SearchParameter[];
   readonly filters?: Filter[];
 }
 
 function FilterDescription(props: FilterDescriptionProps): JSX.Element {
-  const filters = (props.filters ?? []).filter((f) => f.code === props.searchParam.code);
+  const filters = (props.filters ?? []).filter((f) => props.searchParams.find((p) => p.code === f.code));
   if (filters.length === 0) {
     return <span>no filters</span>;
   }

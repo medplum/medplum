@@ -60,6 +60,7 @@ const operatorNames: Record<Operator, string> = {
   in: 'in',
   'not-in': 'not in',
   'of-type': 'of type',
+  missing: 'missing',
 };
 
 /**
@@ -327,15 +328,12 @@ function addDateFilterImpl(definition: SearchRequest, field: string, op: Operato
 }
 
 /**
- * Adds a filter for a user field.
+ * Adds a filter that constrains the specified field to "missing".
  *
- * @param field
- * @param op
- * @param value
+ * @param {string} field The field key name.
  */
-export function addUserFilter(definition: SearchRequest, field: string, op: Operator, value: string): SearchRequest {
-  definition = clearFiltersOnField(definition, field);
-  return addFilter(definition, field, op, value);
+export function addMissingFilter(definition: SearchRequest, field: string, value = true): SearchRequest {
+  return addFilter(definition, field, Operator.MISSING, value.toString());
 }
 
 /**
@@ -520,8 +518,8 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
   }
 
   // Priority 2: SearchParameter by exact match
-  if (field.searchParam && field.name === field.searchParam.code) {
-    return renderSearchParameterValue(resource, field.searchParam, field.elementDefinition);
+  if (field.searchParams && field.searchParams.length === 1 && field.name === field.searchParams[0].code) {
+    return renderSearchParameterValue(resource, field.searchParams[0], field.elementDefinition);
   }
 
   // We don't know how to render this field definition
