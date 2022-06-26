@@ -31,6 +31,15 @@ const schema: IndexedStructureDefinition = {
             },
           ],
         },
+        managingOrganization: {
+          id: 'Patient.managingOrganization',
+          path: 'Patient.managingOrganization',
+          type: [
+            {
+              code: 'reference',
+            },
+          ],
+        },
       },
       searchParams: Object.fromEntries(PatientSearchParameters.map((p) => [p.code, p])),
     },
@@ -95,175 +104,6 @@ describe('SearchPopupMenu', () => {
     setup({
       search: { resourceType: 'Patient' },
     });
-  });
-
-  test('Renders name field', () => {
-    setup({
-      search: {
-        resourceType: 'Patient',
-      },
-      searchParams: [schema.types['Patient']?.searchParams?.['name'] as SearchParameter],
-    });
-
-    expect(screen.getByText('Equals...')).toBeDefined();
-  });
-
-  test('Renders date field', () => {
-    setup({
-      search: {
-        resourceType: 'Patient',
-      },
-      searchParams: [schema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
-    });
-
-    expect(screen.getByText('Before...')).toBeDefined();
-    expect(screen.getByText('After...')).toBeDefined();
-  });
-
-  test('Renders date field submenu', async () => {
-    setup({
-      search: {
-        resourceType: 'Patient',
-      },
-      searchParams: [schema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
-    });
-
-    expect(screen.getByText('Before...')).toBeDefined();
-    expect(screen.getByText('After...')).toBeDefined();
-    expect(screen.getByText('Tomorrow')).toBeDefined();
-    expect(screen.getByText('Today')).toBeDefined();
-    expect(screen.getByText('Yesterday')).toBeDefined();
-  });
-
-  test('Renders numeric field', () => {
-    setup({
-      search: {
-        resourceType: 'Observation',
-      },
-      searchParams: [schema.types['Observation']?.searchParams?.['value-quantity'] as SearchParameter],
-    });
-
-    expect(screen.getByText('Sort Largest to Smallest')).toBeDefined();
-    expect(screen.getByText('Sort Smallest to Largest')).toBeDefined();
-  });
-
-  test('Text sort', async () => {
-    let currSearch: SearchRequest = {
-      resourceType: 'Patient',
-    };
-
-    setup({
-      search: currSearch,
-      searchParams: [schema.types['Patient']?.searchParams?.['name'] as SearchParameter],
-      onChange: (e) => (currSearch = e),
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Sort A to Z'));
-    });
-
-    expect(currSearch.sortRules).toBeDefined();
-    expect(currSearch.sortRules?.length).toEqual(1);
-    expect(currSearch.sortRules?.[0].code).toEqual('name');
-    expect(currSearch.sortRules?.[0].descending).toEqual(false);
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Sort Z to A'));
-    });
-
-    expect(currSearch.sortRules).toBeDefined();
-    expect(currSearch.sortRules?.length).toEqual(1);
-    expect(currSearch.sortRules?.[0].code).toEqual('name');
-    expect(currSearch.sortRules?.[0].descending).toEqual(true);
-  });
-
-  test('Text clear filters', async () => {
-    let currSearch: SearchRequest = {
-      resourceType: 'Patient',
-      filters: [
-        {
-          code: 'name',
-          operator: Operator.EQUALS,
-          value: 'Alice',
-        },
-      ],
-    };
-
-    setup({
-      search: currSearch,
-      searchParams: [schema.types['Patient']?.searchParams?.['name'] as SearchParameter],
-      onChange: (e) => (currSearch = e),
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Clear filters'));
-    });
-
-    expect(currSearch.filters?.length).toEqual(0);
-  });
-
-  test('Text submenu prompt', async () => {
-    const searchParam = schema.types['Patient']?.searchParams?.['name'] as SearchParameter;
-    const onPrompt = jest.fn();
-
-    setup({
-      search: {
-        resourceType: 'Patient',
-      },
-      searchParams: [searchParam],
-      onPrompt,
-    });
-
-    const options = [
-      { text: 'Equals...', operator: Operator.EQUALS },
-      { text: 'Does not equal...', operator: Operator.NOT_EQUALS },
-      { text: 'Contains...', operator: Operator.CONTAINS },
-      { text: 'Does not contain...', operator: Operator.EQUALS },
-    ];
-
-    for (const option of options) {
-      onPrompt.mockClear();
-
-      await act(async () => {
-        fireEvent.click(screen.getByText(option.text));
-      });
-
-      expect(onPrompt).toBeCalledWith(searchParam, {
-        code: 'name',
-        operator: option.operator,
-        value: '',
-      } as Filter);
-    }
-  });
-
-  test('Text missing', async () => {
-    const searchParam = schema.types['Patient']?.searchParams?.['name'] as SearchParameter;
-
-    let currSearch: SearchRequest = {
-      resourceType: 'Observation',
-    };
-
-    setup({
-      search: currSearch,
-      searchParams: [searchParam],
-      onChange: (e) => (currSearch = e),
-    });
-
-    const options = ['Missing', 'Not missing'];
-    for (const option of options) {
-      await act(async () => {
-        fireEvent.click(screen.getByText(option));
-      });
-
-      expect(currSearch.filters).toBeDefined();
-      expect(currSearch.filters?.length).toEqual(1);
-      expect(currSearch.filters).toMatchObject([
-        {
-          code: 'name',
-          operator: Operator.MISSING,
-        },
-      ]);
-    }
   });
 
   test('Date sort', async () => {
@@ -539,6 +379,212 @@ describe('SearchPopupMenu', () => {
     });
 
     expect(currSearch.filters?.length).toEqual(0);
+  });
+
+  test('Reference clear filters', async () => {
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'organization',
+          operator: Operator.EQUALS,
+          value: 'Organization/123',
+        },
+      ],
+    };
+
+    setup({
+      search: currSearch,
+      searchParams: [schema.types['Patient']?.searchParams?.['organization'] as SearchParameter],
+      onChange: (e) => (currSearch = e),
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Clear filters'));
+    });
+
+    expect(currSearch.filters?.length).toEqual(0);
+  });
+
+  test('Reference submenu prompt', async () => {
+    const searchParam = schema.types['Patient']?.searchParams?.['organization'] as SearchParameter;
+    const onPrompt = jest.fn();
+
+    setup({
+      search: {
+        resourceType: 'Patient',
+      },
+      searchParams: [searchParam],
+      onPrompt,
+    });
+
+    const options = [
+      { text: 'Equals...', operator: Operator.EQUALS },
+      { text: 'Does not equal...', operator: Operator.NOT_EQUALS },
+    ];
+
+    for (const option of options) {
+      onPrompt.mockClear();
+
+      await act(async () => {
+        fireEvent.click(screen.getByText(option.text));
+      });
+
+      expect(onPrompt).toBeCalledWith(searchParam, {
+        code: 'organization',
+        operator: option.operator,
+        value: '',
+      } as Filter);
+    }
+  });
+
+  test('Reference missing', async () => {
+    const searchParam = schema.types['Patient']?.searchParams?.['organization'] as SearchParameter;
+
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+    };
+
+    setup({
+      search: currSearch,
+      searchParams: [searchParam],
+      onChange: (e) => (currSearch = e),
+    });
+
+    const options = ['Missing', 'Not missing'];
+    for (const option of options) {
+      await act(async () => {
+        fireEvent.click(screen.getByText(option));
+      });
+
+      expect(currSearch.filters).toBeDefined();
+      expect(currSearch.filters?.length).toEqual(1);
+      expect(currSearch.filters).toMatchObject([
+        {
+          code: 'organization',
+          operator: Operator.MISSING,
+        },
+      ]);
+    }
+  });
+
+  test('Text sort', async () => {
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+    };
+
+    setup({
+      search: currSearch,
+      searchParams: [schema.types['Patient']?.searchParams?.['name'] as SearchParameter],
+      onChange: (e) => (currSearch = e),
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sort A to Z'));
+    });
+
+    expect(currSearch.sortRules).toBeDefined();
+    expect(currSearch.sortRules?.length).toEqual(1);
+    expect(currSearch.sortRules?.[0].code).toEqual('name');
+    expect(currSearch.sortRules?.[0].descending).toEqual(false);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sort Z to A'));
+    });
+
+    expect(currSearch.sortRules).toBeDefined();
+    expect(currSearch.sortRules?.length).toEqual(1);
+    expect(currSearch.sortRules?.[0].code).toEqual('name');
+    expect(currSearch.sortRules?.[0].descending).toEqual(true);
+  });
+
+  test('Text clear filters', async () => {
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Alice',
+        },
+      ],
+    };
+
+    setup({
+      search: currSearch,
+      searchParams: [schema.types['Patient']?.searchParams?.['name'] as SearchParameter],
+      onChange: (e) => (currSearch = e),
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Clear filters'));
+    });
+
+    expect(currSearch.filters?.length).toEqual(0);
+  });
+
+  test('Text submenu prompt', async () => {
+    const searchParam = schema.types['Patient']?.searchParams?.['name'] as SearchParameter;
+    const onPrompt = jest.fn();
+
+    setup({
+      search: {
+        resourceType: 'Patient',
+      },
+      searchParams: [searchParam],
+      onPrompt,
+    });
+
+    const options = [
+      { text: 'Equals...', operator: Operator.EQUALS },
+      { text: 'Does not equal...', operator: Operator.NOT_EQUALS },
+      { text: 'Contains...', operator: Operator.CONTAINS },
+      { text: 'Does not contain...', operator: Operator.EQUALS },
+    ];
+
+    for (const option of options) {
+      onPrompt.mockClear();
+
+      await act(async () => {
+        fireEvent.click(screen.getByText(option.text));
+      });
+
+      expect(onPrompt).toBeCalledWith(searchParam, {
+        code: 'name',
+        operator: option.operator,
+        value: '',
+      } as Filter);
+    }
+  });
+
+  test('Text missing', async () => {
+    const searchParam = schema.types['Patient']?.searchParams?.['name'] as SearchParameter;
+
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+    };
+
+    setup({
+      search: currSearch,
+      searchParams: [searchParam],
+      onChange: (e) => (currSearch = e),
+    });
+
+    const options = ['Missing', 'Not missing'];
+    for (const option of options) {
+      await act(async () => {
+        fireEvent.click(screen.getByText(option));
+      });
+
+      expect(currSearch.filters).toBeDefined();
+      expect(currSearch.filters?.length).toEqual(1);
+      expect(currSearch.filters).toMatchObject([
+        {
+          code: 'name',
+          operator: Operator.MISSING,
+        },
+      ]);
+    }
   });
 
   test('Renders meta.versionId', () => {

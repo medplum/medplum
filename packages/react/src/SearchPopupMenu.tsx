@@ -105,8 +105,11 @@ function SearchParameterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
     case 'number':
     case 'quantity':
       return <NumericFilterSubMenu {...props} />;
+    case 'reference':
+      return <ReferenceFilterSubMenu {...props} />;
     case 'string':
     case 'token':
+    case 'uri':
       return <TextFilterSubMenu {...props} />;
     default:
       return <>Unknown search param type: {props.searchParam.type}</>;
@@ -165,6 +168,22 @@ function NumericFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
       <MenuItem onClick={() => props.onPrompt(searchParam, Operator.LESS_THAN_OR_EQUALS)}>
         Less than or equal to...
       </MenuItem>
+      <MenuSeparator />
+      <MenuItem onClick={() => props.onChange(addMissingFilter(props.search, code))}>Missing</MenuItem>
+      <MenuItem onClick={() => props.onChange(addMissingFilter(props.search, code, false))}>Not missing</MenuItem>
+      <MenuSeparator />
+      <MenuItem onClick={() => props.onClear(searchParam)}>Clear filters</MenuItem>
+    </>
+  );
+}
+
+function ReferenceFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
+  const { searchParam } = props;
+  const code = searchParam.code as string;
+  return (
+    <>
+      <MenuItem onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}>Equals...</MenuItem>
+      <MenuItem onClick={() => props.onPrompt(searchParam, Operator.NOT_EQUALS)}>Does not equal...</MenuItem>
       <MenuSeparator />
       <MenuItem onClick={() => props.onChange(addMissingFilter(props.search, code))}>Missing</MenuItem>
       <MenuItem onClick={() => props.onChange(addMissingFilter(props.search, code, false))}>Not missing</MenuItem>
