@@ -1677,4 +1677,59 @@ describe('FHIR Repo', () => {
     expect(bundleContains(bundle1, serviceRequest1)).toEqual(false);
     expect(bundleContains(bundle1, serviceRequest2)).toEqual(true);
   });
+
+  test('Missing', async () => {
+    const code = randomUUID();
+
+    // Test both an array column (specimen) and a non-array column (encounter),
+    // because the resulting SQL could be subtly different.
+
+    const [outcome1, serviceRequest1] = await systemRepo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      code: { coding: [{ code }] },
+      subject: { reference: 'Patient/' + randomUUID() },
+      specimen: [{ reference: 'Specimen/' + randomUUID() }],
+      encounter: { reference: 'Encounter/' + randomUUID() },
+    });
+    assertOk(outcome1, serviceRequest1);
+
+    const [outcome2, serviceRequest2] = await systemRepo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      code: { coding: [{ code }] },
+      subject: { reference: 'Patient/' + randomUUID() },
+    });
+    assertOk(outcome2, serviceRequest2);
+
+    const [outcome3, bundle1] = await systemRepo.search(
+      parseSearchRequest('ServiceRequest', { code, 'specimen:missing': 'true' })
+    );
+    assertOk(outcome3, bundle1);
+    expect(bundle1.entry?.length).toEqual(1);
+    expect(bundleContains(bundle1, serviceRequest1)).toEqual(false);
+    expect(bundleContains(bundle1, serviceRequest2)).toEqual(true);
+
+    const [outcome4, bundle2] = await systemRepo.search(
+      parseSearchRequest('ServiceRequest', { code, 'specimen:missing': 'false' })
+    );
+    assertOk(outcome4, bundle2);
+    expect(bundle2.entry?.length).toEqual(1);
+    expect(bundleContains(bundle2, serviceRequest1)).toEqual(true);
+    expect(bundleContains(bundle2, serviceRequest2)).toEqual(false);
+
+    const [outcome5, bundle3] = await systemRepo.search(
+      parseSearchRequest('ServiceRequest', { code, 'encounter:missing': 'true' })
+    );
+    assertOk(outcome5, bundle3);
+    expect(bundle3.entry?.length).toEqual(1);
+    expect(bundleContains(bundle3, serviceRequest1)).toEqual(false);
+    expect(bundleContains(bundle3, serviceRequest2)).toEqual(true);
+
+    const [outcome6, bundle4] = await systemRepo.search(
+      parseSearchRequest('ServiceRequest', { code, 'encounter:missing': 'false' })
+    );
+    assertOk(outcome6, bundle4);
+    expect(bundle4.entry?.length).toEqual(1);
+    expect(bundleContains(bundle4, serviceRequest1)).toEqual(true);
+    expect(bundleContains(bundle4, serviceRequest2)).toEqual(false);
+  });
 });
