@@ -255,23 +255,26 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
  * @param typeSchema The type definition.
  */
 function getFieldsList(typeSchema: TypeSchema): string[] {
-  let keys = Object.keys(typeSchema.properties);
+  const result = [] as string[];
+  const keys = new Set<string>();
+  const names = new Set<string>();
 
-  if (typeSchema.searchParams) {
-    // Combine the arrays and de-dupe
-    keys = [...new Set([...keys, ...Object.keys(typeSchema.searchParams)])];
+  // Add properties first
+  for (const key of Object.keys(typeSchema.properties)) {
+    result.push(key);
+    keys.add(key.toLowerCase());
+    names.add(buildFieldNameString(key));
   }
 
-  const result = [] as string[];
-  const names = [] as string[];
-
-  for (const key of keys) {
-    // Dedupe by display name
-    // Many properties and search parameters have the same name
-    const name = buildFieldNameString(key);
-    if (!names.includes(name)) {
-      result.push(key);
-      names.push(name);
+  // Add search parameters if unique
+  if (typeSchema.searchParams) {
+    for (const code of Object.keys(typeSchema.searchParams)) {
+      const name = buildFieldNameString(code);
+      if (!keys.has(code) && !names.has(name)) {
+        result.push(code);
+        keys.add(code);
+        names.add(buildFieldNameString(code));
+      }
     }
   }
 

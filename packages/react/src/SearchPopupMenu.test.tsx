@@ -1,4 +1,5 @@
 import { Filter, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
+import { SearchParameter } from '@medplum/fhirtypes';
 import { MockClient, PatientSearchParameters } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
@@ -30,20 +31,25 @@ const schema: IndexedStructureDefinition = {
             },
           ],
         },
+        managingOrganization: {
+          id: 'Patient.managingOrganization',
+          path: 'Patient.managingOrganization',
+          type: [
+            {
+              code: 'reference',
+            },
+          ],
+        },
       },
       searchParams: Object.fromEntries(PatientSearchParameters.map((p) => [p.code, p])),
     },
     Observation: {
       display: 'Observation',
       properties: {
-        valueInteger: {
+        'value[x]': {
           id: 'Observation.value[x]',
           path: 'Observation.value[x]',
-          type: [
-            {
-              code: 'integer',
-            },
-          ],
+          type: [{ code: 'integer' }, { code: 'quantity' }, { code: 'string' }],
         },
       },
       searchParams: {
@@ -51,6 +57,13 @@ const schema: IndexedStructureDefinition = {
           resourceType: 'SearchParameter',
           code: 'value-quantity',
           type: 'quantity',
+          expression: 'Observation.value',
+        },
+        'value-string': {
+          resourceType: 'SearchParameter',
+          code: 'value-string',
+          type: 'string',
+          expression: 'Observation.value',
         },
       },
     },
@@ -93,71 +106,14 @@ describe('SearchPopupMenu', () => {
     });
   });
 
-  test('Renders name field', () => {
-    setup({
-      search: {
-        resourceType: 'Patient',
-      },
-      searchParam: schema.types['Patient']?.searchParams?.['name'],
-    });
-
-    expect(screen.getByText('Equals...')).toBeDefined();
-  });
-
-  test('Renders date field', () => {
-    setup({
-      search: {
-        resourceType: 'Patient',
-      },
-      searchParam: schema.types['Patient']?.searchParams?.['birthdate'],
-    });
-
-    expect(screen.getByText('Before...')).toBeDefined();
-    expect(screen.getByText('After...')).toBeDefined();
-  });
-
-  test('Renders date field submenu', async () => {
-    setup({
-      search: {
-        resourceType: 'Patient',
-      },
-      searchParam: schema.types['Patient']?.searchParams?.['birthdate'],
-    });
-
-    expect(screen.getByText('Before...')).toBeDefined();
-    expect(screen.getByText('After...')).toBeDefined();
-
-    const dateFiltersSubmenu = screen.getByText('Date filters');
-
-    await act(async () => {
-      fireEvent.click(dateFiltersSubmenu);
-    });
-
-    expect(screen.getByText('Tomorrow')).toBeDefined();
-    expect(screen.getByText('Today')).toBeDefined();
-    expect(screen.getByText('Yesterday')).toBeDefined();
-  });
-
-  test('Renders numeric field', () => {
-    setup({
-      search: {
-        resourceType: 'Observation',
-      },
-      searchParam: schema.types['Observation']?.searchParams?.['value-quantity'],
-    });
-
-    expect(screen.getByText('Sort Largest to Smallest')).toBeDefined();
-    expect(screen.getByText('Sort Smallest to Largest')).toBeDefined();
-  });
-
-  test('Sort', async () => {
+  test('Date sort', async () => {
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
     };
 
     setup({
       search: currSearch,
-      searchParam: schema.types['Patient']?.searchParams?.['birthdate'],
+      searchParams: [schema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
 
@@ -180,94 +136,15 @@ describe('SearchPopupMenu', () => {
     expect(currSearch.sortRules?.[0].descending).toEqual(true);
   });
 
-  test('Clear filters', async () => {
-    let currSearch: SearchRequest = {
-      resourceType: 'Patient',
-      filters: [
-        {
-          code: 'name',
-          operator: Operator.EQUALS,
-          value: 'Alice',
-        },
-      ],
-    };
-
-    setup({
-      search: currSearch,
-      searchParam: schema.types['Patient']?.searchParams?.['name'],
-      onChange: (e) => (currSearch = e),
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Clear filters'));
-    });
-
-    expect(currSearch.filters?.length).toEqual(0);
-  });
-
-  test('Text submenu prompt', async () => {
-    const onPrompt = jest.fn();
-
-    setup({
-      search: {
-        resourceType: 'Patient',
-      },
-      searchParam: schema.types['Patient']?.searchParams?.['name'],
-      onPrompt,
-    });
-
-    const options = [
-      { text: 'Equals...', operator: Operator.EQUALS },
-      { text: 'Does not equal...', operator: Operator.NOT_EQUALS },
-      { text: 'Contains...', operator: Operator.CONTAINS },
-      { text: 'Does not contain...', operator: Operator.EQUALS },
-    ];
-
-    for (const option of options) {
-      onPrompt.mockClear();
-
-      await act(async () => {
-        fireEvent.click(screen.getByText(option.text));
-      });
-
-      expect(onPrompt).toBeCalledWith({
-        code: 'name',
-        operator: option.operator,
-        value: '',
-      } as Filter);
-    }
-  });
-
-  test('Text search prompt', async () => {
-    const onPrompt = jest.fn();
-
-    setup({
-      search: {
-        resourceType: 'Patient',
-      },
-      searchParam: schema.types['Patient']?.searchParams?.['name'],
-      onPrompt,
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Search'));
-    });
-
-    expect(onPrompt).toBeCalledWith({
-      code: 'name',
-      operator: Operator.CONTAINS,
-      value: '',
-    } as Filter);
-  });
-
   test('Date submenu prompt', async () => {
+    const searchParam = schema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter;
     const onPrompt = jest.fn();
 
     setup({
       search: {
         resourceType: 'Patient',
       },
-      searchParam: schema.types['Patient']?.searchParams?.['birthdate'],
+      searchParams: [searchParam],
       onPrompt,
     });
 
@@ -277,8 +154,6 @@ describe('SearchPopupMenu', () => {
       { text: 'Before...', operator: Operator.ENDS_BEFORE },
       { text: 'After...', operator: Operator.STARTS_AFTER },
       { text: 'Between...', operator: Operator.EQUALS },
-      { text: 'Is set', operator: Operator.EQUALS },
-      { text: 'Is not set', operator: Operator.EQUALS },
     ];
 
     for (const option of options) {
@@ -288,7 +163,7 @@ describe('SearchPopupMenu', () => {
         fireEvent.click(screen.getByText(option.text));
       });
 
-      expect(onPrompt).toBeCalledWith({
+      expect(onPrompt).toBeCalledWith(searchParam, {
         code: 'birthdate',
         operator: option.operator,
         value: '',
@@ -303,7 +178,7 @@ describe('SearchPopupMenu', () => {
 
     setup({
       search: currSearch,
-      searchParam: schema.types['Patient']?.searchParams?.['birthdate'],
+      searchParams: [schema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
 
@@ -328,6 +203,390 @@ describe('SearchPopupMenu', () => {
     }
   });
 
+  test('Date missing', async () => {
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+    };
+
+    setup({
+      search: currSearch,
+      searchParams: [schema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
+      onChange: (e) => (currSearch = e),
+    });
+
+    const options = ['Missing', 'Not missing'];
+    for (const option of options) {
+      await act(async () => {
+        fireEvent.click(screen.getByText(option));
+      });
+
+      expect(currSearch.filters).toBeDefined();
+      expect(currSearch.filters?.length).toEqual(1);
+      expect(currSearch.filters).toMatchObject([
+        {
+          code: 'birthdate',
+          operator: Operator.MISSING,
+        },
+      ]);
+    }
+  });
+
+  test('Date clear filters', async () => {
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'birthdate',
+          operator: Operator.EQUALS,
+          value: '2020-01-01',
+        },
+      ],
+    };
+
+    setup({
+      search: currSearch,
+      searchParams: [schema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
+      onChange: (e) => (currSearch = e),
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Clear filters'));
+    });
+
+    expect(currSearch.filters?.length).toEqual(0);
+  });
+
+  test('Quantity sort', async () => {
+    const searchParam = schema.types['Observation']?.searchParams?.['value-quantity'] as SearchParameter;
+
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+    };
+
+    setup({
+      search: currSearch,
+      searchParams: [searchParam],
+      onChange: (e) => (currSearch = e),
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sort Smallest to Largest'));
+    });
+
+    expect(currSearch.sortRules).toBeDefined();
+    expect(currSearch.sortRules?.length).toEqual(1);
+    expect(currSearch.sortRules?.[0].code).toEqual('value-quantity');
+    expect(currSearch.sortRules?.[0].descending).toEqual(false);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sort Largest to Smallest'));
+    });
+
+    expect(currSearch.sortRules).toBeDefined();
+    expect(currSearch.sortRules?.length).toEqual(1);
+    expect(currSearch.sortRules?.[0].code).toEqual('value-quantity');
+    expect(currSearch.sortRules?.[0].descending).toEqual(true);
+  });
+
+  test('Quantity submenu prompt', async () => {
+    const searchParam = schema.types['Observation']?.searchParams?.['value-quantity'] as SearchParameter;
+    const onPrompt = jest.fn();
+
+    setup({
+      search: {
+        resourceType: 'Observation',
+      },
+      searchParams: [searchParam],
+      onPrompt,
+    });
+
+    const options = [
+      { text: 'Equals...', operator: Operator.EQUALS },
+      { text: 'Does not equal...', operator: Operator.NOT_EQUALS },
+      { text: 'Greater than...', operator: Operator.GREATER_THAN },
+      { text: 'Greater than or equal to...', operator: Operator.GREATER_THAN_OR_EQUALS },
+      { text: 'Less than...', operator: Operator.LESS_THAN },
+      { text: 'Less than or equal to...', operator: Operator.LESS_THAN_OR_EQUALS },
+    ];
+
+    for (const option of options) {
+      onPrompt.mockClear();
+
+      await act(async () => {
+        fireEvent.click(screen.getByText(option.text));
+      });
+
+      expect(onPrompt).toBeCalledWith(searchParam, {
+        code: 'value-quantity',
+        operator: option.operator,
+        value: '',
+      } as Filter);
+    }
+  });
+
+  test('Quantity missing', async () => {
+    const searchParam = schema.types['Observation']?.searchParams?.['value-quantity'] as SearchParameter;
+
+    let currSearch: SearchRequest = {
+      resourceType: 'Observation',
+    };
+
+    setup({
+      search: currSearch,
+      searchParams: [searchParam],
+      onChange: (e) => (currSearch = e),
+    });
+
+    const options = ['Missing', 'Not missing'];
+    for (const option of options) {
+      await act(async () => {
+        fireEvent.click(screen.getByText(option));
+      });
+
+      expect(currSearch.filters).toBeDefined();
+      expect(currSearch.filters?.length).toEqual(1);
+      expect(currSearch.filters).toMatchObject([
+        {
+          code: 'value-quantity',
+          operator: Operator.MISSING,
+        },
+      ]);
+    }
+  });
+
+  test('Quantity clear filters', async () => {
+    const searchParam = schema.types['Observation']?.searchParams?.['value-quantity'] as SearchParameter;
+
+    let currSearch: SearchRequest = {
+      resourceType: 'Observation',
+      filters: [
+        {
+          code: 'value-quantity',
+          operator: Operator.EQUALS,
+          value: '100',
+        },
+      ],
+    };
+
+    setup({
+      search: currSearch,
+      searchParams: [searchParam],
+      onChange: (e) => (currSearch = e),
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Clear filters'));
+    });
+
+    expect(currSearch.filters?.length).toEqual(0);
+  });
+
+  test('Reference clear filters', async () => {
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'organization',
+          operator: Operator.EQUALS,
+          value: 'Organization/123',
+        },
+      ],
+    };
+
+    setup({
+      search: currSearch,
+      searchParams: [schema.types['Patient']?.searchParams?.['organization'] as SearchParameter],
+      onChange: (e) => (currSearch = e),
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Clear filters'));
+    });
+
+    expect(currSearch.filters?.length).toEqual(0);
+  });
+
+  test('Reference submenu prompt', async () => {
+    const searchParam = schema.types['Patient']?.searchParams?.['organization'] as SearchParameter;
+    const onPrompt = jest.fn();
+
+    setup({
+      search: {
+        resourceType: 'Patient',
+      },
+      searchParams: [searchParam],
+      onPrompt,
+    });
+
+    const options = [
+      { text: 'Equals...', operator: Operator.EQUALS },
+      { text: 'Does not equal...', operator: Operator.NOT_EQUALS },
+    ];
+
+    for (const option of options) {
+      onPrompt.mockClear();
+
+      await act(async () => {
+        fireEvent.click(screen.getByText(option.text));
+      });
+
+      expect(onPrompt).toBeCalledWith(searchParam, {
+        code: 'organization',
+        operator: option.operator,
+        value: '',
+      } as Filter);
+    }
+  });
+
+  test('Reference missing', async () => {
+    const searchParam = schema.types['Patient']?.searchParams?.['organization'] as SearchParameter;
+
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+    };
+
+    setup({
+      search: currSearch,
+      searchParams: [searchParam],
+      onChange: (e) => (currSearch = e),
+    });
+
+    const options = ['Missing', 'Not missing'];
+    for (const option of options) {
+      await act(async () => {
+        fireEvent.click(screen.getByText(option));
+      });
+
+      expect(currSearch.filters).toBeDefined();
+      expect(currSearch.filters?.length).toEqual(1);
+      expect(currSearch.filters).toMatchObject([
+        {
+          code: 'organization',
+          operator: Operator.MISSING,
+        },
+      ]);
+    }
+  });
+
+  test('Text sort', async () => {
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+    };
+
+    setup({
+      search: currSearch,
+      searchParams: [schema.types['Patient']?.searchParams?.['name'] as SearchParameter],
+      onChange: (e) => (currSearch = e),
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sort A to Z'));
+    });
+
+    expect(currSearch.sortRules).toBeDefined();
+    expect(currSearch.sortRules?.length).toEqual(1);
+    expect(currSearch.sortRules?.[0].code).toEqual('name');
+    expect(currSearch.sortRules?.[0].descending).toEqual(false);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sort Z to A'));
+    });
+
+    expect(currSearch.sortRules).toBeDefined();
+    expect(currSearch.sortRules?.length).toEqual(1);
+    expect(currSearch.sortRules?.[0].code).toEqual('name');
+    expect(currSearch.sortRules?.[0].descending).toEqual(true);
+  });
+
+  test('Text clear filters', async () => {
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Alice',
+        },
+      ],
+    };
+
+    setup({
+      search: currSearch,
+      searchParams: [schema.types['Patient']?.searchParams?.['name'] as SearchParameter],
+      onChange: (e) => (currSearch = e),
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Clear filters'));
+    });
+
+    expect(currSearch.filters?.length).toEqual(0);
+  });
+
+  test('Text submenu prompt', async () => {
+    const searchParam = schema.types['Patient']?.searchParams?.['name'] as SearchParameter;
+    const onPrompt = jest.fn();
+
+    setup({
+      search: {
+        resourceType: 'Patient',
+      },
+      searchParams: [searchParam],
+      onPrompt,
+    });
+
+    const options = [
+      { text: 'Equals...', operator: Operator.EQUALS },
+      { text: 'Does not equal...', operator: Operator.NOT_EQUALS },
+      { text: 'Contains...', operator: Operator.CONTAINS },
+      { text: 'Does not contain...', operator: Operator.EQUALS },
+    ];
+
+    for (const option of options) {
+      onPrompt.mockClear();
+
+      await act(async () => {
+        fireEvent.click(screen.getByText(option.text));
+      });
+
+      expect(onPrompt).toBeCalledWith(searchParam, {
+        code: 'name',
+        operator: option.operator,
+        value: '',
+      } as Filter);
+    }
+  });
+
+  test('Text missing', async () => {
+    const searchParam = schema.types['Patient']?.searchParams?.['name'] as SearchParameter;
+
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+    };
+
+    setup({
+      search: currSearch,
+      searchParams: [searchParam],
+      onChange: (e) => (currSearch = e),
+    });
+
+    const options = ['Missing', 'Not missing'];
+    for (const option of options) {
+      await act(async () => {
+        fireEvent.click(screen.getByText(option));
+      });
+
+      expect(currSearch.filters).toBeDefined();
+      expect(currSearch.filters?.length).toEqual(1);
+      expect(currSearch.filters).toMatchObject([
+        {
+          code: 'name',
+          operator: Operator.MISSING,
+        },
+      ]);
+    }
+  });
+
   test('Renders meta.versionId', () => {
     const search = {
       resourceType: 'Patient',
@@ -338,7 +597,7 @@ describe('SearchPopupMenu', () => {
 
     setup({
       search,
-      searchParam: fields[0].searchParam,
+      searchParams: fields[0].searchParams,
     });
 
     expect(screen.getByText('Equals...')).toBeDefined();
@@ -356,10 +615,29 @@ describe('SearchPopupMenu', () => {
       search: {
         resourceType: 'Patient',
       },
-      searchParam: fields[0].searchParam,
+      searchParams: fields[0].searchParams,
     });
 
     expect(screen.getByText('Before...')).toBeDefined();
     expect(screen.getByText('After...')).toBeDefined();
+  });
+
+  test('Search parameter choice', () => {
+    const search = {
+      resourceType: 'Observation',
+      fields: ['value[x]'],
+    };
+
+    const fields = getFieldDefinitions(schema, search);
+
+    setup({
+      search: {
+        resourceType: 'Observation',
+      },
+      searchParams: fields[0].searchParams,
+    });
+
+    expect(screen.getByText('Value Quantity')).toBeDefined();
+    expect(screen.getByText('Value String')).toBeDefined();
   });
 });

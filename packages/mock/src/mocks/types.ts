@@ -111,6 +111,14 @@ export const PatientSearchParameters: SearchParameter[] = [
   },
   {
     resourceType: 'SearchParameter',
+    id: 'Observation-value-string',
+    code: 'value-string',
+    base: ['Observation'],
+    type: 'string',
+    expression: '(Observation.value as string) | (Observation.value as CodeableConcept).text',
+  },
+  {
+    resourceType: 'SearchParameter',
     id: 'Encounter-length',
     code: 'length',
     base: ['Encounter'],

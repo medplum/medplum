@@ -112,7 +112,7 @@ export const ServiceRequests = (): JSX.Element => {
 export const Observations = (): JSX.Element => {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Observation',
-    fields: ['id', '_lastUpdated', 'subject', 'code', 'value-quantity'],
+    fields: ['id', '_lastUpdated', 'subject', 'code', 'value[x]', 'value-quantity'],
   });
 
   return (
