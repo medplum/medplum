@@ -108,3 +108,23 @@ export const ServiceRequests = (): JSX.Element => {
     />
   );
 };
+
+export const Observations = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Observation',
+    fields: ['id', '_lastUpdated', 'subject', 'code', 'value-quantity'],
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      checkboxesEnabled={true}
+      onLoad={(e) => console.log('onLoad', e)}
+      onClick={(e) => console.log('onClick', e)}
+      onChange={(e) => {
+        console.log('onChange', e);
+        setSearch(e.definition);
+      }}
+    />
+  );
+};

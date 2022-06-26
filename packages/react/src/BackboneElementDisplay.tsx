@@ -1,26 +1,25 @@
-import { getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/core';
+import { getPropertyDisplayName, globalSchema, TypedValue } from '@medplum/core';
 import React from 'react';
 import { DEFAULT_IGNORED_PROPERTIES } from './constants';
 import { DescriptionList, DescriptionListEntry } from './DescriptionList';
 import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 export interface BackboneElementDisplayProps {
-  schema: IndexedStructureDefinition;
-  typeName: string;
-  value?: any;
+  value: TypedValue;
   compact?: boolean;
   ignoreMissingValues?: boolean;
   link?: boolean;
 }
 
 export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.Element | null {
-  const value = props.value;
+  const typedValue = props.value;
+  const value = typedValue.value;
   if (!value) {
     return null;
   }
 
-  const typeName = props.typeName;
-  const typeSchema = props.schema.types[typeName];
+  const typeName = typedValue.type;
+  const typeSchema = globalSchema.types[typeName];
   if (!typeSchema) {
     return <div>{typeName}&nbsp;not implemented</div>;
   }
@@ -40,7 +39,7 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
           return null;
         }
         const property = entry[1];
-        const [propertyValue, propertyType] = getValueAndType(value, property);
+        const [propertyValue, propertyType] = getValueAndType(typedValue, key);
         if (
           props.ignoreMissingValues &&
           (!propertyValue || (Array.isArray(propertyValue) && propertyValue.length === 0))
@@ -48,9 +47,8 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
           return null;
         }
         return (
-          <DescriptionListEntry key={key} term={getPropertyDisplayName(property)}>
+          <DescriptionListEntry key={key} term={getPropertyDisplayName(key)}>
             <ResourcePropertyDisplay
-              schema={props.schema}
               property={property}
               propertyType={propertyType}
               value={propertyValue}

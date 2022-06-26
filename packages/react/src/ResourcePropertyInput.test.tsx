@@ -1,4 +1,4 @@
-import { createSchema, PropertyType } from '@medplum/core';
+import { PropertyType } from '@medplum/core';
 import {
   Address,
   Annotation,
@@ -22,7 +22,6 @@ import { MedplumProvider } from './MedplumProvider';
 import { ResourcePropertyInput, ResourcePropertyInputProps } from './ResourcePropertyInput';
 
 const medplum = new MockClient();
-const schema = createSchema();
 
 describe('ResourcePropertyInput', () => {
   function setup(props: ResourcePropertyInputProps): void {
@@ -49,7 +48,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'active',
-      schema,
       property,
       onChange,
     });
@@ -75,7 +73,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'date',
-      schema,
       property,
       onChange,
     });
@@ -103,7 +100,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'dateTime',
-      schema,
       property,
       onChange,
     });
@@ -129,7 +125,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'markdown',
-      schema,
       property,
       onChange,
     });
@@ -163,7 +158,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'address',
-      schema,
       property,
       defaultValue,
     });
@@ -188,7 +182,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'note',
-      schema,
       property,
       defaultValue,
     });
@@ -214,7 +207,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'content',
-      schema,
       property,
       defaultValue,
       onChange,
@@ -259,7 +251,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'photo',
-      schema,
       property,
       defaultValue,
       onChange,
@@ -301,7 +292,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'maritalStatus',
-      schema,
       property,
       defaultValue,
     });
@@ -327,7 +317,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'telecom',
-      schema,
       property,
       defaultValue,
     });
@@ -356,7 +345,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'extension',
-      schema,
       property,
       defaultValue,
       onChange,
@@ -391,7 +379,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'name',
-      schema,
       property,
       defaultValue,
     });
@@ -419,7 +406,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'identifier',
-      schema,
       property,
       defaultValue,
       onChange,
@@ -454,7 +440,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'period',
-      schema,
       property,
       defaultValue,
       onChange,
@@ -490,7 +475,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'test',
-      schema,
       property,
       defaultValue,
       onChange,
@@ -526,7 +510,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'test',
-      schema,
       property,
       defaultValue,
       onChange,
@@ -565,7 +548,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'test',
-      schema,
       property,
       defaultValue,
       onChange,
@@ -598,7 +580,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'managingOrganization',
-      schema,
       property,
     });
     expect(screen.getByTestId('autocomplete')).toBeInTheDocument();
@@ -613,7 +594,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'value[x]',
-      schema,
       property,
       onChange,
     });
@@ -686,7 +666,6 @@ describe('ResourcePropertyInput', () => {
 
     setup({
       name: 'value[x]',
-      schema,
       property,
       defaultPropertyType: PropertyType.integer,
     });

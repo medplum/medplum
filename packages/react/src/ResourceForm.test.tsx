@@ -111,6 +111,8 @@ describe('ResourceForm', () => {
   });
 
   test('Submit Observation', async () => {
+    await medplum.requestSchema('Observation');
+
     const onSubmit = jest.fn();
 
     await setup({

@@ -1,12 +1,13 @@
-import { IndexedStructureDefinition, PropertyType } from '@medplum/core';
+import { indexStructureDefinitionBundle, PropertyType } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
 import {
   Address,
   Annotation,
   Attachment,
+  Bundle,
   CodeableConcept,
   Coding,
   ContactPoint,
-  ElementDefinition,
   HumanName,
   Identifier,
   Period,
@@ -19,79 +20,12 @@ import {
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
-
-const schema: IndexedStructureDefinition = {
-  types: {
-    Subscription: {
-      display: 'Subscription',
-      properties: {
-        channel: {
-          path: 'Subscription.channel',
-          min: 1,
-          max: '1',
-          type: [
-            {
-              code: 'BackboneElement',
-            },
-          ],
-        },
-      },
-    },
-    SubscriptionChannel: {
-      display: 'SubscriptionChannel',
-      parentType: 'Subscription',
-      properties: {
-        type: {
-          path: 'Subscription.channel.type',
-          min: 1,
-          max: '1',
-          type: [
-            {
-              code: 'code',
-            },
-          ],
-        },
-        endpoint: {
-          path: 'Subscription.channel.endpoint',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'url',
-            },
-          ],
-        },
-        payload: {
-          path: 'Subscription.channel.payload',
-          min: 0,
-          max: '1',
-          type: [
-            {
-              code: 'code',
-            },
-          ],
-        },
-        header: {
-          path: 'Subscription.channel.header',
-          min: 0,
-          max: '*',
-          type: [
-            {
-              code: 'string',
-            },
-          ],
-        },
-      },
-    },
-  },
-};
+import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
 describe('ResourcePropertyDisplay', () => {
   test('Renders null value', () => {
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'string' }] }}
         propertyType={PropertyType.string}
         value={null}
@@ -102,7 +36,6 @@ describe('ResourcePropertyDisplay', () => {
   test('Renders boolean true', () => {
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'boolean' }] }}
         propertyType={PropertyType.boolean}
         value={true}
@@ -115,7 +48,6 @@ describe('ResourcePropertyDisplay', () => {
   test('Renders boolean false', () => {
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'boolean' }] }}
         propertyType={PropertyType.boolean}
         value={false}
@@ -128,7 +60,6 @@ describe('ResourcePropertyDisplay', () => {
   test('Renders boolean undefined', () => {
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'boolean' }] }}
         propertyType={PropertyType.boolean}
         value={undefined}
@@ -141,7 +72,6 @@ describe('ResourcePropertyDisplay', () => {
   test('Renders string', () => {
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'string' }] }}
         propertyType={PropertyType.string}
         value={'hello'}
@@ -153,7 +83,6 @@ describe('ResourcePropertyDisplay', () => {
   test('Renders canonical', () => {
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'canonical' }] }}
         propertyType={PropertyType.canonical}
         value="hello"
@@ -165,7 +94,6 @@ describe('ResourcePropertyDisplay', () => {
   test('Renders url', () => {
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'url' }] }}
         propertyType={PropertyType.url}
         value="https://example.com"
@@ -177,7 +105,6 @@ describe('ResourcePropertyDisplay', () => {
   test('Renders uri', () => {
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'uri' }] }}
         propertyType={PropertyType.uri}
         value="https://example.com"
@@ -189,7 +116,6 @@ describe('ResourcePropertyDisplay', () => {
   test('Renders string array', () => {
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'string' }], max: '*' }}
         propertyType={PropertyType.string}
         value={['hello', 'world']}
@@ -202,7 +128,6 @@ describe('ResourcePropertyDisplay', () => {
   test('Renders markdown', () => {
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'markdown' }] }}
         propertyType={PropertyType.markdown}
         value="hello"
@@ -218,7 +143,6 @@ describe('ResourcePropertyDisplay', () => {
 
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'Address' }] }}
         propertyType={PropertyType.Address}
         value={value}
@@ -235,7 +159,6 @@ describe('ResourcePropertyDisplay', () => {
 
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'Annotation' }] }}
         propertyType={PropertyType.Annotation}
         value={value}
@@ -254,7 +177,6 @@ describe('ResourcePropertyDisplay', () => {
 
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'Attachment' }] }}
         propertyType={PropertyType.Attachment}
         value={value}
@@ -280,7 +202,6 @@ describe('ResourcePropertyDisplay', () => {
 
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'Attachment' }], max: '*' }}
         propertyType={PropertyType.Attachment}
         value={value}
@@ -297,7 +218,6 @@ describe('ResourcePropertyDisplay', () => {
 
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'CodeableConcept' }] }}
         propertyType={PropertyType.CodeableConcept}
         value={value}
@@ -315,7 +235,6 @@ describe('ResourcePropertyDisplay', () => {
 
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'Coding' }] }}
         propertyType={PropertyType.Coding}
         value={value}
@@ -333,7 +252,6 @@ describe('ResourcePropertyDisplay', () => {
 
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'ContactPoint' }] }}
         propertyType={PropertyType.ContactPoint}
         value={value}
@@ -350,7 +268,6 @@ describe('ResourcePropertyDisplay', () => {
 
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'HumanName' }] }}
         propertyType={PropertyType.HumanName}
         value={value}
@@ -368,7 +285,6 @@ describe('ResourcePropertyDisplay', () => {
 
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'Identifier' }] }}
         propertyType={PropertyType.Identifier}
         value={value}
@@ -386,7 +302,6 @@ describe('ResourcePropertyDisplay', () => {
 
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'Period' }] }}
         propertyType={PropertyType.Period}
         value={value}
@@ -404,7 +319,6 @@ describe('ResourcePropertyDisplay', () => {
 
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'Quantity' }] }}
         propertyType={PropertyType.Quantity}
         value={value}
@@ -422,7 +336,6 @@ describe('ResourcePropertyDisplay', () => {
 
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'Range' }] }}
         propertyType={PropertyType.Range}
         value={value}
@@ -440,7 +353,6 @@ describe('ResourcePropertyDisplay', () => {
 
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ type: [{ code: 'Ratio' }] }}
         propertyType={PropertyType.Ratio}
         value={value}
@@ -459,7 +371,6 @@ describe('ResourcePropertyDisplay', () => {
     render(
       <MemoryRouter>
         <ResourcePropertyDisplay
-          schema={schema}
           property={{ type: [{ code: 'Reference' }] }}
           propertyType={PropertyType.Reference}
           value={value}
@@ -471,6 +382,8 @@ describe('ResourcePropertyDisplay', () => {
   });
 
   test('Renders BackboneElement', () => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+
     const value: SubscriptionChannel = {
       type: 'rest-hook',
       endpoint: 'https://example.com/hook',
@@ -478,7 +391,6 @@ describe('ResourcePropertyDisplay', () => {
 
     render(
       <ResourcePropertyDisplay
-        schema={schema}
         property={{ path: 'Subscription.channel', type: [{ code: 'BackboneElement' }] }}
         propertyType={PropertyType.BackboneElement}
         value={value}
@@ -488,14 +400,14 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText(value.endpoint as string)).toBeInTheDocument();
   });
 
-  test('getValueAndType', () => {
-    expect(getValueAndType(null, {} as ElementDefinition)[0]).toBeUndefined();
-    expect(getValueAndType({}, {} as ElementDefinition)[0]).toBeUndefined();
-    expect(getValueAndType({}, { path: '' } as ElementDefinition)[0]).toBeUndefined();
-    expect(getValueAndType({}, { path: 'x' } as ElementDefinition)[0]).toBeUndefined();
-    expect(getValueAndType({}, { path: 'x', type: [] } as ElementDefinition)[0]).toBeUndefined();
-    expect(
-      getValueAndType({}, { path: 'x', type: [{ code: 'foo' }, { code: 'bar' }] } as ElementDefinition)[0]
-    ).toBeUndefined();
+  test('Handles unknown property', () => {
+    expect.assertions(2);
+    console.error = jest.fn();
+    try {
+      render(<ResourcePropertyDisplay propertyType={PropertyType.BackboneElement} value={{}} />);
+    } catch (err) {
+      expect((err as Error).message).toMatch('requires element definition');
+    }
+    expect(console.error).toBeCalled();
   });
 });

@@ -1,4 +1,3 @@
-import { IndexedStructureDefinition } from '@medplum/core';
 import { ElementDefinition } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
 import { Button } from './Button';
@@ -6,7 +5,6 @@ import { ResourcePropertyInput } from './ResourcePropertyInput';
 import { killEvent } from './utils/dom';
 
 interface ResourceArrayInputProps {
-  schema: IndexedStructureDefinition;
   property: ElementDefinition;
   name: string;
   defaultValue?: any[];
@@ -40,7 +38,6 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
               <td>
                 <ResourcePropertyInput
                   arrayElement={true}
-                  schema={props.schema}
                   property={props.property}
                   name={props.name + '.' + index}
                   defaultValue={v}

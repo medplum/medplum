@@ -5,6 +5,7 @@ import {
   fhirPathEquals,
   fhirPathEquivalent,
   fhirPathIs,
+  getTypedPropertyValue,
   toJsBoolean,
   toTypedValue,
 } from './utils';
@@ -91,5 +92,17 @@ describe('FHIRPath utils', () => {
     // Sort order does not matter
     expect(fhirPathArrayEquivalent([TYPED_1, TYPED_2], [TYPED_2, TYPED_1])).toEqual([TYPED_TRUE]);
     expect(fhirPathArrayEquivalent([TYPED_1, TYPED_2], [TYPED_1, TYPED_1])).toEqual([TYPED_FALSE]);
+  });
+
+  test('getTypedPropertyValue', () => {
+    expect(getTypedPropertyValue({ type: '', value: undefined }, 'x')).toBeUndefined();
+    expect(getTypedPropertyValue({ type: '', value: null }, 'x')).toBeUndefined();
+    expect(getTypedPropertyValue({ type: 'x', value: {} }, 'x')).toBeUndefined();
+    expect(getTypedPropertyValue({ type: 'integer', value: 123 }, 'x')).toBeUndefined();
+
+    // Support missing schemas
+    expect(getTypedPropertyValue({ type: 'Foo', value: { x: 1 } }, 'x')).toEqual(TYPED_1);
+    expect(getTypedPropertyValue({ type: 'Foo', value: { x: [1] } }, 'x')).toEqual([TYPED_1]);
+    expect(getTypedPropertyValue({ type: 'Foo', value: { valueInteger: 1 } }, 'value')).toEqual(TYPED_1);
   });
 });

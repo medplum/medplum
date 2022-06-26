@@ -21,6 +21,7 @@ import {
   NotEquivalentAtom,
   OrAtom,
   SymbolAtom,
+  TypedValue,
   UnaryOperatorAtom,
   UnionAtom,
   XorAtom,
@@ -28,6 +29,7 @@ import {
 import { parseDateString } from './date';
 import { functions } from './functions';
 import { Token, tokenize } from './tokenize';
+import { toTypedValue } from './utils';
 
 interface PrefixParselet {
   parse(parser: Parser, token: Token): Atom;
@@ -339,20 +341,25 @@ export function parseFhirPath(input: string): FhirPathAtom {
  * @param context The resource or object to evaluate the expression against.
  * @returns The result of the FHIRPath expression against the resource or object.
  */
-export function evalFhirPath(input: string, context: unknown): unknown[] {
+export function evalFhirPath(expression: string, input: unknown): unknown[] {
   // eval requires a TypedValue array
   // As a convenience, we can accept array or non-array, and TypedValue or unknown value
-  if (!Array.isArray(context)) {
-    context = [context];
-  }
-  const array = Array.isArray(context) ? context : [context];
+  const array = Array.isArray(input) ? input : [input];
   for (let i = 0; i < array.length; i++) {
     const el = array[i];
     if (!(typeof el === 'object' && 'type' in el && 'value' in el)) {
-      array[i] = { type: PropertyType.BackboneElement, value: el };
+      array[i] = toTypedValue(array[i]);
     }
   }
-  return parseFhirPath(input)
-    .eval(array)
-    .map((e) => e.value);
+  return evalFhirPathTyped(expression, array).map((e) => e.value);
+}
+
+/**
+ * Evaluates a FHIRPath expression against a resource or other object.
+ * @param input The FHIRPath expression to parse.
+ * @param context The resource or object to evaluate the expression against.
+ * @returns The result of the FHIRPath expression against the resource or object.
+ */
+export function evalFhirPathTyped(expression: string, input: TypedValue[]): TypedValue[] {
+  return parseFhirPath(expression).eval(input);
 }

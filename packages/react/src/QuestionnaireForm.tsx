@@ -2,9 +2,13 @@ import {
   capitalize,
   createReference,
   getReferenceString,
+  getTypedPropertyValue,
+  globalSchema,
   IndexedStructureDefinition,
   ProfileResource,
+  PropertyType,
   stringify,
+  TypedValue,
 } from '@medplum/core';
 import {
   Questionnaire,
@@ -27,7 +31,7 @@ import { useMedplum } from './MedplumProvider';
 import { QuantityInput } from './QuantityInput';
 import { QuestionnaireItemType } from './QuestionnaireUtils';
 import { ReferenceInput } from './ReferenceInput';
-import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
+import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 import { TextArea } from './TextArea';
 import { useResource } from './useResource';
 import './QuestionnaireForm.css';
@@ -80,9 +84,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       }}
     >
       {questionnaire.title && <h1>{questionnaire.title}</h1>}
-      {questionnaire.item && (
-        <QuestionnaireFormItemArray schema={schema} items={questionnaire.item} onChange={setItems} />
-      )}
+      {questionnaire.item && <QuestionnaireFormItemArray items={questionnaire.item} onChange={setItems} />}
       <Button type="submit" size="large">
         OK
       </Button>
@@ -91,7 +93,6 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 }
 
 interface QuestionnaireFormItemArrayProps {
-  schema: IndexedStructureDefinition;
   items: QuestionnaireItem[];
   onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
 }
@@ -114,14 +115,12 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
         item.type === QuestionnaireItemType.group ? (
           <QuestionnaireFormItem
             key={item.linkId}
-            schema={props.schema}
             item={item}
             onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
           />
         ) : (
           <FormSection key={item.linkId} htmlFor={item.linkId} title={item.text || ''}>
             <QuestionnaireFormItem
-              schema={props.schema}
               item={item}
               onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
             />
@@ -133,7 +132,6 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
 }
 
 export interface QuestionnaireFormItemProps {
-  schema: IndexedStructureDefinition;
   item: QuestionnaireItem;
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
@@ -172,7 +170,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <div>
           <h3>{item.text}</h3>
-          {item.item && <QuestionnaireFormItemArray schema={props.schema} items={item.item} onChange={onChangeItem} />}
+          {item.item && <QuestionnaireFormItemArray items={item.item} onChange={onChangeItem} />}
         </div>
       );
     case QuestionnaireItemType.boolean:
@@ -265,12 +263,16 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         <div>
           {item.answerOption &&
             item.answerOption.map((option: QuestionnaireItemAnswerOption, index: number) => {
-              const valueElementDefinition = props.schema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
-              const initialElementDefinition =
-                props.schema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
-              const [propertyValue, propertyType] = getValueAndType(option, valueElementDefinition);
-              const [initialValue, initialType] = getValueAndType(initial, initialElementDefinition);
-              const propertyName = 'value' + capitalize(propertyType);
+              const valueElementDefinition = globalSchema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
+              const optionValue = getTypedPropertyValue(
+                { type: 'QuestionnaireItemAnswerOption', value: option },
+                'value'
+              ) as TypedValue;
+              const initialValue = getTypedPropertyValue(
+                { type: 'QuestionnaireItemInitial', value: initial },
+                'value'
+              ) as TypedValue | undefined;
+              const propertyName = 'value' + capitalize(optionValue.type);
               const optionName = `${name}-option-${index}`;
               return (
                 <div key={optionName} className="medplum-questionnaire-option-row">
@@ -279,20 +281,17 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
                       type="radio"
                       id={optionName}
                       name={name}
-                      value={propertyValue}
-                      defaultChecked={
-                        propertyType === initialType && stringify(propertyValue) === stringify(initialValue)
-                      }
-                      onChange={() => onChangeAnswer({ [propertyName]: propertyValue })}
+                      value={optionValue.value}
+                      defaultChecked={initialValue && stringify(optionValue) === stringify(initialValue)}
+                      onChange={() => onChangeAnswer({ [propertyName]: optionValue.value })}
                     />
                   </div>
                   <div>
                     <label htmlFor={optionName}>
                       <ResourcePropertyDisplay
-                        schema={props.schema}
                         property={valueElementDefinition}
-                        propertyType={propertyType}
-                        value={propertyValue}
+                        propertyType={optionValue.type as PropertyType}
+                        value={optionValue.value}
                       />
                     </label>
                   </div>

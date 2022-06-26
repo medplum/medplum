@@ -35,6 +35,7 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
   }
 
   const typeSchema = schema.types[value.resourceType];
+  const typedValue = { type: value.resourceType, value };
   return (
     <form
       noValidate
@@ -58,17 +59,16 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
           return null;
         }
         const property = entry[1];
-        const [propertyValue, propertyType] = getValueAndType(value, property);
+        const [propertyValue, propertyType] = getValueAndType(typedValue, key);
         return (
           <FormSection
             key={key}
-            title={getPropertyDisplayName(property)}
+            title={getPropertyDisplayName(key)}
             description={property.definition}
             htmlFor={key}
             outcome={props.outcome}
           >
             <ResourcePropertyInput
-              schema={schema}
               property={property}
               name={key}
               defaultValue={propertyValue}

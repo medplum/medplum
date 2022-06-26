@@ -1,4 +1,4 @@
-import { buildTypeName, capitalize, IndexedStructureDefinition, PropertyType } from '@medplum/core';
+import { buildTypeName, getTypedPropertyValue, PropertyType, TypedValue } from '@medplum/core';
 import { ElementDefinition } from '@medplum/fhirtypes';
 import React from 'react';
 import { AddressDisplay } from './AddressDisplay';
@@ -19,7 +19,6 @@ import { ReferenceDisplay } from './ReferenceDisplay';
 import { ResourceArrayDisplay } from './ResourceArrayDisplay';
 
 export interface ResourcePropertyDisplayProps {
-  schema?: IndexedStructureDefinition;
   property?: ElementDefinition;
   propertyType: PropertyType;
   value: any;
@@ -36,12 +35,8 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     if (propertyType === 'Attachment') {
       return <AttachmentArrayDisplay values={value} maxWidth={props.maxWidth} />;
     }
-    if (!props.schema) {
-      throw Error(`Displaying property of type ${props.propertyType} requires schema to be passed`);
-    }
     return (
       <ResourceArrayDisplay
-        schema={props.schema}
         property={property}
         values={value}
         ignoreMissingValues={props.ignoreMissingValues}
@@ -96,14 +91,12 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.Reference:
       return <ReferenceDisplay value={value} link={props.link} />;
     default:
-      if (!props.schema) {
-        throw Error(`Displaying property of type ${props.propertyType} requires schema to be passed`);
+      if (!property?.path) {
+        throw Error(`Displaying property of type ${props.propertyType} requires element definition path`);
       }
       return (
         <BackboneElementDisplay
-          schema={props.schema}
-          typeName={buildTypeName(property?.path?.split('.') as string[])}
-          value={value}
+          value={{ type: buildTypeName(property?.path?.split('.') as string[]), value }}
           compact={true}
           ignoreMissingValues={props.ignoreMissingValues}
         />
@@ -121,31 +114,15 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
  * @param property The property definition.
  * @returns The value of the property and the property type.
  */
-export function getValueAndType(context: any, property: ElementDefinition): [any, PropertyType] {
-  if (!context) {
-    return [undefined, PropertyType.string];
+export function getValueAndType(context: TypedValue, path: string): [any, PropertyType] {
+  const typedResult = getTypedPropertyValue(context, path);
+  if (!typedResult) {
+    return [undefined, 'undefined' as PropertyType];
   }
 
-  const path = property.path?.split('.')?.pop();
-  if (!path) {
-    return [undefined, PropertyType.string];
+  if (Array.isArray(typedResult)) {
+    return [typedResult.map((e) => e.value), typedResult[0].type as PropertyType];
   }
 
-  const types = property.type;
-  if (!types || types.length === 0) {
-    return [undefined, PropertyType.string];
-  }
-
-  if (types.length === 1) {
-    return [context[path], types[0].code as PropertyType];
-  }
-
-  for (const type of types) {
-    const path2 = path.replace('[x]', capitalize(type.code as string)) as string;
-    if (path2 in context) {
-      return [context[path2], type.code as PropertyType];
-    }
-  }
-
-  return [undefined, types[0].code as PropertyType];
+  return [typedResult.value, typedResult.type as PropertyType];
 }

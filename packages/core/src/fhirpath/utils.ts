@@ -1,5 +1,6 @@
-import { Period, Quantity } from '@medplum/fhirtypes';
-import { PropertyType } from '../types';
+import { Period, Quantity, Resource } from '@medplum/fhirtypes';
+import { buildTypeName, globalSchema, PropertyType, TypeSchema } from '../types';
+import { capitalize } from '../utils';
 import { TypedValue } from './atoms';
 
 /**
@@ -17,7 +18,9 @@ export function booleanToTypedValue(value: boolean): [TypedValue] {
  * @returns A "best guess" TypedValue for the given value.
  */
 export function toTypedValue(value: unknown): TypedValue {
-  if (Number.isSafeInteger(value)) {
+  if (value === null || value === undefined) {
+    return { type: 'undefined', value: undefined };
+  } else if (Number.isSafeInteger(value)) {
     return { type: PropertyType.integer, value };
   } else if (typeof value === 'number') {
     return { type: PropertyType.decimal, value };
@@ -27,6 +30,8 @@ export function toTypedValue(value: unknown): TypedValue {
     return { type: PropertyType.string, value };
   } else if (isQuantity(value)) {
     return { type: PropertyType.Quantity, value };
+  } else if (typeof value === 'object' && 'resourceType' in value) {
+    return { type: (value as Resource).resourceType, value };
   } else {
     return { type: PropertyType.BackboneElement, value };
   }
@@ -41,6 +46,124 @@ export function toTypedValue(value: unknown): TypedValue {
  */
 export function toJsBoolean(obj: TypedValue[]): boolean {
   return obj.length === 0 ? false : !!obj[0].value;
+}
+
+/**
+ * Returns the value of the property and the property type.
+ * Some property definitions support multiple types.
+ * For example, "Observation.value[x]" can be "valueString", "valueInteger", "valueQuantity", etc.
+ * According to the spec, there can only be one property for a given element definition.
+ * This function returns the value and the type.
+ * @param input The base context (FHIR resource or backbone element).
+ * @param path The property path.
+ * @returns The value of the property and the property type.
+ */
+export function getTypedPropertyValue(input: TypedValue, path: string): TypedValue[] | TypedValue | undefined {
+  if (!input?.value) {
+    return undefined;
+  }
+
+  const typeSchema = globalSchema.types[input.type];
+  if (typeSchema) {
+    return getTypedPropertyValueWithSchema(input, path, typeSchema);
+  } else {
+    return getTypedPropertyValueWithoutSchema(input, path);
+  }
+}
+
+/**
+ * Returns the value of the property and the property type using a type schema.
+ * @param input The base context (FHIR resource or backbone element).
+ * @param path The property path.
+ * @param typeSchema The input type schema.
+ * @returns The value of the property and the property type.
+ */
+function getTypedPropertyValueWithSchema(
+  input: TypedValue,
+  path: string,
+  typeSchema: TypeSchema
+): TypedValue[] | TypedValue | undefined {
+  const property = typeSchema.properties[path] ?? typeSchema.properties[path + '[x]'];
+  if (!property) {
+    return undefined;
+  }
+
+  const types = property.type;
+  if (!types || types.length === 0) {
+    return undefined;
+  }
+
+  let propertyName: string | undefined = undefined;
+  let resultValue: any = undefined;
+  let resultType = 'undefined';
+
+  if (types.length === 1) {
+    propertyName = path;
+    resultValue = input.value[path];
+    resultType = types[0].code as string;
+  } else {
+    for (const type of types) {
+      const path2 = path.replace('[x]', '') + capitalize(type.code as string);
+      if (path2 in input.value) {
+        propertyName = path2;
+        resultValue = input.value[path2];
+        resultType = type.code as string;
+        break;
+      }
+    }
+  }
+
+  if (resultValue === undefined) {
+    return undefined;
+  }
+
+  if (resultType === 'BackboneElement') {
+    resultType = buildTypeName([input.type, propertyName as string]);
+  }
+
+  if (Array.isArray(resultValue)) {
+    return resultValue.map((element) => ({ value: element, type: resultType }));
+  } else {
+    return { value: resultValue, type: resultType };
+  }
+}
+
+/**
+ * Returns the value of the property and the property type using a type schema.
+ * Note that because the type schema is not available, this function may be inaccurate.
+ * In some cases, that is the desired behavior.
+ * @param typedValue The base context (FHIR resource or backbone element).
+ * @param path The property path.
+ * @returns The value of the property and the property type.
+ */
+function getTypedPropertyValueWithoutSchema(
+  typedValue: TypedValue,
+  path: string
+): TypedValue[] | TypedValue | undefined {
+  const input = typedValue.value;
+  if (!input || typeof input !== 'object') {
+    return undefined;
+  }
+
+  let result: any = undefined;
+  if (path in input) {
+    result = (input as { [key: string]: unknown })[path];
+  } else {
+    const propertyName = Object.keys(input).find((k) => k.startsWith(path));
+    if (propertyName) {
+      result = (input as { [key: string]: unknown })[propertyName];
+    }
+  }
+
+  if (result === undefined) {
+    return undefined;
+  }
+
+  if (Array.isArray(result)) {
+    return result.map(toTypedValue);
+  } else {
+    return toTypedValue(result);
+  }
 }
 
 /**

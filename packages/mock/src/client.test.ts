@@ -141,6 +141,12 @@ describe('MockClient', () => {
     expect(console.log).toHaveBeenCalledTimes(3);
   });
 
+  test('Search', async () => {
+    const client = new MockClient();
+    const result = await client.search('Patient', 'name=Simpson');
+    expect(result.entry).toHaveLength(2);
+  });
+
   test('Create binary', async () => {
     const client = new MockClient();
     expect(client.createBinary(null, 'test.exe', 'application/exe')).rejects.toMatchObject(

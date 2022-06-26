@@ -1,4 +1,12 @@
-import { ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  BundleEntry,
+  ElementDefinition,
+  Resource,
+  SearchParameter,
+  StructureDefinition,
+} from '@medplum/fhirtypes';
+import baseSchema from './base-schema.json';
 import { capitalize } from './utils';
 
 /**
@@ -40,7 +48,6 @@ export enum PropertyType {
   Ratio = 'Ratio',
   Reference = 'Reference',
   RelatedArtifact = 'RelatedArtifact',
-  Resource = 'Resource',
   SampledData = 'SampledData',
   Signature = 'Signature',
   SubstanceAmount = 'SubstanceAmount',
@@ -117,6 +124,7 @@ export interface TypeSchema {
 /**
  * Creates a new empty IndexedStructureDefinition.
  * @returns The empty IndexedStructureDefinition.
+ * @deprecated Use globalSchema
  */
 export function createSchema(): IndexedStructureDefinition {
   return { types: {} };
@@ -139,6 +147,19 @@ export function createTypeSchema(typeName: string, description: string | undefin
 }
 
 /**
+ * Indexes a bundle of StructureDefinitions for faster lookup.
+ * @param bundle A FHIR bundle StructureDefinition resources.
+ */
+export function indexStructureDefinitionBundle(bundle: Bundle): void {
+  for (const entry of bundle.entry as BundleEntry[]) {
+    const resource = entry.resource as Resource;
+    if (resource.resourceType === 'StructureDefinition') {
+      indexStructureDefinition(globalSchema, resource);
+    }
+  }
+}
+
+/**
  * Indexes a StructureDefinition for fast lookup.
  * See comments on IndexedStructureDefinition for more details.
  * @param schema The output IndexedStructureDefinition.
@@ -153,7 +174,9 @@ export function indexStructureDefinition(
     return;
   }
 
-  schema.types[typeName] = createTypeSchema(typeName, structureDefinition.description);
+  if (!(typeName in schema.types)) {
+    schema.types[typeName] = createTypeSchema(typeName, structureDefinition.description);
+  }
 
   const elements = structureDefinition.snapshot?.element;
   if (elements) {
@@ -202,6 +225,9 @@ function indexProperty(schema: IndexedStructureDefinition, element: ElementDefin
   }
   const typeName = buildTypeName(parts.slice(0, parts.length - 1));
   const typeSchema = schema.types[typeName];
+  if (!typeSchema) {
+    return;
+  }
   const key = parts[parts.length - 1];
   typeSchema.properties[key] = element;
 }
@@ -235,11 +261,11 @@ export function buildTypeName(components: string[]): string {
   return components.map(capitalize).join('');
 }
 
-export function getPropertyDisplayName(property: ElementDefinition): string {
+export function getPropertyDisplayName(path: string): string {
   // Get the property name, which is the remainder after the last period
   // For example, for path "Patient.birthDate"
   // the property name is "birthDate"
-  const propertyName = (property.path as string).replaceAll('[x]', '').split('.').pop() as string;
+  const propertyName = path.replaceAll('[x]', '').split('.').pop() as string;
 
   // Special case for ID
   if (propertyName === 'id') {
@@ -259,3 +285,8 @@ export function getPropertyDisplayName(property: ElementDefinition): string {
     .replace('_', ' ')
     .replace(/\s+/g, ' ');
 }
+
+/**
+ * Global schema singleton.
+ */
+export const globalSchema = baseSchema as IndexedStructureDefinition;

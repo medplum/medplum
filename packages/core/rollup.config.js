@@ -1,3 +1,4 @@
+import json from '@rollup/plugin-json';
 import resolve from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
 import { mkdirSync, writeFileSync } from 'fs';
@@ -41,8 +42,9 @@ export default {
     },
   ],
   plugins: [
+    json(),
     resolve({ extensions }),
-    typescript(),
+    typescript({ resolveJsonModule: true }),
     {
       buildEnd: () => {
         mkdirSync('./dist/cjs', { recursive: true });

@@ -1,4 +1,4 @@
-import { getPropertyDisplayName, IndexedStructureDefinition, stringify } from '@medplum/core';
+import { getPropertyDisplayName, IndexedStructureDefinition, stringify, toTypedValue } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { useMedplum } from './MedplumProvider';
@@ -50,8 +50,8 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
           }
 
           const property = entry[1];
-          const [originalPropertyValue, originalPropertyType] = getValueAndType(props.original, property);
-          const [revisedPropertyValue, revisedPropertyType] = getValueAndType(props.revised, property);
+          const [originalPropertyValue, originalPropertyType] = getValueAndType(toTypedValue(props.original), key);
+          const [revisedPropertyValue, revisedPropertyType] = getValueAndType(toTypedValue(props.revised), key);
           if (isEmpty(originalPropertyValue) && isEmpty(revisedPropertyValue)) {
             return null;
           }
@@ -62,10 +62,9 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
 
           return (
             <tr key={key}>
-              <td>{getPropertyDisplayName(property)}</td>
+              <td>{getPropertyDisplayName(key)}</td>
               <td className="medplum-diff-removed">
                 <ResourcePropertyDisplay
-                  schema={schema}
                   property={property}
                   propertyType={originalPropertyType}
                   value={originalPropertyValue}
@@ -74,7 +73,6 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
               </td>
               <td className="medplum-diff-added">
                 <ResourcePropertyDisplay
-                  schema={schema}
                   property={property}
                   propertyType={revisedPropertyType}
                   value={revisedPropertyValue}

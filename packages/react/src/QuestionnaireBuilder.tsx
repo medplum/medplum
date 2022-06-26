@@ -1,4 +1,4 @@
-import { IndexedStructureDefinition } from '@medplum/core';
+import { globalSchema, IndexedStructureDefinition } from '@medplum/core';
 import { Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption, Reference } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
@@ -58,7 +58,6 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
     <div className="medplum-questionnaire-builder">
       <Form testid="questionnaire-form" onSubmit={() => props.onSubmit(value)}>
         <ItemBuilder
-          schema={schema}
           item={value}
           selectedKey={selectedKey}
           setSelectedKey={setSelectedKey}
@@ -75,7 +74,6 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
 }
 
 interface ItemBuilderProps<T extends Questionnaire | QuestionnaireItem> {
-  schema: IndexedStructureDefinition;
   item: T;
   selectedKey: string | undefined;
   setSelectedKey: (key: string | undefined) => void;
@@ -178,7 +176,6 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           )}
           {isChoiceQuestion(item) && (
             <AnswerBuilder
-              schema={props.schema}
               options={item.answerOption}
               onChange={(newOptions) => changeProperty('answerOption', newOptions)}
             />
@@ -188,14 +185,13 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
         <>
           {resource.title && <h1>{resource.title}</h1>}
           {item.text && <p>{item.text}</p>}
-          {!isContainer && <QuestionnaireFormItem schema={props.schema} item={item} onChange={() => undefined} />}
+          {!isContainer && <QuestionnaireFormItem item={item} onChange={() => undefined} />}
         </>
       )}
       {item.item &&
         item.item.map((i) => (
           <div key={i.id}>
             <ItemBuilder
-              schema={props.schema}
               item={i}
               selectedKey={props.selectedKey}
               setSelectedKey={props.setSelectedKey}
@@ -267,18 +263,20 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
 }
 
 interface AnswerBuilderProps {
-  schema: IndexedStructureDefinition;
   options?: QuestionnaireItemAnswerOption[];
   onChange: (newOptions: QuestionnaireItemAnswerOption[]) => void;
 }
 
 function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
-  const property = props.schema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
+  const property = globalSchema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
   const options = props.options ?? [];
   return (
     <div>
       {options.map((option: QuestionnaireItemAnswerOption) => {
-        const [propertyValue, propertyType] = getValueAndType(option, property);
+        const [propertyValue, propertyType] = getValueAndType(
+          { type: 'QuestionnaireItemAnswerOption', value: option },
+          'value'
+        );
         return (
           <div
             key={option.id}
@@ -293,7 +291,6 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
             <div>
               <ResourcePropertyInput
                 key={option.id}
-                schema={props.schema}
                 name="value[x]"
                 property={property}
                 defaultPropertyType={propertyType}

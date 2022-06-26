@@ -1,9 +1,15 @@
 import { readJson } from '@medplum/definitions';
 import { AuditEvent, Bundle, BundleEntry, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
-import { evalFhirPath, parseFhirPath } from './parse';
+import { indexStructureDefinitionBundle, PropertyType } from '../types';
+import { evalFhirPath, evalFhirPathTyped, parseFhirPath } from './parse';
 import { toTypedValue } from './utils';
 
 describe('FHIRPath parser', () => {
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+  });
+
   test('Parser can build a arithmetic parser with correct order of operations', () => {
     const result = evalFhirPath('3 / 3 + 4 * 9 - 1', []);
     expect(result).toEqual([36]);
@@ -412,5 +418,63 @@ describe('FHIRPath parser', () => {
     };
     const result = evalFhirPath("between(birthDate, now(), 'years')", [toTypedValue(patient)]);
     expect(result).toEqual([{ value: 20, unit: 'years' }]);
+  });
+
+  test('Boolean values', () => {
+    const patient1: Patient = { resourceType: 'Patient', active: true };
+    const result1 = evalFhirPathTyped('active', [toTypedValue(patient1)]);
+    expect(result1).toEqual([{ type: PropertyType.boolean, value: true }]);
+
+    const patient2: Patient = { resourceType: 'Patient', active: false };
+    const result2 = evalFhirPathTyped('active', [toTypedValue(patient2)]);
+    expect(result2).toEqual([{ type: PropertyType.boolean, value: false }]);
+  });
+
+  test('Schema type lookup', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      telecom: [
+        { system: 'phone', value: '555-555-5555' },
+        { system: 'email', value: 'alice@example.com' },
+      ],
+    };
+    const result = evalFhirPathTyped('telecom', [toTypedValue(patient)]);
+    expect(result).toEqual([
+      {
+        type: PropertyType.ContactPoint,
+        value: { system: 'phone', value: '555-555-5555' },
+      },
+      {
+        type: PropertyType.ContactPoint,
+        value: { system: 'email', value: 'alice@example.com' },
+      },
+    ]);
+  });
+
+  test('Choice of type', () => {
+    const observations: Observation[] = [
+      {
+        resourceType: 'Observation',
+        valueQuantity: { value: 100, unit: 'mg' },
+      },
+      {
+        resourceType: 'Observation',
+        valueString: 'foo',
+      },
+    ];
+    const result = evalFhirPathTyped(
+      'value',
+      observations.map((o) => toTypedValue(o))
+    );
+    expect(result).toEqual([
+      {
+        type: PropertyType.Quantity,
+        value: { value: 100, unit: 'mg' },
+      },
+      {
+        type: PropertyType.string,
+        value: 'foo',
+      },
+    ]);
   });
 });

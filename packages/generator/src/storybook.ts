@@ -4,6 +4,7 @@ import { writeFileSync } from 'fs';
 import { resolve } from 'path';
 
 const resourceTypes = [
+  'Address',
   'Patient',
   'Organization',
   'Practitioner',
@@ -18,7 +19,6 @@ const resourceTypes = [
 const properties = [
   'resourceType',
   'name',
-  'description',
   'snapshot',
   'element',
   'id',
@@ -28,16 +28,15 @@ const properties = [
   'type',
   'code',
   'targetProfile',
-  'binding',
   'valueSet',
-  'definition',
+  'address',
+  'city',
 ];
 
 export function main(): void {
   const output: StructureDefinition[] = [];
   addStructureDefinitions('fhir/r4/profiles-resources.json', output);
   addStructureDefinitions('fhir/r4/profiles-medplum.json', output);
-  console.log(JSON.stringify(output, keyReplacer, 2));
   writeFileSync(
     resolve(__dirname, '../../mock/src/mocks/structuredefinitions.json'),
     JSON.stringify(output, keyReplacer, 2),

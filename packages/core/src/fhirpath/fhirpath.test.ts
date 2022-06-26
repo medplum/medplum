@@ -1,3 +1,6 @@
+import { readJson } from '@medplum/definitions';
+import { Bundle } from '@medplum/fhirtypes';
+import { indexStructureDefinitionBundle } from '../types';
 import { evalFhirPath } from './parse';
 
 const observation = {
@@ -553,6 +556,11 @@ const diagnosticReport = {
 };
 
 describe('FHIRPath Test Suite', () => {
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+  });
+
   describe('Miscellaneous accessor tests', () => {
     test('Extract birthDate', () => {
       expect(evalFhirPath('birthDate', patient)).toEqual(['1974-12-25']);
