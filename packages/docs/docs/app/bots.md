@@ -7,6 +7,9 @@ toc_max_heading_level: 2
 
 Bots are an advanced Medplum feature that enable complex workflows. A **Medplum Bot** is a snippet of JavaScript code that can run on any resource change (create or update). This JavaScript code has access to a [**Medplum client**](/sdk) , which itself can invoke FHIR operations.
 
+**Medplum Bots** are run as [AWS Lambdas](https://aws.amazon.com/lambda/) and in heavily sandboxed environments.
+You can apply an [AccessPolicy](/access-control#access-policies) to the Bot if you want to further reduce the data it can read and write.
+
 Bots are disabled by default for accounts. Contact info@medplum.com if you'd like to learn more.
 
 ## Example uses
@@ -78,6 +81,16 @@ The following function arguments are available to the Bot code, to enable it to 
 | `event`       | [BotEvent](/sdk/interfaces/BotEvent)           | The event that object that triggered the Bot                                                          |
 | `event.input` | `string` &#124; `Resource` &#124; `Hl7Message` | The bot input, usually a FHIR resource or content that was posted to a bot endpoint                   |
 
+In this example, we'll assume the input is a `Patient` resource and print out the patient's name.
+
+```js
+export async function handler(medplum, event) {
+  // Print the name listed for the patient
+  const name = event.input.name[0];
+  console.log(`Hello ${name.given[0]} ${name.family}!`);
+}
+```
+
 When you are done editing, click "Save" to save your Bot code to Medplum.
 
 ## Deploying a Bot
@@ -85,8 +98,7 @@ When you are done editing, click "Save" to save your Bot code to Medplum.
 Clicking "Save" in the **Editor** tab persists your Bot code to the Medplum database, but _doesn't_ deploy your to run in production.
 To deploy your bot, click the "Deploy" button.
 
-:::danger Screenshot
-:::
+![Deploy Button](/img/app/bots/deploy_button.png)
 
 **Medplum Bots** are run as [AWS Lambdas](https://aws.amazon.com/lambda/) and in heavily sandboxed environments.
 You can apply an [AccessPolicy](/access-control#access-policies) to the Bot if you want to further reduce the data it can read and write.
@@ -101,7 +113,7 @@ There are a few different ways a bot can be executed:
 1. Setting up a [Subscription](/fhir-basics#subscriptions-listening-for-changes) to execute the Bot automatically
    based on changes (see next section).
 
-### Executing from the Code Editor
+### _Executing from the Code Editor_
 
 The simplest way to to execute a bot is to click the "Execute" button inside the Bot's **Editor** tab.
 This will execute the most recently deployed version of your Bot, with the `event.input` set to the contents of the
@@ -109,7 +121,7 @@ This will execute the most recently deployed version of your Bot, with the `even
 
 ![Execute from Editor](/img/app/bots/execute_from_editor.png)
 
-### Using the `$execute` endpoint
+### _Using the `$execute` endpoint_
 
 You can also execute a bot programmatically by sending an HTTP `POST` request to the Bot's `$execute`. Below is an example request sent with [`cURL`](https://en.wikipedia.org/wiki/CURL):
 
@@ -117,7 +129,7 @@ You can also execute a bot programmatically by sending an HTTP `POST` request to
 curl -x POST 'https://api.medplum.com/fhir/R4/Bot/<BOT_ID>/$execute' \
   --header 'Content-Type: <CONTENT_TYPE>' \
   --header 'Authorization: Bearer <ACCESS_TOKEN>' \
-  --data '<INPUT_DATA>
+  --data '<INPUT_DATA>'
 ```
 
 Let's walk through each of the parameters here in more detail.
@@ -136,84 +148,70 @@ You can find the `id` of your Bot by clicking on the **Details** tab of the Bot 
 | `text/plain`               | `string`                                | `<INPUT_DATA>` is parsed as plaintext string                                                                                                                        |
 | `x-application/hl7-v2+er7` | [`HL7Message`](/sdk/classes/Hl7Message) | `<INPUT_DATA>` is a string that should be parsed as a pipe-delimited HL7v2 message. HL7v2 is a common text-based message protocol used in legacy healthcare systems |
 
-## Triggering a Bot
+#### `ACCESS_TOKEN`
 
-TODO
+This is the `access_token` you receive after completing the OAth authentication flow. See [this tutorial](/tutorials/api-basics/create-fhir-data#authenticating-using-oauth-client-credentials-flow) for more information.
 
-## Setup the bot subscription
+#### `INPUT_DATA`
 
-Bots can be triggered using FHIR [Subscriptions](/api/fhir/resources/subscription).
+This is the input data that will be parsed according to `CONTENT_TYPE` and passed into your Bot as `event.input`.
 
-Let's connect our bot to [Patient](/api/fhir/resources/patient) resources. That means that the Bot code will run on any "create" or "update" operation to any "Patient".
+### _Executing automatically using a [`Subscription`](/fhir-basics#subscriptions-listening-for-changes)_
 
-- First, go to the [Subscription](https://app.medplum.com/Subscription) resources page.
-- Next, click on the "New..." [button](https://app.medplum.com/Subscription/new).
-- Change "Status" to "Active"
-- Change "Criteria" to `Patient`
-- Change "Channel" "Type" to "Rest Hook"
-- Change "Endpoint" to "Bot/MY_ID", such as "Bot/6867304f-4a34-44d3-b0bd-9e423310449e"
-- Change "Payload" to "application/fhir+json"
-- Scroll down and click "OK"
+While using the `$execute` endpoint allows developers to trigger Bots from 3rd party applications, the most common way to execute a bot is to use a [FHIR subscription](/fhir-basics#subscriptions-listening-for-changes) to trigger the Bot whenever a resource has been updated.
 
-Now you have an active Subscription. ([View all Subscriptions](https://app.medplum.com/Subscription))
+Let's connect our bot to [`Patient`](/api/fhir/resources/patient) resources. That means that the Bot code will run on any "create" or "update" operation to any [`Patient`](/api/fhir/resources/patient).
 
-## Execute the bot
+First, go to the [Subscription](https://app.medplum.com/Subscription) resources page.
 
-With our [Bot](https://app.medplum.com/Bot) and [Subscription](https://app.medplum.com/Subscription) in place, let's trigger the Bot.
+Then click on the "New..."
 
-- First, go to the [Patient resources](https://app.medplum.com/Patient) using the top-left menu and clicking "Patient"
-- Next, click on the "New..." [button](https://app.medplum.com/Patient/new)
-- Enter a sample name such as given "Jane" family "Doe"
-- Scroll down and click "OK"
+![New Subscription](/img/app/bots/new_subscription.png)
 
-Now, let's go back to our [Subscription](https://app.medplum.com/Subscription). On the Timeline, you should see an AuditEvent with the outcome of the JavaScript code execution. If everything worked as expected, you should see "Hello world" logged as part of the AuditEvent. If you want to see all AuditEvents sorted by most recent, you can use [this link](https://app.medplum.com/AuditEvent?_count=20&_fields=id,_lastUpdated&_offset=0&_sort=-_lastUpdated).
+To ensure the Subscription is running, change "Status" to `Active`
 
-## Bot sandbox
+![Activate Subscription](/img/app/bots/subscription_active.png)
 
-The JavaScript code is heavily sandboxed and runs in an AWS Lambda. You can apply an [AccessPolicy](https://app.medplum.com/AccessPolicy) to the Bot if you want to further reduce the data it can read and write.
+Specify which Resources will trigger this subscription using a FHIR search string. If you're not familiar with FHIR search semantics, check out [this tutorial](https://docs.medplum.com/tutorials/api-basics/basic-fhir-search) for a primer.
 
-The following function arguments are available to the Bot code, to enable it to do the functionality it requires.
+For this example, we will trigger the Subscription after a change to _any_ `Patient` resource.
 
-| Name          | Type                                                                              | Description                                                                                           |
-| ------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `medplum`     | [MedplumClient](https://docs.medplum.com/typedoc/core/classes/MedplumClient.html) | An instance of the medplum JS SDK ([documentation](https://docs.medplum.com/typedoc/core/index.html)) |
-| `event`       | BotEvent                                                                          | The event that object that triggered the Bot                                                          |
-| `event.input` | object                                                                            | The bot input, usually a FHIR object or content that was posted to a bot endpoint                     |
+Change "Criteria" field to `Patient`
 
-### medplum
+![Subscription Criteria](/img/app/bots/subscription_criteria.png)
 
-The [Medplum JS client library](https://docs.medplum.com/typedoc/core/index.html), use this library to read and write FHIR resources.
+Next, we specify action should be taken when the subscription is triggered, using the "Channel" field.
 
-For example, you can use `medplum` in your Bot using the following:
+Because, Bots can be are executed using HTTP requests, we will select the Channel "Type" as `Rest Hook` and the Channel "Endpoint" as as `Bot/<BOT_ID>`.
 
-```javascript
-const patient = await medplum.readResource('Patient', 'fdbaf571-919a-4a08-a671-7dffe4340da8');
-```
+![Subscription Channel](/img/app/bots/subscription_channel.png)
 
-### event
+Change "Payload" to `application/fhir+json`. This is similar to the [CONTENT_TYPE](#CONTENT_TYPE) field used by the `$execute` endpoint.
 
-This is a JSON object representing the event that triggered the Lambda.
+![Subscription Payload](/img/app/bots/subscription_payload.png)
 
-### event.input
+Finally, scroll down and click "OK".
 
-This is the content that was input into the Lambda. In this example it will be the `Patient` resource because we set up the [Subscription](https://app.medplum.com/Subscription) to fire when the `Patient` resource is edited.
+**Congratulations!** Now you have an active Subscription. ([View all Subscriptions](https://app.medplum.com/Subscription))
 
-## Logging
+We can test our new subscription by creating a new `Patient`. First, go to the [Patient resources](https://app.medplum.com/Patient) using the top-left menu and clicking "Patient"
 
-A `console`-like variable that can be used for logging output to [AuditEvent](https://docs.medplum.com/api/fhir/resources/auditevent).
+<img src='/img/app/bots/patient_sidebar.png' alt='Patient Sidebar' style={{'max-width': '40%'}}/>
 
-Example:
+Next, click on the "New..." [button](https://app.medplum.com/Patient/new)
+![New Patient Button](/img/app/bots/new_patient_button.png)
 
-```javascript
-export async function handler(medplum, event) {
-  console.log('Hello world');
-}
-```
+Enter a sample name such as given "Jane" family "Doe". Then Scroll down and click "OK"
 
-AuditEvents viewable on either the [Subscription](https://app.medplum.com/Bot) page or the [Bot](https://app.medplum.com/Bot) Page. You can view all [AuditEvents](https://app.medplum.com/AuditEvent) in the webapp as well.
+![Create new Patient](/img/app/bots/NewPatient.gif)
 
-## Special Topics
+Now, let's go back to our [`Subscription`](https://app.medplum.com/Subscription). On the Timeline, you should see an `AuditEvent` with the outcome of the JavaScript code execution. If everything worked as expected, you should see "Hello Jane Doe" logged as part of the `AuditEvent`.
 
-It is also possible to trigger Bots by posting to a Bot `$execute` endpoint. We won't discuss this in depth here, but you can see many examples of this in the [Bots Tutorials](https://docs.medplum.com/tutorials/bots/intro) section.
+:::danger gif
+:::
 
-Bots written using the web editor should be written in Javascript. If you would like to develop locally, test and deploy apps as part of your software development lifecycle, you can use our [Bot CLI](https://github.com/medplum/medplum-demo-bots).
+If you want to see all `AuditEvents` sorted by most recent, you can use [this link](https://app.medplum.com/AuditEvent?_count=20&_fields=id,_lastUpdated&_offset=0&_sort=-_lastUpdated).
+
+## Software Development Lifecycle
+
+Bots written using the web editor should be written in Javascript. If you would like to develop locally, test and deploy apps as part of your software development lifecycle, you can use our [**Bot CLI**](https://github.com/medplum/medplum-demo-bots).
