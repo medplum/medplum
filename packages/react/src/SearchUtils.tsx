@@ -6,10 +6,10 @@ import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisp
 import { SearchControlField } from './SearchControlField';
 
 const searchParamToOperators: Record<string, Operator[]> = {
-  string: [Operator.EQUALS, Operator.NOT_EQUALS, Operator.CONTAINS, Operator.EXACT],
-  fulltext: [Operator.EQUALS, Operator.NOT_EQUALS, Operator.CONTAINS, Operator.EXACT],
-  token: [Operator.EQUALS, Operator.NOT_EQUALS],
-  reference: [Operator.EQUALS, Operator.NOT_EQUALS],
+  string: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],
+  fulltext: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],
+  token: [Operator.EQUALS, Operator.NOT],
+  reference: [Operator.EQUALS, Operator.NOT],
   numeric: [
     Operator.EQUALS,
     Operator.NOT_EQUALS,
@@ -55,6 +55,7 @@ const operatorNames: Record<Operator, string> = {
   contains: 'contains',
   exact: 'exact',
   text: 'text',
+  not: 'not',
   above: 'above',
   below: 'below',
   in: 'in',
