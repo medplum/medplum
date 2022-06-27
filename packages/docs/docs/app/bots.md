@@ -207,10 +207,11 @@ Enter a sample name such as given "Jane" family "Doe". Then Scroll down and clic
 
 Now, let's go back to our [`Subscription`](https://app.medplum.com/Subscription). On the Timeline, you should see an `AuditEvent` with the outcome of the JavaScript code execution. If everything worked as expected, you should see "Hello Jane Doe" logged as part of the `AuditEvent`.
 
-:::danger gif
-:::
+<img src='/img/app/bots/auditevent.png' alt='Audit Event' style={{'max-width': '60%'}}/>
 
-If you want to see all `AuditEvents` sorted by most recent, you can use [this link](https://app.medplum.com/AuditEvent?_count=20&_fields=id,_lastUpdated&_offset=0&_sort=-_lastUpdated).
+If you want to see all `AuditEvents` sorted by most recent, you can use [this link](https://app.medplum.com/AuditEvent?_count=20&_fields=outcomeDesc,_lastUpdated,entity&_offset=0&_sort=-_lastUpdated).
+
+![All Audit Event](/img/app/bots/all_audit_events.png)
 
 ## Software Development Lifecycle
 
