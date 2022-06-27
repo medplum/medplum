@@ -230,7 +230,9 @@ export class IsAtom implements Atom {
 
 /**
  * 6.5.1. and
- * Returns true if both operands evaluate to true, false if either operand evaluates to false, and the empty collection ({ }) otherwise.
+ * Returns true if both operands evaluate to true,
+ * false if either operand evaluates to false,
+ * and the empty collection otherwise.
  */
 export class AndAtom implements Atom {
   constructor(public readonly left: Atom, public readonly right: Atom) {}
@@ -270,7 +272,7 @@ export class OrAtom implements Atom {
  * 6.5.4. xor
  * Returns true if exactly one of the operands evaluates to true,
  * false if either both operands evaluate to true or both operands evaluate to false,
- * and the empty collection ({ }) otherwise:
+ * and the empty collection otherwise.
  */
 export class XorAtom implements Atom {
   constructor(public readonly left: Atom, public readonly right: Atom) {}
