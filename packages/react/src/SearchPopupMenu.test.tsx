@@ -420,7 +420,7 @@ describe('SearchPopupMenu', () => {
 
     const options = [
       { text: 'Equals...', operator: Operator.EQUALS },
-      { text: 'Does not equal...', operator: Operator.NOT_EQUALS },
+      { text: 'Does not equal...', operator: Operator.NOT },
     ];
 
     for (const option of options) {
@@ -537,7 +537,7 @@ describe('SearchPopupMenu', () => {
 
     const options = [
       { text: 'Equals...', operator: Operator.EQUALS },
-      { text: 'Does not equal...', operator: Operator.NOT_EQUALS },
+      { text: 'Does not equal...', operator: Operator.NOT },
       { text: 'Contains...', operator: Operator.CONTAINS },
       { text: 'Does not contain...', operator: Operator.EQUALS },
     ];

@@ -183,7 +183,7 @@ function ReferenceFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
   return (
     <>
       <MenuItem onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}>Equals...</MenuItem>
-      <MenuItem onClick={() => props.onPrompt(searchParam, Operator.NOT_EQUALS)}>Does not equal...</MenuItem>
+      <MenuItem onClick={() => props.onPrompt(searchParam, Operator.NOT)}>Does not equal...</MenuItem>
       <MenuSeparator />
       <MenuItem onClick={() => props.onChange(addMissingFilter(props.search, code))}>Missing</MenuItem>
       <MenuItem onClick={() => props.onChange(addMissingFilter(props.search, code, false))}>Not missing</MenuItem>
@@ -202,7 +202,7 @@ function TextFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
       <MenuItem onClick={() => props.onSort(searchParam, true)}>Sort Z to A</MenuItem>
       <MenuSeparator />
       <MenuItem onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}>Equals...</MenuItem>
-      <MenuItem onClick={() => props.onPrompt(searchParam, Operator.NOT_EQUALS)}>Does not equal...</MenuItem>
+      <MenuItem onClick={() => props.onPrompt(searchParam, Operator.NOT)}>Does not equal...</MenuItem>
       <MenuSeparator />
       <MenuItem onClick={() => props.onPrompt(searchParam, Operator.CONTAINS)}>Contains...</MenuItem>
       <MenuItem onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}>Does not contain...</MenuItem>

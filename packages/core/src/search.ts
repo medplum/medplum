@@ -52,6 +52,7 @@ export enum Operator {
 
   // Token
   TEXT = 'text',
+  NOT = 'not',
   ABOVE = 'above',
   BELOW = 'below',
   IN = 'in',
@@ -66,6 +67,7 @@ const MODIFIER_OPERATORS: Operator[] = [
   Operator.CONTAINS,
   Operator.EXACT,
   Operator.TEXT,
+  Operator.NOT,
   Operator.ABOVE,
   Operator.BELOW,
   Operator.IN,
