@@ -18,6 +18,14 @@ const searchParamToOperators: Record<string, Operator[]> = {
     Operator.GREATER_THAN_OR_EQUALS,
     Operator.LESS_THAN_OR_EQUALS,
   ],
+  quantity: [
+    Operator.EQUALS,
+    Operator.NOT_EQUALS,
+    Operator.GREATER_THAN,
+    Operator.LESS_THAN,
+    Operator.GREATER_THAN_OR_EQUALS,
+    Operator.LESS_THAN_OR_EQUALS,
+  ],
   date: [
     Operator.EQUALS,
     Operator.NOT_EQUALS,

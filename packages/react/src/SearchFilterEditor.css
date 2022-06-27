@@ -1,0 +1,10 @@
+.medplum-filter-editor {
+  text-align: left;
+  width: 900px;
+  max-width: 900px;
+}
+
+.medplum-filter-editor-table {
+  width: 100%;
+  border-collapse: collapse;
+}
