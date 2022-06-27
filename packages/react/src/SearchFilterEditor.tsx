@@ -14,6 +14,7 @@ import {
   setFilters,
 } from './SearchUtils';
 import { Select } from './Select';
+import './SearchFilterEditor.css';
 
 export interface SearchFilterEditorProps {
   schema: IndexedStructureDefinition;
@@ -56,12 +57,18 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
     >
       <div className="medplum-filter-editor">
         <table className="medplum-filter-editor-table">
+          <colgroup>
+            <col style={{ width: 260 }} />
+            <col style={{ width: 260 }} />
+            <col style={{ width: 260 }} />
+            <col style={{ width: 120 }} />
+          </colgroup>
           <thead>
             <tr>
-              <th style={{ width: '30%' }}>Field</th>
-              <th style={{ width: '30%' }}>Operation</th>
-              <th style={{ width: '30%' }}>Value</th>
-              <th style={{ width: '10%' }}>Actions</th>
+              <th>Field</th>
+              <th>Operation</th>
+              <th>Value</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>

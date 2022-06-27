@@ -355,4 +355,56 @@ describe('SearchFilterEditor', () => {
     const input = screen.getByTestId('filter-value') as HTMLInputElement;
     expect(input.value).toMatch(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
   });
+
+  test('Quantity filter', async () => {
+    let currSearch: SearchRequest = {
+      resourceType: 'Observation',
+      filters: [
+        {
+          code: 'value-quantity',
+          operator: Operator.GREATER_THAN,
+          value: '5',
+        },
+      ],
+    };
+
+    await setup(
+      <SearchFilterEditor
+        schema={schema}
+        search={currSearch}
+        visible={true}
+        onOk={(e) => (currSearch = e)}
+        onCancel={() => console.log('onCancel')}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Edit'));
+    });
+
+    const input = screen.getByDisplayValue('5') as HTMLInputElement;
+    await act(async () => {
+      fireEvent.change(input, { target: { value: '6' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    await act(async () => {
+      await waitFor(() => screen.getByText('6'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(currSearch.filters).toMatchObject([
+      {
+        code: 'value-quantity',
+        operator: Operator.GREATER_THAN,
+        value: '6',
+      },
+    ]);
+  });
 });

@@ -61,7 +61,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
       return (
         <QuantityInput
           name={name}
-          defaultValue={{}}
+          defaultValue={tryParseQuantity(props.defaultValue)}
           onChange={(newQuantity: Quantity | undefined) => {
             if (newQuantity) {
               props.onChange(`${newQuantity.value}`);
@@ -77,4 +77,18 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
         <Input testid={name} defaultValue={props.defaultValue} autoFocus={props.autoFocus} onChange={props.onChange} />
       );
   }
+}
+
+function tryParseQuantity(value: string | undefined): Quantity | undefined {
+  if (value) {
+    const [valueString, systemString, unitString] = value.split('|');
+    if (valueString) {
+      return {
+        value: parseFloat(valueString),
+        system: systemString,
+        unit: unitString,
+      };
+    }
+  }
+  return undefined;
 }

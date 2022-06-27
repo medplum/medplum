@@ -117,17 +117,3 @@
   border: 0.1px solid var(--medplum-gray-600);
   outline: 0;
 }
-
-/*
- * Filter editor
- */
-
-.medplum-filter-editor {
-  text-align: left;
-  min-width: 800px;
-}
-
-.medplum-filter-editor-table {
-  width: 100%;
-  border-collapse: collapse;
-}
