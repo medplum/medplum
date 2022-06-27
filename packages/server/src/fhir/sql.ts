@@ -203,11 +203,18 @@ export class SqlBuilder {
 
   async execute(conn: Client | Pool): Promise<any[]> {
     const sql = this.toString();
+    let startTime = 0;
     if (DEBUG) {
       console.log('sql', sql);
       console.log('values', this.#values);
+      startTime = Date.now();
     }
     const result = await conn.query(sql, this.#values);
+    if (DEBUG) {
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      console.log('duration', duration);
+    }
     return result.rows;
   }
 }

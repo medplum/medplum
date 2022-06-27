@@ -180,6 +180,14 @@ class SearchParser implements SearchRequest {
   }
 
   #parseParameter(searchParam: SearchParameter, modifier: string, value: string): void {
+    if (modifier === 'missing') {
+      this.filters.push({
+        code: searchParam.code as string,
+        operator: Operator.MISSING,
+        value,
+      });
+      return;
+    }
     switch (searchParam.type) {
       case 'number':
       case 'date':

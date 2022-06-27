@@ -674,12 +674,16 @@ export class Repository {
     }
 
     const details = getSearchParameterDetails(getStructureDefinitions(), resourceType, param);
-    if (param.type === 'string') {
+    if (filter.operator === FhirOperator.MISSING) {
+      predicate.where(details.columnName, filter.value === 'true' ? Operator.EQUALS : Operator.NOT_EQUALS, null);
+    } else if (param.type === 'string') {
       this.#addStringSearchFilter(predicate, details, filter);
     } else if (param.type === 'token') {
       this.#addTokenSearchFilter(predicate, details, filter);
     } else if (param.type === 'reference') {
       this.#addReferenceSearchFilter(predicate, details, filter);
+    } else if (param.type === 'quantity') {
+      predicate.where(details.columnName, fhirOperatorToSqlOperator(filter.operator), parseFloat(filter.value));
     } else {
       predicate.where(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
     }
