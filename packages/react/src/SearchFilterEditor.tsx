@@ -58,9 +58,9 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
       <div className="medplum-filter-editor">
         <table className="medplum-filter-editor-table">
           <colgroup>
-            <col style={{ width: 260 }} />
-            <col style={{ width: 260 }} />
-            <col style={{ width: 260 }} />
+            <col style={{ width: 200 }} />
+            <col style={{ width: 200 }} />
+            <col style={{ width: 380 }} />
             <col style={{ width: 120 }} />
           </colgroup>
           <thead>

@@ -584,6 +584,7 @@ function renderSearchParameterValue(
         value={value[0].value}
         maxWidth={200}
         ignoreMissingValues={true}
+        link={false}
       />
     );
   }
