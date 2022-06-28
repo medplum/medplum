@@ -287,8 +287,14 @@ export class Repository {
       },
     });
 
-    if (existing && deepEquals(existing, updated)) {
-      return [notModified, existing];
+    if (existing) {
+      // When stricter FHIR validation is enabled, then this can be removed.
+      // At present, there are some cases where a server accepts "empty" values that escape the deep equals.
+      const cleanExisting = JSON.parse(stringify(existing));
+      const cleanUpdated = JSON.parse(stringify(updated));
+      if (deepEquals(cleanExisting, cleanUpdated)) {
+        return [notModified, existing];
+      }
     }
 
     const result: T = {

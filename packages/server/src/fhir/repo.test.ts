@@ -1732,4 +1732,20 @@ describe('FHIR Repo', () => {
     expect(bundleContains(bundle4, serviceRequest1)).toEqual(true);
     expect(bundleContains(bundle4, serviceRequest2)).toEqual(false);
   });
+
+  test('Empty objects', async () => {
+    const [outcome1, patient1] = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      contact: [{}],
+    });
+    assertOk(outcome1, patient1);
+
+    const [outcome2, patient2] = await systemRepo.updateResource<Patient>({
+      resourceType: 'Patient',
+      id: patient1.id,
+      contact: [{}],
+    });
+    expect(outcome2.id).toEqual('not-modified');
+    expect(patient2?.id).toEqual(patient1?.id);
+  });
 });
