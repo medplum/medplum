@@ -1,12 +1,13 @@
 import { getReferenceString } from '@medplum/core';
 import { PlanDefinition, PlanDefinitionAction, Reference } from '@medplum/fhirtypes';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Form } from './Form';
 import { FormSection } from './FormSection';
 import { Input } from './Input';
 import { ResourceInput } from './ResourceInput';
 import { Select } from './Select';
+import { useResource } from './useResource';
 
 export interface PlanDefinitionBuilderProps {
   value: PlanDefinition | Reference<PlanDefinition>;
@@ -14,26 +15,23 @@ export interface PlanDefinitionBuilderProps {
 }
 
 export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.Element | null {
-  const [value, setValue] = useState<PlanDefinition>({
-    resourceType: 'PlanDefinition',
-    action: [
-      {
-        id: generateId(),
-      },
-    ],
-  });
-
+  const defaultValue = useResource(props.value);
+  const [value, setValue] = useState<PlanDefinition>();
   const valueRef = useRef<PlanDefinition>();
   valueRef.current = value;
+
+  useEffect(() => {
+    setValue(ensurePlanDefinitionKeys(defaultValue ?? { resourceType: 'PlanDefinition' }));
+  }, [defaultValue]);
 
   if (!value) {
     return null;
   }
 
-  function changeProperty(property: string, value: any): void {
+  function changeProperty(property: string, newValue: any): void {
     setValue({
       ...valueRef.current,
-      [property]: value,
+      [property]: newValue,
     } as PlanDefinition);
   }
 
@@ -104,13 +102,12 @@ function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
 interface ActionBuilderProps {
   action: PlanDefinitionAction;
   onChange: (action: PlanDefinitionAction) => void;
-  onRemove?: () => void;
+  onRemove: () => void;
 }
 
 function ActionBuilder(props: ActionBuilderProps): JSX.Element {
-  const resource = props.action as PlanDefinition;
   const action = props.action as PlanDefinitionAction;
-  const [actionType, setActionType] = useState<string>();
+  const [actionType, setActionType] = useState<string | undefined>(getInitialActionType(action));
 
   const actionRef = useRef<PlanDefinitionAction>();
   actionRef.current = props.action;
@@ -131,7 +128,7 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
       >
         <Input
           name={`actionTitle-${action.id}`}
-          defaultValue={resource.title}
+          defaultValue={action.title}
           onChange={(newValue) => changeProperty('title', newValue)}
         />
       </FormSection>
@@ -140,7 +137,7 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
         description="The type of the action to be performed."
         htmlFor={`actionType-${action.id}`}
       >
-        <Select name={`actionType-${action.id}`} onChange={setActionType}>
+        <Select name={`actionType-${action.id}`} defaultValue={actionType} onChange={setActionType}>
           <option></option>
           <option value="appointment">Appointment</option>
           <option value="documentation">Documentation</option>
@@ -176,9 +173,7 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
           href="#"
           onClick={(e) => {
             e.preventDefault();
-            if (props.onRemove) {
-              props.onRemove();
-            }
+            props.onRemove();
           }}
         >
           Remove
@@ -231,6 +226,14 @@ function QuestionnaireActionBuilder(props: QuestionnaireActionBuilderProps): JSX
   );
 }
 
+function getInitialActionType(action: PlanDefinitionAction): string | undefined {
+  if (action.definitionCanonical?.startsWith('Questionnaire/')) {
+    return 'questionnaire';
+  }
+
+  return undefined;
+}
+
 let nextId = 1;
 
 /**
@@ -240,6 +243,35 @@ let nextId = 1;
  * Questionnaire, QuestionnaireItem, and QuestionnaireItemAnswerOption.
  * @return A unique key.
  */
-function generateId(): string {
+function generateId(existing?: string): string {
+  if (existing) {
+    if (existing.startsWith('id-')) {
+      const existingNum = parseInt(existing.substring(3));
+      if (!isNaN(existingNum)) {
+        nextId = Math.max(nextId, existingNum + 1);
+      }
+    }
+    return existing;
+  }
   return 'id-' + nextId++;
+}
+
+function ensurePlanDefinitionKeys(planDefinition: PlanDefinition): PlanDefinition {
+  return {
+    ...planDefinition,
+    action: ensurePlanDefinitionActionKeys(planDefinition.action),
+  } as PlanDefinition;
+}
+
+function ensurePlanDefinitionActionKeys(
+  actions: PlanDefinitionAction[] | undefined
+): PlanDefinitionAction[] | undefined {
+  if (!actions) {
+    return undefined;
+  }
+  return actions.map((action) => ({
+    ...action,
+    id: generateId(action.id),
+    action: ensurePlanDefinitionActionKeys(action.action),
+  }));
 }

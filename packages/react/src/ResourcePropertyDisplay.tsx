@@ -49,7 +49,6 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.boolean:
       return <div>{value === undefined ? '' : Boolean(value).toString()}</div>;
     case PropertyType.SystemString:
-    case PropertyType.canonical:
     case PropertyType.code:
     case PropertyType.date:
     case PropertyType.integer:
@@ -59,6 +58,8 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.uri:
     case PropertyType.url:
       return <div>{value}</div>;
+    case PropertyType.canonical:
+      return <ReferenceDisplay value={{ reference: value }} link={props.link} />;
     case PropertyType.dateTime:
     case PropertyType.instant:
       return <DateTimeDisplay value={value} />;

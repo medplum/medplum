@@ -4,6 +4,7 @@ import {
   Bundle,
   DiagnosticReport,
   OperationOutcome,
+  PlanDefinition,
   Questionnaire,
   Resource,
   ServiceRequest,
@@ -19,6 +20,7 @@ import {
   Loading,
   MedplumLink,
   PatientTimeline,
+  PlanDefinitionBuilder,
   QuestionnaireBuilder,
   QuestionnaireForm,
   ResourceBlame,
@@ -49,6 +51,10 @@ function getTabs(resourceType: string, questionnaires?: Bundle): string[] {
 
   if (resourceType === 'Bot') {
     result.push('Editor');
+  }
+
+  if (resourceType === 'PlanDefinition') {
+    result.push('Builder');
   }
 
   if (resourceType === 'Questionnaire') {
@@ -322,7 +328,11 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
           return <DefaultResourceTimeline resource={props.resource} />;
       }
     case 'builder':
-      return <QuestionnaireBuilder questionnaire={props.resource as Questionnaire} onSubmit={props.onSubmit} />;
+      if (props.resource.resourceType === 'PlanDefinition') {
+        return <PlanDefinitionBuilder value={props.resource as PlanDefinition} onSubmit={props.onSubmit} />;
+      } else {
+        return <QuestionnaireBuilder questionnaire={props.resource as Questionnaire} onSubmit={props.onSubmit} />;
+      }
     case 'preview':
       return (
         <>

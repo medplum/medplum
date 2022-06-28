@@ -32,7 +32,7 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
   return (
     <div className="medplum-request-group">
       {requestGroup.action?.map((action, index) => {
-        const task = action.resource && (findBundleEntry(action.resource) as Task | undefined);
+        const task = action.resource && findBundleEntry(action.resource as Reference<Task>);
         const taskInput = task?.input?.[0]?.valueReference;
         const taskOutput = task?.output?.[0]?.valueReference;
         return (
@@ -65,10 +65,10 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
     </div>
   );
 
-  function buildBatchRequest(requestGroup: RequestGroup): Bundle {
+  function buildBatchRequest(request: RequestGroup): Bundle {
     const batchEntries = [] as BundleEntry[];
-    if (requestGroup.action) {
-      for (const action of requestGroup.action) {
+    if (request.action) {
+      for (const action of request.action) {
         if (action.resource?.reference) {
           batchEntries.push({ request: { method: 'GET', url: action.resource.reference } });
         }
@@ -82,10 +82,10 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
     };
   }
 
-  function findBundleEntry(reference: Reference): Resource | undefined {
+  function findBundleEntry<T extends Resource>(reference: Reference<T>): T | undefined {
     for (const entry of responseBundle?.entry as BundleEntry[]) {
       if (entry.resource && reference.reference === getReferenceString(entry.resource)) {
-        return entry.resource;
+        return entry.resource as T;
       }
     }
     return undefined;
