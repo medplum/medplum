@@ -96,15 +96,23 @@ function getFieldDefinition(
   }
 
   const typeSchema = schema.types[resourceType];
-
-  // Get the element definition
-  // If there is an exact match, use that
   const exactElementDefinition: ElementDefinition | undefined = typeSchema.properties[name];
+  const exactSearchParam: SearchParameter | undefined = typeSchema.searchParams?.[name.toLowerCase()];
+
+  // Best case: Exact match of element definition or search parameter.
+  // Examples: ServiceRequest.subject, Patient.name, Patient.birthDate
+  // In this case, we only show the one search parameter.
+  if (exactElementDefinition && exactSearchParam) {
+    return { name, elementDefinition: exactElementDefinition, searchParams: [exactSearchParam] };
+  }
+
+  // Next best case: Exact match of element definition
+  // Examples: Observation.value
+  // In this case, there could be zero or more search parameters that are a function of the element definition.
+  // So search for those search parameters.
   if (exactElementDefinition) {
     let searchParams: SearchParameter[] | undefined = undefined;
     if (typeSchema.searchParams) {
-      // Try to find a search parameter based on the property
-      // For example, name="birthDate", try to find searchParam="birthdate"
       const path = `${resourceType}.${name.replaceAll('[x]', '')}`;
       searchParams = Object.values(typeSchema.searchParams).filter((p) => p.expression?.includes(path));
       if (searchParams.length === 0) {
@@ -114,15 +122,19 @@ function getFieldDefinition(
     return { name, elementDefinition: exactElementDefinition, searchParams };
   }
 
-  // Get the search parameter
-  // If there is an exact match, use that
-  const exactSearchParam: SearchParameter | undefined = typeSchema.searchParams?.[name];
+  // Search parameter case: Exact match of search parameter
+  // Examples: Observation.value-quantity, Patient.email
+  // Here we have a search parameter, but no element definition.
+  // Observation.value-quantity is a search parameter for the Observation.value element.
+  // Patient.email is a search parameter for the Patient.telecom element.
+  // So we need to walk backwards to find the element definition.
   if (exactSearchParam) {
-    // Try to find an element definition based on the search parameter
-    // For example, name="email", try to find elementDefinition="telecom"
     const details = getSearchParameterDetails(schema, resourceType, exactSearchParam);
     return { name, elementDefinition: details.elementDefinition, searchParams: [exactSearchParam] };
   }
 
+  // Worst case: no element definition and no search parameter.
+  // This is probably a malformed URL that includes an unknown field.
+  // We will render the column header, but all cells will be empty.
   return { name };
 }

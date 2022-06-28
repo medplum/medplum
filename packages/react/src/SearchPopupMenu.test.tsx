@@ -46,6 +46,11 @@ const schema: IndexedStructureDefinition = {
     Observation: {
       display: 'Observation',
       properties: {
+        subject: {
+          id: 'Observation.subject',
+          path: 'Observation.subject',
+          type: [{ code: 'reference' }],
+        },
         'value[x]': {
           id: 'Observation.value[x]',
           path: 'Observation.value[x]',
@@ -53,6 +58,18 @@ const schema: IndexedStructureDefinition = {
         },
       },
       searchParams: {
+        patient: {
+          resourceType: 'SearchParameter',
+          code: 'patient',
+          type: 'reference',
+          expression: 'Observation.patient',
+        },
+        subject: {
+          resourceType: 'SearchParameter',
+          code: 'patient',
+          type: 'reference',
+          expression: 'Observation.patient',
+        },
         'value-quantity': {
           resourceType: 'SearchParameter',
           code: 'value-quantity',
@@ -639,5 +656,24 @@ describe('SearchPopupMenu', () => {
 
     expect(screen.getByText('Value Quantity')).toBeDefined();
     expect(screen.getByText('Value String')).toBeDefined();
+  });
+
+  test('Only one search parameter on exact match', () => {
+    const search = {
+      resourceType: 'Observation',
+      fields: ['subject'],
+    };
+
+    const fields = getFieldDefinitions(schema, search);
+
+    setup({
+      search: {
+        resourceType: 'Observation',
+      },
+      searchParams: fields[0].searchParams,
+    });
+
+    expect(screen.getByText('Equals...')).toBeDefined();
+    expect(screen.queryByText('Patient')).toBeNull();
   });
 });
