@@ -44,6 +44,17 @@ import {
   TestOrganization,
 } from './mocks';
 import { ExampleAccessPolicy, ExampleStatusValueSet, ExampleUserConfiguration } from './mocks/accesspolicy';
+import {
+  ExampleWorkflowPlanDefinition,
+  ExampleWorkflowQuestionnaire1,
+  ExampleWorkflowQuestionnaire2,
+  ExampleWorkflowQuestionnaire3,
+  ExampleWorkflowQuestionnaireResponse1,
+  ExampleWorkflowRequestGroup,
+  ExampleWorkflowTask1,
+  ExampleWorkflowTask2,
+  ExampleWorkflowTask3,
+} from './mocks/workflow';
 import { MemoryRepository } from './repo';
 
 export interface MockClientOptions {
@@ -329,6 +340,15 @@ mockRepo.createResource(BartSimpson);
 mockRepo.createResource(DrAliceSmithPreviousVersion);
 mockRepo.createResource(DrAliceSmith);
 mockRepo.createResource(DrAliceSmithSchedule);
+mockRepo.createResource(ExampleWorkflowQuestionnaire1);
+mockRepo.createResource(ExampleWorkflowQuestionnaire2);
+mockRepo.createResource(ExampleWorkflowQuestionnaire3);
+mockRepo.createResource(ExampleWorkflowPlanDefinition);
+mockRepo.createResource(ExampleWorkflowQuestionnaireResponse1);
+mockRepo.createResource(ExampleWorkflowTask1);
+mockRepo.createResource(ExampleWorkflowTask2);
+mockRepo.createResource(ExampleWorkflowTask3);
+mockRepo.createResource(ExampleWorkflowRequestGroup);
 DrAliceSmithSlots.forEach((slot) => mockRepo.createResource(slot));
 
 function mockFhirHandler(method: string, url: string, options: any): any {

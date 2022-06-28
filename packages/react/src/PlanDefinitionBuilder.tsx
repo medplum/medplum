@@ -1,9 +1,11 @@
+import { getReferenceString } from '@medplum/core';
 import { PlanDefinition, PlanDefinitionAction, Reference } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
 import { Button } from './Button';
 import { Form } from './Form';
 import { FormSection } from './FormSection';
 import { Input } from './Input';
+import { ResourceInput } from './ResourceInput';
 import { Select } from './Select';
 
 export interface PlanDefinitionBuilderProps {
@@ -113,13 +115,6 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
   const actionRef = useRef<PlanDefinitionAction>();
   actionRef.current = props.action;
 
-  function addAction(addedAction: PlanDefinitionAction): void {
-    props.onChange({
-      ...props.action,
-      action: [...(props.action?.action ?? []), addedAction],
-    });
-  }
-
   function changeProperty(property: string, value: any): void {
     props.onChange({
       ...actionRef.current,
@@ -150,6 +145,7 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
           <option value="appointment">Appointment</option>
           <option value="documentation">Documentation</option>
           <option value="lab">Lab</option>
+          <option value="questionnaire">Questionnaire</option>
           <option value="shipping">Shipping</option>
           <option value="task">Task</option>
         </Select>
@@ -165,6 +161,8 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
             return <div>Documentation details</div>;
           case 'lab':
             return <LabActionBuilder action={action} onChange={props.onChange} />;
+          case 'questionnaire':
+            return <QuestionnaireActionBuilder action={action} onChange={props.onChange} />;
           case 'shipping':
             return <div>Shipping details</div>;
           case 'task':
@@ -174,15 +172,6 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
         }
       })()}
       <div className="bottom-actions">
-        <a
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            addAction({ id: generateId() });
-          }}
-        >
-          Add sub-action
-        </a>
         <a
           href="#"
           onClick={(e) => {
@@ -206,13 +195,39 @@ interface LabActionBuilderProps {
 
 function LabActionBuilder(props: LabActionBuilderProps): JSX.Element {
   return (
-    <>
-      <h2>Lab Details</h2>
-      <div>Choose Observations</div>
+    <FormSection title="Lab Details" description="Choose observations definitions" htmlFor={props.action.id}>
       <a href="#" onClick={() => props.onChange(props.action)}>
         Add
       </a>
-    </>
+    </FormSection>
+  );
+}
+
+interface QuestionnaireActionBuilderProps {
+  action: PlanDefinitionAction;
+  onChange: (action: PlanDefinitionAction) => void;
+}
+
+function QuestionnaireActionBuilder(props: QuestionnaireActionBuilderProps): JSX.Element {
+  const { id, definitionCanonical } = props.action;
+  const questionnaireRef = definitionCanonical?.startsWith('Questionnaire/')
+    ? { reference: definitionCanonical }
+    : undefined;
+  return (
+    <FormSection title="Questionnaire" description="Choose questionnaire" htmlFor={id}>
+      <ResourceInput
+        name={id as string}
+        resourceType="Questionnaire"
+        defaultValue={questionnaireRef}
+        onChange={(newValue) => {
+          if (newValue) {
+            props.onChange({ ...props.action, definitionCanonical: getReferenceString(newValue) });
+          } else {
+            props.onChange({ ...props.action, definitionCanonical: undefined });
+          }
+        }}
+      />
+    </FormSection>
   );
 }
 
