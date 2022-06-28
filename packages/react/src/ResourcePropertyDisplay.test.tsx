@@ -82,13 +82,14 @@ describe('ResourcePropertyDisplay', () => {
 
   test('Renders canonical', () => {
     render(
-      <ResourcePropertyDisplay
-        property={{ type: [{ code: 'canonical' }] }}
-        propertyType={PropertyType.canonical}
-        value="hello"
-      />
+      <MemoryRouter>
+        <ResourcePropertyDisplay propertyType={PropertyType.canonical} value="Patient/123" />
+      </MemoryRouter>
     );
-    expect(screen.getByText('hello')).toBeInTheDocument();
+
+    const el = screen.getByText('Patient/123');
+    expect(el).toBeInTheDocument();
+    expect(el).toBeInstanceOf(HTMLAnchorElement);
   });
 
   test('Renders url', () => {
