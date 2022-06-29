@@ -58,18 +58,131 @@ describe('PlanDefinitionBuilder', () => {
     const onSubmit = jest.fn();
 
     await setup({
-      value: ExampleWorkflowPlanDefinition,
+      value: {
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+      },
       onSubmit,
     });
 
     await waitFor(() => screen.getByDisplayValue('Example Plan Definition'));
 
-    const title = screen.getByDisplayValue('Example Plan Definition');
-
     await act(async () => {
-      fireEvent.change(title, {
+      fireEvent.change(screen.getByDisplayValue('Example Plan Definition'), {
         target: { value: 'Renamed Plan Definition' },
       });
+    });
+
+    expect(screen.getByText('Save')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toBeCalled();
+  });
+
+  test('Add lab action', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      value: {
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+      },
+      onSubmit,
+    });
+
+    await waitFor(() => screen.getByText('Add action'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add action'));
+    });
+
+    await waitFor(() => screen.getByLabelText('Action Title'));
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Action Title'), {
+        target: { value: 'Example Lab Action' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Action Type'), {
+        target: { value: 'lab' },
+      });
+    });
+
+    expect(screen.getByText('Save')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toBeCalled();
+  });
+
+  test('Add questionnaire action', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      value: {
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+      },
+      onSubmit,
+    });
+
+    await waitFor(() => screen.getByText('Add action'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add action'));
+    });
+
+    await waitFor(() => screen.getByLabelText('Action Title'));
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Action Title'), {
+        target: { value: 'Example Questionnaire Action' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Action Type'), {
+        target: { value: 'questionnaire' },
+      });
+    });
+
+    expect(screen.getByText('Save')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toBeCalled();
+  });
+
+  test('Remove action', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      value: {
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+        action: [
+          {
+            id: 'id-1',
+            title: 'Patient Registration',
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    await waitFor(() => screen.getByText('Remove'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Remove'));
     });
 
     expect(screen.getByText('Save')).toBeDefined();

@@ -106,7 +106,7 @@ interface ActionBuilderProps {
 }
 
 function ActionBuilder(props: ActionBuilderProps): JSX.Element {
-  const action = props.action as PlanDefinitionAction;
+  const { action } = props;
   const [actionType, setActionType] = useState<string | undefined>(getInitialActionType(action));
 
   const actionRef = useRef<PlanDefinitionAction>();
