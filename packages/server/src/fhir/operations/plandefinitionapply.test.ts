@@ -1,0 +1,229 @@
+import { createReference, getReferenceString } from '@medplum/core';
+import { OperationOutcome, Patient, Questionnaire, RequestGroup, Task } from '@medplum/fhirtypes';
+import express from 'express';
+import request from 'supertest';
+import { initApp } from '../../app';
+import { loadTestConfig } from '../../config';
+import { closeDatabase, initDatabase } from '../../database';
+import { initKeys } from '../../oauth';
+import { seedDatabase } from '../../seed';
+import { initTestAuth } from '../../test.setup';
+
+const app = express();
+let accessToken: string;
+
+describe('PlanDefinition apply', () => {
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initDatabase(config.database);
+    await seedDatabase();
+    await initApp(app);
+    await initKeys(config);
+    accessToken = await initTestAuth();
+  });
+
+  afterAll(async () => {
+    await closeDatabase();
+  });
+
+  test('Happy path', async () => {
+    // 1. Create a Questionnaire
+    // 2. Create a PlanDefinition
+    // 3. Create a Patient
+    // 4. Apply the PlanDefinition to create the Task and RequestGroup
+    // 5. Verify the RequestGroup
+    // 6. Verify the Task
+
+    // 1. Create a Questionnaire
+    const res1 = await request(app)
+      .post(`/fhir/R4/Questionnaire`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Questionnaire',
+        name: 'Patient Registration',
+        title: 'Patient Registration',
+        subjectType: ['Patient'],
+        item: [
+          {
+            linkId: '1',
+            text: 'First question',
+            type: 'string',
+          },
+        ],
+      });
+    expect(res1.status).toBe(201);
+
+    // 2. Create a PlanDefinition
+    const res2 = await request(app)
+      .post(`/fhir/R4/PlanDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+        action: [
+          {
+            title: res1.body.title,
+            definitionCanonical: getReferenceString(res1.body as Questionnaire),
+          },
+        ],
+      });
+    expect(res2.status).toBe(201);
+
+    // 3. Create a Patient
+    const res3 = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Workflow'], family: 'Demo' }],
+      });
+    expect(res3.status).toBe(201);
+
+    // 4. Apply the PlanDefinition to create the Task and RequestGroup
+    const res4 = await request(app)
+      .post(`/fhir/R4/PlanDefinition/${res2.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'subject',
+            valueReference: createReference(res3.body as Patient),
+          },
+        ],
+      });
+    expect(res4.status).toBe(201);
+    expect(res4.body.resourceType).toEqual('RequestGroup');
+    expect((res4.body as RequestGroup).action).toHaveLength(1);
+    expect((res4.body as RequestGroup).action?.[0]?.resource?.reference).toBeDefined();
+
+    // 5. Verify the RequestGroup
+    const res5 = await request(app)
+      .get(`/fhir/R4/RequestGroup/${res4.body.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res5.status).toBe(200);
+
+    // 6. Verify the Task
+    const res6 = await request(app)
+      .get(`/fhir/R4/${(res4.body as RequestGroup).action?.[0]?.resource?.reference}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res6.status).toBe(200);
+    expect(res6.body.resourceType).toEqual('Task');
+    expect((res6.body as Task).input).toHaveLength(1);
+    expect((res6.body as Task).input?.[0]?.valueReference?.reference).toEqual(
+      getReferenceString(res1.body as Questionnaire)
+    );
+  });
+
+  test('Unsupported content type', async () => {
+    const res2 = await request(app)
+      .post(`/fhir/R4/PlanDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+      });
+    expect(res2.status).toBe(201);
+
+    const res4 = await request(app)
+      .post(`/fhir/R4/PlanDefinition/${res2.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'text/plain')
+      .send('hello');
+    expect(res4.status).toBe(400);
+    expect(res4.text).toEqual('Unsupported content type');
+  });
+
+  test('Incorrect parameters type', async () => {
+    const res2 = await request(app)
+      .post(`/fhir/R4/PlanDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+      });
+    expect(res2.status).toBe(201);
+
+    const res4 = await request(app)
+      .post(`/fhir/R4/PlanDefinition/${res2.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Patient',
+      });
+    expect(res4.status).toBe(400);
+    expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toEqual('Incorrect parameters type');
+  });
+
+  test('Missing subject', async () => {
+    const res2 = await request(app)
+      .post(`/fhir/R4/PlanDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+      });
+    expect(res2.status).toBe(201);
+
+    const res4 = await request(app)
+      .post(`/fhir/R4/PlanDefinition/${res2.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [],
+      });
+    expect(res4.status).toBe(400);
+    expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toEqual('Missing subject parameter');
+  });
+
+  test('Unsupported action type', async () => {
+    const res2 = await request(app)
+      .post(`/fhir/R4/PlanDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+        action: [
+          {
+            definitionCanonical: 'UnsupportedResourceType',
+          },
+        ],
+      });
+    expect(res2.status).toBe(201);
+
+    const res3 = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Workflow'], family: 'Demo' }],
+      });
+    expect(res3.status).toBe(201);
+
+    const res4 = await request(app)
+      .post(`/fhir/R4/PlanDefinition/${res2.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'subject',
+            valueReference: createReference(res3.body as Patient),
+          },
+        ],
+      });
+    expect(res4.status).toBe(400);
+    expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toEqual('Unsupported action type');
+  });
+});

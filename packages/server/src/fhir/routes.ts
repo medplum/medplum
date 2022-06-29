@@ -12,6 +12,7 @@ import { deployHandler } from './operations/deploy';
 import { executeHandler } from './operations/execute';
 import { expandOperator } from './operations/expand';
 import { graphqlHandler } from './operations/graphql';
+import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
@@ -108,6 +109,9 @@ protectedRoutes.post('/Bot/:id/([$]|%24)deploy', deployHandler);
 
 // GraphQL
 protectedRoutes.post('/([$]|%24)graphql', graphqlHandler);
+
+// PlanDefinition $apply operation
+protectedRoutes.post('/PlanDefinition/:id/([$]|%24)apply', asyncWrap(planDefinitionApplyHandler));
 
 // Create batch
 protectedRoutes.post(
@@ -290,11 +294,11 @@ protectedRoutes.post(
   })
 );
 
-function isFhirJsonContentType(req: Request): boolean {
+export function isFhirJsonContentType(req: Request): boolean {
   return !!(req.is('application/json') || req.is('application/fhir+json'));
 }
 
-async function sendResponse(res: Response, outcome: OperationOutcome, body: any): Promise<void> {
+export async function sendResponse(res: Response, outcome: OperationOutcome, body: any): Promise<void> {
   const repo = res.locals.repo as Repository;
   res.status(getStatus(outcome)).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, body));
 }
