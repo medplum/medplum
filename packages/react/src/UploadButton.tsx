@@ -6,6 +6,7 @@ import { killEvent } from './utils/dom';
 
 export interface UploadButtonProps {
   onUpload: (attachment: Attachment) => void;
+  children?: React.ReactNode;
 }
 
 export function UploadButton(props: UploadButtonProps): JSX.Element {
@@ -67,7 +68,7 @@ export function UploadButton(props: UploadButtonProps): JSX.Element {
           fileInputRef.current?.click();
         }}
       >
-        Upload...
+        {props.children || 'Upload...'}
       </Button>
     </>
   );
