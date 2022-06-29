@@ -112,6 +112,8 @@ function mockFetch(url: string, options: any): Promise<any> {
       resourceType: 'Patient',
       id: '123',
     };
+  } else if (method === 'GET' && url.endsWith('Patient/not-found')) {
+    result = { status: 404 };
   } else if (
     method === 'GET' &&
     (url.endsWith('Patient?_count=1&name:contains=alice') || url.endsWith('Patient?_count=1&name%3Acontains=alice'))
@@ -451,6 +453,24 @@ describe('Client', () => {
     expect(result.resourceType).toBe('Patient');
     expect(result.id).toBe('123');
     expect(client.getCached('Patient', '123')).toBe(result); // Value in the cache
+  });
+
+  test('Read cached resource not found', async () => {
+    expect.assertions(7);
+    const client = new MedplumClient(defaultOptions);
+    const reference = { reference: 'Patient/not-found' };
+    expect(client.getCached('Patient', 'not-found')).toBeUndefined(); // Nothing in the cache
+    expect(client.getCachedReference(reference)).toBeUndefined();
+    const readPromise = client.readResource('Patient', 'not-found');
+    expect(client.getCached('Patient', 'not-found')).toBeUndefined(); // Promise in the cache
+    expect(client.getCachedReference(reference)).toBeUndefined();
+    try {
+      await readPromise;
+    } catch (err) {
+      expect(err).toBeDefined();
+    }
+    expect(client.getCached('Patient', 'not-found')).toBeUndefined(); // Should not throw
+    expect(client.getCachedReference(reference)).toBeUndefined();
   });
 
   test('Read cached reference', async () => {

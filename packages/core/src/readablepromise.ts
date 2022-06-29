@@ -34,6 +34,14 @@ export class ReadablePromise<T> implements Promise<T> {
   }
 
   /**
+   * Returns true if the promise resolved successfully.
+   * @returns True if the Promise resolved successfully.
+   */
+  isOk(): boolean {
+    return this.#status === 'success';
+  }
+
+  /**
    * Attempts to read the value of the promise.
    * If the promise is pending, this method will throw a promise.
    * If the promise rejected, this method will throw the rejection reason.

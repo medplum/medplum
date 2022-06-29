@@ -816,7 +816,7 @@ export class MedplumClient extends EventTarget {
    */
   getCached<K extends ResourceType>(resourceType: K, id: string): ExtractResource<K> | undefined {
     const cached = this.#requestCache.get(this.fhirUrl(resourceType, id).toString())?.value;
-    return cached && !cached.isPending() ? (cached.read() as ExtractResource<K>) : undefined;
+    return cached && cached.isOk() ? (cached.read() as ExtractResource<K>) : undefined;
   }
 
   /**
