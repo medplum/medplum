@@ -115,4 +115,13 @@ describe('UploadButton', () => {
 
     expect(window.alert).toHaveBeenCalledWith('Invalid file type');
   });
+
+  test('Custom text', async () => {
+    setup({
+      children: 'My button',
+      onUpload: jest.fn(),
+    });
+
+    expect(screen.getByText('My button')).toBeInTheDocument();
+  });
 });

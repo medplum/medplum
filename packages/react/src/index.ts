@@ -73,6 +73,7 @@ export * from './TabSwitch';
 export * from './TextArea';
 export * from './Timeline';
 export * from './TitleBar';
+export * from './UploadButton';
 export * from './useResource';
 export * from './utils';
 export * from './utils/date';
