@@ -53,4 +53,19 @@ describe('FhirPathDisplay', () => {
       />
     );
   });
+
+  test('Handles malformed date', () => {
+    console.warn = jest.fn();
+    render(
+      <FhirPathDisplay
+        resource={{
+          resourceType: 'Patient',
+          birthDate: 'not a date',
+        }}
+        path="between(birthDate, now(), 'years')"
+        propertyType={PropertyType.string}
+      />
+    );
+    expect(console.warn).toHaveBeenCalledWith('FhirPathDisplay:', expect.any(Error));
+  });
 });
