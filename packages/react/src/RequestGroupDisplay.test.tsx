@@ -1,5 +1,5 @@
 import { MockClient } from '@medplum/mock';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { act } from 'react-dom/test-utils';
 import { MemoryRouter } from 'react-router-dom';
@@ -20,11 +20,38 @@ async function setup(ui: React.ReactElement): Promise<void> {
 
 describe('RequestGroupDisplay', () => {
   test('Renders undefined', async () => {
-    await setup(<RequestGroupDisplay />);
+    await setup(<RequestGroupDisplay onStart={jest.fn()} onEdit={jest.fn()} />);
   });
 
   test('Renders reference', async () => {
-    await setup(<RequestGroupDisplay value={{ reference: 'RequestGroup/workflow-request-group-1' }} />);
+    const onStart = jest.fn();
+    const onEdit = jest.fn();
+
+    await setup(
+      <RequestGroupDisplay
+        onStart={onStart}
+        onEdit={onEdit}
+        value={{ reference: 'RequestGroup/workflow-request-group-1' }}
+      />
+    );
+
     expect(screen.getByText('Patient Registration')).toBeDefined();
+
+    const startButtons = screen.getAllByText('Start');
+    expect(startButtons).toHaveLength(2);
+
+    const editButtons = screen.getAllByText('Edit');
+    expect(editButtons).toHaveLength(1);
+
+    fireEvent.click(startButtons[0]);
+    expect(onStart).toHaveBeenCalled();
+    expect(onEdit).not.toHaveBeenCalled();
+
+    onStart.mockClear();
+    onEdit.mockClear();
+
+    fireEvent.click(editButtons[0]);
+    expect(onStart).not.toHaveBeenCalled();
+    expect(onEdit).toHaveBeenCalled();
   });
 });

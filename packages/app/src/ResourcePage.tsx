@@ -1,4 +1,4 @@
-import { getReferenceString, stringify } from '@medplum/core';
+import { getReferenceString, resolveId, stringify } from '@medplum/core';
 import {
   Bot,
   Bundle,
@@ -42,6 +42,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { BotEditor } from './BotEditor';
 import { PatientHeader } from './PatientHeader';
+import { PlanDefinitionApplyForm } from './PlanDefinitionApplyForm';
 import { QuickServiceRequests } from './QuickServiceRequests';
 import { QuickStatus } from './QuickStatus';
 import { ResourceHeader } from './ResourceHeader';
@@ -56,7 +57,7 @@ function getTabs(resourceType: string, questionnaires?: Bundle): string[] {
   }
 
   if (resourceType === 'PlanDefinition') {
-    result.push('Builder');
+    result.push('Apply', 'Builder');
   }
 
   if (resourceType === 'Questionnaire') {
@@ -356,7 +357,15 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
     case 'report':
       return <DiagnosticReportDisplay value={props.resource as DiagnosticReport} />;
     case 'checklist':
-      return <RequestGroupDisplay value={props.resource as RequestGroup} />;
+      return (
+        <RequestGroupDisplay
+          value={props.resource as RequestGroup}
+          onStart={(_task, taskInput) => navigate(`/forms/${resolveId(taskInput)}`)}
+          onEdit={(_task, _taskInput, taskOutput) => navigate(`/${taskOutput.reference}}`)}
+        />
+      );
+    case 'apply':
+      return <PlanDefinitionApplyForm planDefinition={props.resource as PlanDefinition} />;
   }
   return null;
 }

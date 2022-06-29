@@ -1,8 +1,8 @@
 import { getReferenceString } from '@medplum/core';
 import { Bundle, BundleEntry, Reference, RequestGroup, Resource, Task } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
+import { Button } from './Button';
 import { DateTimeDisplay } from './DateTimeDisplay';
-import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
 import { ResourceName } from './ResourceName';
 import { StatusBadge } from './StatusBadge';
@@ -11,6 +11,8 @@ import './RequestGroupDisplay.css';
 
 export interface RequestGroupDisplayProps {
   value?: RequestGroup | Reference<RequestGroup>;
+  onStart: (task: Task, input: Reference) => void;
+  onEdit: (task: Task, input: Reference, output: Reference) => void;
 }
 
 export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Element | null {
@@ -52,15 +54,9 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
               </div>
             </div>
             <div className="medplum-request-group-task-actions">
-              {taskInput && !taskOutput && (
-                <MedplumLink className="medplum-button" to={taskInput}>
-                  Start
-                </MedplumLink>
-              )}
+              {taskInput && !taskOutput && <Button onClick={() => props.onStart(task, taskInput)}>Start</Button>}
               {taskInput && taskOutput && (
-                <MedplumLink className="medplum-button" to={taskOutput}>
-                  Edit
-                </MedplumLink>
+                <Button onClick={() => props.onEdit(task, taskInput, taskOutput)}>Edit</Button>
               )}
             </div>
           </div>

@@ -1,8 +1,8 @@
-import { Meta } from '@storybook/react';
 import { ExampleWorkflowRequestGroup } from '@medplum/mock';
+import { Meta } from '@storybook/react';
 import React from 'react';
-import { RequestGroupDisplay } from '../RequestGroupDisplay';
 import { Document } from '../Document';
+import { RequestGroupDisplay } from '../RequestGroupDisplay';
 
 export default {
   title: 'Medplum/RequestGroupDisplay',
@@ -11,6 +11,6 @@ export default {
 
 export const Simple = (): JSX.Element => (
   <Document>
-    <RequestGroupDisplay value={ExampleWorkflowRequestGroup} />
+    <RequestGroupDisplay onStart={console.log} onEdit={console.log} value={ExampleWorkflowRequestGroup} />
   </Document>
 );
