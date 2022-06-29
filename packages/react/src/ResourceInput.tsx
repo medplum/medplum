@@ -38,7 +38,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
     <Autocomplete
       loadOptions={(input: string): Promise<T[]> => {
         return medplum
-          .search(resourceTypeRef.current as ResourceType, 'name=' + encodeURIComponent(input))
+          .search(resourceTypeRef.current as ResourceType, 'name=' + encodeURIComponent(input) + '&_count=10')
           .then((bundle: Bundle) => (bundle.entry as BundleEntry[]).map((entry) => entry.resource as T));
       }}
       getId={(item: T) => {

@@ -209,6 +209,13 @@ describe('ResourcePage', () => {
     expect(screen.getByText('Checklist')).toBeInTheDocument();
   });
 
+  test('PlanDefinition apply', async () => {
+    await setup('/PlanDefinition/workflow-plan-definition-1/apply');
+    await waitFor(() => screen.getByText('Subject'));
+
+    expect(screen.getByText('Subject')).toBeInTheDocument();
+  });
+
   test('Left click on tab', async () => {
     window.open = jest.fn();
 

@@ -1,4 +1,4 @@
-import { getReferenceString, stringify } from '@medplum/core';
+import { getReferenceString, resolveId, stringify } from '@medplum/core';
 import {
   Bot,
   Bundle,
@@ -24,7 +24,6 @@ import {
   PlanDefinitionBuilder,
   QuestionnaireBuilder,
   QuestionnaireForm,
-  ReferenceInput,
   RequestGroupDisplay,
   ResourceBlame,
   ResourceForm,
@@ -43,6 +42,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { BotEditor } from './BotEditor';
 import { PatientHeader } from './PatientHeader';
+import { PlanDefinitionApplyForm } from './PlanDefinitionApplyForm';
 import { QuickServiceRequests } from './QuickServiceRequests';
 import { QuickStatus } from './QuickStatus';
 import { ResourceHeader } from './ResourceHeader';
@@ -357,18 +357,15 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
     case 'report':
       return <DiagnosticReportDisplay value={props.resource as DiagnosticReport} />;
     case 'checklist':
-      return <RequestGroupDisplay value={props.resource as RequestGroup} />;
-    case 'apply':
       return (
-        <Form
-          onSubmit={(formData: Record<string, string>) => {
-            console.log('CODY formData', formData);
-          }}
-        >
-          <ReferenceInput name="subject" targetTypes={['Patient', 'Practitioner']} />
-          <Button type="submit">OK</Button>
-        </Form>
+        <RequestGroupDisplay
+          value={props.resource as RequestGroup}
+          onStart={(_task, taskInput) => navigate(`/forms/${resolveId(taskInput)}`)}
+          onEdit={(_task, _taskInput, taskOutput) => navigate(`/${taskOutput.reference}}`)}
+        />
       );
+    case 'apply':
+      return <PlanDefinitionApplyForm planDefinition={props.resource as PlanDefinition} />;
   }
   return null;
 }

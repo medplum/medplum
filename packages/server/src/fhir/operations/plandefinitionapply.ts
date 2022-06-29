@@ -2,6 +2,7 @@ import { assertOk, badRequest, createReference, getReferenceString, OperationOut
 import {
   CareTeam,
   Device,
+  Group,
   HealthcareService,
   Organization,
   Patient,
@@ -67,6 +68,7 @@ export async function planDefinitionApplyHandler(req: Request, res: Response): P
   const [outcome3, requestGroup] = await repo.createResource<RequestGroup>({
     resourceType: 'RequestGroup',
     instantiatesCanonical: [getReferenceString(planDefinition)],
+    subject: createReference(params.subject) as Reference<Patient | Group>,
     status: 'active',
     action: actions,
   });

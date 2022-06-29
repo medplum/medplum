@@ -5,6 +5,7 @@ import { killEvent } from './utils/dom';
 
 export interface MedplumLinkProps {
   to?: Resource | Reference | string;
+  suffix?: string;
   label?: string;
   id?: string;
   testid?: string;
@@ -24,6 +25,10 @@ export function MedplumLink(props: MedplumLinkProps): JSX.Element {
       href = `/${props.to.resourceType}/${props.to.id}`;
     } else if ('reference' in props.to) {
       href = `/${props.to.reference}`;
+    }
+
+    if (props.suffix) {
+      href += '/' + props.suffix;
     }
   }
 
