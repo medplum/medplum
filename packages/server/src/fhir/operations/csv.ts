@@ -1,9 +1,9 @@
 import { assertOk, badRequest, evalFhirPath, formatAddress, formatHumanName } from '@medplum/core';
 import { Address, BundleEntry, CodeableConcept, ContactPoint, HumanName, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { sendOutcome } from './outcomes';
-import { Repository } from './repo';
-import { parseSearchRequest } from './search';
+import { sendOutcome } from '../outcomes';
+import { Repository } from '../repo';
+import { parseSearchRequest } from '../search';
 
 const resourceTypeColumns: Record<string, Record<string, string>> = {
   Patient: {

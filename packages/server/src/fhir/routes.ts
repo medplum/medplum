@@ -6,12 +6,12 @@ import { asyncWrap } from '../async';
 import { getConfig } from '../config';
 import { authenticateToken } from '../oauth';
 import { processBatch } from './batch';
-import { csvHandler } from './csv';
-import { expandOperator } from './expand';
-import { graphqlHandler } from './graphql';
 import { getCapabilityStatement } from './metadata';
+import { csvHandler } from './operations/csv';
 import { deployHandler } from './operations/deploy';
 import { executeHandler } from './operations/execute';
+import { expandOperator } from './operations/expand';
+import { graphqlHandler } from './operations/graphql';
 import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
@@ -98,7 +98,7 @@ fhirRouter.use(protectedRoutes);
 protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
 
 // CSV Export
-protectedRoutes.get('/:resourceType/([$])csv', asyncWrap(csvHandler));
+protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
 
 // Bot $execute operation
 protectedRoutes.post('/Bot/:id/([$]|%24)execute', executeHandler);
