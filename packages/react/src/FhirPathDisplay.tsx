@@ -9,8 +9,15 @@ export interface FhirPathDisplayProps {
   propertyType: PropertyType;
 }
 
-export function FhirPathDisplay(props: FhirPathDisplayProps): JSX.Element {
-  const value = evalFhirPath(props.path, props.resource);
+export function FhirPathDisplay(props: FhirPathDisplayProps): JSX.Element | null {
+  let value;
+
+  try {
+    value = evalFhirPath(props.path, props.resource);
+  } catch (err) {
+    console.warn('FhirPathDisplay:', err);
+    return null;
+  }
 
   if (value.length > 1) {
     throw new Error(
