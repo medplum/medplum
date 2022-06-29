@@ -1,5 +1,13 @@
 import { PlanDefinition, Reference, RequestGroup } from '@medplum/fhirtypes';
-import { Button, Form, FormSection, MedplumLink, ReferenceInput, useMedplum } from '@medplum/react';
+import {
+  Button,
+  CodeableConceptDisplay,
+  Form,
+  FormSection,
+  MedplumLink,
+  ReferenceInput,
+  useMedplum,
+} from '@medplum/react';
 import React, { useState } from 'react';
 
 export interface PlanDefinitionApplyFormProps {
@@ -47,6 +55,20 @@ export function PlanDefinitionApplyForm(props: PlanDefinitionApplyFormProps): JS
           .catch(console.log);
       }}
     >
+      <h1>Start "{props.planDefinition.title}"</h1>
+      <p>
+        Use the <strong>Apply</strong> operation to create a group of tasks for a workflow.
+      </p>
+      <p>The following tasks will be created:</p>
+      <ul>
+        {props.planDefinition.action?.map((action, index) => (
+          <li key={`action-${index}`}>
+            {action.definitionCanonical?.startsWith('Questionnaire/') && 'Questionnaire request: '}
+            {action.title && <>{action.title}</>}
+            {action.code && <CodeableConceptDisplay value={action.code[0]} />}
+          </li>
+        ))}
+      </ul>
       <FormSection title="Subject">
         <ReferenceInput
           name="subject"
