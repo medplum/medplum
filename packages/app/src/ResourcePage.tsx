@@ -24,6 +24,7 @@ import {
   PlanDefinitionBuilder,
   QuestionnaireBuilder,
   QuestionnaireForm,
+  ReferenceInput,
   RequestGroupDisplay,
   ResourceBlame,
   ResourceForm,
@@ -56,7 +57,7 @@ function getTabs(resourceType: string, questionnaires?: Bundle): string[] {
   }
 
   if (resourceType === 'PlanDefinition') {
-    result.push('Builder');
+    result.push('Apply', 'Builder');
   }
 
   if (resourceType === 'Questionnaire') {
@@ -357,6 +358,17 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
       return <DiagnosticReportDisplay value={props.resource as DiagnosticReport} />;
     case 'checklist':
       return <RequestGroupDisplay value={props.resource as RequestGroup} />;
+    case 'apply':
+      return (
+        <Form
+          onSubmit={(formData: Record<string, string>) => {
+            console.log('CODY formData', formData);
+          }}
+        >
+          <ReferenceInput name="subject" targetTypes={['Patient', 'Practitioner']} />
+          <Button type="submit">OK</Button>
+        </Form>
+      );
   }
   return null;
 }
