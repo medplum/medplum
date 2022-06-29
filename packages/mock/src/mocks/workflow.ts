@@ -79,7 +79,7 @@ export const ExampleWorkflowQuestionnaireResponse1: QuestionnaireResponse = {
 export const ExampleWorkflowTask1: Task = {
   resourceType: 'Task',
   id: 'workflow-task-1',
-  status: 'complete',
+  status: 'completed',
   meta: { author: createReference(HomerSimpson) },
   requester: createReference(DrAliceSmith),
   input: [{ valueReference: createReference(ExampleWorkflowQuestionnaire1) }],

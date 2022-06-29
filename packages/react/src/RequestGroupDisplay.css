@@ -9,6 +9,12 @@
   margin-bottom: 16px;
 }
 
+.medplum-request-group-task-checkmark {
+  color: var(--medplum-gray-700);
+  font-size: 24px;
+  width: 40px;
+}
+
 .medplum-request-group-task-details {
   flex: 1;
   line-height: 1.75;

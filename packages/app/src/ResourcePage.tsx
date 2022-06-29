@@ -6,6 +6,7 @@ import {
   OperationOutcome,
   PlanDefinition,
   Questionnaire,
+  RequestGroup,
   Resource,
   ServiceRequest,
 } from '@medplum/fhirtypes';
@@ -23,6 +24,7 @@ import {
   PlanDefinitionBuilder,
   QuestionnaireBuilder,
   QuestionnaireForm,
+  RequestGroupDisplay,
   ResourceBlame,
   ResourceForm,
   ResourceHistoryTable,
@@ -63,6 +65,10 @@ function getTabs(resourceType: string, questionnaires?: Bundle): string[] {
 
   if (resourceType === 'DiagnosticReport') {
     result.push('Report');
+  }
+
+  if (resourceType === 'RequestGroup') {
+    result.push('Checklist');
   }
 
   result.push('Details', 'Edit', 'History', 'Blame', 'JSON');
@@ -349,6 +355,8 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
       );
     case 'report':
       return <DiagnosticReportDisplay value={props.resource as DiagnosticReport} />;
+    case 'checklist':
+      return <RequestGroupDisplay value={props.resource as RequestGroup} />;
   }
   return null;
 }

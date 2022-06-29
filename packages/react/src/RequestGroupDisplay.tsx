@@ -5,6 +5,7 @@ import { DateTimeDisplay } from './DateTimeDisplay';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
 import { ResourceName } from './ResourceName';
+import { StatusBadge } from './StatusBadge';
 import { useResource } from './useResource';
 import './RequestGroupDisplay.css';
 
@@ -37,6 +38,7 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
         const taskOutput = task?.output?.[0]?.valueReference;
         return (
           <div className="medplum-request-group-task" key={`action-${index}`}>
+            <div className="medplum-request-group-task-checkmark">{task?.status === 'completed' ? '🗹' : '☐'}</div>
             <div className="medplum-request-group-task-details">
               <div className="medplum-request-group-task-title">{action.title}</div>
               <div>
@@ -45,7 +47,9 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
                 &nbsp;on&nbsp;
                 <DateTimeDisplay value={task?.meta?.lastUpdated} />
               </div>
-              <div>Status: {task?.status}</div>
+              <div>
+                Status: <StatusBadge status={task?.status || 'unknown'} />
+              </div>
             </div>
             <div className="medplum-request-group-task-actions">
               {taskInput && !taskOutput && (
