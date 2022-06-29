@@ -51,6 +51,7 @@ export const ExampleWorkflowQuestionnaire3: Questionnaire = {
 export const ExampleWorkflowPlanDefinition: PlanDefinition = {
   resourceType: 'PlanDefinition',
   id: 'workflow-plan-definition-1',
+  title: 'Example Plan Definition',
   action: [
     {
       title: ExampleWorkflowQuestionnaire1.title,
