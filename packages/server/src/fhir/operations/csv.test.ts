@@ -2,12 +2,12 @@ import { ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import { initApp } from '../app';
-import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { initTestAuth } from '../test.setup';
-import { initKeys } from '../oauth';
-import { seedDatabase } from '../seed';
+import { initApp } from '../../app';
+import { loadTestConfig } from '../../config';
+import { closeDatabase, initDatabase } from '../../database';
+import { initKeys } from '../../oauth';
+import { seedDatabase } from '../../seed';
+import { initTestAuth } from '../../test.setup';
 
 const app = express();
 let accessToken: string;

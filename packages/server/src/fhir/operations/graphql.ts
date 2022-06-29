@@ -26,13 +26,13 @@ import {
   validate,
 } from 'graphql';
 import { JSONSchema4 } from 'json-schema';
-import { asyncWrap } from '../async';
-import { sendOutcome } from './outcomes';
-import { Repository } from './repo';
-import { rewriteAttachments, RewriteMode } from './rewrite';
-import { getResourceTypes, getSchemaDefinition } from './schema';
-import { parseSearchRequest } from './search';
-import { getSearchParameters } from './structure';
+import { asyncWrap } from '../../async';
+import { Repository } from '../repo';
+import { rewriteAttachments, RewriteMode } from '../rewrite';
+import { getResourceTypes, getSchemaDefinition } from '../schema';
+import { parseSearchRequest } from '../search';
+import { getSearchParameters } from '../structure';
+import { sendOutcome } from './../outcomes';
 
 const typeCache: Record<string, GraphQLOutputType | undefined> = {
   base64Binary: GraphQLString,

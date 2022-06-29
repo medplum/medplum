@@ -3,7 +3,7 @@ import { initApp } from './app';
 import { loadConfig } from './config';
 import { initDatabase } from './database';
 import { initBinaryStorage } from './fhir';
-import { getRootSchema } from './fhir/graphql';
+import { getRootSchema } from './fhir/operations/graphql';
 import { logger } from './logger';
 import { initKeys } from './oauth';
 import { initRedis } from './redis';
