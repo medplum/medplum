@@ -4,7 +4,9 @@ import {
   Bundle,
   DiagnosticReport,
   OperationOutcome,
+  PlanDefinition,
   Questionnaire,
+  RequestGroup,
   Resource,
   ServiceRequest,
 } from '@medplum/fhirtypes';
@@ -19,8 +21,10 @@ import {
   Loading,
   MedplumLink,
   PatientTimeline,
+  PlanDefinitionBuilder,
   QuestionnaireBuilder,
   QuestionnaireForm,
+  RequestGroupDisplay,
   ResourceBlame,
   ResourceForm,
   ResourceHistoryTable,
@@ -51,12 +55,20 @@ function getTabs(resourceType: string, questionnaires?: Bundle): string[] {
     result.push('Editor');
   }
 
+  if (resourceType === 'PlanDefinition') {
+    result.push('Builder');
+  }
+
   if (resourceType === 'Questionnaire') {
     result.push('Preview', 'Builder');
   }
 
   if (resourceType === 'DiagnosticReport') {
     result.push('Report');
+  }
+
+  if (resourceType === 'RequestGroup') {
+    result.push('Checklist');
   }
 
   result.push('Details', 'Edit', 'History', 'Blame', 'JSON');
@@ -322,7 +334,11 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
           return <DefaultResourceTimeline resource={props.resource} />;
       }
     case 'builder':
-      return <QuestionnaireBuilder questionnaire={props.resource as Questionnaire} onSubmit={props.onSubmit} />;
+      if (props.resource.resourceType === 'PlanDefinition') {
+        return <PlanDefinitionBuilder value={props.resource as PlanDefinition} onSubmit={props.onSubmit} />;
+      } else {
+        return <QuestionnaireBuilder questionnaire={props.resource as Questionnaire} onSubmit={props.onSubmit} />;
+      }
     case 'preview':
       return (
         <>
@@ -339,6 +355,8 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
       );
     case 'report':
       return <DiagnosticReportDisplay value={props.resource as DiagnosticReport} />;
+    case 'checklist':
+      return <RequestGroupDisplay value={props.resource as RequestGroup} />;
   }
   return null;
 }

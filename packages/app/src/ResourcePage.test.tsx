@@ -202,6 +202,13 @@ describe('ResourcePage', () => {
     expect(screen.getByText('Report')).toBeInTheDocument();
   });
 
+  test('RequestGroup checklist', async () => {
+    await setup('/RequestGroup/workflow-request-group-1/checklist');
+    await waitFor(() => screen.getByText('Checklist'));
+
+    expect(screen.getByText('Checklist')).toBeInTheDocument();
+  });
+
   test('Left click on tab', async () => {
     window.open = jest.fn();
 
