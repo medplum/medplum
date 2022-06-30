@@ -1,5 +1,5 @@
 import { MedplumClient } from '@medplum/core';
-import { MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/react';
+import { Logo, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/react';
 import GraphiQL from 'graphiql';
 import React from 'react';
 import { render } from 'react-dom';
@@ -36,7 +36,6 @@ const HELP_TEXT = `# Welcome to Medplum GraphiQL
 
 const medplum = new MedplumClient({
   baseUrl: process.env.MEDPLUM_BASE_URL,
-  clientId: process.env.MEDPLUM_CLIENT_ID,
 });
 
 function App(): JSX.Element {
@@ -44,7 +43,10 @@ function App(): JSX.Element {
   return profile ? (
     <GraphiQL fetcher={async (graphQLParams) => medplum.graphql(graphQLParams.query)} defaultQuery={HELP_TEXT} />
   ) : (
-    <SignInForm onSuccess={() => undefined} />
+    <SignInForm googleClientId={process.env.GOOGLE_CLIENT_ID} onSuccess={() => undefined}>
+      <Logo size={32} />
+      <h1>Sign in to Medplum</h1>
+    </SignInForm>
   );
 }
 
