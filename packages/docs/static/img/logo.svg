@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
-   width="2in"
-   height="2in"
-   viewBox="0 0 50.799995 50.800005"
+   width="1.8207097in"
+   height="2.0003769in"
+   viewBox="0 0 46.246025 50.809579"
    version="1.1"
    id="svg8"
+   inkscape:version="1.2 (dc2aeda, 2022-05-15)"
+   sodipodi:docname="medplum-logo-inkscape.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -13,14 +17,30 @@
   <title
      id="title925">Medplum Logo</title>
   <defs
-     id="defs2">
-    <rect
-       x="10.690781"
-       y="10.690781"
-       width="171.05251"
-       height="36.883194"
-       id="rect835" />
-  </defs>
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.60058097"
+     inkscape:cx="326.35067"
+     inkscape:cy="194.81137"
+     inkscape:document-units="in"
+     inkscape:current-layer="layer1"
+     inkscape:document-rotation="0"
+     showgrid="false"
+     units="in"
+     inkscape:window-width="1309"
+     inkscape:window-height="456"
+     inkscape:window-x="0"
+     inkscape:window-y="38"
+     inkscape:window-maximized="0"
+     inkscape:showpageshadow="2"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1" />
   <metadata
      id="metadata5">
     <rdf:RDF>
@@ -50,28 +70,31 @@
     </rdf:RDF>
   </metadata>
   <g
-     id="layer1">
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-9.8343898,-21.506486)">
     <g
        id="g923"
-       transform="matrix(0.10348183,0,0,0.10348183,-0.38634147,0.03102769)">
+       transform="matrix(0.10348183,0,0,0.10348183,7.5474414,21.506486)">
       <path
          fill="#ad7136"
          d="m 282,67 c 6,-16 16,-29 29,-40 L 289,0 c -22,17 -37,41 -43,68 l 17,23 z"
          id="path900" />
       <path
-         fill="#7e4f9b"
+         fill="#946af9"
          d="m 311,63 c -17,0 -33,4 -48,11 -16,-7 -32,-11 -49,-11 -87,0 -158,96 -158,214 0,118 71,214 158,214 17,0 33,-4 49,-11 15,7 31,11 48,11 87,0 158,-96 158,-214 C 469,159 398,63 311,63 Z"
          id="path902" />
       <path
-         fill="#5a2878"
+         fill="#7857c5"
          d="m 231,489 -17,2 C 127,491 56,395 56,277 56,159 127,63 214,63 l 17,1 c -39,12 -70,102 -70,213 0,111 31,201 70,212 z"
          id="path904" />
       <path
-         fill="#70d65b"
+         fill="#40bc26"
          d="M 207,220 A 176,176 0 0 1 30,263 176,176 0 0 1 251,43 l 1,5 c 17,59 2,125 -45,172 z"
          id="path906" />
       <path
-         fill="#58b741"
+         fill="#33961e"
          d="M 252,48 A 421,421 0 0 0 57,270 L 30,263 A 176,176 0 0 1 251,43 Z"
          id="path908" />
     </g>

@@ -8,10 +8,10 @@ import HomepageCallout from '@site/src/components/HomepageCallout'
 # Welcome to Medplum!
 
 <section className="homepage-grid">
-    <HomepageCallout title="Get Started" body="Write your first medical application in 5 minutes" linkText="Read More" linkRef="/tutorials/api-basics/create-fhir-data" />
-    <HomepageCallout title="API Docs" body="Reference documentation about Medplum's client API for reading and writing healthcare data" linkText="Read More" linkRef="/api" />
-    <HomepageCallout title="Use Cases" body="See how to apply Medplum against your healthcare problem" linkText="Read More" linkRef="#" />
-    <HomepageCallout title="Basic Concepts" body="Learn the basic concepts behind Medplum and the FHIR standard for healthcare data" linkText="Read More" linkRef="#" />
+    <HomepageCallout title="Get Started" body="Write your first medical application in 5 minutes" linkText="Read more" linkRef="/tutorials/api-basics/create-fhir-data" />
+    <HomepageCallout title="API Docs" body="Reference documentation about Medplum's client API for reading and writing healthcare data" linkText="Read more" linkRef="/api" />
+    <HomepageCallout title="Use Cases" body="See how to apply Medplum against your healthcare problem" linkText="Read more" linkRef="#" />
+    <HomepageCallout title="Basic Concepts" body="Learn the basic concepts behind Medplum and the FHIR standard for healthcare data" linkText="Read more" linkRef="#" />
 </section>
 
 ## What is Medplum?

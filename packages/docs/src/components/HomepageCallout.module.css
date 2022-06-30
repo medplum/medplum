@@ -1,24 +1,95 @@
 .container {
+  /* CONSTRUCTION */
+  box-sizing: border-box;
+
+  /* Auto layout */
   display: flex;
-  flex-flow: column nowrap;
-  justify-content: center;
-  background-color: var(--ifm-color-primary-lightest);
-  border-radius: 8px;
-  padding: 1rem;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 32px;
+
+  width: 328px;
+  height: 240px;
+
+  /* LIGHT/neutrals/neutral-3 */
+  background: #FBFBFB;
+
+  /* LIGHT/neutrals/neutral-10 */
+  border: 1px solid #E6E6E6;
+  border-radius: 32px;
+
+  /* Inside auto layout */
+  flex: none;
+  order: 0;
+  align-self: stretch;
+  flex-grow: 1;
+}
+
+[data-theme='dark'] .container {
+  background: #0D0D0D;
+  border: 1px solid #333333;
 }
 
 .content {
-  padding: 0.25rem;
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 300;
+  line-height: 140%;
 }
 
+.title {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 300;
+  font-size: 22px;
+  line-height: 130%;
+  color: #000000;
+}
+
+[data-theme='dark'] .title {
+  color: #FFFFFF;
+}
+.cardBody {
+  /* LIGHT/neutrals/neutral-70 */
+  color: #4D4D4D;
+}
+
+[data-theme='dark']  .cardBody {
+  /* LIGHT/neutrals/neutral-70 */
+  color: #B2B2B2;
+}
+
+
 .link-container {
-  background-color: rgb(88, 183, 64);
-  border-radius: 8px;
-  max-width: 8rem;
-  padding: 0.5rem;
+  /* Auto layout */
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px 12px 2px 16px;
+  gap: 8px;
+
+  width: 145px;
+  height: 30px;
+
+  /* LIGHT/primary/primary-10 */
+  border-radius: 53px;
+
+  background: var(--ifm-color-primary-lightest);
+
+}
+
+[data-theme='dark'] .link-container {
+  background: var(--ifm-color-primary-darkest);
 }
 
 .link-container a {
-  color: var(--ifm-font-color-base-inverse);
-  font-weight: bold;
+  color: var(--ifm-color-primary);
 }
+
+.link-container img {
+  width: 18px;
+  height: 26px;
+  line-height: 100%;
+}
+

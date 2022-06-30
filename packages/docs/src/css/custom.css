@@ -6,16 +6,48 @@
 
 /* You can override the default Infima variables here. */
 :root {
-  --ifm-color-primary: #96588a;
-  --ifm-color-primary-dark: #874f7c;
-  --ifm-color-primary-darker: #804b75;
-  --ifm-color-primary-darkest: #693e61;
-  --ifm-color-primary-light: #a36397;
-  --ifm-color-primary-lighter: #a86a9c;
-  --ifm-color-primary-lightest: #b581ab;
   --ifm-font-size-base: 16px;
   --ifm-code-font-size: 95%;
+  --ifm-font-family-base: 'Poppins', sans-serif;
+  --ifm-color-primary: #946AF9;
+  --ifm-color-primary-dark: #8762DD;
+  --ifm-color-primary-darker: #7857C5;
+  --ifm-color-primary-darkest: #684bab;
+  --ifm-color-primary-light: #AB8AF8;
+  --ifm-color-primary-lighter: #CAB6FA;
+  --ifm-color-primary-lightest: #F4F0FE;
+  --ifm-heading-color: #000000;
 }
+
+[data-theme='dark']  {
+  --ifm-color-primary: #966DF6;
+  --ifm-color-primary-dark: #6646AF;
+  --ifm-color-primary-darker: #402C6E;
+  --ifm-color-primary-darkest: #19122C;
+  --ifm-color-primary-light: #ba9ff9;
+  --ifm-color-primary-lighter: #ba9ff9;
+  --ifm-color-primary-lightest: #ded1fc;
+  --ifm-heading-color: #FFFFFF;
+}
+
+/* @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap'); */
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(/fonts/Poppins-Regular.ttf);
+}
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/fonts/Poppins-SemiBold.ttf);
+}
+
 
 .docusaurus-highlight-code-line {
   background-color: rgba(0, 0, 0, 0.1);
@@ -32,11 +64,23 @@ main img {
   width: 90%;
 }
 
+h1 {
+  font-style: normal;
+  font-weight: 600;
+  font-size: 56px;
+  line-height: 130%;
+}
+
+
+.markdown {
+  margin-left: 2rem;
+}
+
+/* Styles for the grid of cards on the docs homepage*/
 .homepage-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 2rem;
-  margin-inline: 2rem;
   margin-block-end: 4rem;
 }
 
