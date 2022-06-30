@@ -6,7 +6,7 @@ jest.mock('ioredis');
 describe('Redis', () => {
   test('Get redis', async () => {
     const config = await loadTestConfig();
-    await initRedis(config.redis);
+    initRedis(config.redis);
     expect(getRedis()).toBeDefined();
     await closeRedis();
   });

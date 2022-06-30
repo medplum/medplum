@@ -3,19 +3,22 @@ import { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../../config';
 import { closeDatabase, initDatabase } from '../../database';
-import { bundleContains } from '../../test.setup';
+import { closeRedis, initRedis } from '../../redis';
 import { seedDatabase } from '../../seed';
+import { bundleContains } from '../../test.setup';
 import { systemRepo } from '../repo';
 
 describe('HumanName Lookup Table', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
   });
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   test('HumanName', async () => {

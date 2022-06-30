@@ -17,8 +17,9 @@ import fetch from 'node-fetch';
 import { loadTestConfig } from '../config';
 import { closeDatabase, getClient, initDatabase } from '../database';
 import { getRepoForMembership, Repository, systemRepo } from '../fhir/repo';
-import { createTestProject } from '../test.setup';
+import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
+import { createTestProject } from '../test.setup';
 import { closeSubscriptionWorker, execSubscriptionJob, initSubscriptionWorker } from './subscription';
 
 jest.mock('bullmq');
@@ -31,6 +32,7 @@ let botProject: Project;
 describe('Subscription Worker', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initSubscriptionWorker(config.redis);
@@ -63,6 +65,7 @@ describe('Subscription Worker', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
     await closeSubscriptionWorker();
     await closeSubscriptionWorker(); // Double close to ensure quite ignore
   });

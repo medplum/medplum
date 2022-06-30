@@ -9,6 +9,7 @@ import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { initKeys } from '../oauth';
+import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
 import { initTestAuth } from '../test.setup';
 import { initBinaryStorage } from './storage';
@@ -20,6 +21,7 @@ let accessToken: string;
 describe('Binary', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initApp(app);
@@ -30,6 +32,7 @@ describe('Binary', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
     rmSync(binaryDir, { recursive: true, force: true });
   });
 

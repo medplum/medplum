@@ -1,16 +1,18 @@
 import express from 'express';
-import validator from 'validator';
 import request from 'supertest';
+import validator from 'validator';
 import { initApp } from './app';
 import { loadTestConfig } from './config';
 import { closeDatabase, initDatabase } from './database';
 import { initKeys } from './oauth';
+import { closeRedis, initRedis } from './redis';
 
 const app = express();
 
 describe('Well Known', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await initApp(app);
     await initKeys(config);
@@ -18,6 +20,7 @@ describe('Well Known', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   test('Get /.well-known/jwks.json', async () => {

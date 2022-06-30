@@ -45,6 +45,7 @@ import { URL } from 'url';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getClient } from '../database';
+import { getRedis } from '../redis';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
@@ -166,6 +167,21 @@ export class Repository {
       return [accessDenied, undefined];
     }
 
+    if (!this.#context.accessPolicy) {
+      const cachedValue = await getRedis().get(`${resourceType}:${id}`);
+      if (cachedValue) {
+        const cachedResource = JSON.parse(cachedValue) as T;
+        if (
+          cachedResource.meta?.project !== undefined &&
+          this.#context.project !== undefined &&
+          this.#context.project !== cachedResource.meta?.project
+        ) {
+          return [notFound, undefined];
+        }
+        return [allOk, this.#removeHiddenFields(cachedResource)];
+      }
+    }
+
     const client = getClient();
     const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', Operator.EQUALS, id);
 
@@ -180,6 +196,7 @@ export class Repository {
       return [gone, undefined];
     }
 
+    getRedis().set(`${resourceType}:${id}`, rows[0].content as string);
     return [allOk, this.#removeHiddenFields(JSON.parse(rows[0].content as string))];
   }
 
@@ -317,6 +334,8 @@ export class Repository {
     }
 
     try {
+      await getRedis().set(`${resourceType}:${id}`, JSON.stringify(result));
+
       await this.#writeResource(result);
       await this.#writeResourceVersion(result);
       await this.#writeLookupTables(result);
@@ -445,6 +464,8 @@ export class Repository {
     if (!this.#canWriteResourceType(resourceType)) {
       return [accessDenied, undefined];
     }
+
+    getRedis().del(`${resourceType}:${id}`);
 
     const client = getClient();
     const lastUpdated = new Date();

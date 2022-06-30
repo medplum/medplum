@@ -13,15 +13,15 @@ const app = express();
 describe('Health check', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
-    await initRedis(config.redis);
     await initApp(app);
     await initKeys(config);
   });
 
   afterAll(async () => {
     await closeDatabase();
-    await closeRedis();
+    closeRedis();
   });
 
   test('Get /healthcheck', async () => {
