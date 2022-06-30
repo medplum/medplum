@@ -9,12 +9,15 @@ type HomepageCalloutProps = {
 };
 export default function HomepageCallout(props: HomepageCalloutProps): JSX.Element {
   return (
-    <div className={`${styles.container} shadow--md`}>
+    <div className={`${styles.container}`}>
       <div className={styles.content}>
-        <h3>{props.title}</h3>
-        <p>{props.body}</p>
+        <h2 className={styles.title}>{props.title}</h2>
+        <p className={styles.cardBody}>{props.body}</p>
         <div className={styles['link-container']}>
           <a href={props.linkRef}>{props.linkText}</a>
+          <a href={props.linkRef} style={{ maxHeight: '26px' }}>
+            <img src="img/small_arrow.svg" />
+          </a>
         </div>
       </div>
     </div>
