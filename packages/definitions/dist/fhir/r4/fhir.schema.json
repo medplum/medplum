@@ -41930,6 +41930,10 @@
           },
           "type": "array"
         },
+        "publisher": {
+          "description": "The name of the individual or organization that published the ObservationDefinition.",
+          "$ref": "#/definitions/Reference"
+        },
         "category": {
           "description": "A code that classifies the general type of observation.",
           "items": {
