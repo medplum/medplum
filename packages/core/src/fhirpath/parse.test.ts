@@ -1,5 +1,13 @@
 import { readJson } from '@medplum/definitions';
-import { AuditEvent, Bundle, BundleEntry, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
+import {
+  AuditEvent,
+  Bundle,
+  BundleEntry,
+  Observation,
+  Patient,
+  SearchParameter,
+  ServiceRequest,
+} from '@medplum/fhirtypes';
 import { indexStructureDefinitionBundle, PropertyType } from '../types';
 import { evalFhirPath, evalFhirPathTyped, parseFhirPath } from './parse';
 import { toTypedValue } from './utils';
@@ -474,6 +482,37 @@ describe('FHIRPath parser', () => {
       {
         type: PropertyType.string,
         value: 'foo',
+      },
+    ]);
+  });
+
+  test('GraphQL embedded queries', () => {
+    const observations: Observation[] = [
+      {
+        resourceType: 'Observation',
+        code: { coding: [{ code: 'ALB' }] },
+        valueQuantity: { value: 120, unit: 'ng/dL' },
+      },
+      {
+        resourceType: 'Observation',
+        code: { coding: [{ code: 'HBA1C' }] },
+        valueQuantity: { value: 5, unit: '%' },
+      },
+    ];
+
+    // This is an example of how FHIR GraphQL returns embedded searches.
+    // The "ObservationList" is not a real property, but a search result.
+    const serviceRequest: ServiceRequest = {
+      resourceType: 'ServiceRequest',
+      ObservationList: observations,
+    } as ServiceRequest;
+
+    const query = "ObservationList.where(code.coding[0].code='HBA1C').value";
+    const result = evalFhirPathTyped(query, [toTypedValue(serviceRequest)]);
+    expect(result).toEqual([
+      {
+        type: PropertyType.Quantity,
+        value: { value: 5, unit: '%' },
       },
     ]);
   });

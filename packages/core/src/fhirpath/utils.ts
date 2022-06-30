@@ -65,10 +65,13 @@ export function getTypedPropertyValue(input: TypedValue, path: string): TypedVal
 
   const typeSchema = globalSchema.types[input.type];
   if (typeSchema) {
-    return getTypedPropertyValueWithSchema(input, path, typeSchema);
-  } else {
-    return getTypedPropertyValueWithoutSchema(input, path);
+    const typedResult = getTypedPropertyValueWithSchema(input, path, typeSchema);
+    if (typedResult) {
+      return typedResult;
+    }
   }
+
+  return getTypedPropertyValueWithoutSchema(input, path);
 }
 
 /**
