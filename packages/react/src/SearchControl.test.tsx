@@ -833,4 +833,64 @@ describe('SearchControl', () => {
 
     expect(onChange).toBeCalled();
   });
+
+  test('Hide toolbar', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Simpson',
+          },
+        ],
+        fields: ['id', '_lastUpdated', 'name'],
+      },
+      onLoad: jest.fn(),
+      hideToolbar: true,
+    };
+
+    await setup(props);
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    const control = screen.getByTestId('search-control');
+    expect(control).toBeDefined();
+    expect(props.onLoad).toBeCalled();
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+    expect(screen.queryByText('Patient')).not.toBeInTheDocument();
+  });
+
+  test('Hide filters', async () => {
+    const props = {
+      search: {
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Simpson',
+          },
+        ],
+        fields: ['id', '_lastUpdated', 'name'],
+      },
+      onLoad: jest.fn(),
+      hideFilters: true,
+    };
+
+    await setup(props);
+
+    await act(async () => {
+      await waitFor(() => screen.getByTestId('search-control'));
+    });
+
+    const control = screen.getByTestId('search-control');
+    expect(control).toBeDefined();
+    expect(props.onLoad).toBeCalled();
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+    expect(screen.queryByText('no filters')).not.toBeInTheDocument();
+  });
 });
