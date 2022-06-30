@@ -63,6 +63,8 @@ export interface SearchControlProps {
   search: SearchRequest;
   userConfig?: UserConfiguration;
   checkboxesEnabled?: boolean;
+  hideToolbar?: boolean;
+  hideFilters?: boolean;
   onLoad?: (e: SearchLoadEvent) => void;
   onChange?: (e: SearchChangeEvent) => void;
   onClick?: (e: SearchClickEvent) => void;
@@ -244,82 +246,87 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
 
   return (
     <div className="medplum-search-control" onContextMenu={(e) => killEvent(e)} data-testid="search-control">
-      <TitleBar>
-        <div>
-          <h1>
-            <a href={`https://www.hl7.org/fhir/${resourceType.toLowerCase()}.html`} target="_blank" rel="noopener">
-              {resourceType}
-            </a>
-          </h1>
-          {savedSearches && (
-            <Select
-              testid="saved-search-select"
-              style={{ width: 80 }}
-              onChange={(newValue) => {
-                emitSearchChange(parseSearchDefinition(newValue));
-              }}
-            >
-              <option></option>
-              {savedSearches.map((s, index) => (
-                <option key={`${index}-${savedSearches.length}`} value={s.criteria}>
-                  {s.name}
-                </option>
-              ))}
-            </Select>
-          )}
-          <Button
-            testid="fields-button"
-            size="small"
-            onClick={() => setState({ ...stateRef.current, fieldEditorVisible: true })}
-          >
-            Fields
-          </Button>
-          <Button
-            testid="filters-button"
-            size="small"
-            onClick={() => setState({ ...stateRef.current, filterEditorVisible: true })}
-          >
-            Filters
-          </Button>
-          {props.onNew && (
-            <Button size="small" onClick={props.onNew}>
-              New...
-            </Button>
-          )}
-          {props.onExport && (
-            <Button size="small" onClick={props.onExport}>
-              Export...
-            </Button>
-          )}
-          {props.onDelete && (
-            <Button
-              size="small"
-              onClick={() => (props.onDelete as (ids: string[]) => any)(Object.keys(state.selected))}
-            >
-              Delete...
-            </Button>
-          )}
-          {props.onBulk && (
-            <Button size="small" onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(state.selected))}>
-              Bulk...
-            </Button>
-          )}
-        </div>
-        {lastResult && (
+      {!props.hideToolbar && (
+        <TitleBar>
           <div>
-            <span className="medplum-search-summary">
-              {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of{' '}
-              {lastResult.total?.toLocaleString()}
-            </span>
-            <Button testid="prev-page-button" size="small" onClick={() => emitSearchChange(movePage(search, -1))}>
-              &lt;&lt;
+            <h1>
+              <a href={`https://www.hl7.org/fhir/${resourceType.toLowerCase()}.html`} target="_blank" rel="noopener">
+                {resourceType}
+              </a>
+            </h1>
+            {savedSearches && (
+              <Select
+                testid="saved-search-select"
+                style={{ width: 80 }}
+                onChange={(newValue) => {
+                  emitSearchChange(parseSearchDefinition(newValue));
+                }}
+              >
+                <option></option>
+                {savedSearches.map((s, index) => (
+                  <option key={`${index}-${savedSearches.length}`} value={s.criteria}>
+                    {s.name}
+                  </option>
+                ))}
+              </Select>
+            )}
+            <Button
+              testid="fields-button"
+              size="small"
+              onClick={() => setState({ ...stateRef.current, fieldEditorVisible: true })}
+            >
+              Fields
             </Button>
-            <Button testid="next-page-button" size="small" onClick={() => emitSearchChange(movePage(search, 1))}>
-              &gt;&gt;
+            <Button
+              testid="filters-button"
+              size="small"
+              onClick={() => setState({ ...stateRef.current, filterEditorVisible: true })}
+            >
+              Filters
             </Button>
+            {props.onNew && (
+              <Button size="small" onClick={props.onNew}>
+                New...
+              </Button>
+            )}
+            {props.onExport && (
+              <Button size="small" onClick={props.onExport}>
+                Export...
+              </Button>
+            )}
+            {props.onDelete && (
+              <Button
+                size="small"
+                onClick={() => (props.onDelete as (ids: string[]) => any)(Object.keys(state.selected))}
+              >
+                Delete...
+              </Button>
+            )}
+            {props.onBulk && (
+              <Button
+                size="small"
+                onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(state.selected))}
+              >
+                Bulk...
+              </Button>
+            )}
           </div>
-        )}
-      </TitleBar>
+          {lastResult && (
+            <div>
+              <span className="medplum-search-summary">
+                {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of{' '}
+                {lastResult.total?.toLocaleString()}
+              </span>
+              <Button testid="prev-page-button" size="small" onClick={() => emitSearchChange(movePage(search, -1))}>
+                &lt;&lt;
+              </Button>
+              <Button testid="next-page-button" size="small" onClick={() => emitSearchChange(movePage(search, 1))}>
+                &gt;&gt;
+              </Button>
+            </div>
+          )}
+        </TitleBar>
+      )}
       <table>
         <thead>
           <tr>
@@ -342,20 +349,22 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               </th>
             ))}
           </tr>
-          <tr>
-            {checkboxColumn && <th className="filters medplum-search-icon-cell" />}
-            {fields.map((field) => (
-              <th key={field.name} className="filters">
-                {field.searchParams && (
-                  <FilterDescription
-                    resourceType={resourceType}
-                    searchParams={field.searchParams}
-                    filters={props.search.filters}
-                  />
-                )}
-              </th>
-            ))}
-          </tr>
+          {!props.hideFilters && (
+            <tr>
+              {checkboxColumn && <th className="filters medplum-search-icon-cell" />}
+              {fields.map((field) => (
+                <th key={field.name} className="filters">
+                  {field.searchParams && (
+                    <FilterDescription
+                      resourceType={resourceType}
+                      searchParams={field.searchParams}
+                      filters={props.search.filters}
+                    />
+                  )}
+                </th>
+              ))}
+            </tr>
+          )}
         </thead>
         <tbody>
           {resources?.map(

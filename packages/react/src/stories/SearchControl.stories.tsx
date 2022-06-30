@@ -128,3 +128,67 @@ export const Observations = (): JSX.Element => {
     />
   );
 };
+
+export const HideToolbar = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Patient',
+    fields: ['id', '_lastUpdated', 'name'],
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      checkboxesEnabled={true}
+      hideToolbar={true}
+      onLoad={(e) => console.log('onLoad', e)}
+      onClick={(e) => console.log('onClick', e)}
+      onChange={(e) => {
+        console.log('onChange', e);
+        setSearch(e.definition);
+      }}
+    />
+  );
+};
+
+export const HideFilters = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Patient',
+    fields: ['id', '_lastUpdated', 'name'],
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      checkboxesEnabled={true}
+      hideFilters={true}
+      onLoad={(e) => console.log('onLoad', e)}
+      onClick={(e) => console.log('onClick', e)}
+      onChange={(e) => {
+        console.log('onChange', e);
+        setSearch(e.definition);
+      }}
+    />
+  );
+};
+
+export const HideToolbarAndFilters = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Patient',
+    fields: ['id', '_lastUpdated', 'name'],
+  });
+
+  return (
+    <SearchControl
+      search={search}
+      checkboxesEnabled={true}
+      hideToolbar={true}
+      hideFilters={true}
+      onLoad={(e) => console.log('onLoad', e)}
+      onClick={(e) => console.log('onClick', e)}
+      onChange={(e) => {
+        console.log('onChange', e);
+        setSearch(e.definition);
+      }}
+    />
+  );
+};
