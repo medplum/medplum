@@ -1,6 +1,7 @@
-import { buildTypeName, getPropertyDisplayName, globalSchema } from '@medplum/core';
-import { ElementDefinition, OperationOutcome } from '@medplum/fhirtypes';
+import { getPropertyDisplayName, globalSchema } from '@medplum/core';
+import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
+import { CheckboxFormSection } from './CheckboxFormSection';
 import { DEFAULT_IGNORED_PROPERTIES } from './constants';
 import { FormSection } from './FormSection';
 import { setPropertyValue } from './ResourceForm';
@@ -8,8 +9,7 @@ import { getValueAndType } from './ResourcePropertyDisplay';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 
 export interface BackboneElementInputProps {
-  property: ElementDefinition;
-  name: string;
+  typeName: string;
   defaultValue?: any;
   outcome?: OperationOutcome;
   onChange?: (value: any) => void;
@@ -25,11 +25,13 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
     }
   }
 
-  const typeName = buildTypeName(props.property.path?.split('.') as string[]);
+  const typeName = props.typeName;
   const typeSchema = globalSchema.types[typeName];
   if (!typeSchema) {
     return <div>{typeName}&nbsp;not implemented</div>;
   }
+
+  const typedValue = { type: typeName, value };
 
   return (
     <>
@@ -42,7 +44,31 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
         if (!property.type) {
           return null;
         }
-        const [propertyValue, propertyType] = getValueAndType(value, key);
+
+        const [propertyValue, propertyType] = getValueAndType(typedValue, key);
+
+        if (property.type.length === 1 && property.type[0].code === 'boolean') {
+          return (
+            <CheckboxFormSection
+              key={key}
+              title={getPropertyDisplayName(key)}
+              description={property.definition}
+              htmlFor={key}
+            >
+              <ResourcePropertyInput
+                property={property}
+                name={key}
+                defaultValue={propertyValue}
+                defaultPropertyType={propertyType}
+                outcome={props.outcome}
+                onChange={(newValue: any, propName?: string) => {
+                  setValueWrapper(setPropertyValue(value, key, propName ?? key, entry[1], newValue));
+                }}
+              />
+            </CheckboxFormSection>
+          );
+        }
+
         return (
           <FormSection
             key={key}

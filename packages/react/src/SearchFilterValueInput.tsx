@@ -1,6 +1,7 @@
 import { getSearchParameterDetails, IndexedStructureDefinition, SearchParameterType } from '@medplum/core';
 import { Quantity, Reference, SearchParameter } from '@medplum/fhirtypes';
 import React from 'react';
+import { Checkbox } from './Checkbox';
 import { DateTimeInput } from './DateTimeInput';
 import { Input } from './Input';
 import { QuantityInput } from './QuantityInput';
@@ -38,13 +39,11 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
 
     case SearchParameterType.BOOLEAN:
       return (
-        <input
-          type="checkbox"
+        <Checkbox
           name={name}
-          data-testid={name}
-          defaultChecked={props.defaultValue === 'true'}
-          value="true"
-          onChange={(e: React.ChangeEvent) => props.onChange((e.target as HTMLInputElement).checked ? 'true' : 'false')}
+          testid={name}
+          defaultValue={props.defaultValue === 'true'}
+          onChange={(newValue) => props.onChange(newValue.toString())}
         />
       );
 

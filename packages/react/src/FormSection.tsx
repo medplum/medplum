@@ -15,9 +15,9 @@ export function FormSection(props: FormSectionProps): JSX.Element {
   const issues = getIssuesForExpression(props.outcome, props.htmlFor);
   const invalid = issues && issues.length > 0;
   return (
-    <fieldset>
+    <fieldset className="medplum-form-section">
       {props.title && <label htmlFor={props.htmlFor}>{props.title}</label>}
-      {props.description && <small>{props.description}</small>}
+      {props.description && <p>{props.description}</p>}
       {props.children}
       {invalid && (
         <div id={props.htmlFor + '-errors'} className="medplum-input-error">

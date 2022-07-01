@@ -81,30 +81,19 @@ describe('BackboneElementInput', () => {
 
   test('Renders', async () => {
     await medplum.requestSchema('Patient');
-    setup({
-      property: globalSchema.types['Patient'].properties['contact'],
-      name: 'contact',
-    });
+    setup({ typeName: 'PatientContact' });
     expect(screen.getByText('Name')).toBeDefined();
   });
 
   test('Handles content reference', async () => {
     await medplum.requestSchema('ValueSet');
-    setup({
-      property: globalSchema.types['ValueSet'].properties['compose'],
-      name: 'compose',
-    });
+    setup({ typeName: 'ValueSetCompose' });
     expect(screen.getByText('Locked Date')).toBeInTheDocument();
     expect(screen.queryByText('Exclude')).toBeNull();
   });
 
   test('Not implemented', () => {
-    setup({
-      property: {
-        path: 'foo',
-      },
-      name: 'foo',
-    });
+    setup({ typeName: 'Foo' });
     expect(screen.getByText('Foo not implemented')).toBeInTheDocument();
   });
 });

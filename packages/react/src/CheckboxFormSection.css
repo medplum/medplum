@@ -1,0 +1,17 @@
+.medplum-checkbox-form-section {
+  display: flex;
+  justify-content: space-between;
+}
+
+.medplum-checkbox-form-section-checkbox-container {
+  width: 30px;
+}
+
+.medplum-checkbox-form-section-details-container {
+  flex: 1;
+  width: 100%;
+}
+
+.medplum-checkbox-form-section-details-container > label {
+  font-weight: 500;
+}

@@ -2,11 +2,16 @@
   background: var(--medplum-surface);
   border: 0.1px solid var(--medplum-gray-300);
   border-radius: 3px;
-  box-shadow: 0 1px 1px 0 var(--medplum-shadow);
+  box-shadow: 0 0.5px 0.5px 0 var(--medplum-shadow);
   color: var(--medplum-foreground);
   line-height: 18px;
-  padding: 2px 4px;
+  padding: 8px 12px;
   margin: 0;
+}
+
+.medplum-textarea.monospace {
+  font-family: var(--medplum-monospace-font-family);
+  padding: 2px 4px;
 }
 
 .medplum-textarea:focus {

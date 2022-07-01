@@ -22,7 +22,7 @@ export interface InputProps {
 }
 
 export function Input(props: InputProps): JSX.Element {
-  const className = 'medplum-input'; // + (props.size ? ' ' + props.size : '');
+  const className = 'medplum-input';
   const issues = getIssuesForExpression(props.outcome, props.name);
   const invalid = issues && issues.length > 0;
   return (

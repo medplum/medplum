@@ -26,7 +26,7 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Elem
   }
 
   return (
-    <table>
+    <table style={{ width: '100%' }}>
       <colgroup>
         <col width="90%" />
         <col width="10%" />

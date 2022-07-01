@@ -23,6 +23,8 @@ import {
 import React, { useEffect, useState } from 'react';
 import { AttachmentInput } from './AttachmentInput';
 import { Button } from './Button';
+import { Checkbox } from './Checkbox';
+import { CheckboxFormSection } from './CheckboxFormSection';
 import { DateTimeInput } from './DateTimeInput';
 import { Form } from './Form';
 import { FormSection } from './FormSection';
@@ -111,22 +113,45 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
 
   return (
     <>
-      {props.items.map((item, index) =>
-        item.type === QuestionnaireItemType.group ? (
-          <QuestionnaireFormItem
-            key={item.linkId}
-            item={item}
-            onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
-          />
-        ) : (
+      {props.items.map((item, index) => {
+        if (item.type === QuestionnaireItemType.display) {
+          return <p key={item.linkId}>{item.text}</p>;
+        }
+        if (item.type === QuestionnaireItemType.group) {
+          return (
+            <QuestionnaireFormItem
+              key={item.linkId}
+              item={item}
+              onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
+            />
+          );
+        }
+        if (item.type === QuestionnaireItemType.boolean) {
+          const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
+          return (
+            <CheckboxFormSection key={item.linkId} title={item.text} htmlFor={item.linkId}>
+              <Checkbox
+                name={item.linkId}
+                defaultValue={initial?.valueBoolean}
+                onChange={(newValue) =>
+                  setResponseItem(index, {
+                    linkId: item.linkId,
+                    answer: [{ valueBoolean: newValue }],
+                  })
+                }
+              />
+            </CheckboxFormSection>
+          );
+        }
+        return (
           <FormSection key={item.linkId} htmlFor={item.linkId} title={item.text || ''}>
             <QuestionnaireFormItem
               item={item}
               onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
             />
           </FormSection>
-        )
-      )}
+        );
+      })}
     </>
   );
 }
@@ -175,13 +200,10 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       );
     case QuestionnaireItemType.boolean:
       return (
-        <input
-          type="checkbox"
-          id={name}
+        <Checkbox
           name={name}
-          value="true"
-          defaultChecked={initial?.valueBoolean}
-          onChange={(e) => onChangeAnswer({ valueBoolean: e.currentTarget.checked })}
+          defaultValue={initial?.valueBoolean}
+          onChange={(newValue) => onChangeAnswer({ valueBoolean: newValue })}
         />
       );
     case QuestionnaireItemType.decimal:

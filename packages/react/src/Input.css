@@ -1,8 +1,8 @@
 .medplum-input {
   border: 0.1px solid var(--medplum-gray-300);
-  border-radius: 3px;
+  border-radius: 2px;
   background: var(--medplum-surface);
-  box-shadow: 0 1px 1px 0 var(--medplum-shadow);
+  box-shadow: 0 0.5px 0.5px 0 var(--medplum-shadow);
   color: var(--medplum-gray-800);
   font-size: var(--medplum-font-normal);
   height: 34px;
@@ -10,6 +10,10 @@
   max-width: 400px;
   padding: 2px 8px;
   width: 100%;
+}
+
+.medplum-input::placeholder {
+  color: var(--medplum-gray-600);
 }
 
 .medplum-input:focus {
@@ -29,24 +33,4 @@
   padding: 2px 0;
   font-size: var(--medplum-font-small);
   color: red;
-}
-
-input[type='checkbox'],
-input[type='radio'] {
-  border: 0.1px solid var(--medplum-gray-300);
-  border-radius: 0;
-  background: var(--medplum-surface);
-  margin: 4px;
-}
-
-input[type='checkbox']:focus,
-input[type='radio']:focus {
-  background: var(--medplum-surface);
-  color: var(--medplum-gray-900);
-  border: 0.1px solid var(--medplum-blue-300);
-}
-
-input[type='checkbox']:disabled,
-input[type='radio']:disabled {
-  background: var(--medplum-gray-100);
 }

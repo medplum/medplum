@@ -135,52 +135,52 @@ export const KitchenSink = (): JSX.Element => (
           {
             linkId: 'boolean',
             type: 'boolean',
-            text: 'boolean',
+            text: 'Boolean',
           },
           {
             linkId: 'decimal',
             type: 'decimal',
-            text: 'decimal',
+            text: 'Decimal',
           },
           {
             linkId: 'integer',
             type: 'integer',
-            text: 'integer',
+            text: 'Integer',
           },
           {
             linkId: 'date',
             type: 'date',
-            text: 'date',
+            text: 'Date',
           },
           {
             linkId: 'dateTime',
             type: 'dateTime',
-            text: 'dateTime',
+            text: 'Date Time',
           },
           {
             linkId: 'time',
             type: 'time',
-            text: 'time',
+            text: 'Time',
           },
           {
             linkId: 'string',
             type: 'string',
-            text: 'string',
+            text: 'String',
           },
           {
             linkId: 'text',
             type: 'text',
-            text: 'text',
+            text: 'Text',
           },
           {
             linkId: 'url',
             type: 'url',
-            text: 'url',
+            text: 'URL',
           },
           {
             linkId: 'choice',
             type: 'choice',
-            text: 'choice',
+            text: 'Choice',
             answerOption: [
               {
                 valueCoding: {
@@ -207,22 +207,22 @@ export const KitchenSink = (): JSX.Element => (
           {
             linkId: 'open-choice',
             type: 'open-choice',
-            text: 'open-choice',
+            text: 'Open Choice',
           },
           {
             linkId: 'attachment',
             type: 'attachment',
-            text: 'attachment',
+            text: 'Attachment',
           },
           {
             linkId: 'reference',
             type: 'reference',
-            text: 'reference',
+            text: 'Reference',
           },
           {
             linkId: 'quantity',
             type: 'quantity',
-            text: 'quantity',
+            text: 'Quantity',
           },
         ],
       }}
@@ -249,7 +249,7 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
           {
             linkId: 'boolean',
             type: 'boolean',
-            text: 'boolean',
+            text: 'Boolean',
             initial: [
               {
                 valueBoolean: true,
@@ -259,7 +259,7 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
           {
             linkId: 'decimal',
             type: 'decimal',
-            text: 'decimal',
+            text: 'Decimal',
             initial: [
               {
                 valueDecimal: 123.45,
@@ -269,7 +269,7 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
           {
             linkId: 'integer',
             type: 'integer',
-            text: 'integer',
+            text: 'Integer',
             initial: [
               {
                 valueInteger: 123,
@@ -279,7 +279,7 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
           {
             linkId: 'date',
             type: 'date',
-            text: 'date',
+            text: 'Date',
             initial: [
               {
                 valueDate: '2020-01-01',
@@ -289,7 +289,7 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
           {
             linkId: 'dateTime',
             type: 'dateTime',
-            text: 'dateTime',
+            text: 'Date Time',
             initial: [
               {
                 valueDateTime: '2020-01-01T00:00:00Z',
@@ -299,7 +299,7 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
           {
             linkId: 'time',
             type: 'time',
-            text: 'time',
+            text: 'Time',
             initial: [
               {
                 valueTime: '09:40:00',
@@ -309,7 +309,7 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
           {
             linkId: 'string',
             type: 'string',
-            text: 'string',
+            text: 'String',
             initial: [
               {
                 valueString: 'foo',
@@ -319,7 +319,7 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
           {
             linkId: 'text',
             type: 'text',
-            text: 'text',
+            text: 'Text',
             initial: [
               {
                 valueString: 'Lorem ipsum',
@@ -329,7 +329,7 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
           {
             linkId: 'url',
             type: 'url',
-            text: 'url',
+            text: 'URL',
             initial: [
               {
                 valueUri: 'https://example.com',
@@ -339,7 +339,7 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
           {
             linkId: 'choice',
             type: 'choice',
-            text: 'choice',
+            text: 'Choice',
             answerOption: [
               {
                 valueCoding: {
@@ -374,17 +374,17 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
           {
             linkId: 'open-choice',
             type: 'open-choice',
-            text: 'open-choice',
+            text: 'Open Choice',
           },
           {
             linkId: 'attachment',
             type: 'attachment',
-            text: 'attachment',
+            text: 'Attachment',
           },
           {
             linkId: 'reference',
             type: 'reference',
-            text: 'reference',
+            text: 'Reference',
             initial: [
               {
                 valueReference: {
@@ -396,7 +396,7 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
           {
             linkId: 'quantity',
             type: 'quantity',
-            text: 'quantity',
+            text: 'Quantity',
             initial: [
               {
                 valueQuantity: {

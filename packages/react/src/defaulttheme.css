@@ -6,7 +6,9 @@
   --medplum-navbar-textbox: rgba(255, 255, 255, 0.2);
   --medplum-navbar-placeholder: rgba(255, 255, 255, 0.6);
   --medplum-shadow: rgba(0, 0, 0, 0.1);
-  /* font sizes */
+  /* fonts */
+  --medplum-font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
+  --medplum-monospace-font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
   --medplum-font-small: 12px;
   --medplum-font-normal: 13px;
   --medplum-font-big: 18px;
@@ -184,7 +186,7 @@
 
 html {
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
+  font-family: var(--medplum-font-family);
   position: relative;
 }
 
@@ -216,14 +218,14 @@ input[type='tel'],
 input[type='text'],
 input[type='time'],
 input[type='url'],
-select {
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji;
+select,
+textarea {
+  font-family: var(--medplum-font-family);
 }
 
 code,
-pre,
-textarea {
-  font-family: SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;
+pre {
+  font-family: var(--medplum-monospace-font-family);
 }
 
 a {
