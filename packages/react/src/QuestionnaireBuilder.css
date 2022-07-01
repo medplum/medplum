@@ -27,7 +27,7 @@
 }
 
 .medplum-questionnaire-builder .section > .top-actions {
-  top: 0;
+  top: 1px;
   padding: 4px;
   color: var(--medplum-gray-500);
 }
@@ -39,7 +39,7 @@
 .medplum-questionnaire-builder .section > .top-actions,
 .medplum-questionnaire-builder .section > .bottom-actions {
   position: absolute;
-  right: 0;
+  right: 4px;
 }
 
 .medplum-questionnaire-builder .section > .top-actions a,

@@ -40,7 +40,7 @@ export function BatchPage(): JSX.Element {
           });
         }}
       >
-        <TextArea name="input" testid="batch-input" defaultValue={DEFAULT_VALUE} />
+        <TextArea name="input" testid="batch-input" defaultValue={DEFAULT_VALUE} monospace={true} />
         <Button type="submit">Submit</Button>
       </Form>
       {output && (

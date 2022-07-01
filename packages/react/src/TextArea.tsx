@@ -13,12 +13,13 @@ export interface TextAreaProps {
   outcome?: OperationOutcome;
   placeholder?: string;
   testid?: string;
+  monospace?: boolean;
   style?: React.CSSProperties;
   onChange?: (newValue: string) => void;
 }
 
 export function TextArea(props: TextAreaProps): JSX.Element {
-  const className = 'medplum-textarea';
+  const className = 'medplum-textarea' + (props.monospace ? ' monospace' : '');
   const issues = getIssuesForExpression(props.outcome, props.name);
   const invalid = issues && issues.length > 0;
   return (

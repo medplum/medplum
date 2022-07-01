@@ -198,6 +198,14 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           {item.item && <QuestionnaireFormItemArray items={item.item} onChange={onChangeItem} />}
         </div>
       );
+    case QuestionnaireItemType.boolean:
+      return (
+        <Checkbox
+          name={name}
+          defaultValue={initial?.valueBoolean}
+          onChange={(newValue) => onChangeAnswer({ valueBoolean: newValue })}
+        />
+      );
     case QuestionnaireItemType.decimal:
       return (
         <Input

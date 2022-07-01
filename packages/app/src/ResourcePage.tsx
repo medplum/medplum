@@ -302,7 +302,12 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
             props.onSubmit(JSON.parse(formData.resource));
           }}
         >
-          <TextArea testid="resource-json" name="resource" defaultValue={stringify(props.resource, true)} />
+          <TextArea
+            testid="resource-json"
+            name="resource"
+            monospace={true}
+            defaultValue={stringify(props.resource, true)}
+          />
           <Button type="submit">OK</Button>
         </Form>
       );
