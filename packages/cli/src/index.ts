@@ -73,7 +73,11 @@ async function saveBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bot:
       ...bot,
       code,
     });
-    console.log('Success! New bot version: ' + updateResult.meta?.versionId);
+    if (!updateResult) {
+      console.log('Bot not modified');
+    } else {
+      console.log('Success! New bot version: ' + updateResult.meta?.versionId);
+    }
   } catch (err) {
     console.log('Update error: ', err);
   }
