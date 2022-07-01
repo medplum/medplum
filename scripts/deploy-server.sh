@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
 
-if [[ -z "${DOCKER_SERVER}" ]]; then
-  echo "DOCKER_SERVER is missing"
-  exit 1
-fi
-
 if [[ -z "${DOCKER_REPOSITORY}" ]]; then
   echo "DOCKER_REPOSITORY is missing"
   exit 1
