@@ -8,6 +8,9 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { Organization } from './Organization';
+import { Practitioner } from './Practitioner';
+import { PractitionerRole } from './PractitionerRole';
 import { Range } from './Range';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -94,6 +97,12 @@ export interface ObservationDefinition {
    * modifierExtension itself).
    */
   modifierExtension?: Extension[];
+
+  /**
+   * Helps establish the &quot;authority/credibility&quot; of the
+   * ObservationDefinition. May also allow for contact.
+   */
+  publisher?: Reference<Practitioner | PractitionerRole | Organization>;
 
   /**
    * A code that classifies the general type of observation.
