@@ -75,7 +75,7 @@ let rootSchema: GraphQLSchema | undefined;
  * See: https://www.hl7.org/fhir/graphql.html
  */
 export const graphqlHandler = asyncWrap(async (req: Request, res: Response) => {
-  const query = req.body.query as string | undefined;
+  const { query, operationName, variables } = req.body;
   if (!query) {
     sendOutcome(res, badRequest('Must provide query.'));
     return;
@@ -104,6 +104,8 @@ export const graphqlHandler = asyncWrap(async (req: Request, res: Response) => {
         schema,
         document,
         contextValue: { res },
+        operationName,
+        variableValues: variables,
       });
     }
 
