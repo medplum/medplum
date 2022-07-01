@@ -837,6 +837,51 @@ describe('Client', () => {
   });
 });
 
+test('graphql', async () => {
+  const medplum = new MedplumClient(defaultOptions);
+  const result = await medplum.graphql(`{
+    Patient(id: "123") {
+      resourceType
+      id
+      name {
+        given
+        family
+      }
+    }
+  }`);
+  expect(result).toBeDefined();
+  expect((result as any).request.url).toBe('https://x/fhir/R4/$graphql');
+  expect((result as any).request.options.method).toBe('POST');
+  expect((result as any).request.options.headers['Content-Type']).toBe('application/json');
+});
+
+test('graphql variables', async () => {
+  const medplum = new MedplumClient(defaultOptions);
+  const result = await medplum.graphql(
+    `query GetPatientById($patientId: ID!) {
+      Patient(id: $patientId) {
+        resourceType
+        id
+        name {
+          given
+          family
+        }
+      }
+    }`,
+    'GetPatientById',
+    { patientId: '123' }
+  );
+  expect(result).toBeDefined();
+  expect((result as any).request.url).toBe('https://x/fhir/R4/$graphql');
+  expect((result as any).request.options.method).toBe('POST');
+  expect((result as any).request.options.headers['Content-Type']).toBe('application/json');
+
+  const body = JSON.parse((result as any).request.options.body);
+  expect(body.operationName).toBe('GetPatientById');
+  expect(body.query).toBeDefined();
+  expect(body.variables).toBeDefined();
+});
+
 function createPdf(
   docDefinition: TDocumentDefinitions,
   tableLayouts?: { [name: string]: CustomTableLayout },

@@ -29,7 +29,7 @@ export function HeaderSearchInput(props: HeaderSearchInputProps): JSX.Element {
     <Autocomplete
       loadOptions={async (input: string, signal: AbortSignal): Promise<HeaderSearchTypes[]> => {
         return getResourcesFromResponse(
-          (await medplum.graphql(buildGraphQLQuery(input), { signal })) as SearchGraphQLResponse,
+          (await medplum.graphql(buildGraphQLQuery(input), undefined, undefined, { signal })) as SearchGraphQLResponse,
           input
         );
       }}

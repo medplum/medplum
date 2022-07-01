@@ -242,7 +242,6 @@ describe('GraphQL', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/json')
       .send({
-        operationName: 'IntrospectionQuery',
         query: `{
           __schema {
             types {
@@ -262,7 +261,6 @@ describe('GraphQL', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/json')
       .send({
-        operationName: 'IntrospectionQuery',
         query: `{
           __type(name: "Patient") {
             name

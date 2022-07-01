@@ -2,7 +2,7 @@ import { MedplumClient } from '@medplum/core';
 import { Logo, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/react';
 import GraphiQL from 'graphiql';
 import React from 'react';
-import { render } from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import 'regenerator-runtime/runtime.js';
 import '@medplum/react/defaulttheme.css';
 import '@medplum/react/styles.css';
@@ -41,7 +41,10 @@ const medplum = new MedplumClient({
 function App(): JSX.Element {
   const profile = useMedplumProfile();
   return profile ? (
-    <GraphiQL fetcher={async (graphQLParams) => medplum.graphql(graphQLParams.query)} defaultQuery={HELP_TEXT} />
+    <GraphiQL
+      fetcher={async (params) => medplum.graphql(params.query, params.operationName, params.variables)}
+      defaultQuery={HELP_TEXT}
+    />
   ) : (
     <SignInForm googleClientId={process.env.GOOGLE_CLIENT_ID} onSuccess={() => undefined}>
       <Logo size={32} />
@@ -50,9 +53,11 @@ function App(): JSX.Element {
   );
 }
 
-render(
-  <MedplumProvider medplum={medplum}>
-    <App />
-  </MedplumProvider>,
-  document.getElementById('root')
+const root = createRoot(document.getElementById('root') as HTMLElement);
+root.render(
+  <React.StrictMode>
+    <MedplumProvider medplum={medplum}>
+      <App />
+    </MedplumProvider>
+  </React.StrictMode>
 );

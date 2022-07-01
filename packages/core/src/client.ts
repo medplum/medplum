@@ -1308,8 +1308,55 @@ export class MedplumClient extends EventTarget {
     return this.post('email/v1/send', email, 'application/json');
   }
 
-  graphql(query: string, options?: RequestInit): Promise<any> {
-    return this.post(this.fhirUrl('$graphql'), { query }, JSON_CONTENT_TYPE, options);
+  /**
+   * Executes a GraphQL query.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const result = await medplum.graphql(`{
+   *   Patient(id: "123") {
+   *     resourceType
+   *     id
+   *     name {
+   *       given
+   *       family
+   *     }
+   *   }
+   * }`);
+   * ```
+   *
+   * Advanced queries such as named operations and variable substitution are supported:
+   *
+   * ```typescript
+   * const result = await medplum.graphql(
+   *   `query GetPatientById($patientId: ID!) {
+   *     Patient(id: $patientId) {
+   *       resourceType
+   *       id
+   *       name {
+   *         given
+   *         family
+   *       }
+   *     }
+   *   }`,
+   *   'GetPatientById',
+   *   { patientId: '123' }
+   * );
+   * ```
+   *
+   * See the GraphQL documentation for more details: https://graphql.org/learn/
+   *
+   * See the FHIR GraphQL documentation for FHIR specific details: https://www.hl7.org/fhir/graphql.html
+   *
+   * @param query The GraphQL query.
+   * @param operationName Optional GraphQL operation name.
+   * @param variables Optional GraphQL variables.
+   * @param options Optional fetch options.
+   * @returns The GraphQL result.
+   */
+  graphql(query: string, operationName?: string | null, variables?: any, options?: RequestInit): Promise<any> {
+    return this.post(this.fhirUrl('$graphql'), { query, operationName, variables }, JSON_CONTENT_TYPE, options);
   }
 
   getActiveLogin(): LoginState | undefined {
