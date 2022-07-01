@@ -115,7 +115,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
     <>
       {props.items.map((item, index) => {
         if (item.type === QuestionnaireItemType.display) {
-          return <p>{item.text}</p>;
+          return <p key={item.linkId}>{item.text}</p>;
         }
         if (item.type === QuestionnaireItemType.group) {
           return (
@@ -129,7 +129,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
         if (item.type === QuestionnaireItemType.boolean) {
           const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
           return (
-            <CheckboxFormSection title={item.text} htmlFor={item.linkId}>
+            <CheckboxFormSection key={item.linkId} title={item.text} htmlFor={item.linkId}>
               <Checkbox
                 name={item.linkId}
                 defaultValue={initial?.valueBoolean}

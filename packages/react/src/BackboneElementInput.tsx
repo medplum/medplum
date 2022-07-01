@@ -48,9 +48,13 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
         const [propertyValue, propertyType] = getValueAndType(typedValue, key);
 
         if (property.type.length === 1 && property.type[0].code === 'boolean') {
-          // Special case for inline checkbox
           return (
-            <CheckboxFormSection title={getPropertyDisplayName(key)} description={property.definition} htmlFor={key}>
+            <CheckboxFormSection
+              key={key}
+              title={getPropertyDisplayName(key)}
+              description={property.definition}
+              htmlFor={key}
+            >
               <ResourcePropertyInput
                 property={property}
                 name={key}

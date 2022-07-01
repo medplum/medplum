@@ -40,6 +40,23 @@ describe('QuestionnaireForm', () => {
     expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
   });
 
+  test('Display text', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [
+          {
+            linkId: 'display',
+            text: 'Hello world',
+            type: QuestionnaireItemType.display,
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+    expect(screen.getByText('Hello world')).toBeInTheDocument();
+  });
+
   test('Groups', async () => {
     const onSubmit = jest.fn();
 
@@ -161,6 +178,21 @@ describe('QuestionnaireForm', () => {
               },
             ],
           },
+          {
+            linkId: 'q7',
+            type: QuestionnaireItemType.boolean,
+            text: 'q7',
+          },
+          {
+            linkId: 'q8',
+            type: QuestionnaireItemType.boolean,
+            text: 'q8',
+            initial: [
+              {
+                valueBoolean: true,
+              },
+            ],
+          },
         ],
       },
       onSubmit,
@@ -169,6 +201,8 @@ describe('QuestionnaireForm', () => {
     expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
     expect(screen.queryByLabelText('q4')).toBeFalsy();
     expect(screen.queryByLabelText('q5')).toBeFalsy();
+    expect((screen.queryByLabelText('q7') as HTMLInputElement).checked).toBe(false);
+    expect((screen.queryByLabelText('q8') as HTMLInputElement).checked).toBe(true);
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('q1'), { target: { value: 'a1' } });

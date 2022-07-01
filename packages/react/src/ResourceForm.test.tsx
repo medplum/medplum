@@ -1,5 +1,5 @@
 import { createReference } from '@medplum/core';
-import { Specimen } from '@medplum/fhirtypes';
+import { Patient, Specimen } from '@medplum/fhirtypes';
 import { HomerObservation1, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -201,5 +201,27 @@ describe('ResourceForm', () => {
     expect(result.resourceType).toBe('Specimen');
     expect(result.collection).toBeDefined();
     expect(result.collection?.collectedDateTime).toBe(isoString);
+  });
+
+  test('Change boolean', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({ defaultValue: { resourceType: 'Patient' }, onSubmit });
+
+    await waitFor(() => screen.getByText('Resource Type'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Active'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(onSubmit).toBeCalled();
+
+    const patient = onSubmit.mock.calls[0][0] as Patient;
+    expect(patient.resourceType).toBe('Patient');
+    expect(patient.active).toBe(true);
   });
 });

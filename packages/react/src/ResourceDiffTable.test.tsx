@@ -1,8 +1,7 @@
 import { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { act } from 'react-dom/test-utils';
 import { MedplumProvider } from './MedplumProvider';
 import { ResourceDiffTable, ResourceDiffTableProps } from './ResourceDiffTable';
 
