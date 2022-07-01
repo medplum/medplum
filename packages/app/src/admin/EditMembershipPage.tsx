@@ -1,5 +1,5 @@
 import { AccessPolicy, OperationOutcome, ProjectMembership, Reference, UserConfiguration } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, MedplumLink, ResourceBadge, useMedplum } from '@medplum/react';
+import { Button, Checkbox, Document, Form, FormSection, MedplumLink, ResourceBadge, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AccessPolicyInput } from './AccessPolicyInput';
@@ -60,14 +60,7 @@ export function EditMembershipPage(): JSX.Element {
               />
             </FormSection>
             <FormSection title="Admin" htmlFor="admin" outcome={outcome}>
-              <input
-                data-testid="admin-checkbox"
-                type="checkbox"
-                name="admin"
-                defaultChecked={admin}
-                value="true"
-                onChange={(event) => setAdmin(event.currentTarget.checked)}
-              />
+              <Checkbox name="admin" testid="admin-checkbox" defaultValue={admin} onChange={setAdmin} />
             </FormSection>
             <div className="medplum-signin-buttons">
               <div></div>

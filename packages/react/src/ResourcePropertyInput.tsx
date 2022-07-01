@@ -1,4 +1,4 @@
-import { capitalize, PropertyType } from '@medplum/core';
+import { buildTypeName, capitalize, PropertyType } from '@medplum/core';
 import { ElementDefinition, ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { AddressInput } from './AddressInput';
@@ -6,6 +6,7 @@ import { AnnotationInput } from './AnnotationInput';
 import { AttachmentArrayInput } from './AttachmentArrayInput';
 import { AttachmentInput } from './AttachmentInput';
 import { BackboneElementInput } from './BackboneElementInput';
+import { Checkbox } from './Checkbox';
 import { CodeableConceptInput } from './CodeableConceptInput';
 import { CodeInput } from './CodeInput';
 import { CodingInput } from './CodingInput';
@@ -176,15 +177,15 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       return <CodeInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.boolean:
       return (
-        <input
-          type="checkbox"
+        <Checkbox
           name={name}
-          data-testid={name}
-          defaultChecked={!!value}
-          value="true"
-          onChange={(e: React.ChangeEvent) =>
-            props.onChange && props.onChange((e.target as HTMLInputElement).value === 'true')
-          }
+          testid={name}
+          defaultValue={!!value}
+          onChange={(newValue) => {
+            if (props.onChange) {
+              props.onChange(newValue);
+            }
+          }}
         />
       );
     case PropertyType.markdown:
@@ -231,8 +232,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     default:
       return (
         <BackboneElementInput
-          property={property}
-          name={name}
+          typeName={buildTypeName(property.path?.split('.') as string[])}
           defaultValue={value}
           onChange={props.onChange}
           outcome={props.outcome}

@@ -114,6 +114,5 @@
 .medplum-search-icon-cell input[type='checkbox'] {
   margin: 0;
   padding: 0;
-  border: 0.1px solid var(--medplum-gray-600);
   outline: 0;
 }

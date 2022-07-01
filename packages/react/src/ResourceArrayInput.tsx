@@ -26,59 +26,57 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
   }
 
   return (
-    <div>
-      <table style={{ width: '100%' }}>
-        <colgroup>
-          <col width="90%" />
-          <col width="10%" />
-        </colgroup>
-        <tbody>
-          {values.map((v, index) => (
-            <tr key={`${index}-${values.length}`}>
-              <td>
-                <ResourcePropertyInput
-                  arrayElement={true}
-                  property={props.property}
-                  name={props.name + '.' + index}
-                  defaultValue={v}
-                  onChange={(newValue: any) => {
-                    const copy = [...(valuesRef.current as any[])];
-                    copy[index] = newValue;
-                    setValuesWrapper(copy);
-                  }}
-                />
-              </td>
-              <td style={{ textAlign: 'right' }}>
-                <Button
-                  onClick={(e) => {
-                    killEvent(e);
-                    const copy = [...(valuesRef.current as any[])];
-                    copy.splice(index, 1);
-                    setValuesWrapper(copy);
-                  }}
-                >
-                  Remove
-                </Button>
-              </td>
-            </tr>
-          ))}
-          <tr>
-            <td></td>
+    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <colgroup>
+        <col width="90%" />
+        <col width="10%" />
+      </colgroup>
+      <tbody>
+        {values.map((v, index) => (
+          <tr key={`${index}-${values.length}`}>
+            <td>
+              <ResourcePropertyInput
+                arrayElement={true}
+                property={props.property}
+                name={props.name + '.' + index}
+                defaultValue={v}
+                onChange={(newValue: any) => {
+                  const copy = [...(valuesRef.current as any[])];
+                  copy[index] = newValue;
+                  setValuesWrapper(copy);
+                }}
+              />
+            </td>
             <td style={{ textAlign: 'right' }}>
               <Button
                 onClick={(e) => {
                   killEvent(e);
                   const copy = [...(valuesRef.current as any[])];
-                  copy.push(undefined);
+                  copy.splice(index, 1);
                   setValuesWrapper(copy);
                 }}
               >
-                Add
+                Remove
               </Button>
             </td>
           </tr>
-        </tbody>
-      </table>
-    </div>
+        ))}
+        <tr>
+          <td></td>
+          <td style={{ textAlign: 'right' }}>
+            <Button
+              onClick={(e) => {
+                killEvent(e);
+                const copy = [...(valuesRef.current as any[])];
+                copy.push(undefined);
+                setValuesWrapper(copy);
+              }}
+            >
+              Add
+            </Button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   );
 }

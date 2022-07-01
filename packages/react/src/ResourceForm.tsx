@@ -1,13 +1,11 @@
-import { capitalize, getPropertyDisplayName, IndexedStructureDefinition } from '@medplum/core';
+import { capitalize, IndexedStructureDefinition } from '@medplum/core';
 import { ElementDefinition, ElementDefinitionType, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
+import { BackboneElementInput } from './BackboneElementInput';
 import { Button } from './Button';
-import { DEFAULT_IGNORED_PROPERTIES } from './constants';
 import { FormSection } from './FormSection';
 import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
-import { getValueAndType } from './ResourcePropertyDisplay';
-import { ResourcePropertyInput } from './ResourcePropertyInput';
 import { useResource } from './useResource';
 
 export interface ResourceFormProps {
@@ -34,8 +32,6 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
     return <div>Loading...</div>;
   }
 
-  const typeSchema = schema.types[value.resourceType];
-  const typedValue = { type: value.resourceType, value };
   return (
     <form
       noValidate
@@ -53,34 +49,12 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
       <FormSection title="ID">
         <Input name="id" defaultValue={value.id} disabled={true} />
       </FormSection>
-      {Object.entries(typeSchema.properties).map((entry) => {
-        const key = entry[0];
-        if (key === 'id' || DEFAULT_IGNORED_PROPERTIES.indexOf(key) >= 0) {
-          return null;
-        }
-        const property = entry[1];
-        const [propertyValue, propertyType] = getValueAndType(typedValue, key);
-        return (
-          <FormSection
-            key={key}
-            title={getPropertyDisplayName(key)}
-            description={property.definition}
-            htmlFor={key}
-            outcome={props.outcome}
-          >
-            <ResourcePropertyInput
-              property={property}
-              name={key}
-              defaultValue={propertyValue}
-              defaultPropertyType={propertyType}
-              outcome={props.outcome}
-              onChange={(newValue: any, propName?: string) => {
-                setValue(setPropertyValue(value, key, propName ?? key, entry[1], newValue));
-              }}
-            />
-          </FormSection>
-        );
-      })}
+      <BackboneElementInput
+        typeName={value.resourceType}
+        defaultValue={value}
+        outcome={props.outcome}
+        onChange={setValue}
+      />
       <Button type="submit" size="large">
         OK
       </Button>

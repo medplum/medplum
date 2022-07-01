@@ -1,7 +1,7 @@
 select.medplum-select {
   background: var(--medplum-surface);
   padding: 4px 8px;
-  margin: 1px;
+  margin: 1px 1px 1px 0;
   line-height: 28px;
   border-radius: 3px;
 }
@@ -9,7 +9,7 @@ select.medplum-select {
 select.medplum-select:not([size]) {
   border: 0.1px solid var(--medplum-gray-300);
   border-radius: 3px;
-  box-shadow: 0 1px 1px 0 var(--medplum-shadow);
+  box-shadow: 0 0.5px 0.5px 0 var(--medplum-shadow);
   color: var(--medplum-gray-800);
   font-size: var(--medplum-font-normal);
   height: 34px;

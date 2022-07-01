@@ -1,0 +1,18 @@
+input[type='checkbox'],
+input[type='radio'] {
+  background: var(--medplum-surface);
+  padding: 10px;
+  margin: 4px;
+  transform: scale(1.25);
+}
+
+input[type='checkbox']:focus,
+input[type='radio']:focus {
+  color: var(--medplum-gray-900);
+  border: 0.1px solid var(--medplum-blue-300);
+}
+
+input[type='checkbox']:disabled,
+input[type='radio']:disabled {
+  background: var(--medplum-gray-100);
+}

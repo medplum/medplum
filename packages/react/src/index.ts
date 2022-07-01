@@ -7,6 +7,8 @@ export * from './Autocomplete';
 export * from './Avatar';
 export * from './BackboneElementInput';
 export * from './Button';
+export * from './Checkbox';
+export * from './CheckboxFormSection';
 export * from './CodeableConceptDisplay';
 export * from './CodeableConceptInput';
 export * from './CodeInput';
