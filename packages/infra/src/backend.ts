@@ -165,7 +165,7 @@ export class BackEnd extends Construct {
 
     // Task Containers
     const serviceContainer = taskDefinition.addContainer('MedplumTaskDefinition', {
-      image: ecs.ContainerImage.fromEcrRepository(serviceRepo, 'latest'),
+      image: ecs.ContainerImage.fromEcrRepository(serviceRepo, config.serverImageTag),
       command: [`aws:/medplum/${name}/`],
       logging: logDriver,
     });
