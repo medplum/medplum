@@ -10,6 +10,7 @@ FILES_CHANGED=$(git diff --name-only HEAD HEAD~1)
 echo "$FILES_CHANGED"
 
 DEPLOY_APP=false
+DEPLOY_BOT_LAYER=false
 DEPLOY_DOCS=false
 DEPLOY_GRAPHIQL=false
 DEPLOY_SERVER=false
@@ -33,6 +34,10 @@ fi
 
 if [[ "$FILES_CHANGED" =~ packages/app ]]; then
   DEPLOY_APP=true
+fi
+
+if [[ "$FILES_CHANGED" =~ packages/bot-layer ]]; then
+  DEPLOY_BOT_LAYER=true
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/core ]]; then
@@ -74,6 +79,11 @@ fi
 if [[ "$DEPLOY_APP" = true ]]; then
   echo "Deploy app"
   source ./scripts/deploy-app.sh
+fi
+
+if [[ "$DEPLOY_BOT_LAYER" = true ]]; then
+  echo "Deploy bot-layer"
+  source ./scripts/deploy-bot-layer.sh
 fi
 
 if [[ "$DEPLOY_DOCS" = true ]]; then
