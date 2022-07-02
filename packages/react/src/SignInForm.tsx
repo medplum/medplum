@@ -1,4 +1,4 @@
-import { LoginAuthenticationResponse } from '@medplum/core';
+import { GoogleCredentialResponse, LoginAuthenticationResponse } from '@medplum/core';
 import { OperationOutcome, ProjectMembership } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { Avatar } from './Avatar';
@@ -11,19 +11,22 @@ import { Input } from './Input';
 import { Logo } from './Logo';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
-import { getIssuesForExpression } from './utils/outcomes';
 import './SignInForm.css';
 import './util.css';
+import { getIssuesForExpression } from './utils/outcomes';
 
 export interface SignInFormProps {
-  scopes?: string;
-  remember?: boolean;
-  projectId?: string;
-  googleClientId?: string;
-  onSuccess?: () => void;
-  onForgotPassword?: () => void;
-  onRegister?: () => void;
-  children?: React.ReactNode;
+  readonly remember?: boolean;
+  readonly projectId?: string;
+  readonly googleClientId?: string;
+  readonly clientId?: string;
+  readonly scope?: string;
+  readonly nonce?: string;
+  readonly onSuccess?: () => void;
+  readonly onForgotPassword?: () => void;
+  readonly onRegister?: () => void;
+  readonly onCode?: (code: string) => void;
+  readonly children?: React.ReactNode;
 }
 
 export function SignInForm(props: SignInFormProps): JSX.Element {
@@ -41,14 +44,18 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
     }
 
     if (response.code) {
-      medplum
-        .processCode(response.code)
-        .then(() => {
-          if (props.onSuccess) {
-            props.onSuccess();
-          }
-        })
-        .catch(console.log);
+      if (props.onCode) {
+        props.onCode(response.code);
+      } else {
+        medplum
+          .processCode(response.code)
+          .then(() => {
+            if (props.onSuccess) {
+              props.onSuccess();
+            }
+          })
+          .catch(console.log);
+      }
     }
   }
 
@@ -58,6 +65,9 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
         if (!login) {
           return (
             <AuthenticationForm
+              clientId={props.clientId}
+              scope={props.scope}
+              nonce={props.nonce}
               googleClientId={props.googleClientId}
               onForgotPassword={props.onForgotPassword}
               onRegister={props.onRegister}
@@ -77,12 +87,15 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
 }
 
 interface AuthenticationFormProps {
-  projectId?: string;
-  googleClientId?: string;
-  onForgotPassword?: () => void;
-  onRegister?: () => void;
-  handleAuthResponse: (response: LoginAuthenticationResponse) => void;
-  children?: React.ReactNode;
+  readonly projectId?: string;
+  readonly clientId?: string;
+  readonly scope?: string;
+  readonly nonce?: string;
+  readonly googleClientId?: string;
+  readonly onForgotPassword?: () => void;
+  readonly onRegister?: () => void;
+  readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
+  readonly children?: React.ReactNode;
 }
 
 function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
@@ -96,6 +109,9 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
       onSubmit={(formData: Record<string, string>) => {
         medplum
           .startLogin({
+            clientId: props.clientId,
+            scope: props.scope,
+            nonce: props.nonce,
             email: formData.email,
             password: formData.password,
             remember: formData.remember === 'true',
@@ -146,7 +162,21 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
         </div>
       </div>
       <div className="medplum-signin-google-container">
-        <GoogleButton googleClientId={props.googleClientId} handleAuthResponse={props.handleAuthResponse} />
+        <GoogleButton
+          googleClientId={props.googleClientId}
+          handleGoogleCredential={(response: GoogleCredentialResponse) => {
+            medplum
+              .startGoogleLogin({
+                clientId: props.clientId,
+                scope: props.scope,
+                nonce: props.nonce,
+                googleClientId: response.clientId,
+                googleCredential: response.credential,
+              })
+              .then(props.handleAuthResponse)
+              .catch(setOutcome);
+          }}
+        />
       </div>
     </Form>
   );

@@ -17,11 +17,37 @@ mvn clean package
 docker-compose up
 ```
 
-Open browser to <https://localhost:8443/>
+Open browser to <https://localhost.emobix.co.uk:8443/>
 
 Test the Docker localhost URL: <http://host.docker.internal:5000/>
 
 Be sure to logout between each test by visiting <http://host.docker.internal:5000/oauth2/logout>
+
+### OpenID notes
+
+Create two clients
+
+Set the "Redirect Uri" to "https://localhost.emobix.co.uk:8443/test/a/medplum/callback"
+
+- Test Plan: OpenID Connect Core: Basic Certification Profile Authorization server test
+- Server metadata location: discovery
+- Client Registration Type: static_client
+- Test Information
+  - alias: medplum
+  - description: medplum
+  - publish: No
+- Server
+  - discoveryUrl: http://host.docker.internal:5000/.well-known/openid-configuration
+  - login_hint:
+- Client:
+  - client_id: CLIENT_ID_1
+  - client_secret: CLIENT_SECRET_1
+- Client for client_secret_post:
+  - client_id: CLIENT_ID_1
+  - client_secret: CLIENT_SECRET_1
+- Second client:
+  - client_id: CLIENT_ID_2
+  - client_secret: CLIENT_SECRET_2
 
 ## SMART-on-FHIR Certification
 

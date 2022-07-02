@@ -235,7 +235,7 @@ function mockLoginHandler(_method: string, _path: string, options: any): any {
   const { password } = JSON.parse(body);
   if (password === 'password') {
     return {
-      profile: { reference: 'Practitioner/123' },
+      code: 'xyz',
     };
   } else {
     return {

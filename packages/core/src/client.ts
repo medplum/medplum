@@ -192,6 +192,9 @@ export interface LoginRequest {
   readonly password: string;
   readonly remember?: boolean;
   readonly projectId?: string;
+  readonly clientId?: string;
+  readonly scope?: string;
+  readonly nonce?: string;
 }
 
 export interface RegisterRequest {
@@ -207,6 +210,14 @@ export interface RegisterRequest {
 export interface GoogleCredentialResponse {
   readonly clientId: string;
   readonly credential: string;
+}
+
+export interface GoogleLoginRequest {
+  readonly googleClientId: string;
+  readonly googleCredential: string;
+  readonly clientId?: string;
+  readonly scope?: string;
+  readonly nonce?: string;
 }
 
 export interface LoginAuthenticationResponse {
@@ -593,8 +604,8 @@ export class MedplumClient extends EventTarget {
     await this.#startPkce();
     return this.post('auth/login', {
       ...loginRequest,
-      clientId: this.#clientId,
-      scope: DEFAULT_SCOPE,
+      clientId: loginRequest.clientId ?? this.#clientId,
+      scope: loginRequest.scope ?? DEFAULT_SCOPE,
       codeChallengeMethod: 'S256',
       codeChallenge: this.#storage.getString('codeChallenge') as string,
     }) as Promise<LoginAuthenticationResponse>;
@@ -604,12 +615,16 @@ export class MedplumClient extends EventTarget {
    * Tries to sign in with Google authentication.
    * The response parameter is the result of a Google authentication.
    * See: https://developers.google.com/identity/gsi/web/guides/handle-credential-responses-js-functions
-   * @param googleResponse The Google credential response.
+   * @param loginRequest Login request including Google credential response.
    * @returns Promise to the authentication response.
    */
-  async startGoogleLogin(googleResponse: GoogleCredentialResponse): Promise<LoginAuthenticationResponse> {
+  async startGoogleLogin(loginRequest: GoogleLoginRequest): Promise<LoginAuthenticationResponse> {
     await this.#startPkce();
-    return this.post('auth/google', googleResponse) as Promise<LoginAuthenticationResponse>;
+    return this.post('auth/google', {
+      ...loginRequest,
+      clientId: loginRequest.clientId ?? this.#clientId,
+      scope: loginRequest.scope ?? DEFAULT_SCOPE,
+    }) as Promise<LoginAuthenticationResponse>;
   }
 
   /**

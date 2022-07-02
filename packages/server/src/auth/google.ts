@@ -27,8 +27,8 @@ const JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/ce
  * These values are obtained from the Google Sign-in button.
  */
 export const googleValidators = [
-  body('clientId').notEmpty().withMessage('Missing clientId'),
-  body('credential').notEmpty().withMessage('Missing credential'),
+  body('googleClientId').notEmpty().withMessage('Missing googleClientId'),
+  body('googleCredential').notEmpty().withMessage('Missing googleCredential'),
 ];
 
 /**
@@ -44,26 +44,26 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  const clientId = req.body.clientId;
+  const googleClientId = req.body.googleClientId;
   let project: Project | undefined;
 
-  if (clientId !== getConfig().googleClientId) {
+  if (googleClientId !== getConfig().googleClientId) {
     // If the Google Client ID is not the main Medplum Client ID,
     // then it must be associated with a Project.
     // The user can only authenticate with that project.
-    project = await getProjectByGoogleClientId(clientId);
+    project = await getProjectByGoogleClientId(googleClientId);
     if (!project) {
-      sendOutcome(res, badRequest('Invalid Google Client ID'));
+      sendOutcome(res, badRequest('Invalid googleClientId'));
       return;
     }
   }
 
-  const googleJwt = req.body.credential as string;
+  const googleJwt = req.body.googleCredential as string;
 
   const verifyOptions: JWTVerifyOptions = {
     issuer: 'https://accounts.google.com',
     algorithms: ['RS256'],
-    audience: clientId,
+    audience: googleClientId,
   };
 
   let result;
@@ -79,10 +79,13 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     authMethod: 'google',
     email: claims.email,
     googleCredentials: claims,
-    scope: 'openid',
-    nonce: randomUUID(),
     remember: true,
     projectId: project?.id,
+    clientId: req.body.clientId || undefined,
+    scope: req.body.scope || 'openid',
+    nonce: req.body.nonce || randomUUID(),
+    remoteAddress: req.ip,
+    userAgent: req.get('User-Agent'),
   });
   assertOk(loginOutcome, login);
   await sendLoginResult(res, login);
