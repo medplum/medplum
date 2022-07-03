@@ -10,6 +10,7 @@ import { Checkbox } from './Checkbox';
 import { CodeableConceptInput } from './CodeableConceptInput';
 import { CodeInput } from './CodeInput';
 import { CodingInput } from './CodingInput';
+import { ContactDetailInput } from './ContactDetailInput';
 import { ContactPointInput } from './ContactPointInput';
 import { DateTimeInput } from './DateTimeInput';
 import { ExtensionInput } from './ExtensionInput';
@@ -204,6 +205,8 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       return <CodeableConceptInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Coding:
       return <CodingInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
+    case PropertyType.ContactDetail:
+      return <ContactDetailInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.ContactPoint:
       return <ContactPointInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Extension:

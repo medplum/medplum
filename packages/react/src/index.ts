@@ -12,6 +12,8 @@ export * from './CheckboxFormSection';
 export * from './CodeableConceptDisplay';
 export * from './CodeableConceptInput';
 export * from './CodeInput';
+export * from './ContactDetailDisplay';
+export * from './ContactDetailInput';
 export * from './ContactPointDisplay';
 export * from './ContactPointInput';
 export * from './DateTimeDisplay';

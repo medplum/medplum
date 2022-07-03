@@ -1,3 +1,4 @@
+import { stringify } from '@medplum/core';
 import { ContactPoint } from '@medplum/fhirtypes';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
@@ -76,7 +77,6 @@ describe('ContactPointInput', () => {
       });
     });
 
-    expect(lastValue).toBeDefined();
-    expect(JSON.stringify(lastValue)).toEqual('{}');
+    expect(stringify(lastValue)).toBeUndefined();
   });
 });
