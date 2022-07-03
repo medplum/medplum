@@ -8,6 +8,7 @@ export interface InputProps {
   type?: string;
   size?: number;
   step?: number | 'any';
+  style?: React.CSSProperties;
   defaultValue?: string | number;
   required?: boolean;
   autoCapitalize?: string;
@@ -33,6 +34,7 @@ export function Input(props: InputProps): JSX.Element {
       size={props.size}
       step={props.step}
       className={className}
+      style={props.style}
       defaultValue={props.defaultValue || ''}
       required={props.required}
       autoCapitalize={props.autoCapitalize}

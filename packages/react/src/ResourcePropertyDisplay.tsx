@@ -7,6 +7,7 @@ import { AttachmentDisplay } from './AttachmentDisplay';
 import { BackboneElementDisplay } from './BackboneElementDisplay';
 import { CodeableConceptDisplay } from './CodeableConceptDisplay';
 import { CodingDisplay } from './CodingDisplay';
+import { ContactDetailDisplay } from './ContactDetailDisplay';
 import { ContactPointDisplay } from './ContactPointDisplay';
 import { DateTimeDisplay } from './DateTimeDisplay';
 import { HumanNameDisplay } from './HumanNameDisplay';
@@ -75,6 +76,8 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       return <CodeableConceptDisplay value={value} />;
     case PropertyType.Coding:
       return <CodingDisplay value={value} />;
+    case PropertyType.ContactDetail:
+      return <ContactDetailDisplay value={value} />;
     case PropertyType.ContactPoint:
       return <ContactPointDisplay value={value} />;
     case PropertyType.HumanName:

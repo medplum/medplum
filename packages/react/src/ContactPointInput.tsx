@@ -7,7 +7,7 @@ import { Select } from './Select';
 export interface ContactPointInputProps {
   name: string;
   defaultValue?: ContactPoint;
-  onChange?: (value: ContactPoint) => void;
+  onChange?: (value: ContactPoint | undefined) => void;
 }
 
 export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
@@ -16,7 +16,10 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
   const ref = useRef<ContactPoint>();
   ref.current = contactPoint;
 
-  function setContactPointWrapper(newValue: ContactPoint): void {
+  function setContactPointWrapper(newValue: ContactPoint | undefined): void {
+    if (newValue && Object.keys(newValue).length === 0) {
+      newValue = undefined;
+    }
     setContactPoint(newValue);
     if (props.onChange) {
       props.onChange(newValue);
@@ -24,21 +27,27 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
   }
 
   function setSystem(system: string): void {
-    setContactPointWrapper({
-      ...ref.current,
-      system: system ? system : undefined,
-    });
+    const newValue: ContactPoint = { ...ref.current, system };
+    if (!system) {
+      delete newValue.system;
+    }
+    setContactPointWrapper(newValue);
   }
 
   function setUse(use: string): void {
-    setContactPointWrapper({ ...ref.current, use: use ? use : undefined });
+    const newValue: ContactPoint = { ...ref.current, use };
+    if (!use) {
+      delete newValue.use;
+    }
+    setContactPointWrapper(newValue);
   }
 
   function setValue(value: string): void {
-    setContactPointWrapper({
-      ...ref.current,
-      value: value ? value : undefined,
-    });
+    const newValue: ContactPoint = { ...ref.current, value };
+    if (!value) {
+      delete newValue.value;
+    }
+    setContactPointWrapper(newValue);
   }
 
   return (
