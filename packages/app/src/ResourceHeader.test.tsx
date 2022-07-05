@@ -136,6 +136,18 @@ describe('ResourceHeader', () => {
     expect(screen.getByText('TEST_CATEGORY')).toBeInTheDocument();
   });
 
+  test('Renders compound code', async () => {
+    await setup({
+      resourceType: 'ServiceRequest',
+      id: '123',
+      code: { coding: [{ display: 'TEST_CODE1' }, { display: 'TEST_CODE2' }] },
+      category: [{ text: 'TEST_CATEGORY' }],
+    });
+
+    expect(screen.getByText('TEST_CODE1, TEST_CODE2')).toBeInTheDocument();
+    expect(screen.getByText('TEST_CATEGORY')).toBeInTheDocument();
+  });
+
   test('Does not render Bot code', async () => {
     await setup({
       resourceType: 'Bot',
