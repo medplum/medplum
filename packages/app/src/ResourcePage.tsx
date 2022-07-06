@@ -306,6 +306,7 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
             testid="resource-json"
             name="resource"
             monospace={true}
+            style={{ height: 400 }}
             defaultValue={stringify(props.resource, true)}
           />
           <Button type="submit">OK</Button>
