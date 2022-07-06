@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@medplum/bot-layer",
-  "version": "0.9.19",
+  "version": "0.9.20",
   "description": "Medplum Bot Lambda Layer",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -12,7 +12,7 @@
     "directory": "packages/bot-layer"
   },
   "dependencies": {
-    "@medplum/core": "0.9.19",
+    "@medplum/core": "0.9.20",
     "node-fetch": "2.6.7",
     "pdfmake": "0.2.5"
   },
