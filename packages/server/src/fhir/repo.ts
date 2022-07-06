@@ -39,7 +39,7 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { applyPatch, Operation } from 'fast-json-patch';
+import { applyPatch, JsonPatchError, Operation } from 'fast-json-patch';
 import { URL } from 'url';
 import validator from 'validator';
 import { getConfig } from '../config';
@@ -438,7 +438,15 @@ export class Repository {
       return [readOutcome, undefined];
     }
 
-    const patchResult = applyPatch(resource as Resource, patch);
+    let patchResult;
+    try {
+      patchResult = applyPatch(resource as Resource, patch, true);
+    } catch (err) {
+      const patchError = err as JsonPatchError;
+      const message = patchError.message?.split('\n')?.[0] || 'JSONPatch error';
+      return [badRequest(message), undefined];
+    }
+
     const patchedResource = patchResult.newDocument;
     return this.updateResource(patchedResource);
   }

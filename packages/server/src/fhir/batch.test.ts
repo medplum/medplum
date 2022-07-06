@@ -1,5 +1,13 @@
 import { assertOk, isOk } from '@medplum/core';
-import { Bundle, BundleEntry, Observation, OperationOutcome, Patient, Subscription } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  BundleEntry,
+  Observation,
+  OperationOutcome,
+  Patient,
+  ServiceRequest,
+  Subscription,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
@@ -571,6 +579,46 @@ describe('Batch', () => {
     const results = bundle?.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('200');
+  });
+
+  test('JSONPatch error messages', async () => {
+    const [serviceRequestOutcome, serviceRequest] = await repo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      status: 'active',
+      subject: { reference: 'Patient/' + randomUUID() },
+    });
+    assertOk(serviceRequestOutcome, serviceRequest);
+
+    const [outcome, bundle] = await processBatch(repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'PATCH',
+            url: 'ServiceRequest/' + serviceRequest?.id,
+          },
+          resource: {
+            resourceType: 'Binary',
+            contentType: 'application/json-patch+json',
+            data: Buffer.from(JSON.stringify([{ op: 'replace', path: 'status', value: 'final' }]), 'utf8').toString(
+              'base64'
+            ),
+          },
+        },
+      ],
+    });
+
+    expect(isOk(outcome)).toBe(true);
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
+
+    const results = bundle?.entry as BundleEntry[];
+    expect(results.length).toEqual(1);
+    expect(results[0].response?.status).toEqual('400');
+    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+      'Operation `path` property must start with "/"'
+    );
   });
 
   test('Process batch patch invalid url', async () => {
