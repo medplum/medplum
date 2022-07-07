@@ -1,6 +1,6 @@
 {
   "name": "@medplum/definitions",
-  "version": "0.9.20",
+  "version": "0.9.21",
   "description": "Medplum Data Definitions",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
