@@ -68,7 +68,7 @@ export function HomePage(): JSX.Element {
         if (window.confirm('Are you sure you want to delete these resources?')) {
           medplum.invalidateSearches(search.resourceType as ResourceType);
           medplum
-            .post('fhir/R4', {
+            .executeBatch({
               resourceType: 'Bundle',
               type: 'batch',
               entry: ids.map((id) => ({
