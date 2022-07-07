@@ -508,6 +508,130 @@ describe('QuestionnaireForm', () => {
 
     expect(onSubmit).toBeCalled();
   });
+
+  test('Drop down choice input', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.choice,
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+            text: 'q1',
+            answerOption: [
+              {
+                valueString: 'a1',
+              },
+              {
+                valueString: 'a2',
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    expect(screen.getByText('q1')).toBeInTheDocument();
+
+    const dropDown = screen.getByLabelText('q1');
+    expect(dropDown).toBeInTheDocument();
+    expect(dropDown).toBeInstanceOf(HTMLSelectElement);
+
+    await act(async () => {
+      // fireEvent.click(screen.getByLabelText('a1'));
+      fireEvent.change(dropDown, { target: { value: 'a1' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    const response1 = onSubmit.mock.calls[0][0];
+    expect(getAnswer(response1, 'q1')).toMatchObject({ valueString: 'a1' });
+
+    await act(async () => {
+      // fireEvent.click(screen.getByLabelText('a2'));
+      fireEvent.change(dropDown, { target: { value: 'a2' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    const response2 = onSubmit.mock.calls[1][0];
+    expect(getAnswer(response2, 'q1')).toMatchObject({ valueString: 'a2' });
+  });
+
+  test('Drop down choice input default value', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.choice,
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+            text: 'q1',
+            answerOption: [
+              {
+                valueString: 'a1',
+              },
+              {
+                valueString: 'a2',
+              },
+            ],
+            initial: [
+              {
+                valueString: 'a2',
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    expect(screen.getByText('q1')).toBeInTheDocument();
+
+    const dropDown = screen.getByLabelText('q1');
+    expect(dropDown).toBeInTheDocument();
+    expect(dropDown).toBeInstanceOf(HTMLSelectElement);
+    expect((dropDown as HTMLSelectElement).value).toBe('a2');
+  });
 });
 
 function getAnswer(response: QuestionnaireResponse, linkId: string): QuestionnaireResponseItemAnswer | undefined {

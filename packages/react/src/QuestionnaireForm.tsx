@@ -20,7 +20,7 @@ import {
   QuestionnaireResponseItemAnswer,
   Reference,
 } from '@medplum/fhirtypes';
-import React, { useEffect, useState } from 'react';
+import React, { ChangeEvent, useEffect, useState } from 'react';
 import { AttachmentInput } from './AttachmentInput';
 import { Button } from './Button';
 import { Checkbox } from './Checkbox';
@@ -279,49 +279,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           onChange={(newValue) => onChangeAnswer({ valueUri: newValue })}
         />
       );
-    case QuestionnaireItemType.choice:
-    case QuestionnaireItemType.openChoice:
-      return (
-        <div>
-          {item.answerOption &&
-            item.answerOption.map((option: QuestionnaireItemAnswerOption, index: number) => {
-              const valueElementDefinition = globalSchema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
-              const optionValue = getTypedPropertyValue(
-                { type: 'QuestionnaireItemAnswerOption', value: option },
-                'value'
-              ) as TypedValue;
-              const initialValue = getTypedPropertyValue(
-                { type: 'QuestionnaireItemInitial', value: initial },
-                'value'
-              ) as TypedValue | undefined;
-              const propertyName = 'value' + capitalize(optionValue.type);
-              const optionName = `${name}-option-${index}`;
-              return (
-                <div key={optionName} className="medplum-questionnaire-option-row">
-                  <div className="medplum-questionnaire-option-checkbox">
-                    <input
-                      type="radio"
-                      id={optionName}
-                      name={name}
-                      value={optionValue.value}
-                      defaultChecked={initialValue && stringify(optionValue) === stringify(initialValue)}
-                      onChange={() => onChangeAnswer({ [propertyName]: optionValue.value })}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor={optionName}>
-                      <ResourcePropertyDisplay
-                        property={valueElementDefinition}
-                        propertyType={optionValue.type as PropertyType}
-                        value={optionValue.value}
-                      />
-                    </label>
-                  </div>
-                </div>
-              );
-            })}
-        </div>
-      );
     case QuestionnaireItemType.attachment:
       return (
         <AttachmentInput
@@ -346,9 +303,124 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           onChange={(newValue) => onChangeAnswer({ valueQuantity: newValue })}
         />
       );
+    case QuestionnaireItemType.choice:
+    case QuestionnaireItemType.openChoice:
+      if (isDropDownChoice(item)) {
+        return (
+          <QuestionnaireChoiceDropDownInput name={name} item={item} initial={initial} onChangeAnswer={onChangeAnswer} />
+        );
+      } else {
+        return (
+          <QuestionnaireChoiceRadioInput name={name} item={item} initial={initial} onChangeAnswer={onChangeAnswer} />
+        );
+      }
   }
 
   return null;
+}
+
+interface QuestionnaireChoiceInputProps {
+  name: string;
+  item: QuestionnaireItem;
+  initial: QuestionnaireItemInitial | undefined;
+  onChangeAnswer: (newResponseAnswer: QuestionnaireResponseItemAnswer) => void;
+}
+
+function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps): JSX.Element {
+  const { name, item, initial } = props;
+  const valueElementDefinition = globalSchema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
+  const initialValue = getTypedPropertyValue({ type: 'QuestionnaireItemInitial', value: initial }, 'value') as
+    | TypedValue
+    | undefined;
+
+  return (
+    <select
+      id={name}
+      name={name}
+      className="medplum-select"
+      onChange={(e: ChangeEvent<HTMLSelectElement>) => {
+        const index = e.currentTarget.selectedIndex;
+        if (index === 0) {
+          props.onChangeAnswer({});
+          return;
+        }
+        const option = (item.answerOption as QuestionnaireItemAnswerOption[])[index - 1];
+        const optionValue = getTypedPropertyValue(
+          { type: 'QuestionnaireItemAnswerOption', value: option },
+          'value'
+        ) as TypedValue;
+        const propertyName = 'value' + capitalize(optionValue.type);
+        props.onChangeAnswer({ [propertyName]: optionValue.value });
+      }}
+    >
+      <option></option>
+      {item.answerOption &&
+        item.answerOption.map((option: QuestionnaireItemAnswerOption, index: number) => {
+          const optionValue = getTypedPropertyValue(
+            { type: 'QuestionnaireItemAnswerOption', value: option },
+            'value'
+          ) as TypedValue;
+          const optionName = `${name}-option-${index}`;
+          return (
+            <option
+              key={optionName}
+              value={optionValue.value}
+              selected={initialValue && stringify(optionValue) === stringify(initialValue)}
+            >
+              <ResourcePropertyDisplay
+                property={valueElementDefinition}
+                propertyType={optionValue.type as PropertyType}
+                value={optionValue.value}
+              />
+            </option>
+          );
+        })}
+    </select>
+  );
+}
+
+function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JSX.Element {
+  const { name, item, initial, onChangeAnswer } = props;
+  const valueElementDefinition = globalSchema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
+  const initialValue = getTypedPropertyValue({ type: 'QuestionnaireItemInitial', value: initial }, 'value') as
+    | TypedValue
+    | undefined;
+  return (
+    <>
+      {item.answerOption &&
+        item.answerOption.map((option: QuestionnaireItemAnswerOption, index: number) => {
+          const optionValue = getTypedPropertyValue(
+            { type: 'QuestionnaireItemAnswerOption', value: option },
+            'value'
+          ) as TypedValue;
+          const propertyName = 'value' + capitalize(optionValue.type);
+          const optionName = `${name}-option-${index}`;
+          return (
+            <div key={optionName} className="medplum-questionnaire-option-row">
+              <div className="medplum-questionnaire-option-checkbox">
+                <input
+                  type="radio"
+                  id={optionName}
+                  name={name}
+                  value={optionValue.value}
+                  defaultChecked={initialValue && stringify(optionValue) === stringify(initialValue)}
+                  onChange={() => onChangeAnswer({ [propertyName]: optionValue.value })}
+                />
+              </div>
+              <div>
+                <label htmlFor={optionName}>
+                  <ResourcePropertyDisplay
+                    property={valueElementDefinition}
+                    propertyType={optionValue.type as PropertyType}
+                    value={optionValue.value}
+                  />
+                </label>
+              </div>
+            </div>
+          );
+        })}
+    </>
+  );
 }
 
 function buildInitialResponse(questionnaire: Questionnaire): QuestionnaireResponse {
@@ -377,4 +449,12 @@ function buildInitialResponseAnswer(answer: QuestionnaireItemInitial): Questionn
   // This works because QuestionnaireItemInitial and QuestionnaireResponseItemAnswer
   // have the same properties.
   return { ...answer };
+}
+
+function isDropDownChoice(item: QuestionnaireItem): boolean {
+  return !!item.extension?.some(
+    (e) =>
+      e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl' &&
+      e.valueCodeableConcept?.coding?.[0]?.code === 'drop-down'
+  );
 }
