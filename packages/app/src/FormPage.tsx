@@ -55,7 +55,7 @@ export function FormPage(): JSX.Element {
     }
 
     medplum
-      .post('fhir/R4', requestBundle)
+      .executeBatch(requestBundle)
       .then((bundle: Bundle) => {
         if (bundle.entry?.[0]?.response?.status !== '200') {
           setError(bundle.entry?.[0]?.response as OperationOutcome);

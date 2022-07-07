@@ -129,7 +129,7 @@ export function ResourcePage(): JSX.Element {
     };
 
     return medplum
-      .post('fhir/R4', requestBundle)
+      .executeBatch(requestBundle)
       .then((responseBundle: Bundle) => {
         if (responseBundle.entry?.[0]?.response?.status !== '200') {
           setError(responseBundle.entry?.[0]?.response as OperationOutcome);

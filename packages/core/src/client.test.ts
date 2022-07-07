@@ -775,6 +775,48 @@ describe('Client', () => {
     expect(result.resourceType).toBe('ValueSet');
   });
 
+  test('Execute batch', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.executeBatch({
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          fullUrl: 'urn:uuid:61ebe359-bfdc-4613-8bf2-c5e300945f0a',
+          resource: {
+            resourceType: 'Patient',
+            name: [{ use: 'official', given: ['Alice'], family: 'Smith' }],
+            gender: 'female',
+            birthDate: '1974-12-25',
+          },
+          request: {
+            method: 'POST',
+            url: 'Patient',
+          },
+        },
+        {
+          fullUrl: 'urn:uuid:88f151c0-a954-468a-88bd-5ae15c08e059',
+          resource: {
+            resourceType: 'Patient',
+            identifier: [{ system: 'http:/example.org/fhir/ids', value: '234234' }],
+            name: [{ use: 'official', given: ['Bob'], family: 'Jones' }],
+            gender: 'male',
+            birthDate: '1974-12-25',
+          },
+          request: {
+            method: 'POST',
+            url: 'Patient',
+            ifNoneExist: 'identifier=http:/example.org/fhir/ids|234234',
+          },
+        },
+      ],
+    });
+    expect(result).toBeDefined();
+    expect((result as any).request.url).toBe('https://x/fhir/R4');
+    expect((result as any).request.options.method).toBe('POST');
+    expect((result as any).request.options.headers['Content-Type']).toBe('application/fhir+json');
+  });
+
   test('Send email', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.sendEmail({

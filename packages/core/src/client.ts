@@ -1283,6 +1283,57 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Executes a batch or transaction of FHIR operations.
+   *
+   * Example:
+   *
+   * ```typescript
+   * await medplum.executeBatch({
+   *   "resourceType": "Bundle",
+   *   "type": "transaction",
+   *   "entry": [
+   *     {
+   *       "fullUrl": "urn:uuid:61ebe359-bfdc-4613-8bf2-c5e300945f0a",
+   *       "resource": {
+   *         "resourceType": "Patient",
+   *         "name": [{ "use": "official", "given": ["Alice"], "family": "Smith" }],
+   *         "gender": "female",
+   *         "birthDate": "1974-12-25"
+   *       },
+   *       "request": {
+   *         "method": "POST",
+   *         "url": "Patient"
+   *       }
+   *     },
+   *     {
+   *       "fullUrl": "urn:uuid:88f151c0-a954-468a-88bd-5ae15c08e059",
+   *       "resource": {
+   *         "resourceType": "Patient",
+   *         "identifier": [{ "system": "http:/example.org/fhir/ids", "value": "234234" }],
+   *         "name": [{ "use": "official", "given": ["Bob"], "family": "Jones" }],
+   *         "gender": "male",
+   *         "birthDate": "1974-12-25"
+   *       },
+   *       "request": {
+   *         "method": "POST",
+   *         "url": "Patient",
+   *         "ifNoneExist": "identifier=http:/example.org/fhir/ids|234234"
+   *       }
+   *     }
+   *   ]
+   * });
+   * ```
+   *
+   * See The FHIR "batch/transaction" section for full details: https://hl7.org/fhir/http.html#transaction
+   *
+   * @param bundle The FHIR batch/transaction bundle.
+   * @returns The FHIR batch/transaction response bundle.
+   */
+  executeBatch(bundle: Bundle): Promise<Bundle> {
+    return this.post('fhir/R4', bundle);
+  }
+
+  /**
    * Sends an email using the Medplum Email API.
    *
    * Builds the email using nodemailer MailComposer.

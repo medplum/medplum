@@ -55,9 +55,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       setHistory({} as Bundle);
       return;
     }
-
-    const batchRequest = buildSearchRequests(resource);
-    medplum.post('fhir/R4', batchRequest).then(handleBatchResponse);
+    medplum.executeBatch(buildSearchRequests(resource)).then(handleBatchResponse);
   }, [medplum, resource, buildSearchRequests]);
 
   useEffect(() => {
