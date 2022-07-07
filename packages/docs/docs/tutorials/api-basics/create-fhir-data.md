@@ -19,7 +19,6 @@ You will need the following to get started and instructions on how to set this u
 These three requirements will need to be in place to connect
 
 ```js
-const BASE_URL = 'https://api.medplum.com/'; // if you are connecting to an on premise deployment, these values may be different;
 const MY_CLIENT_ID = 'MY_CLIENT_ID';
 const MY_CLIENT_SECRET = 'MY_CLIENT_SECRET';
 ```
@@ -45,31 +44,8 @@ Here is a breakdown of workflow at a high level
 The [client credentials](https://oauth.net/2/grant-types/client-credentials/) flow is a type of connection that is used to obtain an access token outside the context of the user.
 
 ```js
-/**
- * Authenticates using OAuth client credentials flow.
- * This sets the accessToken global.
- */
-async function authenticate() {
-  console.log('Authenticating...');
-  const response = await fetch(BASE_URL + 'oauth2/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: `grant_type=client_credentials&client_id=${MY_CLIENT_ID}&client_secret=${MY_CLIENT_SECRET}`,
-  });
-
-  if (!response.ok) {
-    console.log(response.body);
-    throw new Error('Authentication failed.');
-  }
-
-  const data = await response.json();
-  console.log('Success!');
-  return data.access_token;
-}
-
-const accessToken = await authenticate();
+const medplum = new MedplumClient(defaultOptions);
+await medplum.startClientLogin(MY_CLIENT_ID, MY_CLIENT_SECRET);
 ```
 
 ## Using a FHIR batch request to write data
@@ -98,7 +74,7 @@ async function createServiceRequest() {
   // Make one batch to request to create both the Patient and ServiceRequest.
   // Use the "conditional create" ("ifNoneExist") feature to only create the patient if they do not exist.
   // Use the local ID feature ("urn:uuid:") to link the ServiceRequest to the Patient.
-  const response = await fetch(BASE_URL + 'fhir/R4/', {
+  const data = await medplum.executeBatch({
     method: 'POST',
     headers: {
       Authorization: 'Bearer ' + accessToken,
@@ -156,9 +132,6 @@ async function createServiceRequest() {
     }),
   });
 
-  const data = await response.json();
-  console.log(JSON.stringify(data, undefined, 2));
-
   // Should print "Created" or "OK"
   console.log(data.entry[0].response.outcome.issue[0].details.text);
 
@@ -204,7 +177,7 @@ async function createReport(patientId, serviceRequestId) {
   const observtionUrn2 = 'urn:uuid:' + randomUUID();
 
   // Use the local ID feature ("urn:uuid:") to link the ServiceRequest to the Patient.
-  const response = await fetch(BASE_URL + 'fhir/R4/', {
+  const data = await medplum.executeBatch({
     method: 'POST',
     headers: {
       Authorization: 'Bearer ' + accessToken,
@@ -319,8 +292,6 @@ async function createReport(patientId, serviceRequestId) {
       ],
     }),
   });
-
-  const data = await response.json();
 
   // Return the DiagnosticReport IDs as reference strings.
   return [data.entry[2].response.location];
