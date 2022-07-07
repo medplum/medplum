@@ -335,6 +335,8 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
 
   return (
     <select
+      id={name}
+      name={name}
       className="medplum-select"
       onChange={(e: ChangeEvent<HTMLSelectElement>) => {
         const index = e.currentTarget.selectedIndex;
