@@ -18,6 +18,9 @@ import {
 } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
 
+/**
+ * @internal
+ */
 export type ProfileResource = Patient | Practitioner | RelatedPerson;
 
 /**

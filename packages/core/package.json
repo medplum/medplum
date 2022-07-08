@@ -36,6 +36,10 @@
   },
   "types": "dist/types/index.d.ts",
   "sideEffects": false,
+  "typedoc": {
+    "entryPoint": "./src/index.ts",
+    "displayName": "Medplum Core"
+  },
   "keywords": [
     "medplum",
     "fhir",
