@@ -48,8 +48,8 @@ const config = {
       'docusaurus-plugin-typedoc',
       {
         // Plugin Options
-        id: 'client',
-        out: 'client',
+        id: 'sdk',
+        out: 'sdk',
 
         // TypeDoc options
         entryPoints: ['../core/src/index.ts'],
@@ -58,20 +58,6 @@ const config = {
         excludeProtected: true,
         externalPattern: '**/fhirpath/*.ts',
         excludeExternals: true,
-      },
-    ],
-    [
-      'docusaurus-plugin-typedoc',
-      {
-        // Plugin Options
-        id: 'fhirtypes',
-        out: 'fhirtypes',
-
-        // TypeDoc options
-        entryPoints: ['../fhirtypes/dist/index.d.ts'],
-        tsconfig: '../core/tsconfig.json',
-        excludePrivate: true,
-        excludeProtected: true,
       },
     ],
   ],
