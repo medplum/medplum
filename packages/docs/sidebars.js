@@ -45,6 +45,13 @@ const sidebars = {
       items: [
         { type: 'doc', id: 'sdk/classes/MedplumClient', label: 'MedplumClient' },
         { type: 'doc', id: 'sdk/modules', label: 'Utilities' },
+        { 'Bot Utilities': ['sdk/classes/Hl7Message', 'sdk/interfaces/BotEvent'] },
+        {
+          'Media Utilities': {
+            PDF: ['sdk/interfaces/CreatePdfFunction'],
+            Email: ['sdk/interfaces/MailOptions', 'sdk/interfaces/MailAttachment', 'sdk/interfaces/MailAddress'],
+          },
+        },
       ],
     },
     {
