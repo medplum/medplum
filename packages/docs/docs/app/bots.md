@@ -8,7 +8,7 @@ toc_max_heading_level: 2
 Bots are an advanced Medplum feature that enable complex workflows. A **Medplum Bot** is a snippet of JavaScript code that can run on any resource change (create or update). This JavaScript code has access to a [**Medplum client**](/sdk) , which itself can invoke FHIR operations.
 
 **Medplum Bots** are run as [AWS Lambdas](https://aws.amazon.com/lambda/) and in heavily sandboxed environments.
-You can apply an [AccessPolicy](/access-control#access-policies) to the Bot if you want to further reduce the data it can read and write.
+You can apply an [AccessPolicy](/app/access-control#access-policies) to the Bot if you want to further reduce the data it can read and write.
 
 Bots are disabled by default for accounts. Contact info@medplum.com if you'd like to learn more.
 
@@ -47,7 +47,7 @@ To create a Bot, navigate to the [Project Admin panel](https://app.medplum.com/a
 ![Create a Bot](/img/app/bots/create_bot.png)
 
 On the next page you can enter a bot **name** and **description** (optional). You can also optionally set an [**access
-policy**](app/access-control#access-policies) on the Bot, which can restrict the read/write privileges of the bot's
+policy**](/app/access-control#access-policies) on the Bot, which can restrict the read/write privileges of the bot's
 code. By default, Bots have read/write access to all resources.
 
 ![Enter Bot Properties](/img/app/bots/enter_bot_properties.png)
@@ -101,7 +101,7 @@ To deploy your bot, click the "Deploy" button.
 ![Deploy Button](/img/app/bots/deploy_button.png)
 
 **Medplum Bots** are run as [AWS Lambdas](https://aws.amazon.com/lambda/) and in heavily sandboxed environments.
-You can apply an [AccessPolicy](/access-control#access-policies) to the Bot if you want to further reduce the data it can read and write.
+You can apply an [AccessPolicy](/app/access-control#access-policies) to the Bot if you want to further reduce the data it can read and write.
 
 ## Executing a Bot
 

@@ -26,6 +26,12 @@ const config = {
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/medplum/medplum/blob/main/packages/docs/',
           routeBasePath: '/',
+          async sidebarItemsGenerator({ defaultSidebarItemsGenerator, ...args }) {
+            // Example: return an hardcoded list of static sidebar items
+            let items = await defaultSidebarItemsGenerator(args);
+            items = items.filter((e) => !(e.type === 'doc' && e.id.endsWith('index')));
+            return items;
+          },
         },
         blog: {
           showReadingTime: true,
@@ -37,7 +43,24 @@ const config = {
     ],
   ],
 
-  plugins: [['docusaurus-plugin-typedoc', { out: 'sdk', sidebar: { categoryLabel: 'SDK', position: 5 } }]],
+  plugins: [
+    [
+      'docusaurus-plugin-typedoc',
+      {
+        // Plugin Options
+        id: 'sdk',
+        out: 'sdk',
+
+        // TypeDoc options
+        entryPoints: ['../core/src/index.ts'],
+        tsconfig: '../core/tsconfig.json',
+        excludePrivate: true,
+        excludeProtected: true,
+        externalPattern: '**/fhirpath/*.ts',
+        excludeExternals: true,
+      },
+    ],
+  ],
 
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
