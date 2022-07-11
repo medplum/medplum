@@ -1,5 +1,6 @@
 import { assertOk, createReference, getReferenceString, isOk, Operator } from '@medplum/core';
 import {
+  Appointment,
   AuditEvent,
   Bundle,
   Communication,
@@ -1747,5 +1748,130 @@ describe('FHIR Repo', () => {
     });
     expect(outcome2.id).toEqual('not-modified');
     expect(patient2?.id).toEqual(patient1?.id);
+  });
+
+  test('Starts after', async () => {
+    // Create 2 appointments
+    // One with a start date of 1 second ago
+    // One with a start date of 2 seconds ago
+    const code = randomUUID();
+    const now = new Date();
+    const nowMinus1Second = new Date(now.getTime() - 1000);
+    const nowMinus2Seconds = new Date(now.getTime() - 2000);
+    const nowMinus3Seconds = new Date(now.getTime() - 3000);
+
+    const [outcome1, appt1] = await systemRepo.createResource<Appointment>({
+      resourceType: 'Appointment',
+      status: 'booked',
+      serviceType: [{ text: code }],
+      participant: [{ status: 'accepted' }],
+      start: nowMinus1Second.toISOString(),
+    });
+    assertOk(outcome1, appt1);
+    expect(appt1).toBeDefined();
+
+    const [outcome2, appt2] = await systemRepo.createResource<Appointment>({
+      resourceType: 'Appointment',
+      status: 'booked',
+      serviceType: [{ text: code }],
+      participant: [{ status: 'accepted' }],
+      start: nowMinus2Seconds.toISOString(),
+    });
+    assertOk(outcome2, appt2);
+    expect(appt2).toBeDefined();
+
+    // Greater than (newer than) 2 seconds ago should only return appt 1
+    const [searchOutcome1, searchResult1] = await systemRepo.search({
+      resourceType: 'Appointment',
+      filters: [
+        {
+          code: 'service-type',
+          operator: Operator.EQUALS,
+          value: code,
+        },
+        {
+          code: 'date',
+          operator: Operator.STARTS_AFTER,
+          value: nowMinus2Seconds.toISOString(),
+        },
+      ],
+    });
+
+    expect(searchOutcome1.id).toEqual('ok');
+    expect(bundleContains(searchResult1 as Bundle, appt1 as Appointment)).toEqual(true);
+    expect(bundleContains(searchResult1 as Bundle, appt2 as Appointment)).toEqual(false);
+
+    // Greater than (newer than) or equal to 2 seconds ago should return both appts
+    const [searchOutcome2, searchResult2] = await systemRepo.search({
+      resourceType: 'Appointment',
+      filters: [
+        {
+          code: 'service-type',
+          operator: Operator.EQUALS,
+          value: code,
+        },
+        {
+          code: 'date',
+          operator: Operator.GREATER_THAN_OR_EQUALS,
+          value: nowMinus2Seconds.toISOString(),
+        },
+      ],
+    });
+
+    expect(searchOutcome2.id).toEqual('ok');
+    expect(bundleContains(searchResult2 as Bundle, appt1 as Appointment)).toEqual(true);
+    expect(bundleContains(searchResult2 as Bundle, appt2 as Appointment)).toEqual(true);
+
+    // Less than (older than) to 1 seconds ago should only return appt 2
+    const [searchOutcome3, searchResult3] = await systemRepo.search({
+      resourceType: 'Appointment',
+      filters: [
+        {
+          code: 'service-type',
+          operator: Operator.EQUALS,
+          value: code,
+        },
+        {
+          code: 'date',
+          operator: Operator.STARTS_AFTER,
+          value: nowMinus3Seconds.toISOString(),
+        },
+        {
+          code: 'date',
+          operator: Operator.ENDS_BEFORE,
+          value: nowMinus1Second.toISOString(),
+        },
+      ],
+    });
+
+    expect(searchOutcome3.id).toEqual('ok');
+    expect(bundleContains(searchResult3 as Bundle, appt1 as Appointment)).toEqual(false);
+    expect(bundleContains(searchResult3 as Bundle, appt2 as Appointment)).toEqual(true);
+
+    // Less than (older than) or equal to 1 seconds ago should return both appts
+    const [searchOutcome4, searchResult4] = await systemRepo.search({
+      resourceType: 'Appointment',
+      filters: [
+        {
+          code: 'service-type',
+          operator: Operator.EQUALS,
+          value: code,
+        },
+        {
+          code: 'date',
+          operator: Operator.STARTS_AFTER,
+          value: nowMinus3Seconds.toISOString(),
+        },
+        {
+          code: 'date',
+          operator: Operator.LESS_THAN_OR_EQUALS,
+          value: nowMinus1Second.toISOString(),
+        },
+      ],
+    });
+
+    expect(searchOutcome4.id).toEqual('ok');
+    expect(bundleContains(searchResult4 as Bundle, appt1 as Appointment)).toEqual(true);
+    expect(bundleContains(searchResult4 as Bundle, appt2 as Appointment)).toEqual(true);
   });
 });

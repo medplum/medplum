@@ -1396,10 +1396,12 @@ function fhirOperatorToSqlOperator(fhirOperator: FhirOperator): Operator {
     case FhirOperator.NOT_EQUALS:
       return Operator.NOT_EQUALS;
     case FhirOperator.GREATER_THAN:
+    case FhirOperator.STARTS_AFTER:
       return Operator.GREATER_THAN;
     case FhirOperator.GREATER_THAN_OR_EQUALS:
       return Operator.GREATER_THAN_OR_EQUALS;
     case FhirOperator.LESS_THAN:
+    case FhirOperator.ENDS_BEFORE:
       return Operator.LESS_THAN;
     case FhirOperator.LESS_THAN_OR_EQUALS:
       return Operator.LESS_THAN_OR_EQUALS;
