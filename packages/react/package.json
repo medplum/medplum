@@ -1,6 +1,6 @@
 {
   "name": "@medplum/react",
-  "version": "0.9.20",
+  "version": "0.9.21",
   "description": "Medplum React Component Library",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -19,9 +19,9 @@
     "storybook": "build-storybook"
   },
   "devDependencies": {
-    "@medplum/core": "0.9.20",
-    "@medplum/fhirtypes": "0.9.20",
-    "@medplum/mock": "0.9.20",
+    "@medplum/core": "0.9.21",
+    "@medplum/fhirtypes": "0.9.21",
+    "@medplum/mock": "0.9.21",
     "@storybook/addon-actions": "6.5.9",
     "@storybook/addon-essentials": "6.5.9",
     "@storybook/addon-links": "6.5.9",
@@ -48,7 +48,7 @@
     "typescript": "4.7.4"
   },
   "peerDependencies": {
-    "@medplum/core": "0.9.20",
+    "@medplum/core": "0.9.21",
     "react": "^17.0.2 || ^18.0.0",
     "react-dom": "^17.0.2 || ^18.0.0",
     "react-router-dom": "^6.2.2"
