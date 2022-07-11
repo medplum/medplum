@@ -69,6 +69,7 @@ A record of a request for service such as diagnostic investigations, treatments,
 | instantiates-uri       | uri       | Instantiates external protocol or definition                                                                         | ServiceRequest.instantiatesUri       |
 | intent                 | token     | proposal \| plan \| directive \| order \| original-order \| reflex-order \| filler-order \| instance-order \| option | ServiceRequest.intent                |
 | occurrence             | date      | When service should occur                                                                                            | ServiceRequest.occurrence            |
+| order-detail           | string    | Detail text of the order                                                                                             | ServiceRequest.orderDetail.text      |
 | performer              | reference | Requested performer                                                                                                  | ServiceRequest.performer             |
 | performer-type         | token     | Performer role                                                                                                       | ServiceRequest.performerType         |
 | priority               | token     | routine \| urgent \| asap \| stat                                                                                    | ServiceRequest.priority              |
