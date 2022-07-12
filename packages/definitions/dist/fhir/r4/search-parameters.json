@@ -65532,6 +65532,23 @@
     }
   },
   {
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/Project-recaptcha-site-key",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "Project-recaptcha-site-key",
+      "url" : "https://medplum.com/fhir/SearchParameter/Project-recaptcha-site-key",
+      "version" : "4.0.1",
+      "name" : "name",
+      "publisher" : "Medplum",
+      "code" : "recaptcha-site-key",
+      "base" : ["Project"],
+      "type" : "token",
+      "expression" : "Project.recaptchaSiteKey",
+      "xpath" : "f:Project/f:recaptchaSiteKey",
+      "xpathUsage" : "normal"
+    }
+  },
+  {
     "fullUrl" : "https://medplum.com/fhir/SearchParameter/ProjectMembership-project",
     "resource" : {
       "resourceType" : "SearchParameter",
@@ -65634,6 +65651,23 @@
       "type" : "token",
       "expression" : "User.email",
       "xpath" : "f:User/f:email",
+      "xpathUsage" : "normal"
+    }
+  },
+  {
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/User-project",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "User-project",
+      "url" : "https://medplum.com/fhir/SearchParameter/User-project",
+      "version" : "4.0.1",
+      "name" : "project",
+      "publisher" : "Medplum",
+      "code" : "project",
+      "base" : ["User"],
+      "type" : "token",
+      "expression" : "User.project",
+      "xpath" : "f:User/f:project",
       "xpathUsage" : "normal"
     }
   },

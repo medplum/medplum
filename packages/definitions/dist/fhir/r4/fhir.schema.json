@@ -61098,6 +61098,13 @@
             "$ref": "#/definitions/string"
           },
           "type": "array"
+        },
+        "recaptchaSiteKey": {
+          "description": "A list of approved reCAPTCHA site keys for new user registration.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
         }
       },
       "required": [
@@ -61254,6 +61261,10 @@
         "admin": {
           "description": "Whether this user is a system administrator.",
           "$ref": "#/definitions/boolean"
+        },
+        "project": {
+          "description": "Project where the memberships are available.",
+          "$ref": "#/definitions/Reference"
         }
       },
       "required": [
