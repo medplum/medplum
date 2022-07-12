@@ -9,6 +9,7 @@ import {
   ServiceRequest,
   Specimen,
 } from '@medplum/fhirtypes';
+import { DrAliceSmith } from './alice';
 
 export const HomerSimpson: Patient = {
   resourceType: 'Patient',
@@ -127,36 +128,6 @@ export const HomerMedia: Media = {
     contentType: 'text/plain',
     url: 'https://example.com/test.txt',
   },
-};
-
-export const HomerDiagnosticReport: DiagnosticReport = {
-  resourceType: 'DiagnosticReport',
-  id: '123',
-  meta: {
-    versionId: '1',
-    lastUpdated: '2020-01-02T12:00:00Z',
-    author: {
-      reference: 'Practitioner/123',
-    },
-  },
-  subject: {
-    reference: 'Patient/123',
-    display: 'Homer Simpson',
-  },
-  resultsInterpreter: [
-    {
-      reference: 'Practitioner/123',
-      display: 'Dr. Alice Smith',
-    },
-  ],
-  result: [
-    { reference: 'Observation/1' },
-    { reference: 'Observation/2' },
-    { reference: 'Observation/3' },
-    { reference: 'Observation/4' },
-    { reference: 'Observation/5' },
-    { reference: 'Observation/6' },
-  ],
 };
 
 export const HomerObservation1: Observation = {
@@ -305,6 +276,10 @@ export const HomerSimpsonSpecimen: Specimen = {
   collection: {
     collectedDateTime: '2020-01-01T12:00:00Z',
   },
+  note: [
+    { text: 'Specimen hemolyzed. Results may be affected.' },
+    { text: 'Specimen lipemic. Results may be affected.' },
+  ],
 };
 
 export const HomerServiceRequest: ServiceRequest = {
@@ -343,6 +318,30 @@ export const HomerServiceRequest: ServiceRequest = {
   ],
   specimen: [createReference(HomerSimpsonSpecimen)],
   authoredOn: '2020-01-01T12:00:00Z',
+};
+
+export const HomerDiagnosticReport: DiagnosticReport = {
+  resourceType: 'DiagnosticReport',
+  id: '123',
+  meta: {
+    versionId: '1',
+    lastUpdated: '2020-01-02T12:00:00Z',
+    author: {
+      reference: 'Practitioner/123',
+    },
+  },
+  subject: createReference(HomerSimpson),
+  basedOn: [createReference(HomerServiceRequest)],
+  specimen: [createReference(HomerSimpsonSpecimen)],
+  resultsInterpreter: [createReference(DrAliceSmith)],
+  result: [
+    createReference(HomerObservation1),
+    createReference(HomerObservation2),
+    createReference(HomerObservation3),
+    createReference(HomerObservation4),
+    createReference(HomerObservation5),
+    createReference(HomerObservation6),
+  ],
 };
 
 export const BartSimpson: Patient = {

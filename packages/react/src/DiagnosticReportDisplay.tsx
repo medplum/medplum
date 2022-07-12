@@ -23,15 +23,23 @@ export interface DiagnosticReportDisplayProps {
 
 export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JSX.Element | null {
   const diagnosticReport = useResource(props.value);
+  const specimen = useResource(diagnosticReport?.specimen?.[0]);
   if (!diagnosticReport) {
     return null;
   }
 
-  let textContent: string | undefined = undefined;
+  let textContent = '';
+
   if (diagnosticReport.presentedForm && diagnosticReport.presentedForm.length > 0) {
     const pf = diagnosticReport.presentedForm[0];
     if (pf.contentType?.startsWith('text/plain') && pf.data) {
       textContent = window.atob(pf.data);
+    }
+  }
+
+  if (specimen?.note) {
+    for (const note of specimen.note) {
+      textContent += note.text + '\n\n';
     }
   }
 
@@ -71,8 +79,8 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
           </dl>
         )}
       </div>
-      {textContent && <pre>{textContent}</pre>}
       {diagnosticReport.result && <ObservationTable value={diagnosticReport.result} />}
+      {textContent && <pre>{textContent.trim()}</pre>}
     </div>
   );
 }
