@@ -435,6 +435,7 @@ export class MedplumClient extends EventTarget {
    * Returns the current base URL for all API requests.
    * By default, this is set to `https://api.medplum.com/`.
    * This can be overridden by setting the `baseUrl` option when creating the client.
+   * @category HTTP
    * @returns The current base URL for all API requests.
    */
   getBaseUrl(): string {
@@ -443,6 +444,7 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Clears all auth state including local storage and session storage.
+   * @category Authentication
    */
   clear(): void {
     this.#storage.clear();
@@ -456,6 +458,7 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Invalidates any cached values or cached requests for the given URL.
+   * @category Caching
    * @param url The URL to invalidate.
    */
   invalidateUrl(url: URL | string): void {
@@ -465,6 +468,7 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Invalidates all cached search results or cached requests for the given resourceType.
+   * @category Caching
    * @param resourceType The resource type to invalidate.
    */
   invalidateSearches<K extends ResourceType>(resourceType: K): void {
@@ -483,6 +487,7 @@ export class MedplumClient extends EventTarget {
    * For common operations, we recommend using higher level methods
    * such as `readResource()`, `search()`, etc.
    *
+   * @category HTTP
    * @param url The target URL.
    * @param options Optional fetch options.
    * @returns Promise to the response content.
@@ -505,6 +510,7 @@ export class MedplumClient extends EventTarget {
    * For common operations, we recommend using higher level methods
    * such as `createResource()`.
    *
+   * @category HTTP
    * @param url The target URL.
    * @param body The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
    * @param contentType The content type to be included in the "Content-Type" header.
@@ -530,6 +536,7 @@ export class MedplumClient extends EventTarget {
    * For common operations, we recommend using higher level methods
    * such as `updateResource()`.
    *
+   * @category HTTP
    * @param url The target URL.
    * @param body The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
    * @param contentType The content type to be included in the "Content-Type" header.
@@ -555,6 +562,7 @@ export class MedplumClient extends EventTarget {
    * For common operations, we recommend using higher level methods
    * such as `patchResource()`.
    *
+   * @category HTTP
    * @param url The target URL.
    * @param operations Array of JSONPatch operations.
    * @param options Optional fetch options.
@@ -571,10 +579,12 @@ export class MedplumClient extends EventTarget {
   /**
    * Makes an HTTP DELETE request to the specified URL.
    *
+   *
    * This is a lower level method for custom requests.
    * For common operations, we recommend using higher level methods
    * such as `deleteResource()`.
    *
+   * @category HTTP
    * @param url The target URL.
    * @param options Optional fetch options.
    * @returns Promise to the response content.
@@ -587,6 +597,7 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Tries to register a new user.
+   * @category Authentication
    * @param request The registration request.
    * @returns Promise to the authentication response.
    */
@@ -597,6 +608,7 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Initiates a user login flow.
+   * @category Authentication
    * @param loginRequest Login request including email and password.
    * @returns Promise to the authentication response.
    */
@@ -615,6 +627,7 @@ export class MedplumClient extends EventTarget {
    * Tries to sign in with Google authentication.
    * The response parameter is the result of a Google authentication.
    * See: https://developers.google.com/identity/gsi/web/guides/handle-credential-responses-js-functions
+   * @category Authentication
    * @param loginRequest Login request including Google credential response.
    * @returns Promise to the authentication response.
    */
@@ -630,6 +643,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Signs out locally.
    * Does not invalidate tokens with the server.
+   * @category Authentication
    */
   signOut(): Promise<void> {
     this.clear();
@@ -640,6 +654,7 @@ export class MedplumClient extends EventTarget {
    * Tries to sign in the user.
    * Returns true if the user is signed in.
    * This may result in navigating away to the sign in page.
+   * @category Authentication
    */
   signInWithRedirect(): Promise<ProfileResource | void> | undefined {
     const urlParams = new URLSearchParams(window.location.search);
@@ -655,6 +670,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Tries to sign out the user.
    * See: https://docs.aws.amazon.com/cognito/latest/developerguide/logout-endpoint.html
+   * @category Authentication
    */
   signOutWithRedirect(): void {
     window.location.assign(this.#logoutUrl);
@@ -663,6 +679,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Builds a FHIR URL from a collection of URL path components.
    * For example, `buildUrl('/Patient', '123')` returns `fhir/R4/Patient/123`.
+   * @category HTTP
    * @param path The path component of the URL.
    * @returns The well-formed FHIR URL.
    */
@@ -672,6 +689,8 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Builds a FHIR search URL from a search query or structured query object.
+   * @category HTTP
+   * @category Search
    * @param query The FHIR search query or structured query object.
    * @returns The well-formed FHIR URL.
    */
@@ -720,6 +739,7 @@ export class MedplumClient extends EventTarget {
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
    *
+   * @category Search
    * @param query The search query as either a string or a structured search object.
    * @returns Promise to the search result bundle.
    */
@@ -747,6 +767,7 @@ export class MedplumClient extends EventTarget {
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
    *
+   * @category Search
    * @param query The search query as either a string or a structured search object.
    * @returns Promise to the search result bundle.
    */
@@ -786,6 +807,7 @@ export class MedplumClient extends EventTarget {
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
    *
+   * @category Search
    * @param query The search query as either a string or a structured search object.
    * @returns Promise to the search result bundle.
    */
@@ -812,6 +834,8 @@ export class MedplumClient extends EventTarget {
   /**
    * Searches a ValueSet resource using the "expand" operation.
    * See: https://www.hl7.org/fhir/operation-valueset-expand.html
+   *
+   * @category Search
    * @param system The ValueSet system url.
    * @param filter The search string.
    * @returns Promise to expanded ValueSet.
@@ -825,6 +849,7 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Returns a cached resource if it is available.
+   * @category Caching
    * @param resourceType The FHIR resource type.
    * @param id The FHIR resource ID.
    * @returns The resource if it is available in the cache; undefined otherwise.
@@ -836,6 +861,7 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Returns a cached resource if it is available.
+   * @category Caching
    * @param resourceType The FHIR resource type.
    * @param id The FHIR resource ID.
    * @returns The resource if it is available in the cache; undefined otherwise.
@@ -864,6 +890,7 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "read" operation for full details: https://www.hl7.org/fhir/http.html#read
    *
+   * @category Caching
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
    * @returns The resource if available; undefined otherwise.
@@ -887,6 +914,7 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "read" operation for full details: https://www.hl7.org/fhir/http.html#read
    *
+   * @category Read
    * @param reference The FHIR reference object.
    * @returns The resource if available; undefined otherwise.
    */
@@ -906,6 +934,7 @@ export class MedplumClient extends EventTarget {
    * Returns a cached schema for a resource type.
    * If the schema is not cached, returns undefined.
    * It is assumed that a client will call requestSchema before using this method.
+   * @category Schema
    * @param resourceType The FHIR resource type.
    * @returns The schema if immediately available, undefined otherwise.
    * @deprecated Use globalSchema instead.
@@ -917,6 +946,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Requests the schema for a resource type.
    * If the schema is already cached, the promise is resolved immediately.
+   * @category Schema
    * @param resourceType The FHIR resource type.
    * @returns Promise to a schema with the requested resource type.
    */
@@ -982,6 +1012,7 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "history" operation for full details: https://www.hl7.org/fhir/http.html#history
    *
+   * @category Read
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
    * @returns Promise to the resource history.
@@ -1002,6 +1033,7 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "vread" operation for full details: https://www.hl7.org/fhir/http.html#vread
    *
+   * @category Read
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
    * @returns The resource if available; undefined otherwise.
@@ -1010,6 +1042,12 @@ export class MedplumClient extends EventTarget {
     return this.get(this.fhirUrl(resourceType, id, '_history', vid));
   }
 
+  /**
+   *
+   * @category Read
+   * @param id The Patient Id
+   * @returns A Bundle of all Resources related to the Patient
+   */
   readPatientEverything(id: string): ReadablePromise<Bundle> {
     return this.get(this.fhirUrl('Patient', id, '$everything'));
   }
@@ -1034,6 +1072,7 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
    *
+   * @category Create
    * @param resource The FHIR resource to create.
    * @returns The result of the create operation.
    */
@@ -1079,6 +1118,7 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "conditional create" operation for full details: https://www.hl7.org/fhir/http.html#ccreate
    *
+   * @category Create
    * @param resource The FHIR resource to create.
    * @param query The search query for an equivalent resource.
    * @returns The result of the create operation.
@@ -1105,6 +1145,7 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
    *
+   * @category Create
    * @param data The binary data to upload.
    * @param filename Optional filename for the binary.
    * @param contentType Content type for the binary.
@@ -1140,6 +1181,7 @@ export class MedplumClient extends EventTarget {
    *
    * See the pdfmake document definition for full details: https://pdfmake.github.io/docs/0.1/document-definition-object/
    *
+   * @category Media
    * @param docDefinition The PDF document definition.
    * @returns The result of the create operation.
    */
@@ -1161,6 +1203,7 @@ export class MedplumClient extends EventTarget {
    *
    * This is a convenience method to handle commmon cases where a `Communication` resource is created with a `payload`.
    *
+   * @category Create
    * @param resource The FHIR resource to comment on.
    * @param text The text of the comment.
    * @returns The result of the create operation.
@@ -1216,6 +1259,7 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "update" operation for full details: https://www.hl7.org/fhir/http.html#update
    *
+   * @category Write
    * @param resource The FHIR resource to update.
    * @returns The result of the update operation.
    */
@@ -1248,6 +1292,7 @@ export class MedplumClient extends EventTarget {
    *
    * See the JSONPatch specification for full details: https://tools.ietf.org/html/rfc6902
    *
+   * @category Write
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
    * @param operations The JSONPatch operations.
@@ -1273,6 +1318,7 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "delete" operation for full details: https://www.hl7.org/fhir/http.html#delete
    *
+   * @category Delete
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
    * @returns The result of the delete operation.
@@ -1325,7 +1371,7 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See The FHIR "batch/transaction" section for full details: https://hl7.org/fhir/http.html#transaction
-   *
+   * @category Batch
    * @param bundle The FHIR batch/transaction bundle.
    * @returns The FHIR batch/transaction response bundle.
    */
@@ -1366,7 +1412,7 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See options here: https://nodemailer.com/extras/mailcomposer/
-   *
+   * @category Media
    * @param options The MailComposer options.
    * @returns Promise to the operation outcome.
    */
@@ -1415,6 +1461,7 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR GraphQL documentation for FHIR specific details: https://www.hl7.org/fhir/graphql.html
    *
+   * @category Read
    * @param query The GraphQL query.
    * @param operationName Optional GraphQL operation name.
    * @param variables Optional GraphQL variables.
@@ -1425,10 +1472,17 @@ export class MedplumClient extends EventTarget {
     return this.post(this.fhirUrl('$graphql'), { query, operationName, variables }, JSON_CONTENT_TYPE, options);
   }
 
+  /**
+   * @category Authentication
+   * @returns The Login State
+   */
   getActiveLogin(): LoginState | undefined {
     return this.#storage.getObject('activeLogin');
   }
 
+  /**
+   * @category Authentication
+   */
   async setActiveLogin(login: LoginState): Promise<void> {
     this.#accessToken = login.accessToken;
     this.#refreshToken = login.refreshToken;
@@ -1441,10 +1495,16 @@ export class MedplumClient extends EventTarget {
     await this.#refreshProfile();
   }
 
+  /**
+   * @category Authentication
+   */
   getAccessToken(): string | undefined {
     return this.#accessToken;
   }
 
+  /**
+   * @category Authentication
+   */
   setAccessToken(accessToken: string): void {
     this.#accessToken = accessToken;
     this.#refreshToken = undefined;
@@ -1452,6 +1512,9 @@ export class MedplumClient extends EventTarget {
     this.#config = undefined;
   }
 
+  /**
+   * @category Authentication
+   */
   getLogins(): LoginState[] {
     return this.#storage.getObject<LoginState[]>('logins') ?? [];
   }
@@ -1478,14 +1541,23 @@ export class MedplumClient extends EventTarget {
     return this.#profilePromise;
   }
 
+  /**
+   * @category Authentication
+   */
   isLoading(): boolean {
     return !!this.#profilePromise;
   }
 
+  /**
+   * @category User Profile
+   */
   getProfile(): ProfileResource | undefined {
     return this.#profile;
   }
 
+  /**
+   * @category User Profile
+   */
   async getProfileAsync(): Promise<ProfileResource | undefined> {
     if (this.#profilePromise) {
       await this.#profilePromise;
@@ -1493,12 +1565,17 @@ export class MedplumClient extends EventTarget {
     return this.getProfile();
   }
 
+  /**
+   * @category User Profile
+   */
   getUserConfiguration(): UserConfiguration | undefined {
     return this.#config;
   }
 
   /**
    * Downloads the URL as a blob.
+   *
+   * @category Read
    * @param url The URL to request.
    * @returns Promise to the response body as a blob.
    */
@@ -1746,6 +1823,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Starts a new OAuth2 client credentials flow.
    * See: https://datatracker.ietf.org/doc/html/rfc6749#section-4.4
+   * @category Authentication
    * @param clientId The client ID.
    * @param clientSecret The client secret.
    * @returns Promise that resolves to the client profile.
@@ -1831,6 +1909,7 @@ export class MedplumClient extends EventTarget {
 
 /**
  * Returns the base URL for the current page.
+ * @category HTTP
  */
 function getBaseUrl(): string {
   return window.location.protocol + '//' + window.location.host + '/';
