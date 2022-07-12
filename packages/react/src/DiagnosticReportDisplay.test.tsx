@@ -84,6 +84,8 @@ describe('DiagnosticReportDisplay', () => {
     expect(screen.getByText('Diagnostic Report')).toBeDefined();
     expect(screen.getByText('110 mmHg / 75 mmHg')).toBeDefined();
     expect(screen.getByText('> 50 x')).toBeDefined();
+    expect(screen.getByText('Specimen hemolyzed. Results may be affected.', { exact: false })).toBeDefined();
+    expect(screen.getByText('Specimen lipemic. Results may be affected.', { exact: false })).toBeDefined();
   });
 
   test('Renders by reference', async () => {
