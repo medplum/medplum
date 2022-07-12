@@ -115,6 +115,16 @@
             "type" : [{
               "code" : "string"
             }]
+          },
+          {
+            "id" : "Project.recaptchaSiteKey",
+            "path" : "Project.recaptchaSiteKey",
+            "definition" : "A list of approved reCAPTCHA site keys for new user registration.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "string"
+            }]
           }
         ]
       }
@@ -292,6 +302,17 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
+            }]
+          },
+          {
+            "id" : "User.project",
+            "path" : "User.project",
+            "definition" : "Optional project if the user only exists for the project. This is used for the project-specific user database.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Project"]
             }]
           }
         ]

@@ -70,4 +70,9 @@ export interface Project {
    * A list of approved Google Client IDs for Google Authentication.
    */
   googleClientId?: string[];
+
+  /**
+   * A list of approved reCAPTCHA site keys for new user registration.
+   */
+  recaptchaSiteKey?: string[];
 }

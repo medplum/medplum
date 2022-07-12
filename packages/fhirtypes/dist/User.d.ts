@@ -4,6 +4,8 @@
  */
 
 import { Meta } from './Meta';
+import { Project } from './Project';
+import { Reference } from './Reference';
 
 /**
  * OAuth user.
@@ -56,4 +58,10 @@ export interface User {
    * Encrypted hash of the user's password.
    */
   passwordHash?: string;
+
+  /**
+   * Optional project if the user only exists for the project. This is used
+   * for the project-specific user database.
+   */
+  project?: Reference<Project>;
 }
