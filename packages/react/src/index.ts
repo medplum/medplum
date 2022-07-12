@@ -61,6 +61,7 @@ export * from './ResourcePropertyDisplay';
 export * from './ResourcePropertyInput';
 export * from './ResourceTable';
 export * from './ResourceTimeline';
+export * from './Scheduler';
 export * from './Scrollable';
 export * from './SearchControl';
 export * from './SearchFieldEditor';
