@@ -4,12 +4,12 @@ import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { resetPassword } from '../auth/resetpassword';
-import { createPractitioner, createProjectMembership } from '../auth/utils';
+import { createProfile, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config';
 import { sendEmail } from '../email/email';
 import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { logger } from '../logger';
-import { generateSecret } from '../oauth';
+import { generateSecret, getUserByEmail } from '../oauth';
 import { verifyProjectAdmin } from './utils';
 
 export const inviteValidators = [
@@ -49,7 +49,7 @@ export interface InviteRequest {
 
 export async function inviteUser(request: InviteRequest): Promise<Practitioner> {
   const project = request.project;
-  let user = await searchForExistingUser(request.email);
+  let user = await getUserByEmail(request.email, project.id);
 
   if (user) {
     // Existing user
@@ -90,28 +90,16 @@ export async function inviteUser(request: InviteRequest): Promise<Practitioner> 
   }
   let practitioner = await searchForExistingPractitioner(project, request.email);
   if (!practitioner) {
-    practitioner = await createPractitioner(request, project);
+    practitioner = (await createProfile(
+      project,
+      'Practitioner',
+      request.firstName,
+      request.lastName,
+      request.email
+    )) as Practitioner;
   }
   await createProjectMembership(user, project, practitioner, request.accessPolicy);
   return practitioner;
-}
-
-async function searchForExistingUser(email: string): Promise<User | undefined> {
-  const [outcome, bundle] = await systemRepo.search<User>({
-    resourceType: 'User',
-    filters: [
-      {
-        code: 'email',
-        operator: Operator.EQUALS,
-        value: email,
-      },
-    ],
-  });
-  assertOk(outcome, bundle);
-  if (bundle.entry && bundle.entry.length > 0) {
-    return bundle.entry[0].resource as User;
-  }
-  return undefined;
 }
 
 async function createUser(request: InviteRequest): Promise<User> {

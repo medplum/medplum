@@ -1,5 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { assertOk, createReference, resolveId } from '@medplum/core';
+import { assertOk, createReference } from '@medplum/core';
 import { ClientApplication } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -11,9 +11,10 @@ import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { systemRepo } from '../fhir';
-import { createTestClient, setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
+import { createTestClient, setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+import { registerNew } from './register';
 
 jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
@@ -143,24 +144,18 @@ describe('Login', () => {
     const memberEmail = `member${randomUUID()}@example.com`;
 
     // Register and create a project
-    const res = await request(app).post('/auth/register').type('json').send({
+    const { project, accessToken } = await registerNew({
       firstName: 'Admin',
       lastName: 'Admin',
       projectName: 'Access Policy Project',
       email: adminEmail,
       password: 'password!@#',
-      recaptchaToken: 'xyz',
     });
-
-    expect(res.status).toBe(200);
-    expect(res.body.project).toBeDefined();
-
-    const projectId = resolveId(res.body.project);
 
     // Create an access policy
     const resX = await request(app)
       .post('/fhir/R4/AccessPolicy')
-      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'AccessPolicy',
         name: 'Test Access Policy',
@@ -178,8 +173,8 @@ describe('Login', () => {
 
     // Invite a new member
     const res2 = await request(app)
-      .post('/admin/projects/' + projectId + '/invite')
-      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
       .send({
         firstName: 'Member',
         lastName: 'Member',
@@ -204,8 +199,8 @@ describe('Login', () => {
     // Get the project details and members
     // 3 members total (1 admin, 1 client, 1 invited)
     const res3 = await request(app)
-      .get('/admin/projects/' + projectId)
-      .set('Authorization', 'Bearer ' + res.body.accessToken);
+      .get('/admin/projects/' + project.id)
+      .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
     expect(res3.body.project).toBeDefined();
     expect(res3.body.members).toBeDefined();
@@ -218,14 +213,14 @@ describe('Login', () => {
 
     // Get the new membership details
     const res4 = await request(app)
-      .get('/admin/projects/' + projectId + '/members/' + member.id)
-      .set('Authorization', 'Bearer ' + res.body.accessToken);
+      .get('/admin/projects/' + project.id + '/members/' + member.id)
+      .set('Authorization', 'Bearer ' + accessToken);
     expect(res4.status).toBe(200);
 
     // Set the new member's access policy
     const res5 = await request(app)
-      .post('/admin/projects/' + projectId + '/members/' + member.id)
-      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .post('/admin/projects/' + project.id + '/members/' + member.id)
+      .set('Authorization', 'Bearer ' + accessToken)
       .type('json')
       .send({
         ...res4.body,
@@ -237,8 +232,8 @@ describe('Login', () => {
     // Make sure the access policy is set
     // 3 members total (1 admin, 1 client, 1 invited)
     const res6 = await request(app)
-      .get('/admin/projects/' + projectId)
-      .set('Authorization', 'Bearer ' + res.body.accessToken);
+      .get('/admin/projects/' + project.id)
+      .set('Authorization', 'Bearer ' + accessToken);
     expect(res6.status).toBe(200);
     expect(res6.body.project).toBeDefined();
     expect(res6.body.members).toBeDefined();
@@ -325,26 +320,19 @@ describe('Login', () => {
     const password = 'password!@#';
 
     // Register and create a project
-    const res = await request(app).post('/auth/register').type('json').send({
+    const { project } = await registerNew({
       firstName: 'Google',
       lastName: 'Google',
       projectName: 'Require Google Auth',
       email,
       password,
-      recaptchaToken: 'xyz',
     });
-    expect(res.status).toBe(200);
-    expect(res.body.project).toBeDefined();
 
     // As a super admin, update the project to require Google auth
-    const projectId = resolveId(res.body.project) as string;
-    const [updateOutcome, updated] = await systemRepo.patchResource('Project', projectId, [
-      {
-        op: 'add',
-        path: '/features',
-        value: ['google-auth-required'],
-      },
-    ]);
+    const [updateOutcome, updated] = await systemRepo.updateResource({
+      ...project,
+      features: ['google-auth-required'],
+    });
     assertOk(updateOutcome, updated);
 
     // Then try to login

@@ -5,14 +5,18 @@ import { changePasswordHandler, changePasswordValidators } from './changepasswor
 import { googleHandler, googleValidators } from './google';
 import { loginHandler, loginValidators } from './login';
 import { meHandler } from './me';
+import { newPatientHandler, newPatientValidators } from './newpatient';
+import { newProjectHandler, newProjectValidators } from './newproject';
+import { newUserHandler, newUserValidators } from './newuser';
 import { profileHandler, profileValidators } from './profile';
-import { registerHandler, registerValidators } from './register';
 import { resetPasswordHandler, resetPasswordValidators } from './resetpassword';
 import { setPasswordHandler, setPasswordValidators } from './setpassword';
 
 export const authRouter = Router();
 authRouter.get('/me', authenticateToken, asyncWrap(meHandler));
-authRouter.post('/register', registerValidators, asyncWrap(registerHandler));
+authRouter.post('/newuser', newUserValidators, asyncWrap(newUserHandler));
+authRouter.post('/newproject', newProjectValidators, asyncWrap(newProjectHandler));
+authRouter.post('/newpatient', newPatientValidators, asyncWrap(newPatientHandler));
 authRouter.post('/login', loginValidators, asyncWrap(loginHandler));
 authRouter.post('/profile', profileValidators, asyncWrap(profileHandler));
 authRouter.post('/changepassword', changePasswordValidators, asyncWrap(changePasswordHandler));

@@ -74,6 +74,10 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, err.outcome as OperationOutcome);
     return;
   }
+  if (err.resourceType === 'OperationOutcome') {
+    sendOutcome(res, err as OperationOutcome);
+    return;
+  }
   if (err.type === 'request.aborted') {
     return;
   }
@@ -85,6 +89,7 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, badRequest('File too large'));
     return;
   }
+  console.log(JSON.stringify(err, null, 2));
   logger.error('Unhandled error', err);
   res.status(500).json({ msg: 'Internal Server Error' });
 }

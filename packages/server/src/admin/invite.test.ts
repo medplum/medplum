@@ -1,5 +1,4 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { resolveId } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -7,11 +6,12 @@ import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp } from '../app';
+import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
+import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 
 jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
@@ -43,26 +43,19 @@ describe('Admin Invite', () => {
 
   test('New user to project', async () => {
     // First, Alice creates a project
-    const res = await request(app)
-      .post('/auth/register')
-      .type('json')
-      .send({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.project).toBeDefined();
+    const { project, accessToken } = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
 
     // Second, Alice invites Bob to the project
     const bobEmail = `bob${randomUUID()}@example.com`;
     const res2 = await request(app)
-      .post('/admin/projects/' + resolveId(res.body.project) + '/invite')
-      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
       .send({
         firstName: 'Bob',
         lastName: 'Jones',
@@ -82,40 +75,29 @@ describe('Admin Invite', () => {
 
   test('Existing user to project', async () => {
     // First, Alice creates a project
-    const res = await request(app)
-      .post('/auth/register')
-      .type('json')
-      .send({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.project).toBeDefined();
+    const aliceRegistration = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
 
     // Second, Bob creates a project
     const bobEmail = `bob${randomUUID()}@example.com`;
-    const res2 = await request(app).post('/auth/register').type('json').send({
+    await registerNew({
       firstName: 'Bob',
       lastName: 'Jones',
       projectName: 'Bob Project',
       email: bobEmail,
       password: 'password!@#',
-      recaptchaToken: 'xyz',
     });
-
-    expect(res2.status).toBe(200);
-    expect(res2.body.project).toBeDefined();
 
     // Third, Alice invites Bob to the project
     // Because Bob already has an account, no emails should be sent
     const res3 = await request(app)
-      .post('/admin/projects/' + resolveId(res.body.project) + '/invite')
-      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .post('/admin/projects/' + aliceRegistration.project.id + '/invite')
+      .set('Authorization', 'Bearer ' + aliceRegistration.accessToken)
       .send({
         firstName: 'Bob',
         lastName: 'Jones',
@@ -135,26 +117,19 @@ describe('Admin Invite', () => {
 
   test('Existing practitioner to project', async () => {
     // First, Alice creates a project
-    const res = await request(app)
-      .post('/auth/register')
-      .type('json')
-      .send({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.project).toBeDefined();
+    const { project, accessToken } = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
 
     // Second, Alice creates a Practitioner resource
     const bobEmail = `bob${randomUUID()}@example.com`;
     const res2 = await request(app)
       .post('/fhir/R4/Practitioner')
-      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .set('Authorization', 'Bearer ' + accessToken)
       .type('json')
       .send({
         resourceType: 'Practitioner',
@@ -168,8 +143,8 @@ describe('Admin Invite', () => {
     // Because there is already a practitioner with the same email,
     // we should reuse the existing Practitioner resource
     const res3 = await request(app)
-      .post('/admin/projects/' + resolveId(res.body.project) + '/invite')
-      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
       .send({
         firstName: 'Bob',
         lastName: 'Jones',
@@ -183,43 +158,29 @@ describe('Admin Invite', () => {
 
   test('Access denied', async () => {
     // First, Alice creates a project
-    const res = await request(app)
-      .post('/auth/register')
-      .type('json')
-      .send({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.project).toBeDefined();
+    const aliceRegistration = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
 
     // Second, Bob creates a project
-    const res2 = await request(app)
-      .post('/auth/register')
-      .type('json')
-      .send({
-        firstName: 'Bob',
-        lastName: 'Jones',
-        projectName: 'Bob Project',
-        email: `bob${randomUUID()}@example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
-
-    expect(res2.status).toBe(200);
-    expect(res2.body.project).toBeDefined();
+    const bobRegistration = await registerNew({
+      firstName: 'Bob',
+      lastName: 'Jones',
+      projectName: 'Bob Project',
+      email: `bob${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
 
     // Third, Bob tries to invite Carol to Alice's project
     // In this example, Bob is not an admin of Alice's project
     // So access is denied
     const res3 = await request(app)
-      .post('/admin/projects/' + resolveId(res.body.project) + '/invite')
-      .set('Authorization', 'Bearer ' + res2.body.accessToken)
+      .post('/admin/projects/' + aliceRegistration.project.id + '/invite')
+      .set('Authorization', 'Bearer ' + bobRegistration.accessToken)
       .send({
         firstName: 'Carol',
         lastName: 'Brown',
@@ -233,27 +194,20 @@ describe('Admin Invite', () => {
 
   test('Input validation', async () => {
     // First, Alice creates a project
-    const res = await request(app)
-      .post('/auth/register')
-      .type('json')
-      .send({
-        firstName: 'Alice',
-        lastName: 'Smith',
-        projectName: 'Alice Project',
-        email: `alice${randomUUID()}@example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.project).toBeDefined();
+    const { project, accessToken } = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
 
     // Second, Alice invites Bob to the project
     // But she forgets his email address
     // So the request should fail
     const res2 = await request(app)
-      .post('/admin/projects/' + resolveId(res.body.project) + '/invite')
-      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
       .send({
         firstName: 'Bob',
         lastName: 'Jones',
