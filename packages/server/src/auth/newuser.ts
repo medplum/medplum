@@ -42,7 +42,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
 
   const existingUser = await getUserByEmail(req.body.email, req.body.projectId);
   if (existingUser) {
-    sendOutcome(res, badRequest('Email already registered'));
+    sendOutcome(res, badRequest('Email already registered', 'email'));
     return;
   }
 
