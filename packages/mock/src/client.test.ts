@@ -1,9 +1,21 @@
-import { allOk, badRequest, LoginState, notFound } from '@medplum/core';
+import { allOk, badRequest, LoginState, notFound, RegisterRequest } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
+import { webcrypto } from 'crypto';
+import { TextEncoder } from 'util';
 import { MockClient } from './client';
 import { HomerSimpson } from './mocks';
 
 describe('MockClient', () => {
+  beforeAll(() => {
+    Object.defineProperty(global, 'TextEncoder', {
+      value: TextEncoder,
+    });
+
+    Object.defineProperty(global, 'crypto', {
+      value: webcrypto,
+    });
+  });
+
   test('Simple route', async () => {
     const client = new MockClient();
     const result = await client.get('fhir/R4/Patient/123');
@@ -53,16 +65,35 @@ describe('MockClient', () => {
     expect(client.post('auth/resetpassword', '{"email":"other@example.com"}')).rejects.toBeDefined();
   });
 
-  test('Register', () => {
+  test('Register success', async () => {
+    const client = new MockClient();
+
+    const registerRequest: RegisterRequest = {
+      email: `george@example.com`,
+      password: 'password',
+      firstName: 'Sally',
+      lastName: 'Foo',
+      projectName: 'Sally World',
+      recaptchaToken: 'xyz',
+    };
+
+    const response1 = await client.startNewUser(registerRequest);
+    expect(response1).toBeDefined();
+
+    const response2 = await client.startNewProject(registerRequest, response1);
+    expect(response2).toBeDefined();
+
+    const response3 = await client.processCode(response2.code as string);
+    expect(response3).toBeDefined();
+  });
+
+  test('Register error', async () => {
     const client = new MockClient();
     expect(
-      client.post('auth/register', JSON.stringify({ email: 'george@example.com', password: 'password' }))
-    ).resolves.toMatchObject(allOk);
-    expect(
-      client.post('auth/register', JSON.stringify({ email: 'other@example.com', password: 'password' }))
+      client.post('auth/newuser', JSON.stringify({ email: 'other@example.com', password: 'password' }))
     ).rejects.toBeDefined();
     expect(
-      client.post('auth/register', JSON.stringify({ email: 'george@example.com', password: 'wrong' }))
+      client.post('auth/newuser', JSON.stringify({ email: 'george@example.com', password: 'wrong' }))
     ).rejects.toBeDefined();
   });
 
@@ -138,7 +169,7 @@ describe('MockClient', () => {
     console.log = jest.fn();
     const client = new MockClient({ debug: true });
     await client.get('not-found');
-    expect(console.log).toHaveBeenCalledTimes(3);
+    expect(console.log).toHaveBeenCalled();
   });
 
   test('Search', async () => {
@@ -168,7 +199,7 @@ describe('MockClient', () => {
     const client2 = new MockClient({ debug: true });
     const result2 = await client2.createPdf({ content: ['Hello World'] });
     expect(result2).toBeDefined();
-    expect(console.log).toHaveBeenCalledTimes(4);
+    expect(console.log).toHaveBeenCalled();
   });
 
   test('Delete resource', async () => {
