@@ -1,7 +1,6 @@
 import { assertOk, createReference } from '@medplum/core';
-import { ClientApplication, Project, User } from '@medplum/fhirtypes';
-import { registerNew } from './auth/register';
-import { getConfig } from './config';
+import { Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import bcrypt from 'bcryptjs';
 import { systemRepo } from './fhir';
 import { logger } from './logger';
 import { createSearchParameters } from './seeds/searchparameters';
@@ -14,19 +13,58 @@ export async function seedDatabase(): Promise<void> {
     return;
   }
 
-  const registerResponse = await registerNew({
-    admin: true,
-    firstName: 'Medplum',
-    lastName: 'Admin',
-    projectName: 'Medplum',
-    email: 'admin@example.com',
-    password: 'medplum_admin',
+  const firstName = 'Medplum';
+  const lastName = 'Admin';
+  const projectName = 'Medplum';
+  const email = 'admin@example.com';
+  const password = 'medplum_admin';
+
+  const passwordHash = await bcrypt.hash(password, 10);
+  const [userOutcome, user] = await systemRepo.createResource<User>({
+    resourceType: 'User',
+    email,
+    passwordHash,
   });
+  assertOk(userOutcome, user);
 
-  const client = registerResponse.client as ClientApplication;
-  await systemRepo.updateResource({ ...client, redirectUri: getConfig().appBaseUrl });
+  const [projectOutcome, project] = await systemRepo.createResource<Project>({
+    resourceType: 'Project',
+    name: projectName,
+    owner: createReference(user),
+  });
+  assertOk(projectOutcome, project);
 
-  await createPublicProject(registerResponse.user);
+  const [practitionerOutcome, practitioner] = await systemRepo.createResource<Practitioner>({
+    resourceType: 'Practitioner',
+    meta: {
+      project: project.id,
+    },
+    name: [
+      {
+        given: [firstName],
+        family: lastName,
+      },
+    ],
+    telecom: [
+      {
+        system: 'email',
+        use: 'work',
+        value: email,
+      },
+    ],
+  });
+  assertOk(practitionerOutcome, practitioner);
+
+  const [membershipOutcome, membership] = await systemRepo.createResource<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    project: createReference(project),
+    user: createReference(user),
+    profile: createReference(practitioner),
+    admin: true,
+  });
+  assertOk(membershipOutcome, membership);
+
+  await createPublicProject(user);
   await createValueSetElements();
   await createSearchParameters();
   await createStructureDefinitions();

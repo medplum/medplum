@@ -104,6 +104,7 @@ export class MockClient extends MedplumClient {
         }
 
         return Promise.resolve({
+          ok: true,
           blob: () => Promise.resolve(response),
           json: () => Promise.resolve(response),
         });
@@ -156,6 +157,8 @@ function mockHandler(method: string, path: string, options: any): any {
     return mockAdminHandler(method, path);
   } else if (path.startsWith('auth/')) {
     return mockAuthHandler(method, path, options);
+  } else if (path.startsWith('oauth2/')) {
+    return mockOAuthHandler(method, path, options);
   } else if (path.startsWith('fhir/R4')) {
     return mockFhirHandler(method, path, options);
   } else {
@@ -193,8 +196,12 @@ function mockAuthHandler(method: string, path: string, options: any): any {
     return mockSetPasswordHandler(method, path, options);
   }
 
-  if (path.startsWith('auth/register')) {
-    return mockRegisterHandler(method, path, options);
+  if (path.startsWith('auth/newuser')) {
+    return mockNewUserHandler(method, path, options);
+  }
+
+  if (path.startsWith('auth/newproject')) {
+    return mockNewProjectHandler(method, path, options);
   }
 
   if (path.startsWith('auth/resetpassword')) {
@@ -272,7 +279,7 @@ function mockSetPasswordHandler(_method: string, _path: string, options: any): a
   }
 }
 
-function mockRegisterHandler(_method: string, _path: string, options: any): any {
+function mockNewUserHandler(_method: string, _path: string, options: any): any {
   const { body } = options;
   const { email, password } = JSON.parse(body);
   if (email === 'george@example.com' && password === 'password') {
@@ -289,6 +296,12 @@ function mockRegisterHandler(_method: string, _path: string, options: any): any 
       ],
     };
   }
+}
+
+function mockNewProjectHandler(_method: string, _path: string, _options: any): any {
+  return {
+    code: 'xyz',
+  };
 }
 
 function mockResetPasswordHandler(_method: string, _path: string, options: any): any {
@@ -309,6 +322,16 @@ function mockResetPasswordHandler(_method: string, _path: string, options: any):
       ],
     };
   }
+}
+
+function mockOAuthHandler(_method: string, path: string, _options: any): any {
+  if (path.startsWith('oauth2/token')) {
+    return {
+      access_token: 'header.' + window.btoa(JSON.stringify({ client_id: 'my-client-id' })) + '.signature',
+    };
+  }
+
+  return null;
 }
 
 const mockRepo = new MemoryRepository();

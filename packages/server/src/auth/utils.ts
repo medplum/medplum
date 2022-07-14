@@ -7,7 +7,6 @@ import {
   Project,
   ProjectMembership,
   Reference,
-  Resource,
   User,
 } from '@medplum/fhirtypes';
 import { Response } from 'express';
@@ -18,42 +17,30 @@ import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { logger } from '../logger';
 import { getUserMemberships } from '../oauth';
 
-export interface NewAccountRequest {
-  firstName: string;
-  lastName: string;
-  email: string;
-}
-
-export async function createPractitioner(request: NewAccountRequest, project: Project): Promise<Practitioner> {
-  return createProfile(request, project, 'Practitioner') as Promise<Practitioner>;
-}
-
-export async function createPatient(request: NewAccountRequest, project: Project): Promise<Patient> {
-  return createProfile(request, project, 'Patient') as Promise<Patient>;
-}
-
-async function createProfile(
-  request: NewAccountRequest,
+export async function createProfile(
   project: Project,
-  resourceType: 'Patient' | 'Practitioner'
-): Promise<Resource> {
-  logger.info(`Create ${resourceType}: ${request.firstName} ${request.lastName}`);
-  const [outcome, result] = await systemRepo.createResource<Resource>({
+  resourceType: 'Patient' | 'Practitioner',
+  firstName: string,
+  lastName: string,
+  email: string
+): Promise<Patient | Practitioner> {
+  logger.info(`Create ${resourceType}: ${firstName} ${lastName}`);
+  const [outcome, result] = await systemRepo.createResource<Patient | Practitioner>({
     resourceType,
     meta: {
       project: project.id,
     },
     name: [
       {
-        given: [request.firstName],
-        family: request.lastName,
+        given: [firstName],
+        family: lastName,
       },
     ],
     telecom: [
       {
         system: 'email',
         use: 'work',
-        value: request.email,
+        value: email,
       },
     ],
   });

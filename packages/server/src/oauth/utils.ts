@@ -5,9 +5,7 @@ import {
   createReference,
   Filter,
   getDateProperty,
-  isNotFound,
   isOk,
-  notFound,
   Operator,
   ProfileResource,
   resolveId,
@@ -25,7 +23,7 @@ import {
 import bcrypt from 'bcryptjs';
 import { timingSafeEqual } from 'crypto';
 import { JWTPayload } from 'jose';
-import { RepositoryResult, systemRepo } from '../fhir';
+import { systemRepo } from '../fhir';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
 
 export interface LoginRequest {
@@ -97,11 +95,7 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     }
   }
 
-  const [outcome, user] = await getUserByEmail(request.email);
-  if (!isOk(outcome) && !isNotFound(outcome)) {
-    return [outcome, undefined];
-  }
-
+  const user = await getUserByEmail(request.email, request.projectId);
   if (!user) {
     return [badRequest('Email or password is invalid'), undefined];
   }
@@ -296,6 +290,10 @@ export async function getAuthTokens(
     return [badRequest('Login missing user'), undefined];
   }
 
+  if (!login.membership) {
+    return [badRequest('Login missing profile'), undefined];
+  }
+
   if (!login.granted) {
     await systemRepo.updateResource<Login>({
       ...login,
@@ -349,10 +347,30 @@ export async function revokeLogin(login: Login): Promise<void> {
 
 /**
  * Searches for user by email.
- * @param email
- * @return
+ * TODO: When we implement FHIR _filter, this method can be simplified with an "or" operation.
+ * @param email The email string.
+ * @param projectId Optional project ID.
+ * @return The user if found; otherwise, undefined.
  */
-async function getUserByEmail(email: string): RepositoryResult<User | undefined> {
+export async function getUserByEmail(email: string, projectId: string | undefined): Promise<User | undefined> {
+  if (projectId) {
+    // If a project is specified, then try to find a user account only in that project.
+    const userWithProject = await getUserByEmailInProject(email, projectId);
+    if (userWithProject) {
+      return userWithProject;
+    }
+  }
+  return getUserByEmailWithoutProject(email);
+}
+
+/**
+ * Searches for a user by email and project.
+ * This will only return users that are explicitly associated with the project.
+ * @param email The email string.
+ * @param projectId The project ID.
+ * @returns The user if found; otherwise, undefined.
+ */
+async function getUserByEmailInProject(email: string, projectId: string): Promise<User | undefined> {
   const [outcome, bundle] = await systemRepo.search({
     resourceType: 'User',
     filters: [
@@ -361,15 +379,41 @@ async function getUserByEmail(email: string): RepositoryResult<User | undefined>
         operator: Operator.EQUALS,
         value: email,
       },
+      {
+        code: 'project',
+        operator: Operator.EQUALS,
+        value: 'Project/' + projectId,
+      },
     ],
   });
   assertOk(outcome, bundle);
+  return bundle.entry && bundle.entry.length > 0 ? (bundle.entry[0].resource as User) : undefined;
+}
 
-  if (!bundle.entry || bundle.entry.length === 0) {
-    return [notFound, undefined];
-  }
-
-  return [allOk, bundle.entry[0].resource as User];
+/**
+ * Searches for a user by email without a project.
+ * This returns users that are not explicitly associated with a project.
+ * @param email The email string.
+ * @returns The user if found; otherwise, undefined.
+ */
+async function getUserByEmailWithoutProject(email: string): Promise<User | undefined> {
+  const [outcome, bundle] = await systemRepo.search({
+    resourceType: 'User',
+    filters: [
+      {
+        code: 'email',
+        operator: Operator.EQUALS,
+        value: email,
+      },
+      {
+        code: 'project',
+        operator: Operator.MISSING,
+        value: 'true',
+      },
+    ],
+  });
+  assertOk(outcome, bundle);
+  return bundle.entry && bundle.entry.length > 0 ? (bundle.entry[0].resource as User) : undefined;
 }
 
 /**

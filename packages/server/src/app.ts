@@ -74,6 +74,10 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, err.outcome as OperationOutcome);
     return;
   }
+  if (err.resourceType === 'OperationOutcome') {
+    sendOutcome(res, err as OperationOutcome);
+    return;
+  }
   if (err.type === 'request.aborted') {
     return;
   }

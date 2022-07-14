@@ -8,9 +8,10 @@ import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
+import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+import { registerNew } from './register';
 
 jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
@@ -41,24 +42,17 @@ describe('Change Password', () => {
   });
 
   test('Success', async () => {
-    const res = await request(app)
-      .post('/auth/register')
-      .type('json')
-      .send({
-        firstName: 'John',
-        lastName: 'Adams',
-        projectName: 'Adams Project',
-        email: `john${randomUUID()}@example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.project).toBeDefined();
+    const { accessToken } = await registerNew({
+      firstName: 'John',
+      lastName: 'Adams',
+      projectName: 'Adams Project',
+      email: `john${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
 
     const res2 = await request(app)
       .post('/auth/changepassword')
-      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .set('Authorization', 'Bearer ' + accessToken)
       .send({
         oldPassword: 'password!@#',
         newPassword: 'password!@#123',
@@ -68,24 +62,17 @@ describe('Change Password', () => {
   });
 
   test('Missing old password', async () => {
-    const res = await request(app)
-      .post('/auth/register')
-      .type('json')
-      .send({
-        firstName: 'Thomas',
-        lastName: 'Jefferson',
-        projectName: 'Jefferson Project',
-        email: `thomas${randomUUID()}@example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.project).toBeDefined();
+    const { accessToken } = await registerNew({
+      firstName: 'Thomas',
+      lastName: 'Jefferson',
+      projectName: 'Jefferson Project',
+      email: `thomas${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
 
     const res2 = await request(app)
       .post('/auth/changepassword')
-      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .set('Authorization', 'Bearer ' + accessToken)
       .send({
         oldPassword: '',
         newPassword: 'password!@#123',
@@ -95,24 +82,17 @@ describe('Change Password', () => {
   });
 
   test('Incorrect old password', async () => {
-    const res = await request(app)
-      .post('/auth/register')
-      .type('json')
-      .send({
-        firstName: 'Thomas',
-        lastName: 'Jefferson',
-        projectName: 'Jefferson Project',
-        email: `thomas${randomUUID()}@example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.project).toBeDefined();
+    const { accessToken } = await registerNew({
+      firstName: 'Thomas',
+      lastName: 'Jefferson',
+      projectName: 'Jefferson Project',
+      email: `thomas${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
 
     const res2 = await request(app)
       .post('/auth/changepassword')
-      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .set('Authorization', 'Bearer ' + accessToken)
       .send({
         oldPassword: 'foobarbang',
         newPassword: 'password!@#123',
@@ -123,27 +103,20 @@ describe('Change Password', () => {
   });
 
   test('Breached password', async () => {
-    const res = await request(app)
-      .post('/auth/register')
-      .type('json')
-      .send({
-        firstName: 'Thomas',
-        lastName: 'Jefferson',
-        projectName: 'Jefferson Project',
-        email: `thomas${randomUUID()}@example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.project).toBeDefined();
+    const { accessToken } = await registerNew({
+      firstName: 'Thomas',
+      lastName: 'Jefferson',
+      projectName: 'Jefferson Project',
+      email: `thomas${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
 
     // Mock the pwnedPassword function to return "1", meaning the password is breached.
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 1);
 
     const res2 = await request(app)
       .post('/auth/changepassword')
-      .set('Authorization', 'Bearer ' + res.body.accessToken)
+      .set('Authorization', 'Bearer ' + accessToken)
       .send({
         oldPassword: 'password!@#',
         newPassword: 'breached',

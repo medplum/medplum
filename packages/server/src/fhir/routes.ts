@@ -92,7 +92,7 @@ publicRoutes.get('/.well-known/smart-configuration', (_req: Request, res: Respon
 
 // Protected routes require authentication
 const protectedRoutes = Router();
-fhirRouter.use(authenticateToken);
+protectedRoutes.use(authenticateToken);
 fhirRouter.use(protectedRoutes);
 
 // ValueSet $expand operation

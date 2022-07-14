@@ -1,9 +1,9 @@
 import { Bundle, Patient, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
-import crypto, { randomUUID } from 'crypto';
+import { randomUUID, webcrypto } from 'crypto';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
-import { MedplumClient } from './client';
+import { MedplumClient, RegisterRequest } from './client';
 import { ProfileResource, stringify } from './utils';
 
 const defaultOptions = {
@@ -67,18 +67,6 @@ function mockFetch(url: string, options: any): Promise<any> {
     result = {
       login: '123',
       code: '123',
-    };
-  } else if (method === 'POST' && url.endsWith('auth/register')) {
-    result = {
-      status: 200,
-      access_token: 'header.' + window.btoa(stringify({ client_id: defaultOptions.clientId })) + '.signature',
-      refresh_token: 'header.' + window.btoa(stringify({ client_id: defaultOptions.clientId })) + '.signature',
-      project: {
-        reference: 'Project/123',
-      },
-      profile: {
-        reference: 'Practitioner/123',
-      },
     };
   } else if (method === 'GET' && url.endsWith('auth/me')) {
     result = {
@@ -199,8 +187,8 @@ describe('Client', () => {
       value: TextEncoder,
     });
 
-    Object.defineProperty(global.self, 'crypto', {
-      value: crypto.webcrypto,
+    Object.defineProperty(global, 'crypto', {
+      value: webcrypto,
     });
   });
 
@@ -361,15 +349,21 @@ describe('Client', () => {
 
   test('Register', async () => {
     const client = new MedplumClient(defaultOptions);
-    await client.register({
+
+    const registerRequest: RegisterRequest = {
       email: `sally${randomUUID()}@example.com`,
       password: 'testtest',
       firstName: 'Sally',
       lastName: 'Foo',
       projectName: 'Sally World',
       recaptchaToken: 'xyz',
-    });
-    expect(client.getActiveLogin()).toBeDefined();
+    };
+
+    const response1 = await client.startNewUser(registerRequest);
+    expect(response1).toBeDefined();
+
+    const response2 = await client.startNewProject(registerRequest, response1);
+    expect(response2).toBeDefined();
   });
 
   test('Client credentials flow', async () => {

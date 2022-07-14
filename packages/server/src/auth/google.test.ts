@@ -1,5 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { assertOk, resolveId } from '@medplum/core';
+import { assertOk } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -12,6 +12,7 @@ import { systemRepo } from '../fhir';
 import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+import { registerNew } from './register';
 
 jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
@@ -115,26 +116,19 @@ describe('Google Auth', () => {
     const password = 'password!@#';
 
     // Register and create a project
-    const res = await request(app).post('/auth/register').type('json').send({
+    const { project } = await registerNew({
       firstName: 'Google',
       lastName: 'Google',
       projectName: 'Require Google Auth',
       email,
       password,
-      recaptchaToken: 'xyz',
     });
-    expect(res.status).toBe(200);
-    expect(res.body.project).toBeDefined();
 
     // As a super admin, update the project to require Google auth
-    const projectId = resolveId(res.body.project) as string;
-    const [updateOutcome, updated] = await systemRepo.patchResource('Project', projectId, [
-      {
-        op: 'add',
-        path: '/features',
-        value: ['google-auth-required'],
-      },
-    ]);
+    const [updateOutcome, updated] = await systemRepo.updateResource({
+      ...project,
+      features: ['google-auth-required'],
+    });
     assertOk(updateOutcome, updated);
 
     // Then try to login with Google auth
@@ -153,26 +147,19 @@ describe('Google Auth', () => {
     const googleClientId = 'google-client-id-' + randomUUID();
 
     // Register and create a project
-    const res = await request(app).post('/auth/register').type('json').send({
+    const { project } = await registerNew({
       firstName: 'Google',
       lastName: 'Google',
       projectName: 'Require Google Auth',
       email,
       password,
-      recaptchaToken: 'xyz',
     });
-    expect(res.status).toBe(200);
-    expect(res.body.project).toBeDefined();
 
     // As a super admin, set the google client ID
-    const projectId = resolveId(res.body.project) as string;
-    const [updateOutcome, updated] = await systemRepo.patchResource('Project', projectId, [
-      {
-        op: 'add',
-        path: '/googleClientId',
-        value: [googleClientId],
-      },
-    ]);
+    const [updateOutcome, updated] = await systemRepo.updateResource({
+      ...project,
+      googleClientId: [googleClientId],
+    });
     assertOk(updateOutcome, updated);
 
     // Try to login with the custom Google client

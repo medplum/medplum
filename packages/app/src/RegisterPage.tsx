@@ -1,6 +1,6 @@
 import { RegisterRequest } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Logo, Input, useMedplum } from '@medplum/react';
+import { Button, Document, Form, FormSection, Input, Logo, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { getRecaptcha, initRecaptcha } from './utils';
 
@@ -17,16 +17,17 @@ export function RegisterPage(): JSX.Element {
     <Document width={450}>
       <Form
         style={{ maxWidth: 400 }}
-        onSubmit={(formData: Record<string, string>) => {
-          getRecaptcha().then((recaptchaToken: string) => {
-            medplum
-              .register({
-                ...formData,
-                recaptchaToken,
-              } as unknown as RegisterRequest)
-              .then(() => setSuccess(true))
-              .catch(setOutcome);
-          });
+        onSubmit={async (formData: Record<string, string>) => {
+          try {
+            const recaptchaToken = await getRecaptcha();
+            const registerRequest = { ...formData, recaptchaToken } as RegisterRequest;
+            const userLogin = await medplum.startNewUser(registerRequest);
+            const projectLogin = await medplum.startNewProject(registerRequest, userLogin);
+            await medplum.processCode(projectLogin.code as string);
+            setSuccess(true);
+          } catch (err) {
+            setOutcome(err as OperationOutcome);
+          }
         }}
       >
         <div className="medplum-center">

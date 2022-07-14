@@ -17,6 +17,7 @@ import { randomUUID } from 'crypto';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
+import { initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 import { bundleContains } from '../test.setup';
 import { processBatch } from './batch';
@@ -30,6 +31,7 @@ describe('FHIR Repo', () => {
     const config = await loadTestConfig();
     await initDatabase(config.database);
     await seedDatabase();
+    await initKeys(config);
   });
 
   afterAll(async () => {

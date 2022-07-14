@@ -596,14 +596,42 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
-   * Tries to register a new user.
+   * Initiates a new user flow.
+   *
+   * This method is part of the two different user registration flows:
+   * 1) New Practitioner and new Project
+   * 2) New Patient registration
+   *
    * @category Authentication
-   * @param request The registration request.
+   * @param registerRequest Register request including email and password.
    * @returns Promise to the authentication response.
    */
-  async register(request: RegisterRequest): Promise<void> {
-    const response = await this.post('auth/register', request);
-    await this.setActiveLogin(response as LoginState);
+  async startNewUser(registerRequest: RegisterRequest): Promise<LoginAuthenticationResponse> {
+    await this.#startPkce();
+    return this.post('auth/newuser', {
+      ...registerRequest,
+      codeChallengeMethod: 'S256',
+      codeChallenge: this.#storage.getString('codeChallenge') as string,
+    }) as Promise<LoginAuthenticationResponse>;
+  }
+
+  /**
+   * Initiates a new project flow.
+   *
+   * This requires a partial login from `startNewUser` or `startNewGoogleUser`.
+   *
+   * @param registerRequest Register request including email and password.
+   * @param login The partial login to complete.  This should come from the `startNewUser` method.
+   * @returns Promise to the authentication response.
+   */
+  async startNewProject(
+    registerRequest: RegisterRequest,
+    login: LoginAuthenticationResponse
+  ): Promise<LoginAuthenticationResponse> {
+    return this.post('auth/newproject', {
+      ...registerRequest,
+      ...login,
+    }) as Promise<LoginAuthenticationResponse>;
   }
 
   /**
