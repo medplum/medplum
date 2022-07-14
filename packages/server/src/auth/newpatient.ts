@@ -1,5 +1,14 @@
-import { assertOk, badRequest, createReference } from '@medplum/core';
-import { Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { assertOk, badRequest, createReference, formatHumanName, getReferenceString } from '@medplum/core';
+import {
+  AccessPolicy,
+  HumanName,
+  Login,
+  Patient,
+  Project,
+  ProjectMembership,
+  Reference,
+  User,
+} from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
@@ -76,12 +85,15 @@ export async function createPatient(
     throw badRequest('Project does not allow open registration');
   }
 
-  const profile = await createProfile(project, 'Patient', firstName, lastName, user.email as string);
+  const profile = (await createProfile(project, 'Patient', firstName, lastName, user.email as string)) as Patient;
 
-  // TODO: Clone the project.defaultPatientAccessPolicy
-  // Replace variables with patient ID
+  const [templateOutcome, template] = await systemRepo.readReference(project.defaultPatientAccessPolicy);
+  assertOk(templateOutcome, template);
 
-  const membership = await createProjectMembership(user, project, profile, project.defaultPatientAccessPolicy, true);
+  const [policyOutcome, policy] = await systemRepo.createResource<AccessPolicy>(buildAccessPolicy(template, profile));
+  assertOk(policyOutcome, policy);
+
+  const membership = await createProjectMembership(user, project, profile, createReference(policy), true);
 
   const [updateOutcome, updated] = await systemRepo.updateResource<Login>({
     ...login,
@@ -90,4 +102,16 @@ export async function createPatient(
   assertOk(updateOutcome, updated);
 
   return membership;
+}
+
+function buildAccessPolicy(template: AccessPolicy, patient: Patient): AccessPolicy {
+  const templateJson = JSON.stringify(template);
+  const policyJson = templateJson
+    .replaceAll('%patient.id', patient.id as string)
+    .replaceAll('%patient', getReferenceString(patient));
+
+  return {
+    ...JSON.parse(policyJson),
+    name: formatHumanName(patient.name?.[0] as HumanName) + ' Access Policy',
+  };
 }
