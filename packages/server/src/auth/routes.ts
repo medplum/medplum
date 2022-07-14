@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { asyncWrap } from '../async';
 import { authenticateToken } from '../oauth';
 import { changePasswordHandler, changePasswordValidators } from './changepassword';
@@ -13,6 +14,13 @@ import { resetPasswordHandler, resetPasswordValidators } from './resetpassword';
 import { setPasswordHandler, setPasswordValidators } from './setpassword';
 
 export const authRouter = Router();
+authRouter.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+  })
+);
+
 authRouter.get('/me', authenticateToken, asyncWrap(meHandler));
 authRouter.post('/newuser', newUserValidators, asyncWrap(newUserHandler));
 authRouter.post('/newproject', newProjectValidators, asyncWrap(newProjectHandler));
