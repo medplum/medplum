@@ -1,4 +1,5 @@
 import { assertOk, createReference, resolveId } from '@medplum/core';
+import { AccessPolicy, BundleEntry, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -94,6 +95,19 @@ describe('New patient', () => {
       .send({
         resourceType: 'AccessPolicy',
         name: 'Default Patient Policy',
+        compartment: {
+          reference: '%patient',
+        },
+        resource: [
+          {
+            resourceType: 'Patient',
+            criteria: 'Patient?_id=%patient.id',
+          },
+          {
+            resourceType: 'Observation',
+            criteria: 'Observation?subject=%patient',
+          },
+        ],
       });
     expect(res6.status).toBe(201);
 
@@ -102,7 +116,7 @@ describe('New patient', () => {
       {
         op: 'add',
         path: '/defaultPatientAccessPolicy',
-        value: createReference(res3.body),
+        value: createReference(res6.body),
       },
     ]);
     assertOk(updateOutcome, updatedProject);
@@ -135,5 +149,30 @@ describe('New patient', () => {
       lastName: 'Login',
     });
     expect(res9.status).toBe(400);
+
+    // Get the Patient
+    const res10 = await request(app)
+      .get(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + res3.body.access_token);
+    expect(res10.status).toBe(200);
+
+    const patient = res10.body.entry[0].resource as Patient;
+
+    // Get the AccessPolicy
+    const res11 = await request(app)
+      .get(`/fhir/R4/AccessPolicy`)
+      .set('Authorization', 'Bearer ' + res3.body.access_token);
+    expect(res11.status).toBe(200);
+
+    const accessPolicies = (res11.body.entry as BundleEntry<AccessPolicy>[]).map((e) => e.resource) as AccessPolicy[];
+    expect(accessPolicies).toHaveLength(2);
+    expect(accessPolicies.some((p) => p.name === 'Default Patient Policy')).toBe(true);
+    expect(accessPolicies.some((p) => p.name === 'Peggy Patient Access Policy')).toBe(true);
+
+    const peggyPolicy = accessPolicies.find((p) => p.name === 'Peggy Patient Access Policy');
+    expect(peggyPolicy).toBeDefined();
+    expect(peggyPolicy?.compartment?.reference).toEqual('Patient/' + patient.id);
+    expect(peggyPolicy?.resource?.[0]?.criteria).toEqual('Patient?_id=' + patient.id);
+    expect(peggyPolicy?.resource?.[1]?.criteria).toEqual('Observation?subject=Patient/' + patient.id);
   });
 });
