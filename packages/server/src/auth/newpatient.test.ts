@@ -116,5 +116,24 @@ describe('New patient', () => {
       lastName: 'Patient',
     });
     expect(res7.status).toBe(200);
+
+    // Try to reuse the login
+    // (This should fail)
+    const res8 = await request(app).post('/auth/newpatient').type('json').send({
+      login: res4.body.login,
+      project: projectId,
+      firstName: 'Reuse',
+      lastName: 'Login',
+    });
+    expect(res8.status).toBe(400);
+
+    // Try to register as a patient without a login
+    // (This should fail)
+    const res9 = await request(app).post('/auth/newpatient').type('json').send({
+      project: projectId,
+      firstName: 'Missing',
+      lastName: 'Login',
+    });
+    expect(res9.status).toBe(400);
   });
 });

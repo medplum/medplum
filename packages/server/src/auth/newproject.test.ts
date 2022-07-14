@@ -65,6 +65,23 @@ describe('New project', () => {
       .get(`/fhir/R4/${res3.body.profile.reference}`)
       .set('Authorization', 'Bearer ' + res3.body.access_token);
     expect(res4.status).toBe(200);
+
+    // Try to reuse the login (this should fail)
+    const res5 = await request(app).post('/auth/newproject').type('json').send({
+      login: res1.body.login,
+      projectName: 'Hamilton Project',
+      firstName: 'Alexander',
+      lastName: 'Hamilton',
+    });
+    expect(res5.status).toBe(400);
+
+    // Try without a login (this should fail)
+    const res6 = await request(app).post('/auth/newproject').type('json').send({
+      projectName: 'Hamilton Project',
+      firstName: 'Alexander',
+      lastName: 'Hamilton',
+    });
+    expect(res6.status).toBe(400);
   });
 
   test('Default ClientApplication is restricted to project', async () => {
