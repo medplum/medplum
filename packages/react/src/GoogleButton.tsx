@@ -21,8 +21,7 @@ export interface GoogleButtonProps {
 
 export function GoogleButton(props: GoogleButtonProps): JSX.Element | null {
   const medplum = useMedplum();
-  const { handleGoogleCredential } = props;
-  const googleClientId = getGoogleClientId(props.googleClientId);
+  const { googleClientId, handleGoogleCredential } = props;
   const parentRef = useRef<HTMLDivElement>(null);
   const [scriptLoaded, setScriptLoaded] = useState<boolean>(typeof google !== 'undefined');
   const [initialized, setInitialized] = useState<boolean>(false);

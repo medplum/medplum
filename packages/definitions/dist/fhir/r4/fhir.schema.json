@@ -61268,8 +61268,7 @@
         }
       },
       "required": [
-        "email",
-        "passwordHash"
+        "email"
       ]
     },
     "Login": {

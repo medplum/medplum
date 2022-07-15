@@ -198,13 +198,13 @@ export interface LoginRequest {
 }
 
 export interface RegisterRequest {
+  readonly projectName?: string;
   readonly firstName: string;
   readonly lastName: string;
-  readonly projectName: string;
   readonly email: string;
-  readonly password: string;
+  readonly password?: string;
   readonly remember?: boolean;
-  readonly recaptchaToken: string;
+  readonly recaptchaToken?: string;
 }
 
 export interface GoogleCredentialResponse {
@@ -629,6 +629,25 @@ export class MedplumClient extends EventTarget {
     login: LoginAuthenticationResponse
   ): Promise<LoginAuthenticationResponse> {
     return this.post('auth/newproject', {
+      ...registerRequest,
+      ...login,
+    }) as Promise<LoginAuthenticationResponse>;
+  }
+
+  /**
+   * Initiates a new patient flow.
+   *
+   * This requires a partial login from `startNewUser` or `startNewGoogleUser`.
+   *
+   * @param registerRequest Register request including email and password.
+   * @param login The partial login to complete.  This should come from the `startNewUser` method.
+   * @returns Promise to the authentication response.
+   */
+  async startNewPatient(
+    registerRequest: RegisterRequest,
+    login: LoginAuthenticationResponse
+  ): Promise<LoginAuthenticationResponse> {
+    return this.post('auth/newpatient', {
       ...registerRequest,
       ...login,
     }) as Promise<LoginAuthenticationResponse>;

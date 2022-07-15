@@ -1,7 +1,17 @@
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Logo, MedplumLink, Input, useMedplum } from '@medplum/react';
+import {
+  Button,
+  Document,
+  Form,
+  FormSection,
+  getRecaptcha,
+  initRecaptcha,
+  Input,
+  Logo,
+  MedplumLink,
+  useMedplum,
+} from '@medplum/react';
 import React, { useEffect, useState } from 'react';
-import { getRecaptcha, initRecaptcha } from './utils';
 
 export function ResetPasswordPage(): JSX.Element {
   const medplum = useMedplum();

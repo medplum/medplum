@@ -1,6 +1,6 @@
-import { initRecaptcha } from './utils';
+import { initRecaptcha } from './recaptcha';
 
-describe('Utils', () => {
+describe('reCAPTCHA', () => {
   beforeEach(() => {
     // Reset the DOM
     document.getElementsByTagName('html')[0].innerHTML = '';

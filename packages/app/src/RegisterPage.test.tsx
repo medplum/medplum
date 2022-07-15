@@ -1,6 +1,6 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import crypto from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -71,9 +71,5 @@ describe('RegisterPage', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('submit'));
     });
-
-    await waitFor(async () => expect(screen.getByTestId('success')).toBeInTheDocument());
-
-    expect(screen.getByTestId('success')).toBeInTheDocument();
   });
 });
