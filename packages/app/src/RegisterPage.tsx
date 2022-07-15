@@ -6,7 +6,7 @@ export function RegisterPage(): JSX.Element {
   const navigate = useNavigate();
 
   return (
-    <RegisterForm type="practitioner" onSuccess={() => navigate('/')} googleClientId={process.env.GOOGLE_CLIENT_ID}>
+    <RegisterForm type="project" onSuccess={() => navigate('/')} googleClientId={process.env.GOOGLE_CLIENT_ID}>
       <Logo size={32} />
       <h1>Create a new account</h1>
     </RegisterForm>
