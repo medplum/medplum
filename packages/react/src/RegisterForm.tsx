@@ -162,6 +162,17 @@ export function RegisterForm(props: RegisterFormProps): JSX.Element {
             outcome={outcome}
           />
         </FormSection>
+        <p style={{ fontSize: '12px', color: '#888' }}>
+          By clicking submit you agree to the Medplum <a href="https://www.medplum.com/privacy">Privacy&nbsp;Policy</a>
+          {' and '}
+          <a href="https://www.medplum.com/terms">Terms&nbsp;of&nbsp;Service</a>.
+        </p>
+        <p style={{ fontSize: '12px', color: '#888' }}>
+          This site is protected by reCAPTCHA and the Google{' '}
+          <a href="https://policies.google.com/privacy">Privacy&nbsp;Policy</a>
+          {' and '}
+          <a href="https://policies.google.com/terms">Terms&nbsp;of&nbsp;Service</a> apply.
+        </p>
         <div className="medplum-signin-buttons">
           <div>
             <input type="checkbox" id="remember" name="remember" value="true" />
