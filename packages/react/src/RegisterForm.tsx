@@ -13,14 +13,22 @@ import { getRecaptcha, initRecaptcha } from './utils/recaptcha';
 import './SignInForm.css';
 import './util.css';
 
-export interface RegisterFormProps {
-  readonly type: 'patient' | 'practitioner';
-  readonly remember?: boolean;
-  readonly projectId?: string;
+export interface BaseRegisterFormProps {
   readonly googleClientId?: string;
-  readonly onSuccess: () => void;
   readonly children?: React.ReactNode;
+  readonly onSuccess: () => void;
 }
+
+export interface PatientRegisterFormProps extends BaseRegisterFormProps {
+  readonly type: 'patient';
+  readonly projectId: string;
+}
+
+export interface ProjectRegisterFormProps extends BaseRegisterFormProps {
+  readonly type: 'project';
+}
+
+export type RegisterFormProps = PatientRegisterFormProps | ProjectRegisterFormProps;
 
 export function RegisterForm(props: RegisterFormProps): JSX.Element {
   const medplum = useMedplum();
@@ -122,7 +130,7 @@ export function RegisterForm(props: RegisterFormProps): JSX.Element {
             outcome={outcome}
           />
         </FormSection>
-        {props.type === 'practitioner' && (
+        {props.type === 'project' && (
           <FormSection title="Project Name" htmlFor="projectName" outcome={outcome}>
             <Input
               name="projectName"

@@ -1,6 +1,6 @@
 import { GoogleCredentialResponse, MedplumClient } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { webcrypto } from 'crypto';
+import { randomUUID, webcrypto } from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';
@@ -13,7 +13,7 @@ function mockFetch(url: string, options: any): Promise<any> {
 
   if (options.method === 'POST' && url.endsWith('/auth/newuser')) {
     const { email, password } = JSON.parse(options.body);
-    if (email === 'new-practitioner@example.com' && password === 'new-password') {
+    if (email === 'new-user@example.com' && password === 'new-password') {
       status = 200;
       result = {
         login: '1',
@@ -33,6 +33,12 @@ function mockFetch(url: string, options: any): Promise<any> {
       };
     }
   } else if (options.method === 'POST' && url.endsWith('/auth/newproject')) {
+    status = 200;
+    result = {
+      login: '1',
+      code: '1',
+    };
+  } else if (options.method === 'POST' && url.endsWith('/auth/newpatient')) {
     status = 200;
     result = {
       login: '1',
@@ -141,23 +147,11 @@ describe('RegisterForm', () => {
     });
   });
 
-  test('Renders new practitioner form', async () => {
-    await setup({ type: 'practitioner', onSuccess: jest.fn() });
-    const input = screen.getByTestId('submit') as HTMLButtonElement;
-    expect(input.innerHTML).toBe('Create account');
-  });
-
-  test('Renders new patient form', async () => {
-    await setup({ type: 'patient', onSuccess: jest.fn() });
-    const input = screen.getByTestId('submit') as HTMLButtonElement;
-    expect(input.innerHTML).toBe('Create account');
-  });
-
-  test('Submit success', async () => {
+  test('Register new project success', async () => {
     const onSuccess = jest.fn();
 
     await setup({
-      type: 'practitioner',
+      type: 'project',
       onSuccess,
     });
 
@@ -175,7 +169,49 @@ describe('RegisterForm', () => {
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('email'), {
-        target: { value: 'new-practitioner@example.com' },
+        target: { value: 'new-user@example.com' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('password'), {
+        target: { value: 'new-password' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('submit'));
+    });
+
+    await waitFor(() => expect(medplum.getProfile()).toBeDefined());
+
+    expect(onSuccess).toHaveBeenCalled();
+  });
+
+  test('Register new patient success', async () => {
+    const projectId = randomUUID();
+    const onSuccess = jest.fn();
+
+    await setup({
+      type: 'patient',
+      projectId,
+      onSuccess,
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('firstName'), { target: { value: 'First' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('lastName'), { target: { value: 'Last' } });
+    });
+
+    expect(screen.queryByTestId('projectName')).toBeNull();
+    expect(screen.queryByText('Project Name')).toBeNull();
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('email'), {
+        target: { value: 'new-user@example.com' },
       });
     });
 
@@ -233,7 +269,7 @@ describe('RegisterForm', () => {
 
     await act(async () => {
       await setup({
-        type: 'practitioner',
+        type: 'project',
         onSuccess,
         googleClientId: clientId,
       });
