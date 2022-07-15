@@ -1,7 +1,3 @@
-.medplum-signin {
-  max-width: 400px;
-}
-
 .medplum-signin-buttons {
   display: flex;
   justify-content: space-between;
@@ -29,14 +25,33 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-top: 0.1px solid var(--medplum-gray-200);
 }
 
-.medplum-signin-google-icon {
-  margin-right: 8px;
+.medplum-signin-separator {
+  padding: 12px 0;
+  margin: 12px 0;
+  overflow: hidden;
+  text-align: center;
+  font-size: var(--medplum-font-small);
 }
 
-.medplum-signin-google-icon svg {
+.medplum-signin-separator::before,
+.medplum-signin-separator::after {
+  background-color: var(--medplum-gray-400);
+  content: '';
   display: inline-block;
-  vertical-align: top;
+  height: 0.1px;
+  position: relative;
+  vertical-align: middle;
+  width: 50%;
+}
+
+.medplum-signin-separator::before {
+  right: 0.5em;
+  margin-left: -50%;
+}
+
+.medplum-signin-separator::after {
+  left: 0.5em;
+  margin-right: -50%;
 }

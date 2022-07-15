@@ -9,7 +9,7 @@ import { initApp } from '../app';
 import { getConfig, loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { systemRepo } from '../fhir';
-import { initKeys } from '../oauth';
+import { getUserByEmail, initKeys } from '../oauth';
 import { seedDatabase } from '../seed';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { registerNew } from './register';
@@ -109,6 +109,20 @@ describe('Google Auth', () => {
     });
     expect(res.status).toBe(200);
     expect(res.body.code).toBeDefined();
+  });
+
+  test('Create new user account', async () => {
+    const email = 'new-google-' + randomUUID() + '@example.com';
+    const res = await request(app).post('/auth/google').type('json').send({
+      googleClientId: getConfig().googleClientId,
+      googleCredential: email,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.login).toBeDefined();
+    expect(res.body.code).toBeUndefined();
+
+    const user = await getUserByEmail(email, undefined);
+    expect(user).toBeDefined();
   });
 
   test('Require Google auth', async () => {

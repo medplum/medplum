@@ -6,7 +6,7 @@ import { Button } from './Button';
 import { Document } from './Document';
 import { Form } from './Form';
 import { FormSection } from './FormSection';
-import { GoogleButton } from './GoogleButton';
+import { getGoogleClientId, GoogleButton } from './GoogleButton';
 import { Input } from './Input';
 import { Logo } from './Logo';
 import { MedplumLink } from './MedplumLink';
@@ -100,6 +100,7 @@ interface AuthenticationFormProps {
 
 function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
   const medplum = useMedplum();
+  const googleClientId = getGoogleClientId(props.googleClientId);
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const issues = getIssuesForExpression(outcome, undefined);
 
@@ -129,6 +130,28 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
             </div>
           ))}
         </div>
+      )}
+      {googleClientId && (
+        <>
+          <div className="medplum-signin-google-container">
+            <GoogleButton
+              googleClientId={googleClientId}
+              handleGoogleCredential={(response: GoogleCredentialResponse) => {
+                medplum
+                  .startGoogleLogin({
+                    clientId: props.clientId,
+                    scope: props.scope,
+                    nonce: props.nonce,
+                    googleClientId: response.clientId,
+                    googleCredential: response.credential,
+                  })
+                  .then(props.handleAuthResponse)
+                  .catch(setOutcome);
+              }}
+            />
+          </div>
+          <div className="medplum-signin-separator">or</div>
+        </>
       )}
       <FormSection title="Email" htmlFor="email" outcome={outcome}>
         <Input name="email" type="email" testid="email" required={true} autoFocus={true} outcome={outcome} />
@@ -160,23 +183,6 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
             Sign in
           </Button>
         </div>
-      </div>
-      <div className="medplum-signin-google-container">
-        <GoogleButton
-          googleClientId={props.googleClientId}
-          handleGoogleCredential={(response: GoogleCredentialResponse) => {
-            medplum
-              .startGoogleLogin({
-                clientId: props.clientId,
-                scope: props.scope,
-                nonce: props.nonce,
-                googleClientId: response.clientId,
-                googleCredential: response.credential,
-              })
-              .then(props.handleAuthResponse)
-              .catch(setOutcome);
-          }}
-        />
       </div>
     </Form>
   );

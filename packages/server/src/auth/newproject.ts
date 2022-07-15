@@ -15,7 +15,6 @@ export interface NewProjectRequest {
 
 export const newProjectValidators = [
   body('login').notEmpty().withMessage('Missing login'),
-  body('projectName').notEmpty().withMessage('Project name is required'),
   body('firstName').notEmpty().withMessage('First name is required'),
   body('lastName').notEmpty().withMessage('Last name is required'),
 ];
@@ -42,7 +41,13 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
     return;
   }
 
-  const { projectName, firstName, lastName } = req.body;
+  const { firstName, lastName } = req.body;
+
+  let projectName = req.body.projectName;
+  if (!projectName) {
+    projectName = `${firstName} ${lastName}'s Project`;
+  }
+
   const membership = await createProject(login, projectName, firstName, lastName);
 
   // Update the login

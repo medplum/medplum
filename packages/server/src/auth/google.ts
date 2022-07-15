@@ -1,5 +1,5 @@
-import { assertOk, badRequest, Operator } from '@medplum/core';
-import { Project } from '@medplum/fhirtypes';
+import { assertOk, badRequest, createReference, Operator } from '@medplum/core';
+import { Project, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -7,7 +7,7 @@ import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
 import { URL } from 'url';
 import { getConfig } from '../config';
 import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
-import { GoogleCredentialClaims, tryLogin } from '../oauth';
+import { getUserByEmail, GoogleCredentialClaims, tryLogin } from '../oauth';
 import { sendLoginResult } from './utils';
 
 /*
@@ -75,6 +75,17 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
   }
 
   const claims = result.payload as GoogleCredentialClaims;
+
+  const existingUser = await getUserByEmail(claims.email, project?.id);
+  if (!existingUser) {
+    const [createUserOutcome, user] = await systemRepo.createResource<User>({
+      resourceType: 'User',
+      email: claims.email,
+      project: project ? createReference(project) : undefined,
+    });
+    assertOk(createUserOutcome, user);
+  }
+
   const [loginOutcome, login] = await tryLogin({
     authMethod: 'google',
     email: claims.email,

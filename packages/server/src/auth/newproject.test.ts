@@ -84,6 +84,26 @@ describe('New project', () => {
     expect(res6.status).toBe(400);
   });
 
+  test('Default project name', async () => {
+    const res1 = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+      });
+    expect(res1.status).toBe(200);
+
+    const res2 = await request(app).post('/auth/newproject').type('json').send({
+      login: res1.body.login,
+      firstName: 'Alexander',
+      lastName: 'Hamilton',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.login).toBeDefined();
+  });
+
   test('Default ClientApplication is restricted to project', async () => {
     // User1 registers
     // User1 creates a patient
