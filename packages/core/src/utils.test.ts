@@ -8,6 +8,7 @@ import {
   createReference,
   deepEquals,
   findObservationInterval,
+  findObservationReferenceRange,
   getCodeBySystem,
   getDateProperty,
   getDisplayString,
@@ -631,5 +632,9 @@ describe('Core Utils', () => {
     expect(findObservationInterval(def, homer, 7)?.condition).toBe('N');
     expect(findObservationInterval(def, marge, 7)?.condition).toBe('N');
     expect(findObservationInterval(def, bart, 3)?.condition).toBe('N');
+
+    expect(findObservationReferenceRange(def, homer, ['N'])?.range?.low?.value).toBe(7);
+    expect(findObservationReferenceRange(def, marge, ['N'])?.range?.low?.value).toBe(7);
+    expect(findObservationReferenceRange(def, bart, ['N'])?.range?.low?.value).toBe(3);
   });
 });
