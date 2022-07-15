@@ -22,7 +22,7 @@ Medplum is a **developer platform** that enables **flexible and rapid developmen
 2. **Medplum API** - The Medplum CDR also exposes a **[FHIR-based API](/api)** for sending, receiving, and manipulating healthcare data. This includes support for binary files like images, videos, and pdfs.
 3. **Medplum SDK** - This is a set of client libraries that simplify the process of interacting with the **Medplum API**. Currently, we only offer a **Typescript** library, but are planning to support more languages in the future. If there's a language you'd like supported, feel free to open a [Github Issue](https://github.com/medplum/medplum/issues).
 4. **Medplum App** - This is a web application where can you can view your data, perform basic editing tasks. You can also use the Medplum App to manage basic workflows.
-5. **UI Component Library** - Medplum ships with a system of [React components](/tutorials/react-hello-world/hello-world-part-1) designed to help you quickly develop custom healthcare applications
+5. **UI Component Library** - Medplum ships with a system of [React components](/tutorials/react-components/hello-world-part-1) designed to help you quickly develop custom healthcare applications
 
 ## Getting Started
 
@@ -58,5 +58,5 @@ The following diagram shows how all of these pieces fit together.
 
 ## Community
 
-- **Contributing** - Medplum is open source because we believe that streamling healthcare is based on _transparency_ and _collaboration_. If you are interested contributing to Medplum, check out our [Contributors](/contributing) page
+- **Contributing** - Medplum is open source because we believe that streamling healthcare is based on _transparency_ and _collaboration_. If you are interested contributing to Medplum, check out our [Contributors](/community/contributing) page
 - **Discord** - Join the conversation by checking us out on [Discord](https://discord.gg/UBAWwvrVeN)
