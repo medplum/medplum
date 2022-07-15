@@ -35,8 +35,8 @@
   font-size: var(--medplum-font-small);
 }
 
-.medplum-signin-separator:before,
-.medplum-signin-separator:after {
+.medplum-signin-separator::before,
+.medplum-signin-separator::after {
   background-color: var(--medplum-gray-400);
   content: '';
   display: inline-block;
@@ -46,12 +46,12 @@
   width: 50%;
 }
 
-.medplum-signin-separator:before {
+.medplum-signin-separator::before {
   right: 0.5em;
   margin-left: -50%;
 }
 
-.medplum-signin-separator:after {
+.medplum-signin-separator::after {
   left: 0.5em;
   margin-right: -50%;
 }
