@@ -537,6 +537,23 @@ export function findObservationInterval(
 }
 
 /**
+ * Tries to find an observation reference range for the given patient and condition names.
+ * @param definition The observation definition.
+ * @param patient The patient.
+ * @param names The condition names.
+ * @returns The observation interval if found; otherwise undefined.
+ */
+export function findObservationReferenceRange(
+  definition: ObservationDefinition,
+  patient: Patient,
+  names: string[]
+): ObservationDefinitionQualifiedInterval | undefined {
+  return definition.qualifiedInterval?.find(
+    (interval) => observationIntervalMatchesPatient(interval, patient) && names.includes(interval.condition as string)
+  );
+}
+
+/**
  * Returns true if the patient matches the observation interval.
  * @param interval The observation interval.
  * @param patient The patient.
