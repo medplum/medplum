@@ -15,6 +15,7 @@ import './util.css';
 
 export interface BaseRegisterFormProps {
   readonly googleClientId?: string;
+  readonly recaptchaSiteKey: string;
   readonly children?: React.ReactNode;
   readonly onSuccess: () => void;
 }
@@ -33,10 +34,11 @@ export type RegisterFormProps = PatientRegisterFormProps | ProjectRegisterFormPr
 export function RegisterForm(props: RegisterFormProps): JSX.Element {
   const medplum = useMedplum();
   const googleClientId = getGoogleClientId(props.googleClientId);
+  const recaptchaSiteKey = props.recaptchaSiteKey;
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const issues = getIssuesForExpression(outcome, undefined);
 
-  useEffect(initRecaptcha, []);
+  useEffect(() => initRecaptcha(recaptchaSiteKey), [recaptchaSiteKey]);
 
   async function handleAuthResponse(
     registerRequest: RegisterRequest,
@@ -62,7 +64,7 @@ export function RegisterForm(props: RegisterFormProps): JSX.Element {
         style={{ maxWidth: 400 }}
         onSubmit={async (formData: Record<string, string>) => {
           try {
-            const recaptchaToken = await getRecaptcha();
+            const recaptchaToken = await getRecaptcha(recaptchaSiteKey);
             const registerRequest = { ...formData, recaptchaToken } as RegisterRequest;
             const userLogin = await medplum.startNewUser(registerRequest);
             handleAuthResponse(registerRequest, userLogin);

@@ -9,9 +9,11 @@ export default {
   component: RegisterForm,
 } as Meta;
 
+const recaptchaSiteKey = 'abc';
+
 export function Basic(): JSX.Element {
   return (
-    <RegisterForm type="project" onSuccess={() => alert('Signed in!')}>
+    <RegisterForm type="project" recaptchaSiteKey={recaptchaSiteKey} onSuccess={() => alert('Registered!')}>
       <Logo size={32} />
       <h1>Register new account</h1>
     </RegisterForm>
@@ -21,7 +23,7 @@ export function Basic(): JSX.Element {
 export function WithFooter(): JSX.Element {
   return (
     <>
-      <RegisterForm type="project" onSuccess={() => alert('Signed in!')}>
+      <RegisterForm type="project" recaptchaSiteKey={recaptchaSiteKey} onSuccess={() => alert('Registered!')}>
         <Logo size={32} />
         <h1>Register new account</h1>
       </RegisterForm>
@@ -37,7 +39,12 @@ export function WithFooter(): JSX.Element {
 export function WithGoogle(): JSX.Element {
   return (
     <>
-      <RegisterForm type="project" onSuccess={() => alert('Signed in!')} googleClientId="xyz">
+      <RegisterForm
+        type="project"
+        recaptchaSiteKey={recaptchaSiteKey}
+        onSuccess={() => alert('Registered!')}
+        googleClientId="xyz"
+      >
         <Logo size={32} />
         <h1>Register new account</h1>
       </RegisterForm>

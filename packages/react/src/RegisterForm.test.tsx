@@ -7,6 +7,8 @@ import { TextEncoder } from 'util';
 import { MedplumProvider } from './MedplumProvider';
 import { RegisterForm, RegisterFormProps } from './RegisterForm';
 
+const recaptchaSiteKey = 'abc';
+
 function mockFetch(url: string, options: any): Promise<any> {
   let status = 404;
   let result: any;
@@ -152,6 +154,7 @@ describe('RegisterForm', () => {
 
     await setup({
       type: 'project',
+      recaptchaSiteKey,
       onSuccess,
     });
 
@@ -195,6 +198,7 @@ describe('RegisterForm', () => {
     await setup({
       type: 'patient',
       projectId,
+      recaptchaSiteKey,
       onSuccess,
     });
 
@@ -272,6 +276,7 @@ describe('RegisterForm', () => {
         type: 'project',
         onSuccess,
         googleClientId: clientId,
+        recaptchaSiteKey,
       });
     });
 
