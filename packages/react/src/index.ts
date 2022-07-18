@@ -33,6 +33,7 @@ export * from './HumanNameDisplay';
 export * from './HumanNameInput';
 export * from './IdentifierInput';
 export * from './Input';
+export * from './InputRow';
 export * from './Loading';
 export * from './Logo';
 export * from './MedplumLink';
