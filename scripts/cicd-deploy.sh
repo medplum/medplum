@@ -81,11 +81,6 @@ if [[ "$DEPLOY_APP" = true ]]; then
   source ./scripts/deploy-app.sh
 fi
 
-if [[ "$DEPLOY_BOT_LAYER" = true ]]; then
-  echo "Deploy bot-layer"
-  source ./scripts/deploy-bot-layer.sh
-fi
-
 if [[ "$DEPLOY_DOCS" = true ]]; then
   echo "Deploy docs"
   source ./scripts/deploy-docs.sh
