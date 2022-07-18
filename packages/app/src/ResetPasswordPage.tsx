@@ -13,13 +13,15 @@ import {
 } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 
+const recaptchaSiteKey = process.env.RECAPTCHA_SITE_KEY as string;
+
 export function ResetPasswordPage(): JSX.Element {
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    initRecaptcha();
+    initRecaptcha(recaptchaSiteKey);
   }, []);
 
   return (
@@ -27,7 +29,7 @@ export function ResetPasswordPage(): JSX.Element {
       <Form
         style={{ maxWidth: 400 }}
         onSubmit={(formData: Record<string, string>) => {
-          getRecaptcha().then((recaptchaToken: string) => {
+          getRecaptcha(recaptchaSiteKey).then((recaptchaToken: string) => {
             medplum
               .post('auth/resetpassword', { ...formData, recaptchaToken })
               .then(() => setSuccess(true))

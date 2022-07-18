@@ -3,21 +3,23 @@ import { createScriptTag } from '../utils';
 /**
  * Dynamically loads the recaptcha script.
  * We do not want to load the script on page load unless the user needs it.
+ * @param siteKey The reCAPTCHA site key, available from the reCAPTCHA admin page.
  */
-export function initRecaptcha(): void {
+export function initRecaptcha(siteKey: string): void {
   if (typeof grecaptcha === 'undefined') {
-    createScriptTag('https://www.google.com/recaptcha/api.js?render=' + process.env.RECAPTCHA_SITE_KEY);
+    createScriptTag('https://www.google.com/recaptcha/api.js?render=' + siteKey);
   }
 }
 
 /**
  * Starts a request to generate a recapcha token.
+ * @param siteKey The reCAPTCHA site key, available from the reCAPTCHA admin page.
  * @returns Promise to a recaptcha token for the current user.
  */
-export function getRecaptcha(): Promise<string> {
+export function getRecaptcha(siteKey: string): Promise<string> {
   return new Promise((resolve) => {
     grecaptcha.ready(() => {
-      grecaptcha.execute(process.env.RECAPTCHA_SITE_KEY as string, { action: 'submit' }).then(resolve);
+      grecaptcha.execute(siteKey, { action: 'submit' }).then(resolve);
     });
   });
 }

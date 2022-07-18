@@ -11,14 +11,14 @@ describe('reCAPTCHA', () => {
 
     // Init Recaptcha
     // Should create a <script> tag for the Recaptcha script.
-    initRecaptcha();
+    initRecaptcha('xyz');
     expect(document.getElementsByTagName('script').length).toBe(1);
 
     // Simulate loading the script
     Object.defineProperty(global, 'grecaptcha', { value: {} });
 
     // Initializing again should not create more <script> tags
-    initRecaptcha();
+    initRecaptcha('xyz');
     expect(document.getElementsByTagName('script').length).toBe(1);
   });
 });
