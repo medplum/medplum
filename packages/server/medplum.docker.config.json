@@ -22,14 +22,14 @@
   "botLambdaRoleArn": "",
   "botLambdaLayerName": "medplum-bot-layer",
   "database": {
-    "host": "localhost",
+    "host": "host.docker.internal",
     "port": 5432,
     "dbname": "medplum",
     "username": "medplum",
     "password": "medplum"
   },
   "redis": {
-    "host": "localhost",
+    "host": "host.docker.internal",
     "port": 6379,
     "password": "medplum"
   }
