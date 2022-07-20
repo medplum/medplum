@@ -61093,16 +61093,23 @@
           "$ref": "#/definitions/Reference"
         },
         "googleClientId": {
-          "description": "A list of approved Google Client IDs for Google Authentication.",
+          "description": "DEPRECATED",
           "items": {
             "$ref": "#/definitions/string"
           },
           "type": "array"
         },
         "recaptchaSiteKey": {
-          "description": "A list of approved reCAPTCHA site keys for new user registration.",
+          "description": "DEPRECATED",
           "items": {
             "$ref": "#/definitions/string"
+          },
+          "type": "array"
+        },
+        "site": {
+          "description": "Web application or web site that is associated with the project.",
+          "items": {
+            "$ref": "#/definitions/Project_Site"
           },
           "type": "array"
         }
@@ -61110,6 +61117,49 @@
       "required": [
         "name",
         "owner"
+      ]
+    },
+    "Project_Site": {
+      "description": "Web application or web site that is associated with the project.",
+      "properties": {
+        "resourceType": {
+          "description": "This is a Project resource",
+          "const": "Project"
+        },
+        "id": {
+          "description": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "$ref": "#/definitions/string"
+        },
+        "name": {
+          "description": "A name associated with the Project.",
+          "$ref": "#/definitions/string"
+        },
+        "domain": {
+          "description": "A name associated with the Project.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
+        },
+        "googleClientId": {
+          "description": "A name associated with the Project.",
+          "$ref": "#/definitions/string"
+        },
+        "googleClientSecret": {
+          "description": "A name associated with the Project.",
+          "$ref": "#/definitions/string"
+        },
+        "recaptchaSiteKey": {
+          "description": "A name associated with the Project.",
+          "$ref": "#/definitions/string"
+        },
+        "recaptchaSecretKey": {
+          "description": "A name associated with the Project.",
+          "$ref": "#/definitions/string"
+        }
+      },
+      "required": [
+        "name"
       ]
     },
     "ProjectMembership": {

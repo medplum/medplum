@@ -65526,8 +65526,8 @@
       "code" : "google-client-id",
       "base" : ["Project"],
       "type" : "token",
-      "expression" : "Project.googleClientId",
-      "xpath" : "f:Project/f:googleClientId",
+      "expression" : "Project.site.googleClientId",
+      "xpath" : "f:Project/f:site/f:googleClientId",
       "xpathUsage" : "normal"
     }
   },
@@ -65543,8 +65543,8 @@
       "code" : "recaptcha-site-key",
       "base" : ["Project"],
       "type" : "token",
-      "expression" : "Project.recaptchaSiteKey",
-      "xpath" : "f:Project/f:recaptchaSiteKey",
+      "expression" : "Project.site.recaptchaSiteKey",
+      "xpath" : "f:Project/f:site/f:recaptchaSiteKey",
       "xpathUsage" : "normal"
     }
   },

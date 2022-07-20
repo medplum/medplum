@@ -37,6 +37,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
   }
 
   const recaptchaSiteKey = req.body.recaptchaSiteKey;
+  let secretKey = getConfig().recaptchaSecretKey as string;
   let project: Project | undefined;
 
   if (recaptchaSiteKey !== getConfig().recaptchaSiteKey) {
@@ -48,9 +49,10 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
       sendOutcome(res, badRequest('Invalid recaptchaSiteKey'));
       return;
     }
+    secretKey = project.site?.[0]?.recaptchaSecretKey as string;
   }
 
-  if (!(await verifyRecaptcha(req.body.recaptchaToken))) {
+  if (!(await verifyRecaptcha(secretKey, req.body.recaptchaToken))) {
     sendOutcome(res, badRequest('Recaptcha failed'));
     return;
   }

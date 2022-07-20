@@ -129,6 +129,7 @@ describe('New user', () => {
     const email = `recaptcha-client${randomUUID()}@example.com`;
     const password = 'password!@#';
     const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
+    const recaptchaSecretKey = 'recaptcha-secret-key-' + randomUUID();
 
     // Register and create a project
     const { project } = await registerNew({
@@ -142,7 +143,15 @@ describe('New user', () => {
     // As a super admin, set the recaptcha site key
     const [updateOutcome, updated] = await systemRepo.updateResource({
       ...project,
-      recaptchaSiteKey: [recaptchaSiteKey],
+      // recaptchaSiteKey: [recaptchaSiteKey],
+      site: [
+        {
+          name: 'Test Site',
+          domain: ['example.com'],
+          recaptchaSiteKey,
+          recaptchaSecretKey,
+        },
+      ],
     });
     assertOk(updateOutcome, updated);
 

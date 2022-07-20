@@ -20,7 +20,7 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     return;
   }
 
-  if (!(await verifyRecaptcha(req.body.recaptchaToken))) {
+  if (!(await verifyRecaptcha(getConfig().recaptchaSecretKey as string, req.body.recaptchaToken))) {
     sendOutcome(res, badRequest('Recaptcha failed'));
     return;
   }
