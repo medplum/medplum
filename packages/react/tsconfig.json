@@ -1,9 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist/types",
+    "rootDir": "src",
     "lib": ["esnext", "dom", "dom.iterable"],
-    "emitDeclarationOnly": true
+    "emitDeclarationOnly": true,
+    "resolveJsonModule": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

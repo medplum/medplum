@@ -12,7 +12,7 @@
   },
   "scripts": {
     "clean": "rimraf dist",
-    "build": "npm run clean && tsc && npm run rollup",
+    "build": "npm run clean && npm run rollup",
     "rollup": "rollup --config rollup.config.js",
     "test": "jest"
   },
@@ -34,7 +34,7 @@
     "require": "./dist/cjs/index.js",
     "import": "./dist/esm/index.js"
   },
-  "types": "dist/types/index.d.ts",
+  "types": "dist/esm/index.d.ts",
   "sideEffects": false,
   "keywords": [
     "medplum",

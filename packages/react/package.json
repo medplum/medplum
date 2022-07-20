@@ -13,7 +13,7 @@
   "scripts": {
     "clean": "rimraf dist storybook-static",
     "dev": "start-storybook -p 6006",
-    "build": "npm run clean && tsc && npm run rollup",
+    "build": "npm run clean && npm run rollup",
     "rollup": "rollup --config rollup.config.js",
     "test": "jest",
     "storybook": "build-storybook"
@@ -69,7 +69,7 @@
       "import": "./dist/esm/styles.css"
     }
   },
-  "types": "dist/types/index.d.ts",
+  "types": "dist/esm/index.d.ts",
   "sideEffects": [
     "*.css"
   ],
