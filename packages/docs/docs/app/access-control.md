@@ -170,3 +170,37 @@ For example:
 ```
 
 Because the account-tagging is handled within the resource, project administrators and API users can set the account directly.
+
+## Example: Patient Access
+
+A common need is to grant access to resources belonging to a specific patient.  In this case it is recommended to use templated access policies, that also implement compartments as shown below.
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "Default Patient Policy",
+  "compartment": {
+    "reference": "%patient",
+  },
+  "compartment": {
+    "reference": "Organization/a23a2966-d58a-4098-b41b-e8f18bcda339",
+    "display": "Example Customer Organization"
+  },
+  "resource": [
+    {
+      "resourceType": "Patient",
+      "criteria": "Patient?_id=%patient.id",
+    },
+    {
+      "resourceType": "Observation",
+      "criteria": "Observation?subject=%patient",
+    },
+  ]
+}
+```
+
+You can configure your project to support open registration for patients, therefore it is crucial that you setup a Default Access Policy similar to the one above.
+
+### Related Resources
+
+* [Registration React Component](https://docs.medplum.com/storybook/index.html?path=/story/medplum-registerform--basic)
