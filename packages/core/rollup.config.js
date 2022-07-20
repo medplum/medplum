@@ -11,6 +11,8 @@ const globals = {
   stream: 'stream',
 };
 
+const sourcemapPathTransform = (path) => path.replaceAll('\\', '/').replaceAll('../../../src', '../../src');
+
 export default [
   {
     input: 'src/index.ts',
@@ -20,6 +22,7 @@ export default [
         format: 'umd',
         name: 'medplum.core',
         sourcemap: true,
+        sourcemapPathTransform,
         globals,
       },
       {
@@ -28,6 +31,7 @@ export default [
         name: 'medplum.core',
         plugins: [terser()],
         sourcemap: true,
+        sourcemapPathTransform,
         globals,
       },
     ],
@@ -53,6 +57,14 @@ export default [
         preserveModules: true,
         preserveModulesRoot: 'src',
         sourcemap: true,
+        sourcemapPathTransform,
+      },
+      {
+        file: 'dist/esm/index.min.js',
+        format: 'esm',
+        plugins: [terser()],
+        sourcemap: true,
+        sourcemapPathTransform,
       },
     ],
     plugins: [

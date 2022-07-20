@@ -20,6 +20,8 @@ const globals = {
   'react-router-dom': 'ReactRouterDOM',
 };
 
+const sourcemapPathTransform = (path) => path.replaceAll('\\', '/').replaceAll('../../../src', '../../src');
+
 export default [
   {
     input: 'src/index.ts',
@@ -29,6 +31,7 @@ export default [
         format: 'umd',
         name: 'medplum.ui',
         sourcemap: true,
+        sourcemapPathTransform,
         globals,
       },
       {
@@ -37,6 +40,7 @@ export default [
         name: 'medplum.ui',
         plugins: [terser()],
         sourcemap: true,
+        sourcemapPathTransform,
         globals,
       },
     ],
@@ -74,13 +78,14 @@ export default [
         preserveModules: true,
         preserveModulesRoot: 'src',
         sourcemap: true,
-        sourcemapPathTransform: (relativeSourcePath, sourcemapPath) => {
-          // will replace relative paths with absolute paths
-          // return path.resolve(path.dirname(sourcemapPath), relativeSourcePath);
-          // console.log('CODY sourcemapPathTransform', relativeSourcePath, sourcemapPath);
-          // return relativeSourcePath;
-          return relativeSourcePath.replaceAll('\\', '/').replaceAll('../../../src', '../../src');
-        },
+        sourcemapPathTransform,
+      },
+      {
+        file: 'dist/esm/index.min.js',
+        format: 'esm',
+        plugins: [terser()],
+        sourcemap: true,
+        sourcemapPathTransform,
       },
     ],
     plugins: [
