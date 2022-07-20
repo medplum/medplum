@@ -11,48 +11,61 @@ const globals = {
   stream: 'stream',
 };
 
-export default {
-  input: 'src/index.ts',
-  output: [
-    {
-      file: 'dist/esm/index.js',
-      format: 'esm',
-      sourcemap: true,
-    },
-    {
-      file: 'dist/esm/index.min.js',
-      format: 'esm',
-      plugins: [terser()],
-      sourcemap: true,
-    },
-    {
-      file: 'dist/cjs/index.js',
-      format: 'umd',
-      name: 'medplum.core',
-      sourcemap: true,
-      globals,
-    },
-    {
-      file: 'dist/cjs/index.min.js',
-      format: 'umd',
-      name: 'medplum.core',
-      plugins: [terser()],
-      sourcemap: true,
-      globals,
-    },
-  ],
-  plugins: [
-    json(),
-    resolve({ extensions }),
-    typescript({ resolveJsonModule: true }),
-    {
-      buildEnd: () => {
-        mkdirSync('./dist/cjs', { recursive: true });
-        mkdirSync('./dist/esm', { recursive: true });
-        writeFileSync('./dist/cjs/package.json', '{"type": "commonjs"}');
-        writeFileSync('./dist/esm/package.json', '{"type": "module"}');
+export default [
+  {
+    input: 'src/index.ts',
+    output: [
+      {
+        file: 'dist/cjs/index.js',
+        format: 'umd',
+        name: 'medplum.core',
+        sourcemap: true,
+        globals,
       },
-    },
-  ],
-  external: Object.keys(globals),
-};
+      {
+        file: 'dist/cjs/index.min.js',
+        format: 'umd',
+        name: 'medplum.core',
+        plugins: [terser()],
+        sourcemap: true,
+        globals,
+      },
+    ],
+    plugins: [
+      json(),
+      resolve({ extensions }),
+      typescript({ tsconfig: 'tsconfig.cjs.json', resolveJsonModule: true }),
+      {
+        buildEnd: () => {
+          mkdirSync('./dist/cjs', { recursive: true });
+          writeFileSync('./dist/cjs/package.json', '{"type": "commonjs"}');
+        },
+      },
+    ],
+    external: Object.keys(globals),
+  },
+  {
+    input: 'src/index.ts',
+    output: [
+      {
+        dir: 'dist/esm',
+        format: 'esm',
+        preserveModules: true,
+        preserveModulesRoot: 'src',
+        sourcemap: true,
+      },
+    ],
+    plugins: [
+      json(),
+      resolve({ extensions }),
+      typescript({ tsconfig: 'tsconfig.esm.json', resolveJsonModule: true }),
+      {
+        buildEnd: () => {
+          mkdirSync('./dist/esm', { recursive: true });
+          writeFileSync('./dist/esm/package.json', '{"type": "module"}');
+        },
+      },
+    ],
+    external: Object.keys(globals),
+  },
+];
