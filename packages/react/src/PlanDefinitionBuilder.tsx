@@ -38,11 +38,7 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
   return (
     <div className="medplum-questionnaire-builder">
       <Form testid="questionnaire-form" onSubmit={() => props.onSubmit(value)}>
-        <FormSection
-          title="Plan Title"
-          description="The display name of the 'Plan', something that can be ordered."
-          htmlFor="title"
-        >
+        <FormSection title="Plan Title" htmlFor="title">
           <Input defaultValue={value.title} onChange={(newValue) => changeProperty('title', newValue)} />
         </FormSection>
         <ActionArrayBuilder actions={value.action || []} onChange={(x) => changeProperty('action', x)} />
@@ -121,11 +117,7 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
 
   return (
     <div className="section">
-      <FormSection
-        title="Action Title"
-        description="The name of the action, an operational task to be completed."
-        htmlFor={`actionTitle-${action.id}`}
-      >
+      <FormSection title="Title" htmlFor={`actionTitle-${action.id}`}>
         <Input
           name={`actionTitle-${action.id}`}
           defaultValue={action.title}
@@ -133,7 +125,7 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
         />
       </FormSection>
       <FormSection
-        title="Action Type"
+        title="Type of Action"
         description="The type of the action to be performed."
         htmlFor={`actionType-${action.id}`}
       >
@@ -153,17 +145,17 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
       {(() => {
         switch (actionType) {
           case 'appointment':
-            return <div>Appointment details</div>;
+            return <AppointmentActionBuilder action={action} onChange={props.onChange} />;
           case 'documentation':
-            return <div>Documentation details</div>;
+            return <ActivityActionBuilder action={action} onChange={props.onChange} />;
           case 'lab':
-            return <LabActionBuilder action={action} onChange={props.onChange} />;
+            return <ActivityActionBuilder action={action} onChange={props.onChange} />;
           case 'questionnaire':
             return <QuestionnaireActionBuilder action={action} onChange={props.onChange} />;
           case 'shipping':
-            return <div>Shipping details</div>;
+            return <ActivityActionBuilder action={action} onChange={props.onChange} />;
           case 'task':
-            return <div>Task details</div>;
+            return <ActivityActionBuilder action={action} onChange={props.onChange} />;
           default:
             return null;
         }
@@ -188,12 +180,48 @@ interface LabActionBuilderProps {
   onChange: (action: PlanDefinitionAction) => void;
 }
 
-function LabActionBuilder(props: LabActionBuilderProps): JSX.Element {
+function AppointmentActionBuilder(props: LabActionBuilderProps): JSX.Element {
+  const { id, definitionCanonical } = props.action;
+  const questionnaireRef = definitionCanonical?.startsWith('Schedule/')
+    ? { reference: definitionCanonical }
+    : undefined;
   return (
-    <FormSection title="Lab Details" description="Choose observations definitions" htmlFor={props.action.id}>
-      <a href="#" onClick={() => props.onChange(props.action)}>
-        Add
-      </a>
+    <FormSection title="Schedule" description="Select Schedule" htmlFor={id}>
+      <ResourceInput
+        name={id as string}
+        resourceType="Schedule"
+        defaultValue={questionnaireRef}
+        onChange={(newValue) => {
+          if (newValue) {
+            props.onChange({ ...props.action, definitionCanonical: getReferenceString(newValue) });
+          } else {
+            props.onChange({ ...props.action, definitionCanonical: undefined });
+          }
+        }}
+      />
+    </FormSection>
+  );
+}
+
+function ActivityActionBuilder(props: LabActionBuilderProps): JSX.Element {
+  const { id, definitionCanonical } = props.action;
+  const questionnaireRef = definitionCanonical?.startsWith('ActivityDefinition/')
+    ? { reference: definitionCanonical }
+    : undefined;
+  return (
+    <FormSection title="ActivityDefinition" description="Search for protocol" htmlFor={id}>
+      <ResourceInput
+        name={id as string}
+        resourceType="ActivityDefinition"
+        defaultValue={questionnaireRef}
+        onChange={(newValue) => {
+          if (newValue) {
+            props.onChange({ ...props.action, definitionCanonical: getReferenceString(newValue) });
+          } else {
+            props.onChange({ ...props.action, definitionCanonical: undefined });
+          }
+        }}
+      />
     </FormSection>
   );
 }
