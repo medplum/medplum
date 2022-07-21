@@ -671,7 +671,9 @@ describe('Client', () => {
 
   test('Patch resource', async () => {
     const client = new MedplumClient(defaultOptions);
-    const result = await client.patchResource('Patient', '123', []);
+    const result = await client.patchResource('Patient', '123', [
+      { op: 'replace', path: '/name/0/family', value: 'Doe' },
+    ]);
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('PATCH');
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
