@@ -1,4 +1,5 @@
 import { assertOk, badRequest } from '@medplum/core';
+import { OperationOutcome } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -143,7 +144,6 @@ describe('New user', () => {
     // As a super admin, set the recaptcha site key
     const [updateOutcome, updated] = await systemRepo.updateResource({
       ...project,
-      // recaptchaSiteKey: [recaptchaSiteKey],
       site: [
         {
           name: 'Test Site',
@@ -171,5 +171,64 @@ describe('New user', () => {
     expect(res.status).toBe(200);
     expect(res.body.login).toBeDefined();
     expect(res.body.code).toBeUndefined();
+  });
+
+  test('Recaptcha site key not found', async () => {
+    const res = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        firstName: 'Custom',
+        lastName: 'Recaptcha',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaSiteKey: randomUUID(),
+        recaptchaToken: 'xyz',
+      });
+    expect(res.status).toBe(400);
+    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe('Invalid recaptchaSiteKey');
+  });
+
+  test('Recaptcha secret key not found', async () => {
+    const email = `recaptcha-client${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
+
+    // Register and create a project
+    const { project } = await registerNew({
+      firstName: 'Google',
+      lastName: 'Google',
+      projectName: 'Require Google Auth',
+      email,
+      password,
+    });
+
+    // As a super admin, set the recaptcha site key
+    const [updateOutcome, updated] = await systemRepo.updateResource({
+      ...project,
+      site: [
+        {
+          name: 'Test Site',
+          domain: ['example.com'],
+          recaptchaSiteKey,
+        },
+      ],
+    });
+    assertOk(updateOutcome, updated);
+
+    const res = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        projectId: project.id,
+        firstName: 'Custom',
+        lastName: 'Recaptcha',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaSiteKey,
+        recaptchaToken: 'xyz',
+      });
+    expect(res.status).toBe(400);
+    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe('Invalid recaptchaSecretKey');
   });
 });
