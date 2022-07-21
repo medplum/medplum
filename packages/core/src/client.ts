@@ -202,6 +202,7 @@ export interface NewUserRequest {
   readonly password: string;
   readonly recaptchaToken: string;
   readonly recaptchaSiteKey?: string;
+  readonly remember?: boolean;
 }
 
 export interface NewProjectRequest {

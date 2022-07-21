@@ -78,6 +78,7 @@ export function RegisterForm(props: RegisterFormProps): JSX.Element {
               lastName: formData.lastName,
               email: formData.email,
               password: formData.password,
+              remember: formData.remember === 'true',
               recaptchaSiteKey,
               recaptchaToken,
             };
