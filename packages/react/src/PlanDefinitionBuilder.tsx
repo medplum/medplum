@@ -189,10 +189,8 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
             <Select name={`actionType-${action.id}`} defaultValue={actionType} onChange={setActionType}>
               <option></option>
               <option value="appointment">Appointment</option>
-              <option value="documentation">Documentation</option>
               <option value="lab">Lab</option>
               <option value="questionnaire">Questionnaire</option>
-              <option value="shipping">Shipping</option>
               <option value="task">Task</option>
             </Select>
           </FormSection>
@@ -218,16 +216,6 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
                     onChange={props.onChange}
                   />
                 );
-              case 'documentation':
-                return (
-                  <ActionResourceTypeBuilder
-                    title="Documentation"
-                    description="The subject must provide documentation that meets the following requirements."
-                    resourceType="CommunicationRequest"
-                    action={action}
-                    onChange={props.onChange}
-                  />
-                );
               case 'lab':
                 return (
                   <ActionResourceTypeBuilder
@@ -244,16 +232,6 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
                     title="Questionnaire"
                     description="The subject must complete the selected questionnaire."
                     resourceType="Questionnaire"
-                    action={action}
-                    onChange={props.onChange}
-                  />
-                );
-              case 'shipping':
-                return (
-                  <ActionResourceTypeBuilder
-                    title="Shipping"
-                    description="A shipment must be delivered to or from the subject."
-                    resourceType="SupplyRequest"
                     action={action}
                     onChange={props.onChange}
                   />
