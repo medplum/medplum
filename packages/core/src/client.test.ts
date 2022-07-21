@@ -1,9 +1,9 @@
 import { Bundle, Patient, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
-import { randomUUID, webcrypto } from 'crypto';
+import { webcrypto } from 'crypto';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
-import { MedplumClient, RegisterRequest } from './client';
+import { MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
 import { ProfileResource, stringify } from './utils';
 
 const defaultOptions = {
@@ -347,23 +347,54 @@ describe('Client', () => {
     expect(window.location.assign).toBeCalled();
   });
 
-  test('Register', async () => {
+  test('New project success', async () => {
     const client = new MedplumClient(defaultOptions);
 
-    const registerRequest: RegisterRequest = {
-      email: `sally${randomUUID()}@example.com`,
-      password: 'testtest',
-      firstName: 'Sally',
-      lastName: 'Foo',
-      projectName: 'Sally World',
+    const newUserRequest: NewUserRequest = {
+      email: `george@example.com`,
+      password: 'password',
       recaptchaToken: 'xyz',
     };
 
-    const response1 = await client.startNewUser(registerRequest);
+    const response1 = await client.startNewUser(newUserRequest);
     expect(response1).toBeDefined();
 
-    const response2 = await client.startNewProject(registerRequest, response1);
+    const newProjectRequest: NewProjectRequest = {
+      firstName: 'Sally',
+      lastName: 'Foo',
+      projectName: 'Sally World',
+    };
+
+    const response2 = await client.startNewProject(newProjectRequest, response1);
     expect(response2).toBeDefined();
+
+    const response3 = await client.processCode(response2.code as string);
+    expect(response3).toBeDefined();
+  });
+
+  test('New patient success', async () => {
+    const client = new MedplumClient(defaultOptions);
+
+    const newUserRequest: NewUserRequest = {
+      email: `george@example.com`,
+      password: 'password',
+      recaptchaToken: 'xyz',
+    };
+
+    const response1 = await client.startNewUser(newUserRequest);
+    expect(response1).toBeDefined();
+
+    const newPatientRequest: NewPatientRequest = {
+      firstName: 'Sally',
+      lastName: 'Foo',
+      projectId: '123',
+    };
+
+    const response2 = await client.startNewPatient(newPatientRequest, response1);
+    expect(response2).toBeDefined();
+
+    const response3 = await client.processCode(response2.code as string);
+    expect(response3).toBeDefined();
   });
 
   test('Client credentials flow', async () => {

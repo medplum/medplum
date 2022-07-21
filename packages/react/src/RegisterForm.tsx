@@ -1,4 +1,10 @@
-import { GoogleCredentialResponse, LoginAuthenticationResponse, parseJWTPayload, RegisterRequest } from '@medplum/core';
+import {
+  GoogleCredentialResponse,
+  LoginAuthenticationResponse,
+  NewPatientRequest,
+  NewProjectRequest,
+  parseJWTPayload,
+} from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { Button } from './Button';
@@ -41,15 +47,15 @@ export function RegisterForm(props: RegisterFormProps): JSX.Element {
   useEffect(() => initRecaptcha(recaptchaSiteKey), [recaptchaSiteKey]);
 
   async function handleAuthResponse(
-    registerRequest: RegisterRequest,
+    registerRequest: NewPatientRequest | NewProjectRequest,
     partialLogin: LoginAuthenticationResponse
   ): Promise<void> {
     try {
       let login;
       if (props.type === 'patient') {
-        login = await medplum.startNewPatient(registerRequest, partialLogin);
+        login = await medplum.startNewPatient(registerRequest as NewPatientRequest, partialLogin);
       } else {
-        login = await medplum.startNewProject(registerRequest, partialLogin);
+        login = await medplum.startNewProject(registerRequest as NewProjectRequest, partialLogin);
       }
       await medplum.processCode(login.code as string);
       props.onSuccess();
@@ -65,7 +71,17 @@ export function RegisterForm(props: RegisterFormProps): JSX.Element {
         onSubmit={async (formData: Record<string, string>) => {
           try {
             const recaptchaToken = await getRecaptcha(recaptchaSiteKey);
-            const registerRequest = { ...formData, recaptchaToken } as RegisterRequest;
+            const registerRequest = {
+              projectId: (props as PatientRegisterFormProps).projectId,
+              projectName: formData.projectName,
+              firstName: formData.firstName,
+              lastName: formData.lastName,
+              email: formData.email,
+              password: formData.password,
+              remember: formData.remember === 'true',
+              recaptchaSiteKey,
+              recaptchaToken,
+            };
             const userLogin = await medplum.startNewUser(registerRequest);
             handleAuthResponse(registerRequest, userLogin);
           } catch (err) {
@@ -97,6 +113,7 @@ export function RegisterForm(props: RegisterFormProps): JSX.Element {
                     const userLogin = await medplum.startGoogleLogin(loginRequest);
                     const googleClaims = parseJWTPayload(loginRequest.googleCredential);
                     const registerRequest = {
+                      projectId: (props as PatientRegisterFormProps).projectId,
                       firstName: googleClaims.given_name as string,
                       lastName: googleClaims.family_name as string,
                       email: googleClaims.email as string,

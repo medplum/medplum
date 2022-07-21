@@ -81,7 +81,7 @@ describe('New patient', () => {
 
     const res5 = await request(app).post('/auth/newpatient').type('json').send({
       login: res4.body.login,
-      project: projectId,
+      projectId: projectId,
       firstName: 'Peggy',
       lastName: 'Patient',
     });
@@ -125,7 +125,7 @@ describe('New patient', () => {
     // (This should succeed)
     const res7 = await request(app).post('/auth/newpatient').type('json').send({
       login: res4.body.login,
-      project: projectId,
+      projectId,
       firstName: 'Peggy',
       lastName: 'Patient',
     });
@@ -135,7 +135,7 @@ describe('New patient', () => {
     // (This should fail)
     const res8 = await request(app).post('/auth/newpatient').type('json').send({
       login: res4.body.login,
-      project: projectId,
+      projectId,
       firstName: 'Reuse',
       lastName: 'Login',
     });
@@ -144,7 +144,7 @@ describe('New patient', () => {
     // Try to register as a patient without a login
     // (This should fail)
     const res9 = await request(app).post('/auth/newpatient').type('json').send({
-      project: projectId,
+      projectId,
       firstName: 'Missing',
       lastName: 'Login',
     });
