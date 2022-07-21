@@ -33,8 +33,8 @@ describe('PlanDefinitionBuilder', () => {
       onSubmit: jest.fn(),
     });
 
-    expect(screen.getByText('Patient Registration')).toBeDefined();
-    expect(screen.getByText('Family Health History')).toBeDefined();
+    expect(screen.getByText('Patient Registration (questionnaire)')).toBeDefined();
+    expect(screen.getByText('Family Health History (questionnaire)')).toBeDefined();
   });
 
   test('Handles submit', async () => {
@@ -54,7 +54,7 @@ describe('PlanDefinitionBuilder', () => {
     expect(onSubmit).toBeCalled();
   });
 
-  test('Change title', async () => {
+  test('Change plan title', async () => {
     const onSubmit = jest.fn();
 
     await setup({
@@ -70,6 +70,43 @@ describe('PlanDefinitionBuilder', () => {
     await act(async () => {
       fireEvent.change(screen.getByDisplayValue('Example Plan Definition'), {
         target: { value: 'Renamed Plan Definition' },
+      });
+    });
+
+    expect(screen.getByText('Save')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toBeCalled();
+  });
+
+  test('Change action title', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      value: {
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+        action: [
+          {
+            title: 'Example Action',
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    await waitFor(() => screen.getByText('Example Action'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Example Action'));
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByDisplayValue('Example Action'), {
+        target: { value: 'Renamed Action' },
       });
     });
 

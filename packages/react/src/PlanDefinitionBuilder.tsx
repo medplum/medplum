@@ -8,6 +8,7 @@ import { Input } from './Input';
 import { ResourceInput } from './ResourceInput';
 import { Select } from './Select';
 import { useResource } from './useResource';
+import { killEvent } from './utils/dom';
 
 export interface PlanDefinitionBuilderProps {
   value: PlanDefinition | Reference<PlanDefinition>;
@@ -16,12 +17,29 @@ export interface PlanDefinitionBuilderProps {
 
 export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.Element | null {
   const defaultValue = useResource(props.value);
+  const [selectedKey, setSelectedKey] = useState<string>();
+  const [hoverKey, setHoverKey] = useState<string>();
   const [value, setValue] = useState<PlanDefinition>();
+
+  function handleDocumentMouseOver(): void {
+    setHoverKey(undefined);
+  }
+
+  function handleDocumentClick(): void {
+    setSelectedKey(undefined);
+  }
+
   const valueRef = useRef<PlanDefinition>();
   valueRef.current = value;
 
   useEffect(() => {
     setValue(ensurePlanDefinitionKeys(defaultValue ?? { resourceType: 'PlanDefinition' }));
+    document.addEventListener('mouseover', handleDocumentMouseOver);
+    document.addEventListener('click', handleDocumentClick);
+    return () => {
+      document.removeEventListener('mouseover', handleDocumentMouseOver);
+      document.removeEventListener('click', handleDocumentClick);
+    };
   }, [defaultValue]);
 
   if (!value) {
@@ -41,7 +59,14 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
         <FormSection title="Plan Title" htmlFor="title">
           <Input defaultValue={value.title} onChange={(newValue) => changeProperty('title', newValue)} />
         </FormSection>
-        <ActionArrayBuilder actions={value.action || []} onChange={(x) => changeProperty('action', x)} />
+        <ActionArrayBuilder
+          actions={value.action || []}
+          selectedKey={selectedKey}
+          setSelectedKey={setSelectedKey}
+          hoverKey={hoverKey}
+          setHoverKey={setHoverKey}
+          onChange={(x) => changeProperty('action', x)}
+        />
         <Button type="submit" size="large">
           Save
         </Button>
@@ -52,6 +77,10 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
 
 interface ActionArrayBuilderProps {
   actions: PlanDefinitionAction[];
+  selectedKey: string | undefined;
+  setSelectedKey: (key: string | undefined) => void;
+  hoverKey: string | undefined;
+  setHoverKey: (key: string | undefined) => void;
   onChange: (actions: PlanDefinitionAction[]) => void;
 }
 
@@ -67,6 +96,7 @@ function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
 
   function addAction(addedAction: PlanDefinitionAction): void {
     props.onChange([...(actionsRef.current as PlanDefinition[]), addedAction]);
+    props.setSelectedKey(addedAction.id);
   }
 
   function removeAction(removedAction: PlanDefinitionAction): void {
@@ -77,14 +107,22 @@ function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
     <div className="section">
       {props.actions.map((i) => (
         <div key={i.id}>
-          <ActionBuilder action={i} onChange={changeAction} onRemove={() => removeAction(i)} />
+          <ActionBuilder
+            action={i}
+            selectedKey={props.selectedKey}
+            setSelectedKey={props.setSelectedKey}
+            hoverKey={props.hoverKey}
+            setHoverKey={props.setHoverKey}
+            onChange={changeAction}
+            onRemove={() => removeAction(i)}
+          />
         </div>
       ))}
       <div className="bottom-actions">
         <a
           href="#"
           onClick={(e) => {
-            e.preventDefault();
+            killEvent(e);
             addAction({ id: generateId() });
           }}
         >
@@ -97,6 +135,10 @@ function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
 
 interface ActionBuilderProps {
   action: PlanDefinitionAction;
+  selectedKey: string | undefined;
+  setSelectedKey: (key: string | undefined) => void;
+  hoverKey: string | undefined;
+  setHoverKey: (key: string | undefined) => void;
   onChange: (action: PlanDefinitionAction) => void;
   onRemove: () => void;
 }
@@ -104,9 +146,21 @@ interface ActionBuilderProps {
 function ActionBuilder(props: ActionBuilderProps): JSX.Element {
   const { action } = props;
   const [actionType, setActionType] = useState<string | undefined>(getInitialActionType(action));
+  const editing = props.selectedKey === props.action.id;
+  const hovering = props.hoverKey === props.action.id;
 
   const actionRef = useRef<PlanDefinitionAction>();
   actionRef.current = props.action;
+
+  function onClick(e: React.SyntheticEvent): void {
+    killEvent(e);
+    props.setSelectedKey(props.action.id);
+  }
+
+  function onHover(e: React.SyntheticEvent): void {
+    killEvent(e);
+    props.setHoverKey(props.action.id);
+  }
 
   function changeProperty(property: string, value: any): void {
     props.onChange({
@@ -115,51 +169,115 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
     } as PlanDefinitionAction);
   }
 
+  const className = editing ? 'section editing' : hovering ? 'section hovering' : 'section';
   return (
-    <div className="section">
-      <FormSection title="Title" htmlFor={`actionTitle-${action.id}`}>
-        <Input
-          name={`actionTitle-${action.id}`}
-          defaultValue={action.title}
-          onChange={(newValue) => changeProperty('title', newValue)}
-        />
-      </FormSection>
-      <FormSection
-        title="Type of Action"
-        description="The type of the action to be performed."
-        htmlFor={`actionType-${action.id}`}
-      >
-        <Select name={`actionType-${action.id}`} defaultValue={actionType} onChange={setActionType}>
-          <option></option>
-          <option value="appointment">Appointment</option>
-          <option value="documentation">Documentation</option>
-          <option value="lab">Lab</option>
-          <option value="questionnaire">Questionnaire</option>
-          <option value="shipping">Shipping</option>
-          <option value="task">Task</option>
-        </Select>
-      </FormSection>
-      {action.action && action.action.length > 0 && (
-        <ActionArrayBuilder actions={action.action} onChange={(x) => changeProperty('action', x)} />
+    <div className={className} onClick={onClick} onMouseOver={onHover}>
+      {editing ? (
+        <>
+          <FormSection title="Title" htmlFor={`actionTitle-${action.id}`}>
+            <Input
+              name={`actionTitle-${action.id}`}
+              defaultValue={action.title}
+              onChange={(newValue) => changeProperty('title', newValue)}
+            />
+          </FormSection>
+          <FormSection
+            title="Type of Action"
+            description="The type of the action to be performed."
+            htmlFor={`actionType-${action.id}`}
+          >
+            <Select name={`actionType-${action.id}`} defaultValue={actionType} onChange={setActionType}>
+              <option></option>
+              <option value="appointment">Appointment</option>
+              <option value="documentation">Documentation</option>
+              <option value="lab">Lab</option>
+              <option value="questionnaire">Questionnaire</option>
+              <option value="shipping">Shipping</option>
+              <option value="task">Task</option>
+            </Select>
+          </FormSection>
+          {action.action && action.action.length > 0 && (
+            <ActionArrayBuilder
+              actions={action.action}
+              selectedKey={props.selectedKey}
+              setSelectedKey={props.setSelectedKey}
+              hoverKey={props.hoverKey}
+              setHoverKey={props.setHoverKey}
+              onChange={(x) => changeProperty('action', x)}
+            />
+          )}
+          {(() => {
+            switch (actionType) {
+              case 'appointment':
+                return (
+                  <ActionResourceTypeBuilder
+                    title="Appointment"
+                    description="The subject must schedule an appointment from the schedule."
+                    resourceType="Schedule"
+                    action={action}
+                    onChange={props.onChange}
+                  />
+                );
+              case 'documentation':
+                return (
+                  <ActionResourceTypeBuilder
+                    title="Documentation"
+                    description="The subject must provide documentation that meets the following requirements."
+                    resourceType="CommunicationRequest"
+                    action={action}
+                    onChange={props.onChange}
+                  />
+                );
+              case 'lab':
+                return (
+                  <ActionResourceTypeBuilder
+                    title="Lab"
+                    description="The subject must complete the following lab panel."
+                    resourceType="ActivityDefinition"
+                    action={action}
+                    onChange={props.onChange}
+                  />
+                );
+              case 'questionnaire':
+                return (
+                  <ActionResourceTypeBuilder
+                    title="Questionnaire"
+                    description="The subject must complete the selected questionnaire."
+                    resourceType="Questionnaire"
+                    action={action}
+                    onChange={props.onChange}
+                  />
+                );
+              case 'shipping':
+                return (
+                  <ActionResourceTypeBuilder
+                    title="Shipping"
+                    description="A shipment must be delivered to or from the subject."
+                    resourceType="SupplyRequest"
+                    action={action}
+                    onChange={props.onChange}
+                  />
+                );
+              case 'task':
+                return (
+                  <ActionResourceTypeBuilder
+                    title="Task"
+                    description="The subject must complete the following task."
+                    resourceType="ActivityDefinition"
+                    action={action}
+                    onChange={props.onChange}
+                  />
+                );
+              default:
+                return null;
+            }
+          })()}
+        </>
+      ) : (
+        <div>
+          {action.title || 'Untitled'} {actionType && `(${actionType})`}
+        </div>
       )}
-      {(() => {
-        switch (actionType) {
-          case 'appointment':
-            return <AppointmentActionBuilder action={action} onChange={props.onChange} />;
-          case 'documentation':
-            return <ActivityActionBuilder action={action} onChange={props.onChange} />;
-          case 'lab':
-            return <ActivityActionBuilder action={action} onChange={props.onChange} />;
-          case 'questionnaire':
-            return <QuestionnaireActionBuilder action={action} onChange={props.onChange} />;
-          case 'shipping':
-            return <ActivityActionBuilder action={action} onChange={props.onChange} />;
-          case 'task':
-            return <ActivityActionBuilder action={action} onChange={props.onChange} />;
-          default:
-            return null;
-        }
-      })()}
       <div className="bottom-actions">
         <a
           href="#"
@@ -175,68 +293,25 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
   );
 }
 
-interface ActionTypeBuilderProps {
+interface ActionResourceTypeBuilderProps {
+  title: string;
+  description: string;
+  resourceType: string;
   action: PlanDefinitionAction;
   onChange: (action: PlanDefinitionAction) => void;
 }
 
-function AppointmentActionBuilder(props: ActionTypeBuilderProps): JSX.Element {
+function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.Element {
   const { id, definitionCanonical } = props.action;
-  const questionnaireRef = definitionCanonical?.startsWith('Schedule/')
+  const reference = definitionCanonical?.startsWith(props.resourceType + '/')
     ? { reference: definitionCanonical }
     : undefined;
   return (
-    <FormSection title="Schedule" description="Select Schedule" htmlFor={id}>
+    <FormSection title={props.title} description={props.description} htmlFor={id}>
       <ResourceInput
         name={id as string}
-        resourceType="Schedule"
-        defaultValue={questionnaireRef}
-        onChange={(newValue) => {
-          if (newValue) {
-            props.onChange({ ...props.action, definitionCanonical: getReferenceString(newValue) });
-          } else {
-            props.onChange({ ...props.action, definitionCanonical: undefined });
-          }
-        }}
-      />
-    </FormSection>
-  );
-}
-
-function ActivityActionBuilder(props: ActionTypeBuilderProps): JSX.Element {
-  const { id, definitionCanonical } = props.action;
-  const questionnaireRef = definitionCanonical?.startsWith('ActivityDefinition/')
-    ? { reference: definitionCanonical }
-    : undefined;
-  return (
-    <FormSection title="ActivityDefinition" description="Search for protocol" htmlFor={id}>
-      <ResourceInput
-        name={id as string}
-        resourceType="ActivityDefinition"
-        defaultValue={questionnaireRef}
-        onChange={(newValue) => {
-          if (newValue) {
-            props.onChange({ ...props.action, definitionCanonical: getReferenceString(newValue) });
-          } else {
-            props.onChange({ ...props.action, definitionCanonical: undefined });
-          }
-        }}
-      />
-    </FormSection>
-  );
-}
-
-function QuestionnaireActionBuilder(props: ActionTypeBuilderProps): JSX.Element {
-  const { id, definitionCanonical } = props.action;
-  const questionnaireRef = definitionCanonical?.startsWith('Questionnaire/')
-    ? { reference: definitionCanonical }
-    : undefined;
-  return (
-    <FormSection title="Questionnaire" description="Choose questionnaire" htmlFor={id}>
-      <ResourceInput
-        name={id as string}
-        resourceType="Questionnaire"
-        defaultValue={questionnaireRef}
+        resourceType={props.resourceType}
+        defaultValue={reference}
         onChange={(newValue) => {
           if (newValue) {
             props.onChange({ ...props.action, definitionCanonical: getReferenceString(newValue) });
