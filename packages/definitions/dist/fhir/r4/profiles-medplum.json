@@ -109,7 +109,7 @@
           {
             "id" : "Project.googleClientId",
             "path" : "Project.googleClientId",
-            "definition" : "A list of approved Google Client IDs for Google Authentication.",
+            "definition" : "DEPRECATED",
             "min" : 0,
             "max" : "*",
             "type" : [{
@@ -119,9 +119,79 @@
           {
             "id" : "Project.recaptchaSiteKey",
             "path" : "Project.recaptchaSiteKey",
-            "definition" : "A list of approved reCAPTCHA site keys for new user registration.",
+            "definition" : "DEPRECATED",
             "min" : 0,
             "max" : "*",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "Project.site",
+            "path" : "Project.site",
+            "definition" : "Web application or web site that is associated with the project.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "BackboneElement"
+            }]
+          },
+          {
+            "id" : "Project.site.name",
+            "path" : "Project.site.name",
+            "definition" : "Friendly name that will make it easy for you to identify the site in the future.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "Project.site.domain",
+            "path" : "Project.site.domain",
+            "definition" : "The list of domain names associated with the site. User authentication will be restricted to the domains you enter here, plus any subdomains. In other words, a registration for example.com also registers subdomain.example.com. A valid domain requires a host and must not include any path, port, query or fragment.",
+            "min" : 1,
+            "max" : "*",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "Project.site.googleClientId",
+            "path" : "Project.site.googleClientId",
+            "definition" : "The publicly visible Google Client ID for the site. This is used to authenticate users with Google. This value is available in the Google Developer Console.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "Project.site.googleClientSecret",
+            "path" : "Project.site.googleClientSecret",
+            "definition" : "The private Google Client Secret for the site. This value is available in the Google Developer Console.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "Project.site.recaptchaSiteKey",
+            "path" : "Project.site.recaptchaSiteKey",
+            "definition" : "The publicly visible reCAPTCHA site key. This value is generated when you create a new reCAPTCHA site in the reCAPTCHA admin console. Use this site key in the HTML code your site serves to users.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "Project.site.recaptchaSecretKey",
+            "path" : "Project.site.recaptchaSecretKey",
+            "definition" : "The private reCAPTCHA secret key. This value is generated when you create a new reCAPTCHA site in the reCAPTCHA admin console. Use this secret key for communication between your site and reCAPTCHA.",
+            "min" : 0,
+            "max" : "1",
             "type" : [{
               "code" : "string"
             }]

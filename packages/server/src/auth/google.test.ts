@@ -172,7 +172,13 @@ describe('Google Auth', () => {
     // As a super admin, set the google client ID
     const [updateOutcome, updated] = await systemRepo.updateResource({
       ...project,
-      googleClientId: [googleClientId],
+      site: [
+        {
+          name: 'Test Site',
+          domain: ['example.com'],
+          googleClientId,
+        },
+      ],
     });
     assertOk(updateOutcome, updated);
 
