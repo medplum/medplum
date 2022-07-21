@@ -200,8 +200,10 @@ function mockAuthHandler(method: string, path: string, options: any): any {
     return mockNewUserHandler(method, path, options);
   }
 
-  if (path.startsWith('auth/newproject')) {
-    return mockNewProjectHandler(method, path, options);
+  if (path.startsWith('auth/newproject') || path.startsWith('auth/newpatient')) {
+    return {
+      code: 'xyz',
+    };
   }
 
   if (path.startsWith('auth/resetpassword')) {
@@ -296,12 +298,6 @@ function mockNewUserHandler(_method: string, _path: string, options: any): any {
       ],
     };
   }
-}
-
-function mockNewProjectHandler(_method: string, _path: string, _options: any): any {
-  return {
-    code: 'xyz',
-  };
 }
 
 function mockResetPasswordHandler(_method: string, _path: string, options: any): any {
