@@ -175,12 +175,12 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
   );
 }
 
-interface LabActionBuilderProps {
+interface ActionTypeBuilderProps {
   action: PlanDefinitionAction;
   onChange: (action: PlanDefinitionAction) => void;
 }
 
-function AppointmentActionBuilder(props: LabActionBuilderProps): JSX.Element {
+function AppointmentActionBuilder(props: ActionTypeBuilderProps): JSX.Element {
   const { id, definitionCanonical } = props.action;
   const questionnaireRef = definitionCanonical?.startsWith('Schedule/')
     ? { reference: definitionCanonical }
@@ -203,7 +203,7 @@ function AppointmentActionBuilder(props: LabActionBuilderProps): JSX.Element {
   );
 }
 
-function ActivityActionBuilder(props: LabActionBuilderProps): JSX.Element {
+function ActivityActionBuilder(props: ActionTypeBuilderProps): JSX.Element {
   const { id, definitionCanonical } = props.action;
   const questionnaireRef = definitionCanonical?.startsWith('ActivityDefinition/')
     ? { reference: definitionCanonical }
@@ -226,12 +226,7 @@ function ActivityActionBuilder(props: LabActionBuilderProps): JSX.Element {
   );
 }
 
-interface QuestionnaireActionBuilderProps {
-  action: PlanDefinitionAction;
-  onChange: (action: PlanDefinitionAction) => void;
-}
-
-function QuestionnaireActionBuilder(props: QuestionnaireActionBuilderProps): JSX.Element {
+function QuestionnaireActionBuilder(props: ActionTypeBuilderProps): JSX.Element {
   const { id, definitionCanonical } = props.action;
   const questionnaireRef = definitionCanonical?.startsWith('Questionnaire/')
     ? { reference: definitionCanonical }

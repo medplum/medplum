@@ -82,6 +82,46 @@ describe('PlanDefinitionBuilder', () => {
     expect(onSubmit).toBeCalled();
   });
 
+  test('Add appointment action', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      value: {
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+      },
+      onSubmit,
+    });
+
+    await waitFor(() => screen.getByText('Add action'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add action'));
+    });
+
+    await waitFor(() => screen.getByLabelText('Title'));
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Title'), {
+        target: { value: 'Example Lab Action' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Type of Action'), {
+        target: { value: 'appointment' },
+      });
+    });
+
+    expect(screen.getByText('Save')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toBeCalled();
+  });
+
   test('Add lab action', async () => {
     const onSubmit = jest.fn();
 
@@ -99,16 +139,16 @@ describe('PlanDefinitionBuilder', () => {
       fireEvent.click(screen.getByText('Add action'));
     });
 
-    await waitFor(() => screen.getByLabelText('Action Title'));
+    await waitFor(() => screen.getByLabelText('Title'));
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Action Title'), {
+      fireEvent.change(screen.getByLabelText('Title'), {
         target: { value: 'Example Lab Action' },
       });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Action Type'), {
+      fireEvent.change(screen.getByLabelText('Type of Action'), {
         target: { value: 'lab' },
       });
     });
@@ -139,16 +179,16 @@ describe('PlanDefinitionBuilder', () => {
       fireEvent.click(screen.getByText('Add action'));
     });
 
-    await waitFor(() => screen.getByLabelText('Action Title'));
+    await waitFor(() => screen.getByLabelText('Title'));
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Action Title'), {
+      fireEvent.change(screen.getByLabelText('Title'), {
         target: { value: 'Example Questionnaire Action' },
       });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Action Type'), {
+      fireEvent.change(screen.getByLabelText('Type of Action'), {
         target: { value: 'questionnaire' },
       });
     });
