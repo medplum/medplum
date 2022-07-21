@@ -263,7 +263,7 @@ export interface BotEvent {
  * Compatible with fast-json-patch Operation.
  */
 export interface PatchOperation {
-  readonly op: string;
+  readonly op: 'add' | 'remove' | 'replace' | 'copy' | 'move' | 'test';
   readonly path: string;
   readonly value?: any;
 }
