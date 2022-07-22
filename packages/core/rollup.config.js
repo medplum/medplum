@@ -73,8 +73,9 @@ export default [
       typescript({ tsconfig: 'tsconfig.esm.json', resolveJsonModule: true }),
       {
         buildEnd: () => {
-          mkdirSync('./dist/esm', { recursive: true });
+          mkdirSync('./dist/esm/node_modules/tslib', { recursive: true });
           writeFileSync('./dist/esm/package.json', '{"type": "module"}');
+          writeFileSync('./dist/esm/node_modules/tslib/package.json', '{"type": "module"}');
         },
       },
     ],
