@@ -238,6 +238,20 @@ describe('MockClient', () => {
     expect(console.log).toHaveBeenCalled();
   });
 
+  test('Update resource', async () => {
+    const client = new MockClient();
+
+    const resource1 = await client.createResource<Patient>({
+      resourceType: 'Patient',
+    });
+    expect(resource1).toBeDefined();
+
+    const resource2 = await client.updateResource({ ...resource1, active: true });
+    expect(resource2).toBeDefined();
+    expect(resource2.id).toEqual(resource1.id);
+    expect(resource2.meta?.versionId).not.toEqual(resource1.meta?.versionId);
+  });
+
   test('Delete resource', async () => {
     const client = new MockClient();
 

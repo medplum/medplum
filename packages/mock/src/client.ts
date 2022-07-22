@@ -425,7 +425,7 @@ class MockFetchClient {
         return this.mockRepo.search(parseSearchDefinition(url));
       }
     } else if (method === 'PUT') {
-      return this.mockRepo.createResource(JSON.parse(options.body));
+      return this.mockRepo.updateResource(JSON.parse(options.body));
     } else if (method === 'DELETE') {
       if (resourceType && id) {
         return this.mockRepo.deleteResource(resourceType, id);
