@@ -24,7 +24,7 @@
 
 .medplum-questionnaire-builder .section.editing input,
 .medplum-questionnaire-builder .section.editing select {
-  margin: 2px 4px;
+  margin: 2px 4px 2px 0;
 }
 
 .medplum-questionnaire-builder .section > .top-actions {

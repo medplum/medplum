@@ -105,16 +105,16 @@ function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
 
   return (
     <div className="section">
-      {props.actions.map((i) => (
-        <div key={i.id}>
+      {props.actions.map((action) => (
+        <div key={action.id}>
           <ActionBuilder
-            action={i}
+            action={action}
             selectedKey={props.selectedKey}
             setSelectedKey={props.setSelectedKey}
             hoverKey={props.hoverKey}
             setHoverKey={props.setHoverKey}
             onChange={changeAction}
-            onRemove={() => removeAction(i)}
+            onRemove={() => removeAction(action)}
           />
         </div>
       ))}
@@ -145,12 +145,9 @@ interface ActionBuilderProps {
 
 function ActionBuilder(props: ActionBuilderProps): JSX.Element {
   const { action } = props;
-  const [actionType, setActionType] = useState<string | undefined>(getInitialActionType(action));
+  const actionType = getInitialActionType(action);
   const editing = props.selectedKey === props.action.id;
   const hovering = props.hoverKey === props.action.id;
-
-  const actionRef = useRef<PlanDefinitionAction>();
-  actionRef.current = props.action;
 
   function onClick(e: React.SyntheticEvent): void {
     killEvent(e);
@@ -162,99 +159,22 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
     props.setHoverKey(props.action.id);
   }
 
-  function changeProperty(property: string, value: any): void {
-    props.onChange({
-      ...actionRef.current,
-      [property]: value,
-    } as PlanDefinitionAction);
-  }
-
   const className = editing ? 'section editing' : hovering ? 'section hovering' : 'section';
   return (
     <div className={className} onClick={onClick} onMouseOver={onHover}>
       {editing ? (
-        <>
-          <FormSection title="Title" htmlFor={`actionTitle-${action.id}`}>
-            <Input
-              name={`actionTitle-${action.id}`}
-              defaultValue={action.title}
-              onChange={(newValue) => changeProperty('title', newValue)}
-            />
-          </FormSection>
-          <FormSection
-            title="Type of Action"
-            description="The type of the action to be performed."
-            htmlFor={`actionType-${action.id}`}
-          >
-            <Select name={`actionType-${action.id}`} defaultValue={actionType} onChange={setActionType}>
-              <option></option>
-              <option value="appointment">Appointment</option>
-              <option value="lab">Lab</option>
-              <option value="questionnaire">Questionnaire</option>
-              <option value="task">Task</option>
-            </Select>
-          </FormSection>
-          {action.action && action.action.length > 0 && (
-            <ActionArrayBuilder
-              actions={action.action}
-              selectedKey={props.selectedKey}
-              setSelectedKey={props.setSelectedKey}
-              hoverKey={props.hoverKey}
-              setHoverKey={props.setHoverKey}
-              onChange={(x) => changeProperty('action', x)}
-            />
-          )}
-          {(() => {
-            switch (actionType) {
-              case 'appointment':
-                return (
-                  <ActionResourceTypeBuilder
-                    title="Appointment"
-                    description="The subject must schedule an appointment from the schedule."
-                    resourceType="Schedule"
-                    action={action}
-                    onChange={props.onChange}
-                  />
-                );
-              case 'lab':
-                return (
-                  <ActionResourceTypeBuilder
-                    title="Lab"
-                    description="The subject must complete the following lab panel."
-                    resourceType="ActivityDefinition"
-                    action={action}
-                    onChange={props.onChange}
-                  />
-                );
-              case 'questionnaire':
-                return (
-                  <ActionResourceTypeBuilder
-                    title="Questionnaire"
-                    description="The subject must complete the selected questionnaire."
-                    resourceType="Questionnaire"
-                    action={action}
-                    onChange={props.onChange}
-                  />
-                );
-              case 'task':
-                return (
-                  <ActionResourceTypeBuilder
-                    title="Task"
-                    description="The subject must complete the following task."
-                    resourceType="ActivityDefinition"
-                    action={action}
-                    onChange={props.onChange}
-                  />
-                );
-              default:
-                return null;
-            }
-          })()}
-        </>
+        <ActionEditor
+          action={action}
+          actionType={actionType}
+          onChange={props.onChange}
+          selectedKey={props.selectedKey}
+          setSelectedKey={props.setSelectedKey}
+          hoverKey={props.hoverKey}
+          setHoverKey={props.setHoverKey}
+          onRemove={props.onRemove}
+        />
       ) : (
-        <div>
-          {action.title || 'Untitled'} {actionType && `(${actionType})`}
-        </div>
+        <ActionDisplay action={action} actionType={actionType} />
       )}
       <div className="bottom-actions">
         <a
@@ -268,6 +188,124 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
         </a>
       </div>
     </div>
+  );
+}
+
+interface ActionDisplayProps {
+  action: PlanDefinitionAction;
+  actionType: string | undefined;
+}
+
+function ActionDisplay(props: ActionDisplayProps): JSX.Element {
+  const { action, actionType } = props;
+  return (
+    <div>
+      {action.title || 'Untitled'} {actionType && `(${actionType})`}
+    </div>
+  );
+}
+
+interface ActionEditorProps {
+  action: PlanDefinitionAction;
+  actionType: string | undefined;
+  selectedKey: string | undefined;
+  setSelectedKey: (key: string | undefined) => void;
+  hoverKey: string | undefined;
+  setHoverKey: (key: string | undefined) => void;
+  onChange: (action: PlanDefinitionAction) => void;
+  onRemove: () => void;
+}
+
+function ActionEditor(props: ActionEditorProps): JSX.Element {
+  const { action } = props;
+  const [actionType, setActionType] = useState<string | undefined>(props.actionType);
+
+  function changeProperty(property: string, value: any): void {
+    props.onChange({
+      ...action,
+      [property]: value,
+    } as PlanDefinitionAction);
+  }
+
+  return (
+    <>
+      <FormSection title="Title" htmlFor={`actionTitle-${action.id}`}>
+        <Input
+          name={`actionTitle-${action.id}`}
+          defaultValue={action.title}
+          onChange={(newValue) => changeProperty('title', newValue)}
+        />
+      </FormSection>
+      <FormSection
+        title="Type of Action"
+        description="The type of the action to be performed."
+        htmlFor={`actionType-${action.id}`}
+      >
+        <Select name={`actionType-${action.id}`} defaultValue={actionType} onChange={setActionType}>
+          <option></option>
+          <option value="appointment">Appointment</option>
+          <option value="lab">Lab</option>
+          <option value="questionnaire">Questionnaire</option>
+          <option value="task">Task</option>
+        </Select>
+      </FormSection>
+      {action.action && action.action.length > 0 && (
+        <ActionArrayBuilder
+          actions={action.action}
+          selectedKey={props.selectedKey}
+          setSelectedKey={props.setSelectedKey}
+          hoverKey={props.hoverKey}
+          setHoverKey={props.setHoverKey}
+          onChange={(x) => changeProperty('action', x)}
+        />
+      )}
+      {(() => {
+        switch (actionType) {
+          case 'appointment':
+            return (
+              <ActionResourceTypeBuilder
+                title="Appointment"
+                description="The subject must schedule an appointment from the schedule."
+                resourceType="Schedule"
+                action={action}
+                onChange={props.onChange}
+              />
+            );
+          case 'lab':
+            return (
+              <ActionResourceTypeBuilder
+                title="Lab"
+                description="The subject must complete the following lab panel."
+                resourceType="ActivityDefinition"
+                action={action}
+                onChange={props.onChange}
+              />
+            );
+          case 'questionnaire':
+            return (
+              <ActionResourceTypeBuilder
+                title="Questionnaire"
+                description="The subject must complete the selected questionnaire."
+                resourceType="Questionnaire"
+                action={action}
+                onChange={props.onChange}
+              />
+            );
+          case 'task':
+            return (
+              <ActionResourceTypeBuilder
+                title="Task"
+                description="The subject must complete the following task."
+                resourceType="ActivityDefinition"
+                action={action}
+                onChange={props.onChange}
+              />
+            );
+          default:
+            return null;
+        }
+      })()}
+    </>
   );
 }
 
