@@ -47,7 +47,7 @@ import { QuickServiceRequests } from './QuickServiceRequests';
 import { QuickStatus } from './QuickStatus';
 import { ResourceHeader } from './ResourceHeader';
 import { SpecimenHeader } from './SpecimenHeader';
-import { getPatient, getSpecimen } from './utils';
+import { getPatient, getSpecimen, normalizeErrorString } from './utils';
 
 function getTabs(resourceType: string, questionnaires?: Bundle): string[] {
   const result = ['Timeline'];
@@ -168,7 +168,7 @@ export function ResourcePage(): JSX.Element {
       .updateResource(cleanResource(newResource))
       .then(loadResource)
       .then(() => toast.success('Success'))
-      .catch(setError);
+      .catch((err) => toast.error(normalizeErrorString(err)));
   }
 
   function onStatusChange(status: string): void {
