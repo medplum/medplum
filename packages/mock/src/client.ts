@@ -62,9 +62,12 @@ export interface MockClientOptions {
 }
 
 export class MockClient extends MedplumClient {
+  readonly debug: boolean;
   activeLoginOverride?: LoginState;
 
   constructor(clientOptions?: MockClientOptions) {
+    const mockFetchClient = new MockFetchClient(clientOptions?.debug);
+
     super({
       baseUrl: 'https://example.com/',
       clientId: 'my-client-id',
@@ -72,44 +75,12 @@ export class MockClient extends MedplumClient {
         docDefinition: TDocumentDefinitions,
         tableLayouts?: { [name: string]: CustomTableLayout },
         fonts?: TFontDictionary | undefined
-      ) => {
-        if (clientOptions?.debug) {
-          console.log(`Mock Client: createPdf(`);
-          console.log(`  ${JSON.stringify(docDefinition, null, 2)},`);
-          console.log(`  ${JSON.stringify(tableLayouts, null, 2)},`);
-          console.log(`  ${JSON.stringify(fonts, null, 2)});`);
-        }
-        return Promise.resolve({});
-      },
+      ) => mockFetchClient.mockCreatePdf(docDefinition, tableLayouts, fonts),
       fetch: (url: string, options: any) => {
-        const method = options.method || 'GET';
-        const path = url.replace('https://example.com/', '');
-
-        if (clientOptions?.debug) {
-          console.log('MockClient', method, path);
-        }
-
-        const response = mockHandler(method, path, options);
-
-        if (clientOptions?.debug && !response) {
-          console.log('MockClient: not found', method, path);
-        }
-
-        if (clientOptions?.debug) {
-          console.log('MockClient', JSON.stringify(response, null, 2));
-        }
-
-        if (response?.resourceType === 'OperationOutcome' && !isOk(response)) {
-          return Promise.reject(response);
-        }
-
-        return Promise.resolve({
-          ok: true,
-          blob: () => Promise.resolve(response),
-          json: () => Promise.resolve(response),
-        });
+        return mockFetchClient.mockFetch(url, options);
       },
     });
+    this.debug = !!clientOptions?.debug;
   }
 
   clear(): void {
@@ -152,307 +123,360 @@ export class MockClient extends MedplumClient {
   }
 }
 
-function mockHandler(method: string, path: string, options: any): any {
-  if (path.startsWith('admin/')) {
-    return mockAdminHandler(method, path);
-  } else if (path.startsWith('auth/')) {
-    return mockAuthHandler(method, path, options);
-  } else if (path.startsWith('oauth2/')) {
-    return mockOAuthHandler(method, path, options);
-  } else if (path.startsWith('fhir/R4')) {
-    return mockFhirHandler(method, path, options);
-  } else {
+class MockFetchClient {
+  readonly mockRepo: MemoryRepository;
+
+  constructor(readonly debug = false) {
+    this.mockRepo = new MemoryRepository();
+    this.initMockRepo();
+  }
+
+  mockFetch(url: string, options: any): Promise<any> {
+    const method = options.method || 'GET';
+    const path = url.replace('https://example.com/', '');
+
+    if (this.debug) {
+      console.log('MockClient', method, path);
+    }
+
+    const response = this.mockHandler(method, path, options);
+
+    if (this.debug && !response) {
+      console.log('MockClient: not found', method, path);
+    }
+
+    if (this.debug) {
+      console.log('MockClient', JSON.stringify(response, null, 2));
+    }
+
+    if (response?.resourceType === 'OperationOutcome' && !isOk(response)) {
+      return Promise.reject(response);
+    }
+
+    return Promise.resolve({
+      ok: true,
+      blob: () => Promise.resolve(response),
+      json: () => Promise.resolve(response),
+    });
+  }
+
+  mockCreatePdf(
+    docDefinition: TDocumentDefinitions,
+    tableLayouts?: { [name: string]: CustomTableLayout },
+    fonts?: TFontDictionary | undefined
+  ): Promise<any> {
+    if (this.debug) {
+      console.log(`Mock Client: createPdf(`);
+      console.log(`  ${JSON.stringify(docDefinition, null, 2)},`);
+      console.log(`  ${JSON.stringify(tableLayouts, null, 2)},`);
+      console.log(`  ${JSON.stringify(fonts, null, 2)});`);
+    }
+    return Promise.resolve({});
+  }
+
+  private mockHandler(method: string, path: string, options: any): any {
+    if (path.startsWith('admin/')) {
+      return this.mockAdminHandler(method, path);
+    } else if (path.startsWith('auth/')) {
+      return this.mockAuthHandler(method, path, options);
+    } else if (path.startsWith('oauth2/')) {
+      return this.mockOAuthHandler(method, path, options);
+    } else if (path.startsWith('fhir/R4')) {
+      return this.mockFhirHandler(method, path, options);
+    } else {
+      return null;
+    }
+  }
+
+  private mockAdminHandler(_method: string, path: string): any {
+    if (path.startsWith('admin/projects/123')) {
+      return {
+        project: { id: '123', name: 'Project 123' },
+        members: [
+          { id: '123', profile: { reference: 'Practitioner/123', display: 'Alice Smith' }, role: 'owner' },
+          { id: '888', profile: { reference: 'ClientApplication/123', display: 'Test Client' }, role: 'client' },
+          { id: '999', profile: { reference: 'Bot/123', display: 'Test Bot' }, role: 'bot' },
+        ],
+      };
+    }
+
+    return {
+      ok: true,
+    };
+  }
+
+  private mockAuthHandler(method: string, path: string, options: any): any {
+    if (path.startsWith('auth/changepassword')) {
+      return this.mockChangePasswordHandler(method, path, options);
+    }
+
+    if (path.startsWith('auth/login')) {
+      return this.mockLoginHandler(method, path, options);
+    }
+
+    if (path.startsWith('auth/setpassword')) {
+      return this.mockSetPasswordHandler(method, path, options);
+    }
+
+    if (path.startsWith('auth/newuser')) {
+      return this.mockNewUserHandler(method, path, options);
+    }
+
+    if (path.startsWith('auth/newproject') || path.startsWith('auth/newpatient')) {
+      return {
+        code: 'xyz',
+      };
+    }
+
+    if (path.startsWith('auth/resetpassword')) {
+      return this.mockResetPasswordHandler(method, path, options);
+    }
+
+    if (path.startsWith('auth/me')) {
+      return {
+        profile: { reference: 'Practitioner/123' },
+      };
+    }
+
     return null;
   }
-}
 
-function mockAdminHandler(_method: string, path: string): any {
-  if (path.startsWith('admin/projects/123')) {
-    return {
-      project: { id: '123', name: 'Project 123' },
-      members: [
-        { id: '123', profile: { reference: 'Practitioner/123', display: 'Alice Smith' }, role: 'owner' },
-        { id: '888', profile: { reference: 'ClientApplication/123', display: 'Test Client' }, role: 'client' },
-        { id: '999', profile: { reference: 'Bot/123', display: 'Test Bot' }, role: 'bot' },
-      ],
-    };
-  }
-
-  return {
-    ok: true,
-  };
-}
-
-function mockAuthHandler(method: string, path: string, options: any): any {
-  if (path.startsWith('auth/changepassword')) {
-    return mockChangePasswordHandler(method, path, options);
-  }
-
-  if (path.startsWith('auth/login')) {
-    return mockLoginHandler(method, path, options);
-  }
-
-  if (path.startsWith('auth/setpassword')) {
-    return mockSetPasswordHandler(method, path, options);
-  }
-
-  if (path.startsWith('auth/newuser')) {
-    return mockNewUserHandler(method, path, options);
-  }
-
-  if (path.startsWith('auth/newproject') || path.startsWith('auth/newpatient')) {
-    return {
-      code: 'xyz',
-    };
-  }
-
-  if (path.startsWith('auth/resetpassword')) {
-    return mockResetPasswordHandler(method, path, options);
-  }
-
-  if (path.startsWith('auth/me')) {
-    return {
-      profile: { reference: 'Practitioner/123' },
-    };
-  }
-
-  return null;
-}
-
-function mockChangePasswordHandler(_method: string, _path: string, options: any): any {
-  const { body } = options;
-  const { oldPassword } = JSON.parse(body);
-  if (oldPassword === 'orange') {
-    return allOk;
-  } else {
-    return {
-      resourceType: 'OperationOutcome',
-      issue: [
-        {
-          expression: ['oldPassword'],
-          details: {
-            text: 'Incorrect password',
-          },
-        },
-      ],
-    };
-  }
-}
-
-function mockLoginHandler(_method: string, _path: string, options: any): any {
-  const { body } = options;
-  const { password } = JSON.parse(body);
-  if (password === 'password') {
-    return {
-      code: 'xyz',
-    };
-  } else {
-    return {
-      resourceType: 'OperationOutcome',
-      issue: [
-        {
-          expression: ['password'],
-          details: {
-            text: 'Invalid password',
-          },
-        },
-      ],
-    };
-  }
-}
-
-function mockSetPasswordHandler(_method: string, _path: string, options: any): any {
-  const { body } = options;
-  const { password } = JSON.parse(body);
-  if (password === 'orange') {
-    return allOk;
-  } else {
-    return {
-      resourceType: 'OperationOutcome',
-      issue: [
-        {
-          expression: ['password'],
-          details: {
-            text: 'Invalid password',
-          },
-        },
-      ],
-    };
-  }
-}
-
-function mockNewUserHandler(_method: string, _path: string, options: any): any {
-  const { body } = options;
-  const { email, password } = JSON.parse(body);
-  if (email === 'george@example.com' && password === 'password') {
-    return allOk;
-  } else {
-    return {
-      resourceType: 'OperationOutcome',
-      issue: [
-        {
-          details: {
-            text: 'Invalid',
-          },
-        },
-      ],
-    };
-  }
-}
-
-function mockResetPasswordHandler(_method: string, _path: string, options: any): any {
-  const { body } = options;
-  const { email } = JSON.parse(body);
-  if (email === 'admin@example.com') {
-    return allOk;
-  } else {
-    return {
-      resourceType: 'OperationOutcome',
-      issue: [
-        {
-          expression: ['email'],
-          details: {
-            text: 'Email not found',
-          },
-        },
-      ],
-    };
-  }
-}
-
-function mockOAuthHandler(_method: string, path: string, _options: any): any {
-  if (path.startsWith('oauth2/token')) {
-    return {
-      access_token: 'header.' + window.btoa(JSON.stringify({ client_id: 'my-client-id' })) + '.signature',
-    };
-  }
-
-  return null;
-}
-
-const mockRepo = new MemoryRepository();
-mockRepo.createResource(HomerSimpsonPreviousVersion);
-mockRepo.createResource(HomerSimpson);
-mockRepo.createResource(ExampleAccessPolicy);
-mockRepo.createResource(ExampleStatusValueSet);
-mockRepo.createResource(ExampleUserConfiguration);
-mockRepo.createResource(ExampleBot);
-mockRepo.createResource(ExampleClient);
-mockRepo.createResource(HomerDiagnosticReport);
-mockRepo.createResource(HomerEncounter);
-mockRepo.createResource(HomerCommunication);
-mockRepo.createResource(HomerMedia);
-mockRepo.createResource(HomerObservation1);
-mockRepo.createResource(HomerObservation2);
-mockRepo.createResource(HomerObservation3);
-mockRepo.createResource(HomerObservation4);
-mockRepo.createResource(HomerObservation5);
-mockRepo.createResource(HomerObservation6);
-mockRepo.createResource(HomerSimpsonSpecimen);
-mockRepo.createResource(TestOrganization);
-mockRepo.createResource(DifferentOrganization);
-mockRepo.createResource(ExampleQuestionnaire);
-mockRepo.createResource(ExampleQuestionnaireResponse);
-mockRepo.createResource(HomerServiceRequest);
-mockRepo.createResource(ExampleSubscription);
-mockRepo.createResource(BartSimpson);
-mockRepo.createResource(DrAliceSmithPreviousVersion);
-mockRepo.createResource(DrAliceSmith);
-mockRepo.createResource(DrAliceSmithSchedule);
-mockRepo.createResource(ExampleWorkflowQuestionnaire1);
-mockRepo.createResource(ExampleWorkflowQuestionnaire2);
-mockRepo.createResource(ExampleWorkflowQuestionnaire3);
-mockRepo.createResource(ExampleWorkflowPlanDefinition);
-mockRepo.createResource(ExampleWorkflowQuestionnaireResponse1);
-mockRepo.createResource(ExampleWorkflowTask1);
-mockRepo.createResource(ExampleWorkflowTask2);
-mockRepo.createResource(ExampleWorkflowTask3);
-mockRepo.createResource(ExampleWorkflowRequestGroup);
-DrAliceSmithSlots.forEach((slot) => mockRepo.createResource(slot));
-
-function mockFhirHandler(method: string, url: string, options: any): any {
-  const path = url.includes('?') ? url.substring(0, url.indexOf('?')) : url;
-  const match = /fhir\/R4\/?([^/]+)?\/?([^/]+)?\/?([^/]+)?\/?([^/]+)?/.exec(path);
-  const resourceType = match?.[1];
-  const id = match?.[2];
-  const operation = match?.[3];
-  const versionId = match?.[4];
-  if (path.startsWith('fhir/R4/ValueSet/$expand')) {
-    return exampleValueSet;
-  } else if (path === 'fhir/R4/$graphql') {
-    return mockFhirGraphqlHandler(method, path, options);
-  } else if (path === 'not-found' || id === 'not-found') {
-    return notFound;
-  } else if (method === 'POST') {
-    if (resourceType && id && operation) {
-      return {};
-    } else if (resourceType) {
-      return mockRepo.createResource(JSON.parse(options.body));
+  private mockChangePasswordHandler(_method: string, _path: string, options: any): any {
+    const { body } = options;
+    const { oldPassword } = JSON.parse(body);
+    if (oldPassword === 'orange') {
+      return allOk;
     } else {
-      return mockFhirBatchHandler(method, path, options);
-    }
-  } else if (method === 'GET') {
-    if (resourceType && id && versionId) {
-      return mockRepo.readVersion(resourceType, id, versionId);
-    } else if (resourceType && id && operation === '_history') {
-      return mockRepo.readHistory(resourceType, id);
-    } else if (resourceType && id) {
-      return mockRepo.readResource(resourceType, id);
-    } else if (resourceType) {
-      return mockRepo.search(parseSearchDefinition(url));
-    }
-  } else if (method === 'PUT') {
-    return mockRepo.createResource(JSON.parse(options.body));
-  } else if (method === 'DELETE') {
-    if (resourceType && id) {
-      return mockRepo.deleteResource(resourceType, id);
-    } else {
-      return notFound;
-    }
-  }
-}
-
-function mockFhirGraphqlHandler(_method: string, _path: string, options: any): any {
-  const { body } = options;
-  if (body.includes('ResourceList: ServiceRequestList')) {
-    return {
-      data: {
-        ResourceList: [
+      return {
+        resourceType: 'OperationOutcome',
+        issue: [
           {
-            ...HomerServiceRequest,
-            ObservationList: [
-              HomerObservation1,
-              HomerObservation2,
-              HomerObservation3,
-              HomerObservation4,
-              HomerObservation5,
-              HomerObservation6,
-            ],
+            expression: ['oldPassword'],
+            details: {
+              text: 'Incorrect password',
+            },
           },
         ],
-      },
+      };
+    }
+  }
+
+  private mockLoginHandler(_method: string, _path: string, options: any): any {
+    const { body } = options;
+    const { password } = JSON.parse(body);
+    if (password === 'password') {
+      return {
+        code: 'xyz',
+      };
+    } else {
+      return {
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            expression: ['password'],
+            details: {
+              text: 'Invalid password',
+            },
+          },
+        ],
+      };
+    }
+  }
+
+  private mockSetPasswordHandler(_method: string, _path: string, options: any): any {
+    const { body } = options;
+    const { password } = JSON.parse(body);
+    if (password === 'orange') {
+      return allOk;
+    } else {
+      return {
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            expression: ['password'],
+            details: {
+              text: 'Invalid password',
+            },
+          },
+        ],
+      };
+    }
+  }
+
+  private mockNewUserHandler(_method: string, _path: string, options: any): any {
+    const { body } = options;
+    const { email, password } = JSON.parse(body);
+    if (email === 'george@example.com' && password === 'password') {
+      return allOk;
+    } else {
+      return {
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            details: {
+              text: 'Invalid',
+            },
+          },
+        ],
+      };
+    }
+  }
+
+  private mockResetPasswordHandler(_method: string, _path: string, options: any): any {
+    const { body } = options;
+    const { email } = JSON.parse(body);
+    if (email === 'admin@example.com') {
+      return allOk;
+    } else {
+      return {
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            expression: ['email'],
+            details: {
+              text: 'Email not found',
+            },
+          },
+        ],
+      };
+    }
+  }
+
+  private mockOAuthHandler(_method: string, path: string, _options: any): any {
+    if (path.startsWith('oauth2/token')) {
+      return {
+        access_token: 'header.' + window.btoa(JSON.stringify({ client_id: 'my-client-id' })) + '.signature',
+      };
+    }
+
+    return null;
+  }
+
+  private initMockRepo(): void {
+    this.mockRepo.createResource(HomerSimpsonPreviousVersion);
+    this.mockRepo.createResource(HomerSimpson);
+    this.mockRepo.createResource(ExampleAccessPolicy);
+    this.mockRepo.createResource(ExampleStatusValueSet);
+    this.mockRepo.createResource(ExampleUserConfiguration);
+    this.mockRepo.createResource(ExampleBot);
+    this.mockRepo.createResource(ExampleClient);
+    this.mockRepo.createResource(HomerDiagnosticReport);
+    this.mockRepo.createResource(HomerEncounter);
+    this.mockRepo.createResource(HomerCommunication);
+    this.mockRepo.createResource(HomerMedia);
+    this.mockRepo.createResource(HomerObservation1);
+    this.mockRepo.createResource(HomerObservation2);
+    this.mockRepo.createResource(HomerObservation3);
+    this.mockRepo.createResource(HomerObservation4);
+    this.mockRepo.createResource(HomerObservation5);
+    this.mockRepo.createResource(HomerObservation6);
+    this.mockRepo.createResource(HomerSimpsonSpecimen);
+    this.mockRepo.createResource(TestOrganization);
+    this.mockRepo.createResource(DifferentOrganization);
+    this.mockRepo.createResource(ExampleQuestionnaire);
+    this.mockRepo.createResource(ExampleQuestionnaireResponse);
+    this.mockRepo.createResource(HomerServiceRequest);
+    this.mockRepo.createResource(ExampleSubscription);
+    this.mockRepo.createResource(BartSimpson);
+    this.mockRepo.createResource(DrAliceSmithPreviousVersion);
+    this.mockRepo.createResource(DrAliceSmith);
+    this.mockRepo.createResource(DrAliceSmithSchedule);
+    this.mockRepo.createResource(ExampleWorkflowQuestionnaire1);
+    this.mockRepo.createResource(ExampleWorkflowQuestionnaire2);
+    this.mockRepo.createResource(ExampleWorkflowQuestionnaire3);
+    this.mockRepo.createResource(ExampleWorkflowPlanDefinition);
+    this.mockRepo.createResource(ExampleWorkflowQuestionnaireResponse1);
+    this.mockRepo.createResource(ExampleWorkflowTask1);
+    this.mockRepo.createResource(ExampleWorkflowTask2);
+    this.mockRepo.createResource(ExampleWorkflowTask3);
+    this.mockRepo.createResource(ExampleWorkflowRequestGroup);
+    DrAliceSmithSlots.forEach((slot) => this.mockRepo.createResource(slot));
+  }
+
+  private mockFhirHandler(method: string, url: string, options: any): any {
+    const path = url.includes('?') ? url.substring(0, url.indexOf('?')) : url;
+    const match = /fhir\/R4\/?([^/]+)?\/?([^/]+)?\/?([^/]+)?\/?([^/]+)?/.exec(path);
+    const resourceType = match?.[1];
+    const id = match?.[2];
+    const operation = match?.[3];
+    const versionId = match?.[4];
+    if (path.startsWith('fhir/R4/ValueSet/$expand')) {
+      return exampleValueSet;
+    } else if (path === 'fhir/R4/$graphql') {
+      return this.mockFhirGraphqlHandler(method, path, options);
+    } else if (path === 'not-found' || id === 'not-found') {
+      return notFound;
+    } else if (method === 'POST') {
+      if (resourceType && id && operation) {
+        return {};
+      } else if (resourceType) {
+        return this.mockRepo.createResource(JSON.parse(options.body));
+      } else {
+        return this.mockFhirBatchHandler(method, path, options);
+      }
+    } else if (method === 'GET') {
+      if (resourceType && id && versionId) {
+        return this.mockRepo.readVersion(resourceType, id, versionId);
+      } else if (resourceType && id && operation === '_history') {
+        return this.mockRepo.readHistory(resourceType, id);
+      } else if (resourceType && id) {
+        return this.mockRepo.readResource(resourceType, id);
+      } else if (resourceType) {
+        return this.mockRepo.search(parseSearchDefinition(url));
+      }
+    } else if (method === 'PUT') {
+      return this.mockRepo.updateResource(JSON.parse(options.body));
+    } else if (method === 'DELETE') {
+      if (resourceType && id) {
+        return this.mockRepo.deleteResource(resourceType, id);
+      } else {
+        return notFound;
+      }
+    }
+  }
+
+  private mockFhirGraphqlHandler(_method: string, _path: string, options: any): any {
+    const { body } = options;
+    if (body.includes('ResourceList: ServiceRequestList')) {
+      return {
+        data: {
+          ResourceList: [
+            {
+              ...HomerServiceRequest,
+              ObservationList: [
+                HomerObservation1,
+                HomerObservation2,
+                HomerObservation3,
+                HomerObservation4,
+                HomerObservation5,
+                HomerObservation6,
+              ],
+            },
+          ],
+        },
+      };
+    }
+    return GraphQLSchemaResponse;
+  }
+
+  private mockFhirBatchHandler(_method: string, _path: string, options: any): any {
+    const { body } = options;
+    const request = JSON.parse(body) as Bundle;
+    return {
+      resourceType: 'Bundle',
+      type: 'batch-response',
+      entry: request.entry?.map((e: BundleEntry) => {
+        const url = 'fhir/R4/' + e?.request?.url;
+        const method = e?.request?.method as string;
+        const resource = this.mockHandler(method, url, null);
+        if (resource?.resourceType === 'OperationOutcome') {
+          return { resource, response: { status: getStatus(resource).toString() } };
+        } else if (resource) {
+          return { resource, response: { status: '200' } };
+        } else {
+          return { resource: notFound, response: { status: '404' } };
+        }
+      }),
     };
   }
-  return GraphQLSchemaResponse;
-}
-
-function mockFhirBatchHandler(_method: string, _path: string, options: any): any {
-  const { body } = options;
-  const request = JSON.parse(body) as Bundle;
-  return {
-    resourceType: 'Bundle',
-    type: 'batch-response',
-    entry: request.entry?.map((e: BundleEntry) => {
-      const url = 'fhir/R4/' + e?.request?.url;
-      const method = e?.request?.method as string;
-      const resource = mockHandler(method, url, null);
-      if (resource?.resourceType === 'OperationOutcome') {
-        return { resource, response: { status: getStatus(resource).toString() } };
-      } else if (resource) {
-        return { resource, response: { status: '200' } };
-      } else {
-        return { resource: notFound, response: { status: '404' } };
-      }
-    }),
-  };
 }
