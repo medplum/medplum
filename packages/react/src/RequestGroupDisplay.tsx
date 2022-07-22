@@ -1,8 +1,7 @@
-import { getReferenceString } from '@medplum/core';
+import { formatDateTime, getReferenceString } from '@medplum/core';
 import { Bundle, BundleEntry, Reference, RequestGroup, Resource, Task } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { Button } from './Button';
-import { DateTimeDisplay } from './DateTimeDisplay';
 import { useMedplum } from './MedplumProvider';
 import { ResourceName } from './ResourceName';
 import { StatusBadge } from './StatusBadge';
@@ -47,7 +46,7 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
                 Last edited by&nbsp;
                 <ResourceName value={task?.meta?.author as Reference} />
                 &nbsp;on&nbsp;
-                <DateTimeDisplay value={task?.meta?.lastUpdated} />
+                {formatDateTime(task?.meta?.lastUpdated)}
               </div>
               <div>
                 Status: <StatusBadge status={task?.status || 'unknown'} />

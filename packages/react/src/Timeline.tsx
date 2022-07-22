@@ -1,15 +1,14 @@
-import { getReferenceString } from '@medplum/core';
+import { formatDateTime, getReferenceString } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
-import { DateTimeDisplay } from './DateTimeDisplay';
 import { ErrorBoundary } from './ErrorBoundary';
 import { MedplumLink } from './MedplumLink';
 import { Popup } from './Popup';
 import { ResourceName } from './ResourceName';
-import { killEvent } from './utils/dom';
 import './Timeline.css';
+import { killEvent } from './utils/dom';
 
 export interface TimelineProps {
   children?: React.ReactNode;
@@ -41,9 +40,7 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
         <div className="medplum-timeline-item-title">
           <ResourceName value={author} link={true} />
           <div className="medplum-timeline-item-subtitle">
-            <MedplumLink to={props.resource}>
-              <DateTimeDisplay value={props.resource.meta?.lastUpdated} />
-            </MedplumLink>
+            <MedplumLink to={props.resource}>{formatDateTime(props.resource.meta?.lastUpdated)}</MedplumLink>
             <span>&middot;</span>
             <MedplumLink to={props.resource}>{props.resource.resourceType}</MedplumLink>
           </div>

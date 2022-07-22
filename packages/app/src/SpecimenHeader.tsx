@@ -1,5 +1,6 @@
+import { formatDateTime } from '@medplum/core';
 import { Reference, Specimen } from '@medplum/fhirtypes';
-import { DateTimeDisplay, Scrollable, useResource } from '@medplum/react';
+import { Scrollable, useResource } from '@medplum/react';
 import React from 'react';
 
 export interface SpecimenHeaderProps {
@@ -20,9 +21,7 @@ export function SpecimenHeader(props: SpecimenHeaderProps): JSX.Element | null {
         </dl>
         <dl>
           <dt>Collected</dt>
-          <dd>
-            <DateTimeDisplay value={specimen?.collection?.collectedDateTime} />
-          </dd>
+          <dd>{formatDateTime(specimen?.collection?.collectedDateTime)}</dd>
         </dl>
         <dl>
           <dt>Age</dt>
