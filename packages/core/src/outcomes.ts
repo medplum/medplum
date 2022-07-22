@@ -173,3 +173,25 @@ export class OperationOutcomeError extends Error {
     this.outcome = outcome;
   }
 }
+
+/**
+ * Normalizes an error object into a displayable error string.
+ * @param error The error value which could be a string, Error, OperationOutcome, or other unknown type.
+ * @returns A display string for the error.
+ */
+export function normalizeErrorString(error: unknown): string {
+  if (!error) {
+    return 'Unknown error';
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'object' && 'resourceType' in error) {
+    const outcome = error as OperationOutcome;
+    return outcome.issue?.[0]?.details?.text ?? 'Unknown error';
+  }
+  return JSON.stringify(error);
+}

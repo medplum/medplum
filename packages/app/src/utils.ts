@@ -1,4 +1,4 @@
-import { OperationOutcome, Patient, Reference, Resource, Specimen } from '@medplum/fhirtypes';
+import { Patient, Reference, Resource, Specimen } from '@medplum/fhirtypes';
 
 export function getPatient(resource: Resource): Patient | Reference<Patient> | undefined {
   if (resource.resourceType === 'Patient') {
@@ -55,21 +55,4 @@ export function sendCommand(frame: HTMLIFrameElement, command: any): Promise<any
 
     frame.contentWindow?.postMessage(command, 'https://codeeditor.medplum.com', [channel.port2]);
   });
-}
-
-export function normalizeErrorString(error: unknown): string {
-  if (!error) {
-    return 'Unknown error';
-  }
-  if (typeof error === 'string') {
-    return error;
-  }
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (typeof error === 'object' && 'resourceType' in error) {
-    const outcome = error as OperationOutcome;
-    return outcome.issue?.[0]?.details?.text ?? 'Unknown error';
-  }
-  return JSON.stringify(error);
 }

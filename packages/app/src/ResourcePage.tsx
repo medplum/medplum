@@ -1,4 +1,4 @@
-import { getReferenceString, resolveId, stringify } from '@medplum/core';
+import { getReferenceString, normalizeErrorString, resolveId, stringify } from '@medplum/core';
 import {
   Bot,
   Bundle,
@@ -47,7 +47,7 @@ import { QuickServiceRequests } from './QuickServiceRequests';
 import { QuickStatus } from './QuickStatus';
 import { ResourceHeader } from './ResourceHeader';
 import { SpecimenHeader } from './SpecimenHeader';
-import { getPatient, getSpecimen, normalizeErrorString } from './utils';
+import { getPatient, getSpecimen } from './utils';
 
 function getTabs(resourceType: string, questionnaires?: Bundle): string[] {
   const result = ['Timeline'];
