@@ -104,3 +104,15 @@ export const HelpText = (): JSX.Element => (
     />
   </Document>
 );
+
+export const LoadOnFocus = (): JSX.Element => (
+  <Document>
+    <Autocomplete
+      name="foo"
+      loadOptions={search}
+      getId={(option: string) => option}
+      getDisplay={(option: string) => <div>{option}</div>}
+      loadOnFocus={true}
+    />
+  </Document>
+);
