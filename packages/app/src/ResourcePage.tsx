@@ -1,4 +1,4 @@
-import { getReferenceString, resolveId, stringify } from '@medplum/core';
+import { getReferenceString, normalizeErrorString, resolveId, stringify } from '@medplum/core';
 import {
   Bot,
   Bundle,
@@ -168,7 +168,7 @@ export function ResourcePage(): JSX.Element {
       .updateResource(cleanResource(newResource))
       .then(loadResource)
       .then(() => toast.success('Success'))
-      .catch(setError);
+      .catch((err) => toast.error(normalizeErrorString(err)));
   }
 
   function onStatusChange(status: string): void {
