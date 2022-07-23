@@ -120,8 +120,7 @@ describe('Execute', () => {
     expect(res2.status).toBe(400);
   });
 
-  test('Execute on AWS Lambda', async () => {
-    // Step 1: Create a bot
+  test('Unsupported runtime version', async () => {
     const res1 = await request(app)
       .post(`/fhir/R4/Bot`)
       .set('Content-Type', 'application/fhir+json')
@@ -129,7 +128,7 @@ describe('Execute', () => {
       .send({
         resourceType: 'Bot',
         name: 'Test Bot',
-        runtimeVersion: 'awslambda',
+        runtimeVersion: 'unsupported',
         code: `
         export async function handler() {
           console.log('input', input);
@@ -154,6 +153,6 @@ describe('Execute', () => {
       .set('Content-Type', 'application/fhir+json')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
-    expect(res3.status).toBe(200);
+    expect(res3.status).toBe(400);
   });
 });

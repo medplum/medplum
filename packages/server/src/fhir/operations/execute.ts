@@ -83,7 +83,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   if (bot.runtimeVersion === 'awslambda') {
     return runInLambda(request);
   } else {
-    throw new Error('Unsupported bot runtime');
+    return { success: false, logResult: 'Unsupported bot runtime' };
   }
 }
 
