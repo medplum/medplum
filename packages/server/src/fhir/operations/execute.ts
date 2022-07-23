@@ -57,7 +57,11 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   });
 
   // Create the audit event
-  createAuditEvent(bot, result.success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure, result.logResult);
+  await createAuditEvent(
+    bot,
+    result.success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
+    result.logResult
+  );
 
   // Send the response
   res

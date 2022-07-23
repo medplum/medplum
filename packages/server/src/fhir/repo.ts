@@ -280,7 +280,7 @@ export class Repository {
       return [existingOutcome, undefined];
     }
 
-    if (await this.#checkTooManyVersions(resourceType, id)) {
+    if (!create && (await this.#checkTooManyVersions(resourceType, id))) {
       return [tooManyRequests, undefined];
     }
 
