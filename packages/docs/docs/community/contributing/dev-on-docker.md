@@ -66,13 +66,13 @@ From there, you can proceed to use the app.
 
 Do you see any errors in the logs?
 
-Is the API healtcheck available at <http://localhost:5000/healthcheck>?
+Is the API healtcheck available at <http://localhost:8000/healthcheck>?
 
 Is it possible you already have PostgreSQL running on port 5432?
 
 Is it possible you already have Redis running on port 6379?
 
-Is it possible you already have a different project running on ports 3000 or 5000?
+Is it possible you already have a different project running on ports 3000 or 8000?
 
 ### Stop everything
 

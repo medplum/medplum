@@ -20,5 +20,5 @@ RUN npm run build --workspace packages/fhirtypes
 RUN npm run build --workspace packages/core
 RUN npm run build --workspace packages/mock
 RUN npm run build --workspace packages/server
-EXPOSE 5000
+EXPOSE 8000
 ENTRYPOINT [ "npm", "run", "dev", "--workspace", "packages/server", "file:medplum.docker.config.json" ]

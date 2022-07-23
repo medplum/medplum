@@ -97,7 +97,7 @@ cd packages/server
 npm run dev
 ```
 
-You can access the healthcheck at <http://localhost:5000/healthcheck>
+You can access the healthcheck at <http://localhost:8000/healthcheck>
 
 ### Develop the web UI
 
