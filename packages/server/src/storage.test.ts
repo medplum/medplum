@@ -9,6 +9,7 @@ import { initApp } from './app';
 import { loadTestConfig } from './config';
 import { closeDatabase, initDatabase } from './database';
 import { getBinaryStorage, initBinaryStorage, systemRepo } from './fhir';
+import { closeRedis, initRedis } from './redis';
 import { seedDatabase } from './seed';
 
 const app = express();
@@ -18,6 +19,7 @@ let binary: Binary;
 describe('Storage Routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initApp(app);
@@ -39,6 +41,7 @@ describe('Storage Routes', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
     rmSync(binaryDir, { recursive: true, force: true });
   });
 

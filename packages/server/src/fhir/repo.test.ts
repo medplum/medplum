@@ -18,6 +18,7 @@ import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { initKeys } from '../oauth';
+import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
 import { bundleContains } from '../test.setup';
 import { processBatch } from './batch';
@@ -25,10 +26,12 @@ import { getRepoForLogin, Repository, systemRepo } from './repo';
 import { parseSearchRequest } from './search';
 
 jest.mock('hibp');
+jest.mock('ioredis');
 
 describe('FHIR Repo', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initKeys(config);
@@ -36,6 +39,7 @@ describe('FHIR Repo', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   test('getRepoForLogin', async () => {

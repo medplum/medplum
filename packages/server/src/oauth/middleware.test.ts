@@ -7,9 +7,10 @@ import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { systemRepo } from '../fhir';
-import { createTestClient } from '../test.setup';
 import { initKeys } from '../oauth';
+import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
+import { createTestClient } from '../test.setup';
 import { generateAccessToken, generateSecret } from './keys';
 
 const app = express();
@@ -18,6 +19,7 @@ let client: ClientApplication;
 describe('Auth middleware', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initApp(app);
@@ -27,6 +29,7 @@ describe('Auth middleware', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   test('Login not found', async () => {

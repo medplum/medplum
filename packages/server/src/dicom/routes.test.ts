@@ -3,9 +3,10 @@ import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { initTestAuth } from '../test.setup';
 import { initKeys } from '../oauth';
+import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
+import { initTestAuth } from '../test.setup';
 
 const app = express();
 let accessToken: string;
@@ -13,6 +14,7 @@ let accessToken: string;
 describe('DICOM Routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initApp(app);
@@ -22,6 +24,7 @@ describe('DICOM Routes', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   test('Get studies', async () => {

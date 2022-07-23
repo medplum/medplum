@@ -7,6 +7,7 @@ import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { initKeys } from '../oauth';
+import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 
@@ -18,6 +19,7 @@ const app = express();
 describe('New project', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initApp(app);
@@ -26,6 +28,7 @@ describe('New project', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   beforeEach(async () => {

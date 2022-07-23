@@ -5,6 +5,7 @@ import { initApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { closeDatabase, initDatabase } from '../../database';
 import { initKeys } from '../../oauth';
+import { closeRedis, initRedis } from '../../redis';
 import { seedDatabase } from '../../seed';
 import { initTestAuth } from '../../test.setup';
 
@@ -38,6 +39,7 @@ let bot: Bot;
 describe('Execute', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initApp(app);
@@ -59,6 +61,7 @@ describe('Execute', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   test('Submit plain text', async () => {

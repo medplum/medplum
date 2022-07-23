@@ -7,6 +7,7 @@ import { initApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { systemRepo } from '../fhir';
+import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
 import { createTestClient } from '../test.setup';
 import { generateSecret, initKeys } from './keys';
@@ -19,6 +20,7 @@ let client: ClientApplication;
 describe('OAuth2 Token', () => {
   beforeAll(async () => {
     config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initApp(app);
@@ -28,6 +30,7 @@ describe('OAuth2 Token', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   test('Token with wrong Content-Type', async () => {

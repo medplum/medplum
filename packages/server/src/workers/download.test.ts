@@ -10,6 +10,7 @@ import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { initBinaryStorage } from '../fhir';
 import { Repository } from '../fhir/repo';
+import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
 import { closeDownloadWorker, execDownloadJob, initDownloadWorker } from './download';
 
@@ -22,6 +23,7 @@ let repo: Repository;
 describe('Download Worker', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initBinaryStorage('file:' + binaryDir);
@@ -37,6 +39,7 @@ describe('Download Worker', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
     await closeDownloadWorker();
     await closeDownloadWorker(); // Double close to ensure quite ignore
     rmSync(binaryDir, { recursive: true, force: true });

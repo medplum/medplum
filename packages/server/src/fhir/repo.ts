@@ -45,6 +45,7 @@ import { URL } from 'url';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getClient } from '../database';
+import { getRedis } from '../redis';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
@@ -89,6 +90,12 @@ export interface RepositoryContext {
    * which grants system-level access.
    */
   admin?: boolean;
+}
+
+export interface CacheEntry<T extends Resource> {
+  resource: T;
+  projectId: string;
+  compartments: string[];
 }
 
 export type RepositoryResult<T extends Resource | undefined> = Promise<[OperationOutcome, T | undefined]>;
@@ -166,6 +173,20 @@ export class Repository {
       return [accessDenied, undefined];
     }
 
+    if (!this.#context.accessPolicy) {
+      const cacheRecord = await getCacheEntry<T>(resourceType, id);
+      if (cacheRecord) {
+        if (
+          this.#context.project !== undefined &&
+          cacheRecord.projectId !== undefined &&
+          cacheRecord.projectId !== this.#context.project
+        ) {
+          return [notFound, undefined];
+        }
+        return [allOk, this.#removeHiddenFields(cacheRecord.resource)];
+      }
+    }
+
     const client = getClient();
     const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', Operator.EQUALS, id);
 
@@ -180,7 +201,9 @@ export class Repository {
       return [gone, undefined];
     }
 
-    return [allOk, this.#removeHiddenFields(JSON.parse(rows[0].content as string))];
+    const resource = JSON.parse(rows[0].content as string) as T;
+    setCacheEntry(resource);
+    return [allOk, this.#removeHiddenFields(resource)];
   }
 
   async readReference<T extends Resource>(reference: Reference<T>): RepositoryResult<T> {
@@ -317,6 +340,7 @@ export class Repository {
     }
 
     try {
+      await setCacheEntry(result);
       await this.#writeResource(result);
       await this.#writeResourceVersion(result);
       await this.#writeLookupTables(result);
@@ -445,6 +469,8 @@ export class Repository {
     if (!this.#canWriteResourceType(resourceType)) {
       return [accessDenied, undefined];
     }
+
+    await deleteCacheEntry(resourceType, id);
 
     const client = getClient();
     const lastUpdated = new Date();
@@ -1419,6 +1445,47 @@ export class Repository {
     const { adminClientId } = getConfig();
     return !!adminClientId && this.#context.author.reference === 'ClientApplication/' + adminClientId;
   }
+}
+
+/**
+ * Tries to read a cache entry from Redis by resource type and ID.
+ * @param resourceType The resource type.
+ * @param id The resource ID.
+ * @returns The cache entry if found; otherwise, undefined.
+ */
+async function getCacheEntry<T extends Resource>(resourceType: string, id: string): Promise<CacheEntry<T> | undefined> {
+  const cachedValue = await getRedis().get(getCacheKey(resourceType, id));
+  return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<T>) : undefined;
+}
+
+/**
+ * Writes a cache entry to Redis.
+ * @param resource The resource to cache.
+ */
+async function setCacheEntry(resource: Resource): Promise<void> {
+  await getRedis().set(
+    getCacheKey(resource.resourceType, resource.id as string),
+    JSON.stringify({ resource, projectId: resource.meta?.project })
+  );
+}
+
+/**
+ * Deletes a cache entry from Redis.
+ * @param resourceType The resource type.
+ * @param id The resource ID.
+ */
+async function deleteCacheEntry(resourceType: string, id: string): Promise<void> {
+  await getRedis().del(getCacheKey(resourceType, id));
+}
+
+/**
+ * Returns the redis cache key for the given resource type and resource ID.
+ * @param resourceType The resource type.
+ * @param id The resource ID.
+ * @returns The Redis cache key.
+ */
+function getCacheKey(resourceType: string, id: string): string {
+  return `${resourceType}/${id}`;
 }
 
 /**

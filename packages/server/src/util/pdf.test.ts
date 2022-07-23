@@ -4,6 +4,7 @@ import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { initBinaryStorage, Repository, systemRepo } from '../fhir';
+import { closeRedis, initRedis } from '../redis';
 import { createPdf } from './pdf';
 
 const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
@@ -13,12 +14,14 @@ const dd: TDocumentDefinitions = { content: ['Hello world'] };
 describe('Binary', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await initBinaryStorage('file:' + binaryDir);
   });
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
     rmSync(binaryDir, { recursive: true, force: true });
   });
 
