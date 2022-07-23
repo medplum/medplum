@@ -280,7 +280,7 @@ export class Repository {
       return [existingOutcome, undefined];
     }
 
-    if (await this.#checkTooManyVersions(resourceType, id)) {
+    if (await this.#isTooManyVersions(resourceType, id, create)) {
       return [tooManyRequests, undefined];
     }
 
@@ -292,14 +292,8 @@ export class Repository {
       },
     });
 
-    if (existing) {
-      // When stricter FHIR validation is enabled, then this can be removed.
-      // At present, there are some cases where a server accepts "empty" values that escape the deep equals.
-      const cleanExisting = JSON.parse(stringify(existing));
-      const cleanUpdated = JSON.parse(stringify(updated));
-      if (deepEquals(cleanExisting, cleanUpdated)) {
-        return [notModified, existing];
-      }
+    if (await this.#isNotModified(existing, updated)) {
+      return [notModified, existing];
     }
 
     const result: T = {
@@ -339,9 +333,13 @@ export class Repository {
    * Returns true if the resource has too many versions within the specified time period.
    * @param resourceType The resource type.
    * @param id The resource ID.
+   * @param create If true, then the resource is being created.
    * @returns True if the resource has too many versions within the specified time period.
    */
-  async #checkTooManyVersions(resourceType: string, id: string): Promise<boolean> {
+  async #isTooManyVersions(resourceType: string, id: string, create: boolean): Promise<boolean> {
+    if (create) {
+      return false;
+    }
     const seconds = 60;
     const maxVersions = 10;
     const client = getClient();
@@ -351,6 +349,24 @@ export class Repository {
       .where('lastUpdated', Operator.GREATER_THAN, new Date(Date.now() - 1000 * seconds))
       .execute(client);
     return (rows[0].count as number) >= maxVersions;
+  }
+
+  /**
+   * Returns true if the resource is not modified from the existing resource.
+   * @param existing The existing resource.
+   * @param updated The updated resource.
+   * @returns True if the resource is not modified.
+   */
+  async #isNotModified(existing: Resource | undefined, updated: Resource): Promise<boolean> {
+    if (!existing) {
+      return false;
+    }
+
+    // When stricter FHIR validation is enabled, then this can be removed.
+    // At present, there are some cases where a server accepts "empty" values that escape the deep equals.
+    const cleanExisting = JSON.parse(stringify(existing));
+    const cleanUpdated = JSON.parse(stringify(updated));
+    return deepEquals(cleanExisting, cleanUpdated);
   }
 
   /**
