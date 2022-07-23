@@ -509,21 +509,21 @@ describe('Autocomplete', () => {
     expect(onChange).toBeCalledWith(['Bob Jones']);
   });
 
-  test('Dropdown goes away if no input', async () => {
+  test('Load on focus', async () => {
     render(
       <Autocomplete
         name="foo"
         loadOptions={async () => ['Homer Simpson', 'Bob Jones']}
         getId={(item: string) => item}
         getDisplay={(item: string) => <span>{item}</span>}
+        loadOnFocus={true}
       />
     );
 
     const input = screen.getByTestId('input-element') as HTMLInputElement;
 
-    // Enter "Simpson"
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Simpson' } });
+      fireEvent.focus(input);
     });
 
     // Wait for the drop down
@@ -532,18 +532,7 @@ describe('Autocomplete', () => {
     });
 
     await waitFor(() => screen.getByTestId('dropdown'));
-
-    // Remove input
-    await act(async () => {
-      fireEvent.change(input, { target: { value: '' } });
-    });
-
-    // Wait for the drop down to go away
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
-
-    expect(screen.queryByTestId('dropdown')).toBeNull();
+    expect(screen.getByTestId('dropdown')).toBeInTheDocument();
   });
 
   test('Down arrow does not go past last entry', async () => {

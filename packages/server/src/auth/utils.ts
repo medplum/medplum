@@ -11,7 +11,6 @@ import {
 } from '@medplum/fhirtypes';
 import { Response } from 'express';
 import fetch from 'node-fetch';
-import { getConfig } from '../config';
 import { systemRepo } from '../fhir';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { logger } from '../logger';
@@ -105,12 +104,11 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
 
 /**
  * Verifies the recaptcha response from the client.
+ * @param secretKey The Recaptcha secret key to use for verification.
  * @param recaptchaToken The Recaptcha response from the client.
  * @returns True on success, false on failure.
  */
-export async function verifyRecaptcha(recaptchaToken: string): Promise<boolean> {
-  const secretKey = getConfig().recaptchaSecretKey as string;
-
+export async function verifyRecaptcha(secretKey: string, recaptchaToken: string): Promise<boolean> {
   const url =
     'https://www.google.com/recaptcha/api/siteverify' +
     '?secret=' +

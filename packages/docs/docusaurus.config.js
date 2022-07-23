@@ -91,7 +91,7 @@ const config = {
             type: 'doc',
             docId: 'home',
             position: 'left',
-            label: 'Docs',
+            label: 'Home',
           },
           {
             to: '/tutorials',
@@ -104,8 +104,8 @@ const config = {
             position: 'left',
           },
           {
-            to: '/contributing',
-            label: 'Contributing',
+            to: '/community/contributing',
+            label: 'Community',
             position: 'left',
           },
           {

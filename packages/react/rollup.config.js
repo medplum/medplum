@@ -20,63 +20,97 @@ const globals = {
   'react-router-dom': 'ReactRouterDOM',
 };
 
-export default {
-  input: 'src/index.ts',
-  output: [
-    {
-      file: 'dist/esm/index.js',
-      format: 'esm',
-      sourcemap: true,
-    },
-    {
-      file: 'dist/esm/index.min.js',
-      format: 'esm',
-      plugins: [terser()],
-      sourcemap: true,
-    },
-    {
-      file: 'dist/cjs/index.js',
-      format: 'umd',
-      name: 'medplum.ui',
-      sourcemap: true,
-      globals,
-    },
-    {
-      file: 'dist/cjs/index.min.js',
-      format: 'umd',
-      name: 'medplum.ui',
-      plugins: [terser()],
-      sourcemap: true,
-      globals,
-    },
-  ],
-  plugins: [
-    replace({
-      preventAssignment: true,
-      values: {
-        'process.env.NODE_ENV': '"production"',
-        'process.env.GOOGLE_AUTH_ORIGINS': `"${process.env.GOOGLE_AUTH_ORIGINS}"`,
-        'process.env.GOOGLE_CLIENT_ID': `"${process.env.GOOGLE_CLIENT_ID}"`,
+const sourcemapPathTransform = (path) => path.replaceAll('\\', '/').replaceAll('../../../src', '../../src');
+
+export default [
+  {
+    input: 'src/index.ts',
+    output: [
+      {
+        file: 'dist/cjs/index.js',
+        format: 'umd',
+        name: 'medplum.ui',
+        sourcemap: true,
+        sourcemapPathTransform,
+        globals,
       },
-    }),
-    peerDepsExternal(),
-    postcss({ extract: 'styles.css' }),
-    resolve({ extensions }),
-    typescript(),
-    copy({
-      targets: [
-        { src: 'src/defaulttheme.css', dest: 'dist/esm/' },
-        { src: 'src/defaulttheme.css', dest: 'dist/cjs/' },
-      ],
-    }),
-    {
-      buildEnd: () => {
-        mkdirSync('./dist/cjs', { recursive: true });
-        mkdirSync('./dist/esm', { recursive: true });
-        writeFileSync('./dist/cjs/package.json', '{"type": "commonjs"}');
-        writeFileSync('./dist/esm/package.json', '{"type": "module"}');
+      {
+        file: 'dist/cjs/index.min.js',
+        format: 'umd',
+        name: 'medplum.ui',
+        plugins: [terser()],
+        sourcemap: true,
+        sourcemapPathTransform,
+        globals,
       },
-    },
-  ],
-  external: Object.keys(globals),
-};
+    ],
+    plugins: [
+      replace({
+        preventAssignment: true,
+        values: {
+          'process.env.NODE_ENV': '"production"',
+          'process.env.GOOGLE_AUTH_ORIGINS': `"${process.env.GOOGLE_AUTH_ORIGINS}"`,
+          'process.env.GOOGLE_CLIENT_ID': `"${process.env.GOOGLE_CLIENT_ID}"`,
+        },
+      }),
+      peerDepsExternal(),
+      postcss({ extract: 'styles.css' }),
+      resolve({ extensions }),
+      typescript({ tsconfig: 'tsconfig.cjs.json', resolveJsonModule: true }),
+      copy({
+        targets: [{ src: 'src/defaulttheme.css', dest: 'dist/cjs/' }],
+      }),
+      {
+        buildEnd: () => {
+          mkdirSync('./dist/cjs', { recursive: true });
+          writeFileSync('./dist/cjs/package.json', '{"type": "commonjs"}');
+        },
+      },
+    ],
+    external: Object.keys(globals),
+  },
+  {
+    input: 'src/index.ts',
+    output: [
+      {
+        dir: 'dist/esm',
+        format: 'esm',
+        preserveModules: true,
+        preserveModulesRoot: 'src',
+        sourcemap: true,
+        sourcemapPathTransform,
+      },
+      {
+        file: 'dist/esm/index.min.js',
+        format: 'esm',
+        plugins: [terser()],
+        sourcemap: true,
+        sourcemapPathTransform,
+      },
+    ],
+    plugins: [
+      replace({
+        preventAssignment: true,
+        values: {
+          'process.env.NODE_ENV': '"production"',
+          'process.env.GOOGLE_AUTH_ORIGINS': `"${process.env.GOOGLE_AUTH_ORIGINS}"`,
+          'process.env.GOOGLE_CLIENT_ID': `"${process.env.GOOGLE_CLIENT_ID}"`,
+        },
+      }),
+      peerDepsExternal(),
+      postcss({ extract: 'styles.css' }),
+      resolve({ extensions }),
+      typescript({ tsconfig: 'tsconfig.esm.json', resolveJsonModule: true }),
+      copy({
+        targets: [{ src: 'src/defaulttheme.css', dest: 'dist/esm/' }],
+      }),
+      {
+        buildEnd: () => {
+          mkdirSync('./dist/esm', { recursive: true });
+          writeFileSync('./dist/esm/package.json', '{"type": "module"}');
+        },
+      },
+    ],
+    external: Object.keys(globals),
+  },
+];

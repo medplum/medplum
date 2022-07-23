@@ -1,7 +1,14 @@
-import { capitalize, evalFhirPathTyped, Filter, Operator, PropertyType, SearchRequest } from '@medplum/core';
+import {
+  capitalize,
+  evalFhirPathTyped,
+  Filter,
+  formatDateTime,
+  Operator,
+  PropertyType,
+  SearchRequest,
+} from '@medplum/core';
 import { ElementDefinition, Resource, SearchParameter } from '@medplum/fhirtypes';
 import React from 'react';
-import { DateTimeDisplay } from './DateTimeDisplay';
 import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 import { SearchControlField } from './SearchControlField';
 
@@ -518,7 +525,7 @@ export function renderValue(resource: Resource, field: SearchControlField): stri
   }
 
   if (key === '_lastUpdated') {
-    return <DateTimeDisplay value={resource.meta?.lastUpdated} />;
+    return formatDateTime(resource.meta?.lastUpdated);
   }
 
   // Priority 1: ElementDefinition by exact match

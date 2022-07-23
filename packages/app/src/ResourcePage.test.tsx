@@ -7,11 +7,8 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { HomePage } from './HomePage';
 import { ResourcePage } from './ResourcePage';
 
-let medplum: MockClient;
-
 describe('ResourcePage', () => {
-  async function setup(url: string): Promise<void> {
-    medplum = new MockClient();
+  async function setup(url: string, medplum = new MockClient()): Promise<void> {
     await act(async () => {
       render(
         <MedplumProvider medplum={medplum}>
@@ -61,11 +58,12 @@ describe('ResourcePage', () => {
 
   test('Delete button confirm', async () => {
     // Create a practitioner that we can delete
+    const medplum = new MockClient();
     const practitioner = await medplum.createResource<Practitioner>({
       resourceType: 'Practitioner',
     });
 
-    await setup(`/Practitioner/${practitioner.id}/delete`);
+    await setup(`/Practitioner/${practitioner.id}/delete`, medplum);
     await waitFor(() => screen.getByText('Delete'));
     expect(screen.getByText('Delete')).toBeInTheDocument();
 
@@ -220,7 +218,6 @@ describe('ResourcePage', () => {
     window.open = jest.fn();
 
     await setup('/Practitioner/123/details');
-    await waitFor(() => screen.getByText('Name'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('History'));
@@ -237,7 +234,6 @@ describe('ResourcePage', () => {
     window.open = jest.fn();
 
     await setup('/Practitioner/123/details');
-    await waitFor(() => screen.getByText('Name'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('History'), { button: 1 });

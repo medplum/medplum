@@ -1,4 +1,12 @@
-import { allOk, badRequest, LoginState, notFound, RegisterRequest } from '@medplum/core';
+import {
+  allOk,
+  badRequest,
+  LoginState,
+  NewPatientRequest,
+  NewProjectRequest,
+  NewUserRequest,
+  notFound,
+} from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { webcrypto } from 'crypto';
 import { TextEncoder } from 'util';
@@ -65,22 +73,50 @@ describe('MockClient', () => {
     expect(client.post('auth/resetpassword', '{"email":"other@example.com"}')).rejects.toBeDefined();
   });
 
-  test('Register success', async () => {
+  test('New project success', async () => {
     const client = new MockClient();
 
-    const registerRequest: RegisterRequest = {
+    const newUserRequest: NewUserRequest = {
       email: `george@example.com`,
       password: 'password',
-      firstName: 'Sally',
-      lastName: 'Foo',
-      projectName: 'Sally World',
       recaptchaToken: 'xyz',
     };
 
-    const response1 = await client.startNewUser(registerRequest);
+    const response1 = await client.startNewUser(newUserRequest);
     expect(response1).toBeDefined();
 
-    const response2 = await client.startNewProject(registerRequest, response1);
+    const newProjectRequest: NewProjectRequest = {
+      firstName: 'Sally',
+      lastName: 'Foo',
+      projectName: 'Sally World',
+    };
+
+    const response2 = await client.startNewProject(newProjectRequest, response1);
+    expect(response2).toBeDefined();
+
+    const response3 = await client.processCode(response2.code as string);
+    expect(response3).toBeDefined();
+  });
+
+  test('New patient success', async () => {
+    const client = new MockClient();
+
+    const newUserRequest: NewUserRequest = {
+      email: `george@example.com`,
+      password: 'password',
+      recaptchaToken: 'xyz',
+    };
+
+    const response1 = await client.startNewUser(newUserRequest);
+    expect(response1).toBeDefined();
+
+    const newPatientRequest: NewPatientRequest = {
+      firstName: 'Sally',
+      lastName: 'Foo',
+      projectId: '123',
+    };
+
+    const response2 = await client.startNewPatient(newPatientRequest, response1);
     expect(response2).toBeDefined();
 
     const response3 = await client.processCode(response2.code as string);
@@ -200,6 +236,20 @@ describe('MockClient', () => {
     const result2 = await client2.createPdf({ content: ['Hello World'] });
     expect(result2).toBeDefined();
     expect(console.log).toHaveBeenCalled();
+  });
+
+  test('Update resource', async () => {
+    const client = new MockClient();
+
+    const resource1 = await client.createResource<Patient>({
+      resourceType: 'Patient',
+    });
+    expect(resource1).toBeDefined();
+
+    const resource2 = await client.updateResource({ ...resource1, active: true });
+    expect(resource2).toBeDefined();
+    expect(resource2.id).toEqual(resource1.id);
+    expect(resource2.meta?.versionId).not.toEqual(resource1.meta?.versionId);
   });
 
   test('Delete resource', async () => {

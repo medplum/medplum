@@ -5,7 +5,8 @@ const CREATED_ID = 'created';
 const GONE_ID = 'gone';
 const NOT_MODIFIED_ID = 'not-modified';
 const NOT_FOUND_ID = 'not-found';
-const ACCESS_DENIED = 'access-denied';
+const ACCESS_DENIED_ID = 'access-denied';
+const TOO_MANY_REQUESTS_ID = 'too-many-requests';
 
 export const allOk: OperationOutcome = {
   resourceType: 'OperationOutcome',
@@ -79,13 +80,27 @@ export const gone: OperationOutcome = {
 
 export const accessDenied: OperationOutcome = {
   resourceType: 'OperationOutcome',
-  id: ACCESS_DENIED,
+  id: ACCESS_DENIED_ID,
   issue: [
     {
       severity: 'error',
-      code: 'access-denied',
+      code: 'forbidden',
       details: {
         text: 'Access Denied',
+      },
+    },
+  ],
+};
+
+export const tooManyRequests: OperationOutcome = {
+  resourceType: 'OperationOutcome',
+  id: TOO_MANY_REQUESTS_ID,
+  issue: [
+    {
+      severity: 'error',
+      code: 'throttled',
+      details: {
+        text: 'Too Many Requests',
       },
     },
   ],
@@ -126,12 +141,14 @@ export function getStatus(outcome: OperationOutcome): number {
     return 201;
   } else if (outcome.id === NOT_MODIFIED_ID) {
     return 304;
-  } else if (outcome.id === ACCESS_DENIED) {
+  } else if (outcome.id === ACCESS_DENIED_ID) {
     return 403;
   } else if (outcome.id === NOT_FOUND_ID) {
     return 404;
   } else if (outcome.id === GONE_ID) {
     return 410;
+  } else if (outcome.id === TOO_MANY_REQUESTS_ID) {
+    return 429;
   } else {
     return 400;
   }
@@ -155,4 +172,26 @@ export class OperationOutcomeError extends Error {
     super(outcome?.issue?.[0].details?.text);
     this.outcome = outcome;
   }
+}
+
+/**
+ * Normalizes an error object into a displayable error string.
+ * @param error The error value which could be a string, Error, OperationOutcome, or other unknown type.
+ * @returns A display string for the error.
+ */
+export function normalizeErrorString(error: unknown): string {
+  if (!error) {
+    return 'Unknown error';
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'object' && 'resourceType' in error) {
+    const outcome = error as OperationOutcome;
+    return outcome.issue?.[0]?.details?.text ?? 'Unknown error';
+  }
+  return JSON.stringify(error);
 }

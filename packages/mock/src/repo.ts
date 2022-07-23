@@ -11,7 +11,7 @@ export class MemoryRepository {
   }
 
   createResource<T extends Resource>(resource: T): T {
-    const result = resource;
+    const result = JSON.parse(JSON.stringify(resource));
 
     if (!result.id) {
       result.id = this.generateId();
@@ -29,7 +29,7 @@ export class MemoryRepository {
       result.meta.lastUpdated = new Date().toISOString();
     }
 
-    const { resourceType, id } = resource as { resourceType: string; id: string };
+    const { resourceType, id } = result as { resourceType: string; id: string };
 
     if (!(resourceType in this.#resources)) {
       this.#resources[resourceType] = {};
@@ -43,9 +43,22 @@ export class MemoryRepository {
       this.#history[resourceType][id] = [];
     }
 
-    this.#resources[resourceType][id] = resource;
+    this.#resources[resourceType][id] = result;
     this.#history[resourceType][id].push(result);
     return result;
+  }
+
+  updateResource<T extends Resource>(resource: T): T {
+    const result = JSON.parse(JSON.stringify(resource)) as T;
+    if (result.meta) {
+      if (result.meta.versionId) {
+        delete result.meta.versionId;
+      }
+      if (result.meta.lastUpdated) {
+        delete result.meta.lastUpdated;
+      }
+    }
+    return this.createResource(result);
   }
 
   readResource<T extends Resource>(resourceType: string, id: string): T | undefined {

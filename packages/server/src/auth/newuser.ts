@@ -1,10 +1,11 @@
-import { assertOk, badRequest } from '@medplum/core';
-import { OperationOutcome, User } from '@medplum/fhirtypes';
+import { assertOk, badRequest, Operator } from '@medplum/core';
+import { OperationOutcome, Project, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { pwnedPassword } from 'hibp';
+import { getConfig } from '../config';
 import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { logger } from '../logger';
 import { getUserByEmail, tryLogin } from '../oauth';
@@ -35,7 +36,27 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
     return;
   }
 
-  if (!(await verifyRecaptcha(req.body.recaptchaToken))) {
+  const recaptchaSiteKey = req.body.recaptchaSiteKey;
+  let secretKey: string | undefined = getConfig().recaptchaSecretKey;
+  let project: Project | undefined;
+
+  if (recaptchaSiteKey !== getConfig().recaptchaSiteKey) {
+    // If the recaptcha site key is not the main Medplum recaptcha site key,
+    // then it must be associated with a Project.
+    // The user can only authenticate with that project.
+    project = await getProjectByRecaptchaSiteKey(recaptchaSiteKey);
+    if (!project) {
+      sendOutcome(res, badRequest('Invalid recaptchaSiteKey'));
+      return;
+    }
+    secretKey = project.site?.find((s) => s.recaptchaSiteKey === recaptchaSiteKey)?.recaptchaSecretKey;
+    if (!secretKey) {
+      sendOutcome(res, badRequest('Invalid recaptchaSecretKey'));
+      return;
+    }
+  }
+
+  if (!(await verifyRecaptcha(secretKey as string, req.body.recaptchaToken))) {
     sendOutcome(res, badRequest('Recaptcha failed'));
     return;
   }
@@ -87,4 +108,20 @@ export async function createUser(request: NewUserRequest): Promise<User> {
   assertOk(outcome, result);
   logger.info('Created: ' + result.id);
   return result;
+}
+
+async function getProjectByRecaptchaSiteKey(recaptchaSiteKey: string): Promise<Project | undefined> {
+  const [outcome, bundle] = await systemRepo.search<Project>({
+    resourceType: 'Project',
+    count: 1,
+    filters: [
+      {
+        code: 'recaptcha-site-key',
+        operator: Operator.EQUALS,
+        value: recaptchaSiteKey,
+      },
+    ],
+  });
+  assertOk(outcome, bundle);
+  return bundle.entry && bundle.entry.length > 0 ? bundle.entry[0].resource : undefined;
 }

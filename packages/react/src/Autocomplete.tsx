@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { killEvent } from './utils/dom';
 import './Autocomplete.css';
+import { killEvent } from './utils/dom';
 
 export interface AutocompleteProps<T> {
   name: string;
@@ -9,6 +9,7 @@ export interface AutocompleteProps<T> {
   defaultValue?: T[];
   className?: string;
   placeholder?: string;
+  loadOnFocus?: boolean;
   loadOptions: (input: string, signal: AbortSignal) => Promise<T[]>;
   buildUnstructured?: (input: string) => T;
   getId: (item: T) => string;
@@ -22,7 +23,7 @@ export interface AutocompleteProps<T> {
 export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
   const inputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
-  const [lastValue, setLastValue] = useState('');
+  const [lastValue, setLastValue] = useState<string | undefined>(undefined);
   const [timer, setTimer] = useState<number>();
   const [dropDownVisible, setDropDownVisible] = useState(false);
   const [values, setValues] = useState(props.defaultValue ?? []);
@@ -85,6 +86,9 @@ export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
 
   function handleFocus(): void {
     setFocused(true);
+    if (props.loadOnFocus) {
+      handleInput();
+    }
   }
 
   function handleBlur(): void {
@@ -233,14 +237,6 @@ export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
     const value = inputRef.current?.value?.trim() || '';
     if (value === lastValueRef.current) {
       // Nothing has changed, move on
-      return;
-    }
-
-    if (!value) {
-      setDropDownVisible(false);
-      setLastValue('');
-      setOptions([]);
-      setSelectedIndex(-1);
       return;
     }
 

@@ -7,4 +7,4 @@ sidebar_position: 1
 The best way to learn is by doing. Follow these tutorials to get you up and running.
 
 1. [API Basics](/tutorials/api-basics/create-fhir-data) - Use the REST API to create and read data
-2. [React Hello World](/tutorials/react-hello-world/hello-world-part-1) - Use the React Component Library to build a front-end app
+2. [React Hello World](/tutorials/react-components/hello-world-part-1) - Use the React Component Library to build a front-end app

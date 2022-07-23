@@ -1,4 +1,11 @@
-import { buildTypeName, getTypedPropertyValue, PropertyType, TypedValue } from '@medplum/core';
+import {
+  buildTypeName,
+  formatDateTime,
+  formatPeriod,
+  getTypedPropertyValue,
+  PropertyType,
+  TypedValue,
+} from '@medplum/core';
 import { ElementDefinition } from '@medplum/fhirtypes';
 import React from 'react';
 import { AddressDisplay } from './AddressDisplay';
@@ -9,10 +16,8 @@ import { CodeableConceptDisplay } from './CodeableConceptDisplay';
 import { CodingDisplay } from './CodingDisplay';
 import { ContactDetailDisplay } from './ContactDetailDisplay';
 import { ContactPointDisplay } from './ContactPointDisplay';
-import { DateTimeDisplay } from './DateTimeDisplay';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { IdentifierDisplay } from './IdentifierDisplay';
-import { PeriodDisplay } from './PeriodDisplay';
 import { QuantityDisplay } from './QuantityDisplay';
 import { RangeDisplay } from './RangeDisplay';
 import { RatioDisplay } from './RatioDisplay';
@@ -63,7 +68,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       return <ReferenceDisplay value={{ reference: value }} link={props.link} />;
     case PropertyType.dateTime:
     case PropertyType.instant:
-      return <DateTimeDisplay value={value} />;
+      return <div>{formatDateTime(value)}</div>;
     case PropertyType.markdown:
       return <pre>{value}</pre>;
     case PropertyType.Address:
@@ -85,7 +90,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.Identifier:
       return <IdentifierDisplay value={value} />;
     case PropertyType.Period:
-      return <PeriodDisplay value={value} />;
+      return <div>{formatPeriod(value)}</div>;
     case PropertyType.Quantity:
       return <QuantityDisplay value={value} />;
     case PropertyType.Range:

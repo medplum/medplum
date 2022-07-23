@@ -23,6 +23,7 @@ import {
   SearchRequest,
   SortRule,
   stringify,
+  tooManyRequests,
 } from '@medplum/core';
 import {
   AccessPolicy,
@@ -279,6 +280,10 @@ export class Repository {
       return [existingOutcome, undefined];
     }
 
+    if (await this.#checkTooManyVersions(resourceType, id)) {
+      return [tooManyRequests, undefined];
+    }
+
     const updated = await rewriteAttachments<T>(RewriteMode.REFERENCE, this, {
       ...this.#restoreReadonlyFields(resource, existing),
       meta: {
@@ -328,6 +333,24 @@ export class Repository {
 
     this.#removeHiddenFields(result);
     return [existing ? allOk : created, result];
+  }
+
+  /**
+   * Returns true if the resource has too many versions within the specified time period.
+   * @param resourceType The resource type.
+   * @param id The resource ID.
+   * @returns True if the resource has too many versions within the specified time period.
+   */
+  async #checkTooManyVersions(resourceType: string, id: string): Promise<boolean> {
+    const seconds = 60;
+    const maxVersions = 10;
+    const client = getClient();
+    const rows = await new SelectQuery(resourceType + '_History')
+      .raw(`COUNT (DISTINCT "versionId")::int AS "count"`)
+      .where('id', Operator.EQUALS, id)
+      .where('lastUpdated', Operator.GREATER_THAN, new Date(Date.now() - 1000 * seconds))
+      .execute(client);
+    return (rows[0].count as number) >= maxVersions;
   }
 
   /**

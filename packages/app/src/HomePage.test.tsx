@@ -6,10 +6,7 @@ import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { getDefaultFields, HomePage } from './HomePage';
 
-let medplum: MockClient;
-
-async function setup(url = '/Patient'): Promise<void> {
-  medplum = new MockClient();
+async function setup(url = '/Patient', medplum = new MockClient()): Promise<void> {
   await act(async () => {
     render(
       <MedplumProvider medplum={medplum}>
@@ -102,13 +99,14 @@ describe('HomePage', () => {
 
   test('Delete button, ok', async () => {
     // Create a practitioner that we can delete
+    const medplum = new MockClient();
     const patient = await medplum.createResource<Patient>({
       resourceType: 'Patient',
     });
 
     window.confirm = jest.fn(() => true);
 
-    await setup();
+    await setup('/Patient', medplum);
 
     // Make sure the patient is on the screen
     await waitFor(() => screen.getByText(patient.id as string));

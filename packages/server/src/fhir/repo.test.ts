@@ -1876,4 +1876,29 @@ describe('FHIR Repo', () => {
     expect(bundleContains(searchResult4 as Bundle, appt1 as Appointment)).toEqual(true);
     expect(bundleContains(searchResult4 as Bundle, appt2 as Appointment)).toEqual(true);
   });
+
+  test('Too many versions', async () => {
+    // Create version 1
+    const [createOutcome, patient] = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ family: 'Test' }],
+    });
+    assertOk(createOutcome, patient);
+
+    // Create versions 2-10
+    for (let i = 0; i < 9; i++) {
+      await systemRepo.updateResource<Patient>({
+        ...patient,
+        name: [{ family: `Test ${i}` }],
+      });
+    }
+
+    // Try to create version 11
+    const [updateOutcome, updatedPatient] = await systemRepo.updateResource<Patient>({
+      ...patient,
+      name: [{ family: `Test too many requests` }],
+    });
+    expect(updateOutcome.id).toEqual('too-many-requests');
+    expect(updatedPatient).toBeUndefined();
+  });
 });

@@ -15,14 +15,9 @@ import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { setLoginMembership } from '../oauth';
 import { createProfile, createProjectMembership } from './utils';
 
-export interface NewProjectRequest {
-  readonly login: string;
-  readonly project: string;
-}
-
 export const newPatientValidators = [
   body('login').notEmpty().withMessage('Missing login'),
-  body('project').notEmpty().withMessage('Project ID is required'),
+  body('projectId').notEmpty().withMessage('Project ID is required'),
   body('firstName').notEmpty().withMessage('First name is required'),
   body('lastName').notEmpty().withMessage('Last name is required'),
 ];
@@ -48,8 +43,8 @@ export async function newPatientHandler(req: Request, res: Response): Promise<vo
     return;
   }
 
-  const { project, firstName, lastName } = req.body;
-  const membership = await createPatient(login, project, firstName, lastName);
+  const { projectId, firstName, lastName } = req.body;
+  const membership = await createPatient(login, projectId, firstName, lastName);
 
   // Update the login
   const [updateOutcome, updated] = await setLoginMembership(login, membership.id as string);

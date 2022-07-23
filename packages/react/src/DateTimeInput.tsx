@@ -1,3 +1,4 @@
+import { isValidDate } from '@medplum/core';
 import React from 'react';
 import { Input, InputProps } from './Input';
 
@@ -66,8 +67,4 @@ export function convertLocalToIso(localString: string | undefined): string {
   }
 
   return date.toISOString();
-}
-
-function isValidDate(date: Date): boolean {
-  return date instanceof Date && !isNaN(date.getTime());
 }
