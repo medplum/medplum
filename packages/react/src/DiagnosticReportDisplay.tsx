@@ -1,4 +1,4 @@
-import { capitalize } from '@medplum/core';
+import { capitalize, formatDateTime } from '@medplum/core';
 import {
   DiagnosticReport,
   Observation,
@@ -8,14 +8,13 @@ import {
 } from '@medplum/fhirtypes';
 import React from 'react';
 import { CodeableConceptDisplay } from './CodeableConceptDisplay';
-import { DateTimeDisplay } from './DateTimeDisplay';
+import './DiagnosticReportDisplay.css';
 import { MedplumLink } from './MedplumLink';
 import { QuantityDisplay } from './QuantityDisplay';
 import { RangeDisplay } from './RangeDisplay';
 import { ResourceBadge } from './ResourceBadge';
-import { useResource } from './useResource';
-import './DiagnosticReportDisplay.css';
 import './Table.css';
+import { useResource } from './useResource';
 
 export interface DiagnosticReportDisplayProps {
   value?: DiagnosticReport | Reference<DiagnosticReport>;
@@ -67,9 +66,7 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
         {diagnosticReport.issued && (
           <dl>
             <dt>Issued</dt>
-            <dd>
-              <DateTimeDisplay value={diagnosticReport.issued} />
-            </dd>
+            <dd>{formatDateTime(diagnosticReport.issued)}</dd>
           </dl>
         )}
         {diagnosticReport.status && (
