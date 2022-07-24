@@ -6,6 +6,7 @@ import {
   getReferenceString,
   OperationOutcomeError,
   Operator,
+  parseSearchDefinition,
   PropertyType,
   toTypedValue,
   TypedValue,
@@ -15,13 +16,14 @@ import {
   GraphDefinition,
   GraphDefinitionLink,
   GraphDefinitionLinkTarget,
-  PlanDefinition,
+  OperationOutcome,
+  Reference,
   Resource,
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
+
 import { Repository } from '../repo';
 import { sendResponse } from '../routes';
-import { parseSearchUrl } from '../search';
 
 /**
  * Handles a Resource $graph request.
@@ -37,10 +39,10 @@ export async function resourceGraphHandler(req: Request, res: Response): Promise
   const { resourceType, id } = req.params;
   const repo = res.locals.repo as Repository;
 
-  const [outcome1, rootResource] = await repo.readResource<PlanDefinition>(resourceType, id);
+  const [outcome1, rootResource] = await repo.readResource(resourceType, id);
   assertOk(outcome1, rootResource);
 
-  const definition = await validateParameters(req, res);
+  const definition = await validateQueryParameters(req, res);
   console.log('Definition', req.query, definition);
   if (!definition) {
     return;
@@ -50,13 +52,16 @@ export async function resourceGraphHandler(req: Request, res: Response): Promise
     throw new OperationOutcomeError(badRequest('Missing or incorrect `start` type'));
   }
   const results = [rootResource] as Resource[];
-  await followLinks(rootResource, definition.link, results, repo);
-
-  console.log('Resulting Resources', results);
+  const resourceCache = {} as Record<string, Resource>;
+  resourceCache[getReferenceString(rootResource)] = rootResource;
+  if ((rootResource as any).url) {
+    resourceCache[(rootResource as any).url] = rootResource;
+  }
+  await followLinks(rootResource, definition.link, results, resourceCache, repo);
 
   sendResponse(res, outcome1, {
     resourceType: 'Bundle',
-    entry: results.map((r) => ({
+    entry: dedupResources(results).map((r) => ({
       resource: r,
     })),
     type: 'collection',
@@ -77,10 +82,22 @@ export async function resourceGraphHandler(req: Request, res: Response): Promise
  * @param resource
  * @param path
  */
+type FhirPathLink = GraphDefinitionLink & Required<Pick<GraphDefinitionLink, 'path'>>;
+function isFhirPathLink(link: GraphDefinitionLink): link is FhirPathLink {
+  return link.path !== undefined;
+}
+
+type SearchLink = Omit<GraphDefinitionLink, 'path'> & {
+  target: Required<Pick<GraphDefinitionLinkTarget, 'type' | 'params'>>;
+};
+function isSearchLink(link: GraphDefinitionLink): link is SearchLink {
+  return link.path === undefined && link.target !== undefined && link.target.every((t) => t.type && t.params);
+}
 async function followLinks(
   resource: Resource,
   links: GraphDefinitionLink[] | undefined,
   results: Resource[],
+  resourceCache: Record<string, Resource>,
   repo: Repository,
   depth: number = 0
 ) {
@@ -101,22 +118,19 @@ async function followLinks(
       let linkedResources = [] as Resource[];
 
       if (isFhirPathLink(link)) {
-        linkedResources = await followFhirPathLink(link, target, resource, repo);
+        linkedResources = await followFhirPathLink(link, target, resource, resourceCache, repo);
+      } else if (isSearchLink(link)) {
+        linkedResources = await followSearchLink(resource, link, resourceCache, repo);
       } else {
-        console.info('Following link', link.target, link);
-        linkedResources = await followSearchLink(repo, resource, link);
+        throw new OperationOutcomeError(badRequest(`Invalid link: ${JSON.stringify(link)}`));
       }
+      linkedResources = dedupResources(linkedResources);
       results.push(...linkedResources);
       for (const linkedResource of linkedResources) {
-        await followLinks(linkedResource, target.link, results, repo, depth + 1);
+        await followLinks(linkedResource, target.link, results, resourceCache, repo, depth + 1);
       }
     }
   }
-}
-
-type FhirPathLink = GraphDefinitionLink & Required<Pick<GraphDefinitionLink, 'path'>>;
-function isFhirPathLink(link: GraphDefinitionLink): link is FhirPathLink {
-  return link.path !== undefined;
 }
 
 /**
@@ -136,6 +150,7 @@ async function followFhirPathLink(
   link: FhirPathLink,
   target: GraphDefinitionLinkTarget,
   resource: Resource,
+  resourceCache: Record<string, Resource>,
   repo: Repository
 ): Promise<Resource[]> {
   const results = [] as Resource[];
@@ -153,12 +168,12 @@ async function followFhirPathLink(
   console.info('Following target', target);
   const referenceElements = elements.filter((elem) => elem.type === PropertyType.Reference);
   if (referenceElements.length > 0) {
-    results.push(...(await followReferenceElements(referenceElements, target, repo)));
+    results.push(...(await followReferenceElements(referenceElements, target, resourceCache, repo)));
   }
 
   const canonicalElements = elements.filter((elem) => elem.type === PropertyType.canonical);
   if (canonicalElements.length > 0) {
-    results.push(...(await followCanonicalElements(canonicalElements, target, repo)));
+    results.push(...(await followCanonicalElements(canonicalElements, target, resourceCache, repo)));
   }
 
   console.log('FhirPath Link Results', link, '\n', results);
@@ -169,54 +184,78 @@ async function followFhirPathLink(
 async function followReferenceElements(
   elements: TypedValue[],
   target: GraphDefinitionLinkTarget,
+  resourceCache: Record<string, Resource>,
   repo: Repository
 ): Promise<Resource[]> {
-  const targetElements = elements.filter((elem) => elem.value.reference?.split('/')[0] === target.type);
-  console.info('Target Elements(reference):', target, targetElements);
+  const targetReferences = elements
+    .filter((elem) => elem.value.reference?.split('/')[0] === target.type)
+    .map((elem) => elem.value as Reference);
 
-  return Promise.all(
-    targetElements.map(async (ref) => {
-      const [outcome, linkedResource] = await repo.readReference(ref.value);
-      assertOk(outcome, linkedResource);
-      return linkedResource;
-    })
-  );
+  console.debug('Target Elements(reference):', target, targetReferences);
+
+  const results = [] as Resource[];
+
+  for (const ref of targetReferences) {
+    if (ref.reference) {
+      if (ref.reference in resourceCache) {
+        results.push(resourceCache[ref.reference]);
+      } else {
+        const [outcome, linkedResource] = await repo.readReference(ref);
+        assertOk(outcome, linkedResource);
+
+        // Cache here to speed up subsequent loop iterations
+        addToCache(linkedResource, resourceCache);
+        results.push(linkedResource);
+      }
+    }
+  }
+  return results;
 }
 
 async function followCanonicalElements(
   elements: TypedValue[],
   target: GraphDefinitionLinkTarget,
+  resourceCache: Record<string, Resource>,
   repo: Repository
 ): Promise<Resource[]> {
+  if (!target?.type) {
+    return [];
+  }
+
+  // Filter out Resources where we've seen the canonical URL
   const targetUrls = elements.map((elem) => elem.value as string);
+  console.debug('Target Elements(canonical):', target, targetUrls);
 
-  console.info('Target Elements(canonical):', target, targetUrls);
+  const results = [] as Resource[];
+  for (const url of targetUrls) {
+    if (url in resourceCache) {
+      results.push(resourceCache[url]);
+    } else {
+      const [outcome, bundle] = (await repo.search({
+        resourceType: target.type,
+        filters: [{ code: 'url', operator: Operator.EQUALS, value: url }],
+      })) as [OperationOutcome, Bundle];
+      assertOk(outcome, bundle);
+      const linkedResources = bundle?.entry?.map((entry) => entry.resource).filter((e) => !!e) as Resource[];
+      if (linkedResources?.length > 1) {
+        console.warn(`Warning: Found more than 1 resource with canonical URL ${url}`);
+      }
 
-  return (
-    await Promise.all(
-      targetUrls.flatMap(async (url) => {
-        if (!target.type) {
-          return [];
-        }
-        console.info('url', url);
-        const [outcome, bundle] = await repo.search({
-          resourceType: target.type,
-          filters: [{ code: 'url', operator: Operator.EQUALS, value: url }],
-        });
-        assertOk(outcome, bundle);
+      // Cache here to speed up subsequent loop iterations
+      linkedResources.forEach((res) => addToCache(res, resourceCache));
+      results.push(...linkedResources);
+    }
+  }
 
-        const linkedResources = bundle?.entry?.map((entry) => entry.resource).filter((e) => !!e) as Resource[];
-        if (linkedResources?.length > 1) {
-          console.warn(`Warning: Found more than 1 resource with canonical URL ${url}`);
-        }
-
-        return linkedResources;
-      })
-    )
-  ).flat();
+  return results;
 }
 
-async function followSearchLink(repo: Repository, resource: Resource, link: GraphDefinitionLink): Promise<Resource[]> {
+async function followSearchLink(
+  resource: Resource,
+  link: GraphDefinitionLink,
+  resourceCache: Record<string, Resource>,
+  repo: Repository
+): Promise<Resource[]> {
   let results = [] as Resource[];
   if (!link.target) {
     return [];
@@ -228,7 +267,7 @@ async function followSearchLink(repo: Repository, resource: Resource, link: Grap
     const searchParams = target.params?.replace('{ref}', getReferenceString(resource));
 
     // Formulate the searchURL string
-    const searchRequest = parseSearchUrl(new URL(`/${searchResourceType}?${searchParams}`));
+    const searchRequest = parseSearchDefinition(`${searchResourceType}?${searchParams}`);
 
     // Parse the max count from the link description, if available
     searchRequest.count = Math.max(parseCardinality(link.max), 5000);
@@ -238,6 +277,8 @@ async function followSearchLink(repo: Repository, resource: Resource, link: Grap
     assertOk(outcome, bundle);
     if (bundle && bundle.entry) {
       const resources = bundle.entry.map((entry) => entry.resource).filter((e): e is Resource => !!e);
+      resources.forEach((res) => addToCache(res, resourceCache));
+
       results.push(...resources);
     }
   }
@@ -251,10 +292,8 @@ async function followSearchLink(repo: Repository, resource: Resource, link: Grap
  * @param res The HTTP response.
  * @returns The operation parameters if available; otherwise, undefined.
  */
-async function validateParameters(req: Request, res: Response): Promise<GraphDefinition | undefined> {
+async function validateQueryParameters(req: Request, res: Response): Promise<GraphDefinition | undefined> {
   const { graph } = req.query as { graph: string };
-
-  console.debug('Query params', req.query);
 
   const repo = res.locals.repo as Repository;
   const [outcome2, bundle] = await repo.search({
@@ -283,4 +322,24 @@ function parseCardinality(cardinality: string | undefined): number {
     return Number.POSITIVE_INFINITY;
   }
   return parseInt(cardinality);
+}
+
+function addToCache(resource: Resource, cache: Record<string, Resource>) {
+  cache[getReferenceString(resource)] = resource;
+  const url = (resource as any).url;
+  if (url) {
+    cache[url] = resource;
+  }
+}
+
+function dedupResources(resources: Resource[]) {
+  const seen = new Set<string>();
+  return resources.filter((item) => {
+    const key = getReferenceString(item);
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
 }
