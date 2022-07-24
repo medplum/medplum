@@ -177,6 +177,7 @@ export class Repository {
       const cacheRecord = await getCacheEntry<T>(resourceType, id);
       if (cacheRecord) {
         if (
+          !this.#isAdmin() &&
           this.#context.project !== undefined &&
           cacheRecord.projectId !== undefined &&
           cacheRecord.projectId !== this.#context.project
