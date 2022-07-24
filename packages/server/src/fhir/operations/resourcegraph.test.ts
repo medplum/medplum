@@ -2,8 +2,11 @@ import { createReference } from '@medplum/core';
 import {
   ActivityDefinition,
   Bundle,
+  DiagnosticReport,
   GraphDefinition,
+  Observation,
   ObservationDefinition,
+  Organization,
   Patient,
   PlanDefinition,
   Questionnaire,
@@ -116,7 +119,7 @@ describe('Resource $graph', () => {
     expect(resources?.[2]).toMatchObject(q2);
   });
 
-  test.only('Two Levels Deep', async () => {
+  test('Two Levels Deep', async () => {
     const graphName = 'example-two-levels';
     await createResource({
       resourceType: 'GraphDefinition',
@@ -181,7 +184,100 @@ describe('Resource $graph', () => {
     expect(resources?.filter((e) => e?.resourceType === 'ObservationDefinition')).toMatchObject(obsDefs);
   });
 
-  test('Search Based Link', async () => {});
+  test('Search Based Link', async () => {
+    const graphName = 'example-search-based-link';
+    // 1. Create a GraphDefinition
+    await createResource({
+      resourceType: 'GraphDefinition',
+      name: graphName,
+      start: 'ServiceRequest',
+      link: [{ target: [{ type: 'DiagnosticReport', params: 'based-on={ref}' }] }],
+    } as GraphDefinition);
+
+    const patient = await createResource({
+      resourceType: 'Patient',
+      name: [{ given: ['Graph'], family: 'Demo' }],
+    } as Patient);
+
+    const serviceRequest = await createResource({
+      resourceType: 'ServiceRequest',
+      subject: createReference(patient),
+    } as ServiceRequest);
+
+    // // 2. Create a DiagnosticReport
+    const report = await createResource({
+      resourceType: 'DiagnosticReport',
+      code: { text: 'foo' },
+      basedOn: [createReference(serviceRequest)],
+    } as DiagnosticReport);
+
+    // // 4. Apply the PlanDefinition to create the Task and RequestGroup
+    const bundle = await getResourceGraph(serviceRequest, graphName);
+    const resources = bundle.entry?.map((entry) => entry?.resource);
+    expect(resources).toHaveLength(2);
+    expect(resources?.[0]).toMatchObject(serviceRequest);
+    expect(resources?.[1]).toMatchObject(report);
+  });
+
+  test('Nested Search Links', async () => {
+    const graphName = 'example-nested-search';
+    // 1. Create a GraphDefinition
+    await createResource({
+      resourceType: 'GraphDefinition',
+      name: graphName,
+      start: 'ServiceRequest',
+      link: [
+        {
+          target: [
+            {
+              type: 'Observation',
+              params: 'based-on={ref}',
+              link: [{ path: 'Observation.performer', target: [{ type: 'Organization' }] }],
+            },
+          ],
+        },
+      ],
+    } as GraphDefinition);
+
+    const patient = await createResource({
+      resourceType: 'Patient',
+      name: [{ given: ['Graph'], family: 'Demo' }],
+    } as Patient);
+
+    const serviceRequest = await createResource({
+      resourceType: 'ServiceRequest',
+      subject: createReference(patient),
+    } as ServiceRequest);
+
+    const performer = await createResource({
+      resourceType: 'Organization',
+      name: 'Foo Medical',
+    } as Organization);
+
+    const observations = await Promise.all(
+      ['AAA', 'BBB', 'CCC'].map((code) =>
+        createResource<Observation>({
+          resourceType: 'Observation',
+          code: { text: code },
+          performer: [createReference(performer)],
+          basedOn: [createReference(serviceRequest)],
+        })
+      )
+    );
+
+    // // 4. Apply the PlanDefinition to create the Task and RequestGroup
+    const bundle = await getResourceGraph(serviceRequest, graphName);
+    const resources = bundle.entry?.map((entry) => entry?.resource);
+    expect(resources).toHaveLength(5);
+    expect(resources?.[0]).toMatchObject(serviceRequest);
+    expect(resources?.filter((res) => res?.resourceType === 'Observation')).toContainEqual(observations[0]);
+    expect(resources?.filter((res) => res?.resourceType === 'Observation')).toContainEqual(observations[1]);
+    expect(resources?.filter((res) => res?.resourceType === 'Observation')).toContainEqual(observations[2]);
+
+    // All 3 observations have the same performer, so we should expect a single Organization entry
+
+    expect(resources?.filter((res) => res?.resourceType === 'Organization')).toMatchObject([performer]);
+  });
 });
 
 async function getResourceGraph<T extends Resource>(resource: T, graphName: string): Promise<Bundle> {
@@ -190,6 +286,7 @@ async function getResourceGraph<T extends Resource>(resource: T, graphName: stri
   const res = await request(app)
     .get(url)
     .set('Authorization', 'Bearer ' + accessToken);
+
   expect(res.status).toBe(200);
   return res.body as Bundle;
 }
@@ -200,6 +297,10 @@ async function createResource<T extends Resource>(resource: T): Promise<T> {
     .set('Authorization', 'Bearer ' + accessToken)
     .set('Content-Type', 'application/fhir+json')
     .send(resource);
+  if (!res.ok) {
+    console.error(JSON.stringify(res.body, null, 2));
+  }
+
   expect(res.status).toBe(201);
   return res.body;
 }
