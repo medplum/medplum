@@ -13,6 +13,7 @@ import { executeHandler } from './operations/execute';
 import { expandOperator } from './operations/expand';
 import { graphqlHandler } from './operations/graphql';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
+import { resourceGraphHandler } from './operations/resourcegraph';
 import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
@@ -112,6 +113,9 @@ protectedRoutes.post('/([$]|%24)graphql', graphqlHandler);
 
 // PlanDefinition $apply operation
 protectedRoutes.post('/PlanDefinition/:id/([$]|%24)apply', asyncWrap(planDefinitionApplyHandler));
+
+// Resource $graph operation
+protectedRoutes.get('/:resourceType/:id/([$]|%24)graph', asyncWrap(resourceGraphHandler));
 
 // Execute batch
 protectedRoutes.post(

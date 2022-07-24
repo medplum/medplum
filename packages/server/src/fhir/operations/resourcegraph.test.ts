@@ -1,0 +1,205 @@
+import { createReference } from '@medplum/core';
+import {
+  ActivityDefinition,
+  Bundle,
+  GraphDefinition,
+  ObservationDefinition,
+  Patient,
+  PlanDefinition,
+  Questionnaire,
+  Resource,
+  ServiceRequest,
+} from '@medplum/fhirtypes';
+import express from 'express';
+import request from 'supertest';
+import { initApp } from '../../app';
+import { loadTestConfig } from '../../config';
+import { closeDatabase, initDatabase } from '../../database';
+import { initKeys } from '../../oauth';
+import { seedDatabase } from '../../seed';
+import { initTestAuth } from '../../test.setup';
+import { getStructureDefinitions } from '../structure';
+
+const app = express();
+let accessToken: string;
+
+describe('Resource $graph', () => {
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initDatabase(config.database);
+    await seedDatabase();
+    await initApp(app);
+    await initKeys(config);
+    getStructureDefinitions();
+    accessToken = await initTestAuth();
+  });
+
+  afterAll(async () => {
+    await closeDatabase();
+  });
+
+  test('Smoke Test', async () => {
+    // 1. Create a GraphDefinition
+    // 2. Create a Patient
+    // 3. Create a ServiceRequest
+    // 4. Run the $graph operation
+    // 5. Verify the Bundle
+
+    const graphName = 'example-smoke-test';
+    // 1. Create a GraphDefinition
+    await createResource({
+      resourceType: 'GraphDefinition',
+      name: graphName,
+      start: 'ServiceRequest',
+      link: [{ path: 'ServiceRequest.subject', target: [{ type: 'Patient' }] }],
+    } as GraphDefinition);
+
+    // 2. Create a Patient
+    const patient = await createResource({
+      resourceType: 'Patient',
+      name: [{ given: ['Graph'], family: 'Demo' }],
+    } as Patient);
+
+    // 3. Create a Patient
+    const serviceRequest = await createResource({
+      resourceType: 'ServiceRequest',
+      subject: createReference(patient),
+    } as ServiceRequest);
+
+    // 4. Apply the PlanDefinition to create the Task and RequestGroup
+    const bundle = await getResourceGraph(serviceRequest, graphName);
+    const resources = bundle.entry?.map((entry) => entry?.resource);
+    expect(resources).toHaveLength(2);
+    expect(resources?.[0]).toMatchObject(serviceRequest);
+    expect(resources?.[1]).toMatchObject(patient);
+  });
+
+  test('Canonical Link', async () => {
+    const graphName = 'example-canonical';
+    await createResource({
+      resourceType: 'GraphDefinition',
+      name: graphName,
+      start: 'PlanDefinition',
+      link: [{ path: 'PlanDefinition.action.definition', target: [{ type: 'Questionnaire' }] }],
+    } as GraphDefinition);
+
+    const q1 = await createResource({
+      resourceType: 'Questionnaire',
+      name: 'Patient Registration',
+      title: 'Patient Registration',
+      url: 'http://example.com/PatientRegistration',
+    } as Questionnaire);
+
+    const q2 = await createResource({
+      resourceType: 'Questionnaire',
+      name: 'Medical History',
+      title: 'Medical History',
+      url: 'http://example.com/MedicalHistory',
+    } as Questionnaire);
+
+    // 3. Create a PlanDefinition
+    const planDefinition = await createResource({
+      resourceType: 'PlanDefinition',
+      action: [
+        { definitionCanonical: 'http://example.com/PatientRegistration' },
+        { definitionCanonical: 'http://example.com/MedicalHistory' },
+      ],
+    } as PlanDefinition);
+
+    // 4. Apply the PlanDefinition to create the Task and RequestGroup
+    const bundle = await getResourceGraph(planDefinition, graphName);
+    const resources = bundle.entry?.map((entry) => entry?.resource);
+
+    expect(resources).toHaveLength(3);
+    expect(resources?.[0]).toMatchObject(planDefinition);
+    expect(resources?.[1]).toMatchObject(q1);
+    expect(resources?.[2]).toMatchObject(q2);
+  });
+
+  test.only('Two Levels Deep', async () => {
+    const graphName = 'example-two-levels';
+    await createResource({
+      resourceType: 'GraphDefinition',
+      name: graphName,
+      start: 'PlanDefinition',
+      link: [
+        {
+          path: 'PlanDefinition.action.definition',
+          target: [
+            {
+              type: 'ActivityDefinition',
+              link: [
+                {
+                  path: 'ActivityDefinition.observationResultRequirement',
+                  target: [{ type: 'ObservationDefinition' }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    } as GraphDefinition);
+
+    const obsDefs = await Promise.all(
+      ['ACT', 'BUN', 'HEM'].map((code) =>
+        createResource<ObservationDefinition>({ resourceType: 'ObservationDefinition', code: { text: code } })
+      )
+    );
+
+    const a1 = await createResource({
+      resourceType: 'ActivityDefinition',
+      name: 'ACT Test',
+      title: 'ACT Test',
+      url: 'http://example.com/ActTest',
+      observationResultRequirement: [createReference(obsDefs[0])],
+    } as ActivityDefinition);
+
+    const a2 = await createResource({
+      resourceType: 'ActivityDefinition',
+      name: 'BUN Panel',
+      title: 'BUN Panel',
+      url: 'http://example.com/BunPanel',
+      observationResultRequirement: [createReference(obsDefs[1]), createReference(obsDefs[2])],
+    } as ActivityDefinition);
+
+    // 3. Create a PlanDefinition
+    const planDefinition = await createResource({
+      resourceType: 'PlanDefinition',
+      action: [
+        { definitionCanonical: 'http://example.com/ActTest' },
+        { definitionCanonical: 'http://example.com/BunPanel' },
+      ],
+    } as PlanDefinition);
+
+    // 4. Apply the PlanDefinition to create the Task and RequestGroup
+    const bundle = await getResourceGraph(planDefinition, graphName);
+    const resources = bundle.entry?.map((entry) => entry?.resource);
+
+    expect(resources).toHaveLength(6);
+    expect(resources?.[0]).toMatchObject(planDefinition);
+    expect(resources?.filter((e) => e?.resourceType === 'ActivityDefinition')).toMatchObject([a1, a2]);
+    expect(resources?.filter((e) => e?.resourceType === 'ObservationDefinition')).toMatchObject(obsDefs);
+  });
+
+  test('Search Based Link', async () => {});
+});
+
+async function getResourceGraph<T extends Resource>(resource: T, graphName: string): Promise<Bundle> {
+  const url = `/fhir/R4/${resource.resourceType}/${resource.id}/$graph?graph=${graphName}`;
+  console.info(url);
+  const res = await request(app)
+    .get(url)
+    .set('Authorization', 'Bearer ' + accessToken);
+  expect(res.status).toBe(200);
+  return res.body as Bundle;
+}
+
+async function createResource<T extends Resource>(resource: T): Promise<T> {
+  const res = await request(app)
+    .post(`/fhir/R4/${resource.resourceType}`)
+    .set('Authorization', 'Bearer ' + accessToken)
+    .set('Content-Type', 'application/fhir+json')
+    .send(resource);
+  expect(res.status).toBe(201);
+  return res.body;
+}
