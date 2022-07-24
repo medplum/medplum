@@ -282,7 +282,7 @@ describe('Resource $graph', () => {
 
 async function getResourceGraph<T extends Resource>(resource: T, graphName: string): Promise<Bundle> {
   const url = `/fhir/R4/${resource.resourceType}/${resource.id}/$graph?graph=${graphName}`;
-  console.info(url);
+
   const res = await request(app)
     .get(url)
     .set('Authorization', 'Bearer ' + accessToken);
