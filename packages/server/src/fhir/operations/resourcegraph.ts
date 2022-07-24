@@ -43,7 +43,7 @@ export async function resourceGraphHandler(req: Request, res: Response): Promise
   assertOk(outcome1, rootResource);
 
   const definition = await validateQueryParameters(req, res);
-  console.log('Definition', req.query, definition);
+
   if (!definition) {
     return;
   }
@@ -154,9 +154,8 @@ async function followFhirPathLink(
   repo: Repository
 ): Promise<Resource[]> {
   const results = [] as Resource[];
-  console.info('Following link', link.path, link);
+
   const elements = evalFhirPathTyped(link.path, [toTypedValue(resource)]);
-  console.info(`Received Elements for path ${link.path}`, elements);
 
   // The only kinds of links we can follow are 'reference search parameters'. This includes elements of type
   // Reference and type canonical
@@ -165,7 +164,7 @@ async function followFhirPathLink(
   }
 
   // For each of the elements we found on the current resource, follow their various targets
-  console.info('Following target', target);
+
   const referenceElements = elements.filter((elem) => elem.type === PropertyType.Reference);
   if (referenceElements.length > 0) {
     results.push(...(await followReferenceElements(referenceElements, target, resourceCache, repo)));
@@ -175,8 +174,6 @@ async function followFhirPathLink(
   if (canonicalElements.length > 0) {
     results.push(...(await followCanonicalElements(canonicalElements, target, resourceCache, repo)));
   }
-
-  console.log('FhirPath Link Results', link, '\n', results);
 
   return results;
 }
@@ -190,8 +187,6 @@ async function followReferenceElements(
   const targetReferences = elements
     .filter((elem) => elem.value.reference?.split('/')[0] === target.type)
     .map((elem) => elem.value as Reference);
-
-  console.debug('Target Elements(reference):', target, targetReferences);
 
   const results = [] as Resource[];
 
@@ -224,7 +219,6 @@ async function followCanonicalElements(
 
   // Filter out Resources where we've seen the canonical URL
   const targetUrls = elements.map((elem) => elem.value as string);
-  console.debug('Target Elements(canonical):', target, targetUrls);
 
   const results = [] as Resource[];
   for (const url of targetUrls) {
