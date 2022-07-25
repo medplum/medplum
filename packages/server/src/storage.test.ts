@@ -1,5 +1,6 @@
 import { assertOk } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import express, { Request } from 'express';
 import { mkdtempSync, rmSync } from 'fs';
 import { sep } from 'path';
@@ -53,5 +54,10 @@ describe('Storage Routes', () => {
   test('Success', async () => {
     const res = await request(app).get(`/storage/${binary.id}?Signature=xyz&Expires=123`);
     expect(res.status).toBe(200);
+  });
+
+  test('File not found', async () => {
+    const res = await request(app).get(`/storage/${randomUUID()}?Signature=xyz&Expires=123`);
+    expect(res.status).toBe(404);
   });
 });

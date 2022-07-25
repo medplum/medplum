@@ -73,7 +73,11 @@ class FileSystemStorage implements BinaryStorage {
   }
 
   async readBinary(binary: Binary): Promise<internal.Readable> {
-    return createReadStream(this.#getPath(binary));
+    const path = this.#getPath(binary);
+    if (!existsSync(path)) {
+      throw new Error('File not found');
+    }
+    return createReadStream(path);
   }
 
   #getDir(binary: Binary): string {
