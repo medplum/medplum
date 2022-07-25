@@ -152,9 +152,18 @@ function getTypedPropertyValueWithoutSchema(
   if (path in input) {
     result = (input as { [key: string]: unknown })[path];
   } else {
-    const propertyName = Object.keys(input).find((k) => k.startsWith(path));
-    if (propertyName) {
-      result = (input as { [key: string]: unknown })[propertyName];
+    // Only support property names that would be valid types
+    // Examples:
+    // value + valueString = ok, because "string" is valid
+    // value + valueDecimal = ok, because "decimal" is valid
+    // id + identifiier = not ok, because "entifier" is not a valid type
+    // resource + resourceType = not ok, because "type" is not a valid type
+    for (const propertyType in PropertyType) {
+      const propertyName = path + capitalize(propertyType);
+      if (propertyName in input) {
+        result = (input as { [key: string]: unknown })[propertyName];
+        break;
+      }
     }
   }
 
