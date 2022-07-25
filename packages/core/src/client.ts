@@ -35,7 +35,7 @@ import { arrayBufferToBase64, createReference, ProfileResource } from './utils';
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_SCOPE = 'launch/patient openid fhirUser offline_access user/*.*';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
-const DEFAULT_CACHE_TIME = 10000; // 10 seconds
+const DEFAULT_CACHE_TIME = 60000; // 60 seconds
 const JSON_CONTENT_TYPE = 'application/json';
 const FHIR_CONTENT_TYPE = 'application/fhir+json';
 const PATCH_CONTENT_TYPE = 'application/json-patch+json';
