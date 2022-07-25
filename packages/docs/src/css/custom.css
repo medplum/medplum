@@ -17,6 +17,8 @@
   --ifm-color-primary-lighter: #CAB6FA;
   --ifm-color-primary-lightest: #F4F0FE;
   --ifm-heading-color: #000000;
+  --code-block-shadow:  rgba(0, 0, 0, 0.15) 0 5px 15px;
+  --img-block-shadow:  rgba(0, 0, 0, 0.15) 0 5px 15px;
 }
 
 [data-theme='dark']  {
@@ -28,6 +30,8 @@
   --ifm-color-primary-lighter: #ba9ff9;
   --ifm-color-primary-lightest: #ded1fc;
   --ifm-heading-color: #FFFFFF;
+  --code-block-shadow:  rgba(0, 0, 0, 0.35) 0 5px 15px;
+  --img-block-shadow:  rgba(0, 0, 0, 0.95) 0 5px 15px;
 }
 
 /* @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap'); */
@@ -62,6 +66,7 @@ html[data-theme='dark'] .docusaurus-highlight-code-line {
 
 main img {
   width: 90%;
+  box-shadow: var(--img-block-shadow);
 }
 
 h1 {
@@ -88,4 +93,8 @@ h1 {
   .homepage-grid {
     grid-template-columns: repeat(1, minmax(0, 1fr));
   }
+}
+
+.prism-code {
+  box-shadow: var(--code-block-shadow);
 }
