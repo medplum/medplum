@@ -33,6 +33,12 @@ describe('ResourceArrayInput', () => {
     expect(screen.getAllByText('Remove')).toHaveLength(2);
   });
 
+  test('Handles non-arrays', () => {
+    render(<ResourceArrayInput property={property} name="myProp" defaultValue={'x' as unknown as string[]} />);
+
+    expect(screen.getByText('Add')).toBeInTheDocument();
+  });
+
   test('Click add button', async () => {
     render(<ResourceArrayInput property={property} name="myProp" defaultValue={[]} />);
 
