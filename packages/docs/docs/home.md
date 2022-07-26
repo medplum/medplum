@@ -58,5 +58,5 @@ The following diagram shows how all of these pieces fit together.
 
 ## Community
 
-- **Contributing** - Medplum is open source because we believe that streamling healthcare is based on _transparency_ and _collaboration_. If you are interested contributing to Medplum, check out our [Contributors](/community/contributing) page
+- **Contributing** - Medplum is open source because we believe that streamling healthcare is based on _transparency_ and _collaboration_. If you are interested contributing to Medplum, check out our [Contributors](/contributing) page
 - **Discord** - Join the conversation by checking us out on [Discord](https://discord.gg/UBAWwvrVeN)

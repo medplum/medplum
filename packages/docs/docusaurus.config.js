@@ -104,8 +104,8 @@ const config = {
             position: 'left',
           },
           {
-            to: '/community/contributing',
-            label: 'Community',
+            to: '/contributing',
+            label: 'Contributing',
             position: 'left',
           },
           {
