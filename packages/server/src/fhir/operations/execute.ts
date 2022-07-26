@@ -2,18 +2,11 @@ import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { assertOk, createReference, Hl7Message, resolveId } from '@medplum/core';
 import { AuditEvent, Bot, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import fetch from 'node-fetch';
-import Mail from 'nodemailer/lib/mailer';
 import { TextDecoder, TextEncoder } from 'util';
-import vm from 'vm';
 import { asyncWrap } from '../../async';
-import { sendEmail } from '../../email/email';
 import { generateAccessToken } from '../../oauth';
 import { AuditEventOutcome } from '../../util/auditevent';
-import { MockConsole } from '../../util/console';
-import { createPdf } from '../../util/pdf';
-import { getRepoForMembership, Repository, systemRepo } from '../repo';
-import { rewriteAttachments, RewriteMode } from '../rewrite';
+import { Repository, systemRepo } from '../repo';
 
 export const EXECUTE_CONTENT_TYPES = [
   'application/json',
@@ -90,7 +83,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   if (bot.runtimeVersion === 'awslambda') {
     return runInLambda(request);
   } else {
-    return runInVmContext(request);
+    return { success: false, logResult: 'Unsupported bot runtime' };
   }
 }
 
@@ -209,54 +202,6 @@ function parseLambdaLog(logResult: string): string {
     }
   }
   return result.join('\n');
-}
-
-/**
- * Executes a Bot in a VM sandbox.
- * @param request The bot request.
- * @returns The bot execution result.
- */
-async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutionResult> {
-  const { bot, runAs, input } = request;
-  const botRepo = await getRepoForMembership(runAs);
-  const botConsole = new MockConsole();
-
-  const sandbox = {
-    input,
-    resource: input,
-    repo: botRepo,
-    console: botConsole,
-    fetch,
-    assertOk,
-    createReference,
-    createPdf,
-    sendEmail: async (args: Mail.Options) => {
-      await sendEmail(await rewriteAttachments(RewriteMode.PRESIGNED_URL, botRepo, args));
-    },
-  };
-
-  const options: vm.RunningScriptOptions = {
-    timeout: 100,
-  };
-
-  // Wrap code in an async block for top-level await support
-  const wrappedCode = '(async () => {' + bot.code + '})();';
-
-  // Return the result of the code execution
-  try {
-    const returnValue = (await vm.runInNewContext(wrappedCode, sandbox, options)) as any;
-    return {
-      success: true,
-      logResult: botConsole.toString(),
-      returnValue,
-    };
-  } catch (err) {
-    botConsole.log('Error', (err as Error).message);
-    return {
-      success: false,
-      logResult: botConsole.toString(),
-    };
-  }
 }
 
 function getResponseContentType(req: Request): string {
