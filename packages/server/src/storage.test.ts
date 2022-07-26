@@ -1,8 +1,9 @@
 import { assertOk } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import express, { Request } from 'express';
-import { mkdtempSync, rmSync } from 'fs';
-import { sep } from 'path';
+import { mkdtempSync, rmSync, unlinkSync } from 'fs';
+import { resolve, sep } from 'path';
 import { Readable } from 'stream';
 import request from 'supertest';
 import { initApp } from './app';
@@ -53,5 +54,30 @@ describe('Storage Routes', () => {
   test('Success', async () => {
     const res = await request(app).get(`/storage/${binary.id}?Signature=xyz&Expires=123`);
     expect(res.status).toBe(200);
+  });
+
+  test('Binary not found', async () => {
+    const res = await request(app).get(`/storage/${randomUUID()}?Signature=xyz&Expires=123`);
+    expect(res.status).toBe(404);
+  });
+
+  test('File not found', async () => {
+    const [outcome, resource] = await systemRepo.createResource<Binary>({
+      resourceType: 'Binary',
+      contentType: 'text/plain',
+    });
+    assertOk(outcome, resource);
+
+    const req = new Readable();
+    req.push('hello world');
+    req.push(null);
+    (req as any).headers = {};
+    await getBinaryStorage().writeBinary(resource, 'hello.txt', 'text/plain', req as Request);
+
+    // Delete the file on disk
+    unlinkSync(resolve(binaryDir, `${resource.id}/${resource.meta?.versionId}`));
+
+    const res = await request(app).get(`/storage/${resource.id}?Signature=xyz&Expires=123`);
+    expect(res.status).toBe(404);
   });
 });
