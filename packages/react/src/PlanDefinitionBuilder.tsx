@@ -1,4 +1,4 @@
-import { getReferenceString, IndexedStructureDefinition } from '@medplum/core';
+import { getReferenceString, IndexedStructureDefinition, PropertyType } from '@medplum/core';
 import { ElementDefinition, PlanDefinition, PlanDefinitionAction, Reference } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
@@ -9,7 +9,7 @@ import { useMedplum } from './MedplumProvider';
 import { ReferenceDisplay } from './ReferenceDisplay';
 import { setPropertyValue } from './ResourceForm';
 import { ResourceInput } from './ResourceInput';
-import { getValueAndType } from './ResourcePropertyDisplay';
+import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 import { Select } from './Select';
 import { useResource } from './useResource';
@@ -161,7 +161,7 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
   const hovering = props.hoverKey === props.action.id;
 
   function onClick(e: React.SyntheticEvent): void {
-    killEvent(e);
+    e.stopPropagation();
     props.setSelectedKey(props.action.id);
   }
 
@@ -172,7 +172,7 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
 
   const className = editing ? 'section editing' : hovering ? 'section hovering' : 'section';
   return (
-    <div className={className} onClick={onClick} onMouseOver={onHover}>
+    <div data-testid={action.id} className={className} onClick={onClick} onMouseOver={onHover}>
       {editing ? (
         <ActionEditor
           action={action}
@@ -202,6 +202,13 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
   );
 }
 
+const timingProperty: ElementDefinition = {
+  path: 'PlanDefinition.action.timing[x]',
+  min: 0,
+  max: '1',
+  type: [{ code: 'dateTime' }, { code: 'Period' }, { code: 'Range' }, { code: 'Timing' }],
+};
+
 interface ActionDisplayProps {
   action: PlanDefinitionAction;
   actionType: string | undefined;
@@ -209,6 +216,7 @@ interface ActionDisplayProps {
 
 function ActionDisplay(props: ActionDisplayProps): JSX.Element {
   const { action, actionType } = props;
+  const [propertyValue, propertyType] = getActionTiming(action);
   return (
     <div>
       <div>
@@ -217,6 +225,11 @@ function ActionDisplay(props: ActionDisplayProps): JSX.Element {
       {action.definitionCanonical && (
         <div>
           <ReferenceDisplay value={{ reference: action.definitionCanonical }} />
+        </div>
+      )}
+      {propertyValue && (
+        <div>
+          <ResourcePropertyDisplay property={timingProperty} propertyType={propertyType} value={propertyValue} />
         </div>
       )}
     </div>
@@ -324,13 +337,7 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
         }
       })()}
       <FormSection title="Timing" description="When the action should take place." htmlFor={'timing-' + action.id}>
-        <ActionTimingInput
-          name={'timing-' + action.id}
-          action={action}
-          onChange={(newValue) => {
-            console.log('timing change', newValue);
-          }}
-        />
+        <ActionTimingInput name={'timing-' + action.id} action={action} onChange={props.onChange} />
       </FormSection>
     </>
   );
@@ -375,23 +382,17 @@ interface ActionTimingInputProps {
 }
 
 function ActionTimingInput(props: ActionTimingInputProps): JSX.Element {
-  const property: ElementDefinition = {
-    min: 0,
-    max: '1',
-    type: [{ code: 'dateTime' }, { code: 'Period' }, { code: 'Range' }, { code: 'Timing' }],
-  };
   const value = props.action;
   const key = 'timing';
-  const typedValue = { type: 'PlanDefinitionAction', value };
-  const [propertyValue, propertyType] = getValueAndType(typedValue, key);
+  const [propertyValue, propertyType] = getActionTiming(value);
   return (
     <ResourcePropertyInput
-      property={property}
-      name={'timing-' + value.id}
+      property={timingProperty}
+      name="timing[x]"
       defaultValue={propertyValue}
       defaultPropertyType={propertyType}
       onChange={(newValue: any, propName?: string) => {
-        props.onChange(setPropertyValue(value, key, propName ?? key, property, newValue));
+        props.onChange(setPropertyValue(value, key, propName ?? key, timingProperty, newValue));
       }}
     />
   );
@@ -411,6 +412,10 @@ function getInitialActionType(action: PlanDefinitionAction): string | undefined 
   }
 
   return undefined;
+}
+
+function getActionTiming(action: PlanDefinitionAction): [any, PropertyType] {
+  return getValueAndType({ type: 'PlanDefinitionAction', value: action }, 'timing');
 }
 
 let nextId = 1;

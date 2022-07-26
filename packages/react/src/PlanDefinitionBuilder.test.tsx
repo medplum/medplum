@@ -40,6 +40,35 @@ describe('PlanDefinitionBuilder', () => {
     expect(screen.getByText('Family Health History (questionnaire)')).toBeDefined();
   });
 
+  test('Hover on/off', async () => {
+    await setup({
+      value: {
+        resourceType: 'PlanDefinition',
+        action: [
+          {
+            id: 'action1',
+            title: 'Example Action',
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByTestId('action1')).not.toHaveClass('hovering');
+
+    await act(async () => {
+      fireEvent.mouseOver(screen.getByText('Example Action'));
+    });
+
+    expect(screen.getByTestId('action1')).toHaveClass('hovering');
+
+    await act(async () => {
+      fireEvent.mouseOver(document.body);
+    });
+
+    expect(screen.getByTestId('action1')).not.toHaveClass('hovering');
+  });
+
   test('Handles submit', async () => {
     const onSubmit = jest.fn();
 
@@ -230,6 +259,46 @@ describe('PlanDefinitionBuilder', () => {
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Type of Action'), {
         target: { value: 'questionnaire' },
+      });
+    });
+
+    expect(screen.getByText('Save')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toBeCalled();
+  });
+
+  test('Add task action', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      value: {
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+      },
+      onSubmit,
+    });
+
+    await waitFor(() => screen.getByText('Add action'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add action'));
+    });
+
+    await waitFor(() => screen.getByLabelText('Title'));
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Title'), {
+        target: { value: 'Example Task Action' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Type of Action'), {
+        target: { value: 'task' },
       });
     });
 
