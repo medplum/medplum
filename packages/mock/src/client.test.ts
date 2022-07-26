@@ -269,4 +269,10 @@ describe('MockClient', () => {
     const resource3 = await client.readResource('Patient', resource1.id as string);
     expect(resource3).toBeUndefined();
   });
+
+  test('Empty search', async () => {
+    const client = new MockClient();
+    const result = await client.search('Schedule', 'name=');
+    expect(result.entry).toHaveLength(1);
+  });
 });

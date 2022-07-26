@@ -12,6 +12,7 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly defaultValue?: T | Reference<T>;
   readonly className?: string;
   readonly placeholder?: string;
+  readonly loadOnFocus?: boolean;
   readonly onChange?: (value: T | undefined) => void;
 }
 
@@ -36,7 +37,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
 
   return (
     <Autocomplete
-      loadOptions={(input: string): Promise<T[]> => {
+      loadOptions={async (input: string): Promise<T[]> => {
         return medplum
           .search(resourceTypeRef.current as ResourceType, 'name=' + encodeURIComponent(input) + '&_count=10')
           .then((bundle: Bundle) => (bundle.entry as BundleEntry[]).map((entry) => entry.resource as T));
@@ -56,6 +57,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
       defaultValue={value ? [value] : undefined}
       className={props.className}
       placeholder={props.placeholder}
+      loadOnFocus={props.loadOnFocus}
       onChange={(items: T[]) => {
         setValueWrapper(items.length > 0 ? items[0] : undefined);
       }}

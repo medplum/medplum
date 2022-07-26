@@ -1,11 +1,16 @@
-import { getReferenceString } from '@medplum/core';
-import { PlanDefinition, PlanDefinitionAction, Reference } from '@medplum/fhirtypes';
+import { getReferenceString, IndexedStructureDefinition } from '@medplum/core';
+import { ElementDefinition, PlanDefinition, PlanDefinitionAction, Reference } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Form } from './Form';
 import { FormSection } from './FormSection';
 import { Input } from './Input';
+import { useMedplum } from './MedplumProvider';
+import { ReferenceDisplay } from './ReferenceDisplay';
+import { setPropertyValue } from './ResourceForm';
 import { ResourceInput } from './ResourceInput';
+import { getValueAndType } from './ResourcePropertyDisplay';
+import { ResourcePropertyInput } from './ResourcePropertyInput';
 import { Select } from './Select';
 import { useResource } from './useResource';
 import { killEvent } from './utils/dom';
@@ -16,7 +21,9 @@ export interface PlanDefinitionBuilderProps {
 }
 
 export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.Element | null {
+  const medplum = useMedplum();
   const defaultValue = useResource(props.value);
+  const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>(undefined);
   const [selectedKey, setSelectedKey] = useState<string>();
   const [hoverKey, setHoverKey] = useState<string>();
   const [value, setValue] = useState<PlanDefinition>();
@@ -33,6 +40,10 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
   valueRef.current = value;
 
   useEffect(() => {
+    medplum.requestSchema('PlanDefinition').then(setSchema);
+  }, [medplum]);
+
+  useEffect(() => {
     setValue(ensurePlanDefinitionKeys(defaultValue ?? { resourceType: 'PlanDefinition' }));
     document.addEventListener('mouseover', handleDocumentMouseOver);
     document.addEventListener('click', handleDocumentClick);
@@ -42,7 +53,7 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
     };
   }, [defaultValue]);
 
-  if (!value) {
+  if (!schema || !value) {
     return null;
   }
 
@@ -200,7 +211,14 @@ function ActionDisplay(props: ActionDisplayProps): JSX.Element {
   const { action, actionType } = props;
   return (
     <div>
-      {action.title || 'Untitled'} {actionType && `(${actionType})`}
+      <div>
+        {action.title || 'Untitled'} {actionType && `(${actionType})`}
+      </div>
+      {action.definitionCanonical && (
+        <div>
+          <ReferenceDisplay value={{ reference: action.definitionCanonical }} />
+        </div>
+      )}
     </div>
   );
 }
@@ -305,15 +323,24 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
             return null;
         }
       })()}
+      <FormSection title="Timing" description="When the action should take place." htmlFor={'timing-' + action.id}>
+        <ActionTimingInput
+          name={'timing-' + action.id}
+          action={action}
+          onChange={(newValue) => {
+            console.log('timing change', newValue);
+          }}
+        />
+      </FormSection>
     </>
   );
 }
 
 interface ActionResourceTypeBuilderProps {
+  action: PlanDefinitionAction;
   title: string;
   description: string;
   resourceType: string;
-  action: PlanDefinitionAction;
   onChange: (action: PlanDefinitionAction) => void;
 }
 
@@ -328,6 +355,7 @@ function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.E
         name={id as string}
         resourceType={props.resourceType}
         defaultValue={reference}
+        loadOnFocus={true}
         onChange={(newValue) => {
           if (newValue) {
             props.onChange({ ...props.action, definitionCanonical: getReferenceString(newValue) });
@@ -340,9 +368,46 @@ function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.E
   );
 }
 
+interface ActionTimingInputProps {
+  name: string;
+  action: PlanDefinitionAction;
+  onChange: (action: PlanDefinitionAction) => void;
+}
+
+function ActionTimingInput(props: ActionTimingInputProps): JSX.Element {
+  const property: ElementDefinition = {
+    min: 0,
+    max: '1',
+    type: [{ code: 'dateTime' }, { code: 'Period' }, { code: 'Range' }, { code: 'Timing' }],
+  };
+  const value = props.action;
+  const key = 'timing';
+  const typedValue = { type: 'PlanDefinitionAction', value };
+  const [propertyValue, propertyType] = getValueAndType(typedValue, key);
+  return (
+    <ResourcePropertyInput
+      property={property}
+      name={'timing-' + value.id}
+      defaultValue={propertyValue}
+      defaultPropertyType={propertyType}
+      onChange={(newValue: any, propName?: string) => {
+        props.onChange(setPropertyValue(value, key, propName ?? key, property, newValue));
+      }}
+    />
+  );
+}
+
 function getInitialActionType(action: PlanDefinitionAction): string | undefined {
+  if (action.definitionCanonical?.startsWith('Schedule')) {
+    return 'appointment';
+  }
+
   if (action.definitionCanonical?.startsWith('Questionnaire/')) {
     return 'questionnaire';
+  }
+
+  if (action.definitionCanonical?.startsWith('ActivityDefinition/')) {
+    return 'task';
   }
 
   return undefined;
