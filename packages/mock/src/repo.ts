@@ -151,6 +151,8 @@ function matchesSearchFilter(resource: Resource, filter: Filter): boolean {
 function matchesSearchFilterValue(resource: Resource, filter: Filter, filterValue: string): boolean {
   const expression = filter.code.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
   const values = evalFhirPath(expression as string, resource);
-  const result = values.some((value) => JSON.stringify(value).toLowerCase().includes(filterValue.toLowerCase()));
+  const result =
+    filterValue === '' ||
+    values.some((value) => JSON.stringify(value).toLowerCase().includes(filterValue.toLowerCase()));
   return filter.operator === Operator.NOT_EQUALS ? !result : result;
 }

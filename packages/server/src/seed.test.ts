@@ -21,5 +21,5 @@ describe('Seed', () => {
 
     // Second time, seeder should silently ignore
     await seedDatabase();
-  });
+  }, 240000);
 });

@@ -26,6 +26,7 @@ import { ReferenceInput } from './ReferenceInput';
 import { ResourceArrayInput } from './ResourceArrayInput';
 import { Select } from './Select';
 import { TextArea } from './TextArea';
+import { TimingInput } from './TimingInput';
 
 export interface ResourcePropertyInputProps {
   property: ElementDefinition;
@@ -232,6 +233,8 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           onChange={props.onChange}
         />
       );
+    case PropertyType.Timing:
+      return <TimingInput name={name} defaultValue={value} onChange={props.onChange} />;
     default:
       return (
         <BackboneElementInput

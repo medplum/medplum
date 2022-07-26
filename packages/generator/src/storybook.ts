@@ -11,6 +11,7 @@ const resourceTypes = [
   'Encounter',
   'DiagnosticReport',
   'Observation',
+  'PlanDefinition',
   'Questionnaire',
   'ServiceRequest',
   'Specimen',
@@ -31,6 +32,7 @@ const properties = [
   'valueSet',
   'address',
   'city',
+  'action',
 ];
 
 export function main(): void {
