@@ -600,7 +600,9 @@ describe('Client', () => {
   test('Not modified', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.updateResource({ resourceType: 'Patient', id: '777' });
-    expect(result).toBeUndefined();
+    expect(result).not.toBeUndefined();
+    expect(result.resourceType).toBe('Patient');
+    expect(result.id).toBe('777');
   });
 
   test('Bad Request', async () => {
