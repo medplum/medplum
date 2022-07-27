@@ -16,8 +16,17 @@ export function CodeableConceptDisplay(props: CodeableConceptDisplayProps): JSX.
     return <>{value.text}</>;
   }
 
-  if (value.coding && value.coding.length > 0) {
-    return <CodingDisplay value={value.coding[0]} />;
+  if (value.coding) {
+    return (
+      <>
+        {value.coding.map((coding, index) => (
+          <React.Fragment key={'coding-' + index}>
+            {index > 0 && <>{', '}</>}
+            <CodingDisplay value={coding} />
+          </React.Fragment>
+        ))}
+      </>
+    );
   }
 
   return null;
