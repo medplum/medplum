@@ -1320,7 +1320,7 @@ export class MedplumClient extends EventTarget {
    * @param resource The FHIR resource to update.
    * @returns The result of the update operation.
    */
-  updateResource<T extends Resource>(resource: T): Promise<T> {
+  async updateResource<T extends Resource>(resource: T): Promise<T> {
     if (!resource.resourceType) {
       throw new Error('Missing resourceType');
     }
@@ -1328,7 +1328,10 @@ export class MedplumClient extends EventTarget {
       throw new Error('Missing id');
     }
     this.invalidateSearches(resource.resourceType);
-    return this.put(this.fhirUrl(resource.resourceType, resource.id), resource);
+    const result = await this.put(this.fhirUrl(resource.resourceType, resource.id), resource);
+    // On 304 not modified, result will be undefined
+    // Return the user input instead
+    return result ?? resource;
   }
 
   /**
