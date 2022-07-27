@@ -13,7 +13,9 @@ interface ResourceArrayInputProps {
 }
 
 export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element {
-  const [values, setValues] = useState(props.defaultValue ?? []);
+  const [values, setValues] = useState(
+    props.defaultValue && Array.isArray(props.defaultValue) ? props.defaultValue : []
+  );
 
   const valuesRef = useRef<any[]>();
   valuesRef.current = values;

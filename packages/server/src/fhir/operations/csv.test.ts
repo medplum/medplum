@@ -6,6 +6,7 @@ import { initApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { closeDatabase, initDatabase } from '../../database';
 import { initKeys } from '../../oauth';
+import { closeRedis, initRedis } from '../../redis';
 import { seedDatabase } from '../../seed';
 import { initTestAuth } from '../../test.setup';
 
@@ -15,6 +16,7 @@ let accessToken: string;
 describe('CSV Export', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initApp(app);
@@ -24,6 +26,7 @@ describe('CSV Export', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   test('Export Patient', async () => {

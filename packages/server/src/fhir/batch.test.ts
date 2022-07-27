@@ -11,6 +11,7 @@ import {
 import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
+import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
 import { processBatch } from './batch';
 import { Repository } from './repo';
@@ -20,6 +21,7 @@ let repo: Repository;
 describe('Batch', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
 
@@ -33,6 +35,7 @@ describe('Batch', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   test('Process batch with missing bundle type', async () => {

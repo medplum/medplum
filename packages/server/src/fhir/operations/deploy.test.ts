@@ -6,70 +6,9 @@ import { initApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { closeDatabase, initDatabase } from '../../database';
 import { initKeys } from '../../oauth';
+import { closeRedis, initRedis } from '../../redis';
 import { seedDatabase } from '../../seed';
 import { initTestAuth } from '../../test.setup';
-
-jest.mock('@aws-sdk/client-lambda', () => {
-  const original = jest.requireActual('@aws-sdk/client-lambda');
-
-  class LambdaClient {
-    static created = false;
-    static updated = false;
-
-    async send(command: any): Promise<any> {
-      if (command instanceof original.GetFunctionCommand) {
-        if (LambdaClient.created) {
-          return {
-            Configuration: {
-              FunctionName: command.input.FunctionName,
-            },
-          };
-        } else {
-          return Promise.reject(new Error('Function not found'));
-        }
-      }
-      if (command instanceof original.GetFunctionConfigurationCommand) {
-        return {
-          FunctionName: command.input.FunctionName,
-          Runtime: 'node16.x',
-          Handler: 'index.handler',
-          Layers: [
-            {
-              Arn: 'arn:aws:lambda:us-east-1:123456789012:layer:test-layer:1',
-            },
-          ],
-        };
-      }
-      if (command instanceof original.CreateFunctionCommand) {
-        LambdaClient.created = true;
-        return {
-          FunctionName: command.input.FunctionName,
-        };
-      }
-      if (command instanceof original.UpdateFunctionCodeCommand) {
-        LambdaClient.updated = true;
-        return {
-          FunctionName: command.input.FunctionName,
-        };
-      }
-      if (command instanceof original.ListLayerVersionsCommand) {
-        return {
-          LayerVersions: [
-            {
-              LayerVersionArn: 'xyz',
-            },
-          ],
-        };
-      }
-      return undefined;
-    }
-  }
-
-  return {
-    ...original,
-    LambdaClient,
-  };
-});
 
 const app = express();
 let accessToken: string;
@@ -77,6 +16,7 @@ let accessToken: string;
 describe('Deploy', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initApp(app);
@@ -86,6 +26,7 @@ describe('Deploy', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   beforeEach(() => {

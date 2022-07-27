@@ -7,9 +7,10 @@ import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { systemRepo } from '../fhir';
-import { createTestProject } from '../test.setup';
 import { generateAccessToken, initKeys } from '../oauth';
+import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
+import { createTestProject } from '../test.setup';
 
 const app = express();
 let project: Project;
@@ -20,6 +21,7 @@ let nonAdminAccessToken: string;
 describe('Super Admin routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initApp(app);
@@ -108,6 +110,7 @@ describe('Super Admin routes', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   test('Rebuild ValueSetElements as super admin', async () => {

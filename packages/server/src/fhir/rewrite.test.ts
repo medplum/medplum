@@ -3,6 +3,7 @@ import { Binary, Practitioner } from '@medplum/fhirtypes';
 import { URL } from 'url';
 import { loadTestConfig, MedplumServerConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
+import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
 import { systemRepo } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
@@ -13,6 +14,7 @@ describe('URL rewrite', () => {
 
   beforeAll(async () => {
     config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
 
@@ -25,6 +27,7 @@ describe('URL rewrite', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   test('Null', async () => {

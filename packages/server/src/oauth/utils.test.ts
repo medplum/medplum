@@ -3,8 +3,9 @@ import { ClientApplication } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { createTestClient } from '../test.setup';
+import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
+import { createTestClient } from '../test.setup';
 import { initKeys } from './keys';
 import { tryLogin, validateLoginRequest } from './utils';
 
@@ -13,6 +14,7 @@ let client: ClientApplication;
 describe('OAuth utils', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initKeys(config);
@@ -21,6 +23,7 @@ describe('OAuth utils', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   test('Login with invalid client ID', async () => {

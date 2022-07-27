@@ -3,6 +3,7 @@ import { Patient, SpecimenDefinition } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../../config';
 import { closeDatabase, initDatabase } from '../../database';
+import { closeRedis, initRedis } from '../../redis';
 import { seedDatabase } from '../../seed';
 import { bundleContains } from '../../test.setup';
 import { systemRepo } from '../repo';
@@ -10,12 +11,14 @@ import { systemRepo } from '../repo';
 describe('Identifier Lookup Table', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
   });
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   test('Identifier', async () => {

@@ -4,12 +4,14 @@ import { initApp } from './app';
 import { loadTestConfig } from './config';
 import { closeDatabase, initDatabase } from './database';
 import { initKeys } from './oauth';
+import { closeRedis, initRedis } from './redis';
 
 const app = express();
 
 describe('OpenAPI', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await initApp(app);
     await initKeys(config);
@@ -17,6 +19,7 @@ describe('OpenAPI', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   test('Get /openapi.json', async () => {

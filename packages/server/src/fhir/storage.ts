@@ -2,8 +2,8 @@ import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { Binary } from '@medplum/fhirtypes';
 import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
-import path from 'path';
-import internal from 'stream';
+import { resolve } from 'path';
+import { Readable } from 'stream';
 import { ReadableStream } from 'stream/web';
 
 let binaryStorage: BinaryStorage | undefined = undefined;
@@ -33,10 +33,10 @@ interface BinaryStorage {
     binary: Binary,
     filename: string | undefined,
     contentType: string | undefined,
-    stream: internal.Readable | NodeJS.ReadableStream
+    stream: Readable | NodeJS.ReadableStream
   ): Promise<void>;
 
-  readBinary(binary: Binary): Promise<internal.Readable>;
+  readBinary(binary: Binary): Promise<Readable>;
 }
 
 /**
@@ -48,8 +48,8 @@ class FileSystemStorage implements BinaryStorage {
 
   constructor(baseDir: string) {
     this.#baseDir = baseDir;
-    if (!existsSync(path.resolve(baseDir))) {
-      mkdirSync(path.resolve(baseDir));
+    if (!existsSync(resolve(baseDir))) {
+      mkdirSync(resolve(baseDir));
     }
   }
 
@@ -57,7 +57,7 @@ class FileSystemStorage implements BinaryStorage {
     binary: Binary,
     filename: string | undefined,
     contentType: string | undefined,
-    stream: internal.Readable | NodeJS.ReadableStream
+    stream: Readable | NodeJS.ReadableStream
   ): Promise<void> {
     checkFileMetadata(filename, contentType);
     const dir = this.#getDir(binary);
@@ -72,16 +72,20 @@ class FileSystemStorage implements BinaryStorage {
     });
   }
 
-  async readBinary(binary: Binary): Promise<internal.Readable> {
-    return createReadStream(this.#getPath(binary));
+  async readBinary(binary: Binary): Promise<Readable> {
+    const filePath = this.#getPath(binary);
+    if (!existsSync(filePath)) {
+      throw new Error('File not found');
+    }
+    return createReadStream(filePath);
   }
 
   #getDir(binary: Binary): string {
-    return path.resolve(this.#baseDir, binary.id as string);
+    return resolve(this.#baseDir, binary.id as string);
   }
 
   #getPath(binary: Binary): string {
-    return path.resolve(this.#getDir(binary), binary.meta?.versionId as string);
+    return resolve(this.#getDir(binary), binary.meta?.versionId as string);
   }
 }
 
@@ -128,7 +132,7 @@ class S3Storage implements BinaryStorage {
     binary: Binary,
     filename: string | undefined,
     contentType: string | undefined,
-    stream: internal.Readable | NodeJS.ReadableStream
+    stream: Readable | NodeJS.ReadableStream
   ): Promise<void> {
     checkFileMetadata(filename, contentType);
     const upload = new Upload({
@@ -137,7 +141,7 @@ class S3Storage implements BinaryStorage {
         Key: this.#getKey(binary),
         CacheControl: 'max-age=3600, s-maxage=86400',
         ContentType: contentType || 'application/octet-stream',
-        Body: stream as internal.Readable | ReadableStream<any>,
+        Body: stream as Readable | ReadableStream<any>,
       },
       client: this.#client,
       queueSize: 3,
@@ -146,14 +150,14 @@ class S3Storage implements BinaryStorage {
     await upload.done();
   }
 
-  async readBinary(binary: Binary): Promise<internal.Readable> {
+  async readBinary(binary: Binary): Promise<Readable> {
     const output = await this.#client.send(
       new GetObjectCommand({
         Bucket: this.#bucket,
         Key: this.#getKey(binary),
       })
     );
-    return output.Body as internal.Readable;
+    return output.Body as Readable;
   }
 
   #getKey(binary: Binary): string {

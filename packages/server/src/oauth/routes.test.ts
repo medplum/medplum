@@ -4,8 +4,9 @@ import request from 'supertest';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { createTestClient } from '../test.setup';
+import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
+import { createTestClient } from '../test.setup';
 import { initKeys } from './keys';
 
 const app = express();
@@ -14,6 +15,7 @@ let client: ClientApplication;
 describe('OAuth Routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initApp(app);
@@ -23,6 +25,7 @@ describe('OAuth Routes', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   test('Get token with client credentials', async () => {

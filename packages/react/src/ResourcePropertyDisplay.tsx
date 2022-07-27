@@ -2,6 +2,7 @@ import {
   buildTypeName,
   formatDateTime,
   formatPeriod,
+  formatTiming,
   getTypedPropertyValue,
   PropertyType,
   TypedValue,
@@ -99,6 +100,8 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       return <RatioDisplay value={value} />;
     case PropertyType.Reference:
       return <ReferenceDisplay value={value} link={props.link} />;
+    case PropertyType.Timing:
+      return <div>{formatTiming(value)}</div>;
     default:
       if (!property?.path) {
         throw Error(`Displaying property of type ${props.propertyType} requires element definition path`);

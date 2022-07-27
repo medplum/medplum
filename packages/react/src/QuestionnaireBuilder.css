@@ -1,9 +1,9 @@
 .medplum-questionnaire-builder .section {
   position: relative;
-  margin: 4px;
-  padding: 16px 12px 16px 4px;
+  margin: 4px 4px 4px 0;
+  padding: 4px 12px 16px 2px;
   background-color: var(--medplum-surface);
-  border: 1px solid var(--medplum-gray-300);
+  border: 1px solid var(--medplum-surface);
   border-radius: 8px;
 }
 
@@ -12,18 +12,19 @@
 }
 
 .medplum-questionnaire-builder .section.hovering {
-  border-color: var(--medplum-blue-500);
+  border: 1px solid var(--medplum-blue-500);
 }
 
 .medplum-questionnaire-builder .section.editing {
-  margin: 8px 4px 12px 4px;
-  padding: 4px 4px 20px 4px;
+  margin: 8px 4px 12px 0;
+  padding: 4px 4px 20px 12px;
+  border: 1px solid var(--medplum-gray-300);
   border-left: 4px solid var(--medplum-blue-500);
 }
 
 .medplum-questionnaire-builder .section.editing input,
 .medplum-questionnaire-builder .section.editing select {
-  margin: 2px 4px;
+  margin: 2px 4px 2px 0;
 }
 
 .medplum-questionnaire-builder .section > .top-actions {

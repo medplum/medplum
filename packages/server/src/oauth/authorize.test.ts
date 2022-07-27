@@ -5,6 +5,7 @@ import { URL, URLSearchParams } from 'url';
 import { initApp } from '../app';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
+import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
 import { createTestClient } from '../test.setup';
 import { initKeys } from './keys';
@@ -15,6 +16,7 @@ let client: ClientApplication;
 describe('OAuth Authorize', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initApp(app);
@@ -24,6 +26,7 @@ describe('OAuth Authorize', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   test('Authorize GET client not found', async () => {

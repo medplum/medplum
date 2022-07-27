@@ -20,7 +20,7 @@ async function main(): Promise<void> {
   logger.info('config: ' + JSON.stringify(config, undefined, 2));
 
   await initDatabase(config.database);
-  await initRedis(config.redis);
+  initRedis(config.redis);
   await initKeys(config);
   await seedDatabase();
   initBinaryStorage(config.binaryStorage);

@@ -33,11 +33,14 @@
   padding: 6px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 
 .modal-dialog-title-close {
   cursor: pointer;
   vertical-align: middle;
+  width: 20px;
+  height: 20px;
 }
 
 .modal-dialog-title-close:hover {

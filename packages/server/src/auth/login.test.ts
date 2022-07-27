@@ -12,6 +12,7 @@ import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { systemRepo } from '../fhir';
 import { initKeys } from '../oauth';
+import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
 import { createTestClient, setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { registerNew } from './register';
@@ -26,6 +27,7 @@ let client: ClientApplication;
 describe('Login', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initApp(app);
@@ -35,6 +37,7 @@ describe('Login', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   beforeEach(() => {

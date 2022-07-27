@@ -10,11 +10,11 @@ import { getConfig, loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
 import { systemRepo } from '../fhir';
 import { getUserByEmail, initKeys } from '../oauth';
+import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { registerNew } from './register';
 
-jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
 jest.mock('node-fetch');
 
@@ -43,6 +43,7 @@ const app = express();
 describe('Google Auth', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initApp(app);
@@ -51,6 +52,7 @@ describe('Google Auth', () => {
 
   afterAll(async () => {
     await closeDatabase();
+    closeRedis();
   });
 
   beforeEach(() => {

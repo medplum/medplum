@@ -45,6 +45,7 @@ import { URL } from 'url';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getClient } from '../database';
+import { getRedis } from '../redis';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
@@ -89,6 +90,12 @@ export interface RepositoryContext {
    * which grants system-level access.
    */
   admin?: boolean;
+}
+
+export interface CacheEntry<T extends Resource> {
+  resource: T;
+  projectId: string;
+  compartments: string[];
 }
 
 export type RepositoryResult<T extends Resource | undefined> = Promise<[OperationOutcome, T | undefined]>;
@@ -166,6 +173,21 @@ export class Repository {
       return [accessDenied, undefined];
     }
 
+    if (!this.#context.accessPolicy) {
+      const cacheRecord = await getCacheEntry<T>(resourceType, id);
+      if (cacheRecord) {
+        if (
+          !this.#isAdmin() &&
+          this.#context.project !== undefined &&
+          cacheRecord.projectId !== undefined &&
+          cacheRecord.projectId !== this.#context.project
+        ) {
+          return [notFound, undefined];
+        }
+        return [allOk, this.#removeHiddenFields(cacheRecord.resource)];
+      }
+    }
+
     const client = getClient();
     const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', Operator.EQUALS, id);
 
@@ -180,7 +202,9 @@ export class Repository {
       return [gone, undefined];
     }
 
-    return [allOk, this.#removeHiddenFields(JSON.parse(rows[0].content as string))];
+    const resource = JSON.parse(rows[0].content as string) as T;
+    setCacheEntry(resource);
+    return [allOk, this.#removeHiddenFields(resource)];
   }
 
   async readReference<T extends Resource>(reference: Reference<T>): RepositoryResult<T> {
@@ -280,7 +304,7 @@ export class Repository {
       return [existingOutcome, undefined];
     }
 
-    if (await this.#checkTooManyVersions(resourceType, id)) {
+    if (await this.#isTooManyVersions(resourceType, id, create)) {
       return [tooManyRequests, undefined];
     }
 
@@ -292,14 +316,8 @@ export class Repository {
       },
     });
 
-    if (existing) {
-      // When stricter FHIR validation is enabled, then this can be removed.
-      // At present, there are some cases where a server accepts "empty" values that escape the deep equals.
-      const cleanExisting = JSON.parse(stringify(existing));
-      const cleanUpdated = JSON.parse(stringify(updated));
-      if (deepEquals(cleanExisting, cleanUpdated)) {
-        return [notModified, existing];
-      }
+    if (await this.#isNotModified(existing, updated)) {
+      return [notModified, existing];
     }
 
     const result: T = {
@@ -323,6 +341,7 @@ export class Repository {
     }
 
     try {
+      await setCacheEntry(result);
       await this.#writeResource(result);
       await this.#writeResourceVersion(result);
       await this.#writeLookupTables(result);
@@ -339,9 +358,13 @@ export class Repository {
    * Returns true if the resource has too many versions within the specified time period.
    * @param resourceType The resource type.
    * @param id The resource ID.
+   * @param create If true, then the resource is being created.
    * @returns True if the resource has too many versions within the specified time period.
    */
-  async #checkTooManyVersions(resourceType: string, id: string): Promise<boolean> {
+  async #isTooManyVersions(resourceType: string, id: string, create: boolean): Promise<boolean> {
+    if (create) {
+      return false;
+    }
     const seconds = 60;
     const maxVersions = 10;
     const client = getClient();
@@ -351,6 +374,24 @@ export class Repository {
       .where('lastUpdated', Operator.GREATER_THAN, new Date(Date.now() - 1000 * seconds))
       .execute(client);
     return (rows[0].count as number) >= maxVersions;
+  }
+
+  /**
+   * Returns true if the resource is not modified from the existing resource.
+   * @param existing The existing resource.
+   * @param updated The updated resource.
+   * @returns True if the resource is not modified.
+   */
+  async #isNotModified(existing: Resource | undefined, updated: Resource): Promise<boolean> {
+    if (!existing) {
+      return false;
+    }
+
+    // When stricter FHIR validation is enabled, then this can be removed.
+    // At present, there are some cases where a server accepts "empty" values that escape the deep equals.
+    const cleanExisting = JSON.parse(stringify(existing));
+    const cleanUpdated = JSON.parse(stringify(updated));
+    return deepEquals(cleanExisting, cleanUpdated);
   }
 
   /**
@@ -429,6 +470,8 @@ export class Repository {
     if (!this.#canWriteResourceType(resourceType)) {
       return [accessDenied, undefined];
     }
+
+    await deleteCacheEntry(resourceType, id);
 
     const client = getClient();
     const lastUpdated = new Date();
@@ -1403,6 +1446,47 @@ export class Repository {
     const { adminClientId } = getConfig();
     return !!adminClientId && this.#context.author.reference === 'ClientApplication/' + adminClientId;
   }
+}
+
+/**
+ * Tries to read a cache entry from Redis by resource type and ID.
+ * @param resourceType The resource type.
+ * @param id The resource ID.
+ * @returns The cache entry if found; otherwise, undefined.
+ */
+async function getCacheEntry<T extends Resource>(resourceType: string, id: string): Promise<CacheEntry<T> | undefined> {
+  const cachedValue = await getRedis().get(getCacheKey(resourceType, id));
+  return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<T>) : undefined;
+}
+
+/**
+ * Writes a cache entry to Redis.
+ * @param resource The resource to cache.
+ */
+async function setCacheEntry(resource: Resource): Promise<void> {
+  await getRedis().set(
+    getCacheKey(resource.resourceType, resource.id as string),
+    JSON.stringify({ resource, projectId: resource.meta?.project })
+  );
+}
+
+/**
+ * Deletes a cache entry from Redis.
+ * @param resourceType The resource type.
+ * @param id The resource ID.
+ */
+async function deleteCacheEntry(resourceType: string, id: string): Promise<void> {
+  await getRedis().del(getCacheKey(resourceType, id));
+}
+
+/**
+ * Returns the redis cache key for the given resource type and resource ID.
+ * @param resourceType The resource type.
+ * @param id The resource ID.
+ * @returns The Redis cache key.
+ */
+function getCacheKey(resourceType: string, id: string): string {
+  return `${resourceType}/${id}`;
 }
 
 /**
