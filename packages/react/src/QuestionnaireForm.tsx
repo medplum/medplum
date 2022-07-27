@@ -179,6 +179,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
   function onChangeItem(newResponseItems: QuestionnaireResponseItem[]): void {
     props.onChange({
       linkId: item.linkId,
+      text: item.text,
       item: newResponseItems,
     });
   }
@@ -186,6 +187,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
   function onChangeAnswer(newResponseAnswer: QuestionnaireResponseItemAnswer): void {
     props.onChange({
       linkId: item.linkId,
+      text: item.text,
       answer: [newResponseAnswer],
     });
   }
@@ -440,6 +442,7 @@ function buildInitialResponseItems(items: QuestionnaireItem[] | undefined): Ques
 function buildInitialResponseItem(item: QuestionnaireItem): QuestionnaireResponseItem {
   return {
     linkId: item.linkId,
+    text: item.text,
     item: buildInitialResponseItems(item.item),
     answer: item.initial?.map(buildInitialResponseAnswer) ?? [],
   };
