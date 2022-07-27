@@ -171,8 +171,8 @@ export class BackEnd extends Construct {
     });
 
     serviceContainer.addPortMappings({
-      containerPort: 8000,
-      hostPort: 8000,
+      containerPort: 8103,
+      hostPort: 8103,
     });
 
     // Security Groups
@@ -197,7 +197,7 @@ export class BackEnd extends Construct {
     // Load Balancer Target Group
     const targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {
       vpc: vpc,
-      port: 8000,
+      port: 8103,
       protocol: elbv2.ApplicationProtocol.HTTP,
       healthCheck: {
         path: '/healthcheck',
