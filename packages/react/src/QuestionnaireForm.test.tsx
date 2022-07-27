@@ -130,10 +130,15 @@ describe('QuestionnaireForm', () => {
     expect(onSubmit).toBeCalled();
 
     const response = onSubmit.mock.calls[0][0];
+    expect(response.resourceType).toBe('QuestionnaireResponse');
     expect(getAnswer(response, 'question1')).toMatchObject({ valueString: 'a1' });
     expect(getAnswer(response, 'question2')).toMatchObject({ valueString: 'a2' });
     expect(getAnswer(response, 'question3')).toMatchObject({ valueString: 'a3' });
     expect(getAnswer(response, 'question4')).toMatchObject({ valueString: 'a4' });
+    expect(response.item).toHaveLength(2);
+    expect(response.item[0].item).toHaveLength(2);
+    expect(response.item[0].item[0].linkId).toBe('question1');
+    expect(response.item[0].item[0].text).toBe('Question 1');
   });
 
   test('Handles submit', async () => {
@@ -446,6 +451,7 @@ describe('QuestionnaireForm', () => {
       item: [
         {
           linkId: 'q1',
+          text: 'q1',
           answer: [
             {
               valueAttachment: {
