@@ -1,10 +1,5 @@
-import { PropertyType } from '@medplum/core';
-import {
-  Questionnaire,
-  QuestionnaireResponse,
-  QuestionnaireResponseItem,
-  QuestionnaireResponseItemAnswer,
-} from '@medplum/fhirtypes';
+import { getQuestionnaireAnswers, PropertyType } from '@medplum/core';
+import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { randomUUID } from 'crypto';
@@ -96,6 +91,11 @@ describe('QuestionnaireForm', () => {
                 text: 'Question 4',
                 type: QuestionnaireItemType.string,
               },
+              {
+                linkId: 'question5',
+                text: 'Question 5',
+                type: QuestionnaireItemType.boolean,
+              },
             ],
           },
         ],
@@ -131,14 +131,18 @@ describe('QuestionnaireForm', () => {
 
     const response = onSubmit.mock.calls[0][0];
     expect(response.resourceType).toBe('QuestionnaireResponse');
-    expect(getAnswer(response, 'question1')).toMatchObject({ valueString: 'a1' });
-    expect(getAnswer(response, 'question2')).toMatchObject({ valueString: 'a2' });
-    expect(getAnswer(response, 'question3')).toMatchObject({ valueString: 'a3' });
-    expect(getAnswer(response, 'question4')).toMatchObject({ valueString: 'a4' });
     expect(response.item).toHaveLength(2);
     expect(response.item[0].item).toHaveLength(2);
     expect(response.item[0].item[0].linkId).toBe('question1');
     expect(response.item[0].item[0].text).toBe('Question 1');
+    expect(response.item[1].item[2].linkId).toBe('question5');
+    expect(response.item[1].item[2].text).toBe('Question 5');
+
+    const answers = getQuestionnaireAnswers(response);
+    expect(answers['question1']).toMatchObject({ valueString: 'a1' });
+    expect(answers['question2']).toMatchObject({ valueString: 'a2' });
+    expect(answers['question3']).toMatchObject({ valueString: 'a3' });
+    expect(answers['question4']).toMatchObject({ valueString: 'a4' });
   });
 
   test('Handles submit', async () => {
@@ -228,10 +232,11 @@ describe('QuestionnaireForm', () => {
     expect(onSubmit).toBeCalled();
 
     const response = onSubmit.mock.calls[0][0];
-    expect(getAnswer(response, 'q1')).toMatchObject({ valueString: 'a1' });
-    expect(getAnswer(response, 'q2')).toMatchObject({ valueInteger: 2 });
-    expect(getAnswer(response, 'q3')).toMatchObject({ valueDate: '2023-03-03' });
-    expect(getAnswer(response, 'q6')).toMatchObject({ valueString: 'initial answer' });
+    const answers = getQuestionnaireAnswers(response);
+    expect(answers['q1']).toMatchObject({ valueString: 'a1' });
+    expect(answers['q2']).toMatchObject({ valueInteger: 2 });
+    expect(answers['q3']).toMatchObject({ valueDate: '2023-03-03' });
+    expect(answers['q6']).toMatchObject({ valueString: 'initial answer' });
   });
 
   each([
@@ -336,7 +341,8 @@ describe('QuestionnaireForm', () => {
     });
 
     const response1 = onSubmit.mock.calls[0][0];
-    expect(getAnswer(response1, 'q1')).toMatchObject({ valueString: 'a1' });
+    const answers1 = getQuestionnaireAnswers(response1);
+    expect(answers1['q1']).toMatchObject({ valueString: 'a1' });
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText('a2'));
@@ -347,7 +353,8 @@ describe('QuestionnaireForm', () => {
     });
 
     const response2 = onSubmit.mock.calls[1][0];
-    expect(getAnswer(response2, 'q1')).toMatchObject({ valueString: 'a2' });
+    const answers2 = getQuestionnaireAnswers(response2);
+    expect(answers2['q1']).toMatchObject({ valueString: 'a2' });
   });
 
   test('Choice valueReference default value', async () => {
@@ -571,10 +578,10 @@ describe('QuestionnaireForm', () => {
     });
 
     const response1 = onSubmit.mock.calls[0][0];
-    expect(getAnswer(response1, 'q1')).toMatchObject({ valueString: 'a1' });
+    const answers1 = getQuestionnaireAnswers(response1);
+    expect(answers1['q1']).toMatchObject({ valueString: 'a1' });
 
     await act(async () => {
-      // fireEvent.click(screen.getByLabelText('a2'));
       fireEvent.change(dropDown, { target: { value: 'a2' } });
     });
 
@@ -583,7 +590,8 @@ describe('QuestionnaireForm', () => {
     });
 
     const response2 = onSubmit.mock.calls[1][0];
-    expect(getAnswer(response2, 'q1')).toMatchObject({ valueString: 'a2' });
+    const answers2 = getQuestionnaireAnswers(response2);
+    expect(answers2['q1']).toMatchObject({ valueString: 'a2' });
   });
 
   test('Drop down choice input default value', async () => {
@@ -639,26 +647,3 @@ describe('QuestionnaireForm', () => {
     expect((dropDown as HTMLSelectElement).value).toBe('a2');
   });
 });
-
-function getAnswer(response: QuestionnaireResponse, linkId: string): QuestionnaireResponseItemAnswer | undefined {
-  return getAnswerFromItems(response.item as QuestionnaireResponseItem[], linkId);
-}
-
-function getAnswerFromItems(
-  items: QuestionnaireResponseItem[],
-  linkId: string
-): QuestionnaireResponseItemAnswer | undefined {
-  for (const item of items) {
-    if (item.linkId === linkId) {
-      return (item.answer as QuestionnaireResponseItemAnswer[])[0];
-    }
-    if (item.item) {
-      const answer = getAnswerFromItems(item.item as QuestionnaireResponseItem[], linkId);
-      if (answer) {
-        return answer;
-      }
-    }
-  }
-
-  return undefined;
-}

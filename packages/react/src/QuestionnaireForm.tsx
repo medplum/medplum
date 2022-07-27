@@ -136,6 +136,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
                 onChange={(newValue) =>
                   setResponseItem(index, {
                     linkId: item.linkId,
+                    text: item.text,
                     answer: [{ valueBoolean: newValue }],
                   })
                 }
