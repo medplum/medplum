@@ -21,6 +21,7 @@
 .medplum-signin-google-container {
   padding: 20px 0 10px 0;
   margin: 20px 0 10px 0;
+  height: 70px;
   text-align: center;
   display: flex;
   align-items: center;
