@@ -1147,7 +1147,6 @@ export class MedplumClient extends EventTarget {
    *
    * ```typescript
    * const result = await medplum.createResourceIfNoneExist(
-   *   'Patient?identifier=123',
    *   {
    *     resourceType: 'Patient',
    *     identifier: [{
@@ -1158,14 +1157,16 @@ export class MedplumClient extends EventTarget {
    *      family: 'Smith',
    *      given: ['John']
    *     }]
-   *   });
+   *   },
+   *   'Patient?identifier=123'
+   * );
    * console.log(result.id);
    * ```
    *
    * This method is syntactic sugar for:
    *
    * ```typescript
-   * return searchOne(query) ?? createResource(resource);
+   * return searchOne(resourceType, query) ?? createResource(resource);
    * ```
    *
    * The query parameter only contains the search parameters (what would be in the URL following the "?").
@@ -1174,7 +1175,7 @@ export class MedplumClient extends EventTarget {
    *
    * @category Create
    * @param resource The FHIR resource to create.
-   * @param query The search query for an equivalent resource.
+   * @param query The search query for an equivalent resource (should not include resource type or "?").
    * @returns The result of the create operation.
    */
   async createResourceIfNoneExist<T extends Resource>(resource: T, query: string): Promise<T> {
