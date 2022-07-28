@@ -49,7 +49,7 @@ export interface MedplumClientOptions {
   /**
    * Base server URL.
    *
-   * Default value is "https://api.medplum.com/".
+   * Default value is https://api.medplum.com/
    *
    * Use this to point to a custom Medplum deployment.
    */
