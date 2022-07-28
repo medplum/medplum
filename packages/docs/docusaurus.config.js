@@ -7,7 +7,7 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Medplum',
-  tagline: 'Healthcare infrastructure and application development',
+  tagline: 'Fast and easy healthcare dev',
   url: 'https://docs.medplum.com',
   baseUrl: '/',
   trailingSlash: false,
@@ -16,7 +16,6 @@ const config = {
   favicon: 'img/favicon.ico',
   organizationName: 'medplum', // Usually your GitHub org/user name.
   projectName: 'medplum', // Usually your repo name.
-
   presets: [
     [
       '@docusaurus/preset-classic',
