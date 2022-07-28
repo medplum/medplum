@@ -2,12 +2,14 @@ import { AccessPolicy, OperationOutcome, ProjectMembership, Reference, UserConfi
 import { Button, Checkbox, Document, Form, FormSection, MedplumLink, ResourceBadge, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { getProjectId } from '../utils';
 import { AccessPolicyInput } from './AccessPolicyInput';
 import { UserConfigurationInput } from './UserConfigurationInput';
 
 export function EditMembershipPage(): JSX.Element {
-  const { projectId, membershipId } = useParams();
+  const { membershipId } = useParams();
   const medplum = useMedplum();
+  const projectId = getProjectId(medplum);
   const membership = medplum.get(`admin/projects/${projectId}/members/${membershipId}`).read();
   const [accessPolicy, setAccessPolicy] = useState<Reference<AccessPolicy> | undefined>(membership.accessPolicy);
   const [userConfiguration, setUserConfiguration] = useState<Reference<UserConfiguration> | undefined>(

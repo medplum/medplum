@@ -10,9 +10,9 @@ The Medplum API uses standard OAuth2/OpenID authentication. "Client Credentials 
 
 This tutorial assumes you already have a Medplum account in good standing. (If not, please [register](https://app.medplum.com/register).)
 
-You will need to create a [ClientApplication](https://app.medplum.com/ClientApplication) if one does not already exist. You can create a new ClientApp [here](https://app.medplum.com/ClientApplication/new).
+You will need to create a [ClientApplication](https://app.medplum.com/ClientApplication) if one does not already exist. You can create a new ClientApplication [here](https://app.medplum.com/admin/project/client).
 
-For this example you will need to provide an `ID` and `Secret`, but Redirect Uri is optional.
+For this example you will need the `ID` and `Secret`.
 
 ## Connecting to the service
 

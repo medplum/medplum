@@ -1,12 +1,12 @@
 import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { Button, Document, Form, FormSection, Input, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { getProjectId } from '../utils';
 import { AccessPolicyInput } from './AccessPolicyInput';
 
 export function CreateClientPage(): JSX.Element {
-  const { projectId } = useParams() as { projectId: string };
   const medplum = useMedplum();
+  const projectId = getProjectId(medplum);
   const result = medplum.get(`admin/projects/${projectId}`).read();
   const [name, setName] = useState<string>('');
   const [description, setDescription] = useState<string>('');

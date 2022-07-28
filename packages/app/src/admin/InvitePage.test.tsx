@@ -13,7 +13,7 @@ async function setup(url: string): Promise<void> {
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
           <Routes>
-            <Route path="/admin/projects/:projectId/invite" element={<InvitePage />} />
+            <Route path="/admin/project/invite" element={<InvitePage />} />
           </Routes>
         </MemoryRouter>
       </MedplumProvider>
@@ -22,6 +22,19 @@ async function setup(url: string): Promise<void> {
 }
 
 describe('InvitePage', () => {
+  beforeAll(() => {
+    medplum.setActiveLoginOverride({
+      accessToken: '123',
+      refreshToken: '456',
+      profile: {
+        reference: 'Practitioner/123',
+      },
+      project: {
+        reference: 'Project/123',
+      },
+    });
+  });
+
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -34,14 +47,14 @@ describe('InvitePage', () => {
   });
 
   test('Renders', async () => {
-    await setup('/admin/projects/123/invite');
+    await setup('/admin/project/invite');
     await waitFor(() => screen.getByText('Invite'));
 
     expect(screen.getByText('Invite')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
-    await setup('/admin/projects/123/invite');
+    await setup('/admin/project/invite');
     await waitFor(() => screen.getByText('Invite'));
 
     expect(screen.getByText('Invite')).toBeInTheDocument();
@@ -66,7 +79,7 @@ describe('InvitePage', () => {
   });
 
   test('Submit with access policy', async () => {
-    await setup('/admin/projects/123/invite');
+    await setup('/admin/project/invite');
     await waitFor(() => screen.getByText('Invite'));
 
     expect(screen.getByText('Invite')).toBeInTheDocument();

@@ -13,7 +13,7 @@ async function setup(url: string): Promise<void> {
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
           <Routes>
-            <Route path="/admin/projects/:projectId/bot" element={<CreateBotPage />} />
+            <Route path="/admin/project/bot" element={<CreateBotPage />} />
           </Routes>
         </MemoryRouter>
       </MedplumProvider>
@@ -22,6 +22,19 @@ async function setup(url: string): Promise<void> {
 }
 
 describe('CreateBotPage', () => {
+  beforeAll(() => {
+    medplum.setActiveLoginOverride({
+      accessToken: '123',
+      refreshToken: '456',
+      profile: {
+        reference: 'Practitioner/123',
+      },
+      project: {
+        reference: 'Project/123',
+      },
+    });
+  });
+
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -34,13 +47,13 @@ describe('CreateBotPage', () => {
   });
 
   test('Renders', async () => {
-    await setup('/admin/projects/123/bot');
+    await setup('/admin/project/bot');
     await waitFor(() => screen.getByText('Create Bot'));
     expect(screen.getByText('Create Bot')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
-    await setup('/admin/projects/123/bot');
+    await setup('/admin/project/bot');
     await waitFor(() => screen.getByText('Create Bot'));
 
     expect(screen.getByText('Create Bot')).toBeInTheDocument();
@@ -62,7 +75,7 @@ describe('CreateBotPage', () => {
   });
 
   test('Submit with access policy', async () => {
-    await setup('/admin/projects/123/bot');
+    await setup('/admin/project/bot');
     await waitFor(() => screen.getByText('Create Bot'));
 
     expect(screen.getByText('Create Bot')).toBeInTheDocument();

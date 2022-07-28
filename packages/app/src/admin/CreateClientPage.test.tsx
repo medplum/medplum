@@ -13,7 +13,7 @@ async function setup(url: string): Promise<void> {
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
           <Routes>
-            <Route path="/admin/projects/:projectId/client" element={<CreateClientPage />} />
+            <Route path="/admin/project/client" element={<CreateClientPage />} />
           </Routes>
         </MemoryRouter>
       </MedplumProvider>
@@ -22,6 +22,19 @@ async function setup(url: string): Promise<void> {
 }
 
 describe('CreateClientPage', () => {
+  beforeAll(() => {
+    medplum.setActiveLoginOverride({
+      accessToken: '123',
+      refreshToken: '456',
+      profile: {
+        reference: 'Practitioner/123',
+      },
+      project: {
+        reference: 'Project/123',
+      },
+    });
+  });
+
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -34,13 +47,13 @@ describe('CreateClientPage', () => {
   });
 
   test('Renders', async () => {
-    await setup('/admin/projects/123/client');
+    await setup('/admin/project/client');
     await waitFor(() => screen.getByText('Create Client'));
     expect(screen.getByText('Create Client')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
-    await setup('/admin/projects/123/client');
+    await setup('/admin/project/client');
     await waitFor(() => screen.getByText('Create Client'));
 
     expect(screen.getByText('Create Client')).toBeInTheDocument();
@@ -65,7 +78,7 @@ describe('CreateClientPage', () => {
   });
 
   test('Submit with access policy', async () => {
-    await setup('/admin/projects/123/client');
+    await setup('/admin/project/client');
     await waitFor(() => screen.getByText('Create Client'));
 
     expect(screen.getByText('Create Client')).toBeInTheDocument();
