@@ -13,7 +13,7 @@ async function setup(url: string): Promise<void> {
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
           <Routes>
-            <Route path="/admin/projects/:projectId/members/:membershipId" element={<EditMembershipPage />} />
+            <Route path="/admin/project/members/:membershipId" element={<EditMembershipPage />} />
           </Routes>
         </MemoryRouter>
       </MedplumProvider>
@@ -24,6 +24,16 @@ async function setup(url: string): Promise<void> {
 describe('EditMembershipPage', () => {
   beforeEach(() => {
     medplum = new MockClient();
+    medplum.setActiveLoginOverride({
+      accessToken: '123',
+      refreshToken: '456',
+      profile: {
+        reference: 'Practitioner/123',
+      },
+      project: {
+        reference: 'Project/123',
+      },
+    });
 
     jest.useFakeTimers();
   });
@@ -36,14 +46,14 @@ describe('EditMembershipPage', () => {
   });
 
   test('Renders', async () => {
-    await setup('/admin/projects/123/members/456');
+    await setup('/admin/project/members/456');
     await waitFor(() => screen.getByText('Save'));
 
     expect(screen.getByText('Save')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
-    await setup('/admin/projects/123/members/456');
+    await setup('/admin/project/members/456');
     await waitFor(() => screen.getByText('Save'));
 
     expect(screen.getByText('Save')).toBeInTheDocument();
@@ -56,7 +66,7 @@ describe('EditMembershipPage', () => {
   });
 
   test('Submit with access policy', async () => {
-    await setup('/admin/projects/123/members/456');
+    await setup('/admin/project/members/456');
     await waitFor(() => screen.getByText('Save'));
 
     expect(screen.getByText('Save')).toBeInTheDocument();
@@ -89,7 +99,7 @@ describe('EditMembershipPage', () => {
   });
 
   test('Submit with user configuration', async () => {
-    await setup('/admin/projects/123/members/456');
+    await setup('/admin/project/members/456');
     await waitFor(() => screen.getByText('Save'));
 
     expect(screen.getByText('Save')).toBeInTheDocument();
@@ -124,7 +134,7 @@ describe('EditMembershipPage', () => {
   test('Submit with admin', async () => {
     const medplumPostSpy = jest.spyOn(medplum, 'post');
 
-    await setup('/admin/projects/123/members/456');
+    await setup('/admin/project/members/456');
     await waitFor(() => screen.getByText('Save'));
 
     expect(screen.getByText('Save')).toBeInTheDocument();
@@ -152,7 +162,7 @@ describe('EditMembershipPage', () => {
   test('Remove admin', async () => {
     const medplumPostSpy = jest.spyOn(medplum, 'post');
 
-    await setup('/admin/projects/123/members/456');
+    await setup('/admin/project/members/456');
     await waitFor(() => screen.getByText('Save'));
 
     expect(screen.getByText('Save')).toBeInTheDocument();
@@ -184,7 +194,7 @@ describe('EditMembershipPage', () => {
   });
 
   test('Remove user accept confirm', async () => {
-    await setup('/admin/projects/123/members/456');
+    await setup('/admin/project/members/456');
     await waitFor(() => screen.getByText('Save'));
 
     expect(screen.getByText('Remove user')).toBeInTheDocument();
@@ -198,7 +208,7 @@ describe('EditMembershipPage', () => {
   });
 
   test('Remove user reject confirm', async () => {
-    await setup('/admin/projects/123/members/456');
+    await setup('/admin/project/members/456');
     await waitFor(() => screen.getByText('Save'));
 
     expect(screen.getByText('Remove user')).toBeInTheDocument();

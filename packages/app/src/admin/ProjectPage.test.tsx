@@ -22,7 +22,7 @@ async function setup(url: string): Promise<void> {
 }
 
 describe('ProjectPage', () => {
-  test('Renders', async () => {
+  beforeAll(() => {
     medplum.setActiveLoginOverride({
       accessToken: '123',
       refreshToken: '456',
@@ -33,7 +33,9 @@ describe('ProjectPage', () => {
         reference: 'Project/123',
       },
     });
+  });
 
+  test('Renders', async () => {
     await setup('/admin/project');
     await waitFor(() => screen.getByText('Alice Smith'));
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();

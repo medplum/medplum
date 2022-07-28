@@ -52,11 +52,11 @@ export function HomePage(): JSX.Element {
         navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
       }}
       onNew={
-        search.resourceType === 'Bot'
-          ? undefined
-          : () => {
+        canCreate(search.resourceType)
+          ? () => {
               navigate(`/${search.resourceType}/new`);
             }
+          : undefined
       }
       onExport={() => {
         const url = medplum.fhirUrl(search.resourceType, '$csv') + formatSearchQuery(search);
@@ -191,4 +191,8 @@ function getLastSearch(resourceType: string): SearchRequest | undefined {
 function saveLastSearch(search: SearchRequest): void {
   localStorage.setItem('defaultResourceType', search.resourceType);
   localStorage.setItem(search.resourceType + '-defaultSearch', JSON.stringify(search));
+}
+
+function canCreate(resourceType: string): boolean {
+  return resourceType !== 'Bot' && resourceType !== 'ClientApplication';
 }

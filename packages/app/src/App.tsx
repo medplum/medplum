@@ -74,11 +74,11 @@ export function App(): JSX.Element {
             <Route path="/bulk/:resourceType" element={<BulkAppPage />} />
             <Route path="/smart" element={<SmartSearchPage />} />
             <Route path="/forms/:id" element={<FormPage />} />
+            <Route path="/admin/project/bot" element={<CreateBotPage />} />
+            <Route path="/admin/project/client" element={<CreateClientPage />} />
+            <Route path="/admin/project/invite" element={<InvitePage />} />
+            <Route path="/admin/project/members/:membershipId" element={<EditMembershipPage />} />
             <Route path="/admin/project" element={<ProjectPage />} />
-            <Route path="/admin/projects/:projectId/bot" element={<CreateBotPage />} />
-            <Route path="/admin/projects/:projectId/client" element={<CreateClientPage />} />
-            <Route path="/admin/projects/:projectId/invite" element={<InvitePage />} />
-            <Route path="/admin/projects/:projectId/members/:membershipId" element={<EditMembershipPage />} />
             <Route path="/admin/super" element={<SuperAdminPage />} />
             <Route path="/lab/assays" element={<AssaysPage />} />
             <Route path="/lab/panels" element={<PanelsPage />} />

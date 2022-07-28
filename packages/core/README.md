@@ -43,7 +43,7 @@ const medplum = new MedplumClient({
 
 ```ts
 const medplum = new MedplumClient();
-medplum.clientCredentials(MY_CLIENT_ID, MY_CLIENT_SECRET);
+await medplum.startClientLogin(MY_CLIENT_ID, MY_CLIENT_SECRET);
 ```
 
 ## Authenticating with Medplum
