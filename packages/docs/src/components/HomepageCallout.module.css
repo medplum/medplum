@@ -93,3 +93,6 @@
   line-height: 100%;
 }
 
+.icon {
+  box-shadow: none;
+}
