@@ -27,6 +27,15 @@ describe('App', () => {
     expect(res.headers['strict-transport-security']).toBeDefined();
   });
 
+  test('robots.txt', async () => {
+    const app = express();
+    await loadTestConfig();
+    await initApp(app);
+    const res = await request(app).get('/robots.txt');
+    expect(res.status).toBe(200);
+    expect(res.text).toBe('User-agent: *\nDisallow: /');
+  });
+
   test('No CORS', async () => {
     const app = express();
     await loadTestConfig();
