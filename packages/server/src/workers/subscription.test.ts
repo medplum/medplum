@@ -572,6 +572,7 @@ describe('Subscription Worker', () => {
 
     const auditEvent = bundle.entry?.[0]?.resource as AuditEvent;
     expect(auditEvent.outcomeDesc).toEqual('Bots not enabled');
+    expect(auditEvent.period).toBeDefined();
   });
 
   test('Execute bot subscriptions', async () => {
