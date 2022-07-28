@@ -785,6 +785,34 @@ describe('FHIR Repo', () => {
     expect(patient3).toBeUndefined();
   });
 
+  test('Read history after delete', async () => {
+    // Create the patient
+    const [outcome1, patient] = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+    assertOk(outcome1, patient);
+
+    const [outcome2, history1] = await systemRepo.readHistory('Patient', patient?.id as string);
+    assertOk(outcome2, history1);
+    expect(history1?.entry?.length).toBe(1);
+
+    // Delete the patient
+    const [outcome3] = await systemRepo.deleteResource('Patient', patient?.id as string);
+    expect(outcome3.id).toEqual('ok');
+
+    const [outcome4] = await systemRepo.readHistory('Patient', patient?.id as string);
+    expect(outcome4.id).toEqual('gone');
+
+    // Restore the patient
+    const [outcome5, patient2] = await systemRepo.updateResource({ ...patient, meta: undefined });
+    assertOk(outcome5, patient2);
+
+    const [outcome6, history2] = await systemRepo.readHistory('Patient', patient?.id as string);
+    assertOk(outcome6, history2);
+    expect(history2?.entry?.length).toBe(3);
+  });
+
   test('Search birthDate after delete', async () => {
     const [createOutcome, patient] = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
