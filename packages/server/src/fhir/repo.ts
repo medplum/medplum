@@ -10,6 +10,7 @@ import {
   Filter,
   formatSearchQuery,
   getSearchParameterDetails,
+  getStatus,
   gone,
   isGone,
   isNotFound,
@@ -240,14 +241,29 @@ export class Repository {
       .limit(100)
       .execute(client);
 
+    const entries: BundleEntry<T>[] = [];
+
+    for (const row of rows) {
+      if (row.content) {
+        entries.push({
+          resource: this.#removeHiddenFields(JSON.parse(row.content as string)),
+        });
+      } else {
+        entries.push({
+          response: {
+            status: getStatus(gone).toString(),
+            outcome: gone,
+          },
+        });
+      }
+    }
+
     return [
       allOk,
       {
         resourceType: 'Bundle',
         type: 'history',
-        entry: rows.map((row: any) => ({
-          resource: this.#removeHiddenFields(JSON.parse(row.content as string)),
-        })),
+        entry: entries,
       },
     ];
   }
