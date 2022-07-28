@@ -1,5 +1,6 @@
 import { loadTestConfig } from './config';
-import { closeDatabase, initDatabase } from './database';
+import { closeDatabase, getClient, initDatabase } from './database';
+import { Operator, SelectQuery } from './fhir/sql';
 import { closeRedis, initRedis } from './redis';
 import { seedDatabase } from './seed';
 
@@ -18,6 +19,14 @@ describe('Seed', () => {
   test('Seeder completes successfully', async () => {
     // First time, seeder should run
     await seedDatabase();
+
+    // Make sure the first user is a super admin
+    const rows = await new SelectQuery('User')
+      .column('content')
+      .where('email', Operator.EQUALS, 'admin@example.com')
+      .execute(getClient());
+    const user = JSON.parse(rows[0].content);
+    expect(user.admin).toBe(true);
 
     // Second time, seeder should silently ignore
     await seedDatabase();

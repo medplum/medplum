@@ -24,6 +24,7 @@ export async function seedDatabase(): Promise<void> {
     resourceType: 'User',
     email,
     passwordHash,
+    admin: true,
   });
   assertOk(userOutcome, user);
 
