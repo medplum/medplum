@@ -211,14 +211,6 @@ describe('Client', () => {
       () =>
         new MedplumClient({
           clientId: 'xyz',
-          baseUrl: 'https://x',
-        })
-    ).toThrow('Base URL must end with a trailing slash');
-
-    expect(
-      () =>
-        new MedplumClient({
-          clientId: 'xyz',
           baseUrl: 'https://x/',
         })
     ).toThrow();
@@ -241,6 +233,11 @@ describe('Client', () => {
 
     window.fetch = jest.fn();
     expect(() => new MedplumClient()).not.toThrow();
+  });
+
+  test('Missing trailing slash', () => {
+    const client = new MedplumClient({ clientId: 'xyz', baseUrl: 'https://x' });
+    expect(client.getBaseUrl()).toBe('https://x/');
   });
 
   test('Restore from localStorage', async () => {

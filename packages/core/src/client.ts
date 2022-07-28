@@ -414,9 +414,6 @@ export class MedplumClient extends EventTarget {
       if (!options.baseUrl.startsWith('http')) {
         throw new Error('Base URL must start with http or https');
       }
-      if (!options.baseUrl.endsWith('/')) {
-        throw new Error('Base URL must end with a trailing slash');
-      }
     }
 
     this.#fetch = options?.fetch || window.fetch.bind(window);
@@ -424,7 +421,7 @@ export class MedplumClient extends EventTarget {
     this.#storage = new ClientStorage();
     this.#requestCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
     this.#cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
-    this.#baseUrl = options?.baseUrl || DEFAULT_BASE_URL;
+    this.#baseUrl = ensureTrailingSlash(options?.baseUrl) || DEFAULT_BASE_URL;
     this.#clientId = options?.clientId || '';
     this.#authorizeUrl = options?.authorizeUrl || this.#baseUrl + 'oauth2/authorize';
     this.#tokenUrl = options?.tokenUrl || this.#baseUrl + 'oauth2/token';
@@ -1973,4 +1970,11 @@ export class MedplumClient extends EventTarget {
  */
 function getBaseUrl(): string {
   return window.location.protocol + '//' + window.location.host + '/';
+}
+
+function ensureTrailingSlash(url: string | undefined): string | undefined {
+  if (!url) {
+    return url;
+  }
+  return url.endsWith('/') ? url : url + '/';
 }
