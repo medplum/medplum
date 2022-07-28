@@ -44,7 +44,6 @@
     "jszip": "3.10.0",
     "node-fetch": "2.6.7",
     "nodemailer": "6.7.7",
-    "pdfmake": "0.2.5",
     "pg": "8.7.3",
     "validator": "13.7.0"
   },
@@ -62,7 +61,6 @@
     "@types/mailparser": "3.4.0",
     "@types/node": "18.0.6",
     "@types/nodemailer": "6.4.4",
-    "@types/pdfmake": "0.2.0",
     "@types/pg": "8.6.5",
     "@types/set-cookie-parser": "2.4.2",
     "@types/supertest": "2.0.12",
