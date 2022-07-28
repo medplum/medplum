@@ -1,4 +1,4 @@
-// PKCE auth ased on:
+// PKCE auth based on:
 // https://aws.amazon.com/blogs/security/how-to-add-authentication-single-page-web-application-with-amazon-cognito-oauth2-implementation/
 
 import {
