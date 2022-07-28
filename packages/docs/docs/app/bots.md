@@ -75,11 +75,11 @@ export async function handler(medplum, event) {
 
 The following function arguments are available to the Bot code, to enable it to do the functionality it requires.
 
-| Name          | Type                                           | Description                                                                                           |
-| ------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `medplum`     | [MedplumClient](/sdk/classes/MedplumClient)    | An instance of the medplum JS SDK ([documentation](https://docs.medplum.com/typedoc/core/index.html)) |
-| `event`       | [BotEvent](/sdk/interfaces/BotEvent)           | The event that object that triggered the Bot                                                          |
-| `event.input` | `string` &#124; `Resource` &#124; `Hl7Message` | The bot input, usually a FHIR resource or content that was posted to a bot endpoint                   |
+| Name          | Type                                           | Description                                                                         |
+| ------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `medplum`     | [MedplumClient](/sdk/classes/MedplumClient)    | An instance of the medplum JS SDK ([documentation](/sdk/))                          |
+| `event`       | [BotEvent](/sdk/interfaces/BotEvent)           | The event that object that triggered the Bot                                        |
+| `event.input` | `string` &#124; `Resource` &#124; `Hl7Message` | The bot input, usually a FHIR resource or content that was posted to a bot endpoint |
 
 In this example, we'll assume the input is a `Patient` resource and print out the patient's name.
 
@@ -144,7 +144,7 @@ You can find the `id` of your Bot by clicking on the **Details** tab of the Bot 
 
 | Content-Type               | typeof `event.input`                    | Description                                                                                                                                                         |
 | -------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `application/fhir+json`    | [`Resource`](/category/resources)       | `<INPUT_DATA>` is parsed as a [FHIR Resource](/fhir-basics#resources) encoded as a JSON string                                                                      |
+| `application/fhir+json`    | [`Resource`](/api/fhir/resources)       | `<INPUT_DATA>` is parsed as a [FHIR Resource](/fhir-basics#resources) encoded as a JSON string                                                                      |
 | `text/plain`               | `string`                                | `<INPUT_DATA>` is parsed as plaintext string                                                                                                                        |
 | `x-application/hl7-v2+er7` | [`HL7Message`](/sdk/classes/Hl7Message) | `<INPUT_DATA>` is a string that should be parsed as a pipe-delimited HL7v2 message. HL7v2 is a common text-based message protocol used in legacy healthcare systems |
 

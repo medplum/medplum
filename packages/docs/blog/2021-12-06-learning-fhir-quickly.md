@@ -11,7 +11,7 @@ Fast Healthcare Interoperability Resources (FHIR) specification is a data standa
 
 Major healthcare platforms such as Epic and Cerner, as well as big tech - Apple, Google, etc. support FHIR in various capacities, making it increasingly popular.
 
-FHIR is very powerful and expressive, but that can make it hard to understand. It can feel indimidating, even for those with a healthcare background and a lot of domain expertise.
+FHIR is very powerful and expressive, but that can make it hard to understand. It can feel intimidating, even for those with a healthcare background and a lot of domain expertise.
 
 Medplum is designed to help you implement FHIR, of course, but also to help you learn FHIR. The app is built on a JAM stack (Javascript, APIs and Markup), and the API calls are... FHIR API calls!
 
@@ -21,7 +21,7 @@ Using Chrome Developer tools can see directly which calls are made to render the
 
 To try for yourself:
 
-0. Pre-requisite, you have set up your Medplum account and created at least one patient [instructions here](https://docs.medplum.com/app/intro) and are using Google Chrome.
+0. Pre-requisite, you have set up your Medplum account and created at least one patient [instructions here](/app/) and are using Google Chrome.
 1. Open the Medplum App and navigate to the Patient page.
 2. Open up Chrome Developer Tools and navigate to the Network tab and refresh the page [instructions here](https://everything.curl.dev/usingcurl/copyas).
 

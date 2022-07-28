@@ -4,6 +4,7 @@
   "link": {
     "type": "generated-index",
     "title": "FHIR Resources",
-    "description": "FHIR Resource Reference"
+    "description": "FHIR Resource Reference",
+    "slug": "/api/fhir/resources"
   }
 }

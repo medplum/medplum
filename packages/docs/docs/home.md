@@ -18,7 +18,7 @@ import HomepageCallout from '@site/src/components/HomepageCallout'
 
 Medplum is a **developer platform** that enables **flexible and rapid development** of healthcare apps. In consists of the following components:
 
-1. **Medplum Clinical Data Repository (CDR)** - This is the the backend server and data store that hosts your healthcare data in a secure, compliant, and standards based respository.
+1. **Medplum Clinical Data Repository (CDR)** - This is the the backend server and data store that hosts your healthcare data in a secure, compliant, and standards based repository.
 2. **Medplum API** - The Medplum CDR also exposes a **[FHIR-based API](/api)** for sending, receiving, and manipulating healthcare data. This includes support for binary files like images, videos, and pdfs.
 3. **Medplum SDK** - This is a set of client libraries that simplify the process of interacting with the **Medplum API**. Currently, we only offer a **Typescript** library, but are planning to support more languages in the future. If there's a language you'd like supported, feel free to open a [Github Issue](https://github.com/medplum/medplum/issues).
 4. **Medplum App** - This is a web application where can you can view your data, perform basic editing tasks. You can also use the Medplum App to manage basic workflows.
@@ -58,5 +58,5 @@ The following diagram shows how all of these pieces fit together.
 
 ## Community
 
-- **Contributing** - Medplum is open source because we believe that streamling healthcare is based on _transparency_ and _collaboration_. If you are interested contributing to Medplum, check out our [Contributors](/contributing) page
+- **Contributing** - Medplum is open source because we believe that streamlining healthcare is based on _transparency_ and _collaboration_. If you are interested contributing to Medplum, check out our [Contributors](/contributing) page
 - **Discord** - Join the conversation by checking us out on [Discord](https://discord.gg/UBAWwvrVeN)
