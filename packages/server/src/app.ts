@@ -122,7 +122,8 @@ export async function initApp(app: Express): Promise<Express> {
       type: ['x-application/hl7-v2+er7'],
     })
   );
-  app.get('/', (req: Request, res: Response) => res.sendStatus(200));
+  app.get('/', (_req, res) => res.sendStatus(200));
+  app.get('/robots.txt', (_req, res) => res.type('text/plain').send('User-agent: *\nDisallow: /'));
   app.get('/healthcheck', asyncWrap(healthcheckHandler));
   app.get('/openapi.json', openApiHandler);
   app.use('/.well-known/', wellKnownRouter);
