@@ -65665,10 +65665,11 @@
       "publisher" : "Medplum",
       "code" : "project",
       "base" : ["User"],
-      "type" : "token",
+      "type" : "reference",
       "expression" : "User.project",
       "xpath" : "f:User/f:project",
-      "xpathUsage" : "normal"
+      "xpathUsage" : "normal",
+      "target" : ["Project"]
     }
   },
   {
