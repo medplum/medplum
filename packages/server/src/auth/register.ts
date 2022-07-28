@@ -18,7 +18,6 @@ export interface RegisterRequest {
   readonly projectName: string;
   readonly email: string;
   readonly password: string;
-  readonly admin?: boolean;
 }
 
 export interface RegisterResponse {
