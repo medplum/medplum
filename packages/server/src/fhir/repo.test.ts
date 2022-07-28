@@ -790,7 +790,6 @@ describe('FHIR Repo', () => {
     const [outcome1, patient] = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
-      birthDate: '1971-02-02',
     });
     assertOk(outcome1, patient);
 
