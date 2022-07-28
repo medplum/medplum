@@ -144,7 +144,7 @@ You can find the `id` of your Bot by clicking on the **Details** tab of the Bot 
 
 | Content-Type               | typeof `event.input`                    | Description                                                                                                                                                         |
 | -------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `application/fhir+json`    | [`Resource`](/category/resources)       | `<INPUT_DATA>` is parsed as a [FHIR Resource](/fhir-basics#resources) encoded as a JSON string                                                                      |
+| `application/fhir+json`    | [`Resource`](/api/fhir/resources)       | `<INPUT_DATA>` is parsed as a [FHIR Resource](/fhir-basics#resources) encoded as a JSON string                                                                      |
 | `text/plain`               | `string`                                | `<INPUT_DATA>` is parsed as plaintext string                                                                                                                        |
 | `x-application/hl7-v2+er7` | [`HL7Message`](/sdk/classes/Hl7Message) | `<INPUT_DATA>` is a string that should be parsed as a pipe-delimited HL7v2 message. HL7v2 is a common text-based message protocol used in legacy healthcare systems |
 

@@ -17,7 +17,7 @@ While FHIR is quite powerful, it can have a bit of a learning curve. The page wi
 
 ## Resources
 
-A core data object in FHIR is called a [**Resource**](https://www.hl7.org/fhir/resource.html). You can think of Resources as **objects** in object oriented languages. The FHIR standard defines a set of [**Resource Types**](/category/resources), similar to **classes**, that have been built for healthcare applications.
+A core data object in FHIR is called a [**Resource**](https://www.hl7.org/fhir/resource.html). You can think of Resources as **objects** in object oriented languages. The FHIR standard defines a set of [**Resource Types**](/api/fhir/resources), similar to **classes**, that have been built for healthcare applications.
 
 Resources can represent a broad range of healthcare ideas, from very **concrete healthcare items** (e.g. [Patient](/api/fhir/resources/patient), [Medication](/api/fhir/resources/medication), [Device](/api/fhir/resources/device)) or more **abstract concepts** (e.g. [Procedure](/api/fhir/resources/procedure), [Care Plan](/api/fhir/resources/careplan), [Encounter](/api/fhir/resources/encounter)).
 
@@ -176,7 +176,7 @@ The example `Patient` below has three identifiers: **an SSN and two MRN identifi
 
 There are many caeses in which a client would like to query resources that fulfill certain criteria. **FHIR resources cannot be searched by arbitrary fields**. Instead, the specification **defines specific search parameters for each resource** that can be used for queries.
 
-You can find the search parameters on the [reference page](/category/resources) for each resource. **Refer to the [FHIR Search](https://www.hl7.org/fhir/search.html) documentation** for how construct search queries using these parameters.
+You can find the search parameters on the [reference page](/api/fhir/resources) for each resource. **Refer to the [FHIR Search](https://www.hl7.org/fhir/search.html) documentation** for how construct search queries using these parameters.
 
 ### Example
 
