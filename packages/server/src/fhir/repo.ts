@@ -287,24 +287,7 @@ export class Repository {
       throw forbidden;
     }
 
-    let existing: T | undefined = undefined;
-
-    try {
-      existing = await this.readResource<T>(resourceType, id);
-    } catch (err) {
-      if (!err || typeof err !== 'object' || !('resourceType' in err)) {
-        throw err;
-      }
-
-      const existingOutcome = err as OperationOutcome;
-      if (!isOk(existingOutcome) && !isNotFound(existingOutcome) && !isGone(existingOutcome)) {
-        throw existingOutcome;
-      }
-
-      if (!create && isNotFound(existingOutcome) && !this.#canSetId()) {
-        throw existingOutcome;
-      }
-    }
+    const existing = await this.#checkExistingResource<T>(resourceType, id, create);
 
     if (await this.#isTooManyVersions(resourceType, id, create)) {
       throw tooManyRequests;
@@ -349,6 +332,45 @@ export class Repository {
     await addBackgroundJobs(result);
     this.#removeHiddenFields(result);
     return result;
+  }
+
+  /**
+   * Tries to return the existing resource, if it is available.
+   * Handles the following cases:
+   *  - Previous version exists
+   *  - Previous version was deleted, and user is restoring it
+   *  - Previous version does not exist, and user does not have permission to create by ID
+   *  - Previous version does not exist, and user does have permission to create by ID
+   * @param resourceType The FHIR resource type.
+   * @param id The resource ID.
+   * @returns The existing resource, if found.
+   */
+  async #checkExistingResource<T extends Resource>(
+    resourceType: string,
+    id: string,
+    create: boolean
+  ): Promise<T | undefined> {
+    try {
+      return await this.readResource<T>(resourceType, id);
+    } catch (err) {
+      if (!err || typeof err !== 'object' || !('resourceType' in err)) {
+        throw err;
+      }
+
+      const existingOutcome = err as OperationOutcome;
+      if (!isOk(existingOutcome) && !isNotFound(existingOutcome) && !isGone(existingOutcome)) {
+        throw existingOutcome;
+      }
+
+      if (!create && isNotFound(existingOutcome) && !this.#canSetId()) {
+        throw existingOutcome;
+      }
+
+      // Otherwise, it is ok if the resource is not found.
+      // This is an "update" operation, and the outcome is "not-found" or "gone",
+      // and the current user has permission to create a new version.
+      return undefined;
+    }
   }
 
   /**
@@ -463,7 +485,7 @@ export class Repository {
       id,
       lastUpdated,
       deleted: true,
-      compartments: this.#getCompartments(resource as Resource),
+      compartments: this.#getCompartments(resource),
       content,
     };
 
@@ -476,7 +498,7 @@ export class Repository {
       content,
     }).execute(client);
 
-    await this.#deleteFromLookupTables(resource as Resource);
+    await this.#deleteFromLookupTables(resource);
   }
 
   async patchResource(resourceType: string, id: string, patch: Operation[]): Promise<Resource> {
@@ -484,7 +506,7 @@ export class Repository {
 
     let patchResult;
     try {
-      patchResult = applyPatch(resource as Resource, patch, true);
+      patchResult = applyPatch(resource, patch, true);
     } catch (err) {
       const patchError = err as JsonPatchError;
       const message = patchError.message?.split('\n')?.[0] || 'JSONPatch error';

@@ -1,3 +1,4 @@
+import { OperationOutcomeError } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { OperationOutcome, OperationOutcomeIssue, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
@@ -61,11 +62,11 @@ export function validateResource<T extends Resource>(resource: T): void {
   checkRequiredProperties(resource, definition, issues);
 
   if (issues.length > 0) {
-    throw {
+    throw new OperationOutcomeError({
       resourceType: 'OperationOutcome',
       id: randomUUID(),
       issue: issues,
-    };
+    });
   }
 }
 

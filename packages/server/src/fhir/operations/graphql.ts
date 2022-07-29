@@ -417,8 +417,7 @@ async function resolveBySearch(
 async function resolveById(_source: any, args: any, ctx: any, info: GraphQLResolveInfo): Promise<Resource | undefined> {
   const repo = ctx.res.locals.repo as Repository;
   try {
-    const resource = await repo.readResource(info.fieldName, args.id);
-    return resource;
+    return await repo.readResource(info.fieldName, args.id);
   } catch (err) {
     throw new Error(normalizeErrorString(err));
   }
@@ -436,8 +435,7 @@ async function resolveById(_source: any, args: any, ctx: any, info: GraphQLResol
 async function resolveByReference(source: any, _args: any, ctx: any): Promise<Resource | undefined> {
   const repo = ctx.res.locals.repo as Repository;
   try {
-    const resource = await repo.readReference(source as Reference);
-    return resource;
+    return await repo.readReference(source as Reference);
   } catch (err) {
     throw new Error(normalizeErrorString(err));
   }

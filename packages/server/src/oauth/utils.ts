@@ -71,7 +71,6 @@ export interface GoogleCredentialClaims extends JWTPayload {
 export async function tryLogin(request: LoginRequest): Promise<Login> {
   validateLoginRequest(request);
 
-  // let clientOutcome: OperationOutcome | undefined;
   let client: ClientApplication | undefined;
   if (request.clientId) {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', request.clientId);
