@@ -28,7 +28,7 @@ async function main(): Promise<void> {
   getRootSchema();
 
   const app = await initApp(express());
-  app.listen(8103);
+  app.listen(config.port);
 }
 
 main();

@@ -6,6 +6,7 @@ import { resolve } from 'path';
 const AWS_REGION = 'us-east-1';
 
 export interface MedplumServerConfig {
+  port: number;
   baseUrl: string;
   issuer: string;
   jwksUrl: string;

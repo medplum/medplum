@@ -1,4 +1,5 @@
 {
+  "port": 8103,
   "baseUrl": "http://localhost:8103/",
   "issuer": "http://localhost:8103/",
   "audience": "http://localhost:8103/",
