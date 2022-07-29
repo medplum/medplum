@@ -8,10 +8,10 @@ Follow these instructions to get the complete Medplum stack running directly on 
 
 ## Prerequisites
 
+:::note Note for windows Users
+
 1. **Npm**: See [the npm documentation](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) for instructions on installing it with your OS.
 1. [Clone the Medplum repo](./clone-the-repo)
-
-:::note Note for windows Users
 
 Running on Windows is supported, but it has a few extra steps:
 
