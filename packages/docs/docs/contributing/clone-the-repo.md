@@ -6,28 +6,22 @@ sidebar_position: 10
 
 Ah, you're ready to get your hands dirty, eh? Great! Let's get you setup with a cloned repo.
 
-:::danger
+The first step is to clone our [Github Repository](https://github.com/medplum/medplum)
 
-fork
-
-:::
-
-To clone the repo, run the following command:
+To clone the repo, run the following command in your terminal:
 
 ```bash
-git clone git@github.com:medplum/medplum.git
+git clone git@github.com:medplum/medplum.git medplum
 ```
 
-If you get `Permission denied` error using `ssh` refer [here](https://help.github.com/articles/error-permission-denied-publickey/)
-or use `https` link as a fallback.
+If you get an error saying `Permission denied` using `ssh`, you can refer to the [Github docs on setting up SSH keys](https://help.github.com/articles/error-permission-denied-publickey/).
+
+Alternatively, you can use the `https` method as a fallback.
 
 ```sh
-git clone https://github.com/medplum/medplum.git
+git clone https://github.com/medplum/medplum.git medplum
 ```
 
-That will create a complete copy of the project source code on your local machine.
+That will create a complete copy of the project source code on your local machine, including code for the Medplum Server, Medplum App, and associated libraries.
 
-Next, you probably want to build and run the project. There are two methods for running and developing locally:
-
-1. [Dev on the host](./dev-on-host) including running Postgres and Redis on the host
-2. [Dev on docker](./dev-on-docker) without running any services directly on the host
+In the next step, we'll build the application and run the tests.
