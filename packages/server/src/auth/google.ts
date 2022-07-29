@@ -1,4 +1,4 @@
-import { assertOk, badRequest, createReference, Operator } from '@medplum/core';
+import { badRequest, createReference, Operator } from '@medplum/core';
 import { Project, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
@@ -78,15 +78,14 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
 
   const existingUser = await getUserByEmail(claims.email, project?.id);
   if (!existingUser) {
-    const [createUserOutcome, user] = await systemRepo.createResource<User>({
+    await systemRepo.createResource<User>({
       resourceType: 'User',
       email: claims.email,
       project: project ? createReference(project) : undefined,
     });
-    assertOk(createUserOutcome, user);
   }
 
-  const [loginOutcome, login] = await tryLogin({
+  const login = await tryLogin({
     authMethod: 'google',
     email: claims.email,
     googleCredentials: claims,
@@ -98,12 +97,11 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
   });
-  assertOk(loginOutcome, login);
   await sendLoginResult(res, login);
 }
 
 async function getProjectByGoogleClientId(googleClientId: string): Promise<Project | undefined> {
-  const [outcome, bundle] = await systemRepo.search<Project>({
+  const bundle = await systemRepo.search<Project>({
     resourceType: 'Project',
     count: 1,
     filters: [
@@ -114,6 +112,5 @@ async function getProjectByGoogleClientId(googleClientId: string): Promise<Proje
       },
     ],
   });
-  assertOk(outcome, bundle);
   return bundle.entry && bundle.entry.length > 0 ? bundle.entry[0].resource : undefined;
 }

@@ -1,4 +1,3 @@
-import { assertOk } from '@medplum/core';
 import { Media } from '@medplum/fhirtypes';
 import { Job, Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
@@ -55,15 +54,13 @@ describe('Download Worker', () => {
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [mediaOutcome, media] = await repo.createResource<Media>({
+    const media = await repo.createResource<Media>({
       resourceType: 'Media',
       content: {
         contentType: 'text/plain',
         url,
       },
     });
-
-    expect(mediaOutcome.id).toEqual('created');
     expect(media).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
@@ -89,15 +86,13 @@ describe('Download Worker', () => {
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [mediaOutcome, media] = await repo.createResource<Media>({
+    const media = await repo.createResource<Media>({
       resourceType: 'Media',
       content: {
         contentType: 'text/plain',
         url: '',
       },
     });
-
-    expect(mediaOutcome.id).toEqual('created');
     expect(media).toBeDefined();
     expect(queue.add).not.toHaveBeenCalled();
   });
@@ -108,15 +103,13 @@ describe('Download Worker', () => {
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [mediaOutcome, media] = await repo.createResource<Media>({
+    const media = await repo.createResource<Media>({
       resourceType: 'Media',
       content: {
         contentType: 'text/plain',
         url,
       },
     });
-
-    expect(mediaOutcome.id).toEqual('created');
     expect(media).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
@@ -134,15 +127,13 @@ describe('Download Worker', () => {
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [mediaOutcome, media] = await repo.createResource<Media>({
+    const media = await repo.createResource<Media>({
       resourceType: 'Media',
       content: {
         contentType: 'text/plain',
         url,
       },
     });
-
-    expect(mediaOutcome.id).toEqual('created');
     expect(media).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
@@ -160,7 +151,7 @@ describe('Download Worker', () => {
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [mediaOutcome, media] = await repo.createResource<Media>({
+    const media = await repo.createResource<Media>({
       resourceType: 'Media',
       content: {
         contentType: 'text/plain',
@@ -168,13 +159,11 @@ describe('Download Worker', () => {
       },
     });
 
-    assertOk(mediaOutcome, media);
     expect(queue.add).toHaveBeenCalled();
 
     // At this point the job should be in the queue
     // But let's delete the resource
-    const [deleteOutcome] = await repo.deleteResource('Media', media?.id as string);
-    assertOk(deleteOutcome, media);
+    await repo.deleteResource('Media', media?.id as string);
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execDownloadJob(job);
@@ -187,28 +176,25 @@ describe('Download Worker', () => {
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [mediaOutcome, media] = await repo.createResource<Media>({
+    const media = await repo.createResource<Media>({
       resourceType: 'Media',
       content: {
         contentType: 'text/plain',
         url: 'https://example.com/download',
       },
     });
-
-    expect(mediaOutcome.id).toEqual('created');
     expect(media).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
     // At this point the job should be in the queue
     // But let's change the URL to an internal Binary resource
-    const [updateOutcome, updated] = await repo.updateResource({
+    await repo.updateResource({
       ...(media as Media),
       content: {
         contentType: 'text/plain',
         url: 'Binary/' + randomUUID(),
       },
     });
-    assertOk(updateOutcome, updated);
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execDownloadJob(job);

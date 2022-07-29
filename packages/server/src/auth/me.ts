@@ -1,4 +1,4 @@
-import { assertOk, ProfileResource } from '@medplum/core';
+import { ProfileResource } from '@medplum/core';
 import { ProjectMembership, Reference, UserConfiguration } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { systemRepo } from '../fhir';
@@ -7,10 +7,7 @@ import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 export async function meHandler(req: Request, res: Response): Promise<void> {
   const membership = res.locals.membership as ProjectMembership;
 
-  const [profileOutcome, profile] = await systemRepo.readReference<ProfileResource>(
-    membership.profile as Reference<ProfileResource>
-  );
-  assertOk(profileOutcome, profile);
+  const profile = await systemRepo.readReference<ProfileResource>(membership.profile as Reference<ProfileResource>);
 
   const config = await getUserConfiguration(membership);
 
@@ -24,9 +21,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
 
 async function getUserConfiguration(membership: ProjectMembership): Promise<UserConfiguration> {
   if (membership.userConfiguration) {
-    const [configOutcome, config] = await systemRepo.readReference<UserConfiguration>(membership.userConfiguration);
-    assertOk(configOutcome, config);
-    return config;
+    return systemRepo.readReference<UserConfiguration>(membership.userConfiguration);
   }
 
   const favorites = ['Patient', 'Practitioner', 'Organization', 'ServiceRequest', 'DiagnosticReport', 'Questionnaire'];

@@ -1,4 +1,4 @@
-import { assertOk, isOk } from '@medplum/core';
+import { isOk } from '@medplum/core';
 import {
   Bundle,
   BundleEntry,
@@ -39,35 +39,36 @@ describe('Batch', () => {
   });
 
   test('Process batch with missing bundle type', async () => {
-    const [outcome, bundle] = await processBatch(repo, {
-      resourceType: 'Bundle',
-    });
-
-    expect(isOk(outcome)).toBe(false);
-    expect(outcome.issue?.[0].details?.text).toContain('Missing bundle type');
-    expect(bundle).toBeUndefined();
+    try {
+      await processBatch(repo, { resourceType: 'Bundle' });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(isOk(outcome)).toBe(false);
+      expect(outcome.issue?.[0].details?.text).toContain('Missing bundle type');
+    }
   });
 
   test('Process batch with invalid bundle type', async () => {
-    const [outcome, bundle] = await processBatch(repo, {
-      resourceType: 'Bundle',
-      type: 'xyz',
-    });
-
-    expect(isOk(outcome)).toBe(false);
-    expect(outcome.issue?.[0].details?.text).toContain('Unrecognized bundle type');
-    expect(bundle).toBeUndefined();
+    try {
+      await processBatch(repo, { resourceType: 'Bundle', type: 'xyz' });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(isOk(outcome)).toBe(false);
+      expect(outcome.issue?.[0].details?.text).toContain('Unrecognized bundle type');
+    }
   });
 
   test('Process batch with missing entries', async () => {
-    const [outcome, bundle] = await processBatch(repo, {
-      resourceType: 'Bundle',
-      type: 'batch',
-    });
-
-    expect(isOk(outcome)).toBe(false);
-    expect(outcome.issue?.[0].details?.text).toContain('Missing bundle entry');
-    expect(bundle).toBeUndefined();
+    try {
+      await processBatch(repo, { resourceType: 'Bundle', type: 'batch' });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(isOk(outcome)).toBe(false);
+      expect(outcome.issue?.[0].details?.text).toContain('Missing bundle entry');
+    }
   });
 
   test('Process batch success', async () => {
@@ -89,7 +90,7 @@ describe('Batch', () => {
       },
     });
 
-    const [outcome, bundle] = await processBatch(userRepo, {
+    const bundle = await processBatch(userRepo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -145,7 +146,6 @@ describe('Batch', () => {
       ],
     });
 
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.type).toEqual('batch-response');
     expect(bundle?.entry).toBeDefined();
@@ -160,22 +160,20 @@ describe('Batch', () => {
     expect(results[3].response?.status).toEqual('404');
     expect(results[4].response?.status).toEqual('404');
 
-    const [patientOutcome, patient] = await userRepo.readReference({
+    const patient = await userRepo.readReference({
       reference: results[0].response?.location as string,
     });
-    expect(isOk(patientOutcome)).toBe(true);
     expect(patient).toBeDefined();
 
-    const [observationOutcome, observation] = await userRepo.readReference({
+    const observation = await userRepo.readReference({
       reference: results[1].response?.location as string,
     });
-    expect(isOk(observationOutcome)).toBe(true);
     expect(observation).toBeDefined();
     expect((observation as Observation).subject?.reference).toEqual('Patient/' + patient?.id);
   });
 
   test('Process batch create success', async () => {
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -190,8 +188,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -201,7 +197,7 @@ describe('Batch', () => {
   });
 
   test('Process batch create missing resource', async () => {
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -213,8 +209,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -224,7 +218,7 @@ describe('Batch', () => {
   });
 
   test('Process batch create missing resourceType', async () => {
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -237,8 +231,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -248,7 +240,7 @@ describe('Batch', () => {
   });
 
   test('Process batch create missing required properties', async () => {
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -263,8 +255,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -274,7 +264,7 @@ describe('Batch', () => {
   });
 
   test('Process batch create ignore http fullUrl', async () => {
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -290,8 +280,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -303,7 +291,7 @@ describe('Batch', () => {
   test('Process batch create does not rewrite identifier', async () => {
     const id = randomUUID();
 
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -326,8 +314,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -335,10 +321,9 @@ describe('Batch', () => {
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('201');
 
-    const [readOutcome, readResult] = await repo.readReference({
+    const readResult = await repo.readReference({
       reference: results[0].response?.location as string,
     });
-    expect(isOk(readOutcome)).toBe(true);
     expect(readResult).toBeDefined();
     expect((readResult as Patient).identifier?.[0]?.value).toEqual(id);
   });
@@ -346,7 +331,7 @@ describe('Batch', () => {
   test('Process batch create ifNoneExist success', async () => {
     const identifier = randomUUID();
 
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -384,8 +369,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -399,7 +382,7 @@ describe('Batch', () => {
   test('Process batch create ifNoneExist invalid resource type', async () => {
     const identifier = randomUUID();
 
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -415,8 +398,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -432,7 +413,7 @@ describe('Batch', () => {
     // First, intentionally create 2 patients with duplicate identifiers
     // Then, the 3rd entry use ifNoneExists
     // The search will return 2 patients, which causes the entry to fail
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -484,8 +465,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -497,12 +476,11 @@ describe('Batch', () => {
   });
 
   test('Process batch update', async () => {
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
     });
-    assertOk(patientOutcome, patient);
 
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -518,8 +496,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -529,7 +505,7 @@ describe('Batch', () => {
   });
 
   test('Process batch update missing resource', async () => {
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -541,8 +517,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -552,12 +526,11 @@ describe('Batch', () => {
   });
 
   test('Process batch patch', async () => {
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
     });
-    assertOk(patientOutcome, patient);
 
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -574,8 +547,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -585,14 +556,13 @@ describe('Batch', () => {
   });
 
   test('JSONPatch error messages', async () => {
-    const [serviceRequestOutcome, serviceRequest] = await repo.createResource<ServiceRequest>({
+    const serviceRequest = await repo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
       status: 'active',
       subject: { reference: 'Patient/' + randomUUID() },
     });
-    assertOk(serviceRequestOutcome, serviceRequest);
 
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -611,8 +581,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -625,7 +593,7 @@ describe('Batch', () => {
   });
 
   test('Process batch patch invalid url', async () => {
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -637,8 +605,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -649,7 +615,7 @@ describe('Batch', () => {
   });
 
   test('Process batch patch missing resource', async () => {
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -661,8 +627,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -675,7 +639,7 @@ describe('Batch', () => {
   });
 
   test('Process batch patch wrong pach type', async () => {
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -690,8 +654,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -704,7 +666,7 @@ describe('Batch', () => {
   });
 
   test('Process batch patch wrong pach type', async () => {
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -719,8 +681,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -733,12 +693,11 @@ describe('Batch', () => {
   });
 
   test('Process batch delete', async () => {
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
     });
-    assertOk(patientOutcome, patient);
 
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -750,8 +709,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -761,7 +718,7 @@ describe('Batch', () => {
   });
 
   test('Process batch delete invalid URL', async () => {
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -773,8 +730,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -784,7 +739,7 @@ describe('Batch', () => {
   });
 
   test('Process batch missing request', async () => {
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -793,8 +748,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -807,7 +760,7 @@ describe('Batch', () => {
   });
 
   test('Process batch missing request.method', async () => {
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -821,8 +774,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -835,7 +786,7 @@ describe('Batch', () => {
   });
 
   test('Process batch unsupported request.method', async () => {
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -850,8 +801,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -864,7 +813,7 @@ describe('Batch', () => {
   });
 
   test('Process batch missing request.url', async () => {
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -878,8 +827,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -892,7 +839,7 @@ describe('Batch', () => {
   });
 
   test('Process batch not found', async () => {
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -916,8 +863,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
 
@@ -929,13 +874,12 @@ describe('Batch', () => {
   });
 
   test('Process batch read history', async () => {
-    const [createOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ family: 'Foo', given: ['Bar'] }],
     });
-    assertOk(createOutcome, patient);
 
-    const [outcome, bundle] = await processBatch(repo, {
+    const bundle = await processBatch(repo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -947,8 +891,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.entry).toBeDefined();
   });
@@ -964,7 +906,7 @@ describe('Batch', () => {
       project: projectId,
     });
 
-    const [outcome, bundle] = await processBatch(userRepo, {
+    const bundle = await processBatch(userRepo, {
       resourceType: 'Bundle',
       type: 'transaction',
       entry: [
@@ -1006,8 +948,6 @@ describe('Batch', () => {
         },
       ],
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(bundle).toBeDefined();
     expect(bundle?.type).toEqual('batch-response');
     expect(bundle?.entry).toBeDefined();
@@ -1017,10 +957,9 @@ describe('Batch', () => {
     expect(results[0].response?.status).toEqual('201');
     expect(results[1].response?.status).toEqual('201');
 
-    const [subscriptionOutcome, subscription] = await userRepo.readReference<Subscription>({
+    const subscription = await userRepo.readReference<Subscription>({
       reference: results[1].response?.location as string,
     });
-    assertOk(subscriptionOutcome, subscription);
     expect(subscription.criteria).toMatch(
       /QuestionnaireResponse\?questionnaire=Questionnaire\/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/
     );

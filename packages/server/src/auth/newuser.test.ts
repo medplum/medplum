@@ -1,4 +1,4 @@
-import { assertOk, badRequest } from '@medplum/core';
+import { badRequest } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -145,7 +145,7 @@ describe('New user', () => {
     });
 
     // As a super admin, set the recaptcha site key
-    const [updateOutcome, updated] = await systemRepo.updateResource({
+    await systemRepo.updateResource({
       ...project,
       site: [
         {
@@ -156,7 +156,6 @@ describe('New user', () => {
         },
       ],
     });
-    assertOk(updateOutcome, updated);
 
     const res = await request(app)
       .post('/auth/newuser')
@@ -207,7 +206,7 @@ describe('New user', () => {
     });
 
     // As a super admin, set the recaptcha site key
-    const [updateOutcome, updated] = await systemRepo.updateResource({
+    await systemRepo.updateResource({
       ...project,
       site: [
         {
@@ -217,7 +216,6 @@ describe('New user', () => {
         },
       ],
     });
-    assertOk(updateOutcome, updated);
 
     const res = await request(app)
       .post('/auth/newuser')

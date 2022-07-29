@@ -1,4 +1,4 @@
-import { assertOk, createReference, getReferenceString, isOk } from '@medplum/core';
+import { createReference, getReferenceString, unauthorized } from '@medplum/core';
 import { ClientApplication, Login, ProjectMembership } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
 import { getRepoForLogin, systemRepo } from '../fhir';
@@ -6,40 +6,42 @@ import { logger } from '../logger';
 import { MedplumAccessTokenClaims, verifyJwt } from './keys';
 import { getUserMemberships, timingSafeEqualStr } from './utils';
 
-export async function authenticateToken(req: Request, res: Response, next: NextFunction): Promise<void> {
-  if (await authenticateTokenImpl(req, res)) {
-    next();
-  } else {
-    res.sendStatus(401);
-  }
+export function authenticateToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+  return authenticateTokenImpl(req, res).then(next).catch(next);
 }
 
-export async function authenticateTokenImpl(req: Request, res: Response): Promise<boolean> {
+export async function authenticateTokenImpl(req: Request, res: Response): Promise<void> {
   const [tokenType, token] = req.headers.authorization?.split(' ') ?? [];
   if (!tokenType || !token) {
-    return false;
+    throw unauthorized;
   }
 
   if (tokenType === 'Bearer') {
-    return authenticateBearerToken(res, token);
+    await authenticateBearerToken(res, token);
   } else if (tokenType === 'Basic') {
-    return authenticateBasicAuth(res, token);
+    await authenticateBasicAuth(res, token);
   } else {
-    return false;
+    throw unauthorized;
   }
 }
 
-async function authenticateBearerToken(res: Response, token: string): Promise<boolean> {
+async function authenticateBearerToken(res: Response, token: string): Promise<void> {
   try {
     const verifyResult = await verifyJwt(token);
     const claims = verifyResult.payload as MedplumAccessTokenClaims;
-    const [loginOutcome, login] = await systemRepo.readResource<Login>('Login', claims.login_id);
-    if (!isOk(loginOutcome) || !login || !login.membership || login.revoked) {
-      return false;
+
+    let login = undefined;
+    try {
+      login = await systemRepo.readResource<Login>('Login', claims.login_id);
+    } catch (err) {
+      throw unauthorized;
     }
 
-    const [membershipOutcome, membership] = await systemRepo.readReference<ProjectMembership>(login.membership);
-    assertOk(membershipOutcome, membership);
+    if (!login || !login.membership || login.revoked) {
+      throw unauthorized;
+    }
+
+    const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
 
     res.locals.login = login;
     res.locals.membership = membership;
@@ -47,27 +49,33 @@ async function authenticateBearerToken(res: Response, token: string): Promise<bo
     res.locals.profile = claims.profile;
     res.locals.scope = claims.scope;
     res.locals.repo = await getRepoForLogin(login, membership);
-    return true;
   } catch (err) {
     logger.error('verify error', err);
-    return false;
+    throw unauthorized;
   }
 }
 
-async function authenticateBasicAuth(res: Response, token: string): Promise<boolean> {
+async function authenticateBasicAuth(res: Response, token: string): Promise<void> {
   const credentials = Buffer.from(token, 'base64').toString('ascii');
   const [username, password] = credentials.split(':');
   if (!username || !password) {
-    return false;
+    throw unauthorized;
   }
 
-  const [outcome, client] = await systemRepo.readResource<ClientApplication>('ClientApplication', username);
-  if (!isOk(outcome) || !client) {
-    return false;
+  let client = undefined;
+
+  try {
+    client = await systemRepo.readResource<ClientApplication>('ClientApplication', username);
+  } catch (err) {
+    throw unauthorized;
+  }
+
+  if (!client) {
+    throw unauthorized;
   }
 
   if (!timingSafeEqualStr(client.secret as string, password)) {
-    return false;
+    throw unauthorized;
   }
 
   const login: Login = {
@@ -76,7 +84,7 @@ async function authenticateBasicAuth(res: Response, token: string): Promise<bool
 
   const memberships = await getUserMemberships(createReference(client));
   if (memberships.length !== 1) {
-    return false;
+    throw unauthorized;
   }
 
   const membership = memberships[0];
@@ -87,5 +95,4 @@ async function authenticateBasicAuth(res: Response, token: string): Promise<bool
   res.locals.profile = getReferenceString(client);
   res.locals.scope = 'openid';
   res.locals.repo = await getRepoForLogin(login, membership);
-  return true;
 }

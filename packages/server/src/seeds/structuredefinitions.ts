@@ -1,4 +1,3 @@
-import { assertOk } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, Resource, StructureDefinition } from '@medplum/fhirtypes';
 import { getClient } from '../database';
@@ -21,12 +20,11 @@ async function createStructureDefinitionsForBundle(structureDefinitions: Bundle)
 
     if (resource.resourceType === 'StructureDefinition' && resource.name) {
       logger.debug('StructureDefinition: ' + resource.name);
-      const [outcome, result] = await systemRepo.createResource<StructureDefinition>({
+      const result = await systemRepo.createResource<StructureDefinition>({
         ...resource,
         text: undefined,
         differential: undefined,
       });
-      assertOk(outcome, result);
       logger.debug('Created: ' + result.id);
     }
   }

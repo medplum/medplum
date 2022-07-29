@@ -1,12 +1,4 @@
-import {
-  assertOk,
-  createReference,
-  getReferenceString,
-  isOk,
-  Operator,
-  ProfileResource,
-  resolveId,
-} from '@medplum/core';
+import { createReference, getReferenceString, Operator, ProfileResource, resolveId } from '@medplum/core';
 import { ClientApplication, Login, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { createHash } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
@@ -76,8 +68,10 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
     return sendTokenError(res, 'invalid_request', 'Missing client_secret');
   }
 
-  const [readOutcome, client] = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
-  if (!isOk(readOutcome) || !client) {
+  let client;
+  try {
+    client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+  } catch (err) {
     return sendTokenError(res, 'invalid_request', 'Invalid client');
   }
 
@@ -100,7 +94,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
 
   const scope = req.body.scope as string;
 
-  const [loginOutcome, login] = await systemRepo.createResource<Login>({
+  const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
     user: createReference(client),
     client: createReference(client),
@@ -109,7 +103,6 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
     granted: true,
     scope,
   });
-  assertOk(loginOutcome, login);
 
   const accessToken = await generateAccessToken({
     login_id: login?.id as string,
@@ -143,7 +136,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
     return sendTokenError(res, 'invalid_request', 'Missing code');
   }
 
-  const [searchOutcome, searchResult] = await systemRepo.search({
+  const searchResult = await systemRepo.search({
     resourceType: 'Login',
     filters: [
       {
@@ -154,7 +147,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
     ],
   });
 
-  if (!isOk(searchOutcome) || !searchResult || !searchResult.entry || searchResult.entry.length === 0) {
+  if (!searchResult.entry || searchResult.entry.length === 0) {
     return sendTokenError(res, 'invalid_request', 'Invalid code');
   }
 
@@ -188,13 +181,9 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
     }
   }
 
-  const [membershipOutcome, membership] = await systemRepo.readReference<ProjectMembership>(login.membership);
-  assertOk(membershipOutcome, membership);
+  const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
 
-  const [tokenOutcome, token] = await getAuthTokens(login, membership.profile as Reference<ProfileResource>);
-  if (!isOk(tokenOutcome) || !token) {
-    return sendTokenError(res, 'invalid_request', 'Invalid token');
-  }
+  const token = await getAuthTokens(login, membership.profile as Reference<ProfileResource>);
 
   return res.status(200).json({
     token_type: 'Bearer',
@@ -228,10 +217,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
     return sendTokenError(res, 'invalid_request', 'Invalid refresh token');
   }
 
-  const [loginOutcome, login] = await systemRepo.readResource<Login>('Login', claims.login_id);
-  if (!isOk(loginOutcome) || !login) {
-    return sendTokenError(res, 'invalid_request', 'Invalid token');
-  }
+  const login = await systemRepo.readResource<Login>('Login', claims.login_id);
 
   if (login.refreshSecret === undefined) {
     // This token does not have a refresh available
@@ -262,23 +248,18 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
 
   // Refresh token rotation
   // Generate a new refresh secret and update the login
-  const [updateOutcome, updatedLogin] = await systemRepo.updateResource<Login>({
+  const updatedLogin = await systemRepo.updateResource<Login>({
     ...login,
     refreshSecret: generateSecret(48),
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
   });
-  assertOk(updateOutcome, updatedLogin);
 
-  const [membershipOutcome, membership] = await systemRepo.readReference<ProjectMembership>(
+  const membership = await systemRepo.readReference<ProjectMembership>(
     login.membership as Reference<ProjectMembership>
   );
-  assertOk(membershipOutcome, membership);
 
-  const [tokenOutcome, token] = await getAuthTokens(updatedLogin, membership.profile as Reference<ProfileResource>);
-  if (!isOk(tokenOutcome)) {
-    return sendTokenError(res, 'invalid_request', 'Invalid token');
-  }
+  const token = await getAuthTokens(updatedLogin, membership.profile as Reference<ProfileResource>);
 
   if (!token) {
     return sendTokenError(res, 'invalid_request', 'Invalid token');

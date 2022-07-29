@@ -1,4 +1,4 @@
-import { assertOk, Operator } from '@medplum/core';
+import { Operator } from '@medplum/core';
 import { BundleEntry, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { systemRepo } from '../fhir';
@@ -14,10 +14,9 @@ import { systemRepo } from '../fhir';
 export async function verifyProjectAdmin(req: Request, res: Response): Promise<Project | undefined> {
   const { projectId } = req.params;
 
-  const [projectOutcome, project] = await systemRepo.readResource<Project>('Project', projectId);
-  assertOk(projectOutcome, project);
+  const project = await systemRepo.readResource<Project>('Project', projectId);
 
-  const [membershipOutcome, bundle] = await systemRepo.search<ProjectMembership>({
+  const bundle = await systemRepo.search<ProjectMembership>({
     resourceType: 'ProjectMembership',
     count: 1,
     filters: [
@@ -33,7 +32,6 @@ export async function verifyProjectAdmin(req: Request, res: Response): Promise<P
       },
     ],
   });
-  assertOk(membershipOutcome, bundle);
 
   if (bundle.entry?.length === 0) {
     return undefined;
@@ -53,7 +51,7 @@ export async function verifyProjectAdmin(req: Request, res: Response): Promise<P
  * @returns The list of project memberships.
  */
 export async function getProjectMemberships(projectId: string): Promise<ProjectMembership[]> {
-  const [membershipOutcome, bundle] = await systemRepo.search<ProjectMembership>({
+  const bundle = await systemRepo.search<ProjectMembership>({
     resourceType: 'ProjectMembership',
     count: 1000,
     filters: [
@@ -64,6 +62,5 @@ export async function getProjectMemberships(projectId: string): Promise<ProjectM
       },
     ],
   });
-  assertOk(membershipOutcome, bundle);
   return (bundle.entry as BundleEntry<ProjectMembership>[]).map((entry) => entry.resource as ProjectMembership);
 }

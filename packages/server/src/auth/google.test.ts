@@ -1,5 +1,4 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { assertOk } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -141,11 +140,10 @@ describe('Google Auth', () => {
     });
 
     // As a super admin, update the project to require Google auth
-    const [updateOutcome, updated] = await systemRepo.updateResource({
+    await systemRepo.updateResource({
       ...project,
       features: ['google-auth-required'],
     });
-    assertOk(updateOutcome, updated);
 
     // Then try to login with Google auth
     // This should succeed
@@ -172,7 +170,7 @@ describe('Google Auth', () => {
     });
 
     // As a super admin, set the google client ID
-    const [updateOutcome, updated] = await systemRepo.updateResource({
+    await systemRepo.updateResource({
       ...project,
       site: [
         {
@@ -182,7 +180,6 @@ describe('Google Auth', () => {
         },
       ],
     });
-    assertOk(updateOutcome, updated);
 
     // Try to login with the custom Google client
     // This should succeed

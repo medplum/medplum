@@ -1,4 +1,4 @@
-import { assertOk, badRequest, getStatus } from '@medplum/core';
+import { allOk, badRequest, created, getStatus } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { Operation } from 'fast-json-patch';
@@ -113,7 +113,7 @@ protectedRoutes.post('/([$]|%24)graphql', graphqlHandler);
 // PlanDefinition $apply operation
 protectedRoutes.post('/PlanDefinition/:id/([$]|%24)apply', asyncWrap(planDefinitionApplyHandler));
 
-// Create batch
+// Execute batch
 protectedRoutes.post(
   '/',
   asyncWrap(async (req: Request, res: Response) => {
@@ -127,9 +127,8 @@ protectedRoutes.post(
       return;
     }
     const repo = res.locals.repo as Repository;
-    const [outcome, result] = await processBatch(repo, bundle);
-    assertOk(outcome, result);
-    sendResponse(res, outcome, result);
+    const result = await processBatch(repo, bundle);
+    sendResponse(res, allOk, result);
   })
 );
 
@@ -140,9 +139,8 @@ protectedRoutes.get(
     const { resourceType } = req.params;
     const repo = res.locals.repo as Repository;
     const query = req.query as Record<string, string[] | string | undefined>;
-    const [outcome, bundle] = await repo.search(parseSearchRequest(resourceType, query));
-    assertOk(outcome, bundle);
-    sendResponse(res, outcome, bundle);
+    const bundle = await repo.search(parseSearchRequest(resourceType, query));
+    sendResponse(res, allOk, bundle);
   })
 );
 
@@ -161,9 +159,8 @@ protectedRoutes.post(
       return;
     }
     const repo = res.locals.repo as Repository;
-    const [outcome, result] = await repo.createResource(resource);
-    assertOk(outcome, result);
-    sendResponse(res, outcome, result);
+    const result = await repo.createResource(resource);
+    sendResponse(res, created, result);
   })
 );
 
@@ -173,9 +170,8 @@ protectedRoutes.get(
   asyncWrap(async (req: Request, res: Response) => {
     const { resourceType, id } = req.params;
     const repo = res.locals.repo as Repository;
-    const [outcome, resource] = await repo.readResource(resourceType, id);
-    assertOk(outcome, resource);
-    sendResponse(res, outcome, resource);
+    const resource = await repo.readResource(resourceType, id);
+    sendResponse(res, allOk, resource);
   })
 );
 
@@ -185,9 +181,8 @@ protectedRoutes.get(
   asyncWrap(async (req: Request, res: Response) => {
     const { resourceType, id } = req.params;
     const repo = res.locals.repo as Repository;
-    const [outcome, bundle] = await repo.readHistory(resourceType, id);
-    assertOk(outcome, bundle);
-    res.status(getStatus(outcome)).json(bundle);
+    const bundle = await repo.readHistory(resourceType, id);
+    sendResponse(res, allOk, bundle);
   })
 );
 
@@ -197,9 +192,8 @@ protectedRoutes.get(
   asyncWrap(async (req: Request, res: Response) => {
     const { resourceType, id, vid } = req.params;
     const repo = res.locals.repo as Repository;
-    const [outcome, resource] = await repo.readVersion(resourceType, id, vid);
-    assertOk(outcome, resource);
-    res.status(getStatus(outcome)).json(resource);
+    const resource = await repo.readVersion(resourceType, id, vid);
+    sendResponse(res, allOk, resource);
   })
 );
 
@@ -222,9 +216,8 @@ protectedRoutes.put(
       return;
     }
     const repo = res.locals.repo as Repository;
-    const [outcome, result] = await repo.updateResource(resource);
-    assertOk(outcome, result);
-    sendResponse(res, outcome, result);
+    const result = await repo.updateResource(resource);
+    sendResponse(res, allOk, result);
   })
 );
 
@@ -234,9 +227,8 @@ protectedRoutes.delete(
   asyncWrap(async (req: Request, res: Response) => {
     const { resourceType, id } = req.params;
     const repo = res.locals.repo as Repository;
-    const [outcome] = await repo.deleteResource(resourceType, id);
-    assertOk(outcome, { resourceType });
-    sendOutcome(res, outcome);
+    await repo.deleteResource(resourceType, id);
+    sendOutcome(res, allOk);
   })
 );
 
@@ -251,9 +243,8 @@ protectedRoutes.patch(
     const { resourceType, id } = req.params;
     const patch = req.body as Operation[];
     const repo = res.locals.repo as Repository;
-    const [outcome, resource] = await repo.patchResource(resourceType, id, patch);
-    assertOk(outcome, resource);
-    sendResponse(res, outcome, resource);
+    const resource = await repo.patchResource(resourceType, id, patch);
+    sendResponse(res, allOk, resource);
   })
 );
 
@@ -265,8 +256,8 @@ protectedRoutes.post(
       res.status(400).send('Unsupported content type');
       return;
     }
-    const outcome = validateResource(req.body);
-    sendOutcome(res, outcome);
+    validateResource(req.body);
+    sendOutcome(res, allOk);
   })
 );
 
@@ -276,9 +267,8 @@ protectedRoutes.post(
   asyncWrap(async (req: Request, res: Response) => {
     const { resourceType, id } = req.params;
     const repo = res.locals.repo as Repository;
-    const [outcome, resource] = await repo.reindexResource(resourceType, id);
-    assertOk(outcome, resource);
-    sendResponse(res, outcome, resource);
+    const resource = await repo.reindexResource(resourceType, id);
+    sendResponse(res, allOk, resource);
   })
 );
 
@@ -288,9 +278,8 @@ protectedRoutes.post(
   asyncWrap(async (req: Request, res: Response) => {
     const { resourceType, id } = req.params;
     const repo = res.locals.repo as Repository;
-    const [outcome, resource] = await repo.resendSubscriptions(resourceType, id);
-    assertOk(outcome, resource);
-    sendResponse(res, outcome, resource);
+    const resource = await repo.resendSubscriptions(resourceType, id);
+    sendResponse(res, allOk, resource);
   })
 );
 

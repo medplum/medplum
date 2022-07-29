@@ -1,5 +1,5 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { assertOk, createReference, Hl7Message, resolveId } from '@medplum/core';
+import { createReference, Hl7Message, resolveId } from '@medplum/core';
 import { AuditEvent, Bot, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { TextDecoder, TextEncoder } from 'util';
@@ -38,8 +38,7 @@ export interface BotExecutionResult {
 export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   const { id } = req.params;
   const repo = res.locals.repo as Repository;
-  const [outcome, bot] = await repo.readResource<Bot>('Bot', id);
-  assertOk(outcome, bot);
+  const bot = await repo.readResource<Bot>('Bot', id);
 
   // Execute the bot
   const result = await executeBot({
@@ -93,8 +92,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
  * @returns True if the bot is enabled.
  */
 async function isBotEnabled(bot: Bot): Promise<boolean> {
-  const [projectOutcome, project] = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
-  assertOk(projectOutcome, project);
+  const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
   return !!project.features?.includes('bots');
 }
 
@@ -107,13 +105,12 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
   const { bot, runAs, input, contentType } = request;
 
   // Create the Login resource
-  const [loginOutcome, login] = await systemRepo.createResource<Login>({
+  const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
     membership: createReference(runAs),
     authTime: new Date().toISOString(),
     scope: 'openid',
   });
-  assertOk(loginOutcome, login);
 
   // Create the access token
   const accessToken = await generateAccessToken({

@@ -1,4 +1,4 @@
-import { assertOk, createReference, resolveId } from '@medplum/core';
+import { createReference, resolveId } from '@medplum/core';
 import { AccessPolicy, BundleEntry, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -115,14 +115,13 @@ describe('New patient', () => {
     expect(res6.status).toBe(201);
 
     // As a super admin, enable patient registration
-    const [updateOutcome, updatedProject] = await systemRepo.patchResource('Project', projectId, [
+    await systemRepo.patchResource('Project', projectId, [
       {
         op: 'add',
         path: '/defaultPatientAccessPolicy',
         value: createReference(res6.body),
       },
     ]);
-    assertOk(updateOutcome, updatedProject);
 
     // Try to register as a patient in the new project
     // (This should succeed)

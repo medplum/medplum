@@ -1,4 +1,4 @@
-import { assertOk, badRequest, getStatus } from '@medplum/core';
+import { allOk, badRequest } from '@medplum/core';
 import { Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
@@ -60,9 +60,8 @@ projectAdminRouter.get(
     }
 
     const { membershipId } = req.params;
-    const [outcome, membership] = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
-    assertOk(outcome, membership);
-    res.status(getStatus(outcome)).json(membership);
+    const membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+    res.json(membership);
   })
 );
 
@@ -81,9 +80,8 @@ projectAdminRouter.post(
       return;
     }
 
-    const [outcome, result] = await systemRepo.updateResource(resource);
-    assertOk(outcome, result);
-    res.status(getStatus(outcome)).json(result);
+    const result = await systemRepo.updateResource(resource);
+    res.json(result);
   })
 );
 
@@ -97,20 +95,15 @@ projectAdminRouter.delete(
     }
 
     const { membershipId } = req.params;
-    const [readOutcome, membership] = await systemRepo.readResource<ProjectMembership>(
-      'ProjectMembership',
-      membershipId
-    );
-    assertOk(readOutcome, membership);
+    const membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
 
     if (project.owner?.reference === membership.user?.reference) {
       sendOutcome(res, badRequest('Cannot delete the owner of the project'));
       return;
     }
 
-    const [outcome] = await systemRepo.deleteResource('ProjectMembership', req.params.membershipId);
-    assertOk(outcome, outcome);
-    sendOutcome(res, outcome);
+    await systemRepo.deleteResource('ProjectMembership', req.params.membershipId);
+    sendOutcome(res, allOk);
   })
 );
 

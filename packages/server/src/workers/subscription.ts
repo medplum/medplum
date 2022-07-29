@@ -1,5 +1,14 @@
-import { assertOk, createReference, getExtensionValue, isGone, Operator, stringify } from '@medplum/core';
-import { AuditEvent, Bot, BundleEntry, ProjectMembership, Reference, Resource, Subscription } from '@medplum/fhirtypes';
+import { createReference, getExtensionValue, isGone, Operator, stringify } from '@medplum/core';
+import {
+  AuditEvent,
+  Bot,
+  BundleEntry,
+  OperationOutcome,
+  ProjectMembership,
+  Reference,
+  Resource,
+  Subscription,
+} from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
@@ -191,7 +200,7 @@ function addSubscriptionJobData(job: SubscriptionJobData): void {
  * @returns The list of all subscriptions in this repository.
  */
 async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
-  const [outcome, bundle] = await systemRepo.search<Subscription>({
+  const bundle = await systemRepo.search<Subscription>({
     resourceType: 'Subscription',
     filters: [
       {
@@ -206,7 +215,6 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
       },
     ],
   });
-  assertOk(outcome, bundle);
   return (bundle.entry as BundleEntry<Subscription>[]).map((e) => e.resource as Subscription);
 }
 
@@ -217,30 +225,35 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
   const { subscriptionId, resourceType, id, versionId } = job.data;
 
-  const [subscriptionOutcome, subscription] = await systemRepo.readResource<Subscription>(
-    'Subscription',
-    subscriptionId
-  );
-  if (isGone(subscriptionOutcome)) {
-    // If the subscription was deleted, then stop processing it.
-    return;
+  let subscription;
+  try {
+    subscription = await systemRepo.readResource<Subscription>('Subscription', subscriptionId);
+  } catch (err) {
+    if (isGone(err as OperationOutcome)) {
+      // If the subscription was deleted, then stop processing it.
+      return;
+    }
+    // Otherwise re-throw
+    throw err;
   }
-  assertOk(subscriptionOutcome, subscription);
 
   if (subscription.status !== 'active') {
     // If the subscription has been disabled, then stop processing it.
     return;
   }
 
-  const [readOutcome, currentVersion] = await systemRepo.readResource(resourceType, id);
-  if (isGone(readOutcome)) {
-    // If the resource was deleted, then stop processing it.
-    return;
+  try {
+    await systemRepo.readResource(resourceType, id);
+  } catch (err) {
+    if (isGone(err as OperationOutcome)) {
+      // If the resource was deleted, then stop processing it.
+      return;
+    }
+    // Otherwise re-throw
+    throw err;
   }
-  assertOk(readOutcome, currentVersion);
 
-  const [versionOutcome, resourceVersion] = await systemRepo.readVersion(resourceType, id, versionId);
-  assertOk(versionOutcome, resourceVersion);
+  const resourceVersion = await systemRepo.readVersion(resourceType, id, versionId);
 
   const channelType = subscription?.channel?.type;
   if (channelType === 'rest-hook') {
@@ -350,8 +363,7 @@ async function execBot(subscription: Subscription, resource: Resource): Promise<
   }
 
   // URL should be a Bot reference string
-  const [botOutcome, bot] = await systemRepo.readReference<Bot>({ reference: url });
-  assertOk(botOutcome, bot);
+  const bot = await systemRepo.readReference<Bot>({ reference: url });
 
   const project = bot.meta?.project as string;
   let runAs: ProjectMembership | undefined;
@@ -381,7 +393,7 @@ async function execBot(subscription: Subscription, resource: Resource): Promise<
 }
 
 async function findProjectMembership(project: string, profile: Reference): Promise<ProjectMembership | undefined> {
-  const [outcome, bundle] = await systemRepo.search<ProjectMembership>({
+  const bundle = await systemRepo.search<ProjectMembership>({
     resourceType: 'ProjectMembership',
     count: 1,
     filters: [
@@ -397,7 +409,6 @@ async function findProjectMembership(project: string, profile: Reference): Promi
       },
     ],
   });
-  assertOk(outcome, bundle);
   return bundle.entry?.[0]?.resource;
 }
 

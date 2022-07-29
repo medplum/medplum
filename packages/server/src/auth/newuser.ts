@@ -1,4 +1,4 @@
-import { assertOk, badRequest, Operator } from '@medplum/core';
+import { badRequest, Operator } from '@medplum/core';
 import { OperationOutcome, Project, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
@@ -70,7 +70,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
   try {
     await createUser(req.body as NewUserRequest);
 
-    const [loginOutcome, login] = await tryLogin({
+    const login = await tryLogin({
       authMethod: 'password',
       projectId: req.body.projectId || undefined,
       scope: req.body.scope || 'openid',
@@ -83,7 +83,6 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
       remoteAddress: req.ip,
       userAgent: req.get('User-Agent'),
     });
-    assertOk(loginOutcome, login);
     res.status(200).json({ login: login?.id });
   } catch (outcome) {
     sendOutcome(res, outcome as OperationOutcome);
@@ -100,18 +99,17 @@ export async function createUser(request: NewUserRequest): Promise<User> {
 
   logger.info('Create user ' + email);
   const passwordHash = await bcrypt.hash(password, 10);
-  const [outcome, result] = await systemRepo.createResource<User>({
+  const result = await systemRepo.createResource<User>({
     resourceType: 'User',
     email,
     passwordHash,
   });
-  assertOk(outcome, result);
   logger.info('Created: ' + result.id);
   return result;
 }
 
 async function getProjectByRecaptchaSiteKey(recaptchaSiteKey: string): Promise<Project | undefined> {
-  const [outcome, bundle] = await systemRepo.search<Project>({
+  const bundle = await systemRepo.search<Project>({
     resourceType: 'Project',
     count: 1,
     filters: [
@@ -122,6 +120,5 @@ async function getProjectByRecaptchaSiteKey(recaptchaSiteKey: string): Promise<P
       },
     ],
   });
-  assertOk(outcome, bundle);
   return bundle.entry && bundle.entry.length > 0 ? bundle.entry[0].resource : undefined;
 }

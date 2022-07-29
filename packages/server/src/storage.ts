@@ -1,4 +1,3 @@
-import { assertOk } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from './async';
@@ -18,8 +17,7 @@ storageRouter.get(
     }
 
     const { id } = req.params;
-    const [outcome, binary] = await systemRepo.readResource<Binary>('Binary', id);
-    assertOk(outcome, binary);
+    const binary = await systemRepo.readResource<Binary>('Binary', id);
 
     try {
       const stream = await getBinaryStorage().readBinary(binary);

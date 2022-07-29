@@ -1,4 +1,4 @@
-import { accessDenied, allOk, assertOk, isOk } from '@medplum/core';
+import { allOk, forbidden } from '@medplum/core';
 import { User } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
@@ -17,11 +17,9 @@ superAdminRouter.use(authenticateToken);
 superAdminRouter.post(
   '/valuesets',
   asyncWrap(async (_req: Request, res: Response) => {
-    const [outcome, user] = await systemRepo.readResource<User>('User', res.locals.user);
-    assertOk(outcome, user);
-
+    const user = await systemRepo.readResource<User>('User', res.locals.user);
     if (!user.admin) {
-      sendOutcome(res, accessDenied);
+      sendOutcome(res, forbidden);
       return;
     }
 
@@ -36,11 +34,9 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/structuredefinitions',
   asyncWrap(async (_req: Request, res: Response) => {
-    const [outcome, user] = await systemRepo.readResource<User>('User', res.locals.user);
-    assertOk(outcome, user);
-
+    const user = await systemRepo.readResource<User>('User', res.locals.user);
     if (!user.admin) {
-      sendOutcome(res, accessDenied);
+      sendOutcome(res, forbidden);
       return;
     }
 
@@ -55,11 +51,9 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/searchparameters',
   asyncWrap(async (_req: Request, res: Response) => {
-    const [outcome, user] = await systemRepo.readResource<User>('User', res.locals.user);
-    assertOk(outcome, user);
-
+    const user = await systemRepo.readResource<User>('User', res.locals.user);
     if (!user.admin) {
-      sendOutcome(res, accessDenied);
+      sendOutcome(res, forbidden);
       return;
     }
 
@@ -74,22 +68,16 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/reindex',
   asyncWrap(async (req: Request, res: Response) => {
-    const [outcome, user] = await systemRepo.readResource<User>('User', res.locals.user);
-    assertOk(outcome, user);
-
+    const user = await systemRepo.readResource<User>('User', res.locals.user);
     if (!user.admin) {
-      sendOutcome(res, accessDenied);
+      sendOutcome(res, forbidden);
       return;
     }
 
     const resourceType = req.body.resourceType;
-    const validateOutcome = validateResourceType(resourceType);
-    if (!isOk(validateOutcome)) {
-      sendOutcome(res, validateOutcome);
-      return;
-    }
+    validateResourceType(resourceType);
 
-    const [reindexOutcome] = await systemRepo.reindexResourceType(resourceType);
-    sendOutcome(res, reindexOutcome);
+    await systemRepo.reindexResourceType(resourceType);
+    sendOutcome(res, allOk);
   })
 );

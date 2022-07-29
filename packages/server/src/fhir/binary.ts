@@ -1,4 +1,4 @@
-import { assertOk, badRequest } from '@medplum/core';
+import { badRequest } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import internal from 'stream';
@@ -18,14 +18,13 @@ binaryRouter.post(
     const filename = req.query['_filename'] as string | undefined;
     const contentType = req.get('Content-Type');
     const repo = res.locals.repo as Repository;
-    const [outcome, resource] = await repo.createResource<Binary>({
+    const resource = await repo.createResource<Binary>({
       resourceType: 'Binary',
       contentType,
       meta: {
         project: req.query['_project'] as string | undefined,
       },
     });
-    assertOk(outcome, resource);
 
     const stream = getContentStream(req);
     if (!stream) {
@@ -53,7 +52,7 @@ binaryRouter.put(
     const filename = req.query['_filename'] as string | undefined;
     const contentType = req.get('Content-Type');
     const repo = res.locals.repo as Repository;
-    const [outcome, resource] = await repo.updateResource<Binary>({
+    const resource = await repo.updateResource<Binary>({
       resourceType: 'Binary',
       id,
       contentType,
@@ -61,7 +60,6 @@ binaryRouter.put(
         project: req.query['_project'] as string | undefined,
       },
     });
-    assertOk(outcome, resource);
 
     const stream = getContentStream(req);
     if (!stream) {
@@ -80,8 +78,7 @@ binaryRouter.get(
   asyncWrap(async (req: Request, res: Response) => {
     const { id } = req.params;
     const repo = res.locals.repo as Repository;
-    const [outcome, binary] = await repo.readResource<Binary>('Binary', id);
-    assertOk(outcome, binary);
+    const binary = await repo.readResource<Binary>('Binary', id);
 
     res.status(200).contentType(binary.contentType as string);
 

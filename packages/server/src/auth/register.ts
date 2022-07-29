@@ -1,4 +1,4 @@
-import { assertOk, createReference, ProfileResource } from '@medplum/core';
+import { createReference, ProfileResource } from '@medplum/core';
 import { ClientApplication, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
@@ -37,14 +37,13 @@ export interface RegisterResponse {
 export async function registerNew(request: RegisterRequest): Promise<RegisterResponse> {
   const { email, password, projectName, firstName, lastName } = request;
   const passwordHash = await bcrypt.hash(password, 10);
-  const [userOutcome, user] = await systemRepo.createResource<User>({
+  const user = await systemRepo.createResource<User>({
     resourceType: 'User',
     email,
     passwordHash,
   });
-  assertOk(userOutcome, user);
 
-  const [loginOutcome, login] = await tryLogin({
+  const login = await tryLogin({
     authMethod: 'password',
     scope: 'openid',
     nonce: randomUUID(),
@@ -52,26 +51,20 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     password: request.password,
     remember: true,
   });
-  assertOk(loginOutcome, login);
 
   const membership = await createProject(login, projectName, firstName, lastName);
 
-  const [projectOutcome, project] = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
-  assertOk(projectOutcome, project);
+  const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
 
-  const [profileOutcome, profile] = await systemRepo.readReference<ProfileResource>(
-    membership.profile as Reference<ProfileResource>
-  );
-  assertOk(profileOutcome, profile);
+  const profile = await systemRepo.readReference<ProfileResource>(membership.profile as Reference<ProfileResource>);
 
-  const [tokenOutcome, token] = await getAuthTokens(
+  const token = await getAuthTokens(
     {
       ...login,
       membership: createReference(membership),
     },
     createReference(profile)
   );
-  assertOk(tokenOutcome, token);
 
   return {
     accessToken: token.accessToken,

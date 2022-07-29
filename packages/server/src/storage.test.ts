@@ -1,4 +1,3 @@
-import { assertOk } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express, { Request } from 'express';
@@ -26,12 +25,10 @@ describe('Storage Routes', () => {
     await initApp(app);
     await initBinaryStorage('file:' + binaryDir);
 
-    const [outcome, resource] = await systemRepo.createResource<Binary>({
+    binary = await systemRepo.createResource<Binary>({
       resourceType: 'Binary',
       contentType: 'text/plain',
     });
-    assertOk(outcome, resource);
-    binary = resource;
 
     const req = new Readable();
     req.push('hello world');
@@ -62,11 +59,10 @@ describe('Storage Routes', () => {
   });
 
   test('File not found', async () => {
-    const [outcome, resource] = await systemRepo.createResource<Binary>({
+    const resource = await systemRepo.createResource<Binary>({
       resourceType: 'Binary',
       contentType: 'text/plain',
     });
-    assertOk(outcome, resource);
 
     const req = new Readable();
     req.push('hello world');
