@@ -2,21 +2,23 @@
 sidebar_position: 20
 ---
 
-# Dev on Host
+# Run the Stack
 
 Follow these instructions to get the complete Medplum stack running directly on your host machine.
 
 ## Prerequisites
 
-1. **Install npm**: See [the npm documentation](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) for instructions on installing it with your OS.
+1. **Npm**: See [the npm documentation](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) for instructions on installing it with your OS.
 1. [Clone the Medplum repo](./clone-the-repo)
 
-### Notes for Windows users
+:::note Note for windows Users
 
 Running on Windows is supported, but it has a few extra steps:
 
-- Redis does not support Windows, so considered using [Memurai](https://www.memurai.com/)
-- Several build tools use bash scripts, so consider using [MSYS2](https://www.msys2.org/)
+- Redis does not support Windows, so considered using [Memurai](https://www.memurai.com/) as a substitute
+- Several build tools use bash scripts, so consider using [MSYS2](https://www.msys2.org/) to run them
+
+:::
 
 ## Install
 
@@ -27,9 +29,9 @@ cd medplum
 npm ci
 ```
 
-## Build
+## Build and Test
 
-We provide convenience shell scripts to perform a full build and test:
+We provide convenience scripts to perform a full build and test:
 
 ```sh
 ./scripts/build.sh
@@ -46,16 +48,21 @@ This will do the following:
 
 ### Background services
 
-First, make sure that PostgreSQL and Redis are running.
+The Medplum Stack requires the following services to be running in your environment:
+
+- [PostgreSQL](https://www.postgresql.org/) for the primary database
+- [Redis](https://redis.com/) for caching and job queueing
+
+When running this services on your local machine you can either use Docker (recommended) or install them directly onto your machine.
 
 #### Using Docker (Recommended)
 
-Use the supplied `docker-compose-background.yml` file to run PostgreSQL and Redis background services. These services will be deployed with all necessary medplum configurations and database migrations.
+Use the supplied `docker-compose.yml` file to run PostgreSQL and Redis background services. These services will be deployed with all necessary medplum configurations and database migrations.
 
 From your root `medplum` directory run
 
 ```sh
-docker-compose -f docker-compose-background.yml up
+docker-compose up
 ```
 
 When `docker-compose` completes, you should see something like this in your terminal:
