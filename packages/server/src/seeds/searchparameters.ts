@@ -1,4 +1,3 @@
-import { assertOk } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, SearchParameter } from '@medplum/fhirtypes';
 import { getClient } from '../database';
@@ -18,10 +17,9 @@ export async function createSearchParameters(): Promise<void> {
     const searchParam = entry.resource as SearchParameter;
 
     logger.debug('SearchParameter: ' + searchParam.name);
-    const [outcome, result] = await systemRepo.createResource<SearchParameter>({
+    await systemRepo.createResource<SearchParameter>({
       ...searchParam,
       text: undefined,
     });
-    assertOk(outcome, result);
   }
 }

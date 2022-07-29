@@ -8,7 +8,7 @@ import {
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
-import { allOk, assertOk, badRequest } from '@medplum/core';
+import { allOk, badRequest } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import JSZip from 'jszip';
@@ -84,8 +84,7 @@ function createPdf(docDefinition, tableLayouts, fonts) {
 export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
   const { id } = req.params;
   const repo = res.locals.repo as Repository;
-  const [outcome, bot] = await repo.readResource<Bot>('Bot', id);
-  assertOk(outcome, bot);
+  const bot = await repo.readResource<Bot>('Bot', id);
 
   const client = new LambdaClient({ region: 'us-east-1' });
   const name = `medplum-bot-lambda-${bot.id}`;

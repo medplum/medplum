@@ -1,25 +1,13 @@
 import {
-  allOk,
-  assertOk,
   badRequest,
   createReference,
   Filter,
   getDateProperty,
-  isOk,
   Operator,
   ProfileResource,
   resolveId,
 } from '@medplum/core';
-import {
-  BundleEntry,
-  ClientApplication,
-  Login,
-  OperationOutcome,
-  Project,
-  ProjectMembership,
-  Reference,
-  User,
-} from '@medplum/fhirtypes';
+import { BundleEntry, ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { timingSafeEqual } from 'crypto';
 import { JWTPayload } from 'jose';
@@ -80,34 +68,24 @@ export interface GoogleCredentialClaims extends JWTPayload {
   readonly picture: string;
 }
 
-export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome, Login | undefined]> {
-  const validateOutcome = validateLoginRequest(request);
-  if (validateOutcome) {
-    return [validateOutcome, undefined];
-  }
+export async function tryLogin(request: LoginRequest): Promise<Login> {
+  validateLoginRequest(request);
 
-  let clientOutcome: OperationOutcome | undefined;
   let client: ClientApplication | undefined;
   if (request.clientId) {
-    [clientOutcome, client] = await systemRepo.readResource<ClientApplication>('ClientApplication', request.clientId);
-    if (!isOk(clientOutcome)) {
-      return [clientOutcome, undefined];
-    }
+    client = await systemRepo.readResource<ClientApplication>('ClientApplication', request.clientId);
   }
 
   const user = await getUserByEmail(request.email, request.projectId);
   if (!user) {
-    return [badRequest('Email or password is invalid'), undefined];
+    throw badRequest('Email or password is invalid');
   }
 
-  const authOutcome = await authenticate(request, user);
-  if (!isOk(authOutcome)) {
-    return [authOutcome, undefined];
-  }
+  await authenticate(request, user);
 
   const refreshSecret = request.remember ? generateSecret(48) : undefined;
 
-  const [loginOutcome, login] = await systemRepo.createResource<Login>({
+  const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
     client: client && createReference(client),
     user: createReference(user),
@@ -123,7 +101,6 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
     remoteAddress: request.remoteAddress,
     userAgent: request.userAgent,
   });
-  assertOk(loginOutcome, login);
 
   // Try to get user memberships
   // If they only have one membership, set it now
@@ -132,37 +109,37 @@ export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome
   if (memberships.length === 1) {
     return setLoginMembership(login, memberships[0].id as string);
   } else {
-    return [loginOutcome, login];
+    return login;
   }
 }
 
-export function validateLoginRequest(request: LoginRequest): OperationOutcome | undefined {
+export function validateLoginRequest(request: LoginRequest): void {
   if (!request.email) {
-    return badRequest('Invalid email', 'email');
+    throw badRequest('Invalid email', 'email');
   }
 
   if (!request.authMethod) {
-    return badRequest('Invalid authentication method', 'authMethod');
+    throw badRequest('Invalid authentication method', 'authMethod');
   }
 
   if (request.authMethod === 'password' && !request.password) {
-    return badRequest('Invalid password', 'password');
+    throw badRequest('Invalid password', 'password');
   }
 
   if (request.authMethod === 'google' && !request.googleCredentials) {
-    return badRequest('Invalid google credentials', 'googleCredentials');
+    throw badRequest('Invalid google credentials', 'googleCredentials');
   }
 
   if (!request.scope) {
-    return badRequest('Invalid scope', 'scope');
+    throw badRequest('Invalid scope', 'scope');
   }
 
   if (!request.codeChallenge && request.codeChallengeMethod) {
-    return badRequest('Invalid code challenge', 'code_challenge');
+    throw badRequest('Invalid code challenge', 'code_challenge');
   }
 
   if (request.codeChallenge && !request.codeChallengeMethod) {
-    return badRequest('Invalid code challenge method', 'code_challenge_method');
+    throw badRequest('Invalid code challenge method', 'code_challenge_method');
   }
 
   if (
@@ -170,28 +147,27 @@ export function validateLoginRequest(request: LoginRequest): OperationOutcome | 
     request.codeChallengeMethod !== 'plain' &&
     request.codeChallengeMethod !== 'S256'
   ) {
-    return badRequest('Invalid code challenge method', 'code_challenge_method');
+    throw badRequest('Invalid code challenge method', 'code_challenge_method');
   }
 
   return undefined;
 }
 
-async function authenticate(request: LoginRequest, user: User): Promise<OperationOutcome> {
+async function authenticate(request: LoginRequest, user: User): Promise<void> {
   if (request.password) {
     const bcryptResult = await bcrypt.compare(request.password, user.passwordHash as string);
     if (!bcryptResult) {
-      return badRequest('Email or password is invalid');
+      throw badRequest('Email or password is invalid');
     }
-
-    return allOk;
+    return;
   }
 
   if (request.googleCredentials) {
     // Verify Google user id
-    return allOk;
+    return;
   }
 
-  return badRequest('Invalid authentication method');
+  throw badRequest('Invalid authentication method');
 }
 
 /**
@@ -227,11 +203,10 @@ export async function getUserMemberships(
     });
   }
 
-  const [membershipsOutcome, memberships] = await systemRepo.search<ProjectMembership>({
+  const memberships = await systemRepo.search<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters,
   });
-  assertOk(membershipsOutcome, memberships);
   return (memberships.entry as BundleEntry<ProjectMembership>[]).map((entry) => entry.resource as ProjectMembership);
 }
 
@@ -244,54 +219,47 @@ export async function getUserMemberships(
  * @param membership The membership to set.
  * @returns The updated login.
  */
-export async function setLoginMembership(
-  login: Login,
-  membershipId: string
-): Promise<[OperationOutcome, Login | undefined]> {
+export async function setLoginMembership(login: Login, membershipId: string): Promise<Login> {
   if (login.revoked) {
-    return [badRequest('Login revoked'), undefined];
+    throw badRequest('Login revoked');
   }
 
   if (login.granted) {
-    return [badRequest('Login granted'), undefined];
+    throw badRequest('Login granted');
   }
 
   if (login.membership) {
-    return [badRequest('Login profile already set'), undefined];
+    throw badRequest('Login profile already set');
   }
 
   // Find the membership for the user
   const memberships = await getUserMemberships(login?.user as Reference<User>);
   const membership = memberships.find((m) => m.id === membershipId);
   if (!membership) {
-    return [badRequest('Profile not found'), undefined];
+    throw badRequest('Profile not found');
   }
 
   // Get the project
-  const [projectOutcome, project] = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
-  assertOk(projectOutcome, project);
+  const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
 
   // Make sure the membership satisfies the project requirements
   if (project.features?.includes('google-auth-required') && login.authMethod !== 'google') {
-    return [badRequest('Google authentication is required'), undefined];
+    throw badRequest('Google authentication is required');
   }
 
   // Everything checks out, update the login
   return systemRepo.updateResource<Login>({ ...login, membership: createReference(membership) });
 }
 
-export async function getAuthTokens(
-  login: Login,
-  profile: Reference<ProfileResource>
-): Promise<[OperationOutcome, TokenResult | undefined]> {
+export async function getAuthTokens(login: Login, profile: Reference<ProfileResource>): Promise<TokenResult> {
   const clientId = login.client && resolveId(login.client);
   const userId = resolveId(login.user);
   if (!userId) {
-    return [badRequest('Login missing user'), undefined];
+    throw badRequest('Login missing user');
   }
 
   if (!login.membership) {
-    return [badRequest('Login missing profile'), undefined];
+    throw badRequest('Login missing profile');
   }
 
   if (!login.granted) {
@@ -328,14 +296,11 @@ export async function getAuthTokens(
       })
     : undefined;
 
-  return [
-    allOk,
-    {
-      idToken,
-      accessToken,
-      refreshToken,
-    },
-  ];
+  return {
+    idToken,
+    accessToken,
+    refreshToken,
+  };
 }
 
 export async function revokeLogin(login: Login): Promise<void> {
@@ -371,7 +336,7 @@ export async function getUserByEmail(email: string, projectId: string | undefine
  * @returns The user if found; otherwise, undefined.
  */
 async function getUserByEmailInProject(email: string, projectId: string): Promise<User | undefined> {
-  const [outcome, bundle] = await systemRepo.search({
+  const bundle = await systemRepo.search({
     resourceType: 'User',
     filters: [
       {
@@ -386,7 +351,6 @@ async function getUserByEmailInProject(email: string, projectId: string): Promis
       },
     ],
   });
-  assertOk(outcome, bundle);
   return bundle.entry && bundle.entry.length > 0 ? (bundle.entry[0].resource as User) : undefined;
 }
 
@@ -397,7 +361,7 @@ async function getUserByEmailInProject(email: string, projectId: string): Promis
  * @returns The user if found; otherwise, undefined.
  */
 async function getUserByEmailWithoutProject(email: string): Promise<User | undefined> {
-  const [outcome, bundle] = await systemRepo.search({
+  const bundle = await systemRepo.search({
     resourceType: 'User',
     filters: [
       {
@@ -412,7 +376,6 @@ async function getUserByEmailWithoutProject(email: string): Promise<User | undef
       },
     ],
   });
-  assertOk(outcome, bundle);
   return bundle.entry && bundle.entry.length > 0 ? (bundle.entry[0].resource as User) : undefined;
 }
 

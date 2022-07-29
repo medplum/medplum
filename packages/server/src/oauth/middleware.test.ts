@@ -1,4 +1,4 @@
-import { assertOk, createReference } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import { ClientApplication, Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -51,15 +51,13 @@ describe('Auth middleware', () => {
   test('Login revoked', async () => {
     const scope = 'openid';
 
-    const [loginOutcome, login] = await systemRepo.createResource<Login>({
+    const login = await systemRepo.createResource<Login>({
       resourceType: 'Login',
       client: createReference(client),
       authTime: new Date().toISOString(),
       revoked: true,
       scope,
     });
-
-    assertOk(loginOutcome, login);
 
     const accessToken = await generateAccessToken({
       login_id: login?.id as string,
@@ -161,12 +159,11 @@ describe('Auth middleware', () => {
   });
 
   test('Basic auth without project membership', async () => {
-    const [clientOutcome, client] = await systemRepo.createResource<ClientApplication>({
+    const client = await systemRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
       name: 'Client without project membership',
       secret: generateSecret(48),
     });
-    assertOk(clientOutcome, client);
 
     const res = await request(app)
       .get('/fhir/R4/Patient')

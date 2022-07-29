@@ -1,4 +1,3 @@
-import { assertOk } from '@medplum/core';
 import { Binary, Practitioner } from '@medplum/fhirtypes';
 import { URL } from 'url';
 import { loadTestConfig, MedplumServerConfig } from '../config';
@@ -18,10 +17,9 @@ describe('URL rewrite', () => {
     await initDatabase(config.database);
     await seedDatabase();
 
-    const [outcome, resource] = await systemRepo.createResource({
+    const resource = await systemRepo.createResource({
       resourceType: 'Binary',
     });
-    assertOk(outcome, resource);
     binary = resource;
   });
 

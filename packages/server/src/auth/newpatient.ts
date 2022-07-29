@@ -1,4 +1,4 @@
-import { assertOk, badRequest, createReference, formatHumanName, getReferenceString } from '@medplum/core';
+import { badRequest, createReference, formatHumanName, getReferenceString } from '@medplum/core';
 import {
   AccessPolicy,
   HumanName,
@@ -35,8 +35,7 @@ export async function newPatientHandler(req: Request, res: Response): Promise<vo
     return;
   }
 
-  const [loginOutcome, login] = await systemRepo.readResource<Login>('Login', req.body.login);
-  assertOk(loginOutcome, login);
+  const login = await systemRepo.readResource<Login>('Login', req.body.login);
 
   if (login.membership) {
     sendOutcome(res, badRequest('Login already has a membership'));
@@ -47,8 +46,7 @@ export async function newPatientHandler(req: Request, res: Response): Promise<vo
   const membership = await createPatient(login, projectId, firstName, lastName);
 
   // Update the login
-  const [updateOutcome, updated] = await setLoginMembership(login, membership.id as string);
-  assertOk(updateOutcome, updated);
+  const updated = await setLoginMembership(login, membership.id as string);
 
   res.status(200).json({
     login: updated?.id,
@@ -70,11 +68,9 @@ export async function createPatient(
   firstName: string,
   lastName: string
 ): Promise<ProjectMembership> {
-  const [userOutcome, user] = await systemRepo.readReference<User>(login.user as Reference<User>);
-  assertOk(userOutcome, user);
+  const user = await systemRepo.readReference<User>(login.user as Reference<User>);
 
-  const [projectOutcome, project] = await systemRepo.readResource<Project>('Project', projectId);
-  assertOk(projectOutcome, project);
+  const project = await systemRepo.readResource<Project>('Project', projectId);
 
   if (!project.defaultPatientAccessPolicy) {
     throw badRequest('Project does not allow open registration');
@@ -82,19 +78,16 @@ export async function createPatient(
 
   const profile = (await createProfile(project, 'Patient', firstName, lastName, user.email as string)) as Patient;
 
-  const [templateOutcome, template] = await systemRepo.readReference(project.defaultPatientAccessPolicy);
-  assertOk(templateOutcome, template);
+  const template = await systemRepo.readReference(project.defaultPatientAccessPolicy);
 
-  const [policyOutcome, policy] = await systemRepo.createResource<AccessPolicy>(buildAccessPolicy(template, profile));
-  assertOk(policyOutcome, policy);
+  const policy = await systemRepo.createResource<AccessPolicy>(buildAccessPolicy(template, profile));
 
   const membership = await createProjectMembership(user, project, profile, createReference(policy), true);
 
-  const [updateOutcome, updated] = await systemRepo.updateResource<Login>({
+  await systemRepo.updateResource<Login>({
     ...login,
     membership: createReference(membership),
   });
-  assertOk(updateOutcome, updated);
 
   return membership;
 }

@@ -1,4 +1,4 @@
-import { assertOk, badRequest, evalFhirPath, formatAddress, formatHumanName } from '@medplum/core';
+import { badRequest, evalFhirPath, formatAddress, formatHumanName } from '@medplum/core';
 import { Address, BundleEntry, CodeableConcept, ContactPoint, HumanName, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { sendOutcome } from '../outcomes';
@@ -44,8 +44,7 @@ export async function csvHandler(req: Request, res: Response): Promise<void> {
   const query = req.query as Record<string, string[] | string | undefined>;
   const searchRequest = parseSearchRequest(resourceType, query);
   searchRequest.count = 10000;
-  const [outcome, bundle] = await repo.search(searchRequest);
-  assertOk(outcome, bundle);
+  const bundle = await repo.search(searchRequest);
 
   const columnEntries = Object.entries(columns);
   const output: string[][] = [];

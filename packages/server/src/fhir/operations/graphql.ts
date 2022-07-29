@@ -1,4 +1,12 @@
-import { assertOk, badRequest, Filter, getReferenceString, LRUCache, Operator, SearchRequest } from '@medplum/core';
+import {
+  badRequest,
+  Filter,
+  getReferenceString,
+  LRUCache,
+  normalizeErrorString,
+  Operator,
+  SearchRequest,
+} from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import {
@@ -391,8 +399,7 @@ async function resolveBySearch(
   const resourceType = fieldName.substring(0, fieldName.length - 4); // Remove "List"
   const repo = ctx.res.locals.repo as Repository;
   const searchRequest = parseSearchArgs(resourceType, source, args);
-  const [outcome, bundle] = await repo.search(searchRequest);
-  assertOk(outcome, bundle);
+  const bundle = await repo.search(searchRequest);
   return bundle.entry?.map((e) => e.resource as Resource);
 }
 
@@ -409,9 +416,11 @@ async function resolveBySearch(
  */
 async function resolveById(_source: any, args: any, ctx: any, info: GraphQLResolveInfo): Promise<Resource | undefined> {
   const repo = ctx.res.locals.repo as Repository;
-  const [outcome, resource] = await repo.readResource(info.fieldName, args.id);
-  assertOk(outcome, resource);
-  return resource;
+  try {
+    return await repo.readResource(info.fieldName, args.id);
+  } catch (err) {
+    throw new Error(normalizeErrorString(err));
+  }
 }
 
 /**
@@ -425,9 +434,11 @@ async function resolveById(_source: any, args: any, ctx: any, info: GraphQLResol
  */
 async function resolveByReference(source: any, _args: any, ctx: any): Promise<Resource | undefined> {
   const repo = ctx.res.locals.repo as Repository;
-  const [outcome, resource] = await repo.readReference(source as Reference);
-  assertOk(outcome, resource);
-  return resource;
+  try {
+    return await repo.readReference(source as Reference);
+  } catch (err) {
+    throw new Error(normalizeErrorString(err));
+  }
 }
 
 /**

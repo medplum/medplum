@@ -1,4 +1,3 @@
-import { assertOk } from '@medplum/core';
 import { Login } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -22,12 +21,10 @@ export async function profileHandler(req: Request, res: Response): Promise<void>
     return;
   }
 
-  const [loginOutcome, login] = await systemRepo.readResource<Login>('Login', req.body.login);
-  assertOk(loginOutcome, login);
+  const login = await systemRepo.readResource<Login>('Login', req.body.login);
 
   // Update the login
-  const [updateOutcome, updated] = await setLoginMembership(login, req.body.profile);
-  assertOk(updateOutcome, updated);
+  const updated = await setLoginMembership(login, req.body.profile);
 
   res.status(200).json({
     login: updated?.id,

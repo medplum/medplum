@@ -1,4 +1,4 @@
-import { assertOk, Operator } from '@medplum/core';
+import { Operator } from '@medplum/core';
 import { AccessPolicy, Practitioner, Project, Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
@@ -107,18 +107,17 @@ async function createUser(request: InviteRequest): Promise<User> {
   const password = generateSecret(16);
   logger.info('Create user ' + email);
   const passwordHash = await bcrypt.hash(password, 10);
-  const [outcome, result] = await systemRepo.createResource<User>({
+  const result = await systemRepo.createResource<User>({
     resourceType: 'User',
     email,
     passwordHash,
   });
-  assertOk(outcome, result);
   logger.info('Created: ' + result.id);
   return result;
 }
 
 async function searchForExistingPractitioner(project: Project, email: string): Promise<Practitioner | undefined> {
-  const [outcome, bundle] = await systemRepo.search<Practitioner>({
+  const bundle = await systemRepo.search<Practitioner>({
     resourceType: 'Practitioner',
     filters: [
       {
@@ -133,7 +132,6 @@ async function searchForExistingPractitioner(project: Project, email: string): P
       },
     ],
   });
-  assertOk(outcome, bundle);
   if (bundle.entry && bundle.entry.length > 0) {
     return bundle.entry[0].resource as Practitioner;
   }

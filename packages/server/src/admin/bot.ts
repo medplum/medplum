@@ -1,4 +1,4 @@
-import { assertOk, createReference } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import { AccessPolicy, Bot, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -36,7 +36,7 @@ export interface CreateBotRequest {
 }
 
 export async function createBot(repo: Repository, request: CreateBotRequest): Promise<Bot> {
-  const [clientOutcome, bot] = await repo.createResource<Bot>({
+  const bot = await repo.createResource<Bot>({
     meta: {
       project: request.project.id,
     },
@@ -45,9 +45,8 @@ export async function createBot(repo: Repository, request: CreateBotRequest): Pr
     description: request.description,
     runtimeVersion: 'awslambda',
   });
-  assertOk(clientOutcome, bot);
 
-  const [membershipOutcome, membership] = await systemRepo.createResource<ProjectMembership>({
+  await systemRepo.createResource<ProjectMembership>({
     meta: {
       project: request.project.id,
     },
@@ -57,6 +56,6 @@ export async function createBot(repo: Repository, request: CreateBotRequest): Pr
     profile: createReference(bot),
     accessPolicy: request.accessPolicy,
   });
-  assertOk(membershipOutcome, membership);
+
   return bot;
 }

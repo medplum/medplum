@@ -1,4 +1,4 @@
-import { assertOk, createReference, getReferenceString, Operator, stringify } from '@medplum/core';
+import { createReference, getReferenceString, Operator, stringify } from '@medplum/core';
 import { AuditEvent, Bot, Observation, Patient, Project, ProjectMembership, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue } from 'bullmq';
 import { createHmac, randomUUID } from 'crypto';
@@ -28,14 +28,13 @@ describe('Subscription Worker', () => {
     await initSubscriptionWorker(config.redis);
 
     // Create one simple project with no advanced features enabled
-    const [testProjectOutcome, testProject] = await systemRepo.createResource<Project>({
+    const testProject = await systemRepo.createResource<Project>({
       resourceType: 'Project',
       name: 'Test Project',
       owner: {
         reference: 'User/' + randomUUID(),
       },
     });
-    assertOk(testProjectOutcome, testProject);
 
     repo = new Repository({
       project: testProject.id,
@@ -67,7 +66,7 @@ describe('Subscription Worker', () => {
   test('Send subscriptions', async () => {
     const url = 'https://example.com/subscription';
 
-    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+    const subscription = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       criteria: 'Patient',
@@ -76,18 +75,15 @@ describe('Subscription Worker', () => {
         endpoint: url,
       },
     });
-    expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-
-    expect(patientOutcome.id).toEqual('created');
     expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
@@ -108,7 +104,7 @@ describe('Subscription Worker', () => {
   test('Send subscription with custom headers', async () => {
     const url = 'https://example.com/subscription';
 
-    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+    const subscription = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       criteria: 'Patient',
@@ -118,18 +114,15 @@ describe('Subscription Worker', () => {
         header: ['Authorization: Basic xyz'],
       },
     });
-    expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-
-    expect(patientOutcome.id).toEqual('created');
     expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
@@ -155,7 +148,7 @@ describe('Subscription Worker', () => {
     const url = 'https://example.com/subscription';
     const secret = '0123456789';
 
-    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+    const subscription = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       criteria: 'Patient',
@@ -170,18 +163,15 @@ describe('Subscription Worker', () => {
         },
       ],
     });
-    expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-
-    expect(patientOutcome.id).toEqual('created');
     expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
@@ -207,7 +197,7 @@ describe('Subscription Worker', () => {
   });
 
   test('Ignore non-subscription subscriptions', async () => {
-    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+    const subscription = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       criteria: 'Patient',
@@ -215,24 +205,21 @@ describe('Subscription Worker', () => {
         type: 'email',
       },
     });
-    expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-
-    expect(patientOutcome.id).toEqual('created');
     expect(patient).toBeDefined();
     expect(queue.add).not.toHaveBeenCalled();
   });
 
   test('Ignore subscriptions missing URL', async () => {
-    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+    const subscription = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       criteria: 'Patient',
@@ -241,24 +228,21 @@ describe('Subscription Worker', () => {
         endpoint: '',
       },
     });
-    expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-
-    expect(patientOutcome.id).toEqual('created');
     expect(patient).toBeDefined();
     expect(queue.add).not.toHaveBeenCalled();
   });
 
   test('Ignore subscriptions with missing criteria', async () => {
-    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+    const subscription = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       channel: {
@@ -266,24 +250,21 @@ describe('Subscription Worker', () => {
         endpoint: 'https://example.com/subscription',
       },
     });
-    expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-
-    expect(patientOutcome.id).toEqual('created');
     expect(patient).toBeDefined();
     expect(queue.add).not.toHaveBeenCalled();
   });
 
   test('Ignore subscriptions with different criteria resource type', async () => {
-    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+    const subscription = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       criteria: 'Observation',
@@ -292,24 +273,21 @@ describe('Subscription Worker', () => {
         endpoint: 'https://example.com/subscription',
       },
     });
-    expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-
-    expect(patientOutcome.id).toEqual('created');
     expect(patient).toBeDefined();
     expect(queue.add).not.toHaveBeenCalled();
   });
 
   test('Ignore subscriptions with different criteria parameter', async () => {
-    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+    const subscription = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       criteria: 'Observation?status=final',
@@ -318,7 +296,6 @@ describe('Subscription Worker', () => {
         endpoint: 'https://example.com/subscription',
       },
     });
-    expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
@@ -342,7 +319,7 @@ describe('Subscription Worker', () => {
   });
 
   test('Ignore disabled subscriptions', async () => {
-    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+    const subscription = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'off',
       criteria: 'Patient',
@@ -351,25 +328,22 @@ describe('Subscription Worker', () => {
         endpoint: 'https://example.com/subscription',
       },
     });
-    expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-
-    expect(patientOutcome.id).toEqual('created');
     expect(patient).toBeDefined();
     expect(queue.add).not.toHaveBeenCalled();
   });
 
   test('Ignore resource changes in different project', async () => {
     // Create a subscription in project 1
-    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+    const subscription = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       criteria: 'Patient',
@@ -378,19 +352,16 @@ describe('Subscription Worker', () => {
         endpoint: 'https://example.com/subscription',
       },
     });
-    expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
     // Create a patient in project 2
-    const [patientOutcome, patient] = await botRepo.createResource<Patient>({
+    const patient = await botRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-
-    expect(patientOutcome.id).toEqual('created');
     expect(patient).toBeDefined();
     expect(queue.add).not.toHaveBeenCalled();
   });
@@ -399,7 +370,7 @@ describe('Subscription Worker', () => {
     const project = randomUUID();
     const account = 'Organization/' + randomUUID();
 
-    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+    const subscription = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       meta: {
         project,
@@ -414,21 +385,18 @@ describe('Subscription Worker', () => {
         endpoint: 'https://example.com/subscription',
       },
     });
-    expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       meta: {
         project,
       },
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-
-    expect(patientOutcome.id).toEqual('created');
     expect(patient).toBeDefined();
     expect(queue.add).not.toHaveBeenCalled();
   });
@@ -436,7 +404,7 @@ describe('Subscription Worker', () => {
   test('Retry on 429', async () => {
     const url = 'https://example.com/subscription';
 
-    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+    const subscription = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       criteria: 'Patient',
@@ -445,18 +413,15 @@ describe('Subscription Worker', () => {
         endpoint: url,
       },
     });
-    expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-
-    expect(patientOutcome.id).toEqual('created');
     expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
@@ -471,7 +436,7 @@ describe('Subscription Worker', () => {
   test('Retry on exception', async () => {
     const url = 'https://example.com/subscription';
 
-    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+    const subscription = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       criteria: 'Patient',
@@ -480,18 +445,15 @@ describe('Subscription Worker', () => {
         endpoint: url,
       },
     });
-    expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-
-    expect(patientOutcome.id).toEqual('created');
     expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
@@ -508,7 +470,7 @@ describe('Subscription Worker', () => {
   test('Ignore bots if feature not enabled', async () => {
     const nonce = randomUUID();
 
-    const [botOutcome, bot] = await repo.createResource<Bot>({
+    const bot = await repo.createResource<Bot>({
       resourceType: 'Bot',
       name: 'Test Bot',
       description: 'Test Bot',
@@ -520,17 +482,15 @@ describe('Subscription Worker', () => {
         }
       `,
     });
-    assertOk(botOutcome, bot);
 
-    const [membershipOutcome, membership] = await systemRepo.createResource<ProjectMembership>({
+    await systemRepo.createResource<ProjectMembership>({
       resourceType: 'ProjectMembership',
       project: { reference: 'Project/' + bot.meta?.project },
       user: createReference(bot),
       profile: createReference(bot),
     });
-    assertOk(membershipOutcome, membership);
 
-    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+    const subscription = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       criteria: 'Patient',
@@ -539,16 +499,14 @@ describe('Subscription Worker', () => {
         endpoint: getReferenceString(bot as Bot),
       },
     });
-    assertOk(subscriptionOutcome, subscription);
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-    assertOk(patientOutcome, patient);
     expect(queue.add).toHaveBeenCalled();
 
     (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
@@ -557,7 +515,7 @@ describe('Subscription Worker', () => {
     await execSubscriptionJob(job);
     expect(fetch).not.toHaveBeenCalled();
 
-    const [searchOutcome, bundle] = await repo.search<AuditEvent>({
+    const bundle = await repo.search<AuditEvent>({
       resourceType: 'AuditEvent',
       filters: [
         {
@@ -567,7 +525,6 @@ describe('Subscription Worker', () => {
         },
       ],
     });
-    assertOk(searchOutcome, bundle);
     expect(bundle.entry?.length).toEqual(1);
 
     const auditEvent = bundle.entry?.[0]?.resource as AuditEvent;
@@ -576,7 +533,7 @@ describe('Subscription Worker', () => {
   });
 
   test('Execute bot subscriptions', async () => {
-    const [botOutcome, bot] = await botRepo.createResource<Bot>({
+    const bot = await botRepo.createResource<Bot>({
       resourceType: 'Bot',
       name: 'Test Bot',
       description: 'Test Bot',
@@ -587,17 +544,15 @@ describe('Subscription Worker', () => {
         }
       `,
     });
-    assertOk(botOutcome, bot);
 
-    const [membershipOutcome, membership] = await systemRepo.createResource<ProjectMembership>({
+    await systemRepo.createResource<ProjectMembership>({
       resourceType: 'ProjectMembership',
       project: { reference: 'Project/' + bot.meta?.project },
       user: createReference(bot),
       profile: createReference(bot),
     });
-    assertOk(membershipOutcome, membership);
 
-    const [subscriptionOutcome, subscription] = await botRepo.createResource<Subscription>({
+    const subscription = await botRepo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       criteria: 'Patient',
@@ -606,17 +561,14 @@ describe('Subscription Worker', () => {
         endpoint: getReferenceString(bot as Bot),
       },
     });
-    assertOk(subscriptionOutcome, subscription);
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [patientOutcome, patient] = await botRepo.createResource<Patient>({
+    const patient = await botRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-
-    expect(patientOutcome.id).toEqual('created');
     expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
@@ -626,7 +578,7 @@ describe('Subscription Worker', () => {
     await execSubscriptionJob(job);
     expect(fetch).not.toHaveBeenCalled();
 
-    const [searchOutcome, bundle] = await botRepo.search<AuditEvent>({
+    const bundle = await botRepo.search<AuditEvent>({
       resourceType: 'AuditEvent',
       filters: [
         {
@@ -636,13 +588,12 @@ describe('Subscription Worker', () => {
         },
       ],
     });
-    assertOk(searchOutcome, bundle);
     expect(bundle.entry?.length).toEqual(1);
     expect(bundle.entry?.[0]?.resource?.outcome).toEqual('0');
   });
 
   test('Stop retries if Subscription status not active', async () => {
-    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+    const subscription = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       criteria: 'Patient',
@@ -651,28 +602,24 @@ describe('Subscription Worker', () => {
         endpoint: 'https://example.com/',
       },
     });
-    expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-
-    expect(patientOutcome.id).toEqual('created');
     expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
     // At this point the job should be in the queue
     // But let's change the subscription status to something else
-    const [updateOutcome] = await repo.updateResource<Subscription>({
+    await repo.updateResource<Subscription>({
       ...(subscription as Subscription),
       status: 'off',
     });
-    expect(updateOutcome.id).toEqual('ok');
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execSubscriptionJob(job);
@@ -681,7 +628,7 @@ describe('Subscription Worker', () => {
     expect(fetch).not.toHaveBeenCalled();
 
     // No AuditEvent resources should have been created
-    const [searchOutcome, bundle] = await repo.search<AuditEvent>({
+    const bundle = await repo.search<AuditEvent>({
       resourceType: 'AuditEvent',
       filters: [
         {
@@ -691,12 +638,11 @@ describe('Subscription Worker', () => {
         },
       ],
     });
-    assertOk(searchOutcome, bundle);
     expect(bundle.entry?.length).toEqual(0);
   });
 
   test('Stop retries if Subscription deleted', async () => {
-    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+    const subscription = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       criteria: 'Patient',
@@ -705,24 +651,21 @@ describe('Subscription Worker', () => {
         endpoint: 'https://example.com/',
       },
     });
-    expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
-    assertOk(patientOutcome, patient);
     expect(queue.add).toHaveBeenCalled();
 
     // At this point the job should be in the queue
     // But let's delete the subscription
-    const [deleteOutcome] = await repo.deleteResource('Subscription', subscription?.id as string);
-    assertOk(deleteOutcome, subscription);
+    await repo.deleteResource('Subscription', subscription?.id as string);
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execSubscriptionJob(job);
@@ -731,7 +674,7 @@ describe('Subscription Worker', () => {
     expect(fetch).not.toHaveBeenCalled();
 
     // No AuditEvent resources should have been created
-    const [searchOutcome, bundle] = await repo.search<AuditEvent>({
+    const bundle = await repo.search<AuditEvent>({
       resourceType: 'AuditEvent',
       filters: [
         {
@@ -741,12 +684,11 @@ describe('Subscription Worker', () => {
         },
       ],
     });
-    assertOk(searchOutcome, bundle);
     expect(bundle.entry?.length).toEqual(0);
   });
 
   test('Stop retries if Resource deleted', async () => {
-    const [subscriptionOutcome, subscription] = await repo.createResource<Subscription>({
+    const subscription = await repo.createResource<Subscription>({
       resourceType: 'Subscription',
       status: 'active',
       criteria: 'Patient',
@@ -755,24 +697,21 @@ describe('Subscription Worker', () => {
         endpoint: 'https://example.com/',
       },
     });
-    expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [patientOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
-    assertOk(patientOutcome, patient);
     expect(queue.add).toHaveBeenCalled();
 
     // At this point the job should be in the queue
     // But let's delete the resource
-    const [deleteOutcome] = await repo.deleteResource('Patient', patient.id as string);
-    assertOk(deleteOutcome, patient);
+    await repo.deleteResource('Patient', patient.id as string);
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execSubscriptionJob(job);
@@ -781,7 +720,7 @@ describe('Subscription Worker', () => {
     expect(fetch).not.toHaveBeenCalled();
 
     // No AuditEvent resources should have been created
-    const [searchOutcome, bundle] = await repo.search<AuditEvent>({
+    const bundle = await repo.search<AuditEvent>({
       resourceType: 'AuditEvent',
       filters: [
         {
@@ -791,7 +730,6 @@ describe('Subscription Worker', () => {
         },
       ],
     });
-    assertOk(searchOutcome, bundle);
     expect(bundle.entry?.length).toEqual(0);
   });
 
@@ -801,7 +739,7 @@ describe('Subscription Worker', () => {
       reference: 'Organization/' + randomUUID(),
     };
 
-    const [subscriptionOutcome, subscription] = await systemRepo.createResource<Subscription>({
+    const subscription = await systemRepo.createResource<Subscription>({
       resourceType: 'Subscription',
       meta: {
         project,
@@ -814,13 +752,12 @@ describe('Subscription Worker', () => {
         endpoint: 'https://example.com/subscription',
       },
     });
-    expect(subscriptionOutcome.id).toEqual('created');
     expect(subscription).toBeDefined();
 
     const queue = (Queue as unknown as jest.Mock).mock.instances[0];
     queue.add.mockClear();
 
-    const [patientOutcome, patient] = await systemRepo.createResource<Patient>({
+    const patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       meta: {
         project,
@@ -828,8 +765,6 @@ describe('Subscription Worker', () => {
       },
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
-
-    expect(patientOutcome.id).toEqual('created');
     expect(patient).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
@@ -838,7 +773,7 @@ describe('Subscription Worker', () => {
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execSubscriptionJob(job);
 
-    const [searchOutcome, bundle] = await systemRepo.search<AuditEvent>({
+    const bundle = await systemRepo.search<AuditEvent>({
       resourceType: 'AuditEvent',
       filters: [
         {
@@ -848,7 +783,6 @@ describe('Subscription Worker', () => {
         },
       ],
     });
-    assertOk(searchOutcome, bundle);
     expect(bundle.entry?.length).toEqual(1);
 
     const auditEvent = bundle?.entry?.[0].resource as AuditEvent;

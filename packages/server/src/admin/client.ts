@@ -1,4 +1,4 @@
-import { assertOk, createReference } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import { AccessPolicy, ClientApplication, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -38,7 +38,7 @@ export interface CreateClientRequest {
 }
 
 export async function createClient(repo: Repository, request: CreateClientRequest): Promise<ClientApplication> {
-  const [clientOutcome, client] = await repo.createResource<ClientApplication>({
+  const client = await repo.createResource<ClientApplication>({
     meta: {
       project: request.project.id,
     },
@@ -48,9 +48,8 @@ export async function createClient(repo: Repository, request: CreateClientReques
     description: request.description,
     redirectUri: request.redirectUri,
   });
-  assertOk(clientOutcome, client);
 
-  const [membershipOutcome, membership] = await systemRepo.createResource<ProjectMembership>({
+  await systemRepo.createResource<ProjectMembership>({
     meta: {
       project: request.project.id,
     },
@@ -60,6 +59,6 @@ export async function createClient(repo: Repository, request: CreateClientReques
     profile: createReference(client),
     accessPolicy: request.accessPolicy,
   });
-  assertOk(membershipOutcome, membership);
+
   return client;
 }

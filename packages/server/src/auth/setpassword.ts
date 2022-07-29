@@ -1,4 +1,4 @@
-import { allOk, assertOk, badRequest } from '@medplum/core';
+import { allOk, badRequest } from '@medplum/core';
 import { PasswordChangeRequest, Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
@@ -19,8 +19,7 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
     return;
   }
 
-  const [pcrOutcome, pcr] = await systemRepo.readResource<PasswordChangeRequest>('PasswordChangeRequest', req.body.id);
-  assertOk(pcrOutcome, pcr);
+  const pcr = await systemRepo.readResource<PasswordChangeRequest>('PasswordChangeRequest', req.body.id);
 
   if (pcr.used) {
     sendOutcome(res, badRequest('Already used'));
@@ -32,8 +31,7 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
     return;
   }
 
-  const [userOutcome, user] = await systemRepo.readReference(pcr.user as Reference<User>);
-  assertOk(userOutcome, user);
+  const user = await systemRepo.readReference(pcr.user as Reference<User>);
 
   const numPwns = await pwnedPassword(req.body.password);
   if (numPwns > 0) {
@@ -42,17 +40,7 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
   }
 
   const passwordHash = await bcrypt.hash(req.body.password, 10);
-  const [updateUserOutcome, updatedUser] = await systemRepo.updateResource<User>({
-    ...user,
-    passwordHash,
-  });
-  assertOk(updateUserOutcome, updatedUser);
-
-  const [updatePcrOutcome, updatedPcr] = await systemRepo.updateResource<PasswordChangeRequest>({
-    ...pcr,
-    used: true,
-  });
-  assertOk(updatePcrOutcome, updatedPcr);
-
+  await systemRepo.updateResource<User>({ ...user, passwordHash });
+  await systemRepo.updateResource<PasswordChangeRequest>({ ...pcr, used: true });
   sendOutcome(res, allOk);
 }

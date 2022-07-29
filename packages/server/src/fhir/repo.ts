@@ -1,13 +1,10 @@
 import {
-  accessDenied,
-  allOk,
-  assertOk,
   badRequest,
-  created,
   deepEquals,
   DEFAULT_SEARCH_COUNT,
   evalFhirPath,
   Filter,
+  forbidden,
   formatSearchQuery,
   getSearchParameterDetails,
   getStatus,
@@ -16,7 +13,6 @@ import {
   isNotFound,
   isOk,
   notFound,
-  notModified,
   Operator as FhirOperator,
   resolveId,
   SearchParameterDetails,
@@ -46,6 +42,7 @@ import { URL } from 'url';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getClient } from '../database';
+import { logger } from '../logger';
 import { getRedis } from '../redis';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
@@ -99,8 +96,6 @@ export interface CacheEntry<T extends Resource> {
   compartments: string[];
 }
 
-export type RepositoryResult<T extends Resource | undefined> = Promise<[OperationOutcome, T | undefined]>;
-
 /**
  * Public resource types are in the "public" project.
  * They are available to all users.
@@ -145,12 +140,8 @@ export class Repository {
     }
   }
 
-  async createResource<T extends Resource>(resource: T): RepositoryResult<T> {
-    const validateOutcome = validateResource(resource);
-    if (!isOk(validateOutcome)) {
-      return [validateOutcome, undefined];
-    }
-
+  async createResource<T extends Resource>(resource: T): Promise<T> {
+    validateResource(resource);
     return this.#updateResourceImpl(
       {
         ...resource,
@@ -160,18 +151,15 @@ export class Repository {
     );
   }
 
-  async readResource<T extends Resource>(resourceType: string, id: string): RepositoryResult<T> {
+  async readResource<T extends Resource>(resourceType: string, id: string): Promise<T> {
     if (!id || !validator.isUUID(id)) {
-      return [badRequest('Invalid UUID'), undefined];
+      throw badRequest('Invalid UUID');
     }
 
-    const validateOutcome = validateResourceType(resourceType);
-    if (!isOk(validateOutcome)) {
-      return [validateOutcome, undefined];
-    }
+    validateResourceType(resourceType);
 
     if (!this.#canReadResourceType(resourceType)) {
-      return [accessDenied, undefined];
+      throw forbidden;
     }
 
     if (!this.#context.accessPolicy) {
@@ -183,9 +171,9 @@ export class Repository {
           cacheRecord.projectId !== undefined &&
           cacheRecord.projectId !== this.#context.project
         ) {
-          return [notFound, undefined];
+          throw notFound;
         }
-        return [allOk, this.#removeHiddenFields(cacheRecord.resource)];
+        return this.#removeHiddenFields(cacheRecord.resource);
       }
     }
 
@@ -196,22 +184,22 @@ export class Repository {
 
     const rows = await builder.execute(client);
     if (rows.length === 0) {
-      return [notFound, undefined];
+      throw notFound;
     }
 
     if (rows[0].deleted) {
-      return [gone, undefined];
+      throw gone;
     }
 
     const resource = JSON.parse(rows[0].content as string) as T;
     setCacheEntry(resource);
-    return [allOk, this.#removeHiddenFields(resource)];
+    return this.#removeHiddenFields(resource);
   }
 
-  async readReference<T extends Resource>(reference: Reference<T>): RepositoryResult<T> {
+  async readReference<T extends Resource>(reference: Reference<T>): Promise<T> {
     const parts = reference.reference?.split('/');
     if (!parts || parts.length !== 2) {
-      return [badRequest('Invalid reference'), undefined];
+      throw badRequest('Invalid reference');
     }
     return this.readResource(parts[0], parts[1]);
   }
@@ -227,11 +215,8 @@ export class Repository {
    * @param id The FHIR resource ID.
    * @returns Operation outcome and a history bundle.
    */
-  async readHistory<T extends Resource>(resourceType: string, id: string): RepositoryResult<Bundle<T>> {
-    const [resourceOutcome] = await this.readResource<T>(resourceType, id);
-    if (!isOk(resourceOutcome)) {
-      return [resourceOutcome, undefined];
-    }
+  async readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>> {
+    await this.readResource<T>(resourceType, id);
 
     const client = getClient();
     const rows = await new SelectQuery(resourceType + '_History')
@@ -258,25 +243,19 @@ export class Repository {
       }
     }
 
-    return [
-      allOk,
-      {
-        resourceType: 'Bundle',
-        type: 'history',
-        entry: entries,
-      },
-    ];
+    return {
+      resourceType: 'Bundle',
+      type: 'history',
+      entry: entries,
+    };
   }
 
-  async readVersion<T extends Resource>(resourceType: string, id: string, vid: string): RepositoryResult<T> {
+  async readVersion<T extends Resource>(resourceType: string, id: string, vid: string): Promise<T> {
     if (!validator.isUUID(vid)) {
-      return [badRequest('Invalid UUID'), undefined];
+      throw badRequest('Invalid UUID');
     }
 
-    const [resourceOutcome] = await this.readResource<T>(resourceType, id);
-    if (!isOk(resourceOutcome) && !isGone(resourceOutcome)) {
-      return [resourceOutcome, undefined];
-    }
+    await this.readResource<T>(resourceType, id);
 
     const client = getClient();
     const rows = await new SelectQuery(resourceType + '_History')
@@ -286,42 +265,32 @@ export class Repository {
       .execute(client);
 
     if (rows.length === 0) {
-      return [notFound, undefined];
+      throw notFound;
     }
 
-    return [allOk, this.#removeHiddenFields(JSON.parse(rows[0].content as string))];
+    return this.#removeHiddenFields(JSON.parse(rows[0].content as string));
   }
 
-  async updateResource<T extends Resource>(resource: T): RepositoryResult<T> {
+  async updateResource<T extends Resource>(resource: T): Promise<T> {
     return this.#updateResourceImpl(resource, false);
   }
 
-  async #updateResourceImpl<T extends Resource>(resource: T, create: boolean): RepositoryResult<T> {
-    const validateOutcome = validateResource(resource);
-    if (!isOk(validateOutcome)) {
-      return [validateOutcome, undefined];
-    }
+  async #updateResourceImpl<T extends Resource>(resource: T, create: boolean): Promise<T> {
+    validateResource(resource);
 
     const { resourceType, id } = resource;
     if (!id) {
-      return [badRequest('Missing id'), undefined];
+      throw badRequest('Missing id');
     }
 
     if (!this.#canWriteResourceType(resourceType)) {
-      return [accessDenied, undefined];
+      throw forbidden;
     }
 
-    const [existingOutcome, existing] = await this.readResource<T>(resourceType, id);
-    if (!isOk(existingOutcome) && !isNotFound(existingOutcome) && !isGone(existingOutcome)) {
-      return [existingOutcome, undefined];
-    }
-
-    if (!create && isNotFound(existingOutcome) && !this.#canSetId()) {
-      return [existingOutcome, undefined];
-    }
+    const existing = await this.#checkExistingResource<T>(resourceType, id, create);
 
     if (await this.#isTooManyVersions(resourceType, id, create)) {
-      return [tooManyRequests, undefined];
+      throw tooManyRequests;
     }
 
     const updated = await rewriteAttachments<T>(RewriteMode.REFERENCE, this, {
@@ -333,7 +302,7 @@ export class Repository {
     });
 
     if (await this.#isNotModified(existing, updated)) {
-      return [notModified, existing];
+      return existing as T;
     }
 
     const result: T = {
@@ -356,18 +325,52 @@ export class Repository {
       (result.meta as Meta).account = account;
     }
 
-    try {
-      await setCacheEntry(result);
-      await this.#writeResource(result);
-      await this.#writeResourceVersion(result);
-      await this.#writeLookupTables(result);
-      await addBackgroundJobs(result);
-    } catch (error) {
-      return [badRequest((error as Error).message), undefined];
-    }
-
+    await setCacheEntry(result);
+    await this.#writeResource(result);
+    await this.#writeResourceVersion(result);
+    await this.#writeLookupTables(result);
+    await addBackgroundJobs(result);
     this.#removeHiddenFields(result);
-    return [existing ? allOk : created, result];
+    return result;
+  }
+
+  /**
+   * Tries to return the existing resource, if it is available.
+   * Handles the following cases:
+   *  - Previous version exists
+   *  - Previous version was deleted, and user is restoring it
+   *  - Previous version does not exist, and user does not have permission to create by ID
+   *  - Previous version does not exist, and user does have permission to create by ID
+   * @param resourceType The FHIR resource type.
+   * @param id The resource ID.
+   * @returns The existing resource, if found.
+   */
+  async #checkExistingResource<T extends Resource>(
+    resourceType: string,
+    id: string,
+    create: boolean
+  ): Promise<T | undefined> {
+    try {
+      return await this.readResource<T>(resourceType, id);
+    } catch (err) {
+      if (!err || typeof err !== 'object' || !('resourceType' in err)) {
+        throw err;
+      }
+
+      const existingOutcome = err as OperationOutcome;
+      if (!isOk(existingOutcome) && !isNotFound(existingOutcome) && !isGone(existingOutcome)) {
+        throw existingOutcome;
+      }
+
+      if (!create && isNotFound(existingOutcome) && !this.#canSetId()) {
+        throw existingOutcome;
+      }
+
+      // Otherwise, it is ok if the resource is not found.
+      // This is an "update" operation, and the outcome is "not-found" or "gone",
+      // and the current user has permission to create a new version.
+      return undefined;
+    }
   }
 
   /**
@@ -416,9 +419,9 @@ export class Repository {
    * This should not result in any change to resources or history.
    * @param resourceType The resource type.
    */
-  async reindexResourceType(resourceType: string): RepositoryResult<undefined> {
+  async reindexResourceType(resourceType: string): Promise<void> {
     if (!this.#isSystem()) {
-      return [accessDenied, undefined];
+      throw forbidden;
     }
 
     const client = getClient();
@@ -429,7 +432,6 @@ export class Repository {
     for (const { id } of rows) {
       await this.reindexResource(resourceType, id);
     }
-    return [allOk, undefined];
   }
 
   /**
@@ -439,24 +441,15 @@ export class Repository {
    * @param resourceType The resource type.
    * @param id The resource ID.
    */
-  async reindexResource<T extends Resource>(resourceType: string, id: string): RepositoryResult<T> {
+  async reindexResource<T extends Resource>(resourceType: string, id: string): Promise<T> {
     if (!this.#isSystem() && !this.#isAdmin()) {
-      return [accessDenied, undefined];
+      throw forbidden;
     }
 
-    const [readOutcome, resource] = await this.readResource<T>(resourceType, id);
-    if (!isOk(readOutcome)) {
-      return [readOutcome, undefined];
-    }
-
-    try {
-      await this.#writeResource(resource as T);
-      await this.#writeLookupTables(resource as T);
-    } catch (error) {
-      return [badRequest((error as Error).message), undefined];
-    }
-
-    return [allOk, resource as T];
+    const resource = await this.readResource<T>(resourceType, id);
+    await this.#writeResource(resource as T);
+    await this.#writeLookupTables(resource as T);
+    return resource as T;
   }
 
   /**
@@ -466,25 +459,21 @@ export class Repository {
    * @param resourceType The resource type.
    * @param id The resource ID.
    */
-  async resendSubscriptions<T extends Resource>(resourceType: string, id: string): RepositoryResult<T> {
+  async resendSubscriptions<T extends Resource>(resourceType: string, id: string): Promise<T> {
     if (!this.#isSystem() && !this.#isAdmin()) {
-      return [accessDenied, undefined];
+      throw forbidden;
     }
 
-    const [readOutcome, resource] = await this.readResource<T>(resourceType, id);
-    assertOk(readOutcome, resource);
+    const resource = await this.readResource<T>(resourceType, id);
     await addSubscriptionJobs(resource);
-    return [allOk, resource as T];
+    return resource as T;
   }
 
-  async deleteResource(resourceType: string, id: string): RepositoryResult<undefined> {
-    const [readOutcome, resource] = await this.readResource(resourceType, id);
-    if (!isOk(readOutcome)) {
-      return [readOutcome, undefined];
-    }
+  async deleteResource(resourceType: string, id: string): Promise<void> {
+    const resource = await this.readResource(resourceType, id);
 
     if (!this.#canWriteResourceType(resourceType)) {
-      return [accessDenied, undefined];
+      throw forbidden;
     }
 
     await deleteCacheEntry(resourceType, id);
@@ -496,7 +485,7 @@ export class Repository {
       id,
       lastUpdated,
       deleted: true,
-      compartments: this.#getCompartments(resource as Resource),
+      compartments: this.#getCompartments(resource),
       content,
     };
 
@@ -509,39 +498,31 @@ export class Repository {
       content,
     }).execute(client);
 
-    await this.#deleteFromLookupTables(resource as Resource);
-
-    return [allOk, undefined];
+    await this.#deleteFromLookupTables(resource);
   }
 
-  async patchResource(resourceType: string, id: string, patch: Operation[]): RepositoryResult<Resource> {
-    const [readOutcome, resource] = await this.readResource(resourceType, id);
-    if (!isOk(readOutcome)) {
-      return [readOutcome, undefined];
-    }
+  async patchResource(resourceType: string, id: string, patch: Operation[]): Promise<Resource> {
+    const resource = await this.readResource(resourceType, id);
 
     let patchResult;
     try {
-      patchResult = applyPatch(resource as Resource, patch, true);
+      patchResult = applyPatch(resource, patch, true);
     } catch (err) {
       const patchError = err as JsonPatchError;
       const message = patchError.message?.split('\n')?.[0] || 'JSONPatch error';
-      return [badRequest(message), undefined];
+      throw badRequest(message);
     }
 
     const patchedResource = patchResult.newDocument;
     return this.updateResource(patchedResource);
   }
 
-  async search<T extends Resource>(searchRequest: SearchRequest): RepositoryResult<Bundle<T>> {
+  async search<T extends Resource>(searchRequest: SearchRequest): Promise<Bundle<T>> {
     const resourceType = searchRequest.resourceType;
-    const validateOutcome = validateResourceType(resourceType);
-    if (!isOk(validateOutcome)) {
-      return [validateOutcome, undefined];
-    }
+    validateResourceType(resourceType);
 
     if (!this.#canReadResourceType(resourceType)) {
-      return [accessDenied, undefined];
+      throw forbidden;
     }
 
     let entry = undefined;
@@ -554,16 +535,13 @@ export class Repository {
       total = await this.#getTotalCount(searchRequest);
     }
 
-    return [
-      allOk,
-      {
-        resourceType: 'Bundle',
-        type: 'searchest',
-        entry,
-        total,
-        link: this.#getSearchLinks(searchRequest),
-      },
-    ];
+    return {
+      resourceType: 'Bundle',
+      type: 'searchest',
+      entry,
+      total,
+      link: this.#getSearchLinks(searchRequest),
+    };
   }
 
   /**
@@ -1301,10 +1279,14 @@ export class Repository {
       const patientId = getPatientId(updated);
       if (patientId) {
         // If the resource is in a patient compartment, then lookup the patient.
-        const [patientOutcome, patient] = await systemRepo.readResource('Patient', patientId);
-        if (isOk(patientOutcome) && patient?.meta?.account) {
-          // If the patient has an account, then use it as the resource account.
-          return patient.meta.account;
+        try {
+          const patient = await systemRepo.readResource('Patient', patientId);
+          if (patient?.meta?.account) {
+            // If the patient has an account, then use it as the resource account.
+            return patient.meta.account;
+          }
+        } catch (err) {
+          logger.debug('Error setting patient compartment', err);
         }
       }
     }
@@ -1556,9 +1538,7 @@ export async function getRepoForMembership(membership: ProjectMembership): Promi
   let accessPolicy: AccessPolicy | undefined = undefined;
 
   if (membership.accessPolicy) {
-    const [accessPolicyOutcome, accessPolicyResource] = await systemRepo.readReference(membership.accessPolicy);
-    assertOk(accessPolicyOutcome, accessPolicyResource);
-    accessPolicy = accessPolicyResource;
+    accessPolicy = await systemRepo.readReference(membership.accessPolicy);
   }
 
   return new Repository({

@@ -1,8 +1,8 @@
-import { allOk, badRequest, getReferenceString, getStatus, isOk, notFound } from '@medplum/core';
+import { allOk, badRequest, created, getReferenceString, getStatus, isOk, notFound } from '@medplum/core';
 import { Bundle, BundleEntry, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { Operation } from 'fast-json-patch';
 import { URL } from 'url';
-import { Repository, RepositoryResult } from './repo';
+import { Repository } from './repo';
 import { parseSearchUrl } from './search';
 
 /**
@@ -14,7 +14,7 @@ import { parseSearchUrl } from './search';
  * @param bundle The input bundle.
  * @returns The bundle response.
  */
-export async function processBatch(repo: Repository, bundle: Bundle): RepositoryResult<Bundle> {
+export async function processBatch(repo: Repository, bundle: Bundle): Promise<Bundle> {
   return new BatchProcessor(repo, bundle).processBatch();
 }
 
@@ -40,34 +40,36 @@ class BatchProcessor {
    * @param bundle The input bundle.
    * @returns The bundle response.
    */
-  async processBatch(): RepositoryResult<Bundle> {
+  async processBatch(): Promise<Bundle> {
     const bundleType = this.bundle.type;
     if (!bundleType) {
-      return [badRequest('Missing bundle type'), undefined];
+      throw badRequest('Missing bundle type');
     }
 
     if (bundleType !== 'batch' && bundleType !== 'transaction') {
-      return [badRequest('Unrecognized bundle type'), undefined];
+      throw badRequest('Unrecognized bundle type');
     }
 
     const entries = this.bundle.entry;
     if (!entries) {
-      return [badRequest('Missing bundle entry'), undefined];
+      throw badRequest('Missing bundle entry');
     }
 
     const resultEntries: BundleEntry[] = [];
     for (const entry of entries) {
       const rewritten = this.#rewriteIdsInObject(entry);
-      resultEntries.push(await this.#processBatchEntry(rewritten));
+      try {
+        resultEntries.push(await this.#processBatchEntry(rewritten));
+      } catch (err) {
+        resultEntries.push(buildBundleResponse(err as OperationOutcome));
+      }
     }
 
-    const result: Bundle = {
+    return {
       resourceType: 'Bundle',
       type: 'batch-response',
       entry: resultEntries,
     };
-
-    return [allOk, result];
   }
 
   /**
@@ -91,7 +93,6 @@ class BatchProcessor {
     // Pass in dummy host for parsing purposes.
     // The host is ignored.
     const url = new URL(entry.request.url, 'https://example.com/');
-
     switch (entry.request.method) {
       case 'GET':
         return this.#processGet(url);
@@ -140,8 +141,8 @@ class BatchProcessor {
    * @returns The bundle entry response.
    */
   async #processSearch(url: URL): Promise<BundleEntry> {
-    const [outcome, bundle] = await this.repo.search(parseSearchUrl(url));
-    return buildBundleResponse(outcome, bundle, true);
+    const bundle = await this.repo.search(parseSearchUrl(url));
+    return buildBundleResponse(allOk, bundle, true);
   }
 
   /**
@@ -151,8 +152,8 @@ class BatchProcessor {
    * @returns The bundle entry response.
    */
   async #processReadResource(resourceType: string, id: string): Promise<BundleEntry> {
-    const [outcome, resource] = await this.repo.readResource(resourceType, id);
-    return buildBundleResponse(outcome, resource, true);
+    const resource = await this.repo.readResource(resourceType, id);
+    return buildBundleResponse(allOk, resource, true);
   }
 
   /**
@@ -162,8 +163,8 @@ class BatchProcessor {
    * @returns The bundle entry response.
    */
   async #processReadHistory(resourceType: string, id: string): Promise<BundleEntry> {
-    const [outcome, resource] = await this.repo.readHistory(resourceType, id);
-    return buildBundleResponse(outcome, resource, true);
+    const resource = await this.repo.readHistory(resourceType, id);
+    return buildBundleResponse(allOk, resource, true);
   }
 
   /**
@@ -206,27 +207,20 @@ class BatchProcessor {
     if (entry.request?.ifNoneExist) {
       const baseUrl = `https://example.com/${entry.resource.resourceType}`;
       const searchUrl = new URL('?' + entry.request.ifNoneExist, baseUrl);
-      const [searchOutcome, searchBundle] = await this.repo.search(parseSearchUrl(searchUrl));
-      if (!isOk(searchOutcome)) {
-        return buildBundleResponse(searchOutcome);
-      }
+      const searchBundle = await this.repo.search(parseSearchUrl(searchUrl));
       const entries = searchBundle?.entry as BundleEntry[];
       if (entries.length > 1) {
         return buildBundleResponse(badRequest('Multiple matches'));
       }
       if (entries.length === 1) {
-        outcome = allOk;
         result = entries[0].resource;
+        outcome = allOk;
       }
     }
 
     if (!result) {
-      const [createOutcome, createResult] = await this.repo.createResource(entry.resource);
-      if (!isOk(createOutcome)) {
-        return buildBundleResponse(createOutcome);
-      }
-      outcome = createOutcome;
-      result = createResult;
+      result = await this.repo.createResource(entry.resource);
+      outcome = created;
     }
 
     if (entry.fullUrl && result) {
@@ -260,8 +254,8 @@ class BatchProcessor {
     if (!resource) {
       return buildBundleResponse(badRequest('Missing entry.resource'));
     }
-    const [outcome, result] = await this.repo.updateResource(resource);
-    return buildBundleResponse(outcome, result);
+    const result = await this.repo.updateResource(resource);
+    return buildBundleResponse(allOk, result);
   }
 
   /**
@@ -301,8 +295,8 @@ class BatchProcessor {
       return buildBundleResponse(badRequest('Missing entry.resource.data'));
     }
     const patch: Operation[] = JSON.parse(Buffer.from(patchResource.data, 'base64').toString('utf8'));
-    const [outcome, result] = await this.repo.patchResource(resourceType, id, patch);
-    return buildBundleResponse(outcome, result);
+    const result = await this.repo.patchResource(resourceType, id, patch);
+    return buildBundleResponse(allOk, result);
   }
 
   /**
@@ -325,8 +319,8 @@ class BatchProcessor {
    * @returns The bundle entry response.
    */
   async #processDeleteResource(resourceType: string, id: string): Promise<BundleEntry> {
-    const [outcome] = await this.repo.deleteResource(resourceType, id);
-    return buildBundleResponse(outcome);
+    await this.repo.deleteResource(resourceType, id);
+    return buildBundleResponse(allOk);
   }
 
   #addReplacementId(fullUrl: string, resource: Resource): void {

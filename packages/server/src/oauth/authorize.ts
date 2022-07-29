@@ -1,4 +1,4 @@
-import { getDateProperty, isOk } from '@medplum/core';
+import { getDateProperty } from '@medplum/core';
 import { ClientApplication, Login } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { URL } from 'url';
@@ -37,11 +37,10 @@ export const authorizeGetHandler = asyncWrap(async (req: Request, res: Response)
 async function validateAuthorizeRequest(req: Request, res: Response): Promise<boolean> {
   // First validate the client and the redirect URI.
   // If these are invalid, then show an error page.
-  const [clientOutcome, client] = await systemRepo.readResource<ClientApplication>(
-    'ClientApplication',
-    req.query.client_id as string
-  );
-  if (!isOk(clientOutcome) || !client) {
+  let client = undefined;
+  try {
+    client = await systemRepo.readResource<ClientApplication>('ClientApplication', req.query.client_id as string);
+  } catch (err) {
     res.status(400).send('Client not found');
     return false;
   }
@@ -155,12 +154,7 @@ async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | un
     return undefined;
   }
 
-  const [existingOutcome, existing] = await systemRepo.readResource<Login>('Login', existingLoginId);
-  if (!isOk(existingOutcome) || !existing) {
-    return undefined;
-  }
-
-  return existing;
+  return systemRepo.readResource<Login>('Login', existingLoginId);
 }
 
 /**

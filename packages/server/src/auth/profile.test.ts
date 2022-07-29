@@ -1,4 +1,4 @@
-import { assertOk, getReferenceString, ProfileResource } from '@medplum/core';
+import { getReferenceString, ProfileResource } from '@medplum/core';
 import { Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -97,8 +97,7 @@ describe('Profile', () => {
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
 
-    const [readOutcome, login] = await systemRepo.readResource<Login>('Login', res1.body.login);
-    assertOk(readOutcome, login);
+    const login = await systemRepo.readResource<Login>('Login', res1.body.login);
     await systemRepo.updateResource({
       ...login,
       revoked: true,
@@ -125,8 +124,7 @@ describe('Profile', () => {
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
 
-    const [readOutcome, login] = await systemRepo.readResource<Login>('Login', res1.body.login);
-    assertOk(readOutcome, login);
+    const login = await systemRepo.readResource<Login>('Login', res1.body.login);
     await systemRepo.updateResource({
       ...login,
       granted: true,
@@ -153,8 +151,7 @@ describe('Profile', () => {
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
 
-    const [readOutcome, login] = await systemRepo.readResource<Login>('Login', res1.body.login);
-    assertOk(readOutcome, login);
+    const login = await systemRepo.readResource<Login>('Login', res1.body.login);
     await systemRepo.updateResource({
       ...login,
       membership: {

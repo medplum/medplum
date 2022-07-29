@@ -1,4 +1,4 @@
-import { assertOk, badRequest, createReference, getReferenceString, OperationOutcomeError } from '@medplum/core';
+import { allOk, badRequest, createReference, getReferenceString, OperationOutcomeError } from '@medplum/core';
 import {
   CareTeam,
   Device,
@@ -50,8 +50,7 @@ export async function planDefinitionApplyHandler(req: Request, res: Response): P
   const { id } = req.params;
   const repo = res.locals.repo as Repository;
 
-  const [outcome1, planDefinition] = await repo.readResource<PlanDefinition>('PlanDefinition', id);
-  assertOk(outcome1, planDefinition);
+  const planDefinition = await repo.readResource<PlanDefinition>('PlanDefinition', id);
 
   const params = await validateParameters(req, res);
   if (!params) {
@@ -65,15 +64,14 @@ export async function planDefinitionApplyHandler(req: Request, res: Response): P
     }
   }
 
-  const [outcome3, requestGroup] = await repo.createResource<RequestGroup>({
+  const requestGroup = await repo.createResource<RequestGroup>({
     resourceType: 'RequestGroup',
     instantiatesCanonical: [getReferenceString(planDefinition)],
     subject: createReference(params.subject) as Reference<Patient | Group>,
     status: 'active',
     action: actions,
   });
-  assertOk(outcome3, requestGroup);
-  sendResponse(res, outcome3, requestGroup);
+  sendResponse(res, allOk, requestGroup);
 }
 
 /**
@@ -102,8 +100,7 @@ async function validateParameters(req: Request, res: Response): Promise<PlanDefi
   }
 
   const repo = res.locals.repo as Repository;
-  const [outcome2, subject] = await repo.readReference(subjectParam.valueReference as Reference<SubjectType>);
-  assertOk(outcome2, subject);
+  const subject = await repo.readReference(subjectParam.valueReference as Reference<SubjectType>);
 
   return {
     subject,
@@ -140,7 +137,7 @@ async function createQuestionnaireTask(
   params: PlanDefinitionApplyParameters,
   action: PlanDefinitionAction
 ): Promise<RequestGroupAction> {
-  const [outcome, task] = await repo.createResource<Task>({
+  const task = await repo.createResource<Task>({
     resourceType: 'Task',
     intent: 'order',
     status: 'requested',
@@ -155,7 +152,6 @@ async function createQuestionnaireTask(
       },
     ],
   });
-  assertOk(outcome, task);
 
   return {
     title: action.title,

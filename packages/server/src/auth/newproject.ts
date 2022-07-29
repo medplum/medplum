@@ -1,4 +1,4 @@
-import { assertOk, badRequest, createReference } from '@medplum/core';
+import { badRequest, createReference } from '@medplum/core';
 import { Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -33,8 +33,7 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
     return;
   }
 
-  const [loginOutcome, login] = await systemRepo.readResource<Login>('Login', req.body.login);
-  assertOk(loginOutcome, login);
+  const login = await systemRepo.readResource<Login>('Login', req.body.login);
 
   if (login.membership) {
     sendOutcome(res, badRequest('Login already has a membership'));
@@ -51,8 +50,7 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
   const membership = await createProject(login, projectName, firstName, lastName);
 
   // Update the login
-  const [updateOutcome, updated] = await setLoginMembership(login, membership.id as string);
-  assertOk(updateOutcome, updated);
+  const updated = await setLoginMembership(login, membership.id as string);
 
   res.status(200).json({
     login: updated?.id,
@@ -74,16 +72,14 @@ export async function createProject(
   firstName: string,
   lastName: string
 ): Promise<ProjectMembership> {
-  const [userOutcome, user] = await systemRepo.readReference<User>(login.user as Reference<User>);
-  assertOk(userOutcome, user);
+  const user = await systemRepo.readReference<User>(login.user as Reference<User>);
 
   logger.info('Create project ' + projectName);
-  const [projectOutcome, project] = await systemRepo.createResource<Project>({
+  const project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: projectName,
     owner: createReference(user),
   });
-  assertOk(projectOutcome, project);
 
   logger.info('Created project: ' + project.id);
   await createClient(systemRepo, {
@@ -96,11 +92,10 @@ export async function createProject(
   const membership = await createProjectMembership(user, project, profile, undefined, true);
 
   // Set the membership on the login
-  const [updateOutcome, updated] = await systemRepo.updateResource<Login>({
+  await systemRepo.updateResource<Login>({
     ...login,
     membership: createReference(membership),
   });
-  assertOk(updateOutcome, updated);
 
   return membership;
 }

@@ -1,5 +1,4 @@
-import { isOk } from '@medplum/core';
-import { ClientApplication } from '@medplum/fhirtypes';
+import { ClientApplication, OperationOutcome } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
@@ -27,129 +26,157 @@ describe('OAuth utils', () => {
   });
 
   test('Login with invalid client ID', async () => {
-    const [outcome, login] = await tryLogin({
-      clientId: randomUUID(),
-      authMethod: 'password',
-      email: 'admin@example.com',
-      password: 'medplum_admin',
-      scope: 'openid',
-      nonce: 'nonce',
-      remember: false,
-    });
-
-    expect(isOk(outcome)).toBe(false);
-    expect(login).toBeUndefined();
+    try {
+      await tryLogin({
+        clientId: randomUUID(),
+        authMethod: 'password',
+        email: 'admin@example.com',
+        password: 'medplum_admin',
+        scope: 'openid',
+        nonce: 'nonce',
+        remember: false,
+      });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Not found');
+    }
   });
 
   test('Login with missing email', async () => {
-    const [outcome, login] = await tryLogin({
-      clientId: client.id as string,
-      authMethod: 'password',
-      email: '',
-      password: 'medplum_admin',
-      scope: 'openid',
-      nonce: 'nonce',
-      remember: false,
-    });
-
-    expect(isOk(outcome)).toBe(false);
-    expect(login).toBeUndefined();
+    try {
+      await tryLogin({
+        clientId: client.id as string,
+        authMethod: 'password',
+        email: '',
+        password: 'medplum_admin',
+        scope: 'openid',
+        nonce: 'nonce',
+        remember: false,
+      });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid email');
+    }
   });
 
   test('Login with missing password', async () => {
-    const [outcome, login] = await tryLogin({
-      clientId: client.id as string,
-      authMethod: 'password',
-      email: 'admin@example.com',
-      password: '',
-      scope: 'openid',
-      nonce: 'nonce',
-      remember: false,
-    });
-
-    expect(isOk(outcome)).toBe(false);
-    expect(login).toBeUndefined();
+    try {
+      await tryLogin({
+        clientId: client.id as string,
+        authMethod: 'password',
+        email: 'admin@example.com',
+        password: '',
+        scope: 'openid',
+        nonce: 'nonce',
+        remember: false,
+      });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid password');
+    }
   });
 
   test('User not found', async () => {
-    const [outcome, login] = await tryLogin({
-      clientId: client.id as string,
-      authMethod: 'password',
-      email: 'user-not-found@example.com',
-      password: 'medplum_admin',
-      scope: 'openid',
-      nonce: 'nonce',
-      remember: false,
-    });
-
-    expect(isOk(outcome)).toBe(false);
-    expect(login).toBeUndefined();
+    try {
+      await tryLogin({
+        clientId: client.id as string,
+        authMethod: 'password',
+        email: 'user-not-found@example.com',
+        password: 'medplum_admin',
+        scope: 'openid',
+        nonce: 'nonce',
+        remember: false,
+      });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Email or password is invalid');
+    }
   });
 
   test('Blank authentication method', async () => {
-    const [outcome, login] = await tryLogin({
-      clientId: client.id as string,
-      authMethod: '' as unknown as 'password',
-      email: 'admin@example.com',
-      password: 'medplum_admin',
-      scope: 'openid',
-      nonce: 'nonce',
-      remember: false,
-    });
-
-    expect(isOk(outcome)).toBe(false);
-    expect(outcome.issue?.[0]?.details?.text).toBe('Invalid authentication method');
-    expect(login).toBeUndefined();
+    try {
+      await tryLogin({
+        clientId: client.id as string,
+        authMethod: '' as unknown as 'password',
+        email: 'admin@example.com',
+        password: 'medplum_admin',
+        scope: 'openid',
+        nonce: 'nonce',
+        remember: false,
+      });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toBe('Invalid authentication method');
+    }
   });
 
   test('Invalid authentication method', async () => {
-    const [outcome, login] = await tryLogin({
-      clientId: client.id as string,
-      authMethod: 'xyz' as unknown as 'password',
-      email: 'admin@example.com',
-      scope: 'openid',
-      nonce: 'nonce',
-      remember: false,
-    });
-
-    expect(isOk(outcome)).toBe(false);
-    expect(outcome.issue?.[0]?.details?.text).toBe('Invalid authentication method');
-    expect(login).toBeUndefined();
+    try {
+      await tryLogin({
+        clientId: client.id as string,
+        authMethod: 'xyz' as unknown as 'password',
+        email: 'admin@example.com',
+        scope: 'openid',
+        nonce: 'nonce',
+        remember: false,
+      });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toBe('Invalid authentication method');
+    }
   });
 
   test('Invalid google credentials', async () => {
-    const [outcome, login] = await tryLogin({
-      clientId: client.id as string,
-      authMethod: 'google',
-      email: 'admin@example.com',
-      scope: 'openid',
-      nonce: 'nonce',
-      remember: false,
-    });
-
-    expect(isOk(outcome)).toBe(false);
-    expect(outcome.issue?.[0]?.details?.text).toBe('Invalid google credentials');
-    expect(login).toBeUndefined();
+    try {
+      await tryLogin({
+        clientId: client.id as string,
+        authMethod: 'google',
+        email: 'admin@example.com',
+        scope: 'openid',
+        nonce: 'nonce',
+        remember: false,
+      });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toBe('Invalid google credentials');
+    }
   });
 
   test('Invalid scope', async () => {
-    const [outcome, login] = await tryLogin({
-      clientId: client.id as string,
-      authMethod: 'password',
-      email: 'admin@example.com',
-      password: 'medplum_admin',
-      scope: '',
-      nonce: 'nonce',
-      remember: false,
-    });
-
-    expect(isOk(outcome)).toBe(false);
-    expect(outcome.issue?.[0]?.details?.text).toBe('Invalid scope');
-    expect(login).toBeUndefined();
+    try {
+      await tryLogin({
+        clientId: client.id as string,
+        authMethod: 'password',
+        email: 'admin@example.com',
+        password: 'medplum_admin',
+        scope: '',
+        nonce: 'nonce',
+        remember: false,
+      });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toBe('Invalid scope');
+    }
   });
 
   test('Login successfully', async () => {
-    const [outcome, login] = await tryLogin({
+    const login = await tryLogin({
       clientId: client.id as string,
       authMethod: 'password',
       email: 'admin@example.com',
@@ -158,14 +185,12 @@ describe('OAuth utils', () => {
       nonce: 'nonce',
       remember: false,
     });
-
-    expect(isOk(outcome)).toBe(true);
     expect(login).toBeDefined();
   });
 
-  test('Validate code challenge login request', () => {
+  test('Missing codeChallengeMethod', () => {
     // If user submits codeChallenge, then codeChallengeMethod is required
-    expect(
+    try {
       validateLoginRequest({
         clientId: client.id as string,
         authMethod: 'password',
@@ -175,11 +200,17 @@ describe('OAuth utils', () => {
         nonce: 'nonce',
         remember: false,
         codeChallenge: 'xyz',
-      })?.issue?.[0]?.expression
-    ).toEqual(['code_challenge_method']);
+      });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code_challenge_method');
+    }
+  });
 
+  test('Missing codeChallenge', () => {
     // If user submits codeChallengeMethod, then codeChallenge is required
-    expect(
+    try {
       validateLoginRequest({
         clientId: client.id as string,
         authMethod: 'password',
@@ -189,11 +220,16 @@ describe('OAuth utils', () => {
         nonce: 'nonce',
         remember: false,
         codeChallengeMethod: 'plain',
-      })?.issue?.[0]?.expression
-    ).toEqual(['code_challenge']);
+      });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code_challenge');
+    }
+  });
 
-    // Code challenge method
-    expect(
+  test('Invalid codeChallengeMethod', () => {
+    try {
       validateLoginRequest({
         clientId: client.id as string,
         authMethod: 'password',
@@ -204,11 +240,16 @@ describe('OAuth utils', () => {
         remember: false,
         codeChallenge: 'xyz',
         codeChallengeMethod: 'xyz',
-      })?.issue?.[0]?.expression
-    ).toEqual(['code_challenge_method']);
+      });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code_challenge_method');
+    }
+  });
 
-    // Code challenge method 'plain' is ok
-    expect(
+  test('Plain text code challenge method', () => {
+    expect(() =>
       validateLoginRequest({
         clientId: client.id as string,
         authMethod: 'password',
@@ -220,10 +261,11 @@ describe('OAuth utils', () => {
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
       })
-    ).toBeUndefined();
+    ).not.toThrow();
+  });
 
-    // Code challenge method 'S256' is ok
-    expect(
+  test('S256 code challenge method', () => {
+    expect(() =>
       validateLoginRequest({
         clientId: client.id as string,
         authMethod: 'password',
@@ -233,8 +275,8 @@ describe('OAuth utils', () => {
         nonce: 'nonce',
         remember: false,
         codeChallenge: 'xyz',
-        codeChallengeMethod: 'plain',
+        codeChallengeMethod: 'S256',
       })
-    ).toBeUndefined();
+    ).not.toThrow();
   });
 });

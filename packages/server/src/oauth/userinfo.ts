@@ -1,5 +1,4 @@
 import {
-  assertOk,
   formatAddress,
   formatFamilyName,
   formatGivenName,
@@ -21,10 +20,9 @@ export const userInfoHandler: RequestHandler = asyncWrap(async (_req: Request, r
     sub: res.locals.user,
   };
 
-  const [outcome, resource] = await systemRepo.readReference({
+  const resource = await systemRepo.readReference({
     reference: res.locals.profile,
   });
-  assertOk(outcome, resource);
 
   const profile = resource as ProfileResource;
 

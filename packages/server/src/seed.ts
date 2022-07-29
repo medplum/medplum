@@ -1,4 +1,4 @@
-import { assertOk, createReference } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import { Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { systemRepo } from './fhir';
@@ -20,22 +20,20 @@ export async function seedDatabase(): Promise<void> {
   const password = 'medplum_admin';
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const [userOutcome, user] = await systemRepo.createResource<User>({
+  const user = await systemRepo.createResource<User>({
     resourceType: 'User',
     email,
     passwordHash,
     admin: true,
   });
-  assertOk(userOutcome, user);
 
-  const [projectOutcome, project] = await systemRepo.createResource<Project>({
+  const project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: projectName,
     owner: createReference(user),
   });
-  assertOk(projectOutcome, project);
 
-  const [practitionerOutcome, practitioner] = await systemRepo.createResource<Practitioner>({
+  const practitioner = await systemRepo.createResource<Practitioner>({
     resourceType: 'Practitioner',
     meta: {
       project: project.id,
@@ -54,16 +52,14 @@ export async function seedDatabase(): Promise<void> {
       },
     ],
   });
-  assertOk(practitionerOutcome, practitioner);
 
-  const [membershipOutcome, membership] = await systemRepo.createResource<ProjectMembership>({
+  await systemRepo.createResource<ProjectMembership>({
     resourceType: 'ProjectMembership',
     project: createReference(project),
     user: createReference(user),
     profile: createReference(practitioner),
     admin: true,
   });
-  assertOk(membershipOutcome, membership);
 
   await createPublicProject(user);
   await createValueSetElements();
@@ -76,11 +72,10 @@ export async function seedDatabase(): Promise<void> {
  * @returns True if already seeded.
  */
 async function isSeeded(): Promise<boolean> {
-  const [outcome, bundle] = await systemRepo.search({
+  const bundle = await systemRepo.search({
     resourceType: 'User',
     count: 1,
   });
-  assertOk(outcome, bundle);
   return !!bundle.entry && bundle.entry.length > 0;
 }
 
@@ -91,11 +86,10 @@ async function isSeeded(): Promise<boolean> {
  */
 async function createPublicProject(owner: User): Promise<void> {
   logger.info('Create Public project...');
-  const [outcome, result] = await systemRepo.createResource<Project>({
+  const result = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: 'Public',
     owner: createReference(owner),
   });
-  assertOk(outcome, result);
   logger.info('Created: ' + result.id);
 }

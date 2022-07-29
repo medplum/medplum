@@ -269,7 +269,8 @@ describe('FHIR Routes', () => {
       .put(`/fhir/R4/Patient/${patient.id}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(patient);
-    expect(res2.status).toBe(304);
+    expect(res2.status).toBe(200);
+    expect(res2.body.meta.versionId).toEqual(patient.meta.versionId);
   });
 
   test('Update resource not modified with empty strings', async () => {
@@ -295,7 +296,8 @@ describe('FHIR Routes', () => {
           display: '',
         },
       });
-    expect(res2.status).toBe(304);
+    expect(res2.status).toBe(200);
+    expect(res2.body.meta.versionId).toEqual(patient.meta.versionId);
   });
 
   test('Update resource invalid', async () => {

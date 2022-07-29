@@ -1,5 +1,5 @@
-import { assertOk, isGone } from '@medplum/core';
-import { Binary, Meta, Resource } from '@medplum/fhirtypes';
+import { isGone } from '@medplum/core';
+import { Binary, Meta, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { getConfig, MedplumRedisConfig } from '../config';
@@ -150,12 +150,16 @@ function addDownloadJobData(job: DownloadJobData): void {
 export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> {
   const { resourceType, id, url } = job.data;
 
-  const [readOutcome, resource] = await systemRepo.readResource(resourceType, id);
-  if (isGone(readOutcome)) {
-    // If the resource was deleted, then stop processing it.
-    return;
+  let resource;
+  try {
+    resource = await systemRepo.readResource(resourceType, id);
+  } catch (err) {
+    if (isGone(err as OperationOutcome)) {
+      // If the resource was deleted, then stop processing it.
+      return;
+    }
+    throw err;
   }
-  assertOk(readOutcome, resource);
 
   if (!JSON.stringify(resource).includes(url)) {
     // If the resource no longer includes the URL, then stop processing it.
@@ -173,14 +177,13 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
 
     const contentDisposition = response.headers.get('content-disposition') as string | undefined;
     const contentType = response.headers.get('content-type') as string | undefined;
-    const [createBinaryOutcome, binary] = await systemRepo.createResource<Binary>({
+    const binary = await systemRepo.createResource<Binary>({
       resourceType: 'Binary',
       contentType,
       meta: {
         project: resource?.meta?.project,
       },
     });
-    assertOk(createBinaryOutcome, binary);
     if (response.body === null) {
       throw new Error('Received null response body');
     }
@@ -188,8 +191,7 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
 
     const updated = JSON.parse(JSON.stringify(resource).replace(url, `Binary/${binary?.id}`)) as Resource;
     (updated.meta as Meta).author = { reference: 'system' };
-    const [updateOutcome, updatedResource] = await systemRepo.updateResource(updated);
-    assertOk(updateOutcome, updatedResource);
+    await systemRepo.updateResource(updated);
     logger.info('Downloaded content successfully');
   } catch (ex) {
     logger.info('Download exception: ' + ex);

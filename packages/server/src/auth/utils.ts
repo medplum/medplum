@@ -1,4 +1,4 @@
-import { assertOk, createReference } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import {
   AccessPolicy,
   Login,
@@ -24,7 +24,7 @@ export async function createProfile(
   email: string
 ): Promise<Patient | Practitioner> {
   logger.info(`Create ${resourceType}: ${firstName} ${lastName}`);
-  const [outcome, result] = await systemRepo.createResource<Patient | Practitioner>({
+  const result = await systemRepo.createResource<Patient | Practitioner>({
     resourceType,
     meta: {
       project: project.id,
@@ -43,7 +43,6 @@ export async function createProfile(
       },
     ],
   });
-  assertOk(outcome, result);
   logger.info('Created: ' + result.id);
   return result;
 }
@@ -56,7 +55,7 @@ export async function createProjectMembership(
   admin?: boolean
 ): Promise<ProjectMembership> {
   logger.info('Create project membership: ' + project.name);
-  const [outcome, result] = await systemRepo.createResource<ProjectMembership>({
+  const result = await systemRepo.createResource<ProjectMembership>({
     resourceType: 'ProjectMembership',
     project: createReference(project),
     user: createReference(user),
@@ -64,7 +63,6 @@ export async function createProjectMembership(
     accessPolicy,
     admin,
   });
-  assertOk(outcome, result);
   logger.info('Created: ' + result.id);
   return result;
 }

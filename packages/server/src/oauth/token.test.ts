@@ -1,4 +1,3 @@
-import { assertOk } from '@medplum/core';
 import { ClientApplication } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -140,14 +139,13 @@ describe('OAuth2 Token', () => {
 
   test('Token for client empty secret', async () => {
     // Create a client without an secret
-    const [outcome, badClient] = await systemRepo.createResource<ClientApplication>({
+    const badClient = await systemRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
       name: 'Bad Client',
       description: 'Bad Client',
       secret: '',
       redirectUri: 'https://example.com',
     });
-    assertOk(outcome, badClient);
 
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',
@@ -160,12 +158,11 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token for client without project membership', async () => {
-    const [clientOutcome, client] = await systemRepo.createResource<ClientApplication>({
+    const client = await systemRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
       name: 'Client without project membership',
       secret: generateSecret(48),
     });
-    assertOk(clientOutcome, client);
 
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',

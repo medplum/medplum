@@ -1,5 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { assertOk, createReference } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import { ClientApplication } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -332,11 +332,10 @@ describe('Login', () => {
     });
 
     // As a super admin, update the project to require Google auth
-    const [updateOutcome, updated] = await systemRepo.updateResource({
+    await systemRepo.updateResource({
       ...project,
       features: ['google-auth-required'],
     });
-    assertOk(updateOutcome, updated);
 
     // Then try to login
     // This should fail with error message that google auth is required

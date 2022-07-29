@@ -1,4 +1,4 @@
-import { allOk } from '@medplum/core';
+import { OperationOutcomeError } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { OperationOutcome, OperationOutcomeIssue, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
@@ -29,26 +29,28 @@ export function isResourceType(resourceType: string): boolean {
   return resourceType in getSchemaDefinitions();
 }
 
-export function validateResourceType(resourceType: string): OperationOutcome {
+export function validateResourceType(resourceType: string): void {
   if (!resourceType) {
-    return validationError('Resource type is null');
+    throw validationError('Resource type is null');
   }
-  return isResourceType(resourceType) ? allOk : validationError('Unknown resource type');
+  if (!isResourceType(resourceType)) {
+    throw validationError('Unknown resource type');
+  }
 }
 
-export function validateResource<T extends Resource>(resource: T): OperationOutcome {
+export function validateResource<T extends Resource>(resource: T): void {
   if (!resource) {
-    return validationError('Resource is null');
+    throw validationError('Resource is null');
   }
 
   const resourceType = resource.resourceType;
   if (!resourceType) {
-    return validationError('Missing resource type');
+    throw validationError('Missing resource type');
   }
 
   const definition = getSchemaDefinitions()[resourceType];
   if (!definition) {
-    return validationError('Unknown resource type');
+    throw validationError('Unknown resource type');
   }
 
   const issues: OperationOutcomeIssue[] = [];
@@ -59,15 +61,13 @@ export function validateResource<T extends Resource>(resource: T): OperationOutc
   checkAdditionalProperties(resource, propertyDefinitions, issues);
   checkRequiredProperties(resource, definition, issues);
 
-  if (issues.length === 0) {
-    return allOk;
+  if (issues.length > 0) {
+    throw new OperationOutcomeError({
+      resourceType: 'OperationOutcome',
+      id: randomUUID(),
+      issue: issues,
+    });
   }
-
-  return {
-    resourceType: 'OperationOutcome',
-    id: randomUUID(),
-    issue: issues,
-  };
 }
 
 function checkForNull(value: unknown, path: string, issues: OperationOutcomeIssue[]): void {

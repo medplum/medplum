@@ -1,5 +1,4 @@
-import { isOk } from '@medplum/core';
-import { Binary, OperationOutcome, Resource } from '@medplum/fhirtypes';
+import { Binary, Resource } from '@medplum/fhirtypes';
 import { getConfig } from '../config';
 import { Repository } from './repo';
 import { getPresignedUrl } from './signer';
@@ -147,16 +146,15 @@ async function getAttachmentPresignedUrl(
   id: string,
   versionId?: string
 ): Promise<string | boolean | undefined> {
-  let outcome: OperationOutcome;
   let binary: Binary | undefined;
 
   if (versionId) {
-    [outcome, binary] = await repo.readVersion<Binary>('Binary', id, versionId);
+    binary = await repo.readVersion<Binary>('Binary', id, versionId);
   } else {
-    [outcome, binary] = await repo.readResource<Binary>('Binary', id);
+    binary = await repo.readResource<Binary>('Binary', id);
   }
 
-  return isOk(outcome) && binary && getPresignedUrl(binary);
+  return getPresignedUrl(binary);
 }
 
 /**

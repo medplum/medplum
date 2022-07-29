@@ -1,4 +1,3 @@
-import { assertOk } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -18,7 +17,7 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const [loginOutcome, login] = await tryLogin({
+  const login = await tryLogin({
     authMethod: 'password',
     clientId: req.body.clientId || undefined,
     projectId: req.body.projectId || undefined,
@@ -32,6 +31,5 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
   });
-  assertOk(loginOutcome, login);
   await sendLoginResult(res, login);
 }

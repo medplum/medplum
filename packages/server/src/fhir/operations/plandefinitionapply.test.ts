@@ -99,7 +99,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res4.status).toBe(201);
+    expect(res4.status).toBe(200);
     expect(res4.body.resourceType).toEqual('RequestGroup');
     expect((res4.body as RequestGroup).action).toHaveLength(1);
     expect((res4.body as RequestGroup).action?.[0]?.resource?.reference).toBeDefined();

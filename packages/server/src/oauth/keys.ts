@@ -1,4 +1,4 @@
-import { assertOk, Operator } from '@medplum/core';
+import { Operator } from '@medplum/core';
 import { JsonWebKey } from '@medplum/fhirtypes';
 import { randomBytes } from 'crypto';
 import {
@@ -101,11 +101,10 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     throw new Error('Missing issuer');
   }
 
-  const [searchOutcome, searchResult] = await systemRepo.search({
+  const searchResult = await systemRepo.search({
     resourceType: 'JsonWebKey',
     filters: [{ code: 'active', operator: Operator.EQUALS, value: 'true' }],
   });
-  assertOk(searchOutcome, searchResult);
 
   let jsonWebKeys: JsonWebKey[] | undefined;
 
@@ -118,12 +117,11 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     logger.info('No keys found.  Creating new key...');
     const keyResult = await generateKeyPair(ALG);
     const jwk = await exportJWK(keyResult.privateKey);
-    const [createOutcome, createResult] = await systemRepo.createResource<JsonWebKey>({
+    const createResult = await systemRepo.createResource<JsonWebKey>({
       resourceType: 'JsonWebKey',
       active: true,
       ...jwk,
     } as JsonWebKey);
-    assertOk(createOutcome, createResult);
     jsonWebKeys = [createResult];
   }
 
