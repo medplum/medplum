@@ -160,6 +160,16 @@ describe('MockClient', () => {
                 url: 'Questionnaire/not-found',
               },
             },
+            {
+              request: {
+                method: 'POST',
+                url: 'Patient',
+              },
+              resource: {
+                resourceType: 'Patient',
+                name: [{ given: ['John'], family: 'Doe' }],
+              },
+            },
           ],
         })
       )
@@ -177,6 +187,15 @@ describe('MockClient', () => {
           resource: notFound,
           response: {
             status: '404',
+          },
+        },
+        {
+          resource: {
+            resourceType: 'Patient',
+            name: [{ given: ['John'], family: 'Doe' }],
+          },
+          response: {
+            status: '200',
           },
         },
       ],
