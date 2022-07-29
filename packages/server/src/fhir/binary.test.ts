@@ -1,4 +1,3 @@
-import { OperationOutcome } from '@medplum/fhirtypes';
 import express from 'express';
 import { mkdtempSync, rmSync } from 'fs';
 import { sep } from 'path';
@@ -159,42 +158,6 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
     expect(res3.text).toEqual('Hello world 2');
-  });
-
-  test('Create PDF unsupported content type', async () => {
-    const res = await request(app)
-      .post('/fhir/R4/Binary/$pdf')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'text/plain')
-      .send('Hello world');
-    expect(res.status).toBe(400);
-    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toEqual('Unsupported content type');
-  });
-
-  test('Create PDF malformed JSON', async () => {
-    const res = await request(app)
-      .post('/fhir/R4/Binary/$pdf')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
-      .send('}');
-    expect(res.status).toBe(400);
-    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toMatch('Content could not be parsed');
-  });
-
-  test('Create and read PDF', async () => {
-    const res = await request(app)
-      .post('/fhir/R4/Binary/$pdf')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
-      .send({ content: ['Hello world'] });
-    expect(res.status).toBe(201);
-
-    const binary = res.body;
-    const res2 = await request(app)
-      .get('/fhir/R4/Binary/' + binary.id)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
-    expect(res2.headers['content-type']).toBe('application/pdf');
   });
 });
 

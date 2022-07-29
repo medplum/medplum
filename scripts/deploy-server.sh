@@ -34,8 +34,7 @@ tar \
   packages/definitions/package.json \
   packages/definitions/dist \
   packages/server/package.json \
-  packages/server/dist \
-  packages/server/fonts
+  packages/server/dist
 
 # Build the Docker image
 docker build . -t $DOCKER_REPOSITORY:latest -t $DOCKER_REPOSITORY:$GITHUB_SHA
