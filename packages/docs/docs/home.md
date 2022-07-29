@@ -11,7 +11,7 @@ import HomepageCallout from '@site/src/components/HomepageCallout'
     <HomepageCallout title="Get Started" body="Write your first medical application in 5 minutes" linkText="Read more" linkRef="/tutorials/api-basics/create-fhir-data" />
     <HomepageCallout title="API Docs" body="Reference documentation about Medplum's client API for reading and writing healthcare data" linkText="Read more" linkRef="/api" />
     <HomepageCallout title="Use Cases" body="See how to apply Medplum against your healthcare problem" linkText="Read more" linkRef="#" />
-    <HomepageCallout title="Basic Concepts" body="Learn the basic concepts behind Medplum and the FHIR standard for healthcare data" linkText="Read more" linkRef="#" />
+    <HomepageCallout title="Basic Concepts" body="Learn the basic concepts behind Medplum and the FHIR standard for healthcare data" linkText="Read more" linkRef="/fhir-basics" />
 </section>
 
 ## What is Medplum?
@@ -22,7 +22,7 @@ Medplum is a **developer platform** that enables **flexible and rapid developmen
 2. **Medplum API** - The Medplum CDR also exposes a **[FHIR-based API](/api)** for sending, receiving, and manipulating healthcare data. This includes support for binary files like images, videos, and pdfs.
 3. **Medplum SDK** - This is a set of client libraries that simplify the process of interacting with the **Medplum API**. Currently, we only offer a **Typescript** library, but are planning to support more languages in the future. If there's a language you'd like supported, feel free to open a [Github Issue](https://github.com/medplum/medplum/issues).
 4. **Medplum App** - This is a web application where can you can view your data, perform basic editing tasks. You can also use the Medplum App to manage basic workflows.
-5. **UI Component Library** - Medplum ships with a system of [React components](/tutorials/react-components/hello-world-part-1) designed to help you quickly develop custom healthcare applications
+5. **UI Component Library** - Medplum ships with a system of [React components](/tutorials/ui-components/hello-world-part-1) designed to help you quickly develop custom healthcare applications
 
 ## Getting Started
 
@@ -47,8 +47,8 @@ Stay tuned: we will post detailed implementation guides for all of these scenari
 ## Key Features
 
 - **[Subscriptions](fhir-basics#subscriptions-listening-for-changes)**: notifications when objects are created or updated, this is implemented using the FHIRPath spec
-- **[Identity Management and Access Policies](app/access-control)**: manage user identities and access to data
-- **[Integration and Workflow Automation](tutorials/bots/intro)**: Bots are powerful automation and interoperability tools for sending data to and from other applications
+- **[Identity Management and Access Policies](/tutorials/security/access-control)**: manage user identities and access to data
+- **[Integration and Workflow Automation](/tutorials/bots)**: Bots are powerful automation and interoperability tools for sending data to and from other applications
 
 ## System Overview
 

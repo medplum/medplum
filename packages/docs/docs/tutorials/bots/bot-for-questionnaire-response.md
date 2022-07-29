@@ -1,5 +1,5 @@
 ---
-sidebar_position: 101
+sidebar_position: 1
 ---
 
 # Bot for QuestionnaireResponse
@@ -10,7 +10,7 @@ One of the most powerful combos is "Bots" + "Questionnaires".
 
 A FHIR [Questionnaire](/api/fhir/resources/questionnaire) is a customizable form. You can add custom questions, question types, multiple choice options, etc. You can think of a FHIR Questionnaire as a healthcare-specific Google Forms or Survey Monkey.
 
-A Medplum [Bot](./bots) is a snippet of JavaScript code that can run on any resource change (create or update). This JavaScript code has access to a FHIR client, which itself can invoke FHIR operations.
+A Medplum [Bot](./) is a snippet of JavaScript code that can run on any resource change (create or update). This JavaScript code has access to a FHIR client, which itself can invoke FHIR operations.
 
 Connecting a Bot to a Questionnaire enables custom workflows that you control top to bottom.
 
@@ -140,8 +140,8 @@ const [patientOutcome, patient] = await repo.createResource({
     {
       system: 'phone',
       value: items[3].answer[0].valueString,
-    }
-  ]
+    },
+  ],
 });
 assertOk(patientOutcome, patient);
 console.log('Created patient', patient.id);
@@ -154,7 +154,7 @@ const [serviceRequestOutcome, serviceRequest] = await repo.createResource({
   reasonCode: [
     {
       text: items[4].answer[0].valueString,
-    }
-  ]
+    },
+  ],
 });
 ```

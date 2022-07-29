@@ -2,9 +2,7 @@
   "label": "Bots",
   "position": 4,
   "link": {
-    "type": "generated-index",
-    "title": "Bots",
-    "description": "Use Medplum Bots to automate workflows",
-    "keywords": ["guides"]
+    "type": "doc",
+    "id": "intro"
   }
 }
