@@ -270,6 +270,7 @@ async function sendRestHook(
     return;
   }
 
+  const startTime = new Date().toISOString();
   const headers = buildRestHookHeaders(subscription, resource);
   const body = stringify(resource);
   let error: Error | undefined = undefined;
@@ -282,6 +283,7 @@ async function sendRestHook(
     await createSubscriptionEvent(
       subscription,
       resource,
+      startTime,
       response.status === 200 ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
       `Attempt ${job.attemptsMade} received status ${response.status}`
     );
@@ -294,6 +296,7 @@ async function sendRestHook(
     await createSubscriptionEvent(
       subscription,
       resource,
+      startTime,
       AuditEventOutcome.MinorFailure,
       `Attempt ${job.attemptsMade} received error ${ex}`
     );
@@ -338,6 +341,7 @@ function buildRestHookHeaders(subscription: Subscription, resource: Resource): H
  * @param resource The resource that triggered the subscription.
  */
 async function execBot(subscription: Subscription, resource: Resource): Promise<void> {
+  const startTime = new Date().toISOString();
   const url = subscription?.channel?.endpoint as string;
   if (!url) {
     // This can happen if a user updates the Subscription after the job is created.
@@ -373,7 +377,7 @@ async function execBot(subscription: Subscription, resource: Resource): Promise<
     logResult = (error as Error).message;
   }
 
-  await createSubscriptionEvent(subscription, resource, outcome, logResult);
+  await createSubscriptionEvent(subscription, resource, startTime, outcome, logResult);
 }
 
 async function findProjectMembership(project: string, profile: Reference): Promise<ProjectMembership | undefined> {
@@ -401,12 +405,14 @@ async function findProjectMembership(project: string, profile: Reference): Promi
  * Creates an AuditEvent for a subscription attempt.
  * @param subscription The rest-hook subscription.
  * @param resource The resource that triggered the subscription.
+ * @param startTime The time the subscription attempt started.
  * @param outcome The outcome code.
  * @param outcomeDesc The outcome description text.
  */
 async function createSubscriptionEvent(
   subscription: Subscription,
   resource: Resource,
+  startTime: string,
   outcome: AuditEventOutcome,
   outcomeDesc?: string
 ): Promise<void> {
@@ -415,6 +421,10 @@ async function createSubscriptionEvent(
     meta: {
       project: subscription.meta?.project,
       account: subscription.meta?.account,
+    },
+    period: {
+      start: startTime,
+      end: new Date().toISOString(),
     },
     recorded: new Date().toISOString(),
     type: {
