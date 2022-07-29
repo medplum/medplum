@@ -65,50 +65,81 @@ From your root `medplum` directory run
 docker-compose up
 ```
 
+This will:
+
+1. Start the PostgreSQL server in a container
+2. Set up the appropriate configurations (see [postgres.conf](https://github.com/medplum/medplum/postgres/postgres.conf))
+3. Create two databases for testing: `medplum` and `medplum_test` (see [init_test.sql](https://github.com/medplum/medplum/postgres/init_test.sql))
+
 When `docker-compose` completes, you should see something like this in your terminal:
 
 ```bash
-server_1    | INFO 2022-01-28T19:08:42.224Z Run database migrations
-server_1    | INFO 2022-01-28T19:08:42.477Z No keys found.  Creating new key...
-server_1    | INFO 2022-01-28T19:08:42.582Z Create user admin@example.com
-server_1    | INFO 2022-01-28T19:08:42.639Z Created: 875bc82d-f5a3-49e3-bd36-c6aad1ba96cb
-server_1    | INFO 2022-01-28T19:08:42.639Z Create project Medplum
-server_1    | INFO 2022-01-28T19:08:42.650Z Created: 1bef07a1-b521-4130-9b33-884f90339ee8
-server_1    | INFO 2022-01-28T19:08:42.651Z Create practitioner: Medplum Admin
-server_1    | INFO 2022-01-28T19:08:42.671Z Created: 3cc2a03a-30c3-456f-9b3b-63c9b7b88caa
-server_1    | INFO 2022-01-28T19:08:42.672Z Create project membership: Medplum
-server_1    | INFO 2022-01-28T19:08:42.682Z Created: 93502aad-0b44-428d-b925-3b9b0fad5ad6
-server_1    | INFO 2022-01-28T19:08:42.682Z Create default client Medplum
-server_1    | INFO 2022-01-28T19:08:42.693Z Created: 301226d4-e139-408c-a61a-7bf06693515d
-server_1    | INFO 2022-01-28T19:08:42.704Z Create Public project...
-server_1    | INFO 2022-01-28T19:08:42.714Z Created: 52e4ac94-0f00-4f49-b1ed-469a8e8d78f2
+medplum-postgres-1  | PostgreSQL init process complete; ready for start up.
+medplum-postgres-1  |
+medplum-postgres-1  | 2022-07-29 00:37:44.639 GMT [1] LOG:  starting PostgreSQL 12.10 (Debian 12.10-1.pgdg110+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 10.2.1-6) 10.2.1 20210110, 64-bit
+medplum-postgres-1  | 2022-07-29 00:37:44.639 GMT [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+medplum-postgres-1  | 2022-07-29 00:37:44.639 GMT [1] LOG:  listening on IPv6 address "::", port 5432
+medplum-postgres-1  | 2022-07-29 00:37:44.642 GMT [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+medplum-postgres-1  | 2022-07-29 00:37:44.650 GMT [88] LOG:  database system was shut down at 2022-07-29 00:37:44 GMT
+medplum-postgres-1  | 2022-07-29 00:37:44.654 GMT [1] LOG:  database system is ready to accept connections
 ```
-
-This will seed the medplum database with an example project and user.
-The email and password for the example user are:
-
-- Email: admin@example.com
-- Password: medplum_admin
 
 #### Deploying manually
 
-1. **Install PostgreSQL**: See [the PostgreSQL documentation](https://www.postgresql.org/download/) for instructions on installing it with your OS.
-2. **Install Redis**: See [the Redis documentation](https://redis.io/download) for instructions on installing it with your OS.
+If you'd prefer to install the dependencies directly, you can find installation instructions for the required services below:
+
+1. [Install PostgreSQL](https://www.postgresql.org/download/)
+2. [Install Redis](https://redis.io/download)
+
+After that, you will have to update the file `packages/server/medplum.config.json`
+
+```js
+  "database": {
+    "host":  // YOUR POSTGRESQL HOST
+    "port": // YOUR POSTGRESQL PORT
+    "dbname":  // YOUR POSTGRESQL DB Name
+    "username":  // YOUR POSTGRESQL USERNAME
+    "password":  // YOUR POSTGRESQL PASSWORD
+  },
+    "redis": {
+    "host":  // YOUR REDIS HOST
+    "port": // YOUR REDIS PORT
+    "password": // YOUR REDIS PASSWORD
+  }
+```
 
 ### Start the servers
 
-Start the API server:
+After you have PostgreSQL and Redis up and running, you can run the Medplum API server.
+
+From your root `medplum` directory run:
 
 ```sh
 cd packages/server
 npm run dev
 ```
 
-You can access the healthcheck at <http://localhost:5000/healthcheck>
+This will seed the medplum database with an example project and user.
+The email and password for the example user are:
 
-### Develop the web UI
+|              |                   |
+| ------------ | ----------------- |
+| **Email**    | admin@example.com |
+| **Password** | medplum_admin     |
 
-Start the web frontend:
+To make sure the server is working, you can access the health check at <http://localhost:5000/healthcheck>
+
+If everything is working, you should see the following in your browser:
+
+```json
+{"ok":true,"postgres":true,"redis":true}`
+```
+
+### Run the Medplum Web App
+
+Lastly, you can start the Medplum Wep App.
+
+From your root `medplum` directory run:
 
 ```sh
 cd packages/app
