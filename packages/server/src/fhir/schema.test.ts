@@ -1,4 +1,5 @@
-import { OperationOutcome, Patient, Questionnaire, Resource } from '@medplum/fhirtypes';
+import { OperationOutcomeError } from '@medplum/core';
+import { Patient, Questionnaire, Resource } from '@medplum/fhirtypes';
 import { validateResource, validateResourceType } from './schema';
 
 describe('FHIR schema', () => {
@@ -22,7 +23,7 @@ describe('FHIR schema', () => {
       validateResource({ resourceType: 'Patient', name: 'Homer' } as unknown as Resource);
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.expression?.[0]).toEqual('name');
     }
@@ -35,7 +36,7 @@ describe('FHIR schema', () => {
       validateResource({ resourceType: 'Patient', fakeProperty: 'test' } as unknown as Resource);
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.expression?.[0]).toEqual('fakeProperty');
     }
@@ -46,7 +47,7 @@ describe('FHIR schema', () => {
       validateResource({ resourceType: 'DiagnosticReport' });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code');
     }
@@ -57,7 +58,7 @@ describe('FHIR schema', () => {
       validateResource({ resourceType: 'Patient', name: null } as unknown as Patient);
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.expression?.[0]).toEqual('name');
     }
@@ -68,7 +69,7 @@ describe('FHIR schema', () => {
       validateResource({ resourceType: 'Patient', name: [null] } as unknown as Patient);
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.expression?.[0]).toEqual('name[0]');
     }
@@ -96,7 +97,7 @@ describe('FHIR schema', () => {
       } as unknown as Patient);
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.length).toBe(2);
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.expression?.[0]).toEqual('identifier[0].system');
@@ -129,7 +130,7 @@ describe('FHIR schema', () => {
       } as unknown as Questionnaire);
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.expression?.[0]).toEqual('item[0].item[0].item[0].item[0].item');
     }
