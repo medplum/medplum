@@ -5,6 +5,7 @@ import { closeRedis } from './redis';
 
 jest.mock('bullmq');
 jest.mock('ioredis');
+jest.mock('pg');
 
 jest.mock('express', () => {
   const original = jest.requireActual('express');
@@ -20,6 +21,45 @@ jest.mock('express', () => {
   fn.urlencoded = original.urlencoded;
   fn.listen = listen;
   return fn;
+});
+
+jest.mock('pg', () => {
+  const original = jest.requireActual('express');
+
+  class MockPoolClient {
+    async query(sql: string): Promise<any> {
+      if (sql === 'SELECT "version" FROM "DatabaseMigration"') {
+        return { rows: [{ version: 1000000 }] };
+      }
+      if (sql === 'SELECT "User"."id", "User"."content" FROM "User" WHERE "deleted"=$1 LIMIT 1') {
+        return { rows: [{ id: '1', content: '{}' }] };
+      }
+      return { rows: [] };
+    }
+
+    release(): void {
+      // Nothing to do
+    }
+  }
+
+  class MockPool {
+    async connect(): Promise<MockPoolClient> {
+      return new MockPoolClient();
+    }
+
+    async query(sql: string): Promise<any> {
+      return (await this.connect()).query(sql);
+    }
+
+    end(): void {
+      // Nothing to do
+    }
+  }
+
+  return {
+    ...original,
+    Pool: MockPool,
+  };
 });
 
 describe('Server', () => {
