@@ -95,16 +95,16 @@ After that, you will have to update the file `packages/server/medplum.config.jso
 
 ```js
   "database": {
-    "host":  // YOUR POSTGRESQL HOST
-    "port": // YOUR POSTGRESQL PORT
-    "dbname":  // YOUR POSTGRESQL DB Name
-    "username":  // YOUR POSTGRESQL USERNAME
-    "password":  // YOUR POSTGRESQL PASSWORD
+    "host": "",     // YOUR POSTGRESQL HOST
+    "port": "",     // YOUR POSTGRESQL PORT
+    "dbname": "",   // YOUR POSTGRESQL DB Name
+    "username": "", // YOUR POSTGRESQL USERNAME
+    "password": ""  // YOUR POSTGRESQL PASSWORD
   },
     "redis": {
-    "host":  // YOUR REDIS HOST
-    "port": // YOUR REDIS PORT
-    "password": // YOUR REDIS PASSWORD
+    "host": "",     // YOUR REDIS HOST
+    "port": "",     // YOUR REDIS PORT
+    "password": "", // YOUR REDIS PASSWORD
   }
 ```
 
@@ -132,7 +132,7 @@ To make sure the server is working, you can access the health check at <http://l
 If everything is working, you should see the following in your browser:
 
 ```json
-{"ok":true,"postgres":true,"redis":true}`
+{ "ok": true, "postgres": true, "redis": true }
 ```
 
 ### Run the Medplum Web App
