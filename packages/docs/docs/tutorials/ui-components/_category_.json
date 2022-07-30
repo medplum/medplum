@@ -1,9 +1,10 @@
 {
-  "label": "React Components",
-  "position": 5,
+  "label": "UI Components",
+  "position": 2,
   "link": {
     "type": "generated-index",
-    "title": "React Hello World",
+    "slug": "/tutorials/ui-components",
+    "title": "Medplum UI Components",
     "description": "Learn about Medplum's React Component library",
     "keywords": ["guides"]
   }

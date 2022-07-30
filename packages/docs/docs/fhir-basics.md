@@ -201,7 +201,7 @@ For example the [Medication resource](/api/fhir/resources/medication#search-para
 - **criteria**: This is a string expression that defines _which_ resources to listen to, specified in [FHIRPath](https://hl7.org/fhirpath/) format. This subscription is invoked whenever a resource that matches the criteria is created or updated.
 - **channel**: this describes the kind of action that the `Subscription` will take when it sees a matching resource. Currently, the possible values are `rest-hook`, `websocket`, `email`, and `message`.
 
-In Medplum, a powerful feature is to to **use a [Medplum Bot](/app/bots)** as the endpoint of the `rest-hook` channel. This allows you to run an arbitrary piece of code in response to data changes and automate your medical workflows. See our [Bot-Subscription tutorial](/app/bot-for-questionnaire-response) for more information.
+In Medplum, a powerful feature is to to **use a [Medplum Bot](/tutorials/bots)** as the endpoint of the `rest-hook` channel. This allows you to run an arbitrary piece of code in response to data changes and automate your medical workflows. See our [Bot-Subscription tutorial](/tutorials/bots/bot-for-questionnaire-response) for more information.
 
 <br/>
 

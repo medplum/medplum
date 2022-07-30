@@ -1,10 +1,15 @@
 ---
+sidebar_label: Getting Started
 sidebar_position: 1
 ---
 
-# Medplum Tutorials
+# Getting Started
 
-The best way to learn is by doing. Follow these tutorials to get you up and running.
+Welcome to the Medplum tutorials!
 
-1. [API Basics](/tutorials/api-basics/create-fhir-data) - Use the REST API to create and read data
-2. [React Hello World](/tutorials/react-components/hello-world-part-1) - Use the React Component Library to build a front-end app
+The [Medplum App](/tutorials/app) section is a good place to learn about the basics of setting up a your Medplum project,
+registering new users, and manipulating data.
+
+If you're looking to learn about the Medplum API, start with the [API Basics](/tutorials/api-basics/create-fhir-data) section.
+
+If you're building front-end healthcare apps, take a a look our [UI Component Examples](/tutorials/ui-components)
