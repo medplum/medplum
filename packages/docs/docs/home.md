@@ -5,7 +5,7 @@ sidebar_position: 1
 
 import HomepageCallout from '@site/src/components/HomepageCallout'
 
-# Welcome to Medplum!
+# Welcome to Medplum
 
 <section className="homepage-grid">
     <HomepageCallout title="Get Started" body="Write your first medical application in 5 minutes" linkText="Read more" linkRef="/tutorials/api-basics/create-fhir-data" />
