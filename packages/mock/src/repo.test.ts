@@ -1,4 +1,4 @@
-import { Patient } from '@medplum/fhirtypes';
+import { OperationOutcome, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { MockClient } from './client';
 import { HomerSimpson } from './mocks';
@@ -79,7 +79,11 @@ describe('Mock Repo', () => {
 
     await client.deleteResource('Patient', resource1.id as string);
 
-    const resource4 = await client.readResource('Patient', resource1.id as string);
-    expect(resource4).toBeUndefined();
+    try {
+      await client.readResource('Patient', resource1.id as string);
+      fail('Should have thrown');
+    } catch (err) {
+      expect((err as OperationOutcome).id).toEqual('not-found');
+    }
   });
 });

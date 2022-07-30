@@ -417,6 +417,24 @@ function deepEqualsObject(
 }
 
 /**
+ * Creates a deep clone of the input value.
+ *
+ * Limitations:
+ *  - Only supports JSON primitives and arrays.
+ *  - Does not support Functions, lambdas, etc.
+ *  - Does not support circular references.
+ *
+ * See: https://web.dev/structured-clone/
+ * See: https://stackoverflow.com/questions/40488190/how-is-structured-clone-algorithm-different-from-deep-copy
+ *
+ * @param input The input to clone.
+ * @returns A deep clone of the input.
+ */
+export function deepClone<T>(input: T): T {
+  return JSON.parse(JSON.stringify(input)) as T;
+}
+
+/**
  * Returns true if the input string is a UUID.
  * @param input The input string.
  * @returns True if the input string matches the UUID format.
