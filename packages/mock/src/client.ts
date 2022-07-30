@@ -468,7 +468,9 @@ class MockFetchClient {
       entry: request.entry?.map((e: BundleEntry) => {
         const url = 'fhir/R4/' + e?.request?.url;
         const method = e?.request?.method as string;
-        const resource = this.mockHandler(method, url, null);
+        const resource = this.mockHandler(method, url, {
+          body: e?.resource ? JSON.stringify(e?.resource) : undefined,
+        });
         if (resource?.resourceType === 'OperationOutcome') {
           return { resource, response: { status: getStatus(resource).toString() } };
         } else if (resource) {
