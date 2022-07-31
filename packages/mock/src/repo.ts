@@ -1,5 +1,6 @@
-import { evalFhirPath, Filter, Operator, SearchRequest } from '@medplum/core';
+import { badRequest, deepClone, evalFhirPath, Filter, notFound, Operator, SearchRequest } from '@medplum/core';
 import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
+import { applyPatch, JsonPatchError, Operation } from 'fast-json-patch';
 
 export class MemoryRepository {
   readonly #resources: Record<string, Record<string, Resource>>;
@@ -11,7 +12,7 @@ export class MemoryRepository {
   }
 
   createResource<T extends Resource>(resource: T): T {
-    const result = JSON.parse(JSON.stringify(resource));
+    const result = deepClone(resource);
 
     if (!result.id) {
       result.id = this.generateId();
@@ -45,7 +46,7 @@ export class MemoryRepository {
 
     this.#resources[resourceType][id] = result;
     this.#history[resourceType][id].push(result);
-    return result;
+    return deepClone(result);
   }
 
   updateResource<T extends Resource>(resource: T): T {
@@ -61,25 +62,48 @@ export class MemoryRepository {
     return this.createResource(result);
   }
 
-  readResource<T extends Resource>(resourceType: string, id: string): T | undefined {
-    return this.#resources?.[resourceType]?.[id] as T | undefined;
+  patchResource(resourceType: string, id: string, patch: Operation[]): Resource {
+    const resource = this.readResource(resourceType, id);
+
+    let patchResult;
+    try {
+      patchResult = applyPatch(resource, patch, true);
+    } catch (err) {
+      const patchError = err as JsonPatchError;
+      const message = patchError.message?.split('\n')?.[0] || 'JSONPatch error';
+      throw badRequest(message);
+    }
+
+    const patchedResource = patchResult.newDocument;
+    return this.updateResource(patchedResource);
+  }
+
+  readResource<T extends Resource>(resourceType: string, id: string): T {
+    const resource = this.#resources?.[resourceType]?.[id] as T | undefined;
+    if (!resource) {
+      throw notFound;
+    }
+    return deepClone(resource);
   }
 
   readHistory<T extends Resource>(resourceType: string, id: string): Bundle<T> {
+    this.readResource(resourceType, id);
     return {
       resourceType: 'Bundle',
       type: 'history',
       entry: ((this.#history?.[resourceType]?.[id] ?? []) as T[])
-        .sort(
-          (version1, version2) =>
-            -(version1.meta?.lastUpdated?.localeCompare(version2.meta?.lastUpdated as string) as number)
-        )
-        .map((version) => ({ resource: version })),
+        .reverse()
+        .map((version) => ({ resource: deepClone(version) })),
     };
   }
 
-  readVersion<T extends Resource>(resourceType: string, id: string, versionId: string): T | undefined {
-    return this.#history?.[resourceType]?.[id]?.find((v) => v.meta?.versionId === versionId) as T | undefined;
+  readVersion<T extends Resource>(resourceType: string, id: string, versionId: string): T {
+    this.readResource(resourceType, id);
+    const version = this.#history?.[resourceType]?.[id]?.find((v) => v.meta?.versionId === versionId) as T | undefined;
+    if (!version) {
+      throw notFound;
+    }
+    return deepClone(version);
   }
 
   search<T extends Resource>(searchRequest: SearchRequest): Bundle<T> {
@@ -89,7 +113,7 @@ export class MemoryRepository {
     return {
       resourceType: 'Bundle',
       type: 'searchset',
-      entry: result.map((resource) => ({ resource })) as BundleEntry<T>[],
+      entry: result.map((resource) => ({ resource: deepClone(resource) })) as BundleEntry<T>[],
       total: result.length,
     };
   }

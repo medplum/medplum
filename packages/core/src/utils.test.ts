@@ -6,6 +6,7 @@ import {
   calculateAgeString,
   capitalize,
   createReference,
+  deepClone,
   deepEquals,
   findObservationInterval,
   findObservationReferenceRange,
@@ -398,6 +399,13 @@ describe('Core Utils', () => {
     expect(
       deepEquals({ resourceType: 'Patient', meta: { author: '1' } }, { resourceType: 'Patient', meta: { author: '2' } })
     ).toEqual(true);
+  });
+
+  test('deepClone', () => {
+    const input = { foo: 'bar' };
+    const output = deepClone(input);
+    expect(output).toEqual(input);
+    expect(output).not.toBe(input);
   });
 
   test('Capitalize', () => {

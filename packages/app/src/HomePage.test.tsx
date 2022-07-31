@@ -1,4 +1,4 @@
-import { Patient } from '@medplum/fhirtypes';
+import { OperationOutcome, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -121,8 +121,12 @@ describe('HomePage', () => {
       fireEvent.click(screen.getByText('Delete...'));
     });
 
-    const check = await medplum.readResource('Patient', patient.id as string);
-    expect(check).toBeUndefined();
+    try {
+      await medplum.readResource('Patient', patient.id as string);
+      fail('Should have thrown');
+    } catch (err) {
+      expect((err as OperationOutcome).id).toEqual('not-found');
+    }
 
     // Make sure the patient is *not* on the screen
     await waitFor(() => screen.queryByText(patient.id as string) === null);
