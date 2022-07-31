@@ -10,7 +10,7 @@ import { initRedis } from './redis';
 import { seedDatabase } from './seed';
 import { initWorkers } from './workers';
 
-async function main(): Promise<void> {
+export async function main(): Promise<void> {
   logger.info('Starting Medplum Server...');
 
   const configName = process.argv.length === 3 ? process.argv[2] : 'file:medplum.config.json';
@@ -28,7 +28,9 @@ async function main(): Promise<void> {
   getRootSchema();
 
   const app = await initApp(express());
-  app.listen(5000);
+  app.listen(config.port);
 }
 
-main();
+if (require.main === module) {
+  main();
+}

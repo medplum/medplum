@@ -19,9 +19,9 @@ docker-compose up
 
 Open browser to <https://localhost.emobix.co.uk:8443/>
 
-Test the Docker localhost URL: <http://host.docker.internal:5000/>
+Test the Docker localhost URL: <http://host.docker.internal:8103/>
 
-Be sure to logout between each test by visiting <http://host.docker.internal:5000/oauth2/logout>
+Be sure to logout between each test by visiting <http://host.docker.internal:8103/oauth2/logout>
 
 ### OpenID notes
 
@@ -37,7 +37,7 @@ Set the "Redirect Uri" to "https://localhost.emobix.co.uk:8443/test/a/medplum/ca
   - description: medplum
   - publish: No
 - Server
-  - discoveryUrl: http://host.docker.internal:5000/.well-known/openid-configuration
+  - discoveryUrl: http://host.docker.internal:8103/.well-known/openid-configuration
   - login_hint:
 - Client:
   - client_id: CLIENT_ID_1
@@ -65,9 +65,9 @@ docker-compose up
 
 Open browser to <http://localhost:4567/>
 
-Test the Docker localhost URL: <http://host.docker.internal:5000/>
+Test the Docker localhost URL: <http://host.docker.internal:8103/>
 
-Be sure to logout between each test by visiting <http://host.docker.internal:5000/oauth2/logout>
+Be sure to logout between each test by visiting <http://host.docker.internal:8103/oauth2/logout>
 
 ### Inferno notes
 
@@ -86,4 +86,4 @@ Launch parameters:
 - "iss" - Issuer, must be full FHIR base URL
 - "state" - Must be unique random state
 
-http://localhost:4567/inferno/oauth2/static/launch?iss=http%3A%2F%2Fhost.docker.internal%3A5000%2Ffhir%2FR4&launch=xyz1234
+http://localhost:4567/inferno/oauth2/static/launch?iss=http%3A%2F%2Fhost.docker.internal%3A8103%2Ffhir%2FR4&launch=xyz1234

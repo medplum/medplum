@@ -6,6 +6,7 @@ import { resolve } from 'path';
 const AWS_REGION = 'us-east-1';
 
 export interface MedplumServerConfig {
+  port: number;
   baseUrl: string;
   issuer: string;
   jwksUrl: string;
@@ -139,6 +140,8 @@ async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
           config['database'] = await loadAwsSecrets(value);
         } else if (key === 'RedisSecrets') {
           config['redis'] = await loadAwsSecrets(value);
+        } else if (key === 'port') {
+          config.port = parseInt(value);
         } else {
           config[key] = value;
         }

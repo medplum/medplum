@@ -127,7 +127,7 @@ The email and password for the example user are:
 | **Email**    | admin@example.com |
 | **Password** | medplum_admin     |
 
-To make sure the server is working, you can access the health check at <http://localhost:5000/healthcheck>
+To make sure the server is working, you can access the health check at <http://localhost:8103/healthcheck>
 
 If everything is working, you should see the following in your browser:
 

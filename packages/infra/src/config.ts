@@ -4,6 +4,7 @@ export interface MedplumInfraConfig {
   readonly accountNumber: string;
   readonly region: string;
   readonly domainName: string;
+  readonly apiPort: number;
   readonly apiDomainName: string;
   readonly apiSslCertArn: string;
   readonly appDomainName: string;
