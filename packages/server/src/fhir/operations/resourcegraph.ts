@@ -1,5 +1,5 @@
 import {
-  assertOk,
+  allOk,
   badRequest,
   DEFAULT_SEARCH_COUNT,
   evalFhirPathTyped,
@@ -16,7 +16,6 @@ import {
   GraphDefinition,
   GraphDefinitionLink,
   GraphDefinitionLinkTarget,
-  OperationOutcome,
   Reference,
   Resource,
 } from '@medplum/fhirtypes';
@@ -39,8 +38,7 @@ export async function resourceGraphHandler(req: Request, res: Response): Promise
   const { resourceType, id } = req.params;
   const repo = res.locals.repo as Repository;
 
-  const [outcome1, rootResource] = await repo.readResource(resourceType, id);
-  assertOk(outcome1, rootResource);
+  const rootResource = await repo.readResource(resourceType, id);
 
   const definition = await validateQueryParameters(req, res);
 
@@ -59,9 +57,9 @@ export async function resourceGraphHandler(req: Request, res: Response): Promise
   }
   await followLinks(rootResource, definition.link, results, resourceCache, repo);
 
-  sendResponse(res, outcome1, {
+  sendResponse(res, allOk, {
     resourceType: 'Bundle',
-    entry: dedupResources(results).map((r) => ({
+    entry: deduplicateResources(results).map((r) => ({
       resource: r,
     })),
     type: 'collection',
@@ -78,7 +76,7 @@ export async function resourceGraphHandler(req: Request, res: Response): Promise
  *  for each elem in the collection:
  *    read the reference
  *    add the result to the bundle
- *    follow the sublink on the element
+ *    follow the subLink on the element
  * @param resource
  * @param path
  */
@@ -124,7 +122,7 @@ async function followLinks(
       } else {
         throw new OperationOutcomeError(badRequest(`Invalid link: ${JSON.stringify(link)}`));
       }
-      linkedResources = dedupResources(linkedResources);
+      linkedResources = deduplicateResources(linkedResources);
       results.push(...linkedResources);
       for (const linkedResource of linkedResources) {
         await followLinks(linkedResource, target.link, results, resourceCache, repo, depth + 1);
@@ -195,8 +193,7 @@ async function followReferenceElements(
       if (ref.reference in resourceCache) {
         results.push(resourceCache[ref.reference]);
       } else {
-        const [outcome, linkedResource] = await repo.readReference(ref);
-        assertOk(outcome, linkedResource);
+        const linkedResource = await repo.readReference(ref);
 
         // Cache here to speed up subsequent loop iterations
         addToCache(linkedResource, resourceCache);
@@ -225,11 +222,10 @@ async function followCanonicalElements(
     if (url in resourceCache) {
       results.push(resourceCache[url]);
     } else {
-      const [outcome, bundle] = (await repo.search({
+      const bundle = (await repo.search({
         resourceType: target.type,
         filters: [{ code: 'url', operator: Operator.EQUALS, value: url }],
-      })) as [OperationOutcome, Bundle];
-      assertOk(outcome, bundle);
+      })) as Bundle;
       const linkedResources = bundle?.entry?.map((entry) => entry.resource).filter((e) => !!e) as Resource[];
       if (linkedResources?.length > 1) {
         console.warn(`Warning: Found more than 1 resource with canonical URL ${url}`);
@@ -267,8 +263,7 @@ async function followSearchLink(
     searchRequest.count = Math.max(parseCardinality(link.max), 5000);
 
     // Run the search and add the results to the `results` array
-    const [outcome, bundle] = await repo.search(searchRequest);
-    assertOk(outcome, bundle);
+    const bundle = await repo.search(searchRequest);
     if (bundle && bundle.entry) {
       const resources = bundle.entry.map((entry) => entry.resource).filter((e): e is Resource => !!e);
       resources.forEach((res) => addToCache(res, resourceCache));
@@ -290,11 +285,10 @@ async function validateQueryParameters(req: Request, res: Response): Promise<Gra
   const { graph } = req.query as { graph: string };
 
   const repo = res.locals.repo as Repository;
-  const [outcome2, bundle] = await repo.search({
+  const bundle = await repo.search({
     resourceType: 'GraphDefinition',
     filters: [{ code: 'name', operator: Operator.EQUALS, value: graph }],
   });
-  assertOk(outcome2, bundle);
 
   return bundle.entry?.[0]?.resource as GraphDefinition;
 }
@@ -326,7 +320,7 @@ function addToCache(resource: Resource, cache: Record<string, Resource>) {
   }
 }
 
-function dedupResources(resources: Resource[]) {
+function deduplicateResources(resources: Resource[]) {
   const seen = new Set<string>();
   return resources.filter((item) => {
     const key = getReferenceString(item);
