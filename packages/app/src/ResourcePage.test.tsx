@@ -1,4 +1,4 @@
-import { Practitioner } from '@medplum/fhirtypes';
+import { OperationOutcome, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -71,8 +71,12 @@ describe('ResourcePage', () => {
       fireEvent.click(screen.getByText('Delete'));
     });
 
-    const check = await medplum.readResource('Practitioner', practitioner.id as string);
-    expect(check).toBeUndefined();
+    try {
+      await medplum.readResource('Practitioner', practitioner.id as string);
+      fail('Should have thrown');
+    } catch (err) {
+      expect((err as OperationOutcome).id).toEqual('not-found');
+    }
   });
 
   test('History tab renders', async () => {

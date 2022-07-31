@@ -9,7 +9,7 @@ import {
   parseSearchDefinition,
   ProfileResource,
 } from '@medplum/core';
-import { Binary, Bundle, BundleEntry, Practitioner } from '@medplum/fhirtypes';
+import { Binary, Bundle, BundleEntry, OperationOutcome, Practitioner, Resource } from '@medplum/fhirtypes';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
@@ -393,7 +393,7 @@ class MockFetchClient {
     DrAliceSmithSlots.forEach((slot) => this.mockRepo.createResource(slot));
   }
 
-  private mockFhirHandler(method: string, url: string, options: any): any {
+  private mockFhirHandler(method: string, url: string, options: any): Resource {
     const path = url.includes('?') ? url.substring(0, url.indexOf('?')) : url;
     const match = /fhir\/R4\/?([^/]+)?\/?([^/]+)?\/?([^/]+)?\/?([^/]+)?/.exec(path);
     const resourceType = match?.[1];
@@ -408,7 +408,7 @@ class MockFetchClient {
       return notFound;
     } else if (method === 'POST') {
       if (resourceType && id && operation) {
-        return {};
+        return allOk;
       } else if (resourceType) {
         return this.mockRepo.createResource(JSON.parse(options.body));
       } else {
@@ -419,6 +419,8 @@ class MockFetchClient {
         return this.mockRepo.readVersion(resourceType, id, versionId);
       } else if (resourceType && id && operation === '_history') {
         return this.mockRepo.readHistory(resourceType, id);
+      } else if (resourceType && id === '$csv') {
+        return allOk;
       } else if (resourceType && id) {
         return this.mockRepo.readResource(resourceType, id);
       } else if (resourceType) {
@@ -426,13 +428,17 @@ class MockFetchClient {
       }
     } else if (method === 'PUT') {
       return this.mockRepo.updateResource(JSON.parse(options.body));
+    } else if (method === 'PATCH') {
+      if (resourceType && id) {
+        return this.mockRepo.patchResource(resourceType, id, JSON.parse(options.body));
+      }
     } else if (method === 'DELETE') {
       if (resourceType && id) {
-        return this.mockRepo.deleteResource(resourceType, id);
-      } else {
-        return notFound;
+        this.mockRepo.deleteResource(resourceType, id);
+        return allOk;
       }
     }
+    throw notFound;
   }
 
   private mockFhirGraphqlHandler(_method: string, _path: string, options: any): any {
@@ -465,20 +471,35 @@ class MockFetchClient {
     return {
       resourceType: 'Bundle',
       type: 'batch-response',
-      entry: request.entry?.map((e: BundleEntry) => {
-        const url = 'fhir/R4/' + e?.request?.url;
-        const method = e?.request?.method as string;
-        const resource = this.mockHandler(method, url, {
-          body: e?.resource ? JSON.stringify(e?.resource) : undefined,
-        });
-        if (resource?.resourceType === 'OperationOutcome') {
-          return { resource, response: { status: getStatus(resource).toString() } };
-        } else if (resource) {
-          return { resource, response: { status: '200' } };
-        } else {
-          return { resource: notFound, response: { status: '404' } };
-        }
-      }),
+      entry: request.entry?.map((e) => this.handleBatchEntry(e)),
     };
+  }
+
+  private handleBatchEntry(input: BundleEntry): BundleEntry {
+    try {
+      const url = 'fhir/R4/' + input.request?.url;
+      const method = input.request?.method as string;
+      const resource = this.mockHandler(method, url, {
+        body: input.resource ? JSON.stringify(input.resource) : undefined,
+      });
+      if (resource?.resourceType === 'OperationOutcome') {
+        return {
+          resource,
+          response: { status: getStatus(resource).toString() },
+        };
+      } else if (resource) {
+        return { resource, response: { status: '200' } };
+      } else {
+        return { resource: notFound, response: { status: '404' } };
+      }
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      return {
+        response: {
+          status: getStatus(outcome).toString(),
+          outcome,
+        },
+      };
+    }
   }
 }

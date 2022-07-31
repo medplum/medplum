@@ -1,5 +1,6 @@
-import { deepClone, evalFhirPath, Filter, notFound, Operator, SearchRequest } from '@medplum/core';
+import { badRequest, deepClone, evalFhirPath, Filter, notFound, Operator, SearchRequest } from '@medplum/core';
 import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
+import { applyPatch, JsonPatchError, Operation } from 'fast-json-patch';
 
 export class MemoryRepository {
   readonly #resources: Record<string, Record<string, Resource>>;
@@ -61,7 +62,23 @@ export class MemoryRepository {
     return this.createResource(result);
   }
 
-  readResource<T extends Resource>(resourceType: string, id: string): T | undefined {
+  patchResource(resourceType: string, id: string, patch: Operation[]): Resource {
+    const resource = this.readResource(resourceType, id);
+
+    let patchResult;
+    try {
+      patchResult = applyPatch(resource, patch, true);
+    } catch (err) {
+      const patchError = err as JsonPatchError;
+      const message = patchError.message?.split('\n')?.[0] || 'JSONPatch error';
+      throw badRequest(message);
+    }
+
+    const patchedResource = patchResult.newDocument;
+    return this.updateResource(patchedResource);
+  }
+
+  readResource<T extends Resource>(resourceType: string, id: string): T {
     const resource = this.#resources?.[resourceType]?.[id] as T | undefined;
     if (!resource) {
       throw notFound;
@@ -80,7 +97,7 @@ export class MemoryRepository {
     };
   }
 
-  readVersion<T extends Resource>(resourceType: string, id: string, versionId: string): T | undefined {
+  readVersion<T extends Resource>(resourceType: string, id: string, versionId: string): T {
     this.readResource(resourceType, id);
     const version = this.#history?.[resourceType]?.[id]?.find((v) => v.meta?.versionId === versionId) as T | undefined;
     if (!version) {

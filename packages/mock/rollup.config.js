@@ -8,6 +8,7 @@ const extensions = ['.ts'];
 
 const globals = {
   '@medplum/core': 'medplum.core',
+  'fast-json-patch': 'fast-json-patch',
 };
 
 export default {
