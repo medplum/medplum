@@ -25,6 +25,11 @@
     "@medplum/core": "0.9.28",
     "fast-json-patch": "3.1.1"
   },
+  "peerDependenciesMeta": {
+    "fast-json-patch": {
+      "optional": true
+    }
+  },
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
   "exports": {
