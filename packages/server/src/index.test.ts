@@ -64,7 +64,7 @@ jest.mock('pg', () => {
 
 describe('Server', () => {
   test('Main', async () => {
-    await main();
+    await main('file:medplum.config.json');
     expect((express as any).listen).toHaveBeenCalledWith(8103);
     await closeDatabase();
     closeRedis();

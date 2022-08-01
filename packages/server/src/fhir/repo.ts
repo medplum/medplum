@@ -126,6 +126,11 @@ const lookupTables: LookupTable<unknown>[] = [
 ];
 
 /**
+ * Defines the maximum number of resources returned in a single search result.
+ */
+const maxSearchResults = 1000;
+
+/**
  * The Repository class manages reading and writing to the FHIR repository.
  * It is a thin layer on top of the database.
  * Repository instances should be created per author and project.
@@ -561,7 +566,7 @@ export class Repository {
     this.#addSearchFilters(builder, builder.predicate, searchRequest);
     this.#addSortRules(builder, searchRequest);
 
-    builder.limit(searchRequest.count || 20);
+    builder.limit(Math.min(searchRequest.count || 20, maxSearchResults));
     builder.offset(searchRequest.offset || 0);
 
     const rows = await builder.execute(client);
