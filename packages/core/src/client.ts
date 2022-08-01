@@ -1158,7 +1158,7 @@ export class MedplumClient extends EventTarget {
    *      given: ['John']
    *     }]
    *   },
-   *   'Patient?identifier=123'
+   *   'identifier=123'
    * );
    * console.log(result.id);
    * ```
