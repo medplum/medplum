@@ -2,6 +2,7 @@ import { createReference } from '@medplum/core';
 import {
   ActivityDefinition,
   Bundle,
+  BundleEntry,
   DiagnosticReport,
   GraphDefinition,
   Observation,
@@ -12,6 +13,7 @@ import {
   Questionnaire,
   Resource,
   ServiceRequest,
+  SpecimenDefinition,
 } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
@@ -19,6 +21,7 @@ import { initApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { closeDatabase, initDatabase } from '../../database';
 import { initKeys } from '../../oauth';
+import { initRedis } from '../../redis';
 import { seedDatabase } from '../../seed';
 import { initTestAuth } from '../../test.setup';
 import { getStructureDefinitions } from '../structure';
@@ -29,6 +32,7 @@ let accessToken: string;
 describe('Resource $graph', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
+    initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
     await initApp(app);
@@ -182,6 +186,97 @@ describe('Resource $graph', () => {
     expect(resources?.[0]).toMatchObject(planDefinition);
     expect(resources?.filter((e) => e?.resourceType === 'ActivityDefinition')).toMatchObject([a1, a2]);
     expect(resources?.filter((e) => e?.resourceType === 'ObservationDefinition')).toMatchObject(obsDefs);
+  });
+
+  test.only('Parallel Links', async () => {
+    const graphName = 'example-parallel-link';
+    await createResource({
+      resourceType: 'GraphDefinition',
+      name: graphName,
+      start: 'PlanDefinition',
+      link: [
+        {
+          path: 'PlanDefinition.action.definition',
+          target: [
+            {
+              type: 'ActivityDefinition',
+              link: [
+                {
+                  path: 'ActivityDefinition.observationResultRequirement',
+                  target: [{ type: 'ObservationDefinition' }],
+                },
+                {
+                  path: 'ActivityDefinition.specimenRequirement',
+                  target: [{ type: 'SpecimenDefinition' }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    } as GraphDefinition);
+
+    const obsDefs = await Promise.all(
+      ['ACT', 'BUN', 'HEM'].map((code) =>
+        createResource<ObservationDefinition>({ resourceType: 'ObservationDefinition', code: { text: code } })
+      )
+    );
+
+    const specDefs = [
+      await createResource<SpecimenDefinition>({
+        resourceType: 'SpecimenDefinition',
+        collection: [{ text: 'finger prick' }],
+      }),
+      await createResource<SpecimenDefinition>({
+        resourceType: 'SpecimenDefinition',
+        collection: [{ text: 'saliva' }],
+      }),
+    ];
+
+    const a1 = await createResource({
+      resourceType: 'ActivityDefinition',
+      name: 'ACT Test',
+      title: 'ACT Test',
+      url: 'http://example.com/ActTest',
+      observationResultRequirement: [createReference(obsDefs[0])],
+      specimenRequirement: [createReference(specDefs[0])],
+    } as ActivityDefinition);
+
+    const a2 = await createResource({
+      resourceType: 'ActivityDefinition',
+      name: 'BUN Panel',
+      title: 'BUN Panel',
+      url: 'http://example.com/BunPanel',
+      observationResultRequirement: [createReference(obsDefs[1]), createReference(obsDefs[2])],
+      specimenRequirement: [createReference(specDefs[1])],
+    } as ActivityDefinition);
+
+    // 3. Create a PlanDefinition
+    const planDefinition = await createResource({
+      resourceType: 'PlanDefinition',
+      action: [
+        { definitionCanonical: 'http://example.com/ActTest' },
+        { definitionCanonical: 'http://example.com/BunPanel' },
+      ],
+    } as PlanDefinition);
+
+    // 4. Apply the PlanDefinition to create the Task and RequestGroup
+    const bundle = await getResourceGraph(planDefinition, graphName);
+    const resources = bundle.entry?.map((entry) => entry?.resource);
+
+    console.log(
+      'Resource Types',
+      resources?.map((r: Resource | undefined) => ({
+        resourceType: r?.resourceType,
+        id: r?.id,
+      }))
+    );
+
+    expect(resources).toHaveLength(8);
+    expect(resources?.[0]).toMatchObject(planDefinition);
+    expect(resources?.filter((e) => e?.resourceType === 'ActivityDefinition')).toMatchObject([a1, a2]);
+    expect(resources?.filter((e) => e?.resourceType === 'ObservationDefinition')).toMatchObject(obsDefs);
+    expect(resources?.filter((e) => e?.resourceType === 'SpecimenDefinition')).toMatchObject(specDefs);
   });
 
   test('Search Based Link', async () => {
