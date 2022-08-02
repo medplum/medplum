@@ -84,6 +84,14 @@ medplum-postgres-1  | 2022-07-29 00:37:44.650 GMT [88] LOG:  database system was
 medplum-postgres-1  | 2022-07-29 00:37:44.654 GMT [1] LOG:  database system is ready to accept connections
 ```
 
+**(Optional)** If you'd like to run a `psql` to shell to inspect the database, you can run
+
+```sh
+docker exec -it medplum-postgres-1 psql -U medplum
+```
+
+Where `medplum-postgres-1` can be replaced with the name of your postgres docker container.
+
 #### Deploying manually
 
 If you'd prefer to install the dependencies directly, you can find installation instructions for the required services below:
