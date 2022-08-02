@@ -1,7 +1,6 @@
 import { ElementDefinition, Period, Quantity, Resource } from '@medplum/fhirtypes';
-import { buildTypeName, getElementDefinition, PropertyType } from '../types';
+import { buildTypeName, getElementDefinition, PropertyType, TypedValue } from '../types';
 import { capitalize, isEmpty } from '../utils';
-import { TypedValue } from './atoms';
 
 /**
  * Returns a single element array with a typed boolean value.

@@ -1,7 +1,8 @@
 import { Reference, Resource } from '@medplum/fhirtypes';
-import { PropertyType } from '../types';
+import { Atom } from '../fhirlexer';
+import { PropertyType, TypedValue } from '../types';
 import { calculateAge } from '../utils';
-import { Atom, DotAtom, SymbolAtom, TypedValue } from './atoms';
+import { DotAtom, SymbolAtom } from './atoms';
 import { parseDateString } from './date';
 import { booleanToTypedValue, fhirPathIs, isQuantity, removeDuplicates, toJsBoolean, toTypedValue } from './utils';
 

@@ -43,7 +43,9 @@ describe('FHIRPath parser', () => {
   });
 
   test('Parser throws on unexpected symbol', () => {
-    expect(() => parseFhirPath('*')).toThrowError('Parse error at *. No matching prefix parselet.');
+    expect(() => parseFhirPath('*')).toThrowError(
+      'Parse error at "*" (line 0, column 0). No matching prefix parselet.'
+    );
   });
 
   test('Parser throws on missing tokens', () => {

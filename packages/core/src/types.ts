@@ -10,6 +10,11 @@ import baseSchema from './base-schema.json';
 import { SearchParameterDetails } from './searchparams';
 import { capitalize } from './utils';
 
+export interface TypedValue {
+  readonly type: string;
+  readonly value: any;
+}
+
 /**
  * List of property types.
  * http://www.hl7.org/fhir/valueset-defined-types.html
