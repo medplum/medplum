@@ -26,8 +26,6 @@ These capabilities would normally require writing custom code, HTTP servers, web
 
 By using Bots, the entire logic is self contained and managed in one place. Like all FHIR resources in Medplum, the [Bot resource](https://app.medplum.com/Bot) is versioned with full history tracking, so you can see exactly what changed over time.
 
-We have a full suite of detailed [Bot tutorials](https://docs.medplum.com/tutorials/bots/intro) that go through use cases in detail.
-
 ## Creating a Bot
 
 :::caution Note
@@ -171,7 +169,7 @@ To ensure the Subscription is running, change "Status" to `Active`
 
 ![Activate Subscription](/img/app/bots/subscription_active.png)
 
-Specify which Resources will trigger this subscription using a FHIR search string. If you're not familiar with FHIR search semantics, check out [this tutorial](https://docs.medplum.com/tutorials/api-basics/basic-fhir-search) for a primer.
+Specify which Resources will trigger this subscription using a FHIR search string. If you're not familiar with FHIR search semantics, check out [this tutorial](/tutorials/api-basics/basic-fhir-search) for a primer.
 
 For this example, we will trigger the Subscription after a change to _any_ `Patient` resource.
 
