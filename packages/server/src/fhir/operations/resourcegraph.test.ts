@@ -2,7 +2,6 @@ import { createReference } from '@medplum/core';
 import {
   ActivityDefinition,
   Bundle,
-  BundleEntry,
   DiagnosticReport,
   GraphDefinition,
   Observation,
