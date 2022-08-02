@@ -20,6 +20,7 @@ import {
   Resource,
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
+import { logger } from '../../logger';
 
 import { Repository } from '../repo';
 import { sendResponse } from '../routes';
@@ -52,10 +53,10 @@ export async function resourceGraphHandler(req: Request, res: Response): Promise
   const results = [rootResource] as Resource[];
   const resourceCache = {} as Record<string, Resource>;
   resourceCache[getReferenceString(rootResource)] = rootResource;
-  if ((rootResource as any).url) {
+  if ('url' in rootResource) {
     resourceCache[(rootResource as any).url] = rootResource;
   }
-  await followLinks(rootResource, definition.link, results, resourceCache, repo);
+  await followLinks(repo, rootResource, definition.link, results, resourceCache);
 
   sendResponse(res, allOk, {
     resourceType: 'Bundle',
@@ -92,11 +93,11 @@ function isSearchLink(link: GraphDefinitionLink): link is SearchLink {
   return link.path === undefined && link.target !== undefined && link.target.every((t) => t.type && t.params);
 }
 async function followLinks(
+  repo: Repository,
   resource: Resource,
   links: GraphDefinitionLink[] | undefined,
   results: Resource[],
   resourceCache: Record<string, Resource>,
-  repo: Repository,
   depth: number = 0
 ) {
   // Circuit Breaker
@@ -105,7 +106,7 @@ async function followLinks(
   }
 
   // Recursive Base Case
-  if (!links || links.length == 0) {
+  if (!links) {
     return;
   }
   for (const link of links) {
@@ -116,40 +117,39 @@ async function followLinks(
       let linkedResources = [] as Resource[];
 
       if (isFhirPathLink(link)) {
-        linkedResources = await followFhirPathLink(link, target, resource, resourceCache, repo);
+        linkedResources = await followFhirPathLink(repo, link, target, resource, resourceCache);
       } else if (isSearchLink(link)) {
-        linkedResources = await followSearchLink(resource, link, resourceCache, repo);
+        linkedResources = await followSearchLink(repo, resource, link, resourceCache);
       } else {
         throw new OperationOutcomeError(badRequest(`Invalid link: ${JSON.stringify(link)}`));
       }
       linkedResources = deduplicateResources(linkedResources);
       results.push(...linkedResources);
       for (const linkedResource of linkedResources) {
-        await followLinks(linkedResource, target.link, results, resourceCache, repo, depth + 1);
+        await followLinks(repo, linkedResource, target.link, results, resourceCache, depth + 1);
       }
     }
   }
 }
 
 /**
- *
  * If link.path:
- *  Get elements
- *  For target in Targets
+ *  Evaluate the FHIRPath expression to get the corresponding properties
  *    For elem in elements:
  *      If element is reference: follow reference
  *      If element is canonical: search for resources with url===canonical
- * @param link
- * @param resource
- * @param repo
- * @param results
+ * @param repo The repository object for fetching data
+ * @param link A link element defined in the GraphDefinition
+ * @param resource The resource for which this GraphDefinition is being applied
+ * @param resourceCache A cache of previously fetched resources. Used to prevent redundant reads
+ * @param results The running list of all the resources found while applying this graph
  */
 async function followFhirPathLink(
+  repo: Repository,
   link: FhirPathLink,
   target: GraphDefinitionLinkTarget,
   resource: Resource,
-  resourceCache: Record<string, Resource>,
-  repo: Repository
+  resourceCache: Record<string, Resource>
 ): Promise<Resource[]> {
   const results = [] as Resource[];
 
@@ -165,22 +165,22 @@ async function followFhirPathLink(
 
   const referenceElements = elements.filter((elem) => elem.type === PropertyType.Reference);
   if (referenceElements.length > 0) {
-    results.push(...(await followReferenceElements(referenceElements, target, resourceCache, repo)));
+    results.push(...(await followReferenceElements(repo, referenceElements, target, resourceCache)));
   }
 
   const canonicalElements = elements.filter((elem) => elem.type === PropertyType.canonical);
   if (canonicalElements.length > 0) {
-    results.push(...(await followCanonicalElements(canonicalElements, target, resourceCache, repo)));
+    results.push(...(await followCanonicalElements(repo, canonicalElements, target, resourceCache)));
   }
 
   return results;
 }
 
 async function followReferenceElements(
+  repo: Repository,
   elements: TypedValue[],
   target: GraphDefinitionLinkTarget,
-  resourceCache: Record<string, Resource>,
-  repo: Repository
+  resourceCache: Record<string, Resource>
 ): Promise<Resource[]> {
   const targetReferences = elements
     .filter((elem) => elem.value.reference?.split('/')[0] === target.type)
@@ -205,10 +205,10 @@ async function followReferenceElements(
 }
 
 async function followCanonicalElements(
+  repo: Repository,
   elements: TypedValue[],
   target: GraphDefinitionLinkTarget,
-  resourceCache: Record<string, Resource>,
-  repo: Repository
+  resourceCache: Record<string, Resource>
 ): Promise<Resource[]> {
   if (!target?.type) {
     return [];
@@ -222,13 +222,13 @@ async function followCanonicalElements(
     if (url in resourceCache) {
       results.push(resourceCache[url]);
     } else {
-      const bundle = (await repo.search({
+      const bundle = await repo.search({
         resourceType: target.type,
         filters: [{ code: 'url', operator: Operator.EQUALS, value: url }],
-      })) as Bundle;
+      });
       const linkedResources = bundle?.entry?.map((entry) => entry.resource).filter((e) => !!e) as Resource[];
       if (linkedResources?.length > 1) {
-        console.warn(`Warning: Found more than 1 resource with canonical URL ${url}`);
+        logger.warn(`Warning: Found more than 1 resource with canonical URL ${url}`);
       }
 
       // Cache here to speed up subsequent loop iterations
@@ -240,11 +240,22 @@ async function followCanonicalElements(
   return results;
 }
 
+/**
+ *
+ * Fetches all resources referenced by this GraphDefinition link,
+ * where the link is specified using search parameters
+ *
+ * @param repo The repository object for fetching data
+ * @param resource The resource for which this GraphDefinition is being applied
+ * @param link A link element defined in the GraphDefinition
+ * @param resourceCache A cache of previously fetched resources. Used to prevent redundant reads
+ * @param results The running list of all the resources found while applying this graph
+ */
 async function followSearchLink(
+  repo: Repository,
   resource: Resource,
   link: GraphDefinitionLink,
-  resourceCache: Record<string, Resource>,
-  repo: Repository
+  resourceCache: Record<string, Resource>
 ): Promise<Resource[]> {
   let results = [] as Resource[];
   if (!link.target) {
@@ -276,7 +287,7 @@ async function followSearchLink(
 
 /**
  * Parses and validates the operation parameters.
- * See: https://hl7.org/fhir/plandefinition-operation-apply.html
+ * See: https://www.hl7.org/fhir/resource-operation-graph.html
  * @param req The HTTP request.
  * @param res The HTTP response.
  * @returns The operation parameters if available; otherwise, undefined.

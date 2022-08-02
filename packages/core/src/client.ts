@@ -1531,14 +1531,13 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
-   * @category Read
    *
    * Executes the $graph operation on this resource to fetch a Bundle of resources linked to the target resource
    * according to a graph definition
-   *
+
+   * @category Read
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
-   * @returns The resource if available; undefined otherwise.
    * @param graphName `name` parameter of the GraphDefinition
    * @returns A Bundle
    */
