@@ -263,14 +263,6 @@ describe('Resource $graph', () => {
     const bundle = await getResourceGraph(planDefinition, graphName);
     const resources = bundle.entry?.map((entry) => entry?.resource);
 
-    console.log(
-      'Resource Types',
-      resources?.map((r: Resource | undefined) => ({
-        resourceType: r?.resourceType,
-        id: r?.id,
-      }))
-    );
-
     expect(resources).toHaveLength(8);
     expect(resources?.[0]).toMatchObject(planDefinition);
     expect(resources?.filter((e) => e?.resourceType === 'ActivityDefinition')).toMatchObject([a1, a2]);
