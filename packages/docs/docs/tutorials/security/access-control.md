@@ -168,27 +168,94 @@ Because the account-tagging is handled within the resource, project administrato
 
 ## Example: Patient Access
 
+:::caution Note
+
+Patient Access is disabled by default. Contact your info@medplum.com if you'd like to enable patient registration and default patient access policy.
+
+:::
+
 A common need is to grant access to resources belonging to a specific patient. In this case it is recommended to use templated access policies, that also implement compartments as shown below.
 
 ```json
 {
   "resourceType": "AccessPolicy",
-  "name": "Default Patient Policy",
+  "name": "Patient Access Policy Template",
   "compartment": {
     "reference": "%patient"
-  },
-  "compartment": {
-    "reference": "Organization/a23a2966-d58a-4098-b41b-e8f18bcda339",
-    "display": "Example Customer Organization"
   },
   "resource": [
     {
       "resourceType": "Patient",
-      "criteria": "Patient?_id=%patient.id"
+      "compartment": {
+        "reference": "%patient"
+      }
     },
     {
       "resourceType": "Observation",
-      "criteria": "Observation?subject=%patient"
+      "compartment": {
+        "reference": "%patient"
+      }
+    },
+    {
+      "resourceType": "DiagnosticReport",
+      "compartment": {
+        "reference": "%patient"
+      }
+    },
+    {
+      "resourceType": "MedicationRequest",
+      "compartment": {
+        "reference": "%patient"
+      }
+    },
+    {
+      "resourceType": "Coverage",
+      "compartment": {
+        "reference": "%patient"
+      }
+    },
+    {
+      "resourceType": "PaymentNotice",
+      "compartment": {
+        "reference": "%patient"
+      }
+    },
+    {
+      "resourceType": "CarePlan",
+      "compartment": {
+        "reference": "%patient"
+      }
+    },
+    {
+      "resourceType": "Immunization",
+      "compartment": {
+        "reference": "%patient"
+      }
+    },
+    {
+      "resourceType": "Communication",
+      "compartment": {
+        "reference": "%patient"
+      }
+    },
+    {
+      "resourceType": "Organization",
+      "readonly": true
+    },
+    {
+      "resourceType": "Practitioner",
+      "readonly": true
+    },
+    {
+      "resourceType": "Schedule",
+      "readonly": true
+    },
+    {
+      "resourceType": "Slot",
+      "readonly": true
+    },
+    {
+      "resourceType": "Binary"
     }
   ]
 }
