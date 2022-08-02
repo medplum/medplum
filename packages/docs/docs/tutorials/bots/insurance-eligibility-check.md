@@ -16,7 +16,7 @@ _This guide includes an example of a bot written in Typescript, deployed using t
 
 ## Background: Insurance Eligibility Check Concepts
 
-The term *eligbility check* implies a yes or no answer, but in practice this tends to be more complex.  Medical billing is run off of an [X12](https://x12.org/products/by-industry) data standard, and claims are submitted and managed using that standard.  Eligibility checks, though they do not submit a full claim, use some of the data outlined by the format. In this simple example, the request has the following inputs and outputs.
+The term _eligbility check_ implies a yes or no answer, but in practice this tends to be more complex. Medical billing is run off of an [X12](https://x12.org/products/by-industry) data standard, and claims are submitted and managed using that standard. Eligibility checks, though they do not submit a full claim, use some of the data outlined by the format. In this simple example, the request has the following inputs and outputs.
 
 - Data Inputs
   - Patient information like **name** and **date of birth**
@@ -65,8 +65,8 @@ Full [bot source code](https://github.com/medplum/medplum-demo-bots/blob/main/sr
   - Then, clone [demo bot repo](https://github.com/medplum/medplum-demo-bots), create a .env file in the root directory and put the ClientId and ClientSecret in the .env file.
   - Add your Opkit public key to the `eligibility-check-opkit.ts` bot.
   - Follow the deployment instructions in the [demo bot repo](https://github.com/medplum/medplum-demo-bots) README.
-- Create a `Subscription` that invokes the bot when a `Coverage` object is created. (Here's the guide on [Setting up Subscriptions](https://docs.medplum.com/app/bots#setup-the-bot-subscription))
-- When a new Coverage object is created, your bot will trigger.  Go to the [Subscription](https://app.medplum.com/Subscription) page that you created to view events and logs.
+- Create a `Subscription` that invokes the bot when a `Coverage` object is created. (Here's the guide on [Setting up Subscriptions](/tutorials/bots/bots-basics#executing-automatically-using-a-subscription))
+- When a new Coverage object is created, your bot will trigger. Go to the [Subscription](https://app.medplum.com/Subscription) page that you created to view events and logs.
 
 ### Testing your Bot
 
@@ -92,10 +92,10 @@ These are a function of the deductible, out of pocket stop loss, in-network data
 
 #### Payer IDs
 
-In this example, we provided a payor identifier (this is usually an insurance company, like Blue Shield) as part of the request, but to make this work in practice, you'll need a correct identifier to send along with the request.  Eligibility providers generally use different identifier systems.
+In this example, we provided a payor identifier (this is usually an insurance company, like Blue Shield) as part of the request, but to make this work in practice, you'll need a correct identifier to send along with the request. Eligibility providers generally use different identifier systems.
 
 If, for example, you are performing an eligibility check with Opkit, you must supply an Opkit payer ID. This is supplied by including the Opkit payer ID as an identifier on the Organization FHIR resource (see `eligibility-check-opkit.test.ts` for an example). To find the appropriate Opkit payer ID for a given insurance company, see [this guide](https://docs.opkit.co/docs/faq#which-payer-should-i-use).
 
 #### Is the service in network?
 
-Eligibility checking systems generally do not keep track of whether a specific provider is in network or not.  As a provider, you should maintain a list of which plans are in-network.  We recommend maintaining a list of `Organization`s in FHIR and adding a `type` to them indicating whether they are in-network or not.  The in-network status will be a big factor in the out-of-pocket cost for the patient.
+Eligibility checking systems generally do not keep track of whether a specific provider is in network or not. As a provider, you should maintain a list of which plans are in-network. We recommend maintaining a list of `Organization`s in FHIR and adding a `type` to them indicating whether they are in-network or not. The in-network status will be a big factor in the out-of-pocket cost for the patient.
