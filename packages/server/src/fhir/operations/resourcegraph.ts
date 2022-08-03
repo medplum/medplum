@@ -98,8 +98,8 @@ async function followLinks(
   links: GraphDefinitionLink[] | undefined,
   results: Resource[],
   resourceCache: Record<string, Resource>,
-  depth: number = 0
-) {
+  depth = 0
+): Promise<void> {
   // Circuit Breaker
   if (results.length > 1000 || depth >= 5) {
     return;
@@ -257,7 +257,7 @@ async function followSearchLink(
   link: GraphDefinitionLink,
   resourceCache: Record<string, Resource>
 ): Promise<Resource[]> {
-  let results = [] as Resource[];
+  const results = [] as Resource[];
   if (!link.target) {
     return [];
   }
@@ -304,7 +304,7 @@ async function validateQueryParameters(req: Request, res: Response): Promise<Gra
   return bundle.entry?.[0]?.resource as GraphDefinition;
 }
 
-function validateTargetParams(params: string | undefined) {
+function validateTargetParams(params: string | undefined): void {
   if (!params) {
     throw new OperationOutcomeError(badRequest(`Link target search params missing`));
   }
@@ -323,7 +323,7 @@ function parseCardinality(cardinality: string | undefined): number {
   return parseInt(cardinality);
 }
 
-function addToCache(resource: Resource, cache: Record<string, Resource>) {
+function addToCache(resource: Resource, cache: Record<string, Resource>): void {
   cache[getReferenceString(resource)] = resource;
   const url = (resource as any).url;
   if (url) {
@@ -331,7 +331,7 @@ function addToCache(resource: Resource, cache: Record<string, Resource>) {
   }
 }
 
-function deduplicateResources(resources: Resource[]) {
+function deduplicateResources(resources: Resource[]): Resource[] {
   const seen = new Set<string>();
   return resources.filter((item) => {
     const key = getReferenceString(item);
