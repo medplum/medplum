@@ -128,7 +128,7 @@ protectedRoutes.post(
     }
     const repo = res.locals.repo as Repository;
     const result = await processBatch(repo, bundle);
-    sendResponse(res, allOk, result);
+    await sendResponse(res, allOk, result);
   })
 );
 
@@ -140,7 +140,7 @@ protectedRoutes.get(
     const repo = res.locals.repo as Repository;
     const query = req.query as Record<string, string[] | string | undefined>;
     const bundle = await repo.search(parseSearchRequest(resourceType, query));
-    sendResponse(res, allOk, bundle);
+    await sendResponse(res, allOk, bundle);
   })
 );
 
@@ -160,7 +160,7 @@ protectedRoutes.post(
     }
     const repo = res.locals.repo as Repository;
     const result = await repo.createResource(resource);
-    sendResponse(res, created, result);
+    await sendResponse(res, created, result);
   })
 );
 
@@ -171,7 +171,7 @@ protectedRoutes.get(
     const { resourceType, id } = req.params;
     const repo = res.locals.repo as Repository;
     const resource = await repo.readResource(resourceType, id);
-    sendResponse(res, allOk, resource);
+    await sendResponse(res, allOk, resource);
   })
 );
 
@@ -182,7 +182,7 @@ protectedRoutes.get(
     const { resourceType, id } = req.params;
     const repo = res.locals.repo as Repository;
     const bundle = await repo.readHistory(resourceType, id);
-    sendResponse(res, allOk, bundle);
+    await sendResponse(res, allOk, bundle);
   })
 );
 
@@ -193,7 +193,7 @@ protectedRoutes.get(
     const { resourceType, id, vid } = req.params;
     const repo = res.locals.repo as Repository;
     const resource = await repo.readVersion(resourceType, id, vid);
-    sendResponse(res, allOk, resource);
+    await sendResponse(res, allOk, resource);
   })
 );
 
@@ -217,7 +217,7 @@ protectedRoutes.put(
     }
     const repo = res.locals.repo as Repository;
     const result = await repo.updateResource(resource);
-    sendResponse(res, allOk, result);
+    await sendResponse(res, allOk, result);
   })
 );
 
@@ -244,7 +244,7 @@ protectedRoutes.patch(
     const patch = req.body as Operation[];
     const repo = res.locals.repo as Repository;
     const resource = await repo.patchResource(resourceType, id, patch);
-    sendResponse(res, allOk, resource);
+    await sendResponse(res, allOk, resource);
   })
 );
 
@@ -268,7 +268,7 @@ protectedRoutes.post(
     const { resourceType, id } = req.params;
     const repo = res.locals.repo as Repository;
     const resource = await repo.reindexResource(resourceType, id);
-    sendResponse(res, allOk, resource);
+    await sendResponse(res, allOk, resource);
   })
 );
 
@@ -279,7 +279,7 @@ protectedRoutes.post(
     const { resourceType, id } = req.params;
     const repo = res.locals.repo as Repository;
     const resource = await repo.resendSubscriptions(resourceType, id);
-    sendResponse(res, allOk, resource);
+    await sendResponse(res, allOk, resource);
   })
 );
 
