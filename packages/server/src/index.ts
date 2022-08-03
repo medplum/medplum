@@ -11,6 +11,14 @@ import { seedDatabase } from './seed';
 import { initWorkers } from './workers';
 
 export async function main(configName: string): Promise<void> {
+  process.on('unhandledRejection', (err) => {
+    logger.error('Unhandled promise rejection', err);
+  });
+  process.on('uncaughtException', (err) => {
+    logger.error(err, 'Uncaught Exception thrown');
+    process.exit(1);
+  });
+
   logger.info('Starting Medplum Server...');
   logger.info('configName: ' + configName);
 
