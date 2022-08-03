@@ -58,7 +58,7 @@ export async function resourceGraphHandler(req: Request, res: Response): Promise
   }
   await followLinks(repo, rootResource, definition.link, results, resourceCache);
 
-  sendResponse(res, allOk, {
+  await sendResponse(res, allOk, {
     resourceType: 'Bundle',
     entry: deduplicateResources(results).map((r) => ({
       resource: r,
