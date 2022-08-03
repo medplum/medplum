@@ -49,7 +49,12 @@ describe('Keys', () => {
   test('Missing issuer', async () => {
     const config = await loadTestConfig();
     delete (config as any).issuer;
-    expect(async () => await initKeys(config)).rejects.toThrowError('Missing issuer');
+    try {
+      await initKeys(config);
+      fail('Expected error');
+    } catch (err) {
+      expect((err as Error).message).toEqual('Missing issuer');
+    }
   });
 
   test('Generate before initialized', async () => {

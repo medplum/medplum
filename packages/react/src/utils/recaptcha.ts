@@ -17,9 +17,13 @@ export function initRecaptcha(siteKey: string): void {
  * @returns Promise to a recaptcha token for the current user.
  */
 export function getRecaptcha(siteKey: string): Promise<string> {
-  return new Promise((resolve) => {
-    grecaptcha.ready(() => {
-      grecaptcha.execute(siteKey, { action: 'submit' }).then(resolve);
+  return new Promise((resolve, reject) => {
+    grecaptcha.ready(async () => {
+      try {
+        resolve(await grecaptcha.execute(siteKey, { action: 'submit' }));
+      } catch (err) {
+        reject(err);
+      }
     });
   });
 }

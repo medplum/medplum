@@ -1,6 +1,9 @@
 {
   "root": true,
   "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": "./tsconfig.base.json"
+  },
   "plugins": ["@typescript-eslint"],
   "extends": [
     "eslint:recommended",
@@ -17,6 +20,7 @@
     ],
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-floating-promises": "error",
     "@typescript-eslint/no-unused-vars": [
       "error",
       {

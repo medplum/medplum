@@ -9,7 +9,7 @@ import { logger } from '../logger';
  */
 export async function createStructureDefinitions(): Promise<void> {
   const client = getClient();
-  client.query('DELETE FROM "StructureDefinition"');
+  await client.query('DELETE FROM "StructureDefinition"');
   await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
   await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
 }

@@ -36,7 +36,7 @@ export function BatchPage(): JSX.Element {
       <Form
         onSubmit={(formData: Record<string, string>) => {
           setOutput(undefined);
-          medplum.executeBatch(JSON.parse(formData.input)).then(setOutput);
+          medplum.executeBatch(JSON.parse(formData.input)).then(setOutput).catch(console.log);
         }}
       >
         <TextArea name="input" testid="batch-input" defaultValue={DEFAULT_VALUE} monospace={true} />

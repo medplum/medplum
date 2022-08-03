@@ -197,7 +197,7 @@ export class Repository {
     }
 
     const resource = JSON.parse(rows[0].content as string) as T;
-    setCacheEntry(resource);
+    await setCacheEntry(resource);
     return this.#removeHiddenFields(resource);
   }
 

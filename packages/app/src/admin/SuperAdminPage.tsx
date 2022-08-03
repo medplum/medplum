@@ -1,24 +1,38 @@
+import { normalizeErrorString } from '@medplum/core';
 import { Button, Document, Form, FormSection, Input, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 
 export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();
   const [resourceType, setResourceType] = useState('');
 
   function rebuildStructureDefinitions(): void {
-    medplum.post('admin/super/structuredefinitions', {}).then(() => alert('Done'));
+    medplum
+      .post('admin/super/structuredefinitions', {})
+      .then(() => toast.success('Done'))
+      .catch((err) => toast.error(normalizeErrorString(err)));
   }
 
   function rebuildSearchParameters(): void {
-    medplum.post('admin/super/searchparameters', {}).then(() => alert('Done'));
+    medplum
+      .post('admin/super/searchparameters', {})
+      .then(() => toast.success('Done'))
+      .catch((err) => toast.error(normalizeErrorString(err)));
   }
 
   function rebuildValueSets(): void {
-    medplum.post('admin/super/valuesets', {}).then(() => alert('Done'));
+    medplum
+      .post('admin/super/valuesets', {})
+      .then(() => toast.success('Done'))
+      .catch((err) => toast.error(normalizeErrorString(err)));
   }
 
   function reindexResourceType(): void {
-    medplum.post('admin/super/reindex', { resourceType }).then(() => alert('Done'));
+    medplum
+      .post('admin/super/reindex', { resourceType })
+      .then(() => toast.success('Done'))
+      .catch((err) => toast.error(normalizeErrorString(err)));
   }
 
   return (

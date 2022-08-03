@@ -699,9 +699,8 @@ export class MedplumClient extends EventTarget {
    * Does not invalidate tokens with the server.
    * @category Authentication
    */
-  signOut(): Promise<void> {
+  signOut(): void {
     this.clear();
-    return Promise.resolve();
   }
 
   /**
@@ -710,11 +709,11 @@ export class MedplumClient extends EventTarget {
    * This may result in navigating away to the sign in page.
    * @category Authentication
    */
-  signInWithRedirect(): Promise<ProfileResource | void> | undefined {
+  async signInWithRedirect(): Promise<ProfileResource | void> {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     if (!code) {
-      this.#requestAuthorization();
+      await this.#requestAuthorization();
       return undefined;
     } else {
       return this.processCode(code);
@@ -1815,8 +1814,8 @@ export class MedplumClient extends EventTarget {
    * Clears all auth state including local storage and session storage.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
    */
-  #requestAuthorization(): void {
-    this.#startPkce();
+  async #requestAuthorization(): Promise<void> {
+    await this.#startPkce();
 
     const url = new URL(this.#authorizeUrl);
     url.searchParams.set('response_type', 'code');

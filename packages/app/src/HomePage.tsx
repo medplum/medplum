@@ -2,6 +2,7 @@ import {
   DEFAULT_SEARCH_COUNT,
   Filter,
   formatSearchQuery,
+  normalizeErrorString,
   parseSearchDefinition,
   SearchRequest,
   SortRule,
@@ -10,6 +11,7 @@ import { ResourceType, UserConfiguration } from '@medplum/fhirtypes';
 import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 export function HomePage(): JSX.Element {
   const medplum = useMedplum();
@@ -60,9 +62,12 @@ export function HomePage(): JSX.Element {
       }
       onExport={() => {
         const url = medplum.fhirUrl(search.resourceType, '$csv') + formatSearchQuery(search);
-        medplum.download(url).then((blob) => {
-          window.open(window.URL.createObjectURL(blob), '_blank');
-        });
+        medplum
+          .download(url)
+          .then((blob) => {
+            window.open(window.URL.createObjectURL(blob), '_blank');
+          })
+          .catch((err) => toast.error(normalizeErrorString(err)));
       }}
       onDelete={(ids: string[]) => {
         if (window.confirm('Are you sure you want to delete these resources?')) {
@@ -78,7 +83,8 @@ export function HomePage(): JSX.Element {
                 },
               })),
             })
-            .then(() => setSearch({ ...search }));
+            .then(() => setSearch({ ...search }))
+            .catch((err) => toast.error(normalizeErrorString(err)));
         }
       }}
       onBulk={(ids: string[]) => {

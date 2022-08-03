@@ -128,7 +128,6 @@ if (require.main === module) {
   const medplum = new MedplumClient({ fetch });
   medplum
     .startClientLogin(process.env['MEDPLUM_CLIENT_ID'] as string, process.env['MEDPLUM_CLIENT_SECRET'] as string)
-    .then(() => {
-      main(medplum, process.argv).catch((err) => console.error('Unhandled error:', err));
-    });
+    .then(() => main(medplum, process.argv))
+    .catch((err) => console.error('Unhandled error:', err));
 }

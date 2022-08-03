@@ -115,11 +115,14 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
   }
 
   useEffect(() => {
-    medplum.requestSchema(props.resourceType).then((newSchema) => {
-      // The schema could have the same object identity,
-      // so need to use the spread operator to kick React re-render.
-      setSchema({ ...newSchema });
-    });
+    medplum
+      .requestSchema(props.resourceType)
+      .then((newSchema) => {
+        // The schema could have the same object identity,
+        // so need to use the spread operator to kick React re-render.
+        setSchema({ ...newSchema });
+      })
+      .catch(console.log);
   }, [medplum, props.resourceType]);
 
   const typeSchema = schema?.types?.[props.resourceType];

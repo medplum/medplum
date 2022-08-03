@@ -18,11 +18,11 @@ import { InsertQuery } from '../fhir/sql';
  */
 export async function createValueSetElements(): Promise<void> {
   const client = getClient();
-  client.query('DELETE FROM "ValueSetElement"');
+  await client.query('DELETE FROM "ValueSetElement"');
 
   const bundle = readJson('fhir/r4/valuesets.json') as Bundle<CodeSystem | ValueSet>;
 
-  new ValueSystemImporter(client, bundle).importValueSetElements();
+  await new ValueSystemImporter(client, bundle).importValueSetElements();
 }
 
 class ValueSystemImporter {
@@ -157,7 +157,7 @@ class ValueSystemImporter {
   }
 
   async #insertValueSetElement(system: string, code: string, display: string): Promise<void> {
-    new InsertQuery('ValueSetElement', {
+    await new InsertQuery('ValueSetElement', {
       id: randomUUID(),
       system,
       code,

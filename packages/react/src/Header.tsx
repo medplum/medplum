@@ -106,9 +106,13 @@ export function Header(props: HeaderProps): JSX.Element {
                             className="medplum-nav-menu-profile"
                             key={login.profile?.reference}
                             onClick={() => {
-                              medplum.setActiveLogin(login);
-                              setUserMenuVisible(false);
-                              window.location.reload();
+                              medplum
+                                .setActiveLogin(login)
+                                .then(() => {
+                                  setUserMenuVisible(false);
+                                  window.location.reload();
+                                })
+                                .catch(console.log);
                             }}
                           >
                             <div className="medplum-nav-menu-profile-icon">

@@ -212,7 +212,8 @@ function ProfileForm(props: ProfileFormProps): JSX.Element {
                 login: props.login,
                 profile: membership.id,
               })
-              .then(props.handleAuthResponse);
+              .then(props.handleAuthResponse)
+              .catch(console.log);
           }}
         >
           <div className="medplum-nav-menu-profile-icon">

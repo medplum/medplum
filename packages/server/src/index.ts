@@ -38,5 +38,5 @@ export async function main(configName: string): Promise<void> {
 }
 
 if (require.main === module) {
-  main(process.argv.length === 3 ? process.argv[2] : 'file:medplum.config.json');
+  main(process.argv.length === 3 ? process.argv[2] : 'file:medplum.config.json').catch(console.log);
 }

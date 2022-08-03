@@ -9,7 +9,7 @@ import { logger } from '../logger';
  */
 export async function createSearchParameters(): Promise<void> {
   const client = getClient();
-  client.query('DELETE FROM "SearchParameter"');
+  await client.query('DELETE FROM "SearchParameter"');
 
   const searchParams = readJson('fhir/r4/search-parameters.json') as Bundle;
 

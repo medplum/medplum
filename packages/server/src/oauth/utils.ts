@@ -304,7 +304,7 @@ export async function getAuthTokens(login: Login, profile: Reference<ProfileReso
 }
 
 export async function revokeLogin(login: Login): Promise<void> {
-  systemRepo.updateResource<Login>({
+  await systemRepo.updateResource<Login>({
     ...login,
     revoked: true,
   });
