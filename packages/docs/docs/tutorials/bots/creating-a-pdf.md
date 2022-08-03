@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 5
 ---
 
 # Create a PDF
@@ -118,7 +118,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   console.log('Media result', media);
   return media;
 }
-
 ```
 
 See the [pdfmake images](https://pdfmake.github.io/docs/0.1/document-definition-object/images/) page for more details.
