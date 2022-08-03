@@ -1,5 +1,6 @@
 import { Binary, Resource } from '@medplum/fhirtypes';
 import { getConfig } from '../config';
+import { logger } from '../logger';
 import { Repository } from './repo';
 import { getPresignedUrl } from './signer';
 
@@ -146,15 +147,18 @@ async function getAttachmentPresignedUrl(
   id: string,
   versionId?: string
 ): Promise<string | boolean | undefined> {
-  let binary: Binary | undefined;
-
-  if (versionId) {
-    binary = await repo.readVersion<Binary>('Binary', id, versionId);
-  } else {
-    binary = await repo.readResource<Binary>('Binary', id);
+  try {
+    let binary: Binary | undefined;
+    if (versionId) {
+      binary = await repo.readVersion<Binary>('Binary', id, versionId);
+    } else {
+      binary = await repo.readResource<Binary>('Binary', id);
+    }
+    return getPresignedUrl(binary);
+  } catch (err) {
+    logger.debug('Error reading binary to generate presigned URL:', err);
+    return `Binary/${id}`;
   }
-
-  return getPresignedUrl(binary);
 }
 
 /**

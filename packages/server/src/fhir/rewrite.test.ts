@@ -1,4 +1,5 @@
 import { Binary, Practitioner } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import { URL } from 'url';
 import { loadTestConfig, MedplumServerConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
@@ -108,6 +109,27 @@ describe('URL rewrite', () => {
 
     const url = new URL(result.photo?.[0]?.url as string);
     expect(url.searchParams.has('Expires')).toBe(true);
+  });
+
+  test('Reference not found', async () => {
+    const id = randomUUID();
+
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      photo: [
+        {
+          contentType: 'image/jpeg',
+          url: `Binary/${id}`,
+        },
+      ],
+    };
+
+    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, practitioner);
+    expect(result).toBeDefined();
+    expect(result.resourceType).toBe('Practitioner');
+    expect(result.photo).toBeDefined();
+    expect(result.photo?.length).toBe(1);
+    expect(result.photo?.[0]?.url).toBe(`Binary/${id}`);
   });
 
   test('URL', async () => {
