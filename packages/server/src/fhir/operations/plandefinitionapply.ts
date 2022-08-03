@@ -71,7 +71,7 @@ export async function planDefinitionApplyHandler(req: Request, res: Response): P
     status: 'active',
     action: actions,
   });
-  sendResponse(res, allOk, requestGroup);
+  await sendResponse(res, allOk, requestGroup);
 }
 
 /**
