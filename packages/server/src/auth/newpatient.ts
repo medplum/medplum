@@ -82,7 +82,7 @@ export async function createPatient(
 
   const policy = await systemRepo.createResource<AccessPolicy>(buildAccessPolicy(template, profile));
 
-  const membership = await createProjectMembership(user, project, profile, createReference(policy), true);
+  const membership = await createProjectMembership(user, project, profile, createReference(policy));
 
   await systemRepo.updateResource<Login>({
     ...login,

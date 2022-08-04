@@ -78,7 +78,7 @@ function MemberTable(props: MemberTableProps): JSX.Element {
         </tr>
       </thead>
       <tbody>
-        {props.members.map((member: ProjectMember) => (
+        {sortMembers(props.members).map((member: ProjectMember) => (
           <tr key={member.profile.reference}>
             <td>
               <ResourceBadge value={member.profile} link={true} />
@@ -91,5 +91,11 @@ function MemberTable(props: MemberTableProps): JSX.Element {
         ))}
       </tbody>
     </table>
+  );
+}
+
+function sortMembers(members: ProjectMember[]): ProjectMember[] {
+  return members.sort((a: ProjectMember, b: ProjectMember) =>
+    (a.profile.display || '').localeCompare(b.profile.display || '')
   );
 }
