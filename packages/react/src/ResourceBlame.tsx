@@ -19,7 +19,7 @@ export function ResourceBlame(props: ResourceBlameProps): JSX.Element {
 
   useEffect(() => {
     if (!props.history && props.resourceType && props.id) {
-      medplum.readHistory(props.resourceType, props.id).then((result) => setValue(result));
+      medplum.readHistory(props.resourceType, props.id).then(setValue).catch(console.log);
     }
   }, [medplum, props.history, props.resourceType, props.id]);
 

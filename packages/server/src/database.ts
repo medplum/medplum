@@ -36,7 +36,7 @@ export async function initDatabase(config: MedplumDatabaseConfig): Promise<void>
 
 export async function closeDatabase(): Promise<void> {
   if (pool) {
-    pool.end();
+    await pool.end();
     pool = undefined;
   }
 }

@@ -55,7 +55,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       setHistory({} as Bundle);
       return;
     }
-    medplum.executeBatch(buildSearchRequests(resource)).then(handleBatchResponse);
+    medplum.executeBatch(buildSearchRequests(resource)).then(handleBatchResponse).catch(console.log);
   }, [medplum, resource, buildSearchRequests]);
 
   useEffect(() => {
@@ -115,9 +115,12 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       // Encounter not loaded yet
       return;
     }
-    medplum.createResource(props.createCommunication(resource, sender, contentString)).then((result) => {
-      addResources([result]);
-    });
+    medplum
+      .createResource(props.createCommunication(resource, sender, contentString))
+      .then((result) => {
+        addResources([result]);
+      })
+      .catch(console.log);
   }
 
   /**
@@ -129,9 +132,12 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       // Encounter not loaded yet
       return;
     }
-    medplum.createResource(props.createMedia(resource, sender, attachment)).then((result) => {
-      addResources([result]);
-    });
+    medplum
+      .createResource(props.createMedia(resource, sender, attachment))
+      .then((result) => {
+        addResources([result]);
+      })
+      .catch(console.log);
   }
 
   function setPriority(communication: Communication, priority: string): Promise<Communication> {
@@ -139,11 +145,11 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   }
 
   function onPin(communication: Communication): void {
-    setPriority(communication, 'stat').then(loadTimeline);
+    setPriority(communication, 'stat').then(loadTimeline).catch(console.log);
   }
 
   function onUnpin(communication: Communication): void {
-    setPriority(communication, 'routine').then(loadTimeline);
+    setPriority(communication, 'routine').then(loadTimeline).catch(console.log);
   }
 
   function onDetails(timelineItem: Resource): void {

@@ -102,7 +102,7 @@ export async function addDownloadJobs(resource: Resource): Promise<void> {
   }
 
   if (resource.resourceType === 'Media' && isExternalUrl(resource.content?.url)) {
-    addDownloadJobData({
+    await addDownloadJobData({
       resourceType: resource.resourceType,
       id: resource.id as string,
       url: resource.content?.url as string,
@@ -134,10 +134,10 @@ function isExternalUrl(url: string | undefined): boolean {
  * Adds a download job to the queue.
  * @param job The download job details.
  */
-function addDownloadJobData(job: DownloadJobData): void {
+async function addDownloadJobData(job: DownloadJobData): Promise<void> {
   logger.debug(`Adding Download job`);
   if (queue) {
-    queue.add(jobName, job);
+    await queue.add(jobName, job);
   } else {
     logger.debug(`Download queue not initialized`);
   }

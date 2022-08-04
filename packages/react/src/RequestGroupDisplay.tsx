@@ -22,7 +22,7 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
 
   useEffect(() => {
     if (requestGroup && !startedLoading) {
-      medplum.executeBatch(buildBatchRequest(requestGroup)).then(setResponseBundle);
+      medplum.executeBatch(buildBatchRequest(requestGroup)).then(setResponseBundle).catch(console.log);
       setStartedLoading(true);
     }
   }, [medplum, requestGroup, startedLoading]);

@@ -3,6 +3,7 @@ import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { SuperAdminPage } from './SuperAdminPage';
 
 const medplum = new MockClient();
@@ -21,7 +22,7 @@ function setup(): void {
 
 describe('SuperAdminPage', () => {
   test('Rebuild StructureDefinitions', async () => {
-    window.alert = jest.fn();
+    toast.success = jest.fn();
 
     setup();
 
@@ -29,11 +30,11 @@ describe('SuperAdminPage', () => {
       fireEvent.click(screen.getByText('Rebuild StructureDefinitions'));
     });
 
-    expect(window.alert).toHaveBeenCalledWith('Done');
+    expect(toast.success).toHaveBeenCalledWith('Done');
   });
 
   test('Rebuild SearchParameters', async () => {
-    window.alert = jest.fn();
+    toast.success = jest.fn();
 
     setup();
 
@@ -41,11 +42,11 @@ describe('SuperAdminPage', () => {
       fireEvent.click(screen.getByText('Rebuild SearchParameters'));
     });
 
-    expect(window.alert).toHaveBeenCalledWith('Done');
+    expect(toast.success).toHaveBeenCalledWith('Done');
   });
 
   test('Rebuild ValueSets', async () => {
-    window.alert = jest.fn();
+    toast.success = jest.fn();
 
     setup();
 
@@ -53,11 +54,11 @@ describe('SuperAdminPage', () => {
       fireEvent.click(screen.getByText('Rebuild ValueSets'));
     });
 
-    expect(window.alert).toHaveBeenCalledWith('Done');
+    expect(toast.success).toHaveBeenCalledWith('Done');
   });
 
   test('Reindex resource type', async () => {
-    window.alert = jest.fn();
+    toast.success = jest.fn();
 
     setup();
 
@@ -69,6 +70,6 @@ describe('SuperAdminPage', () => {
       fireEvent.click(screen.getByText('Reindex'));
     });
 
-    expect(window.alert).toHaveBeenCalledWith('Done');
+    expect(toast.success).toHaveBeenCalledWith('Done');
   });
 });

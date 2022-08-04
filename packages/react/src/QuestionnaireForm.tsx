@@ -52,7 +52,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
 
   useEffect(() => {
-    medplum.requestSchema('Questionnaire').then(setSchema);
+    medplum.requestSchema('Questionnaire').then(setSchema).catch(console.log);
   }, [medplum]);
 
   useEffect(() => {

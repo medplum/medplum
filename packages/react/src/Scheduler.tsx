@@ -8,8 +8,8 @@ import { FormSection } from './FormSection';
 import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
 import { ResourceName } from './ResourceName';
-import { useResource } from './useResource';
 import './Scheduler.css';
+import { useResource } from './useResource';
 
 export interface SchedulerProps {
   schedule: Schedule | Reference<Schedule>;
@@ -30,9 +30,12 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
 
   useEffect(() => {
     if (schedule) {
-      medplum.search('Slot', 'schedule=' + getReferenceString(schedule)).then((bundle) => {
-        setSlots((bundle.entry as BundleEntry<Slot>[]).map((entry) => entry.resource as Slot));
-      });
+      medplum
+        .search('Slot', 'schedule=' + getReferenceString(schedule))
+        .then((bundle) => {
+          setSlots((bundle.entry as BundleEntry<Slot>[]).map((entry) => entry.resource as Slot));
+        })
+        .catch(console.log);
     } else {
       setSlots(undefined);
     }

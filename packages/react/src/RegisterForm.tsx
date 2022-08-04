@@ -83,7 +83,7 @@ export function RegisterForm(props: RegisterFormProps): JSX.Element {
               recaptchaToken,
             };
             const userLogin = await medplum.startNewUser(registerRequest);
-            handleAuthResponse(registerRequest, userLogin);
+            await handleAuthResponse(registerRequest, userLogin);
           } catch (err) {
             setOutcome(err as OperationOutcome);
           }
@@ -118,7 +118,7 @@ export function RegisterForm(props: RegisterFormProps): JSX.Element {
                       lastName: googleClaims.family_name as string,
                       email: googleClaims.email as string,
                     };
-                    handleAuthResponse(registerRequest, userLogin);
+                    await handleAuthResponse(registerRequest, userLogin);
                   } catch (err) {
                     setOutcome(err as OperationOutcome);
                   }

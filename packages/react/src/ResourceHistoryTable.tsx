@@ -18,7 +18,10 @@ export function ResourceHistoryTable(props: ResourceHistoryTableProps): JSX.Elem
 
   useEffect(() => {
     if (!props.history && props.resourceType && props.id) {
-      medplum.readHistory(props.resourceType as ResourceType, props.id).then((result) => setValue(result));
+      medplum
+        .readHistory(props.resourceType as ResourceType, props.id)
+        .then(setValue)
+        .catch(console.log);
     }
   }, [medplum, props.history, props.resourceType, props.id]);
 

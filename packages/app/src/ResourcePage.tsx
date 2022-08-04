@@ -128,7 +128,7 @@ export function ResourcePage(): JSX.Element {
       ],
     };
 
-    return medplum
+    medplum
       .executeBatch(requestBundle)
       .then((responseBundle: Bundle) => {
         if (responseBundle.entry?.[0]?.response?.status !== '200') {
@@ -284,7 +284,10 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
           <Button
             danger={true}
             onClick={() => {
-              medplum.deleteResource(resourceType, id as string).then(() => navigate(`/${resourceType}`));
+              medplum
+                .deleteResource(resourceType, id as string)
+                .then(() => navigate(`/${resourceType}`))
+                .catch((err) => toast.error(normalizeErrorString(err)));
             }}
           >
             Delete

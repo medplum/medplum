@@ -1,7 +1,8 @@
-import { getReferenceString } from '@medplum/core';
+import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { BundleEntry, Patient, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { MedplumLink, sortByDateAndPriority, useMedplum, useResource } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import { getPatient } from './utils';
 import './QuickServiceRequests.css';
 
@@ -23,13 +24,16 @@ export function QuickServiceRequests(props: QuickServiceRequestsProps): JSX.Elem
       return;
     }
     const patientRefStr = 'reference' in patient ? patient.reference : getReferenceString(patient as Patient);
-    medplum.search('ServiceRequest', 'subject=' + patientRefStr).then((bundle) => {
-      const entries = bundle.entry as BundleEntry<ServiceRequest>[];
-      const resources = entries.map((e) => e.resource as ServiceRequest);
-      sortByDateAndPriority(resources);
-      resources.reverse();
-      setServiceRequests(resources);
-    });
+    medplum
+      .search('ServiceRequest', 'subject=' + patientRefStr)
+      .then((bundle) => {
+        const entries = bundle.entry as BundleEntry<ServiceRequest>[];
+        const resources = entries.map((e) => e.resource as ServiceRequest);
+        sortByDateAndPriority(resources);
+        resources.reverse();
+        setServiceRequests(resources);
+      })
+      .catch((err) => toast.error(normalizeErrorString(err)));
   }, [medplum, resource]);
 
   if (!serviceRequests) {

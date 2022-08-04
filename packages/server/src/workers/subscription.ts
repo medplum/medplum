@@ -116,7 +116,7 @@ export async function addSubscriptionJobs(resource: Resource): Promise<void> {
   logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
   for (const subscription of subscriptions) {
     if (matchesCriteria(resource, subscription)) {
-      addSubscriptionJobData({
+      await addSubscriptionJobData({
         subscriptionId: subscription.id as string,
         resourceType: resource.resourceType,
         id: resource.id as string,
@@ -185,10 +185,10 @@ function matchesChannelType(subscription: Subscription): boolean {
  * Adds a subscription job to the queue.
  * @param job The subscription job details.
  */
-function addSubscriptionJobData(job: SubscriptionJobData): void {
+async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
   logger.debug(`Adding Subscription job`);
   if (queue) {
-    queue.add(jobName, job);
+    await queue.add(jobName, job);
   } else {
     logger.debug(`Subscription queue not initialized`);
   }

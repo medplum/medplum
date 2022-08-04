@@ -1,12 +1,4 @@
-import {
-  allOk,
-  badRequest,
-  LoginState,
-  NewPatientRequest,
-  NewProjectRequest,
-  NewUserRequest,
-  notFound,
-} from '@medplum/core';
+import { allOk, LoginState, NewPatientRequest, NewProjectRequest, NewUserRequest, notFound } from '@medplum/core';
 import { CodeableConcept, OperationOutcome, Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID, webcrypto } from 'crypto';
 import { TextEncoder } from 'util';
@@ -41,10 +33,15 @@ describe('MockClient', () => {
     expect(client.getProfile()).toMatchObject({ resourceType: 'Practitioner' });
   });
 
-  test('Login', () => {
+  test('Login', async () => {
     const client = new MockClient();
-    expect(client.post('auth/login', '{"password":"password"}')).resolves.toBeDefined();
-    expect(client.post('auth/login', '{"password":"wrong"}')).rejects.toBeDefined();
+    expect(await client.post('auth/login', '{"password":"password"}')).toBeDefined();
+    try {
+      await client.post('auth/login', '{"password":"wrong"}');
+      fail('Should have failed');
+    } catch (err) {
+      expect(err).toBeDefined();
+    }
   });
 
   test('Login override', () => {
@@ -55,22 +52,37 @@ describe('MockClient', () => {
     expect(client.getActiveLogin()).toBeDefined();
   });
 
-  test('Change password', () => {
+  test('Change password', async () => {
     const client = new MockClient();
-    expect(client.post('auth/changepassword', '{"oldPassword":"orange"}')).resolves.toMatchObject(allOk);
-    expect(client.post('auth/changepassword', '{"oldPassword":"banana"}')).rejects.toBeDefined();
+    expect(await client.post('auth/changepassword', '{"oldPassword":"orange"}')).toMatchObject(allOk);
+    try {
+      await client.post('auth/changepassword', '{"oldPassword":"banana"}');
+      fail('Should have failed');
+    } catch (err) {
+      expect(err).toBeDefined();
+    }
   });
 
-  test('Set password', () => {
+  test('Set password', async () => {
     const client = new MockClient();
-    expect(client.post('auth/setpassword', '{"password":"orange"}')).resolves.toMatchObject(allOk);
-    expect(client.post('auth/setpassword', '{"password":"banana"}')).rejects.toBeDefined();
+    expect(await client.post('auth/setpassword', '{"password":"orange"}')).toMatchObject(allOk);
+    try {
+      await client.post('auth/setpassword', '{"password":"banana"}');
+      fail('Should have failed');
+    } catch (err) {
+      expect(err).toBeDefined();
+    }
   });
 
-  test('Reset password', () => {
+  test('Reset password', async () => {
     const client = new MockClient();
-    expect(client.post('auth/resetpassword', '{"email":"admin@example.com"}')).resolves.toMatchObject(allOk);
-    expect(client.post('auth/resetpassword', '{"email":"other@example.com"}')).rejects.toBeDefined();
+    expect(await client.post('auth/resetpassword', '{"email":"admin@example.com"}')).toMatchObject(allOk);
+    try {
+      await client.post('auth/resetpassword', '{"email":"other@example.com"}');
+      fail('Should have failed');
+    } catch (err) {
+      expect(err).toBeDefined();
+    }
   });
 
   test('New project success', async () => {
@@ -125,19 +137,25 @@ describe('MockClient', () => {
 
   test('Register error', async () => {
     const client = new MockClient();
-    expect(
-      client.post('auth/newuser', JSON.stringify({ email: 'other@example.com', password: 'password' }))
-    ).rejects.toBeDefined();
-    expect(
-      client.post('auth/newuser', JSON.stringify({ email: 'george@example.com', password: 'wrong' }))
-    ).rejects.toBeDefined();
+
+    try {
+      await client.post('auth/newuser', JSON.stringify({ email: 'other@example.com', password: 'password' }));
+      fail('Should have failed');
+    } catch (err) {
+      expect(err).toBeDefined();
+    }
+
+    try {
+      await client.post('auth/newuser', JSON.stringify({ email: 'george@example.com', password: 'wrong' }));
+      fail('Should have failed');
+    } catch (err) {
+      expect(err).toBeDefined();
+    }
   });
 
-  test('Who am i', () => {
+  test('Who am i', async () => {
     const client = new MockClient();
-    expect(client.get('auth/me')).resolves.toMatchObject({
-      profile: { reference: 'Practitioner/123' },
-    });
+    expect(await client.get('auth/me')).toMatchObject({ profile: { reference: 'Practitioner/123' } });
   });
 
   test('Batch request', async () => {
@@ -235,10 +253,16 @@ describe('MockClient', () => {
 
   test('Create binary', async () => {
     const client = new MockClient();
-    expect(client.createBinary(null, 'test.exe', 'application/exe')).rejects.toMatchObject(
-      badRequest('Invalid file type')
-    );
-    expect(client.createBinary(null, 'test.txt', 'text/plain')).resolves.toMatchObject({
+
+    try {
+      await client.createBinary(null, 'test.exe', 'application/exe');
+      fail('Should have failed');
+    } catch (err) {
+      expect(err).toBeDefined();
+    }
+
+    const result = await client.createBinary(null, 'test.txt', 'text/plain');
+    expect(result).toMatchObject({
       resourceType: 'Binary',
       title: 'test.txt',
       contentType: 'text/plain',

@@ -42,8 +42,8 @@ describe('AttachmentDisplay', () => {
     global.URL.createObjectURL = jest.fn(() => 'details');
   });
 
-  test('Renders empty', () => {
-    setup();
+  test('Renders empty', async () => {
+    await setup();
   });
 
   test('Renders image', async () => {

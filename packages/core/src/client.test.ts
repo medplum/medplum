@@ -312,7 +312,7 @@ describe('Client', () => {
     const client = new MedplumClient(defaultOptions);
 
     // First, test the initial reidrect
-    const result1 = client.signInWithRedirect();
+    const result1 = await client.signInWithRedirect();
     expect(result1).toBeUndefined();
 
     // Mock response code
@@ -452,16 +452,34 @@ describe('Client', () => {
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
     expect(result.resourceType).toBe('Patient');
     expect(result.id).toBe('123');
-    expect(() => client.readReference({})).rejects.toThrow();
-    expect(() => client.readReference({ reference: '' })).rejects.toThrow();
-    expect(() => client.readReference({ reference: 'xyz' })).rejects.toThrow();
-    expect(() => client.readReference({ reference: 'xyz?abc' })).rejects.toThrow();
-  });
 
-  test('Read empty reference', async () => {
-    const client = new MedplumClient(defaultOptions);
-    const result = client.readReference({});
-    expect(result).rejects.toThrow('Missing reference');
+    try {
+      await client.readReference({});
+      fail('Expected error');
+    } catch (err) {
+      expect((err as Error).message).toEqual('Missing reference');
+    }
+
+    try {
+      await client.readReference({ reference: '' });
+      fail('Expected error');
+    } catch (err) {
+      expect((err as Error).message).toEqual('Missing reference');
+    }
+
+    try {
+      await client.readReference({ reference: 'xyz' });
+      fail('Expected error');
+    } catch (err) {
+      expect((err as Error).message).toEqual('Invalid reference');
+    }
+
+    try {
+      await client.readReference({ reference: 'xyz?abc' });
+      fail('Expected error');
+    } catch (err) {
+      expect((err as Error).message).toEqual('Invalid reference');
+    }
   });
 
   test('Read cached resource', async () => {
@@ -550,7 +568,12 @@ describe('Client', () => {
 
   test('Create resource missing resourceType', async () => {
     const client = new MedplumClient(defaultOptions);
-    expect(async () => client.createResource({} as Patient)).rejects.toThrow('Missing resourceType');
+    try {
+      await client.createResource({} as Patient);
+      fail('Expected error');
+    } catch (err) {
+      expect((err as Error).message).toEqual('Missing resourceType');
+    }
   });
 
   test('Create resource if none exist returns existing', async () => {
@@ -590,8 +613,18 @@ describe('Client', () => {
 
   test('Update resource validation', async () => {
     const client = new MedplumClient(defaultOptions);
-    expect(async () => client.updateResource({} as Patient)).rejects.toThrow('Missing resourceType');
-    expect(async () => client.updateResource({ resourceType: 'Patient' })).rejects.toThrow('Missing id');
+    try {
+      await client.updateResource({} as Patient);
+      fail('Expected error');
+    } catch (err) {
+      expect((err as Error).message).toEqual('Missing resourceType');
+    }
+    try {
+      await client.updateResource({ resourceType: 'Patient' });
+      fail('Expected error');
+    } catch (err) {
+      expect((err as Error).message).toEqual('Missing id');
+    }
   });
 
   test('Not modified', async () => {
@@ -604,8 +637,12 @@ describe('Client', () => {
 
   test('Bad Request', async () => {
     const client = new MedplumClient(defaultOptions);
-    const promise = client.updateResource({ resourceType: 'Patient', id: '888' });
-    expect(promise).rejects.toMatchObject({});
+    try {
+      await client.updateResource({ resourceType: 'Patient', id: '888' });
+      fail('Expected error');
+    } catch (err) {
+      expect(err).toBeDefined();
+    }
   });
 
   test('Create binary', async () => {

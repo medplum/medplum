@@ -29,12 +29,10 @@ export function ResetPasswordPage(): JSX.Element {
       <Form
         style={{ maxWidth: 400 }}
         onSubmit={(formData: Record<string, string>) => {
-          getRecaptcha(recaptchaSiteKey).then((recaptchaToken: string) => {
-            medplum
-              .post('auth/resetpassword', { ...formData, recaptchaToken })
-              .then(() => setSuccess(true))
-              .catch(setOutcome);
-          });
+          getRecaptcha(recaptchaSiteKey)
+            .then((recaptchaToken: string) => medplum.post('auth/resetpassword', { ...formData, recaptchaToken }))
+            .then(() => setSuccess(true))
+            .catch(setOutcome);
         }}
       >
         <div className="medplum-center">

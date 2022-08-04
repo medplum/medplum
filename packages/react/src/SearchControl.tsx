@@ -18,6 +18,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
+import './SearchControl.css';
 import { getFieldDefinitions } from './SearchControlField';
 import { SearchFieldEditor } from './SearchFieldEditor';
 import { SearchFilterEditor } from './SearchFilterEditor';
@@ -28,7 +29,6 @@ import { addFilter, buildFieldNameString, getOpString, movePage, renderValue } f
 import { Select } from './Select';
 import { TitleBar } from './TitleBar';
 import { isCheckboxCell, killEvent } from './utils/dom';
-import './SearchControl.css';
 
 export class SearchChangeEvent extends Event {
   readonly definition: SearchRequest;
@@ -224,11 +224,14 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   }
 
   useEffect(() => {
-    medplum.requestSchema(props.search.resourceType as ResourceType).then((newSchema) => {
-      // The schema could have the same object identity,
-      // so need to use the spread operator to kick React re-render.
-      setSchema({ ...newSchema });
-    });
+    medplum
+      .requestSchema(props.search.resourceType as ResourceType)
+      .then((newSchema) => {
+        // The schema could have the same object identity,
+        // so need to use the spread operator to kick React re-render.
+        setSchema({ ...newSchema });
+      })
+      .catch(console.log);
   }, [medplum, props.search.resourceType]);
 
   const typeSchema = schema?.types?.[props.search.resourceType];

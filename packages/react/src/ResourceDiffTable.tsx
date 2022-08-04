@@ -16,7 +16,7 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
 
   useEffect(() => {
-    medplum.requestSchema(props.original.resourceType).then(setSchema);
+    medplum.requestSchema(props.original.resourceType).then(setSchema).catch(console.log);
   }, [medplum, props.original.resourceType]);
 
   if (!schema) {

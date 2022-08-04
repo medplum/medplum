@@ -40,7 +40,7 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
   valueRef.current = value;
 
   useEffect(() => {
-    medplum.requestSchema('PlanDefinition').then(setSchema);
+    medplum.requestSchema('PlanDefinition').then(setSchema).catch(console.log);
   }, [medplum]);
 
   useEffect(() => {
