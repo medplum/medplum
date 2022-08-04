@@ -1,4 +1,4 @@
-import { createReference, resolveId } from '@medplum/core';
+import { createReference, Operator, resolveId } from '@medplum/core';
 import { AccessPolicy, BundleEntry, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -176,5 +176,14 @@ describe('New patient', () => {
     expect(peggyPolicy?.compartment?.reference).toEqual('Patient/' + patient.id);
     expect(peggyPolicy?.resource?.[0]?.criteria).toEqual('Patient?_id=' + patient.id);
     expect(peggyPolicy?.resource?.[1]?.criteria).toEqual('Observation?subject=Patient/' + patient.id);
+
+    // Get the ProjectMembership
+    const membershipBundle = await systemRepo.search({
+      resourceType: 'ProjectMembership',
+      filters: [{ code: 'profile', operator: Operator.EQUALS, value: 'Patient/' + patient.id }],
+    });
+    expect(membershipBundle).toBeDefined();
+    expect(membershipBundle.entry).toBeDefined();
+    expect(membershipBundle.entry).toHaveLength(1);
   });
 });
