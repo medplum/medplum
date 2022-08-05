@@ -124,6 +124,9 @@ function getRole(project: Project, membership: ProjectMembership): string {
   if (membership.user?.reference?.startsWith('ClientApplication/')) {
     return 'client';
   }
+  if (membership.profile?.reference?.startsWith('Patient/')) {
+    return 'patient';
+  }
   if (membership.user?.reference === project.owner?.reference) {
     return 'owner';
   }

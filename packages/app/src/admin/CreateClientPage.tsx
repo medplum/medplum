@@ -1,5 +1,5 @@
 import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Input, MedplumLink, useMedplum } from '@medplum/react';
+import { Button, Form, FormSection, Input, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 import { getProjectId } from '../utils';
 import { AccessPolicyInput } from './AccessPolicyInput';
@@ -7,7 +7,6 @@ import { AccessPolicyInput } from './AccessPolicyInput';
 export function CreateClientPage(): JSX.Element {
   const medplum = useMedplum();
   const projectId = getProjectId(medplum);
-  const result = medplum.get(`admin/projects/${projectId}`).read();
   const [name, setName] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [redirectUri, setRedirectUri] = useState<string>('');
@@ -16,9 +15,8 @@ export function CreateClientPage(): JSX.Element {
   const [success, setSuccess] = useState(false);
 
   return (
-    <Document width={600}>
-      <h1>Admin / Projects / {result.project.name}</h1>
-      <h3>Create new Client</h3>
+    <>
+      <h1>Create new Client</h1>
       <Form
         onSubmit={() => {
           const body = {
@@ -67,6 +65,6 @@ export function CreateClientPage(): JSX.Element {
           </div>
         )}
       </Form>
-    </Document>
+    </>
   );
 }

@@ -3,12 +3,17 @@ import { ErrorBoundary, FooterLinks, Header, Loading, useMedplum, useMedplumProf
 import React, { Suspense } from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 import { Slide, ToastContainer } from 'react-toastify';
+import { BotsPage } from './admin/BotsPage';
+import { ClientsPage } from './admin/ClientsPage';
 import { CreateBotPage } from './admin/CreateBotPage';
 import { CreateClientPage } from './admin/CreateClientPage';
-import { EditMembershipPage } from './admin/EditMembershipPage';
 import { InvitePage } from './admin/InvitePage';
+import { PatientsPage } from './admin/PatientsPage';
+import { ProjectDetailsPage } from './admin/ProjectDetailsPage';
 import { ProjectPage } from './admin/ProjectPage';
+import { SecretsPage } from './admin/SecretsPage';
 import { SuperAdminPage } from './admin/SuperAdminPage';
+import { UsersPage } from './admin/UsersPage';
 import { BatchPage } from './BatchPage';
 import { BulkAppPage } from './BulkAppPage';
 import { ChangePasswordPage } from './ChangePasswordPage';
@@ -74,12 +79,19 @@ export function App(): JSX.Element {
             <Route path="/bulk/:resourceType" element={<BulkAppPage />} />
             <Route path="/smart" element={<SmartSearchPage />} />
             <Route path="/forms/:id" element={<FormPage />} />
-            <Route path="/admin/project/bot" element={<CreateBotPage />} />
-            <Route path="/admin/project/client" element={<CreateClientPage />} />
-            <Route path="/admin/project/invite" element={<InvitePage />} />
-            <Route path="/admin/project/members/:membershipId" element={<EditMembershipPage />} />
-            <Route path="/admin/project" element={<ProjectPage />} />
             <Route path="/admin/super" element={<SuperAdminPage />} />
+            <Route path="/admin" element={<ProjectPage />}>
+              <Route path="patients" element={<PatientsPage />} />
+              <Route path="bots/new" element={<CreateBotPage />} />
+              <Route path="bots" element={<BotsPage />} />
+              <Route path="clients/new" element={<CreateClientPage />} />
+              <Route path="clients" element={<ClientsPage />} />
+              <Route path="details" element={<ProjectDetailsPage />} />
+              <Route path="invite" element={<InvitePage />} />
+              <Route path="users" element={<UsersPage />} />
+              <Route path="project" element={<ProjectDetailsPage />} />
+              <Route path="secrets" element={<SecretsPage />} />
+            </Route>
             <Route path="/lab/assays" element={<AssaysPage />} />
             <Route path="/lab/panels" element={<PanelsPage />} />
             <Route path="/:resourceType/:id/_history/:versionId/:tab" element={<ResourceVersionPage />} />
