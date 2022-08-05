@@ -175,8 +175,25 @@ function matchesSearchFilter(resource: Resource, filter: Filter): boolean {
 function matchesSearchFilterValue(resource: Resource, filter: Filter, filterValue: string): boolean {
   const expression = filter.code.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
   const values = evalFhirPath(expression as string, resource);
-  const result =
-    filterValue === '' ||
-    values.some((value) => JSON.stringify(value).toLowerCase().includes(filterValue.toLowerCase()));
-  return filter.operator === Operator.NOT_EQUALS ? !result : result;
+
+  switch (filter.operator) {
+    case Operator.GREATER_THAN:
+      return values.some((value) => (value as any).toString() > filterValue);
+
+    case Operator.GREATER_THAN_OR_EQUALS:
+      return values.some((value) => (value as any).toString() >= filterValue);
+
+    case Operator.LESS_THAN:
+      return values.some((value) => (value as any).toString() < filterValue);
+
+    case Operator.LESS_THAN_OR_EQUALS:
+      return values.some((value) => (value as any).toString() <= filterValue);
+
+    default: {
+      const result =
+        filterValue === '' ||
+        values.some((value) => JSON.stringify(value).toLowerCase().includes(filterValue.toLowerCase()));
+      return filter.operator === Operator.NOT_EQUALS ? !result : result;
+    }
+  }
 }

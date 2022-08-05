@@ -1,9 +1,9 @@
 import { getReferenceString } from '@medplum/core';
-import { BundleEntry, Reference, Schedule, Slot } from '@medplum/fhirtypes';
+import { Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
-import { CalendarInput } from './CalendarInput';
+import { CalendarInput, getStartMonth } from './CalendarInput';
 import { FormSection } from './FormSection';
 import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
@@ -23,6 +23,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
   const slotsRef = useRef<Slot[]>();
   slotsRef.current = slots;
 
+  const [month, setMonth] = useState<Date>(getStartMonth());
   const [date, setDate] = useState<Date>();
   const [slot, setSlot] = useState<Slot>();
   const [info, setInfo] = useState<string>();
@@ -30,16 +31,22 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
 
   useEffect(() => {
     if (schedule) {
+      setSlots([]);
       medplum
-        .search('Slot', 'schedule=' + getReferenceString(schedule))
-        .then((bundle) => {
-          setSlots((bundle.entry as BundleEntry<Slot>[]).map((entry) => entry.resource as Slot));
-        })
+        .searchResources(
+          'Slot',
+          new URLSearchParams([
+            ['schedule', getReferenceString(schedule)],
+            ['start', 'gt' + month.toISOString()],
+            ['start', 'lt' + new Date(month.getTime() + 31 * 24 * 60 * 60 * 1000).toISOString()],
+          ])
+        )
+        .then(setSlots)
         .catch(console.log);
     } else {
       setSlots(undefined);
     }
-  }, [medplum, schedule]);
+  }, [medplum, schedule, month]);
 
   if (!schedule || !slots) {
     return null;
@@ -64,7 +71,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
         {!date && (
           <div>
             <h3>Select date</h3>
-            <CalendarInput slots={slots} onClick={setDate} />
+            <CalendarInput slots={slots} onChangeMonth={setMonth} onClick={setDate} />
           </div>
         )}
         {date && !slot && (

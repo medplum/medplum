@@ -6,7 +6,7 @@ import { CalendarInput, getMonthString, getStartMonth } from './CalendarInput';
 describe('CalendarInput', () => {
   test('Renders', () => {
     const onClick = jest.fn();
-    render(<CalendarInput slots={[]} onClick={onClick} />);
+    render(<CalendarInput slots={[]} onChangeMonth={jest.fn()} onClick={onClick} />);
     expect(screen.getByText(getMonthString(new Date()))).toBeDefined();
     expect(screen.getByText('SUN')).toBeDefined();
     expect(screen.getByText('1')).toBeDefined();
@@ -14,14 +14,15 @@ describe('CalendarInput', () => {
 
   test('Disabled days', () => {
     const onClick = jest.fn();
-    render(<CalendarInput slots={[]} onClick={onClick} />);
+    render(<CalendarInput slots={[]} onChangeMonth={jest.fn()} onClick={onClick} />);
     expect(screen.getByText('4')).toBeDefined();
     expect((screen.queryByText('4') as HTMLButtonElement).disabled).toBe(true);
   });
 
   test('Change months', async () => {
+    const onChangeMonth = jest.fn();
     const onClick = jest.fn();
-    render(<CalendarInput slots={[]} onClick={onClick} />);
+    render(<CalendarInput slots={[]} onChangeMonth={onChangeMonth} onClick={onClick} />);
 
     const nextMonth = getStartMonth();
     nextMonth.setMonth(nextMonth.getMonth() + 1);
@@ -30,6 +31,7 @@ describe('CalendarInput', () => {
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Next month'));
     });
+    expect(onChangeMonth).toHaveBeenCalledWith(nextMonth);
     expect(screen.getByText(getMonthString(nextMonth))).toBeDefined();
 
     // Go back to the original month
@@ -56,7 +58,7 @@ describe('CalendarInput', () => {
     ];
 
     const onClick = jest.fn();
-    render(<CalendarInput slots={slots} onClick={onClick} />);
+    render(<CalendarInput slots={slots} onChangeMonth={jest.fn()} onClick={onClick} />);
 
     // Move forward one month
     await act(async () => {

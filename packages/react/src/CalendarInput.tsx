@@ -1,11 +1,12 @@
+import { Slot } from '@medplum/fhirtypes';
 import React, { useMemo, useState } from 'react';
 import { Button } from './Button';
 import { InputRow } from './InputRow';
-import { Slot } from '@medplum/fhirtypes';
 import './CalendarInput.css';
 
 export interface CalendarInputProps {
   slots: Slot[];
+  onChangeMonth: (date: Date) => void;
   onClick: (date: Date) => void;
 }
 
@@ -26,13 +27,15 @@ interface CalendarCell {
 type OptionalCalendarCell = CalendarCell | undefined;
 
 export function CalendarInput(props: CalendarInputProps): JSX.Element {
+  const { onChangeMonth, onClick } = props;
   const [month, setMonth] = useState<Date>(getStartMonth);
 
   function moveMonth(delta: number): void {
     setMonth((currMonth) => {
-      const prevMonth = new Date(currMonth.getTime());
-      prevMonth.setMonth(currMonth.getMonth() + delta);
-      return prevMonth;
+      const newMonth = new Date(currMonth.getTime());
+      newMonth.setMonth(currMonth.getMonth() + delta);
+      onChangeMonth(newMonth);
+      return newMonth;
     });
   }
 
@@ -69,7 +72,7 @@ export function CalendarInput(props: CalendarInputProps): JSX.Element {
               {week.map((day, dayIndex) => (
                 <td key={'day-' + dayIndex}>
                   {day && (
-                    <button disabled={!day.available} onClick={() => props.onClick(day.date)}>
+                    <button disabled={!day.available} onClick={() => onClick(day.date)}>
                       {day.date.getDate()}
                     </button>
                   )}
@@ -103,7 +106,6 @@ function buildGrid(startDate: Date, slots: Slot[]): OptionalCalendarCell[][] {
   while (d.getMonth() === startDate.getMonth()) {
     row.push({
       date: new Date(d.getTime()),
-      // available: isAvailable(d),
       available: isDayAvailable(d, slots),
     });
 
