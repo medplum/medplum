@@ -86,4 +86,22 @@ describe('Mock Repo', () => {
       expect((err as OperationOutcome).id).toEqual('not-found');
     }
   });
+
+  test('Date filters', async () => {
+    const client = new MockClient();
+
+    const month = new Date();
+    month.setDate(1);
+    month.setHours(0, 0, 0, 0);
+
+    const result1 = await client.searchResources(
+      'Slot',
+      new URLSearchParams([
+        ['start', 'gt' + month.toISOString()],
+        ['start', 'lt' + new Date(month.getTime() + 31 * 24 * 60 * 60 * 1000).toISOString()],
+      ])
+    );
+    expect(result1).toBeDefined();
+    expect(result1.length).toBeGreaterThanOrEqual(1);
+  });
 });
