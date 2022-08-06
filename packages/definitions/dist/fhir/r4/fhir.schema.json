@@ -61092,17 +61092,10 @@
           "description": "The default access policy for patients using open registration.",
           "$ref": "#/definitions/Reference"
         },
-        "googleClientId": {
-          "description": "DEPRECATED",
+        "secret": {
+          "description": "Secure environment variable that can be used to store secrets for bots.",
           "items": {
-            "$ref": "#/definitions/string"
-          },
-          "type": "array"
-        },
-        "recaptchaSiteKey": {
-          "description": "DEPRECATED",
-          "items": {
-            "$ref": "#/definitions/string"
+            "$ref": "#/definitions/Project_Secret"
           },
           "type": "array"
         },
@@ -61119,17 +61112,38 @@
         "owner"
       ]
     },
+    "Project_Secret": {
+      "description": "Secure environment variable that can be used to store secrets for bots.",
+      "properties": {
+        "name": {
+          "description": "A name associated with the Project.",
+          "$ref": "#/definitions/string"
+        },
+        "valueBoolean": {
+          "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+          "pattern": "^true|false$",
+          "type": "boolean"
+        },
+        "valueDecimal": {
+          "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+          "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$",
+          "type": "number"
+        },
+        "valueInteger": {
+          "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+          "pattern": "^-?([0]|([1-9][0-9]*))$",
+          "type": "number"
+        },
+        "valueString": {
+          "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+          "pattern": "^[ \\r\\n\\t\\S]+$",
+          "type": "string"
+        }
+      }
+    },
     "Project_Site": {
       "description": "Web application or web site that is associated with the project.",
       "properties": {
-        "resourceType": {
-          "description": "This is a Project resource",
-          "const": "Project"
-        },
-        "id": {
-          "description": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
-          "$ref": "#/definitions/string"
-        },
         "name": {
           "description": "A name associated with the Project.",
           "$ref": "#/definitions/string"

@@ -67,19 +67,47 @@ export interface Project {
   defaultPatientAccessPolicy?: Reference<AccessPolicy>;
 
   /**
-   * DEPRECATED
+   * Secure environment variable that can be used to store secrets for
+   * bots.
    */
-  googleClientId?: string[];
-
-  /**
-   * DEPRECATED
-   */
-  recaptchaSiteKey?: string[];
+  secret?: ProjectSecret[];
 
   /**
    * Web application or web site that is associated with the project.
    */
   site?: ProjectSite[];
+}
+
+/**
+ * Secure environment variable that can be used to store secrets for
+ * bots.
+ */
+export interface ProjectSecret {
+
+  /**
+   * The secret name.
+   */
+  name?: string;
+
+  /**
+   * The secret value.
+   */
+  valueString?: string;
+
+  /**
+   * The secret value.
+   */
+  valueBoolean?: boolean;
+
+  /**
+   * The secret value.
+   */
+  valueDecimal?: number;
+
+  /**
+   * The secret value.
+   */
+  valueInteger?: number;
 }
 
 /**
