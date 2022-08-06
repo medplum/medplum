@@ -1,13 +1,12 @@
 import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Input, MedplumLink, useMedplum } from '@medplum/react';
-import React, { useMemo, useState } from 'react';
+import { Button, Form, FormSection, Input, MedplumLink, useMedplum } from '@medplum/react';
+import React, { useState } from 'react';
 import { getProjectId } from '../utils';
 import { AccessPolicyInput } from './AccessPolicyInput';
 
 export function InvitePage(): JSX.Element {
   const medplum = useMedplum();
   const projectId = getProjectId(medplum);
-  const result = useMemo(() => medplum.get('admin/projects/' + projectId).read(), [medplum, projectId]);
   const [firstName, setFirstName] = useState<string>('');
   const [lastName, setLastName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
@@ -16,9 +15,8 @@ export function InvitePage(): JSX.Element {
   const [success, setSuccess] = useState(false);
 
   return (
-    <Document width={600}>
-      <h1>Admin / Projects / {result.project.name}</h1>
-      <h3>Invite new member</h3>
+    <>
+      <h1>Invite new member</h1>
       <Form
         onSubmit={() => {
           const body = {
@@ -83,6 +81,6 @@ export function InvitePage(): JSX.Element {
           </div>
         )}
       </Form>
-    </Document>
+    </>
   );
 }

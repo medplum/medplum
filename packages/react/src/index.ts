@@ -18,6 +18,7 @@ export * from './ContactPointDisplay';
 export * from './ContactPointInput';
 export * from './DateTimeInput';
 export * from './DefaultResourceTimeline';
+export * from './DescriptionList';
 export * from './DiagnosticReportDisplay';
 export * from './Document';
 export * from './EncounterTimeline';

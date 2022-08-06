@@ -1,5 +1,5 @@
 import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Input, MedplumLink, useMedplum } from '@medplum/react';
+import { Button, Form, FormSection, Input, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 import { getProjectId } from '../utils';
 import { AccessPolicyInput } from './AccessPolicyInput';
@@ -7,7 +7,6 @@ import { AccessPolicyInput } from './AccessPolicyInput';
 export function CreateBotPage(): JSX.Element {
   const medplum = useMedplum();
   const projectId = getProjectId(medplum);
-  const result = medplum.get(`admin/projects/${projectId}`).read();
   const [name, setName] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [accessPolicy, setAccessPolicy] = useState<Reference<AccessPolicy>>();
@@ -15,9 +14,8 @@ export function CreateBotPage(): JSX.Element {
   const [success, setSuccess] = useState(false);
 
   return (
-    <Document width={600}>
-      <h1>Admin / Projects / {result.project.name}</h1>
-      <h3>Create new Bot</h3>
+    <>
+      <h1>Create new Bot</h1>
       <Form
         onSubmit={() => {
           const body = {
@@ -62,6 +60,6 @@ export function CreateBotPage(): JSX.Element {
           </div>
         )}
       </Form>
-    </Document>
+    </>
   );
 }
