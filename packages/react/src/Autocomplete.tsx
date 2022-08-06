@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import './Autocomplete.css';
 import { killEvent } from './utils/dom';
+import './Autocomplete.css';
 
 export interface AutocompleteProps<T> {
   name: string;
@@ -92,6 +92,7 @@ export function Autocomplete<T>(props: AutocompleteProps<T>): JSX.Element {
   }
 
   function handleBlur(): void {
+    tryAddOption();
     setFocused(false);
     dismissOnDelay();
   }

@@ -35,6 +35,7 @@ export function CodeInput(props: CodeInputProps): JSX.Element {
       getDisplay={(item: string) => <>{cachedDisplayValues[item] || item}</>}
       name={props.name}
       defaultValue={defaultValue}
+      loadOnFocus={true}
       onChange={(values: string[]) => {
         if (props.onChange) {
           props.onChange(values[0]);
