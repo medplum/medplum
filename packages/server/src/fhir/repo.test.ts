@@ -1829,4 +1829,30 @@ describe('FHIR Repo', () => {
       expect(outcome.id).toEqual('too-many-requests');
     }
   });
+
+  test('Boolean search', async () => {
+    const family = randomUUID();
+    const patient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ family }],
+      active: true,
+    });
+    const searchResult = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: family,
+        },
+        {
+          code: 'active',
+          operator: Operator.EQUALS,
+          value: 'true',
+        },
+      ],
+    });
+    expect(searchResult.entry).toHaveLength(1);
+    expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
+  });
 });

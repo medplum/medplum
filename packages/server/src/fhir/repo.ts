@@ -1003,7 +1003,7 @@ export class Repository {
    */
   #buildColumnValue(searchParam: SearchParameter, details: SearchParameterDetails, value: any): any {
     if (details.type === SearchParameterType.BOOLEAN) {
-      return value === 'true';
+      return value === true || value === 'true';
     }
 
     if (details.type === SearchParameterType.DATE) {
