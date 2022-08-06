@@ -65,6 +65,6 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
 
 function sortMembers(members: ProjectMember[]): ProjectMember[] {
   return members.sort((a: ProjectMember, b: ProjectMember) =>
-    (a.profile.display || '').localeCompare(b.profile.display || '')
+    (a.profile.display as string).localeCompare(b.profile.display as string)
   );
 }
