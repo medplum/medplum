@@ -54,7 +54,7 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
             </td>
             {props.showRole && <td className="medplum-center">{member.role}</td>}
             <td className="medplum-center">
-              <MedplumLink to={`/admin/project/members/${member.id}`}>Access</MedplumLink>
+              <MedplumLink to={`/admin/members/${member.id}`}>Access</MedplumLink>
             </td>
           </tr>
         ))}

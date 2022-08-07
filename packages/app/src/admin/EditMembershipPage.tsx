@@ -1,5 +1,5 @@
 import { AccessPolicy, OperationOutcome, ProjectMembership, Reference, UserConfiguration } from '@medplum/fhirtypes';
-import { Button, Checkbox, Document, Form, FormSection, MedplumLink, ResourceBadge, useMedplum } from '@medplum/react';
+import { Button, Checkbox, Form, FormSection, MedplumLink, ResourceBadge, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getProjectId } from '../utils';
@@ -29,7 +29,7 @@ export function EditMembershipPage(): JSX.Element {
   }
 
   return (
-    <Document width={600}>
+    <>
       <h1>Edit membership</h1>
       <h3>
         <ResourceBadge value={membership.profile} />
@@ -90,6 +90,6 @@ export function EditMembershipPage(): JSX.Element {
           </div>
         )}
       </Form>
-    </Document>
+    </>
   );
 }
