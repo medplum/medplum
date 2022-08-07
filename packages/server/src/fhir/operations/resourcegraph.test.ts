@@ -24,6 +24,7 @@ import { initRedis } from '../../redis';
 import { seedDatabase } from '../../seed';
 import { initTestAuth } from '../../test.setup';
 import { getStructureDefinitions } from '../structure';
+import { normalizeErrorString } from '@medplum/core';
 
 const app = express();
 let accessToken: string;
@@ -66,7 +67,7 @@ describe('Resource $graph', () => {
       name: [{ given: ['Graph'], family: 'Demo' }],
     } as Patient);
 
-    // 3. Create a Patient
+    // 3. Create a Service Request
     const serviceRequest = await createResource({
       resourceType: 'ServiceRequest',
       subject: createReference(patient),
@@ -78,6 +79,92 @@ describe('Resource $graph', () => {
     expect(resources).toHaveLength(2);
     expect(resources?.[0]).toMatchObject(serviceRequest);
     expect(resources?.[1]).toMatchObject(patient);
+  });
+
+  describe('Error cases', () => {
+    test('Missing Graph Definition', async () => {
+      const graphName = 'this-graph-doesnt-exist';
+      const patient = await createResource({
+        resourceType: 'Patient',
+        name: [{ given: ['Graph'], family: 'Demo' }],
+      } as Patient);
+
+      await getResourceGraph(patient, graphName, 404);
+    });
+
+    test('Missing Resource', async () => {
+      const graphName = 'test-missing-resource';
+      await createResource<GraphDefinition>({ resourceType: 'GraphDefinition', name: graphName, link: [] });
+
+      await getResourceGraph(undefined, graphName, 404);
+    });
+
+    test('Missing Target', async () => {
+      const graphName = 'test-missing-target';
+      const patient = await createResource({
+        resourceType: 'Patient',
+        name: [{ given: ['Graph'], family: 'Demo' }],
+      } as Patient);
+
+      await createResource<GraphDefinition>({
+        resourceType: 'GraphDefinition',
+        name: graphName,
+        start: 'Patient',
+        link: [
+          {
+            path: 'Patient.generalPractitioner',
+          },
+        ],
+      });
+
+      const bundle = await getResourceGraph(patient, graphName);
+      expect(bundle.entry).toHaveLength(1);
+      expect(bundle.entry?.[0]?.resource?.resourceType).toEqual('Patient');
+    });
+
+    test('Malformed Target', async () => {
+      const graphName = 'test-malformed-target';
+      const patient = await createResource({
+        resourceType: 'Patient',
+        name: [{ given: ['Graph'], family: 'Demo' }],
+      } as Patient);
+
+      await createResource<GraphDefinition>({
+        resourceType: 'GraphDefinition',
+        name: graphName,
+        start: 'Patient',
+        link: [
+          {
+            target: [{ id: 'foo' }],
+          },
+        ],
+      });
+
+      const outcome = await getResourceGraph(patient, graphName, 400);
+      expect(normalizeErrorString(outcome)).toContain('Invalid link');
+    });
+    test('Invalid Start', async () => {
+      const graphName = 'test-invalid-start';
+      const patient = await createResource({
+        resourceType: 'Patient',
+        name: [{ given: ['Graph'], family: 'Demo' }],
+      } as Patient);
+
+      await createResource<GraphDefinition>({
+        resourceType: 'GraphDefinition',
+        name: graphName,
+
+        link: [
+          {
+            path: 'Patient.generalPractitioner',
+            target: [{ type: 'Practitioner' }],
+          },
+        ],
+      });
+
+      const outcome = await getResourceGraph(patient, graphName, 400);
+      expect(normalizeErrorString(outcome)).toContain('Missing or incorrect `start` type');
+    });
   });
 
   test('Canonical Link', async () => {
@@ -187,7 +274,7 @@ describe('Resource $graph', () => {
     expect(resources?.filter((e) => e?.resourceType === 'ObservationDefinition')).toMatchObject(obsDefs);
   });
 
-  test.only('Parallel Links', async () => {
+  test('Parallel Links', async () => {
     const graphName = 'example-parallel-link';
     await createResource({
       resourceType: 'GraphDefinition',
@@ -236,7 +323,7 @@ describe('Resource $graph', () => {
       resourceType: 'ActivityDefinition',
       name: 'ACT Test',
       title: 'ACT Test',
-      url: 'http://example.com/ActTest',
+      url: 'http://example.com/ActTest-Parallel',
       observationResultRequirement: [createReference(obsDefs[0])],
       specimenRequirement: [createReference(specDefs[0])],
     } as ActivityDefinition);
@@ -245,7 +332,7 @@ describe('Resource $graph', () => {
       resourceType: 'ActivityDefinition',
       name: 'BUN Panel',
       title: 'BUN Panel',
-      url: 'http://example.com/BunPanel',
+      url: 'http://example.com/BunPanel-Parallel',
       observationResultRequirement: [createReference(obsDefs[1]), createReference(obsDefs[2])],
       specimenRequirement: [createReference(specDefs[1])],
     } as ActivityDefinition);
@@ -253,10 +340,7 @@ describe('Resource $graph', () => {
     // 3. Create a PlanDefinition
     const planDefinition = await createResource({
       resourceType: 'PlanDefinition',
-      action: [
-        { definitionCanonical: 'http://example.com/ActTest' },
-        { definitionCanonical: 'http://example.com/BunPanel' },
-      ],
+      action: [{ definitionCanonical: a1.url }, { definitionCanonical: a2.url }],
     } as PlanDefinition);
 
     // 4. Apply the PlanDefinition to create the Task and RequestGroup
@@ -366,14 +450,18 @@ describe('Resource $graph', () => {
   });
 });
 
-async function getResourceGraph<T extends Resource>(resource: T, graphName: string): Promise<Bundle> {
-  const url = `/fhir/R4/${resource.resourceType}/${resource.id}/$graph?graph=${graphName}`;
+async function getResourceGraph<T extends Resource>(
+  resource: T | undefined,
+  graphName: string,
+  expectedReturnCode = 200
+): Promise<Bundle> {
+  const url = `/fhir/R4/${resource?.resourceType}/${resource?.id}/$graph?graph=${graphName}`;
 
   const res = await request(app)
     .get(url)
     .set('Authorization', 'Bearer ' + accessToken);
 
-  expect(res.status).toBe(200);
+  expect(res.status).toBe(expectedReturnCode);
   return res.body as Bundle;
 }
 

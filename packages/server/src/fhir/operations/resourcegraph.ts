@@ -4,6 +4,7 @@ import {
   DEFAULT_SEARCH_COUNT,
   evalFhirPathTyped,
   getReferenceString,
+  notFound,
   OperationOutcomeError,
   Operator,
   parseSearchDefinition,
@@ -39,13 +40,13 @@ export async function resourceGraphHandler(req: Request, res: Response): Promise
   const { resourceType, id } = req.params;
   const repo = res.locals.repo as Repository;
 
+  if (resourceType === 'undefined' || id === 'undefined') {
+    throw new OperationOutcomeError(notFound);
+  }
+
   const rootResource = await repo.readResource(resourceType, id);
 
   const definition = await validateQueryParameters(req, res);
-
-  if (!definition) {
-    return;
-  }
 
   if (!definition.start || definition.start !== resourceType) {
     throw new OperationOutcomeError(badRequest('Missing or incorrect `start` type'));
@@ -113,6 +114,7 @@ async function followLinks(
     if (!link.target) {
       continue;
     }
+
     for (const target of link.target) {
       let linkedResources = [] as Resource[];
 
@@ -254,13 +256,10 @@ async function followCanonicalElements(
 async function followSearchLink(
   repo: Repository,
   resource: Resource,
-  link: GraphDefinitionLink,
+  link: SearchLink,
   resourceCache: Record<string, Resource>
 ): Promise<Resource[]> {
   const results = [] as Resource[];
-  if (!link.target) {
-    return [];
-  }
   for (const target of link.target) {
     const searchResourceType = target.type;
     validateTargetParams(target.params);
@@ -292,7 +291,7 @@ async function followSearchLink(
  * @param res The HTTP response.
  * @returns The operation parameters if available; otherwise, undefined.
  */
-async function validateQueryParameters(req: Request, res: Response): Promise<GraphDefinition | undefined> {
+async function validateQueryParameters(req: Request, res: Response): Promise<GraphDefinition> {
   const { graph } = req.query as { graph: string };
 
   const repo = res.locals.repo as Repository;
@@ -301,7 +300,12 @@ async function validateQueryParameters(req: Request, res: Response): Promise<Gra
     filters: [{ code: 'name', operator: Operator.EQUALS, value: graph }],
   });
 
-  return bundle.entry?.[0]?.resource as GraphDefinition;
+  const definition = bundle.entry?.[0]?.resource as GraphDefinition;
+  if (!definition) {
+    throw new OperationOutcomeError(notFound);
+  }
+
+  return definition;
 }
 
 function validateTargetParams(params: string | undefined): void {
