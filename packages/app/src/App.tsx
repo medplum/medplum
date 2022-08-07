@@ -7,6 +7,7 @@ import { BotsPage } from './admin/BotsPage';
 import { ClientsPage } from './admin/ClientsPage';
 import { CreateBotPage } from './admin/CreateBotPage';
 import { CreateClientPage } from './admin/CreateClientPage';
+import { EditMembershipPage } from './admin/EditMembershipPage';
 import { InvitePage } from './admin/InvitePage';
 import { PatientsPage } from './admin/PatientsPage';
 import { ProjectDetailsPage } from './admin/ProjectDetailsPage';
@@ -91,6 +92,7 @@ export function App(): JSX.Element {
               <Route path="users" element={<UsersPage />} />
               <Route path="project" element={<ProjectDetailsPage />} />
               <Route path="secrets" element={<SecretsPage />} />
+              <Route path="members/:membershipId" element={<EditMembershipPage />} />
             </Route>
             <Route path="/lab/assays" element={<AssaysPage />} />
             <Route path="/lab/panels" element={<PanelsPage />} />
