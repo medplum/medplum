@@ -29,11 +29,7 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     url = url.substring(0, pipeIndex);
   }
 
-  const filter = req.query.filter as string | undefined;
-  if (!filter) {
-    sendOutcome(res, badRequest('Missing filter'));
-    return;
-  }
+  const filter = req.query.filter || '';
 
   let offset = 0;
   if (req.query.offset) {
@@ -51,6 +47,7 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     .column('display')
     .where('system', Operator.EQUALS, url)
     .where('display', Operator.LIKE, '%' + filter + '%')
+    .orderBy('display')
     .offset(offset)
     .limit(count)
     .execute(client)

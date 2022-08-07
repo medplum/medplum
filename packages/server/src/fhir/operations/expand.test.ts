@@ -40,8 +40,8 @@ describe('Expand', () => {
     const res = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('https://snomed.info/sct')}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
-    expect((res.body as OperationOutcome).issue?.[0].details?.text).toContain('Missing filter');
+    expect(res.status).toBe(200);
+    expect(res.body.expansion.contains.length).toBe(4);
   });
 
   test('Success', async () => {
