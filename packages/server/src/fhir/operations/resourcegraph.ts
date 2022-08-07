@@ -111,12 +111,8 @@ async function followLinks(
     return;
   }
   for (const link of links) {
-    if (!link.target) {
-      continue;
-    }
-
-    for (const target of link.target) {
-      let linkedResources = [] as Resource[];
+    for (const target of link.target || []) {
+      let linkedResources: Resource[];
 
       if (isFhirPathLink(link)) {
         linkedResources = await followFhirPathLink(repo, link, target, resource, resourceCache);
