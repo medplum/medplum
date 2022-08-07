@@ -39,6 +39,7 @@ export function CodingInput(props: CodingInputProps): JSX.Element {
       getDisplay={(item: Coding) => <CodingDisplay value={item} />}
       name={props.name}
       defaultValue={defaultValue}
+      loadOnFocus={true}
       onChange={(values: Coding[]) => {
         if (props.onChange) {
           props.onChange(values[0]);

@@ -40,6 +40,7 @@ export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Elem
       getDisplay={getDisplay}
       name={props.name}
       defaultValue={defaultValue}
+      loadOnFocus={true}
       onChange={(values: CodeableConcept[]) => {
         if (props.onChange) {
           props.onChange(values[0]);
