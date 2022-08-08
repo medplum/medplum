@@ -142,6 +142,18 @@ describe('Login', () => {
     expect(res.body.code).toBeDefined();
   });
 
+  test('Success new project', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email: 'admin@example.com',
+      password: 'medplum_admin',
+      scope: 'openid',
+      projectId: 'new',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.login).toBeDefined();
+    expect(res.body.code).not.toBeDefined();
+  });
+
   test('Login with access policy', async () => {
     const adminEmail = `admin${randomUUID()}@example.com`;
     const memberEmail = `member${randomUUID()}@example.com`;
