@@ -13,7 +13,7 @@ export function ClientsPage(): JSX.Element {
       <h1>Clients</h1>
       <MemberTable members={result.members.filter((member: any) => member.role === 'client')} />
       <div className="medplum-right">
-        <MedplumLink to={`/admin/project/client`}>Create new client</MedplumLink>
+        <MedplumLink to={`/admin/clients/new`}>Create new client</MedplumLink>
       </div>
     </>
   );

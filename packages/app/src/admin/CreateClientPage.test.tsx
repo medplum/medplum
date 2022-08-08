@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { CreateClientPage } from './CreateClientPage';
+import { ProjectPage } from './ProjectPage';
 
 const medplum = new MockClient();
 
@@ -13,7 +14,9 @@ async function setup(url: string): Promise<void> {
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
           <Routes>
-            <Route path="/admin/project/client" element={<CreateClientPage />} />
+            <Route path="/admin" element={<ProjectPage />}>
+              <Route path="clients/new" element={<CreateClientPage />} />
+            </Route>
           </Routes>
         </MemoryRouter>
       </MedplumProvider>
@@ -47,13 +50,13 @@ describe('CreateClientPage', () => {
   });
 
   test('Renders', async () => {
-    await setup('/admin/project/client');
+    await setup('/admin/clients/new');
     await waitFor(() => screen.getByText('Create Client'));
     expect(screen.getByText('Create Client')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
-    await setup('/admin/project/client');
+    await setup('/admin/clients/new');
     await waitFor(() => screen.getByText('Create Client'));
 
     expect(screen.getByText('Create Client')).toBeInTheDocument();
@@ -78,7 +81,7 @@ describe('CreateClientPage', () => {
   });
 
   test('Submit with access policy', async () => {
-    await setup('/admin/project/client');
+    await setup('/admin/clients/new');
     await waitFor(() => screen.getByText('Create Client'));
 
     expect(screen.getByText('Create Client')).toBeInTheDocument();

@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { CreateBotPage } from './CreateBotPage';
+import { ProjectPage } from './ProjectPage';
 
 const medplum = new MockClient();
 
@@ -13,7 +14,9 @@ async function setup(url: string): Promise<void> {
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
           <Routes>
-            <Route path="/admin/project/bot" element={<CreateBotPage />} />
+            <Route path="/admin" element={<ProjectPage />}>
+              <Route path="bots/new" element={<CreateBotPage />} />
+            </Route>
           </Routes>
         </MemoryRouter>
       </MedplumProvider>
@@ -47,13 +50,13 @@ describe('CreateBotPage', () => {
   });
 
   test('Renders', async () => {
-    await setup('/admin/project/bot');
+    await setup('/admin/bots/new');
     await waitFor(() => screen.getByText('Create Bot'));
     expect(screen.getByText('Create Bot')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
-    await setup('/admin/project/bot');
+    await setup('/admin/bots/new');
     await waitFor(() => screen.getByText('Create Bot'));
 
     expect(screen.getByText('Create Bot')).toBeInTheDocument();
@@ -75,7 +78,7 @@ describe('CreateBotPage', () => {
   });
 
   test('Submit with access policy', async () => {
-    await setup('/admin/project/bot');
+    await setup('/admin/bots/new');
     await waitFor(() => screen.getByText('Create Bot'));
 
     expect(screen.getByText('Create Bot')).toBeInTheDocument();
