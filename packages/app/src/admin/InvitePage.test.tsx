@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import React from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { InvitePage } from './InvitePage';
+import { ProjectPage } from './ProjectPage';
 
 const medplum = new MockClient();
 
@@ -13,7 +14,9 @@ async function setup(url: string): Promise<void> {
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
           <Routes>
-            <Route path="/admin/project/invite" element={<InvitePage />} />
+            <Route path="/admin" element={<ProjectPage />}>
+              <Route path="invite" element={<InvitePage />} />
+            </Route>
           </Routes>
         </MemoryRouter>
       </MedplumProvider>
@@ -47,14 +50,14 @@ describe('InvitePage', () => {
   });
 
   test('Renders', async () => {
-    await setup('/admin/project/invite');
+    await setup('/admin/invite');
     await waitFor(() => screen.getByText('Invite'));
 
     expect(screen.getByText('Invite')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
-    await setup('/admin/project/invite');
+    await setup('/admin/invite');
     await waitFor(() => screen.getByText('Invite'));
 
     expect(screen.getByText('Invite')).toBeInTheDocument();
@@ -79,7 +82,7 @@ describe('InvitePage', () => {
   });
 
   test('Submit with access policy', async () => {
-    await setup('/admin/project/invite');
+    await setup('/admin/invite');
     await waitFor(() => screen.getByText('Invite'));
 
     expect(screen.getByText('Invite')).toBeInTheDocument();
