@@ -74,30 +74,37 @@ export async function createProjectMembership(
  * @param res The response object.
  * @param login The login details.
  */
-export async function sendLoginResult(res: Response, login: Login): Promise<void> {
-  if (!login?.membership) {
-    // User has multiple profiles, so the user needs to select
-    // Safe to rewrite attachments,
-    // because we know that these are all resources that the user has access to
-    const memberships = await getUserMemberships(login?.user as Reference<User>);
-    const redactedMemberships = memberships.map((m) => ({
-      id: m.id,
-      project: m.project,
-      profile: m.profile,
-    }));
-    res.status(200).json(
-      await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, {
-        login: login?.id,
-        memberships: redactedMemberships,
-      })
-    );
-  } else {
+export async function sendLoginResult(res: Response, login: Login, newProject: boolean): Promise<void> {
+  if (newProject) {
+    // User is creating a new project.
+    res.json({ login: login.id });
+    return;
+  }
+
+  if (login.membership) {
     // User only has one profile, so proceed
-    res.status(200).json({
+    res.json({
       login: login?.id,
       code: login?.code,
     });
+    return;
   }
+
+  // User has multiple profiles, so the user needs to select
+  // Safe to rewrite attachments,
+  // because we know that these are all resources that the user has access to
+  const memberships = await getUserMemberships(login?.user as Reference<User>); //, newProject ? 'new' : undefined);
+  const redactedMemberships = memberships.map((m) => ({
+    id: m.id,
+    project: m.project,
+    profile: m.profile,
+  }));
+  res.json(
+    await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, {
+      login: login?.id,
+      memberships: redactedMemberships,
+    })
+  );
 }
 
 /**

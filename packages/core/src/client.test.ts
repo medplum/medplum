@@ -348,6 +348,8 @@ describe('Client', () => {
     const client = new MedplumClient(defaultOptions);
 
     const newUserRequest: NewUserRequest = {
+      firstName: 'Sally',
+      lastName: 'Foo',
       email: `george@example.com`,
       password: 'password',
       recaptchaToken: 'xyz',
@@ -357,8 +359,6 @@ describe('Client', () => {
     expect(response1).toBeDefined();
 
     const newProjectRequest: NewProjectRequest = {
-      firstName: 'Sally',
-      lastName: 'Foo',
       projectName: 'Sally World',
     };
 
@@ -373,6 +373,8 @@ describe('Client', () => {
     const client = new MedplumClient(defaultOptions);
 
     const newUserRequest: NewUserRequest = {
+      firstName: 'Sally',
+      lastName: 'Foo',
       email: `george@example.com`,
       password: 'password',
       recaptchaToken: 'xyz',
@@ -382,8 +384,6 @@ describe('Client', () => {
     expect(response1).toBeDefined();
 
     const newPatientRequest: NewPatientRequest = {
-      firstName: 'Sally',
-      lastName: 'Foo',
       projectId: '123',
     };
 

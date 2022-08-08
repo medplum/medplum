@@ -10,13 +10,12 @@ import { createProfile, createProjectMembership } from './utils';
 
 export interface NewProjectRequest {
   readonly loginId: string;
-  readonly projectName?: string;
+  readonly projectName: string;
 }
 
 export const newProjectValidators = [
   body('login').notEmpty().withMessage('Missing login'),
-  body('firstName').notEmpty().withMessage('First name is required'),
-  body('lastName').notEmpty().withMessage('Last name is required'),
+  body('projectName').notEmpty().withMessage('Project name is required'),
 ];
 
 /**
@@ -40,14 +39,10 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
     return;
   }
 
-  const { firstName, lastName } = req.body;
-
-  let projectName = req.body.projectName;
-  if (!projectName) {
-    projectName = `${firstName} ${lastName}'s Project`;
-  }
-
-  const membership = await createProject(login, projectName, firstName, lastName);
+  const projectName = req.body.projectName;
+  const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+  const { firstName, lastName } = user;
+  const membership = await createProject(login, projectName, firstName as string, lastName as string);
 
   // Update the login
   const updated = await setLoginMembership(login, membership.id as string);

@@ -14,10 +14,15 @@ function mockFetch(url: string, options: any): Promise<any> {
   if (options.method === 'POST' && url.endsWith('/auth/login')) {
     const { email, password } = JSON.parse(options.body);
     if (email === 'admin@example.com' && password === 'admin') {
-      status = 301;
+      status = 200;
       result = {
         login: '1',
         code: '1',
+      };
+    } else if (email === 'newproject@example.com' && password === 'newproject') {
+      status = 200;
+      result = {
+        login: '1',
       };
     } else if (email === 'multiple@medplum.com' && password === 'admin') {
       status = 200;
@@ -62,6 +67,12 @@ function mockFetch(url: string, options: any): Promise<any> {
       };
     }
   } else if (options.method === 'POST' && url.endsWith('auth/google')) {
+    status = 200;
+    result = {
+      login: '1',
+      code: '1',
+    };
+  } else if (options.method === 'POST' && url.endsWith('auth/newproject')) {
     status = 200;
     result = {
       login: '1',
@@ -276,6 +287,39 @@ describe('SignInForm', () => {
     });
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
+
+    expect(success).toBe(true);
+  });
+
+  test('Submit success new project', async () => {
+    let success = false;
+
+    await setup({
+      onSuccess: () => (success = true),
+      projectId: 'new',
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('email'), { target: { value: 'newproject@example.com' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('password'), { target: { value: 'newproject' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('submit'));
+    });
+
+    await waitFor(() => screen.getByLabelText('Project Name'));
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Project Name'), { target: { value: 'My Project' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('submit'));
+    });
 
     expect(success).toBe(true);
   });

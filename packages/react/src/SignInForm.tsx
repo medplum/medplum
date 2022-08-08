@@ -65,6 +65,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
         if (!login) {
           return (
             <AuthenticationForm
+              projectId={props.projectId}
               clientId={props.clientId}
               scope={props.scope}
               nonce={props.nonce}
@@ -78,6 +79,8 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
           );
         } else if (memberships) {
           return <ProfileForm login={login} memberships={memberships} handleAuthResponse={handleAuthResponse} />;
+        } else if (props.projectId === 'new') {
+          return <NewProjectForm login={login} handleAuthResponse={handleAuthResponse} />;
         } else {
           return <div>Success</div>;
         }
@@ -110,6 +113,7 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
       onSubmit={(formData: Record<string, string>) => {
         medplum
           .startLogin({
+            projectId: props.projectId,
             clientId: props.clientId,
             scope: props.scope,
             nonce: props.nonce,
@@ -139,6 +143,7 @@ function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
               handleGoogleCredential={(response: GoogleCredentialResponse) => {
                 medplum
                   .startGoogleLogin({
+                    projectId: props.projectId,
                     clientId: props.clientId,
                     scope: props.scope,
                     nonce: props.nonce,
@@ -226,5 +231,58 @@ function ProfileForm(props: ProfileFormProps): JSX.Element {
         </div>
       ))}
     </div>
+  );
+}
+
+interface NewProjectFormProps {
+  login: string;
+  handleAuthResponse: (response: any) => void;
+}
+
+function NewProjectForm(props: NewProjectFormProps): JSX.Element {
+  const medplum = useMedplum();
+  const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
+  return (
+    <Form
+      style={{ maxWidth: 400 }}
+      onSubmit={async (formData: Record<string, string>) => {
+        try {
+          const registerRequest = { projectName: formData.projectName };
+          const partialLogin = { login: props.login };
+          const login = await medplum.startNewProject(registerRequest, partialLogin);
+          props.handleAuthResponse(login);
+        } catch (err) {
+          setOutcome(err as OperationOutcome);
+        }
+      }}
+    >
+      <div className="medplum-center">
+        <Logo size={32} />
+        <h1>Create project</h1>
+      </div>
+      <FormSection title="Project Name" htmlFor="projectName" outcome={outcome}>
+        <Input
+          name="projectName"
+          type="text"
+          testid="projectName"
+          placeholder="My Project"
+          required={true}
+          outcome={outcome}
+        />
+      </FormSection>
+      <p style={{ fontSize: '12px', color: '#888' }}>
+        By clicking submit you agree to the Medplum <a href="https://www.medplum.com/privacy">Privacy&nbsp;Policy</a>
+        {' and '}
+        <a href="https://www.medplum.com/terms">Terms&nbsp;of&nbsp;Service</a>.
+      </p>
+      <div className="medplum-signin-buttons">
+        <div />
+        <div>
+          <Button type="submit" testid="submit">
+            Create project
+          </Button>
+        </div>
+      </div>
+    </Form>
   );
 }

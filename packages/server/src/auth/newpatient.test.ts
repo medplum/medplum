@@ -47,6 +47,8 @@ describe('New patient', () => {
       .post('/auth/newuser')
       .type('json')
       .send({
+        firstName: 'Christina',
+        lastName: 'Smith',
         email: `christina${randomUUID()}@example.com`,
         password: 'password!@#',
         recaptchaToken: 'xyz',
@@ -55,8 +57,6 @@ describe('New patient', () => {
 
     const res2 = await request(app).post('/auth/newproject').type('json').send({
       login: res1.body.login,
-      firstName: 'Christina',
-      lastName: 'Smith',
       projectName: 'Christina Project',
     });
     expect(res2.status).toBe(200);
@@ -76,7 +76,9 @@ describe('New patient', () => {
       .post('/auth/newuser')
       .type('json')
       .send({
-        email: `christina${randomUUID()}@example.com`,
+        firstName: 'Peggy',
+        lastName: 'Patient',
+        email: `peggy${randomUUID()}@example.com`,
         password: 'password!@#',
         recaptchaToken: 'xyz',
       });
@@ -85,8 +87,6 @@ describe('New patient', () => {
     const res5 = await request(app).post('/auth/newpatient').type('json').send({
       login: res4.body.login,
       projectId: projectId,
-      firstName: 'Peggy',
-      lastName: 'Patient',
     });
     expect(res5.status).toBe(400);
 
@@ -128,8 +128,6 @@ describe('New patient', () => {
     const res7 = await request(app).post('/auth/newpatient').type('json').send({
       login: res4.body.login,
       projectId,
-      firstName: 'Peggy',
-      lastName: 'Patient',
     });
     expect(res7.status).toBe(200);
 
@@ -138,8 +136,6 @@ describe('New patient', () => {
     const res8 = await request(app).post('/auth/newpatient').type('json').send({
       login: res4.body.login,
       projectId,
-      firstName: 'Reuse',
-      lastName: 'Login',
     });
     expect(res8.status).toBe(400);
 
@@ -147,8 +143,6 @@ describe('New patient', () => {
     // (This should fail)
     const res9 = await request(app).post('/auth/newpatient').type('json').send({
       projectId,
-      firstName: 'Missing',
-      lastName: 'Login',
     });
     expect(res9.status).toBe(400);
 

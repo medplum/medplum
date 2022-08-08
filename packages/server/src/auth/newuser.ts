@@ -13,12 +13,16 @@ import { verifyRecaptcha } from './utils';
 
 export interface NewUserRequest {
   readonly projectId?: string;
+  readonly firstName: string;
+  readonly lastName: string;
   readonly email: string;
   readonly password: string;
   readonly recaptchaToken: string;
 }
 
 export const newUserValidators = [
+  body('firstName').notEmpty().withMessage('First name is required'),
+  body('lastName').notEmpty().withMessage('Last name is required'),
   body('email').isEmail().withMessage('Valid email address is required'),
   body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
   body('recaptchaToken').notEmpty().withMessage('Recaptcha token is required'),
@@ -90,7 +94,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
 }
 
 export async function createUser(request: NewUserRequest): Promise<User> {
-  const { email, password } = request;
+  const { firstName, lastName, email, password } = request;
 
   const numPwns = await pwnedPassword(password);
   if (numPwns > 0) {
@@ -101,6 +105,8 @@ export async function createUser(request: NewUserRequest): Promise<User> {
   const passwordHash = await bcrypt.hash(password, 10);
   const result = await systemRepo.createResource<User>({
     resourceType: 'User',
+    firstName,
+    lastName,
     email,
     passwordHash,
   });

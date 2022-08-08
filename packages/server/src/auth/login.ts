@@ -31,5 +31,5 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
   });
-  await sendLoginResult(res, login);
+  await sendLoginResult(res, login, req.body.projectId === 'new');
 }

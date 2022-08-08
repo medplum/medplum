@@ -44,10 +44,27 @@ export interface User {
   language?: string;
 
   /**
-   * The email address that uniquely identifies the user.  This email
-   * address must be globally unique within the server.
+   * The first name or given name of the user. This is the value as entered
+   * when the user is created. It is used to populate the profile resource.
+   */
+  firstName?: string;
+
+  /**
+   * The last name or family name of the user. This is the value as entered
+   * when the user is created. It is used to populate the profile resource.
+   */
+  lastName?: string;
+
+  /**
+   * The email address that uniquely identifies the user.
    */
   email?: string;
+
+  /**
+   * Whether the system has verified that the user has access to the email
+   * address.
+   */
+  emailVerified?: boolean;
 
   /**
    * Whether this user is a system administrator.

@@ -154,7 +154,7 @@ export function validateLoginRequest(request: LoginRequest): void {
 }
 
 async function authenticate(request: LoginRequest, user: User): Promise<void> {
-  if (request.password) {
+  if (request.password && user.passwordHash) {
     const bcryptResult = await bcrypt.compare(request.password, user.passwordHash as string);
     if (!bcryptResult) {
       throw badRequest('Email or password is invalid');
@@ -183,6 +183,10 @@ export async function getUserMemberships(
   user: Reference<ClientApplication | User>,
   projectId?: string
 ): Promise<ProjectMembership[]> {
+  if (projectId === 'new') {
+    return [];
+  }
+
   if (!user.reference) {
     throw new Error('User reference is missing');
   }
@@ -318,7 +322,7 @@ export async function revokeLogin(login: Login): Promise<void> {
  * @return The user if found; otherwise, undefined.
  */
 export async function getUserByEmail(email: string, projectId: string | undefined): Promise<User | undefined> {
-  if (projectId) {
+  if (projectId && projectId !== 'new') {
     // If a project is specified, then try to find a user account only in that project.
     const userWithProject = await getUserByEmailInProject(email, projectId);
     if (userWithProject) {
