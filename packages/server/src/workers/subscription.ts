@@ -202,6 +202,7 @@ async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
 async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
   const bundle = await systemRepo.search<Subscription>({
     resourceType: 'Subscription',
+    count: 1000,
     filters: [
       {
         code: '_project',
