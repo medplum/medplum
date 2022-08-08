@@ -58,9 +58,10 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     }
   }
 
-  // TODO: What is "project" conflicts with "req.body.projectId"?
-  // Can that happen?
-  // Throw an error?
+  if (req.body.projectId && project && req.body.projectId !== project.id) {
+    sendOutcome(res, badRequest('Invalid projectId'));
+    return;
+  }
 
   const googleJwt = req.body.googleCredential as string;
 
@@ -94,7 +95,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     email: claims.email,
     googleCredentials: claims,
     remember: true,
-    projectId: project?.id || req.body.projectId,
+    projectId: req.body.projectId || project?.id,
     clientId: req.body.clientId || undefined,
     scope: req.body.scope || 'openid',
     nonce: req.body.nonce || randomUUID(),
