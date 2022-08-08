@@ -1,9 +1,16 @@
-import { Logo, RegisterForm } from '@medplum/react';
-import React from 'react';
+import { Logo, RegisterForm, useMedplum } from '@medplum/react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export function RegisterPage(): JSX.Element {
+export function RegisterPage(): JSX.Element | null {
+  const medplum = useMedplum();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (medplum.getProfile()) {
+      navigate('/signin?project=new');
+    }
+  }, [medplum, navigate]);
 
   return (
     <RegisterForm
