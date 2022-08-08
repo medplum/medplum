@@ -198,6 +198,8 @@ export interface LoginRequest {
 }
 
 export interface NewUserRequest {
+  readonly firstName: string;
+  readonly lastName: string;
   readonly email: string;
   readonly password: string;
   readonly recaptchaToken: string;
@@ -211,8 +213,6 @@ export interface NewProjectRequest {
 
 export interface NewPatientRequest {
   readonly projectId: string;
-  readonly firstName: string;
-  readonly lastName: string;
 }
 
 export interface GoogleCredentialResponse {

@@ -18,8 +18,6 @@ import { createProfile, createProjectMembership } from './utils';
 export const newPatientValidators = [
   body('login').notEmpty().withMessage('Missing login'),
   body('projectId').notEmpty().withMessage('Project ID is required'),
-  body('firstName').notEmpty().withMessage('First name is required'),
-  body('lastName').notEmpty().withMessage('Last name is required'),
 ];
 
 /**
@@ -42,8 +40,11 @@ export async function newPatientHandler(req: Request, res: Response): Promise<vo
     return;
   }
 
-  const { projectId, firstName, lastName } = req.body;
-  const membership = await createPatient(login, projectId, firstName, lastName);
+  const { projectId } = req.body;
+
+  const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+  const { firstName, lastName } = user;
+  const membership = await createPatient(login, projectId, firstName as string, lastName as string);
 
   // Update the login
   const updated = await setLoginMembership(login, membership.id as string);

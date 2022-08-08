@@ -128,8 +128,6 @@ describe('New patient', () => {
     const res7 = await request(app).post('/auth/newpatient').type('json').send({
       login: res4.body.login,
       projectId,
-      firstName: 'Peggy',
-      lastName: 'Patient',
     });
     expect(res7.status).toBe(200);
 
@@ -138,8 +136,6 @@ describe('New patient', () => {
     const res8 = await request(app).post('/auth/newpatient').type('json').send({
       login: res4.body.login,
       projectId,
-      firstName: 'Reuse',
-      lastName: 'Login',
     });
     expect(res8.status).toBe(400);
 
@@ -147,8 +143,6 @@ describe('New patient', () => {
     // (This should fail)
     const res9 = await request(app).post('/auth/newpatient').type('json').send({
       projectId,
-      firstName: 'Missing',
-      lastName: 'Login',
     });
     expect(res9.status).toBe(400);
 

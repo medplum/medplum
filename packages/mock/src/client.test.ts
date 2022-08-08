@@ -89,6 +89,8 @@ describe('MockClient', () => {
     const client = new MockClient();
 
     const newUserRequest: NewUserRequest = {
+      firstName: 'Sally',
+      lastName: 'Foo',
       email: `george@example.com`,
       password: 'password',
       recaptchaToken: 'xyz',
@@ -98,8 +100,6 @@ describe('MockClient', () => {
     expect(response1).toBeDefined();
 
     const newProjectRequest: NewProjectRequest = {
-      firstName: 'Sally',
-      lastName: 'Foo',
       projectName: 'Sally World',
     };
 
@@ -114,6 +114,8 @@ describe('MockClient', () => {
     const client = new MockClient();
 
     const newUserRequest: NewUserRequest = {
+      firstName: 'Sally',
+      lastName: 'Foo',
       email: `george@example.com`,
       password: 'password',
       recaptchaToken: 'xyz',
@@ -123,8 +125,6 @@ describe('MockClient', () => {
     expect(response1).toBeDefined();
 
     const newPatientRequest: NewPatientRequest = {
-      firstName: 'Sally',
-      lastName: 'Foo',
       projectId: '123',
     };
 
