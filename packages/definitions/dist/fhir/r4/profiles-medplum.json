@@ -344,13 +344,43 @@
             }]
           },
           {
-            "id" : "User.email",
-            "path" : "User.email",
-            "definition" : "The email address that uniquely identifies the user.  This email address must be globally unique within the server.",
+            "id" : "User.firstName",
+            "path" : "User.firstName",
+            "definition" : "The first name or given name of the user. This is the value as entered when the user is created. It is used to populate the profile resource.",
             "min" : 1,
             "max" : "1",
             "type" : [{
               "code" : "string"
+            }]
+          },
+          {
+            "id" : "User.lastName",
+            "path" : "User.lastName",
+            "definition" : "The last name or family name of the user. This is the value as entered when the user is created. It is used to populate the profile resource.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "User.email",
+            "path" : "User.email",
+            "definition" : "The email address that uniquely identifies the user.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "User.emailVerified",
+            "path" : "User.emailVerified",
+            "definition" : "Whether the system has verified that the user has access to the email address.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
             }]
           },
           {

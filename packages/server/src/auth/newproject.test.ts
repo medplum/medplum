@@ -43,6 +43,8 @@ describe('New project', () => {
       .post('/auth/newuser')
       .type('json')
       .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
         recaptchaToken: 'xyz',
@@ -52,8 +54,6 @@ describe('New project', () => {
     const res2 = await request(app).post('/auth/newproject').type('json').send({
       login: res1.body.login,
       projectName: 'Hamilton Project',
-      firstName: 'Alexander',
-      lastName: 'Hamilton',
     });
     expect(res2.status).toBe(200);
 
@@ -73,38 +73,14 @@ describe('New project', () => {
     const res5 = await request(app).post('/auth/newproject').type('json').send({
       login: res1.body.login,
       projectName: 'Hamilton Project',
-      firstName: 'Alexander',
-      lastName: 'Hamilton',
     });
     expect(res5.status).toBe(400);
 
     // Try without a login (this should fail)
     const res6 = await request(app).post('/auth/newproject').type('json').send({
       projectName: 'Hamilton Project',
-      firstName: 'Alexander',
-      lastName: 'Hamilton',
     });
     expect(res6.status).toBe(400);
-  });
-
-  test('Default project name', async () => {
-    const res1 = await request(app)
-      .post('/auth/newuser')
-      .type('json')
-      .send({
-        email: `alex${randomUUID()}@example.com`,
-        password: 'password!@#',
-        recaptchaToken: 'xyz',
-      });
-    expect(res1.status).toBe(200);
-
-    const res2 = await request(app).post('/auth/newproject').type('json').send({
-      login: res1.body.login,
-      firstName: 'Alexander',
-      lastName: 'Hamilton',
-    });
-    expect(res2.status).toBe(200);
-    expect(res2.body.login).toBeDefined();
   });
 
   test('Default ClientApplication is restricted to project', async () => {
@@ -118,6 +94,8 @@ describe('New project', () => {
       .post('/auth/newuser')
       .type('json')
       .send({
+        firstName: 'User1',
+        lastName: 'User1',
         email: `user1-${randomUUID()}@example.com`,
         password: 'password!@#',
         recaptchaToken: 'xyz',
@@ -127,8 +105,6 @@ describe('New project', () => {
     const user1_res2 = await request(app).post('/auth/newproject').type('json').send({
       login: user1_res1.body.login,
       projectName: 'User1 Project',
-      firstName: 'User1',
-      lastName: 'User1',
     });
     expect(user1_res2.status).toBe(200);
 
@@ -160,6 +136,8 @@ describe('New project', () => {
       .post('/auth/newuser')
       .type('json')
       .send({
+        firstName: 'User2',
+        lastName: 'User2',
         email: `user2-${randomUUID()}@example.com`,
         password: 'password!@#',
         recaptchaToken: 'xyz',
@@ -169,8 +147,6 @@ describe('New project', () => {
     const user2_res2 = await request(app).post('/auth/newproject').type('json').send({
       login: user2_res1.body.login,
       projectName: 'User2 Project',
-      firstName: 'User2',
-      lastName: 'User2',
     });
     expect(user2_res2.status).toBe(200);
 
@@ -233,6 +209,8 @@ describe('New project', () => {
       .post('/auth/newuser')
       .type('json')
       .send({
+        firstName: 'User1',
+        lastName: 'User1',
         email: `user1-${randomUUID()}@example.com`,
         password: 'password!@#',
         recaptchaToken: 'xyz',
@@ -242,8 +220,6 @@ describe('New project', () => {
     const user1_res2 = await request(app).post('/auth/newproject').type('json').send({
       login: user1_res1.body.login,
       projectName: 'User1 Project',
-      firstName: 'User1',
-      lastName: 'User1',
     });
     expect(user1_res2.status).toBe(200);
 
@@ -273,6 +249,8 @@ describe('New project', () => {
       .post('/auth/newuser')
       .type('json')
       .send({
+        firstName: 'User2',
+        lastName: 'User2',
         email: `user2-${randomUUID()}@example.com`,
         password: 'password!@#',
         recaptchaToken: 'xyz',
@@ -282,8 +260,6 @@ describe('New project', () => {
     const user2_res2 = await request(app).post('/auth/newproject').type('json').send({
       login: user2_res1.body.login,
       projectName: 'User2 Project',
-      firstName: 'User2',
-      lastName: 'User2',
     });
     expect(user2_res2.status).toBe(200);
 

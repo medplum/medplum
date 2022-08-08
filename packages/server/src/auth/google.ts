@@ -58,6 +58,10 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     }
   }
 
+  // TODO: What is "project" conflicts with "req.body.projectId"?
+  // Can that happen?
+  // Throw an error?
+
   const googleJwt = req.body.googleCredential as string;
 
   const verifyOptions: JWTVerifyOptions = {
@@ -90,14 +94,14 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     email: claims.email,
     googleCredentials: claims,
     remember: true,
-    projectId: project?.id,
+    projectId: project?.id || req.body.projectId,
     clientId: req.body.clientId || undefined,
     scope: req.body.scope || 'openid',
     nonce: req.body.nonce || randomUUID(),
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
   });
-  await sendLoginResult(res, login);
+  await sendLoginResult(res, login, req.body.projectId === 'new');
 }
 
 async function getProjectByGoogleClientId(googleClientId: string): Promise<Project | undefined> {

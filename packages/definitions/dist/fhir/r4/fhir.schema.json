@@ -61300,9 +61300,21 @@
           "description": "Extensions for language",
           "$ref": "#/definitions/Element"
         },
-        "email": {
-          "description": "User email.",
+        "firstName": {
+          "description": "The first name or given name of the user. This is the value as entered when the user is created. It is used to populate the profile resource.",
           "$ref": "#/definitions/string"
+        },
+        "lastName": {
+          "description": "The last name or family name of the user. This is the value as entered when the user is created. It is used to populate the profile resource.",
+          "$ref": "#/definitions/string"
+        },
+        "email": {
+          "description": "The email address that uniquely identifies the user.",
+          "$ref": "#/definitions/string"
+        },
+        "emailVerified": {
+          "description": "Whether the system has verified that the user has access to the email address.",
+          "$ref": "#/definitions/boolean"
         },
         "passwordHash": {
           "description": "Encrypted hash of the user's password.",

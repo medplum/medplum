@@ -207,8 +207,6 @@ export interface NewUserRequest {
 
 export interface NewProjectRequest {
   readonly projectName: string;
-  readonly firstName: string;
-  readonly lastName: string;
 }
 
 export interface NewPatientRequest {
@@ -225,6 +223,7 @@ export interface GoogleCredentialResponse {
 export interface GoogleLoginRequest {
   readonly googleClientId: string;
   readonly googleCredential: string;
+  readonly projectId?: string;
   readonly clientId?: string;
   readonly scope?: string;
   readonly nonce?: string;
