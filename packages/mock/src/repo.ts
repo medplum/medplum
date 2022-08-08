@@ -1,6 +1,8 @@
 import { badRequest, deepClone, evalFhirPath, Filter, notFound, Operator, SearchRequest } from '@medplum/core';
 import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
-import { applyPatch, JsonPatchError, Operation } from 'fast-json-patch';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+/** @ts-ignore */
+import type { JsonPatchError, Operation } from 'fast-json-patch';
 
 export class MemoryRepository {
   readonly #resources: Record<string, Record<string, Resource>>;
@@ -62,11 +64,12 @@ export class MemoryRepository {
     return this.createResource(result);
   }
 
-  patchResource(resourceType: string, id: string, patch: Operation[]): Resource {
+  async patchResource(resourceType: string, id: string, patch: Operation[]): Promise<Resource> {
     const resource = this.readResource(resourceType, id);
 
     let patchResult;
     try {
+      const { applyPatch } = await import('fast-json-patch');
       patchResult = applyPatch(resource, patch, true);
     } catch (err) {
       const patchError = err as JsonPatchError;

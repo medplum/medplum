@@ -131,7 +131,7 @@ class MockFetchClient {
     this.initMockRepo();
   }
 
-  mockFetch(url: string, options: any): Promise<any> {
+  async mockFetch(url: string, options: any): Promise<any> {
     const method = options.method || 'GET';
     const path = url.replace('https://example.com/', '');
 
@@ -139,7 +139,7 @@ class MockFetchClient {
       console.log('MockClient', method, path);
     }
 
-    const response = this.mockHandler(method, path, options);
+    const response = await this.mockHandler(method, path, options);
 
     if (this.debug && !response) {
       console.log('MockClient: not found', method, path);
@@ -174,7 +174,7 @@ class MockFetchClient {
     return Promise.resolve({});
   }
 
-  private mockHandler(method: string, path: string, options: any): any {
+  private async mockHandler(method: string, path: string, options: any): Promise<any> {
     if (path.startsWith('admin/')) {
       return this.mockAdminHandler(method, path);
     } else if (path.startsWith('auth/')) {
@@ -393,7 +393,7 @@ class MockFetchClient {
     DrAliceSmithSlots.forEach((slot) => this.mockRepo.createResource(slot));
   }
 
-  private mockFhirHandler(method: string, url: string, options: any): Resource {
+  private async mockFhirHandler(method: string, url: string, options: any): Promise<Resource> {
     const path = url.includes('?') ? url.substring(0, url.indexOf('?')) : url;
     const match = /fhir\/R4\/?([^/]+)?\/?([^/]+)?\/?([^/]+)?\/?([^/]+)?/.exec(path);
     const resourceType = match?.[1];
@@ -465,21 +465,30 @@ class MockFetchClient {
     return GraphQLSchemaResponse;
   }
 
-  private mockFhirBatchHandler(_method: string, _path: string, options: any): any {
+  private async mockFhirBatchHandler(_method: string, _path: string, options: any): Promise<Bundle> {
     const { body } = options;
     const request = JSON.parse(body) as Bundle;
+    let entry: BundleEntry[] | undefined;
+
+    if (request.entry) {
+      entry = [];
+      for (const input of request.entry) {
+        entry.push(await this.handleBatchEntry(input));
+      }
+    }
+
     return {
       resourceType: 'Bundle',
       type: 'batch-response',
-      entry: request.entry?.map((e) => this.handleBatchEntry(e)),
+      entry,
     };
   }
 
-  private handleBatchEntry(input: BundleEntry): BundleEntry {
+  private async handleBatchEntry(input: BundleEntry): Promise<BundleEntry> {
     try {
       const url = 'fhir/R4/' + input.request?.url;
       const method = input.request?.method as string;
-      const resource = this.mockHandler(method, url, {
+      const resource = await this.mockHandler(method, url, {
         body: input.resource ? JSON.stringify(input.resource) : undefined,
       });
       if (resource?.resourceType === 'OperationOutcome') {
