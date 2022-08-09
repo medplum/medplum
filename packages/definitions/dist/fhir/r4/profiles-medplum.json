@@ -107,23 +107,42 @@
             }]
           },
           {
-            "id" : "Project.googleClientId",
-            "path" : "Project.googleClientId",
-            "definition" : "DEPRECATED",
+            "id" : "Project.secret",
+            "path" : "Project.secret",
+            "definition" : "Secure environment variable that can be used to store secrets for bots.",
             "min" : 0,
             "max" : "*",
+            "type" : [{
+              "code" : "BackboneElement"
+            }]
+          },
+          {
+            "id" : "Project.secret.name",
+            "path" : "Project.secret.name",
+            "definition" : "The secret name.",
+            "min" : 1,
+            "max" : "1",
             "type" : [{
               "code" : "string"
             }]
           },
           {
-            "id" : "Project.recaptchaSiteKey",
-            "path" : "Project.recaptchaSiteKey",
-            "definition" : "DEPRECATED",
-            "min" : 0,
-            "max" : "*",
+            "id" : "Project.secret.value[x]",
+            "path" : "Project.secret.value[x]",
+            "definition" : "The secret value.",
+            "min" : 1,
+            "max" : "1",
             "type" : [{
               "code" : "string"
+            },
+            {
+              "code" : "boolean"
+            },
+            {
+              "code" : "decimal"
+            },
+            {
+              "code" : "integer"
             }]
           },
           {
