@@ -25,7 +25,7 @@
 .medplum-document p,
 .medplum-document li {
   line-height: 175%;
-  margin: 8px 0 16px 0;
+  margin: 8px 0;
 }
 
 @media (max-width: 700px) {

@@ -17,19 +17,9 @@ export interface MedplumLinkProps {
 export function MedplumLink(props: MedplumLinkProps): JSX.Element {
   const navigate = useNavigate();
 
-  let href = '#';
-  if (props.to) {
-    if (typeof props.to === 'string') {
-      href = props.to;
-    } else if ('resourceType' in props.to) {
-      href = `/${props.to.resourceType}/${props.to.id}`;
-    } else if ('reference' in props.to) {
-      href = `/${props.to.reference}`;
-    }
-
-    if (props.suffix) {
-      href += '/' + props.suffix;
-    }
+  let href = getHref(props.to);
+  if (props.suffix) {
+    href += '/' + props.suffix;
   }
 
   return (
@@ -51,4 +41,32 @@ export function MedplumLink(props: MedplumLinkProps): JSX.Element {
       {props.children}
     </a>
   );
+}
+
+function getHref(to: Resource | Reference | string | undefined): string {
+  if (to) {
+    if (typeof to === 'string') {
+      return getStringHref(to);
+    } else if ('resourceType' in to) {
+      return getResourceHref(to);
+    } else if ('reference' in to) {
+      return getReferenceHref(to);
+    }
+  }
+  return '#';
+}
+
+function getStringHref(to: string): string {
+  if (to.startsWith('http://') || to.startsWith('https://') || to.startsWith('/')) {
+    return to;
+  }
+  return '/' + to;
+}
+
+function getResourceHref(to: Resource): string {
+  return `/${to.resourceType}/${to.id}`;
+}
+
+function getReferenceHref(to: Reference): string {
+  return `/${to.reference}`;
 }

@@ -48,6 +48,7 @@ import { BotEditor } from './BotEditor';
 import { DeletePage } from './DeletePage';
 import { JsonPage } from './JsonPage';
 import { PlanDefinitionApplyForm } from './PlanDefinitionApplyForm';
+import { SubscriptionsPage } from './SubscriptionsPage';
 
 function getTabs(resourceType: string): string[] {
   const result = ['Timeline'];
@@ -72,7 +73,7 @@ function getTabs(resourceType: string): string[] {
     result.push('Checklist');
   }
 
-  result.push('Details', 'Edit', 'History', 'Blame', 'JSON', 'Apps');
+  result.push('Details', 'Edit', 'History', 'Blame', 'JSON', 'Apps', 'Subscriptions');
   return result;
 }
 
@@ -248,6 +249,7 @@ interface ResourceTabProps {
 function ResourceTab(props: ResourceTabProps): JSX.Element | null {
   const navigate = useNavigate();
   const { resourceType, id } = props.resource;
+  console.log('tab name', props.name);
   switch (props.name) {
     case 'details':
       return <ResourceTable value={props.resource} />;
@@ -313,6 +315,8 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
       );
     case 'apply':
       return <PlanDefinitionApplyForm planDefinition={props.resource as PlanDefinition} />;
+    case 'subscriptions':
+      return <SubscriptionsPage resource={props.resource} />;
   }
   return null;
 }
