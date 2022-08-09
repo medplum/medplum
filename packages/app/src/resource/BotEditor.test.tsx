@@ -5,7 +5,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { AppRoutes } from './AppRoutes';
+import { AppRoutes } from '../AppRoutes';
 
 jest.mock('react-toastify', () => ({
   toast: {

@@ -1,4 +1,4 @@
-import { getReferenceString, normalizeErrorString, resolveId, stringify } from '@medplum/core';
+import { normalizeErrorString, resolveId } from '@medplum/core';
 import {
   Bot,
   Bundle,
@@ -11,13 +11,11 @@ import {
   ServiceRequest,
 } from '@medplum/fhirtypes';
 import {
-  Button,
   DefaultResourceTimeline,
   DiagnosticReportDisplay,
   Document,
   EncounterTimeline,
   ErrorBoundary,
-  Form,
   Loading,
   MedplumLink,
   PatientTimeline,
@@ -34,22 +32,24 @@ import {
   TabList,
   TabPanel,
   TabSwitch,
-  TextArea,
   useMedplum,
 } from '@medplum/react';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { PatientHeader } from '../components/PatientHeader';
+import { QuickServiceRequests } from '../components/QuickServiceRequests';
+import { QuickStatus } from '../components/QuickStatus';
+import { ResourceHeader } from '../components/ResourceHeader';
+import { SpecimenHeader } from '../components/SpecimenHeader';
+import { getPatient, getSpecimen } from '../utils';
+import { AppsPage } from './AppsPage';
 import { BotEditor } from './BotEditor';
-import { PatientHeader } from './PatientHeader';
+import { DeletePage } from './DeletePage';
+import { JsonPage } from './JsonPage';
 import { PlanDefinitionApplyForm } from './PlanDefinitionApplyForm';
-import { QuickServiceRequests } from './QuickServiceRequests';
-import { QuickStatus } from './QuickStatus';
-import { ResourceHeader } from './ResourceHeader';
-import { SpecimenHeader } from './SpecimenHeader';
-import { getPatient, getSpecimen } from './utils';
 
-function getTabs(resourceType: string, questionnaires?: Bundle): string[] {
+function getTabs(resourceType: string): string[] {
   const result = ['Timeline'];
 
   if (resourceType === 'Bot') {
@@ -72,12 +72,7 @@ function getTabs(resourceType: string, questionnaires?: Bundle): string[] {
     result.push('Checklist');
   }
 
-  result.push('Details', 'Edit', 'History', 'Blame', 'JSON');
-
-  if (questionnaires?.entry && questionnaires.entry.length > 0) {
-    result.push('Apps');
-  }
-
+  result.push('Details', 'Edit', 'History', 'Blame', 'JSON', 'Apps');
   return result;
 }
 
@@ -92,7 +87,6 @@ export function ResourcePage(): JSX.Element {
   const [loading, setLoading] = useState<boolean>(true);
   const [value, setValue] = useState<Resource | undefined>();
   const [historyBundle, setHistoryBundle] = useState<Bundle | undefined>();
-  const [questionnaires, setQuestionnaires] = useState<Bundle<Questionnaire>>();
   const [error, setError] = useState<OperationOutcome | undefined>();
 
   const loadResource = useCallback(() => {
@@ -102,7 +96,6 @@ export function ResourcePage(): JSX.Element {
     // Build a batch request
     // 1) Read the resource
     // 2) Read the history
-    // 3) Read any Questionnaires for the resource typ
     const requestBundle: Bundle = {
       resourceType: 'Bundle',
       type: 'batch',
@@ -119,12 +112,6 @@ export function ResourcePage(): JSX.Element {
             url: `${resourceType}/${id}/_history`,
           },
         },
-        {
-          request: {
-            method: 'GET',
-            url: `Questionnaire?subject-type=${resourceType}`,
-          },
-        },
       ],
     };
 
@@ -136,7 +123,6 @@ export function ResourcePage(): JSX.Element {
         } else {
           setValue(responseBundle.entry?.[0]?.resource);
           setHistoryBundle(responseBundle.entry?.[1]?.resource as Bundle);
-          setQuestionnaires(responseBundle.entry?.[2]?.resource as Bundle<Questionnaire>);
         }
         setLoading(false);
       })
@@ -200,7 +186,7 @@ export function ResourcePage(): JSX.Element {
     );
   }
 
-  const tabs = getTabs(resourceType, questionnaires);
+  const tabs = getTabs(resourceType);
   const defaultTab = tabs[0].toLowerCase();
   const currentTab = tab || defaultTab;
   const patient = getPatient(value);
@@ -239,7 +225,6 @@ export function ResourcePage(): JSX.Element {
                   name={currentTab.toLowerCase()}
                   resource={value}
                   resourceHistory={historyBundle}
-                  questionnaires={questionnaires as Bundle<Questionnaire>}
                   onSubmit={onSubmit}
                   outcome={error}
                 />
@@ -256,14 +241,12 @@ interface ResourceTabProps {
   name: string;
   resource: Resource;
   resourceHistory: Bundle;
-  questionnaires: Bundle<Questionnaire>;
   onSubmit: (resource: Resource) => void;
   outcome?: OperationOutcome;
 }
 
 function ResourceTab(props: ResourceTabProps): JSX.Element | null {
   const navigate = useNavigate();
-  const medplum = useMedplum();
   const { resourceType, id } = props.resource;
   switch (props.name) {
     case 'details':
@@ -278,60 +261,15 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
         />
       );
     case 'delete':
-      return (
-        <>
-          <p>Are you sure you want to delete this {resourceType}?</p>
-          <Button
-            danger={true}
-            onClick={() => {
-              medplum
-                .deleteResource(resourceType, id as string)
-                .then(() => navigate(`/${resourceType}`))
-                .catch((err) => toast.error(normalizeErrorString(err)));
-            }}
-          >
-            Delete
-          </Button>
-        </>
-      );
+      return <DeletePage resourceType={resourceType} id={id as string} />;
     case 'history':
       return <ResourceHistoryTable history={props.resourceHistory} />;
     case 'blame':
       return <ResourceBlame history={props.resourceHistory} />;
     case 'json':
-      return (
-        <Form
-          onSubmit={(formData: Record<string, string>) => {
-            props.onSubmit(JSON.parse(formData.resource));
-          }}
-        >
-          <TextArea
-            testid="resource-json"
-            name="resource"
-            monospace={true}
-            style={{ height: 400 }}
-            defaultValue={stringify(props.resource, true)}
-          />
-          <Button type="submit">OK</Button>
-        </Form>
-      );
+      return <JsonPage resource={props.resource} onSubmit={props.onSubmit} />;
     case 'apps':
-      return (
-        <div>
-          {props.questionnaires.entry
-            ?.map((entry) => entry.resource as Questionnaire)
-            .map((questionnaire) => (
-              <div key={questionnaire.id}>
-                <h3>
-                  <MedplumLink to={`/forms/${questionnaire?.id}?subject=${getReferenceString(props.resource)}`}>
-                    {questionnaire.name}
-                  </MedplumLink>
-                </h3>
-                <p>{questionnaire?.description}</p>
-              </div>
-            ))}
-        </div>
-      );
+      return <AppsPage resource={props.resource} />;
     case 'timeline':
       switch (props.resource.resourceType) {
         case 'Encounter':
