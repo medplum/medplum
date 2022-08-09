@@ -2,8 +2,8 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { BulkAppPage } from './BulkAppPage';
+import { MemoryRouter } from 'react-router-dom';
+import { AppRoutes } from './AppRoutes';
 
 const medplum = new MockClient();
 
@@ -20,9 +20,7 @@ describe('ResourcePage', () => {
       render(
         <MedplumProvider medplum={medplum}>
           <MemoryRouter initialEntries={[url]} initialIndex={0}>
-            <Routes>
-              <Route path="/bulk/:resourceType" element={<BulkAppPage />} />
-            </Routes>
+            <AppRoutes />
           </MemoryRouter>
         </MedplumProvider>
       );

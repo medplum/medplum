@@ -4,20 +4,16 @@ import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import crypto from 'crypto';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';
-import { RegisterPage } from './RegisterPage';
-import { SignInPage } from './SignInPage';
+import { AppRoutes } from './AppRoutes';
 
 async function setup(medplum: MedplumClient): Promise<void> {
   await act(async () => {
     render(
       <MemoryRouter initialEntries={['/register']} initialIndex={0}>
         <MedplumProvider medplum={medplum}>
-          <Routes>
-            <Route path="/signin" element={<SignInPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-          </Routes>
+          <AppRoutes />
         </MedplumProvider>
       </MemoryRouter>
     );

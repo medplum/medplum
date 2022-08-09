@@ -2,17 +2,8 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { BotsPage } from './BotsPage';
-import { ClientsPage } from './ClientsPage';
-import { CreateBotPage } from './CreateBotPage';
-import { CreateClientPage } from './CreateClientPage';
-import { InvitePage } from './InvitePage';
-import { PatientsPage } from './PatientsPage';
-import { ProjectDetailsPage } from './ProjectDetailsPage';
-import { ProjectPage } from './ProjectPage';
-import { SecretsPage } from './SecretsPage';
-import { UsersPage } from './UsersPage';
+import { MemoryRouter } from 'react-router-dom';
+import { AppRoutes } from '../AppRoutes';
 
 const medplum = new MockClient();
 
@@ -21,20 +12,7 @@ async function setup(url: string): Promise<void> {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
-          <Routes>
-            <Route path="/admin" element={<ProjectPage />}>
-              <Route path="patients" element={<PatientsPage />} />
-              <Route path="bots/new" element={<CreateBotPage />} />
-              <Route path="bots" element={<BotsPage />} />
-              <Route path="clients/new" element={<CreateClientPage />} />
-              <Route path="clients" element={<ClientsPage />} />
-              <Route path="details" element={<ProjectDetailsPage />} />
-              <Route path="invite" element={<InvitePage />} />
-              <Route path="users" element={<UsersPage />} />
-              <Route path="project" element={<ProjectDetailsPage />} />
-              <Route path="secrets" element={<SecretsPage />} />
-            </Route>
-          </Routes>
+          <AppRoutes />
         </MemoryRouter>
       </MedplumProvider>
     );

@@ -2,8 +2,8 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { FormPage } from './FormPage';
+import { MemoryRouter } from 'react-router-dom';
+import { AppRoutes } from './AppRoutes';
 
 const medplum = new MockClient();
 
@@ -13,10 +13,7 @@ describe('FormPage', () => {
       render(
         <MedplumProvider medplum={medplum}>
           <MemoryRouter initialEntries={[url]} initialIndex={0}>
-            <Routes>
-              <Route path="/forms/:id" element={<FormPage />} />
-              <Route path="/:resourceType/:id" element={<div />} />
-            </Routes>
+            <AppRoutes />
           </MemoryRouter>
         </MedplumProvider>
       );

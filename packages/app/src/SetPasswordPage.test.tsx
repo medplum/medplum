@@ -2,8 +2,8 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { SetPasswordPage } from './SetPasswordPage';
+import { MemoryRouter } from 'react-router-dom';
+import { AppRoutes } from './AppRoutes';
 
 const medplum = new MockClient();
 
@@ -11,9 +11,7 @@ function setup(url: string): void {
   render(
     <MedplumProvider medplum={medplum}>
       <MemoryRouter initialEntries={[url]} initialIndex={0}>
-        <Routes>
-          <Route path="/setpassword/:id/:secret" element={<SetPasswordPage />} />
-        </Routes>
+        <AppRoutes />
       </MemoryRouter>
     </MedplumProvider>
   );
