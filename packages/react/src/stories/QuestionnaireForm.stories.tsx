@@ -14,7 +14,7 @@ export const Basic = (): JSX.Element => (
       questionnaire={{
         resourceType: 'Questionnaire',
         id: 'basic-example',
-        title: 'Basic Exmple',
+        title: 'Basic Example',
         item: [
           {
             linkId: 'titleDisplay',
@@ -41,7 +41,7 @@ export const Groups = (): JSX.Element => (
       questionnaire={{
         resourceType: 'Questionnaire',
         id: 'groups-example',
-        title: 'Groups Exmple',
+        title: 'Groups Example',
         item: [
           {
             linkId: 'group1',
