@@ -7,17 +7,17 @@ import {
 } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
-import { Button } from './Button';
-import { Document } from './Document';
-import { Form } from './Form';
-import { FormSection } from './FormSection';
-import { getGoogleClientId, GoogleButton } from './GoogleButton';
-import { Input } from './Input';
-import { useMedplum } from './MedplumProvider';
-import { getIssuesForExpression } from './utils/outcomes';
-import { getRecaptcha, initRecaptcha } from './utils/recaptcha';
+import { Button } from '../Button';
+import { Document } from '../Document';
+import { Form } from '../Form';
+import { FormSection } from '../FormSection';
+import { getGoogleClientId, GoogleButton } from '../GoogleButton';
+import { Input } from '../Input';
+import { useMedplum } from '../MedplumProvider';
+import { getIssuesForExpression } from '../utils/outcomes';
+import { getRecaptcha, initRecaptcha } from '../utils/recaptcha';
 import './SignInForm.css';
-import './util.css';
+import '../util.css';
 
 export interface BaseRegisterFormProps {
   readonly googleClientId?: string;

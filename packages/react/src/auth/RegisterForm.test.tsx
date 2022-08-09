@@ -4,7 +4,7 @@ import { randomUUID, webcrypto } from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';
-import { MedplumProvider } from './MedplumProvider';
+import { MedplumProvider } from '../MedplumProvider';
 import { RegisterForm, RegisterFormProps } from './RegisterForm';
 
 const recaptchaSiteKey = 'abc';

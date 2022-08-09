@@ -1,8 +1,8 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
+import { SignInForm } from '../auth/SignInForm';
 import { FooterLinks } from '../FooterLinks';
 import { Logo } from '../Logo';
-import { SignInForm } from '../SignInForm';
 
 export default {
   title: 'Medplum/SignInForm',
