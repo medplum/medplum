@@ -43,6 +43,11 @@ export async function newPatientHandler(req: Request, res: Response): Promise<vo
   const { projectId } = req.body;
 
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+  if (!user.project) {
+    sendOutcome(res, badRequest('User must be scoped to the project'));
+    return;
+  }
+
   const { firstName, lastName } = user;
   const membership = await createPatient(login, projectId, firstName as string, lastName as string);
 

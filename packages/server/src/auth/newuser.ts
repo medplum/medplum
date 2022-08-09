@@ -1,4 +1,4 @@
-import { badRequest, Operator } from '@medplum/core';
+import { badRequest, NewUserRequest, Operator } from '@medplum/core';
 import { OperationOutcome, Project, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
@@ -8,17 +8,8 @@ import { pwnedPassword } from 'hibp';
 import { getConfig } from '../config';
 import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { logger } from '../logger';
-import { getUserByEmail, tryLogin } from '../oauth';
+import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth';
 import { verifyRecaptcha } from './utils';
-
-export interface NewUserRequest {
-  readonly projectId?: string;
-  readonly firstName: string;
-  readonly lastName: string;
-  readonly email: string;
-  readonly password: string;
-  readonly recaptchaToken: string;
-}
 
 export const newUserValidators = [
   body('firstName').notEmpty().withMessage('First name is required'),
@@ -65,7 +56,14 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
     return;
   }
 
-  const existingUser = await getUserByEmail(req.body.email, req.body.projectId);
+  // If the user is a practitioner, then projectId should be undefined
+  // If the user is a patient, then projectId must be set
+  let existingUser = undefined;
+  if (req.body.projectId && req.body.projectId !== 'new') {
+    existingUser = await getUserByEmailInProject(req.body.email, req.body.projectId);
+  } else {
+    existingUser = await getUserByEmailWithoutProject(req.body.email);
+  }
   if (existingUser) {
     sendOutcome(res, badRequest('Email already registered', 'email'));
     return;
@@ -94,7 +92,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
 }
 
 export async function createUser(request: NewUserRequest): Promise<User> {
-  const { firstName, lastName, email, password } = request;
+  const { firstName, lastName, email, password, projectId } = request;
 
   const numPwns = await pwnedPassword(password);
   if (numPwns > 0) {
@@ -109,6 +107,7 @@ export async function createUser(request: NewUserRequest): Promise<User> {
     lastName,
     email,
     passwordHash,
+    project: projectId ? { reference: `Project/${projectId}` } : undefined,
   });
   logger.info('Created: ' + result.id);
   return result;

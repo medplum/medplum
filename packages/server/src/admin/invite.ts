@@ -9,7 +9,7 @@ import { getConfig } from '../config';
 import { sendEmail } from '../email/email';
 import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
 import { logger } from '../logger';
-import { generateSecret, getUserByEmail } from '../oauth';
+import { generateSecret, getUserByEmailWithoutProject } from '../oauth';
 import { verifyProjectAdmin } from './utils';
 
 export const inviteValidators = [
@@ -49,7 +49,7 @@ export interface InviteRequest {
 
 export async function inviteUser(request: InviteRequest): Promise<Practitioner> {
   const project = request.project;
-  let user = await getUserByEmail(request.email, project.id);
+  let user = await getUserByEmailWithoutProject(request.email);
 
   if (user) {
     // Existing user
