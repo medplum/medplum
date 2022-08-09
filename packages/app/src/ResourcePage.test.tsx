@@ -3,9 +3,8 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { HomePage } from './HomePage';
-import { ResourcePage } from './ResourcePage';
+import { MemoryRouter } from 'react-router-dom';
+import { AppRoutes } from './AppRoutes';
 
 describe('ResourcePage', () => {
   async function setup(url: string, medplum = new MockClient()): Promise<void> {
@@ -13,11 +12,7 @@ describe('ResourcePage', () => {
       render(
         <MedplumProvider medplum={medplum}>
           <MemoryRouter initialEntries={[url]} initialIndex={0}>
-            <Routes>
-              <Route path="/:resourceType/:id/:tab" element={<ResourcePage />} />
-              <Route path="/:resourceType/:id" element={<ResourcePage />} />
-              <Route path="/:resourceType" element={<HomePage />} />
-            </Routes>
+            <AppRoutes />
           </MemoryRouter>
         </MedplumProvider>
       );

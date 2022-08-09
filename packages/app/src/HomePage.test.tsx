@@ -3,20 +3,16 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { getDefaultFields, HomePage } from './HomePage';
+import { MemoryRouter } from 'react-router-dom';
+import { AppRoutes } from './AppRoutes';
+import { getDefaultFields } from './HomePage';
 
 async function setup(url = '/Patient', medplum = new MockClient()): Promise<void> {
   await act(async () => {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
-          <Routes>
-            <Route path="/:resourceType/new" element={<div>Create Resource Page</div>} />
-            <Route path="/:resourceType/:id" element={<div>Resource Page</div>} />
-            <Route path="/:resourceType" element={<HomePage />} />
-            <Route path="/" element={<HomePage />} />
-          </Routes>
+          <AppRoutes />
         </MemoryRouter>
       </MedplumProvider>
     );
@@ -188,7 +184,7 @@ describe('HomePage', () => {
     });
 
     // Change the tab
-    expect(screen.getByText('Resource Page')).toBeInTheDocument();
+    expect(screen.getByText('Timeline')).toBeInTheDocument();
 
     // Do not open a new browser tab
     expect(window.open).not.toHaveBeenCalled();

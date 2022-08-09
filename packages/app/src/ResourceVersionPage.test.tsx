@@ -2,8 +2,8 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { ResourceVersionPage } from './ResourceVersionPage';
+import { MemoryRouter } from 'react-router-dom';
+import { AppRoutes } from './AppRoutes';
 
 const medplum = new MockClient();
 
@@ -12,10 +12,7 @@ describe('ResourceVersionPage', () => {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
-          <Routes>
-            <Route path="/:resourceType/:id/_history/:versionId/:tab" element={<ResourceVersionPage />} />
-            <Route path="/:resourceType/:id/_history/:versionId" element={<ResourceVersionPage />} />
-          </Routes>
+          <AppRoutes />
         </MemoryRouter>
       </MedplumProvider>
     );

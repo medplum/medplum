@@ -3,9 +3,9 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { ResourcePage } from './ResourcePage';
+import { AppRoutes } from './AppRoutes';
 
 jest.mock('react-toastify', () => ({
   toast: {
@@ -23,9 +23,7 @@ describe('BotEditor', () => {
       render(
         <MedplumProvider medplum={medplum}>
           <MemoryRouter initialEntries={[url]} initialIndex={0}>
-            <Routes>
-              <Route path="/:resourceType/:id/:tab" element={<ResourcePage />} />
-            </Routes>
+            <AppRoutes />
           </MemoryRouter>
         </MedplumProvider>
       );

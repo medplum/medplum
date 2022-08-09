@@ -3,8 +3,8 @@ import { ExampleUserConfiguration, HomerServiceRequest, MockClient } from '@medp
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { ResourcePage } from './ResourcePage';
+import { MemoryRouter } from 'react-router-dom';
+import { AppRoutes } from './AppRoutes';
 
 const medplum = new MockClient();
 medplum.getUserConfiguration = () => ExampleUserConfiguration;
@@ -15,9 +15,7 @@ describe('QuickStatus', () => {
       render(
         <MedplumProvider medplum={medplum}>
           <MemoryRouter initialEntries={[url]} initialIndex={0}>
-            <Routes>
-              <Route path="/:resourceType/:id" element={<ResourcePage />} />
-            </Routes>
+            <AppRoutes />
           </MemoryRouter>
         </MedplumProvider>
       );
