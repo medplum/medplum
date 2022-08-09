@@ -77,8 +77,8 @@ medplum/
 │   ├── graphiql     # Preconfigured GraphiQL
 │   ├── infra        # Infra as code
 │   ├── mock         # Mock FHIR data for testing
-│   └── react        # React component library
-│   ├── server       # Backend API server
+│   ├── react        # React component library
+│   └── server       # Backend API server
 └── scripts          # Helper bash scripts
 ```
 
