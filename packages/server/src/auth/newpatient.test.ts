@@ -76,6 +76,7 @@ describe('New patient', () => {
       .post('/auth/newuser')
       .type('json')
       .send({
+        projectId,
         firstName: 'Peggy',
         lastName: 'Patient',
         email: `peggy${randomUUID()}@example.com`,

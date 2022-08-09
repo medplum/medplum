@@ -93,7 +93,7 @@ export async function sendLoginResult(res: Response, login: Login, newProject: b
   // User has multiple profiles, so the user needs to select
   // Safe to rewrite attachments,
   // because we know that these are all resources that the user has access to
-  const memberships = await getUserMemberships(login?.user as Reference<User>); //, newProject ? 'new' : undefined);
+  const memberships = await getUserMemberships(login?.user as Reference<User>);
   const redactedMemberships = memberships.map((m) => ({
     id: m.id,
     project: m.project,

@@ -316,7 +316,6 @@ export async function revokeLogin(login: Login): Promise<void> {
 
 /**
  * Searches for user by email.
- * TODO: When we implement FHIR _filter, this method can be simplified with an "or" operation.
  * @param email The email string.
  * @param projectId Optional project ID.
  * @return The user if found; otherwise, undefined.
@@ -339,7 +338,7 @@ export async function getUserByEmail(email: string, projectId: string | undefine
  * @param projectId The project ID.
  * @returns The user if found; otherwise, undefined.
  */
-async function getUserByEmailInProject(email: string, projectId: string): Promise<User | undefined> {
+export async function getUserByEmailInProject(email: string, projectId: string): Promise<User | undefined> {
   const bundle = await systemRepo.search({
     resourceType: 'User',
     filters: [
@@ -364,7 +363,7 @@ async function getUserByEmailInProject(email: string, projectId: string): Promis
  * @param email The email string.
  * @returns The user if found; otherwise, undefined.
  */
-async function getUserByEmailWithoutProject(email: string): Promise<User | undefined> {
+export async function getUserByEmailWithoutProject(email: string): Promise<User | undefined> {
   const bundle = await systemRepo.search({
     resourceType: 'User',
     filters: [

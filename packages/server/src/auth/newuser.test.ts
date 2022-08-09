@@ -49,7 +49,6 @@ describe('New user', () => {
       .send({
         firstName: 'Alexander',
         lastName: 'Hamilton',
-        projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
         recaptchaToken: 'xyz',
@@ -231,5 +230,66 @@ describe('New user', () => {
       });
     expect(res.status).toBe(400);
     expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe('Invalid recaptchaSecretKey');
+  });
+
+  test('Isolated projects', async () => {
+    // 1 email address, 3 scenarios
+    // First, register a new project
+    // Next, register as a patient in a different project
+    // Third, register as a patient in a different project
+    // All 3 of these should be isolated
+
+    const email = `test${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    // Project P1 is owned by the email address
+    const reg1 = await registerNew({ firstName: 'P1', lastName: 'P1', projectName: 'P1', email, password });
+    expect(reg1).toBeDefined();
+
+    // Project P2 is owned by someone else
+    const reg2 = await registerNew({
+      firstName: 'P2',
+      lastName: 'P2',
+      projectName: 'P2',
+      email: randomUUID(),
+      password: randomUUID(),
+    });
+    expect(reg2).toBeDefined();
+
+    // Project P3 is owned by someone else
+    const reg3 = await registerNew({
+      firstName: 'P3',
+      lastName: 'P3',
+      projectName: 'P3',
+      email: randomUUID(),
+      password: randomUUID(),
+    });
+    expect(reg3).toBeDefined();
+
+    // Try to register as a patient in Project P2
+    const res1 = await request(app).post('/auth/newuser').type('json').send({
+      projectId: reg2.project.id,
+      firstName: 'Isolated1',
+      lastName: 'Isolated1',
+      email,
+      password,
+      recaptchaToken: 'xyz',
+    });
+    expect(res1.status).toBe(200);
+    expect(res1.body.login).toBeDefined();
+    expect(res1.body.code).toBeUndefined();
+
+    // Try to register as a patient in Project P2
+    const res2 = await request(app).post('/auth/newuser').type('json').send({
+      projectId: reg3.project.id,
+      firstName: 'Isolated2',
+      lastName: 'Isolated2',
+      email,
+      password,
+      recaptchaToken: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.login).toBeDefined();
+    expect(res2.body.code).toBeUndefined();
   });
 });
