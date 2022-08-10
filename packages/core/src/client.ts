@@ -209,10 +209,12 @@ export interface NewUserRequest {
 }
 
 export interface NewProjectRequest {
+  readonly login: string;
   readonly projectName: string;
 }
 
 export interface NewPatientRequest {
+  readonly login: string;
   readonly projectId: string;
 }
 
@@ -228,6 +230,7 @@ export interface GoogleLoginRequest {
   readonly clientId?: string;
   readonly scope?: string;
   readonly nonce?: string;
+  readonly createUser?: boolean;
 }
 
 export interface LoginAuthenticationResponse {
@@ -628,17 +631,10 @@ export class MedplumClient extends EventTarget {
    * This requires a partial login from `startNewUser` or `startNewGoogleUser`.
    *
    * @param newProjectRequest Register request including email and password.
-   * @param login The partial login to complete.  This should come from the `startNewUser` method.
    * @returns Promise to the authentication response.
    */
-  async startNewProject(
-    newProjectRequest: NewProjectRequest,
-    login: LoginAuthenticationResponse
-  ): Promise<LoginAuthenticationResponse> {
-    return this.post('auth/newproject', {
-      ...newProjectRequest,
-      ...login,
-    }) as Promise<LoginAuthenticationResponse>;
+  async startNewProject(newProjectRequest: NewProjectRequest): Promise<LoginAuthenticationResponse> {
+    return this.post('auth/newproject', newProjectRequest) as Promise<LoginAuthenticationResponse>;
   }
 
   /**
@@ -647,17 +643,10 @@ export class MedplumClient extends EventTarget {
    * This requires a partial login from `startNewUser` or `startNewGoogleUser`.
    *
    * @param newPatientRequest Register request including email and password.
-   * @param login The partial login to complete.  This should come from the `startNewUser` method.
    * @returns Promise to the authentication response.
    */
-  async startNewPatient(
-    newPatientRequest: NewPatientRequest,
-    login: LoginAuthenticationResponse
-  ): Promise<LoginAuthenticationResponse> {
-    return this.post('auth/newpatient', {
-      ...newPatientRequest,
-      ...login,
-    }) as Promise<LoginAuthenticationResponse>;
+  async startNewPatient(newPatientRequest: NewPatientRequest): Promise<LoginAuthenticationResponse> {
+    return this.post('auth/newpatient', newPatientRequest) as Promise<LoginAuthenticationResponse>;
   }
 
   /**

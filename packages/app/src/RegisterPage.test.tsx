@@ -48,6 +48,7 @@ describe('RegisterPage', () => {
   test('Submit success', async () => {
     const medplum = new MockClient();
     medplum.getProfile = jest.fn(() => undefined) as any;
+    medplum.startNewUser = jest.fn(() => Promise.resolve({ login: '1' }));
     await setup(medplum);
 
     Object.defineProperty(global, 'grecaptcha', {
@@ -68,15 +69,20 @@ describe('RegisterPage', () => {
       fireEvent.change(screen.getByTestId('lastName'), {
         target: { value: 'Washington' },
       });
-      fireEvent.change(screen.getByTestId('projectName'), {
-        target: { value: 'Test Project' },
-      });
       fireEvent.change(screen.getByTestId('email'), {
         target: { value: 'george@example.com' },
       });
       fireEvent.change(screen.getByTestId('password'), {
         target: { value: 'password' },
       });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('submit'));
+    });
+
+    fireEvent.change(screen.getByTestId('projectName'), {
+      target: { value: 'Test Project' },
     });
 
     await act(async () => {

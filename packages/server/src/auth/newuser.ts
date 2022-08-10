@@ -35,7 +35,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
   let secretKey: string | undefined = getConfig().recaptchaSecretKey;
   let project: Project | undefined;
 
-  if (recaptchaSiteKey !== getConfig().recaptchaSiteKey) {
+  if (recaptchaSiteKey && recaptchaSiteKey !== getConfig().recaptchaSiteKey) {
     // If the recaptcha site key is not the main Medplum recaptcha site key,
     // then it must be associated with a Project.
     // The user can only authenticate with that project.

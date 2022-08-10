@@ -100,10 +100,11 @@ describe('MockClient', () => {
     expect(response1).toBeDefined();
 
     const newProjectRequest: NewProjectRequest = {
+      login: response1.login,
       projectName: 'Sally World',
     };
 
-    const response2 = await client.startNewProject(newProjectRequest, response1);
+    const response2 = await client.startNewProject(newProjectRequest);
     expect(response2).toBeDefined();
 
     const response3 = await client.processCode(response2.code as string);
@@ -125,10 +126,11 @@ describe('MockClient', () => {
     expect(response1).toBeDefined();
 
     const newPatientRequest: NewPatientRequest = {
+      login: response1.login,
       projectId: '123',
     };
 
-    const response2 = await client.startNewPatient(newPatientRequest, response1);
+    const response2 = await client.startNewPatient(newPatientRequest);
     expect(response2).toBeDefined();
 
     const response3 = await client.processCode(response2.code as string);

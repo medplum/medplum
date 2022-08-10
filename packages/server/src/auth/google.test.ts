@@ -112,11 +112,24 @@ describe('Google Auth', () => {
     expect(res.body.code).toBeDefined();
   });
 
+  test('Do not create user', async () => {
+    const email = 'new-google-' + randomUUID() + '@example.com';
+    const res = await request(app).post('/auth/google').type('json').send({
+      googleClientId: getConfig().googleClientId,
+      googleCredential: email,
+    });
+    expect(res.status).toBe(400);
+
+    const user = await getUserByEmail(email, undefined);
+    expect(user).toBeUndefined();
+  });
+
   test('Create new user account', async () => {
     const email = 'new-google-' + randomUUID() + '@example.com';
     const res = await request(app).post('/auth/google').type('json').send({
       googleClientId: getConfig().googleClientId,
       googleCredential: email,
+      createUser: true,
     });
     expect(res.status).toBe(200);
     expect(res.body.login).toBeDefined();
