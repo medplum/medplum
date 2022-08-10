@@ -52,6 +52,13 @@ export interface Project {
   description?: string;
 
   /**
+   * Whether this project is the super administrator project. A super
+   * administrator is a user who has complete access to all resources in
+   * all projects.
+   */
+  superAdmin?: boolean;
+
+  /**
    * The user who owns the project.
    */
   owner?: Reference<User>;

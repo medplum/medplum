@@ -15,7 +15,7 @@ export async function seedDatabase(): Promise<void> {
 
   const firstName = 'Medplum';
   const lastName = 'Admin';
-  const projectName = 'Medplum';
+  const projectName = 'Super Admin';
   const email = 'admin@example.com';
   const password = 'medplum_admin';
 
@@ -24,13 +24,13 @@ export async function seedDatabase(): Promise<void> {
     resourceType: 'User',
     email,
     passwordHash,
-    admin: true,
   });
 
   const project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: projectName,
     owner: createReference(user),
+    superAdmin: true,
   });
 
   const practitioner = await systemRepo.createResource<Practitioner>({
@@ -61,7 +61,6 @@ export async function seedDatabase(): Promise<void> {
     admin: true,
   });
 
-  await createPublicProject(user);
   await createValueSetElements();
   await createSearchParameters();
   await createStructureDefinitions();
@@ -77,19 +76,4 @@ async function isSeeded(): Promise<boolean> {
     count: 1,
   });
   return !!bundle.entry && bundle.entry.length > 0;
-}
-
-/**
- * Creates the public project.
- * This is a special project that is available to all users.
- * It includes 'implementation' resources such as CapabilityStatement.
- */
-async function createPublicProject(owner: User): Promise<void> {
-  logger.info('Create Public project...');
-  const result = await systemRepo.createResource<Project>({
-    resourceType: 'Project',
-    name: 'Public',
-    owner: createReference(owner),
-  });
-  logger.info('Created: ' + result.id);
 }

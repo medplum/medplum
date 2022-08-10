@@ -75,6 +75,17 @@
             }]
           },
           {
+            "id" : "Project.superAdmin",
+            "path" : "Project.superAdmin",
+            "short" : "Whether this project is the super administrator project.",
+            "definition" : "Whether this project is the super administrator project. A super administrator is a user who has complete access to all resources in all projects.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
+            }]
+          },
+          {
             "id" : "Project.owner",
             "path" : "Project.owner",
             "definition" : "The user who owns the project.",
@@ -405,8 +416,8 @@
           {
             "id" : "User.admin",
             "path" : "User.admin",
-            "short" : "Whether this user is a system administrator.",
-            "definition" : "Whether this user is a system administrator.",
+            "short" : "DEPRECATED",
+            "definition" : "DEPRECATED",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -875,7 +886,17 @@
           {
             "id" : "Login.admin",
             "path" : "Login.admin",
-            "definition" : "Whether this login has system administrator privileges.",
+            "definition" : "DEPRECATED",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
+            }]
+          },
+          {
+            "id" : "Login.superAdmin",
+            "path" : "Login.superAdmin",
+            "definition" : "Whether this login has super administrator privileges.",
             "min" : 0,
             "max" : "1",
             "type" : [{

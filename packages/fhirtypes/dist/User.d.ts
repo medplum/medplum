@@ -67,7 +67,7 @@ export interface User {
   emailVerified?: boolean;
 
   /**
-   * Whether this user is a system administrator.
+   * DEPRECATED
    */
   admin?: boolean;
 
