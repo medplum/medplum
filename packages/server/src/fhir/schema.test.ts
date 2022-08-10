@@ -75,6 +75,17 @@ describe('FHIR schema', () => {
     }
   });
 
+  test('Undefined array element', () => {
+    try {
+      validateResource({ resourceType: 'Patient', name: [{ given: [undefined] }] } as unknown as Patient);
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('name[0].given[0]');
+    }
+  });
+
   test('Nested null array element', () => {
     try {
       validateResource({
