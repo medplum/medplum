@@ -1,4 +1,4 @@
-import { OperationOutcome, Practitioner } from '@medplum/fhirtypes';
+import { Bot, OperationOutcome, Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -18,6 +18,17 @@ describe('ResourcePage', () => {
       );
     });
   }
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(async () => {
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
+  });
 
   test('Not found', async () => {
     await setup('/Practitioner/not-found');
@@ -183,6 +194,49 @@ describe('ResourcePage', () => {
     window.alert = jest.fn();
     fireEvent.click(screen.getByText('OK'));
     expect(window.alert).toHaveBeenCalledWith('You submitted the preview');
+  });
+
+  test('Questionnaire bots', async () => {
+    const medplum = new MockClient();
+    const bot = await medplum.createResource<Bot>({
+      resourceType: 'Bot',
+      name: 'Test Bot',
+    });
+    expect(bot.id).toBeDefined();
+
+    await setup('/Questionnaire/123/bots');
+    await waitFor(() => screen.getByText('Connect to bot'));
+
+    expect(screen.getByText('Connect to bot')).toBeInTheDocument();
+
+    // Select "Test Bot" in the bot input field
+
+    const input = screen.getByTestId('input-element') as HTMLInputElement;
+
+    // Enter "Simpson"
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Test' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    await waitFor(() => screen.getByTestId('dropdown'));
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    // Click on "Connect"
+    await act(async () => {
+      fireEvent.click(screen.getByText('Connect'));
+    });
+
+    // Bot subscription should now be listed
+    expect(screen.getByText('Criteria: QuestionnaireResponse?questionnaire=Questionnaire/123')).toBeInTheDocument();
   });
 
   test('Bot editor', async () => {
