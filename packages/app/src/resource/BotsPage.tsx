@@ -56,7 +56,7 @@ export function BotsPage(props: BotsPageProps): JSX.Element {
       <h1>Connect to bot</h1>
       <InputRow>
         <ResourceInput name="bot" resourceType="Bot" onChange={setConnectBot} />
-        <Button onClick={connectToBot}>Connect to bot</Button>
+        <Button onClick={connectToBot}>Connect</Button>
       </InputRow>
       <div style={{ display: 'none' }}>{updated}</div>
     </div>
