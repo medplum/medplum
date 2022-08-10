@@ -45,10 +45,10 @@ import { SpecimenHeader } from '../components/SpecimenHeader';
 import { getPatient, getSpecimen } from '../utils';
 import { AppsPage } from './AppsPage';
 import { BotEditor } from './BotEditor';
+import { BotsPage } from './BotsPage';
 import { DeletePage } from './DeletePage';
 import { JsonPage } from './JsonPage';
 import { PlanDefinitionApplyForm } from './PlanDefinitionApplyForm';
-import { SubscriptionsPage } from './SubscriptionsPage';
 
 function getTabs(resourceType: string): string[] {
   const result = ['Timeline'];
@@ -62,7 +62,7 @@ function getTabs(resourceType: string): string[] {
   }
 
   if (resourceType === 'Questionnaire') {
-    result.push('Preview', 'Builder');
+    result.push('Preview', 'Builder', 'Bots');
   }
 
   if (resourceType === 'DiagnosticReport') {
@@ -73,7 +73,7 @@ function getTabs(resourceType: string): string[] {
     result.push('Checklist');
   }
 
-  result.push('Details', 'Edit', 'History', 'Blame', 'JSON', 'Apps', 'Subscriptions');
+  result.push('Details', 'Edit', 'History', 'Blame', 'JSON', 'Apps');
   return result;
 }
 
@@ -249,7 +249,6 @@ interface ResourceTabProps {
 function ResourceTab(props: ResourceTabProps): JSX.Element | null {
   const navigate = useNavigate();
   const { resourceType, id } = props.resource;
-  console.log('tab name', props.name);
   switch (props.name) {
     case 'details':
       return <ResourceTable value={props.resource} />;
@@ -315,8 +314,8 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
       );
     case 'apply':
       return <PlanDefinitionApplyForm planDefinition={props.resource as PlanDefinition} />;
-    case 'subscriptions':
-      return <SubscriptionsPage resource={props.resource} />;
+    case 'bots':
+      return <BotsPage resource={props.resource} />;
   }
   return null;
 }
