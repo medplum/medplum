@@ -1,5 +1,5 @@
 import React from 'react';
-import { sendCommand } from './utils';
+import { sendCommand } from '../utils';
 
 export interface CodeEditorProps {
   language: 'typescript' | 'json';

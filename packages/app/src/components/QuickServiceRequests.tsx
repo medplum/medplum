@@ -3,7 +3,7 @@ import { BundleEntry, Patient, Reference, Resource, ServiceRequest } from '@medp
 import { MedplumLink, sortByDateAndPriority, useMedplum, useResource } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { getPatient } from './utils';
+import { getPatient } from '../utils';
 import './QuickServiceRequests.css';
 
 export interface QuickServiceRequestsProps {

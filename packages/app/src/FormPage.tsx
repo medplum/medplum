@@ -10,8 +10,8 @@ import {
 import { Document, Loading, MedplumLink, QuestionnaireForm, TitleBar, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { PatientHeader } from './PatientHeader';
-import { ResourceHeader } from './ResourceHeader';
+import { PatientHeader } from './components/PatientHeader';
+import { ResourceHeader } from './components/ResourceHeader';
 import { getPatient } from './utils';
 
 export function FormPage(): JSX.Element {
