@@ -1,5 +1,5 @@
-import { formatDateTime } from '@medplum/core';
-import { Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
+import { formatDateTime, normalizeErrorString } from '@medplum/core';
+import { Bundle, BundleEntry, Resource, ResourceType } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
@@ -39,8 +39,8 @@ export function ResourceHistoryTable(props: ResourceHistoryTableProps): JSX.Elem
         </tr>
       </thead>
       <tbody>
-        {value.entry?.map((entry) => (
-          <HistoryRow key={entry.resource?.meta?.versionId} version={entry.resource as Resource} />
+        {value.entry?.map((entry, index) => (
+          <HistoryRow key={'entry-' + index} entry={entry} />
         ))}
       </tbody>
     </table>
@@ -48,21 +48,30 @@ export function ResourceHistoryTable(props: ResourceHistoryTableProps): JSX.Elem
 }
 
 interface HistoryRowProps {
-  version: Resource;
+  entry: BundleEntry;
 }
 
 function HistoryRow(props: HistoryRowProps): JSX.Element {
-  return (
-    <tr>
-      <td>
-        <ResourceBadge value={props.version.meta?.author} link={true} />
-      </td>
-      <td>{formatDateTime(props.version.meta?.lastUpdated)}</td>
-      <td>
-        <MedplumLink to={getVersionUrl(props.version)}>{props.version.meta?.versionId}</MedplumLink>
-      </td>
-    </tr>
-  );
+  const { response, resource } = props.entry;
+  if (resource) {
+    return (
+      <tr>
+        <td>
+          <ResourceBadge value={resource.meta?.author} link={true} />
+        </td>
+        <td>{formatDateTime(resource.meta?.lastUpdated)}</td>
+        <td>
+          <MedplumLink to={getVersionUrl(resource)}>{resource.meta?.versionId}</MedplumLink>
+        </td>
+      </tr>
+    );
+  } else {
+    return (
+      <tr>
+        <td colSpan={3}>{normalizeErrorString(response?.outcome)}</td>
+      </tr>
+    );
+  }
 }
 
 function getVersionUrl(resource: Resource): string {

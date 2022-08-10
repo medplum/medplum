@@ -1,4 +1,4 @@
-import { normalizeErrorString, resolveId } from '@medplum/core';
+import { isGone, normalizeErrorString, resolveId } from '@medplum/core';
 import {
   Bot,
   Bundle,
@@ -11,6 +11,7 @@ import {
   ServiceRequest,
 } from '@medplum/fhirtypes';
 import {
+  Button,
   DefaultResourceTimeline,
   DiagnosticReportDisplay,
   Document,
@@ -120,11 +121,11 @@ export function ResourcePage(): JSX.Element {
       .executeBatch(requestBundle)
       .then((responseBundle: Bundle) => {
         if (responseBundle.entry?.[0]?.response?.status !== '200') {
-          setError(responseBundle.entry?.[0]?.response as OperationOutcome);
+          setError(responseBundle.entry?.[0]?.response?.outcome as OperationOutcome);
         } else {
           setValue(responseBundle.entry?.[0]?.resource);
-          setHistoryBundle(responseBundle.entry?.[1]?.resource as Bundle);
         }
+        setHistoryBundle(responseBundle.entry?.[1]?.resource as Bundle);
         setLoading(false);
       })
       .catch((reason) => {
@@ -158,6 +159,15 @@ export function ResourcePage(): JSX.Element {
       .catch((err) => toast.error(normalizeErrorString(err)));
   }
 
+  function restoreResource(): void {
+    const restoredResource = historyBundle?.entry?.find((e) => !!e.resource)?.resource;
+    if (restoredResource) {
+      onSubmit(restoredResource);
+    } else {
+      toast.error('No history to restore');
+    }
+  }
+
   function onStatusChange(status: string): void {
     const serviceRequest = value as ServiceRequest;
     const orderDetail = serviceRequest.orderDetail || [];
@@ -176,6 +186,18 @@ export function ResourcePage(): JSX.Element {
 
   if (loading) {
     return <Loading />;
+  }
+
+  if (error && isGone(error)) {
+    return (
+      <Document>
+        <h1>Deleted</h1>
+        <p>The resource was deleted.</p>
+        <Button danger={true} onClick={restoreResource}>
+          Restore
+        </Button>
+      </Document>
+    );
   }
 
   if (!value || !historyBundle) {
