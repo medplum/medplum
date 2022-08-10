@@ -83,8 +83,14 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
 
   const existingUser = await getUserByEmail(claims.email, project?.id);
   if (!existingUser) {
+    if (!req.body.createUser) {
+      sendOutcome(res, badRequest('User not found'));
+      return;
+    }
     await systemRepo.createResource<User>({
       resourceType: 'User',
+      firstName: claims.given_name,
+      lastName: claims.family_name,
       email: claims.email,
       project: project ? createReference(project) : undefined,
     });

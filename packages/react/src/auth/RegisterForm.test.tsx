@@ -21,6 +21,11 @@ function mockFetch(url: string, options: any): Promise<any> {
         login: '1',
         code: '1',
       };
+    } else if (email === 'new-project@example.com' && password === 'new-password') {
+      status = 200;
+      result = {
+        login: '1',
+      };
     } else {
       status = 400;
       result = {
@@ -167,12 +172,8 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('projectName'), { target: { value: 'My Project' } });
-    });
-
-    await act(async () => {
       fireEvent.change(screen.getByTestId('email'), {
-        target: { value: 'new-user@example.com' },
+        target: { value: 'new-project@example.com' },
       });
     });
 
@@ -180,6 +181,16 @@ describe('RegisterForm', () => {
       fireEvent.change(screen.getByTestId('password'), {
         target: { value: 'new-password' },
       });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('submit'));
+    });
+
+    await waitFor(() => screen.getByTestId('projectName'));
+
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('projectName'), { target: { value: 'My Project' } });
     });
 
     await act(async () => {
