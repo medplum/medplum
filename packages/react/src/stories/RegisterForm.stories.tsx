@@ -1,8 +1,8 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
+import { RegisterForm } from '../auth/RegisterForm';
 import { FooterLinks } from '../FooterLinks';
 import { Logo } from '../Logo';
-import { RegisterForm } from '../RegisterForm';
 
 export default {
   title: 'Medplum/RegisterForm',
