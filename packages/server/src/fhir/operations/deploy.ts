@@ -42,6 +42,8 @@ exports.handler = async (event, context) => {
   } catch (err) {
     if (err instanceof Error) {
       console.log("Unhandled error: " + err.message + "\\n" + err.stack);
+    } else if (typeof err === "object") {
+      console.log("Unhandled error: " + JSON.stringify(err, undefined, 2));
     } else {
       console.log("Unhandled error: " + err);
     }
