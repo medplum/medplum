@@ -252,7 +252,11 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   }
 
   // Everything checks out, update the login
-  return systemRepo.updateResource<Login>({ ...login, membership: createReference(membership) });
+  return systemRepo.updateResource<Login>({
+    ...login,
+    membership: createReference(membership),
+    superAdmin: project.superAdmin,
+  });
 }
 
 export async function getAuthTokens(login: Login, profile: Reference<ProfileResource>): Promise<TokenResult> {

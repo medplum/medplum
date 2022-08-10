@@ -130,9 +130,14 @@ export interface Login {
   revoked?: boolean;
 
   /**
-   * Whether this login has system administrator privileges.
+   * DEPRECATED
    */
   admin?: boolean;
+
+  /**
+   * Whether this login has super administrator privileges.
+   */
+  superAdmin?: boolean;
 
   /**
    * The Internet Protocol (IP) address of the client or last proxy that

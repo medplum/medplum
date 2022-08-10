@@ -87,7 +87,7 @@ export interface RepositoryContext {
    * Optional flag for system administrators,
    * which grants system-level access.
    */
-  admin?: boolean;
+  superAdmin?: boolean;
 }
 
 export interface CacheEntry<T extends Resource> {
@@ -171,7 +171,7 @@ export class Repository {
       const cacheRecord = await getCacheEntry<T>(resourceType, id);
       if (cacheRecord) {
         if (
-          !this.#isAdmin() &&
+          !this.#isSuperAdmin() &&
           this.#context.project !== undefined &&
           cacheRecord.projectId !== undefined &&
           cacheRecord.projectId !== this.#context.project
@@ -425,7 +425,7 @@ export class Repository {
    * @param resourceType The resource type.
    */
   async reindexResourceType(resourceType: string): Promise<void> {
-    if (!this.#isSystem()) {
+    if (!this.#isSuperAdmin()) {
       throw forbidden;
     }
 
@@ -447,7 +447,7 @@ export class Repository {
    * @param id The resource ID.
    */
   async reindexResource<T extends Resource>(resourceType: string, id: string): Promise<T> {
-    if (!this.#isSystem() && !this.#isAdmin()) {
+    if (!this.#isSuperAdmin()) {
       throw forbidden;
     }
 
@@ -465,7 +465,7 @@ export class Repository {
    * @param id The resource ID.
    */
   async resendSubscriptions<T extends Resource>(resourceType: string, id: string): Promise<T> {
-    if (!this.#isSystem() && !this.#isAdmin()) {
+    if (!this.#isSuperAdmin()) {
       throw forbidden;
     }
 
@@ -657,7 +657,7 @@ export class Repository {
       return;
     }
 
-    if (this.#isAdmin()) {
+    if (this.#isSuperAdmin()) {
       // No compartment restrictions for admins.
       return;
     }
@@ -1306,7 +1306,7 @@ export class Repository {
    * @returns True if the current user can manually set the ID field.
    */
   #canSetId(): boolean {
-    return this.#isSystem() || this.#isAdmin();
+    return this.#isSuperAdmin();
   }
 
   /**
@@ -1314,7 +1314,7 @@ export class Repository {
    * @returns True if the current user can manually set meta fields.
    */
   #canWriteMeta(): boolean {
-    return this.#isSystem() || this.#isAdmin();
+    return this.#isSuperAdmin();
   }
 
   /**
@@ -1323,7 +1323,7 @@ export class Repository {
    * @returns True if the current user can read the specified resource type.
    */
   #canReadResourceType(resourceType: string): boolean {
-    if (this.#isSystem() || this.#isAdmin()) {
+    if (this.#isSuperAdmin()) {
       return true;
     }
     if (protectedResourceTypes.includes(resourceType)) {
@@ -1351,7 +1351,7 @@ export class Repository {
    * @returns True if the current user can write the specified resource type.
    */
   #canWriteResourceType(resourceType: string): boolean {
-    if (this.#isSystem() || this.#isAdmin()) {
+    if (this.#isSuperAdmin()) {
       return true;
     }
     if (protectedResourceTypes.includes(resourceType)) {
@@ -1437,14 +1437,14 @@ export class Repository {
     return undefined;
   }
 
-  #isSystem(): boolean {
-    return this.#context.author.reference === 'system';
+  #isSuperAdmin(): boolean {
+    return !!this.#context.superAdmin || this.#isAdminClient();
   }
 
-  #isAdmin(): boolean {
-    return !!this.#context.admin || this.#isAdminClient();
-  }
-
+  /**
+   * Deprecated, for removal.
+   * @deprecated
+   */
   #isAdminClient(): boolean {
     const { adminClientId } = getConfig();
     return !!adminClientId && this.#context.author.reference === 'ClientApplication/' + adminClientId;
@@ -1526,20 +1526,10 @@ function fhirOperatorToSqlOperator(fhirOperator: FhirOperator): Operator {
  * Login instances contain details about user compartments.
  * This method ensures that the repository is setup correctly.
  * @param login The user login.
+ * @param membership The active project membership.
  * @returns A repository configured for the login details.
  */
 export async function getRepoForLogin(login: Login, membership: ProjectMembership): Promise<Repository> {
-  if (login.admin) {
-    return new Repository({
-      project: resolveId(membership.project) as string,
-      author: membership.profile as Reference,
-      admin: true,
-    });
-  }
-  return getRepoForMembership(membership);
-}
-
-export async function getRepoForMembership(membership: ProjectMembership): Promise<Repository> {
   let accessPolicy: AccessPolicy | undefined = undefined;
 
   if (membership.accessPolicy) {
@@ -1549,11 +1539,13 @@ export async function getRepoForMembership(membership: ProjectMembership): Promi
   return new Repository({
     project: resolveId(membership.project) as string,
     author: membership.profile as Reference,
+    superAdmin: login.admin || login.superAdmin,
     accessPolicy,
   });
 }
 
 export const systemRepo = new Repository({
+  superAdmin: true,
   author: {
     reference: 'system',
   },

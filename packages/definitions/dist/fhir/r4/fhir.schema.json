@@ -61077,6 +61077,10 @@
           "description": "A summary, characterization or explanation of the Project.",
           "$ref": "#/definitions/string"
         },
+        "superAdmin": {
+          "description": "Whether this project is the super administrator project. A super administrator is a user who has complete access to all resources in all projects.",
+          "$ref": "#/definitions/boolean"
+        },
         "owner": {
           "description": "Indicates the user with responsibility for managing the Project.",
           "$ref": "#/definitions/Reference"
@@ -61443,6 +61447,10 @@
         },
         "admin": {
           "description": "Whether this login has system administrator privileges.",
+          "$ref": "#/definitions/boolean"
+        },
+        "superAdmin": {
+          "description": "Whether this login has super administrator privileges.",
           "$ref": "#/definitions/boolean"
         },
         "remoteAddress": {

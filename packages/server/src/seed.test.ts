@@ -1,3 +1,4 @@
+import { Project } from '@medplum/fhirtypes';
 import { loadTestConfig } from './config';
 import { closeDatabase, getClient, initDatabase } from './database';
 import { Operator, SelectQuery } from './fhir/sql';
@@ -20,13 +21,15 @@ describe('Seed', () => {
     // First time, seeder should run
     await seedDatabase();
 
-    // Make sure the first user is a super admin
-    const rows = await new SelectQuery('User')
+    // Make sure the first project is a super admin
+    const rows = await new SelectQuery('Project')
       .column('content')
-      .where('email', Operator.EQUALS, 'admin@example.com')
+      .where('name', Operator.EQUALS, 'Super Admin')
       .execute(getClient());
-    const user = JSON.parse(rows[0].content);
-    expect(user.admin).toBe(true);
+    expect(rows.length).toBe(1);
+
+    const project = JSON.parse(rows[0].content) as Project;
+    expect(project.superAdmin).toBe(true);
 
     // Second time, seeder should silently ignore
     await seedDatabase();
