@@ -19,12 +19,6 @@ function mockFetch(url: string, options: any): Promise<any> {
       status = 200;
       result = {
         login: '1',
-        code: '1',
-      };
-    } else if (email === 'new-project@example.com' && password === 'new-password') {
-      status = 200;
-      result = {
-        login: '1',
       };
     } else {
       status = 400;
@@ -173,7 +167,7 @@ describe('RegisterForm', () => {
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('email'), {
-        target: { value: 'new-project@example.com' },
+        target: { value: 'new-user@example.com' },
       });
     });
 

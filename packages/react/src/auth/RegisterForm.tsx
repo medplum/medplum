@@ -3,10 +3,10 @@ import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { Document } from '../Document';
 import { useMedplum } from '../MedplumProvider';
-import '../util.css';
 import { NewProjectForm } from './NewProjectForm';
 import { NewUserForm } from './NewUserForm';
 import './SignInForm.css';
+import '../util.css';
 
 export interface RegisterFormProps {
   readonly type: 'patient' | 'project';
