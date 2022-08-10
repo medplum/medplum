@@ -224,7 +224,7 @@ export class Repository {
     try {
       await this.readResource<T>(resourceType, id);
     } catch (err) {
-      if (!isGone(err)) {
+      if (!isGone(err as OperationOutcome)) {
         throw err;
       }
     }
