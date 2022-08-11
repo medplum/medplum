@@ -70,9 +70,7 @@
     }
   },
   "types": "dist/esm/index.d.ts",
-  "sideEffects": [
-    "*.css"
-  ],
+  "sideEffects": false,
   "keywords": [
     "medplum",
     "fhir",
