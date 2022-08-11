@@ -1887,4 +1887,31 @@ describe('FHIR Repo', () => {
     });
     expect(searchResult.entry).toHaveLength(1);
   });
+
+  test('_id equals with comma separated values', async () => {
+    // Create 3 service requests
+    const serviceRequests = [];
+    for (let i = 0; i < 3; i++) {
+      serviceRequests.push(
+        await systemRepo.createResource<ServiceRequest>({
+          resourceType: 'ServiceRequest',
+          subject: { reference: 'Patient/' + randomUUID() },
+          code: { text: randomUUID() },
+        })
+      );
+    }
+
+    // Search for service requests with _id equals the first two separated by a comma
+    const searchResult = await systemRepo.search({
+      resourceType: 'ServiceRequest',
+      filters: [
+        {
+          code: '_id',
+          operator: Operator.EQUALS,
+          value: serviceRequests[0].id + ',' + serviceRequests[1].id,
+        },
+      ],
+    });
+    expect(searchResult.entry).toHaveLength(2);
+  });
 });
