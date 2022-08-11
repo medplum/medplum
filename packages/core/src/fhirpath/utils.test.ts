@@ -110,5 +110,11 @@ describe('FHIRPath utils', () => {
       getTypedPropertyValue(toTypedValue({ resourceType: 'Patient', identifier: [{ value: 'foo' }] }), 'id')
     ).toBeUndefined();
     expect(getTypedPropertyValue(toTypedValue({ resourceType: 'AccessPolicy' }), 'resource')).toBeUndefined();
+
+    // Silently ignore empty arrays
+    expect(
+      getTypedPropertyValue(toTypedValue({ resourceType: 'Patient', identifier: [] }), 'identifier')
+    ).toBeUndefined();
+    expect(getTypedPropertyValue({ type: 'X', value: { x: [] } }, 'x')).toBeUndefined();
   });
 });

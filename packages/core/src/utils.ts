@@ -341,7 +341,7 @@ function isArrayKey(k: string): boolean {
  * @param v Any value.
  * @returns True if the value is an empty string or an empty object.
  */
-function isEmpty(v: any): boolean {
+export function isEmpty(v: any): boolean {
   if (v === null || v === undefined) {
     return true;
   }
