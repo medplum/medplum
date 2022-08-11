@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-if [[ -z "${DOCKER_REPOSITORY}" ]]; then
-  echo "DOCKER_REPOSITORY is missing"
+if [[ -z "${ECR_REPOSITORY}" ]]; then
+  echo "ECR_REPOSITORY is missing"
   exit 1
 fi
 
@@ -37,11 +37,11 @@ tar \
   packages/server/dist
 
 # Build the Docker image
-docker build . -t $DOCKER_REPOSITORY:latest -t $DOCKER_REPOSITORY:$GITHUB_SHA
+docker build . -t $ECR_REPOSITORY:latest -t $ECR_REPOSITORY:$GITHUB_SHA
 
 # Push the Docker image
-docker push $DOCKER_REPOSITORY:latest
-docker push $DOCKER_REPOSITORY:$GITHUB_SHA
+docker push $ECR_REPOSITORY:latest
+docker push $ECR_REPOSITORY:$GITHUB_SHA
 
 # Update the medplum fargate service
 aws ecs update-service \
