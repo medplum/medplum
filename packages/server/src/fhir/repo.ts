@@ -828,20 +828,19 @@ export class Repository {
     for (const valueStr of filter.value.split(',')) {
       const value = details.type === SearchParameterType.BOOLEAN ? valueStr === 'true' : valueStr;
       if (details.array) {
-        if (filter.operator === FhirOperator.NOT_EQUALS) {
-          expressions.push(new Negation(new Condition(details.columnName, Operator.ARRAY_CONTAINS, value)));
-        } else {
-          expressions.push(new Condition(details.columnName, Operator.ARRAY_CONTAINS, value));
-        }
+        expressions.push(new Condition(details.columnName, Operator.ARRAY_CONTAINS, value));
       } else if (filter.operator === FhirOperator.CONTAINS) {
         expressions.push(new Condition(details.columnName, Operator.LIKE, '%' + value + '%'));
-      } else if (filter.operator === FhirOperator.NOT_EQUALS) {
-        expressions.push(new Negation(new Condition(details.columnName, Operator.EQUALS, value)));
       } else {
         expressions.push(new Condition(details.columnName, Operator.EQUALS, value));
       }
     }
-    predicate.whereExpr(new Disjunction(expressions));
+    const disjunction = new Disjunction(expressions);
+    if (filter.operator === FhirOperator.NOT_EQUALS || filter.operator === FhirOperator.NOT) {
+      predicate.whereExpr(new Negation(disjunction));
+    } else {
+      predicate.whereExpr(disjunction);
+    }
   }
 
   /**

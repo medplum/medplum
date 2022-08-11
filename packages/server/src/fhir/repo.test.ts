@@ -1850,4 +1850,41 @@ describe('FHIR Repo', () => {
     expect(searchResult.entry).toHaveLength(1);
     expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
   });
+
+  test('Not equals with comma separated values', async () => {
+    // Create 3 service requests
+    // All 3 have the same category for test isolation
+    // Each have a different code
+    const category = randomUUID();
+    const serviceRequests = [];
+    for (let i = 0; i < 3; i++) {
+      serviceRequests.push(
+        await systemRepo.createResource({
+          resourceType: 'ServiceRequest',
+          subject: { reference: 'Patient/' + randomUUID() },
+          category: [{ text: category }],
+          code: { text: randomUUID() },
+        })
+      );
+    }
+
+    // Search for service requests with category
+    // and code "not equals" the first two separated by a comma
+    const searchResult = await systemRepo.search({
+      resourceType: 'ServiceRequest',
+      filters: [
+        {
+          code: 'category',
+          operator: Operator.EQUALS,
+          value: category,
+        },
+        {
+          code: 'code',
+          operator: Operator.NOT_EQUALS,
+          value: serviceRequests[0].code.text + ',' + serviceRequests[1].code.text,
+        },
+      ],
+    });
+    expect(searchResult.entry).toHaveLength(1);
+  });
 });
