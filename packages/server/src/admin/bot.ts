@@ -7,6 +7,13 @@ import { verifyProjectAdmin } from './utils';
 
 export const createBotValidators = [body('name').notEmpty().withMessage('Bot name is required')];
 
+const defaultBotCode = `import { BotEvent, MedplumClient } from '@medplum/core';
+
+export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+  // Your code here
+}
+`;
+
 export async function createBotHandler(req: Request, res: Response): Promise<void> {
   const project = await verifyProjectAdmin(req, res);
   if (!project) {
@@ -44,6 +51,7 @@ export async function createBot(repo: Repository, request: CreateBotRequest): Pr
     name: request.name,
     description: request.description,
     runtimeVersion: 'awslambda',
+    code: defaultBotCode,
   });
 
   await systemRepo.createResource<ProjectMembership>({

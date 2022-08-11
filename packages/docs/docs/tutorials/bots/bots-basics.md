@@ -62,10 +62,12 @@ Javascript code.
 
 ![Bot Editor](/img/app/bots/BotResourcePage.gif)
 
-All Bots are simply a single Javascript file with a standard async entry point function called `handler`. To start your bot, create a `handler` function as shown below in the **Editor** window.
+All Bots are simply a single TypeScript/JavaScript file with a standard async entry point function called `handler`. To start your bot, create a `handler` function as shown below in the **Editor** window.
 
-```javascript
-export async function handler(medplum, event) {
+```typescript
+import { BotEvent, MedplumClient } from '@medplum/core';
+
+export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   // Your code here
 }
 ```
