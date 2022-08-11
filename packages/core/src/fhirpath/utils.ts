@@ -1,6 +1,6 @@
 import { Period, Quantity, Resource } from '@medplum/fhirtypes';
 import { buildTypeName, globalSchema, PropertyType, TypeSchema } from '../types';
-import { capitalize } from '../utils';
+import { capitalize, isEmpty } from '../utils';
 import { TypedValue } from './atoms';
 
 /**
@@ -116,7 +116,7 @@ function getTypedPropertyValueWithSchema(
     }
   }
 
-  if (resultValue === undefined) {
+  if (isEmpty(resultValue)) {
     return undefined;
   }
 
@@ -167,7 +167,7 @@ function getTypedPropertyValueWithoutSchema(
     }
   }
 
-  if (result === undefined) {
+  if (isEmpty(result)) {
     return undefined;
   }
 
