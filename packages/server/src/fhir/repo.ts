@@ -221,7 +221,13 @@ export class Repository {
    * @returns Operation outcome and a history bundle.
    */
   async readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>> {
-    await this.readResource<T>(resourceType, id);
+    try {
+      await this.readResource<T>(resourceType, id);
+    } catch (err) {
+      if (!isGone(err as OperationOutcome)) {
+        throw err;
+      }
+    }
 
     const client = getClient();
     const rows = await new SelectQuery(resourceType + '_History')

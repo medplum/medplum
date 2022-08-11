@@ -768,19 +768,14 @@ describe('FHIR Repo', () => {
     // Delete the patient
     await systemRepo.deleteResource('Patient', patient?.id as string);
 
-    try {
-      await systemRepo.readHistory('Patient', patient?.id as string);
-      fail('Should have thrown');
-    } catch (err) {
-      const outcome = err as OperationOutcome;
-      expect(outcome.id).toEqual('gone');
-    }
+    const history2 = await systemRepo.readHistory('Patient', patient?.id as string);
+    expect(history2?.entry?.length).toBe(2);
 
     // Restore the patient
     await systemRepo.updateResource({ ...patient, meta: undefined });
 
-    const history2 = await systemRepo.readHistory('Patient', patient?.id as string);
-    expect(history2?.entry?.length).toBe(3);
+    const history3 = await systemRepo.readHistory('Patient', patient?.id as string);
+    expect(history3?.entry?.length).toBe(3);
   });
 
   test('Search birthDate after delete', async () => {
