@@ -1,14 +1,16 @@
-const path = require('path');
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
-const DotenvPlugin = require('dotenv-webpack');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const { SubresourceIntegrityPlugin } = require('webpack-subresource-integrity');
-const dotenv = require('dotenv');
+import dotenv from 'dotenv';
+import DotenvPlugin from 'dotenv-webpack';
+import HtmlWebpackPlugin from 'html-webpack-plugin';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { SubresourceIntegrityPlugin } from 'webpack-subresource-integrity';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 dotenv.config();
 
-module.exports = (env, argv) => ({
+export default (env, argv) => ({
   entry: './src/index.tsx',
   devtool: argv.mode === 'production' ? 'source-map' : 'eval-source-map',
   output: {
@@ -21,10 +23,6 @@ module.exports = (env, argv) => ({
     extensions: ['.ts', '.tsx', '.js'],
   },
   plugins: [
-    new BundleAnalyzerPlugin({
-      analyzerMode: 'static',
-      openAnalyzer: false,
-    }),
     new DotenvPlugin({
       defaults: true,
       systemvars: true,
@@ -67,6 +65,7 @@ module.exports = (env, argv) => ({
     usedExports: true,
     innerGraph: true,
     sideEffects: true,
+    providedExports: true,
     runtimeChunk: 'single',
   },
 });

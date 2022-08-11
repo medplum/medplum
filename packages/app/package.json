@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "name": "@medplum/app",
   "version": "0.9.30",
   "description": "Medplum App",
@@ -15,7 +16,8 @@
     "dev": "webpack serve --mode development",
     "build": "npm run clean && tsc && cross-env NODE_ENV=production webpack --mode production",
     "debug": "webpack --mode development",
-    "test": "jest"
+    "test": "jest",
+    "source-map-explorer": "source-map-explorer *.js --gzip"
   },
   "devDependencies": {
     "@medplum/core": "0.9.30",
