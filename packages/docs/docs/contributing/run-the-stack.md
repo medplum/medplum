@@ -1,5 +1,6 @@
 ---
 sidebar_position: 20
+toc_max_heading_level: 4
 ---
 
 # Run the Stack
@@ -35,7 +36,7 @@ The Medplum Stack requires the following services to be running in your environm
 
 When running this services on your local machine you can either use Docker (recommended) or install them directly onto your machine.
 
-### Using Docker (Recommended)
+#### Using Docker (Recommended)
 
 Use the supplied `docker-compose.yml` file to run PostgreSQL and Redis background services. These services will be deployed with all necessary medplum configurations and database migrations.
 
@@ -72,7 +73,7 @@ docker exec -it medplum-postgres-1 psql -U medplum
 
 Where `medplum-postgres-1` can be replaced with the name of your postgres docker container.
 
-### Deploying manually
+#### Deploying manually
 
 If you'd prefer to install the dependencies directly, you can find installation instructions for the required services below:
 
