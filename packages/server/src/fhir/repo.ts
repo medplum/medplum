@@ -51,7 +51,17 @@ import { getPatientId } from './patient';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { validateResource, validateResourceType } from './schema';
 import { parseSearchUrl } from './search';
-import { Condition, Conjunction, Disjunction, Expression, InsertQuery, Negation, Operator, SelectQuery } from './sql';
+import {
+  Column,
+  Condition,
+  Conjunction,
+  Disjunction,
+  Expression,
+  InsertQuery,
+  Negation,
+  Operator,
+  SelectQuery,
+} from './sql';
 import { getSearchParameter, getSearchParameters, getStructureDefinitions } from './structure';
 
 /**
@@ -764,7 +774,7 @@ export class Repository {
     } else if (param.type === 'string') {
       this.#addStringSearchFilter(predicate, details, filter);
     } else if (param.type === 'token') {
-      this.#addTokenSearchFilter(predicate, details, filter);
+      this.#addTokenSearchFilter(predicate, resourceType, details, filter);
     } else if (param.type === 'reference') {
       this.#addReferenceSearchFilter(predicate, details, filter);
     } else if (param.type === 'quantity') {
@@ -793,7 +803,7 @@ export class Repository {
     const op = fhirOperatorToSqlOperator(filter.operator);
 
     if (code === '_id') {
-      predicate.where({ tableName: resourceType, columnName: 'id' }, op, filter.value);
+      this.#addTokenSearchFilter(predicate, resourceType, { columnName: 'id', type: SearchParameterType.TEXT }, filter);
     } else if (code === '_lastUpdated') {
       predicate.where({ tableName: resourceType, columnName: 'lastUpdated' }, op, filter.value);
     } else if (code === '_compartment' || code === '_project') {
@@ -820,19 +830,26 @@ export class Repository {
   /**
    * Adds a token search filter as "WHERE" clause to the query builder.
    * @param predicate The select query predicate conjunction.
+   * @param resourceType The resource type.
    * @param details The search parameter details.
    * @param filter The search filter.
    */
-  #addTokenSearchFilter(predicate: Conjunction, details: SearchParameterDetails, filter: Filter): void {
+  #addTokenSearchFilter(
+    predicate: Conjunction,
+    resourceType: string,
+    details: SearchParameterDetails,
+    filter: Filter
+  ): void {
+    const column = new Column(resourceType, details.columnName);
     const expressions = [];
     for (const valueStr of filter.value.split(',')) {
       const value = details.type === SearchParameterType.BOOLEAN ? valueStr === 'true' : valueStr;
       if (details.array) {
-        expressions.push(new Condition(details.columnName, Operator.ARRAY_CONTAINS, value));
+        expressions.push(new Condition(column, Operator.ARRAY_CONTAINS, value));
       } else if (filter.operator === FhirOperator.CONTAINS) {
-        expressions.push(new Condition(details.columnName, Operator.LIKE, '%' + value + '%'));
+        expressions.push(new Condition(column, Operator.LIKE, '%' + value + '%'));
       } else {
-        expressions.push(new Condition(details.columnName, Operator.EQUALS, value));
+        expressions.push(new Condition(column, Operator.EQUALS, value));
       }
     }
     const disjunction = new Disjunction(expressions);
