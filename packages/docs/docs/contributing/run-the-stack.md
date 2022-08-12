@@ -8,15 +8,12 @@ Follow these instructions to get the complete Medplum stack running directly on 
 
 ## Prerequisites
 
+1. **Npm**: See [the npm documentation](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) for instructions on installing it with your OS.
+2. [Clone the Medplum repo](./clone-the-repo)
+
 :::note Note for windows Users
 
-1. **Npm**: See [the npm documentation](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) for instructions on installing it with your OS.
-1. [Clone the Medplum repo](./clone-the-repo)
-
-Running on Windows is supported, but it has a few extra steps:
-
-- Redis does not support Windows, so considered using [Memurai](https://www.memurai.com/) as a substitute
-- Several build tools use bash scripts, so consider using [MSYS2](https://www.msys2.org/) to run them
+Running on Windows is supported, but several build tools use bash scripts. We recommend [MSYS2](https://www.msys2.org/) to run them.
 
 :::
 
@@ -29,24 +26,7 @@ cd medplum
 npm ci
 ```
 
-## Build and Test
-
-We provide convenience scripts to perform a full build and test:
-
-```sh
-./scripts/build.sh
-```
-
-This will do the following:
-
-- Install npm dependencies if not already installed
-- Build all packages
-- Run all tests
-- Run linter
-
-## Run
-
-### Background services
+## Background services
 
 The Medplum Stack requires the following services to be running in your environment:
 
@@ -55,7 +35,7 @@ The Medplum Stack requires the following services to be running in your environm
 
 When running this services on your local machine you can either use Docker (recommended) or install them directly onto your machine.
 
-#### Using Docker (Recommended)
+### Using Docker (Recommended)
 
 Use the supplied `docker-compose.yml` file to run PostgreSQL and Redis background services. These services will be deployed with all necessary medplum configurations and database migrations.
 
@@ -92,7 +72,7 @@ docker exec -it medplum-postgres-1 psql -U medplum
 
 Where `medplum-postgres-1` can be replaced with the name of your postgres docker container.
 
-#### Deploying manually
+### Deploying manually
 
 If you'd prefer to install the dependencies directly, you can find installation instructions for the required services below:
 
@@ -115,6 +95,23 @@ After that, you will have to update the file `packages/server/medplum.config.jso
     "password": "", // YOUR REDIS PASSWORD
   }
 ```
+
+## Build and Test
+
+We provide convenience scripts to perform a full build and test:
+
+```sh
+./scripts/build.sh
+```
+
+This will do the following:
+
+- Install npm dependencies if not already installed
+- Build all packages
+- Run all tests
+- Run linter
+
+## Run
 
 ### Start the servers
 
