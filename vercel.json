@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/:path([^.]+)",
+      "destination": "https://legacy.medplum.com/api/:path"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

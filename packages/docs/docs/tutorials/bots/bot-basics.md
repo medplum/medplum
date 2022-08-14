@@ -44,8 +44,7 @@ To create a Bot, navigate to the [Project Admin panel](https://app.medplum.com/a
 
 ![Create a Bot](/img/app/bots/create_bot.png)
 
-On the next page you can enter a bot **name** and **description** (optional). You can also optionally set an [**access policy**](../security/access-control#access-policies) on the Bot, which can restrict the read/write privileges of the bot's
-code. By default, Bots have read/write access to all resources.
+On the next page you can enter a bot **name** and **description** (optional). You can also optionally set an [**access policy**](../security/access-control#access-policies) on the Bot, which can restrict the read/write privileges of the bot's code. By default, Bots have read/write access to all resources.
 
 ![Enter Bot Properties](/img/app/bots/enter_bot_properties.png)
 
@@ -109,8 +108,7 @@ There are a few different ways a bot can be executed:
 
 1. Clicking the "Execute" button in the **Bot Code Editor**
 1. Sending a POST request to the `$execute` endpoint
-1. Setting up a [Subscription](../../fhir-basics#subscriptions-listening-for-changes) to execute the Bot automatically
-   based on changes (see next section).
+1. Setting up a [Subscription](../../fhir-basics#subscriptions-listening-for-changes) to execute the Bot automatically based on changes (see next section).
 
 ### _Executing from the Code Editor_
 

@@ -6,9 +6,9 @@ sidebar_position: 1
 
 Bots are an advanced Medplum feature that enable complex workflows.
 
-One of the most powerful uses is to combine Bots with [Questionnaires](/api/fhir/resources/questionnaire)
+One of the most powerful uses is to combine Bots with [Questionnaires](/docs/api/fhir/resources/questionnaire)
 
-A FHIR [Questionnaire](/api/fhir/resources/questionnaire) is a customizable form. You can add custom questions, question types, multiple choice options, etc. You can think of a FHIR Questionnaire as a healthcare-specific Google Forms or Survey Monkey.
+A FHIR [Questionnaire](/docs/api/fhir/resources/questionnaire) is a customizable form. You can add custom questions, question types, multiple choice options, etc. You can think of a FHIR Questionnaire as a healthcare-specific Google Forms or Survey Monkey.
 
 Connecting a Bot to a Questionnaire enables custom workflows that you control top to bottom.
 
@@ -16,8 +16,8 @@ Connecting a Bot to a Questionnaire enables custom workflows that you control to
 
 Consider some of these Bot and Questionnaire use cases:
 
-- Patient registration - Create a Patient plus initial [Appointment](/api/fhir/resources/appointment) or [ServiceRequest](/api/fhir/resources/servicerequest)
-- Observation entry - From one form, create many [Observation](/api/fhir/resources/observation) and [DiagnosticReport](/api/fhir/resources/diagnosticreport) resources
+- Patient registration - Create a Patient plus initial [Appointment](/docs/api/fhir/resources/appointment) or [ServiceRequest](/docs/api/fhir/resources/servicerequest)
+- Observation entry - From one form, create many [Observation](/docs/api/fhir/resources/observation) and [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport) resources
 - Quick ordering - Create shortcut forms for common orders or workflows
 
 These capabilities would normally require writing custom code, HTTP servers, webhooks, and managing credentials for a separate service.
@@ -26,7 +26,7 @@ By using Bots, the entire logic is self contained and managed in one place. Like
 
 ## Patient registration example
 
-Let's create a simple example Patient Registration form to see how this works. We'll write a simple questionnaire to collect information from a patient, and then write a Bot that creates the corresponding  [Patient](/api/fhir/resources/patient) and [ServiceRequest](/api/fhir/resources/servicerequest)  resources.
+Let's create a simple example Patient Registration form to see how this works. We'll write a simple questionnaire to collect information from a patient, and then write a Bot that creates the corresponding  [Patient](/docs/api/fhir/resources/patient) and [ServiceRequest](/docs/api/fhir/resources/servicerequest)  resources.
 
 ### 1. Create the Questionnaire
 
@@ -84,16 +84,16 @@ import reviewAnswersUrl from './review-answers.png';
 
 Let’s take a look at the resource that is created:
 
-- The resulting resource is of type [QuestionnaireResponse](/api/fhir/resources/questionnaireresponse)
+- The resulting resource is of type [QuestionnaireResponse](/docs/api/fhir/resources/questionnaireresponse)
 - The main property of interest is called `item`, all the form questions as well as their answers.
 - Each item has a `linkId` that you set in the builder, as well an answer array. Most of the time this array will contain 0 or 1 elements, but it could contain multiple elements in the case of multi-choice fields
 - The `questionnaire` property contains a reference to the original questionnaire that generated this response
 
 ### 4. Write the Bot
 
-Next, we'll write a Bot that creates a [Patient](/api/fhir/resources/patient) and [ServiceRequest](/api/fhir/resources/servicerequest) based on the the user's response. To learn how to set up a new Bot, see the [Bot Basics tutorial](./bot-basics)
+Next, we'll write a Bot that creates a [Patient](/docs/api/fhir/resources/patient) and [ServiceRequest](/docs/api/fhir/resources/servicerequest) based on the the user's response. To learn how to set up a new Bot, see the [Bot Basics tutorial](./bot-basics)
 
-To parse out the answers in the '[QuestionnaireResponse](/api/fhir/resources/QuestionnaireResponse), we'll use the [`getQuestionnaireAnswers`](/sdk/modules#getquestionnaireanswers) utility function. This function returns a map from the question's `linkId` to the response.
+To parse out the answers in the '[QuestionnaireResponse](/docs/api/fhir/resources/QuestionnaireResponse), we'll use the [`getQuestionnaireAnswers`](/docs/sdk/modules#getquestionnaireanswers) utility function. This function returns a map from the question's `linkId` to the response.
 
 ```ts
 // Use the getQuestionnaireAnswers utility function to convert the response into
@@ -110,7 +110,7 @@ const phone = answers['phone']?.valueString || 'No Phone Number Given';
 const reasonForVisiting = answers['reasonForVisit']?.valueString || 'No Reason Given';
 ```
 
-We can combine this with the [`medplum.createResource`](/sdk/classes/MedplumClient#createresource) method to create the [Patient](/api/fhir/resources/patient) and [ServiceRequest](/api/fhir/resources/servicerequest) . The final Bot then looks like this:
+We can combine this with the [`medplum.createResource`](/docs/sdk/classes/MedplumClient#createresource) method to create the [Patient](/docs/api/fhir/resources/patient) and [ServiceRequest](/docs/api/fhir/resources/servicerequest) . The final Bot then looks like this:
 
 ```ts
 import { BotEvent, MedplumClient, getQuestionnaireAnswers, createReference } from '@medplum/core';
@@ -185,7 +185,7 @@ import connectBotUrl from './connect-bot.png';
 
 ### 6. Watch it work
 
-Now if you [submit the form](#3-submit-the-form) again, you'll notice that a new [Patient](/api/fhir/resources/patient) and [ServiceRequest](/api/fhir/resources/servicerequest) have been created. 
+Now if you [submit the form](#3-submit-the-form) again, you'll notice that a new [Patient](/docs/api/fhir/resources/patient) and [ServiceRequest](/docs/api/fhir/resources/servicerequest) have been created. 
 
 ![Submit Form](./submit-form2.png)
 
