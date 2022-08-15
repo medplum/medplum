@@ -31,7 +31,7 @@ export function ResourcePropertiesTable(props: { properties: PropertyDocInfo[] }
                 ''
               )}
 
-              <span>{property.name}</span>
+              <span style={property.name.length > 20 ? { fontSize: 'calc(0.85 * 14px)' } : {}}>{property.name}</span>
             </td>
             <td>{property.min > 0 ? 'Y' : ''}</td>
             <td>

@@ -13,3 +13,7 @@
 td p {
   margin-bottom: 0.5ch;
 }
+
+td {
+  font-size: 14px;
+}
