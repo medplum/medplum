@@ -39,6 +39,8 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await systemRepo.createResource<User>({
     resourceType: 'User',
+    firstName,
+    lastName,
     email,
     passwordHash,
   });

@@ -107,6 +107,8 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
   // Create the Login resource
   const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
+    authMethod: 'execute',
+    user: runAs.user,
     membership: createReference(runAs),
     authTime: new Date().toISOString(),
     scope: 'openid',

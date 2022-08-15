@@ -26,12 +26,10 @@ jest.mock('jose', () => {
         throw new Error('Verification failed');
       }
       return {
-        payload: {
-          // By convention for tests, return the credential as the email
-          // Obviously in the real world the credential would be a JWT
-          // And the Google Auth service returns the corresponding email
-          email: credential,
-        },
+        // By convention for tests, return the credential as the email
+        // Obviously in the real world the credential would be a JWT
+        // And the Google Auth service returns the corresponding email
+        payload: JSON.parse(credential),
       };
     }),
   };
@@ -64,20 +62,26 @@ describe('Google Auth', () => {
   });
 
   test('Missing client ID', async () => {
-    const res = await request(app).post('/auth/google').type('json').send({
-      googleClientId: '',
-      googleCredential: 'admin@example.com',
-    });
+    const res = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        googleClientId: '',
+        googleCredential: createCredential('Admin', 'Admin', 'admin@example.com'),
+      });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Missing googleClientId');
   });
 
   test('Invalid client ID', async () => {
-    const res = await request(app).post('/auth/google').type('json').send({
-      googleClientId: '123',
-      googleCredential: 'admin@example.com',
-    });
+    const res = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        googleClientId: '123',
+        googleCredential: createCredential('Admin', 'Admin', 'admin@example.com'),
+      });
     expect(res.status).toBe(400);
     expect(res.body.issue).toBeDefined();
     expect(res.body.issue[0].details.text).toBe('Invalid googleClientId');
@@ -104,20 +108,26 @@ describe('Google Auth', () => {
   });
 
   test('Success', async () => {
-    const res = await request(app).post('/auth/google').type('json').send({
-      googleClientId: getConfig().googleClientId,
-      googleCredential: 'admin@example.com',
-    });
+    const res = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        googleClientId: getConfig().googleClientId,
+        googleCredential: createCredential('Admin', 'Admin', 'admin@example.com'),
+      });
     expect(res.status).toBe(200);
     expect(res.body.code).toBeDefined();
   });
 
   test('Do not create user', async () => {
     const email = 'new-google-' + randomUUID() + '@example.com';
-    const res = await request(app).post('/auth/google').type('json').send({
-      googleClientId: getConfig().googleClientId,
-      googleCredential: email,
-    });
+    const res = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        googleClientId: getConfig().googleClientId,
+        googleCredential: createCredential('Test', 'Test', email),
+      });
     expect(res.status).toBe(400);
 
     const user = await getUserByEmail(email, undefined);
@@ -126,11 +136,14 @@ describe('Google Auth', () => {
 
   test('Create new user account', async () => {
     const email = 'new-google-' + randomUUID() + '@example.com';
-    const res = await request(app).post('/auth/google').type('json').send({
-      googleClientId: getConfig().googleClientId,
-      googleCredential: email,
-      createUser: true,
-    });
+    const res = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        googleClientId: getConfig().googleClientId,
+        googleCredential: createCredential('Test', 'Test', email),
+        createUser: true,
+      });
     expect(res.status).toBe(200);
     expect(res.body.login).toBeDefined();
     expect(res.body.code).toBeUndefined();
@@ -160,10 +173,13 @@ describe('Google Auth', () => {
 
     // Then try to login with Google auth
     // This should succeed
-    const res2 = await request(app).post('/auth/google').type('json').send({
-      googleClientId: getConfig().googleClientId,
-      googleCredential: email,
-    });
+    const res2 = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        googleClientId: getConfig().googleClientId,
+        googleCredential: createCredential('Test', 'Test', email),
+      });
     expect(res2.status).toBe(200);
     expect(res2.body.code).toBeDefined();
   });
@@ -196,11 +212,18 @@ describe('Google Auth', () => {
 
     // Try to login with the custom Google client
     // This should succeed
-    const res2 = await request(app).post('/auth/google').type('json').send({
-      googleClientId: googleClientId,
-      googleCredential: email,
-    });
+    const res2 = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        googleClientId: googleClientId,
+        googleCredential: createCredential('Test', 'Test', email),
+      });
     expect(res2.status).toBe(200);
     expect(res2.body.code).toBeDefined();
   });
 });
+
+function createCredential(firstName: string, lastName: string, email: string): string {
+  return JSON.stringify({ given_name: firstName, family_name: lastName, email });
+}

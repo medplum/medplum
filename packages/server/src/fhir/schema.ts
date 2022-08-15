@@ -1,32 +1,15 @@
-import { OperationOutcomeError } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
-import { OperationOutcome, OperationOutcomeIssue, Resource } from '@medplum/fhirtypes';
+import { OperationOutcomeError, TypeSchema } from '@medplum/core';
+import { ElementDefinition, OperationOutcomeIssue, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { JSONSchema4 } from 'json-schema';
-
-let schema: JSONSchema4 | undefined = undefined;
-
-export function getSchema(): JSONSchema4 {
-  if (!schema) {
-    schema = readJson('fhir/r4/fhir.schema.json') as JSONSchema4;
-  }
-  return schema;
-}
-
-export function getSchemaDefinitions(): { [k: string]: JSONSchema4 } {
-  return getSchema().definitions as { [k: string]: JSONSchema4 };
-}
-
-export function getSchemaDefinition(resourceType: string): JSONSchema4 {
-  return getSchemaDefinitions()[resourceType];
-}
+import { getStructureDefinitions } from './structure';
+import { checkForNull, createStructureIssue, validationError } from './utils';
 
 export function getResourceTypes(): string[] {
-  return Object.keys(getSchema().discriminator.mapping);
+  return Object.keys(getStructureDefinitions().types);
 }
 
 export function isResourceType(resourceType: string): boolean {
-  return resourceType in getSchemaDefinitions();
+  return resourceType in getStructureDefinitions().types;
 }
 
 export function validateResourceType(resourceType: string): void {
@@ -48,7 +31,7 @@ export function validateResource<T extends Resource>(resource: T): void {
     throw validationError('Missing resource type');
   }
 
-  const definition = getSchemaDefinitions()[resourceType];
+  const definition = getStructureDefinitions().types[resourceType];
   if (!definition) {
     throw validationError('Unknown resource type');
   }
@@ -70,33 +53,11 @@ export function validateResource<T extends Resource>(resource: T): void {
   }
 }
 
-function checkForNull(value: unknown, path: string, issues: OperationOutcomeIssue[]): void {
-  if (value === null) {
-    issues.push(createIssue(path, `Invalid null value`));
-  } else if (Array.isArray(value)) {
-    checkArrayForNull(value, path, issues);
-  } else if (typeof value === 'object') {
-    checkObjectForNull(value as Record<string, unknown>, path, issues);
-  }
-}
-
-function checkArrayForNull(array: unknown[], path: string, issues: OperationOutcomeIssue[]): void {
-  for (let i = 0; i < array.length; i++) {
-    if (array[i] === undefined) {
-      issues.push(createIssue(`${path}[${i}]`, `Invalid undefined value`));
-    } else {
-      checkForNull(array[i], `${path}[${i}]`, issues);
-    }
-  }
-}
-
-function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: OperationOutcomeIssue[]): void {
-  for (const [key, value] of Object.entries(obj)) {
-    checkForNull(value, `${path}${path ? '.' : ''}${key}`, issues);
-  }
-}
-
-function checkProperties(resource: Resource, propertyDefinitions: any, issues: OperationOutcomeIssue[]): void {
+function checkProperties(
+  resource: Resource,
+  propertyDefinitions: Record<string, ElementDefinition>,
+  issues: OperationOutcomeIssue[]
+): void {
   for (const [key, value] of Object.entries(propertyDefinitions)) {
     if (key in resource) {
       checkProperty(resource, key, value, issues);
@@ -107,66 +68,41 @@ function checkProperties(resource: Resource, propertyDefinitions: any, issues: O
 function checkProperty(
   resource: Resource,
   propertyName: string,
-  propertyDetails: any,
+  propertyDetails: ElementDefinition,
   issues: OperationOutcomeIssue[]
 ): void {
   const value = (resource as any)[propertyName];
-  if (propertyDetails.type === 'array') {
+  if (propertyDetails.max === '*') {
     if (!Array.isArray(value)) {
-      issues.push(createIssue(propertyName, `Expected array for property "${propertyName}"`));
+      issues.push(createStructureIssue(propertyName, `Expected array for property "${propertyName}"`));
     }
   }
 }
 
 function checkAdditionalProperties(
   resource: Resource,
-  propertyDefinitions: any,
+  propertyDefinitions: ElementDefinition,
   issues: OperationOutcomeIssue[]
 ): void {
   for (const key of Object.keys(resource)) {
-    if (key === 'meta' || key === '_baseDefinition') {
+    if (key === 'resourceType' || key === 'id' || key === 'meta' || key === '_baseDefinition') {
       continue;
     }
     if (!(key in propertyDefinitions)) {
-      issues.push(createIssue(key, `Invalid additional property "${key}"`));
-    }
-  }
-}
-
-function checkRequiredProperties(resource: Resource, definition: any, issues: OperationOutcomeIssue[]): void {
-  const requiredProperties = definition.required;
-  if (requiredProperties) {
-    for (const key of requiredProperties) {
-      if (!(key in resource)) {
-        issues.push(createIssue(key, `Missing required property "${key}"`));
+      // Try to find a "choice of type" property (e.g., "value[x]")
+      // TODO: Consolidate this logic with FHIRPath lookup
+      const choiceOfTypeKey = key.replace(/[A-Z].+/, '[x]');
+      if (!(choiceOfTypeKey in propertyDefinitions)) {
+        issues.push(createStructureIssue(key, `Invalid additional property "${key}"`));
       }
     }
   }
 }
 
-function validationError(details: string): OperationOutcome {
-  return {
-    resourceType: 'OperationOutcome',
-    id: randomUUID(),
-    issue: [
-      {
-        severity: 'error',
-        code: 'structure',
-        details: {
-          text: details,
-        },
-      },
-    ],
-  };
-}
-
-function createIssue(expression: string, details: string): OperationOutcomeIssue {
-  return {
-    severity: 'error',
-    code: 'structure',
-    details: {
-      text: details,
-    },
-    expression: [expression],
-  };
+function checkRequiredProperties(resource: Resource, definition: TypeSchema, issues: OperationOutcomeIssue[]): void {
+  for (const [key, elementDefinition] of Object.entries(definition.properties)) {
+    if (elementDefinition.min === 1 && !(key in resource)) {
+      issues.push(createStructureIssue(key, `Missing required property "${resource.resourceType}.${key}"`));
+    }
+  }
 }

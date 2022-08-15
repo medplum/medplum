@@ -44,6 +44,7 @@ describe('PlanDefinition apply', () => {
       .set('Content-Type', 'application/fhir+json')
       .send({
         resourceType: 'Questionnaire',
+        status: 'active',
         name: 'Patient Registration',
         title: 'Patient Registration',
         subjectType: ['Patient'],
@@ -65,6 +66,7 @@ describe('PlanDefinition apply', () => {
       .send({
         resourceType: 'PlanDefinition',
         title: 'Example Plan Definition',
+        status: 'active',
         action: [
           {
             title: res1.body.title,
@@ -130,6 +132,7 @@ describe('PlanDefinition apply', () => {
       .send({
         resourceType: 'PlanDefinition',
         title: 'Example Plan Definition',
+        status: 'active',
       });
     expect(res2.status).toBe(201);
 
@@ -150,6 +153,7 @@ describe('PlanDefinition apply', () => {
       .send({
         resourceType: 'PlanDefinition',
         title: 'Example Plan Definition',
+        status: 'active',
       });
     expect(res2.status).toBe(201);
 
@@ -172,6 +176,7 @@ describe('PlanDefinition apply', () => {
       .send({
         resourceType: 'PlanDefinition',
         title: 'Example Plan Definition',
+        status: 'active',
       });
     expect(res2.status).toBe(201);
 
@@ -195,6 +200,7 @@ describe('PlanDefinition apply', () => {
       .send({
         resourceType: 'PlanDefinition',
         title: 'Example Plan Definition',
+        status: 'active',
         action: [
           {
             definitionCanonical: 'UnsupportedResourceType',

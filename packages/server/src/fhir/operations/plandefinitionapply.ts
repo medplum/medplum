@@ -69,6 +69,7 @@ export async function planDefinitionApplyHandler(req: Request, res: Response): P
     instantiatesCanonical: [getReferenceString(planDefinition)],
     subject: createReference(params.subject) as Reference<Patient | Group>,
     status: 'active',
+    intent: 'order',
     action: actions,
   });
   await sendResponse(res, allOk, requestGroup);

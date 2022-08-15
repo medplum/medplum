@@ -1,26 +1,22 @@
 import { OperationOutcomeError } from '@medplum/core';
 import { Patient, Questionnaire, Resource } from '@medplum/fhirtypes';
-import { validateResource, validateResourceType } from './schema';
+import { validateResourceWithJsonSchema } from './jsonschema';
 
-describe('FHIR schema', () => {
-  test('validateResourceType', () => {
-    expect(() => validateResourceType('')).toThrow();
-    expect(() => validateResourceType('FakeResource')).toThrow();
-    expect(() => validateResourceType('Patient')).not.toThrow();
-  });
-
-  test('validateResource', () => {
-    expect(() => validateResource(null as unknown as Resource)).toThrow();
-    expect(() => validateResource({} as unknown as Resource)).toThrow();
-    expect(() => validateResource({ resourceType: 'FakeResource' } as unknown as Resource)).toThrow();
-    expect(() => validateResource({ resourceType: 'Patient' })).not.toThrow();
+describe('FHIR JSONSchema', () => {
+  test('validateResourceWithJsonSchema', () => {
+    expect(() => validateResourceWithJsonSchema(null as unknown as Resource)).toThrow();
+    expect(() => validateResourceWithJsonSchema({} as unknown as Resource)).toThrow();
+    expect(() => validateResourceWithJsonSchema({ resourceType: 'FakeResource' } as unknown as Resource)).toThrow();
+    expect(() => validateResourceWithJsonSchema({ resourceType: 'Patient' })).not.toThrow();
   });
 
   test('Array properties', () => {
-    expect(() => validateResource({ resourceType: 'Patient', name: [{ given: ['Homer'] }] })).not.toThrow();
+    expect(() =>
+      validateResourceWithJsonSchema({ resourceType: 'Patient', name: [{ given: ['Homer'] }] })
+    ).not.toThrow();
 
     try {
-      validateResource({ resourceType: 'Patient', name: 'Homer' } as unknown as Resource);
+      validateResourceWithJsonSchema({ resourceType: 'Patient', name: 'Homer' } as unknown as Resource);
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -30,10 +26,12 @@ describe('FHIR schema', () => {
   });
 
   test('Additional properties', () => {
-    expect(() => validateResource({ resourceType: 'Patient', name: [{ given: ['Homer'] }], meta: {} })).not.toThrow();
+    expect(() =>
+      validateResourceWithJsonSchema({ resourceType: 'Patient', name: [{ given: ['Homer'] }], meta: {} })
+    ).not.toThrow();
 
     try {
-      validateResource({ resourceType: 'Patient', fakeProperty: 'test' } as unknown as Resource);
+      validateResourceWithJsonSchema({ resourceType: 'Patient', fakeProperty: 'test' } as unknown as Resource);
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -44,21 +42,18 @@ describe('FHIR schema', () => {
 
   test('Required properties', () => {
     try {
-      validateResource({ resourceType: 'DiagnosticReport' });
+      validateResourceWithJsonSchema({ resourceType: 'DiagnosticReport' });
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue).toHaveLength(2);
       expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('status');
-      expect(outcome.issue?.[1]?.severity).toEqual('error');
-      expect(outcome.issue?.[1]?.expression?.[0]).toEqual('code');
+      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code');
     }
   });
 
   test('Null value', () => {
     try {
-      validateResource({ resourceType: 'Patient', name: null } as unknown as Patient);
+      validateResourceWithJsonSchema({ resourceType: 'Patient', name: null } as unknown as Patient);
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -69,7 +64,7 @@ describe('FHIR schema', () => {
 
   test('Null array element', () => {
     try {
-      validateResource({ resourceType: 'Patient', name: [null] } as unknown as Patient);
+      validateResourceWithJsonSchema({ resourceType: 'Patient', name: [null] } as unknown as Patient);
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -80,7 +75,7 @@ describe('FHIR schema', () => {
 
   test('Undefined array element', () => {
     try {
-      validateResource({ resourceType: 'Patient', name: [{ given: [undefined] }] } as unknown as Patient);
+      validateResourceWithJsonSchema({ resourceType: 'Patient', name: [{ given: [undefined] }] } as unknown as Patient);
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -91,7 +86,7 @@ describe('FHIR schema', () => {
 
   test('Nested null array element', () => {
     try {
-      validateResource({
+      validateResourceWithJsonSchema({
         resourceType: 'Patient',
         identifier: [
           {
@@ -122,7 +117,7 @@ describe('FHIR schema', () => {
 
   test('Deep nested null array element', () => {
     try {
-      validateResource({
+      validateResourceWithJsonSchema({
         resourceType: 'Questionnaire',
         item: [
           {

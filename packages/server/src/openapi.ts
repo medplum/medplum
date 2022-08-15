@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { JSONSchema4 } from 'json-schema';
 import { ComponentsObject, OpenAPIObject, ReferenceObject, SchemaObject, TagObject } from 'openapi3-ts';
 import { getConfig } from './config';
-import { getSchemaDefinitions } from './fhir';
+import { getJsonSchemaDefinitions } from './fhir/jsonschema';
 
 type SchemaMap = { [schema: string]: SchemaObject | ReferenceObject };
 
@@ -21,7 +21,7 @@ function getSpec(): any {
 
 function buildSpec(): any {
   const result = buildBaseSpec();
-  const definitions = getSchemaDefinitions();
+  const definitions = getJsonSchemaDefinitions();
   Object.entries(definitions).forEach(([name, definition]) => buildFhirType(result, name, definition));
   buildPaths(result);
   return result;

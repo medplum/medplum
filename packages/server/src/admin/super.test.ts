@@ -35,6 +35,8 @@ describe('Super Admin routes', () => {
 
     const user1 = await systemRepo.createResource<User>({
       resourceType: 'User',
+      firstName: 'Super',
+      lastName: 'Admin',
       email: `super${randomUUID()}@example.com`,
       passwordHash: 'abc',
       admin: true,
@@ -42,6 +44,8 @@ describe('Super Admin routes', () => {
 
     const user2 = await systemRepo.createResource<User>({
       resourceType: 'User',
+      firstName: 'Super',
+      lastName: 'Admin',
       email: `normie${randomUUID()}@example.com`,
       passwordHash: 'abc',
       admin: false,
@@ -63,6 +67,7 @@ describe('Super Admin routes', () => {
 
     const login1 = await systemRepo.createResource<Login>({
       resourceType: 'Login',
+      authMethod: 'client',
       client: createReference(client),
       user: createReference(user1),
       membership: createReference(membership1),
@@ -73,6 +78,7 @@ describe('Super Admin routes', () => {
 
     const login2 = await systemRepo.createResource<Login>({
       resourceType: 'Login',
+      authMethod: 'client',
       client: createReference(client),
       user: createReference(user2),
       membership: createReference(membership2),

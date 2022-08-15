@@ -53,6 +53,8 @@ describe('Auth middleware', () => {
 
     const login = await systemRepo.createResource<Login>({
       resourceType: 'Login',
+      authMethod: 'client',
+      user: createReference(client),
       client: createReference(client),
       authTime: new Date().toISOString(),
       revoked: true,

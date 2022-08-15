@@ -501,6 +501,7 @@ describe('AccessPolicy', () => {
     // Create an Observation using the ClientApplication
     const observation = await clientRepo.createResource<Observation>({
       resourceType: 'Observation',
+      status: 'final',
       subject: createReference(patient as Patient),
       code: {
         text: 'test',
@@ -531,6 +532,7 @@ describe('AccessPolicy', () => {
     // Create an Observation outside of the account
     const observation2 = await systemRepo.createResource<Observation>({
       resourceType: 'Observation',
+      status: 'final',
       subject: createReference(patient2 as Patient),
       code: {
         text: 'test',
@@ -598,6 +600,7 @@ describe('AccessPolicy', () => {
     try {
       await clientRepo.createResource<Observation>({
         resourceType: 'Observation',
+        status: 'active',
         subject: createReference(patient as Patient),
         code: {
           text: 'test',
@@ -854,6 +857,8 @@ describe('AccessPolicy', () => {
   test('Nested hidden fields on read', async () => {
     const serviceRequest = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       code: {
         text: 'test',
       },
@@ -915,6 +920,8 @@ describe('AccessPolicy', () => {
   test('Hide nonexistent field', async () => {
     const serviceRequest = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       code: {
         text: 'test',
       },

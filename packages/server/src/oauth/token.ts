@@ -96,6 +96,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
 
   const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
+    authMethod: 'client',
     user: createReference(client),
     client: createReference(client),
     membership: createReference(membership),

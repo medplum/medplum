@@ -20,6 +20,7 @@ describe('URL rewrite', () => {
 
     const resource = await systemRepo.createResource({
       resourceType: 'Binary',
+      contentType: 'text/plain',
     });
     binary = resource;
   });
@@ -42,6 +43,7 @@ describe('URL rewrite', () => {
   test('Binary', async () => {
     const input = {
       resourceType: 'Binary',
+      contentType: 'text/plain',
       id: '123',
       extension: [
         {

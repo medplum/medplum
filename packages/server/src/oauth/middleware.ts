@@ -80,6 +80,7 @@ async function authenticateBasicAuth(res: Response, token: string): Promise<void
 
   const login: Login = {
     resourceType: 'Login',
+    authMethod: 'client',
   };
 
   const memberships = await getUserMemberships(createReference(client));
