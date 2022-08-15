@@ -427,6 +427,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "Patient.contact.organization",
       "min": 0,
       "max": "1",
@@ -542,6 +545,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization",
+        "Practitioner",
+        "PractitionerRole"
+      ],
       "path": "Patient.generalPractitioner",
       "min": 0,
       "max": "*",
@@ -555,6 +563,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "Patient.managingOrganization",
       "min": 0,
@@ -628,6 +639,10 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Patient",
+        "RelatedPerson"
       ],
       "path": "Patient.link.other",
       "min": 1,

@@ -184,6 +184,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner"
+      ],
       "path": "PractitionerRole.practitioner",
       "min": 0,
       "max": "1",
@@ -197,6 +200,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "PractitionerRole.organization",
       "min": 0,
@@ -240,6 +246,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Location"
+      ],
       "path": "PractitionerRole.location",
       "min": 0,
       "max": "*",
@@ -253,6 +262,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "HealthcareService"
       ],
       "path": "PractitionerRole.healthcareService",
       "min": 0,
@@ -497,6 +509,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Endpoint"
       ],
       "path": "PractitionerRole.endpoint",
       "min": 0,

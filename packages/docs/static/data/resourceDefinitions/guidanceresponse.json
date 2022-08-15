@@ -200,6 +200,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Group"
+      ],
       "path": "GuidanceResponse.subject",
       "min": 0,
       "max": "1",
@@ -213,6 +217,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "GuidanceResponse.encounter",
       "min": 0,
@@ -242,6 +249,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Device"
+      ],
       "path": "GuidanceResponse.performer",
       "min": 0,
       "max": "1",
@@ -269,6 +279,12 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Condition",
+        "Observation",
+        "DiagnosticReport",
+        "DocumentReference"
       ],
       "path": "GuidanceResponse.reasonReference",
       "min": 0,
@@ -298,6 +314,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "OperationOutcome"
+      ],
       "path": "GuidanceResponse.evaluationMessage",
       "min": 0,
       "max": "*",
@@ -312,6 +331,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Parameters"
+      ],
       "path": "GuidanceResponse.outputParameters",
       "min": 0,
       "max": "1",
@@ -325,6 +347,10 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "CarePlan",
+        "RequestGroup"
       ],
       "path": "GuidanceResponse.result",
       "min": 0,

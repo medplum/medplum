@@ -184,6 +184,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "Medication.manufacturer",
       "min": 0,
       "max": "1",
@@ -285,6 +288,10 @@
       "types": [
         "CodeableConcept",
         "Reference"
+      ],
+      "referenceTypes": [
+        "Substance",
+        "Medication"
       ],
       "path": "Medication.ingredient.item[x]",
       "min": 1,

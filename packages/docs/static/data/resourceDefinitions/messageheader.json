@@ -230,6 +230,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Device"
+      ],
       "path": "MessageHeader.destination.target",
       "min": 0,
       "max": "1",
@@ -258,6 +261,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
+      ],
       "path": "MessageHeader.destination.receiver",
       "min": 0,
       "max": "1",
@@ -271,6 +279,11 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
       ],
       "path": "MessageHeader.sender",
       "min": 0,
@@ -286,6 +299,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole"
+      ],
       "path": "MessageHeader.enterer",
       "min": 0,
       "max": "1",
@@ -299,6 +316,10 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole"
       ],
       "path": "MessageHeader.author",
       "min": 0,
@@ -443,6 +464,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
+      ],
       "path": "MessageHeader.responsible",
       "min": 0,
       "max": "1",
@@ -558,6 +584,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "OperationOutcome"
+      ],
       "path": "MessageHeader.response.details",
       "min": 0,
       "max": "1",
@@ -571,6 +600,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "MessageHeader.focus",
       "min": 0,

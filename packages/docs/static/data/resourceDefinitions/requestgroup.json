@@ -184,6 +184,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "RequestGroup.basedOn",
       "min": 0,
       "max": "*",
@@ -197,6 +200,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "RequestGroup.replaces",
       "min": 0,
@@ -282,6 +288,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Group"
+      ],
       "path": "RequestGroup.subject",
       "min": 0,
       "max": "1",
@@ -295,6 +305,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "RequestGroup.encounter",
       "min": 0,
@@ -324,6 +337,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Device",
+        "Practitioner",
+        "PractitionerRole"
+      ],
       "path": "RequestGroup.author",
       "min": 0,
       "max": "1",
@@ -351,6 +369,12 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Condition",
+        "Observation",
+        "DiagnosticReport",
+        "DocumentReference"
       ],
       "path": "RequestGroup.reasonReference",
       "min": 0,
@@ -745,6 +769,13 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson",
+        "Device"
+      ],
       "path": "RequestGroup.action.participant",
       "min": 0,
       "max": "*",
@@ -842,6 +873,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "RequestGroup.action.resource",
       "min": 0,

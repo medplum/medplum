@@ -212,6 +212,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Group"
+      ],
       "path": "ClinicalImpression.subject",
       "min": 1,
       "max": "1",
@@ -225,6 +229,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "ClinicalImpression.encounter",
       "min": 0,
@@ -269,6 +276,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole"
+      ],
       "path": "ClinicalImpression.assessor",
       "min": 0,
       "max": "1",
@@ -283,6 +294,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "ClinicalImpression"
+      ],
       "path": "ClinicalImpression.previous",
       "min": 0,
       "max": "1",
@@ -296,6 +310,10 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Condition",
+        "AllergyIntolerance"
       ],
       "path": "ClinicalImpression.problem",
       "min": 0,
@@ -383,6 +401,15 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Observation",
+        "QuestionnaireResponse",
+        "FamilyMemberHistory",
+        "DiagnosticReport",
+        "RiskAssessment",
+        "ImagingStudy",
+        "Media"
       ],
       "path": "ClinicalImpression.investigation.item",
       "min": 0,
@@ -499,6 +526,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Condition",
+        "Observation",
+        "Media"
+      ],
       "path": "ClinicalImpression.finding.itemReference",
       "min": 0,
       "max": "1",
@@ -541,6 +573,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "RiskAssessment"
+      ],
       "path": "ClinicalImpression.prognosisReference",
       "min": 0,
       "max": "*",
@@ -554,6 +589,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "ClinicalImpression.supportingInfo",
       "min": 0,

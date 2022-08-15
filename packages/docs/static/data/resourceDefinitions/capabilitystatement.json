@@ -568,6 +568,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "CapabilityStatement.implementation.custodian",
       "min": 0,
       "max": "1",

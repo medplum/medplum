@@ -397,6 +397,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "Location.managingOrganization",
       "min": 0,
       "max": "1",
@@ -410,6 +413,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Location"
       ],
       "path": "Location.partOf",
       "min": 0,
@@ -553,6 +559,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Endpoint"
       ],
       "path": "Location.endpoint",
       "min": 0,

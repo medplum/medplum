@@ -156,6 +156,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Procedure"
+      ],
       "path": "MedicationDispense.partOf",
       "min": 0,
       "max": "*",
@@ -184,6 +187,9 @@
       "types": [
         "CodeableConcept",
         "Reference"
+      ],
+      "referenceTypes": [
+        "DetectedIssue"
       ],
       "path": "MedicationDispense.statusReason[x]",
       "min": 0,
@@ -214,6 +220,9 @@
         "CodeableConcept",
         "Reference"
       ],
+      "referenceTypes": [
+        "Medication"
+      ],
       "path": "MedicationDispense.medication[x]",
       "min": 1,
       "max": "1",
@@ -227,6 +236,10 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Patient",
+        "Group"
       ],
       "path": "MedicationDispense.subject",
       "min": 0,
@@ -242,6 +255,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Encounter",
+        "EpisodeOfCare"
+      ],
       "path": "MedicationDispense.context",
       "min": 0,
       "max": "1",
@@ -255,6 +272,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "MedicationDispense.supportingInformation",
       "min": 0,
@@ -343,6 +363,14 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization",
+        "Patient",
+        "Device",
+        "RelatedPerson"
+      ],
       "path": "MedicationDispense.performer.actor",
       "min": 1,
       "max": "1",
@@ -357,6 +385,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Location"
+      ],
       "path": "MedicationDispense.location",
       "min": 0,
       "max": "1",
@@ -370,6 +401,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "MedicationRequest"
       ],
       "path": "MedicationDispense.authorizingPrescription",
       "min": 0,
@@ -455,6 +489,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Location"
+      ],
       "path": "MedicationDispense.destination",
       "min": 0,
       "max": "1",
@@ -468,6 +505,10 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner"
       ],
       "path": "MedicationDispense.receiver",
       "min": 0,
@@ -612,6 +653,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole"
+      ],
       "path": "MedicationDispense.substitution.responsibleParty",
       "min": 0,
       "max": "*",
@@ -626,6 +671,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "DetectedIssue"
+      ],
       "path": "MedicationDispense.detectedIssue",
       "min": 0,
       "max": "*",
@@ -639,6 +687,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Provenance"
       ],
       "path": "MedicationDispense.eventHistory",
       "min": 0,

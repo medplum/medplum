@@ -170,6 +170,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "HealthcareService.providedBy",
       "min": 0,
       "max": "1",
@@ -225,6 +228,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Location"
       ],
       "path": "HealthcareService.location",
       "min": 0,
@@ -309,6 +315,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Location"
       ],
       "path": "HealthcareService.coverageArea",
       "min": 0,
@@ -710,6 +719,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Endpoint"
       ],
       "path": "HealthcareService.endpoint",
       "min": 0,

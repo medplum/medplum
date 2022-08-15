@@ -198,6 +198,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "PaymentReconciliation.paymentIssuer",
       "min": 0,
       "max": "1",
@@ -212,6 +215,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Task"
+      ],
       "path": "PaymentReconciliation.request",
       "min": 0,
       "max": "1",
@@ -225,6 +231,11 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
       ],
       "path": "PaymentReconciliation.requestor",
       "min": 0,
@@ -411,6 +422,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "PaymentReconciliation.detail.request",
       "min": 0,
       "max": "1",
@@ -425,6 +439,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
+      ],
       "path": "PaymentReconciliation.detail.submitter",
       "min": 0,
       "max": "1",
@@ -438,6 +457,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "PaymentReconciliation.detail.response",
       "min": 0,
@@ -467,6 +489,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "PractitionerRole"
+      ],
       "path": "PaymentReconciliation.detail.responsible",
       "min": 0,
       "max": "1",
@@ -480,6 +505,11 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
       ],
       "path": "PaymentReconciliation.detail.payee",
       "min": 0,

@@ -240,6 +240,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient"
+      ],
       "path": "AllergyIntolerance.patient",
       "min": 1,
       "max": "1",
@@ -253,6 +256,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "AllergyIntolerance.encounter",
       "min": 0,
@@ -300,6 +306,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Patient",
+        "RelatedPerson"
+      ],
       "path": "AllergyIntolerance.recorder",
       "min": 0,
       "max": "1",
@@ -313,6 +325,12 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Patient",
+        "RelatedPerson",
+        "Practitioner",
+        "PractitionerRole"
       ],
       "path": "AllergyIntolerance.asserter",
       "min": 0,

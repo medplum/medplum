@@ -199,6 +199,11 @@
         "CodeableConcept",
         "Reference"
       ],
+      "referenceTypes": [
+        "Medication",
+        "Substance",
+        "Device"
+      ],
       "path": "SupplyRequest.item[x]",
       "min": 1,
       "max": "1",
@@ -347,6 +352,14 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization",
+        "Patient",
+        "RelatedPerson",
+        "Device"
+      ],
       "path": "SupplyRequest.requester",
       "min": 0,
       "max": "1",
@@ -360,6 +373,10 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization",
+        "HealthcareService"
       ],
       "path": "SupplyRequest.supplier",
       "min": 0,
@@ -389,6 +406,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Condition",
+        "Observation",
+        "DiagnosticReport",
+        "DocumentReference"
+      ],
       "path": "SupplyRequest.reasonReference",
       "min": 0,
       "max": "*",
@@ -403,6 +426,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization",
+        "Location"
+      ],
       "path": "SupplyRequest.deliverFrom",
       "min": 0,
       "max": "1",
@@ -416,6 +443,11 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization",
+        "Location",
+        "Patient"
       ],
       "path": "SupplyRequest.deliverTo",
       "min": 0,

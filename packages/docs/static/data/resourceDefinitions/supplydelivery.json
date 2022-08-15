@@ -156,6 +156,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "SupplyRequest"
+      ],
       "path": "SupplyDelivery.basedOn",
       "min": 0,
       "max": "*",
@@ -169,6 +172,10 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "SupplyDelivery",
+        "Contract"
       ],
       "path": "SupplyDelivery.partOf",
       "min": 0,
@@ -197,6 +204,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Patient"
       ],
       "path": "SupplyDelivery.patient",
       "min": 0,
@@ -300,6 +310,11 @@
         "CodeableConcept",
         "Reference"
       ],
+      "referenceTypes": [
+        "Medication",
+        "Substance",
+        "Device"
+      ],
       "path": "SupplyDelivery.suppliedItem.item[x]",
       "min": 0,
       "max": "1",
@@ -330,6 +345,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
+      ],
       "path": "SupplyDelivery.supplier",
       "min": 0,
       "max": "1",
@@ -344,6 +364,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Location"
+      ],
       "path": "SupplyDelivery.destination",
       "min": 0,
       "max": "1",
@@ -357,6 +380,10 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole"
       ],
       "path": "SupplyDelivery.receiver",
       "min": 0,

@@ -240,6 +240,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization",
+        "RelatedPerson",
+        "Practitioner",
+        "PractitionerRole"
+      ],
       "path": "Group.managingEntity",
       "min": 0,
       "max": "1",
@@ -331,6 +337,7 @@
         "Range",
         "Reference"
       ],
+      "referenceTypes": [],
       "path": "Group.characteristic.value[x]",
       "min": 1,
       "max": "1",
@@ -431,6 +438,15 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "Device",
+        "Medication",
+        "Substance",
+        "Group"
       ],
       "path": "Group.member.entity",
       "min": 1,

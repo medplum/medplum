@@ -198,6 +198,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "ServiceRequest"
+      ],
       "path": "BiologicallyDerivedProduct.request",
       "min": 0,
       "max": "*",
@@ -225,6 +228,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "BiologicallyDerivedProduct"
       ],
       "path": "BiologicallyDerivedProduct.parent",
       "min": 0,
@@ -299,6 +305,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole"
+      ],
       "path": "BiologicallyDerivedProduct.collection.collector",
       "min": 0,
       "max": "1",
@@ -312,6 +322,10 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Patient",
+        "Organization"
       ],
       "path": "BiologicallyDerivedProduct.collection.source",
       "min": 0,
@@ -428,6 +442,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Substance"
       ],
       "path": "BiologicallyDerivedProduct.processing.additive",
       "min": 0,

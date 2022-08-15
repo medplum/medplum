@@ -584,6 +584,9 @@
         "DataRequirement",
         "TriggerDefinition"
       ],
+      "referenceTypes": [
+        "Group"
+      ],
       "path": "EvidenceVariable.characteristic.definition[x]",
       "min": 1,
       "max": "1",

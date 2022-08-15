@@ -422,6 +422,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Medication",
+        "Substance",
+        "Device"
+      ],
       "path": "ChargeItemDefinition.instance",
       "min": 0,
       "max": "*",

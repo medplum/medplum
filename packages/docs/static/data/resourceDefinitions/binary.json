@@ -96,6 +96,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "Binary.securityContext",
       "min": 0,
       "max": "1",

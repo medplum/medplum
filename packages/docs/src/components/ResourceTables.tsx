@@ -2,6 +2,7 @@ import React from 'react';
 
 import styles from './ResourceTables.module.css';
 import { buildTypeName } from '@medplum/core';
+
 import { PropertyDocInfo, SearchParamDocInfo } from '../types/documentationTypes';
 
 export function ResourcePropertiesTable(props: { properties: PropertyDocInfo[] }): JSX.Element {
@@ -34,9 +35,7 @@ export function ResourcePropertiesTable(props: { properties: PropertyDocInfo[] }
             </td>
             <td>{property.min > 0 ? 'Y' : ''}</td>
             <td>
-              {property.types?.[0] === 'BackboneElement'
-                ? buildTypeName(property.path.split('.'))
-                : property.types.join(', ')}
+              {renderPropertyTypes(property)}
               {property.max === '*' ? '[]' : ''}
             </td>
             <td>
@@ -77,5 +76,50 @@ export function SearchParamsTable(props: { searchParams: SearchParamDocInfo[] })
         ))}
       </tbody>
     </table>
+  );
+}
+
+function renderPropertyTypes(property: PropertyDocInfo): JSX.Element {
+  const types = property.types;
+  if (types?.[0] === 'BackboneElement') {
+    return <>{buildTypeName(property.path.split('.'))}</>;
+  }
+
+  return (
+    <span style={{ whiteSpace: 'pre-wrap' }}>
+      {property.types
+        .map((t) => (t === 'Reference' ? renderReferenceType(property.referenceTypes || []) : t))
+        .map((type, i, allType) => (
+          <>
+            {type}
+            {i < allType.length - 1 ? ', ' : ''}
+          </>
+        ))}
+    </span>
+  );
+}
+
+function renderReferenceType(referenceTypes: string[]): JSX.Element {
+  const verticalizeLinks = referenceTypes.length > 2;
+  const separator = (i: number): string => {
+    if (i < referenceTypes.length - 1) {
+      if (referenceTypes && verticalizeLinks) {
+        return ' |\n  ';
+      }
+      return ' | ';
+    }
+    return verticalizeLinks ? '\n' : '';
+  };
+  return (
+    <>
+      Reference&lt;
+      {referenceTypes?.map((refType, i) => (
+        <>
+          {i === 0 && verticalizeLinks ? '\n  ' : ''}
+          {<a href={`./${refType}`}>{refType}</a>} {separator(i)}
+        </>
+      ))}
+      &gt;
+    </>
   );
 }

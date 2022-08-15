@@ -226,6 +226,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Group",
+        "Organization"
+      ],
       "path": "Goal.subject",
       "min": 1,
       "max": "1",
@@ -391,6 +396,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson"
+      ],
       "path": "Goal.expressedBy",
       "min": 0,
       "max": "1",
@@ -404,6 +415,14 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Condition",
+        "Observation",
+        "MedicationStatement",
+        "NutritionOrder",
+        "ServiceRequest",
+        "RiskAssessment"
       ],
       "path": "Goal.addresses",
       "min": 0,
@@ -446,6 +465,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Observation"
       ],
       "path": "Goal.outcomeReference",
       "min": 0,

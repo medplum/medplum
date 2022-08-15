@@ -212,6 +212,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient"
+      ],
       "path": "ExplanationOfBenefit.patient",
       "min": 1,
       "max": "1",
@@ -254,6 +257,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole"
+      ],
       "path": "ExplanationOfBenefit.enterer",
       "min": 0,
       "max": "1",
@@ -268,6 +275,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "ExplanationOfBenefit.insurer",
       "min": 1,
       "max": "1",
@@ -281,6 +291,11 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
       ],
       "path": "ExplanationOfBenefit.provider",
       "min": 1,
@@ -397,6 +412,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Claim"
+      ],
       "path": "ExplanationOfBenefit.related.claim",
       "min": 0,
       "max": "1",
@@ -439,6 +457,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "MedicationRequest",
+        "VisionPrescription"
+      ],
       "path": "ExplanationOfBenefit.prescription",
       "min": 0,
       "max": "1",
@@ -452,6 +474,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "MedicationRequest"
       ],
       "path": "ExplanationOfBenefit.originalPrescription",
       "min": 0,
@@ -540,6 +565,13 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization",
+        "Patient",
+        "RelatedPerson"
+      ],
       "path": "ExplanationOfBenefit.payee.party",
       "min": 0,
       "max": "1",
@@ -553,6 +585,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "ServiceRequest"
       ],
       "path": "ExplanationOfBenefit.referral",
       "min": 0,
@@ -568,6 +603,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Location"
+      ],
       "path": "ExplanationOfBenefit.facility",
       "min": 0,
       "max": "1",
@@ -582,6 +620,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Claim"
+      ],
       "path": "ExplanationOfBenefit.claim",
       "min": 0,
       "max": "1",
@@ -595,6 +636,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "ClaimResponse"
       ],
       "path": "ExplanationOfBenefit.claimResponse",
       "min": 0,
@@ -738,6 +782,11 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
       ],
       "path": "ExplanationOfBenefit.careTeam.provider",
       "min": 1,
@@ -915,6 +964,9 @@
         "Attachment",
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "ExplanationOfBenefit.supportingInfo.value[x]",
       "min": 0,
       "max": "1",
@@ -1016,6 +1068,9 @@
       "types": [
         "CodeableConcept",
         "Reference"
+      ],
+      "referenceTypes": [
+        "Condition"
       ],
       "path": "ExplanationOfBenefit.diagnosis.diagnosis[x]",
       "min": 1,
@@ -1175,6 +1230,9 @@
         "CodeableConcept",
         "Reference"
       ],
+      "referenceTypes": [
+        "Procedure"
+      ],
       "path": "ExplanationOfBenefit.procedure.procedure[x]",
       "min": 1,
       "max": "1",
@@ -1188,6 +1246,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Device"
       ],
       "path": "ExplanationOfBenefit.procedure.udi",
       "min": 0,
@@ -1289,6 +1350,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Coverage"
       ],
       "path": "ExplanationOfBenefit.insurance.coverage",
       "min": 1,
@@ -1405,6 +1469,9 @@
       "types": [
         "Address",
         "Reference"
+      ],
+      "referenceTypes": [
+        "Location"
       ],
       "path": "ExplanationOfBenefit.accident.location[x]",
       "min": 0,
@@ -1636,6 +1703,9 @@
         "Address",
         "Reference"
       ],
+      "referenceTypes": [
+        "Location"
+      ],
       "path": "ExplanationOfBenefit.item.location[x]",
       "min": 0,
       "max": "1",
@@ -1706,6 +1776,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Device"
+      ],
       "path": "ExplanationOfBenefit.item.udi",
       "min": 0,
       "max": "*",
@@ -1747,6 +1820,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "ExplanationOfBenefit.item.encounter",
       "min": 0,
@@ -2090,6 +2166,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Device"
+      ],
       "path": "ExplanationOfBenefit.item.detail.udi",
       "min": 0,
       "max": "*",
@@ -2331,6 +2410,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Device"
+      ],
       "path": "ExplanationOfBenefit.item.detail.subDetail.udi",
       "min": 0,
       "max": "*",
@@ -2474,6 +2556,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
+      ],
       "path": "ExplanationOfBenefit.addItem.provider",
       "min": 0,
       "max": "*",
@@ -2546,6 +2633,9 @@
         "CodeableConcept",
         "Address",
         "Reference"
+      ],
+      "referenceTypes": [
+        "Location"
       ],
       "path": "ExplanationOfBenefit.addItem.location[x]",
       "min": 0,

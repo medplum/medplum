@@ -198,6 +198,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "ChargeItem"
+      ],
       "path": "ChargeItem.partOf",
       "min": 0,
       "max": "*",
@@ -226,6 +229,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Group"
+      ],
       "path": "ChargeItem.subject",
       "min": 1,
       "max": "1",
@@ -239,6 +246,10 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter",
+        "EpisodeOfCare"
       ],
       "path": "ChargeItem.context",
       "min": 0,
@@ -343,6 +354,15 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization",
+        "CareTeam",
+        "Patient",
+        "Device",
+        "RelatedPerson"
+      ],
       "path": "ChargeItem.performer.actor",
       "min": 1,
       "max": "1",
@@ -356,6 +376,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "ChargeItem.performingOrganization",
       "min": 0,
@@ -371,6 +394,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "ChargeItem.requestingOrganization",
       "min": 0,
       "max": "1",
@@ -384,6 +410,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "ChargeItem.costCenter",
       "min": 0,
@@ -469,6 +498,14 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization",
+        "Patient",
+        "Device",
+        "RelatedPerson"
+      ],
       "path": "ChargeItem.enterer",
       "min": 0,
       "max": "1",
@@ -511,6 +548,16 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "DiagnosticReport",
+        "ImagingStudy",
+        "Immunization",
+        "MedicationAdministration",
+        "MedicationDispense",
+        "Observation",
+        "Procedure",
+        "SupplyDelivery"
+      ],
       "path": "ChargeItem.service",
       "min": 0,
       "max": "*",
@@ -526,6 +573,11 @@
         "Reference",
         "CodeableConcept"
       ],
+      "referenceTypes": [
+        "Device",
+        "Medication",
+        "Substance"
+      ],
       "path": "ChargeItem.product[x]",
       "min": 0,
       "max": "1",
@@ -539,6 +591,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Account"
       ],
       "path": "ChargeItem.account",
       "min": 0,
@@ -567,6 +622,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "ChargeItem.supportingInformation",
       "min": 0,

@@ -241,6 +241,13 @@
         "boolean",
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson",
+        "Organization"
+      ],
       "path": "MedicationRequest.reported[x]",
       "min": 0,
       "max": "1",
@@ -256,6 +263,9 @@
         "CodeableConcept",
         "Reference"
       ],
+      "referenceTypes": [
+        "Medication"
+      ],
       "path": "MedicationRequest.medication[x]",
       "min": 1,
       "max": "1",
@@ -269,6 +279,10 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Patient",
+        "Group"
       ],
       "path": "MedicationRequest.subject",
       "min": 1,
@@ -284,6 +298,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Encounter"
+      ],
       "path": "MedicationRequest.encounter",
       "min": 0,
       "max": "1",
@@ -297,6 +314,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "MedicationRequest.supportingInformation",
       "min": 0,
@@ -326,6 +346,14 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization",
+        "Patient",
+        "RelatedPerson",
+        "Device"
+      ],
       "path": "MedicationRequest.requester",
       "min": 0,
       "max": "1",
@@ -339,6 +367,15 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization",
+        "Patient",
+        "Device",
+        "RelatedPerson",
+        "CareTeam"
       ],
       "path": "MedicationRequest.performer",
       "min": 0,
@@ -368,6 +405,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole"
+      ],
       "path": "MedicationRequest.recorder",
       "min": 0,
       "max": "1",
@@ -395,6 +436,10 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Condition",
+        "Observation"
       ],
       "path": "MedicationRequest.reasonReference",
       "min": 0,
@@ -438,6 +483,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "CarePlan",
+        "MedicationRequest",
+        "ServiceRequest",
+        "ImmunizationRecommendation"
+      ],
       "path": "MedicationRequest.basedOn",
       "min": 0,
       "max": "*",
@@ -479,6 +530,10 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Coverage",
+        "ClaimResponse"
       ],
       "path": "MedicationRequest.insurance",
       "min": 0,
@@ -738,6 +793,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "MedicationRequest.dispenseRequest.performer",
       "min": 0,
       "max": "1",
@@ -840,6 +898,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "MedicationRequest"
+      ],
       "path": "MedicationRequest.priorPrescription",
       "min": 0,
       "max": "1",
@@ -854,6 +915,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "DetectedIssue"
+      ],
       "path": "MedicationRequest.detectedIssue",
       "min": 0,
       "max": "*",
@@ -867,6 +931,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Provenance"
       ],
       "path": "MedicationRequest.eventHistory",
       "min": 0,

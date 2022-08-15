@@ -184,6 +184,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "EnrollmentRequest.insurer",
       "min": 0,
       "max": "1",
@@ -197,6 +200,11 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
       ],
       "path": "EnrollmentRequest.provider",
       "min": 0,
@@ -212,6 +220,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient"
+      ],
       "path": "EnrollmentRequest.candidate",
       "min": 0,
       "max": "1",
@@ -225,6 +236,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Coverage"
       ],
       "path": "EnrollmentRequest.coverage",
       "min": 0,

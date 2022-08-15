@@ -76,7 +76,7 @@ function buildDocsDefinition(
     result.properties.push({
       name,
       depth: parts.length - 1,
-      types: getPropertyType(element),
+      ...getPropertyTypes(element),
       path: path || '',
       min: min || 0,
       max: max || '',
@@ -167,15 +167,25 @@ function getSearchParamDescription(searchParam: SearchParameter, resourceType: s
   return desc;
 }
 
-function getPropertyType(property: ElementDefinition | undefined): string[] {
+function getPropertyTypes(property: ElementDefinition | undefined): Pick<PropertyDocInfo, 'types' | 'referenceTypes'> {
   const type = property?.type;
   if (!type) {
-    return [''];
+    return { types: [''] };
   }
 
-  return type
+  const types = type
     .map((t) => t.code || '')
     .map((code) => (code === 'http://hl7.org/fhirpath/System.String' ? 'string' : code));
+
+  const referenceIndex = types.indexOf('Reference');
+  if (referenceIndex >= 0) {
+    const referenceTypes =
+      type[referenceIndex].targetProfile
+        ?.filter((target) => target.startsWith('http://hl7.org/fhir/StructureDefinition/'))
+        .map((target) => target.split('/').pop() || '') || [];
+    return { types, referenceTypes };
+  }
+  return { types };
 }
 
 function getInheritance(property: ElementDefinition): { inherited: boolean; base?: string } {

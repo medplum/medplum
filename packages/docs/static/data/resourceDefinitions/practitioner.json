@@ -355,6 +355,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "Practitioner.qualification.issuer",
       "min": 0,
       "max": "1",

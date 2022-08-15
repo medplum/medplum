@@ -212,6 +212,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Group",
+        "Device",
+        "Location"
+      ],
       "path": "List.subject",
       "min": 0,
       "max": "1",
@@ -225,6 +231,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "List.encounter",
       "min": 0,
@@ -253,6 +262,12 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Patient",
+        "Device"
       ],
       "path": "List.source",
       "min": 0,
@@ -396,6 +411,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "List.entry.item",
       "min": 1,

@@ -212,6 +212,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "DocumentReference"
+      ],
       "path": "SubstanceSpecification.source",
       "min": 0,
       "max": "*",
@@ -500,6 +503,10 @@
         "Reference",
         "CodeableConcept"
       ],
+      "referenceTypes": [
+        "SubstanceSpecification",
+        "Substance"
+      ],
       "path": "SubstanceSpecification.property.definingSubstance[x]",
       "min": 0,
       "max": "1",
@@ -528,6 +535,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "SubstanceReferenceInformation"
       ],
       "path": "SubstanceSpecification.referenceInformation",
       "min": 0,
@@ -888,6 +898,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "DocumentReference"
+      ],
       "path": "SubstanceSpecification.structure.source",
       "min": 0,
       "max": "*",
@@ -1117,6 +1130,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "DocumentReference"
       ],
       "path": "SubstanceSpecification.code.source",
       "min": 0,
@@ -1418,6 +1434,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "DocumentReference"
+      ],
       "path": "SubstanceSpecification.name.source",
       "min": 0,
       "max": "*",
@@ -1506,6 +1525,9 @@
         "Reference",
         "CodeableConcept"
       ],
+      "referenceTypes": [
+        "SubstanceSpecification"
+      ],
       "path": "SubstanceSpecification.relationship.substance[x]",
       "min": 0,
       "max": "1",
@@ -1593,6 +1615,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "DocumentReference"
+      ],
       "path": "SubstanceSpecification.relationship.source",
       "min": 0,
       "max": "*",
@@ -1606,6 +1631,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "SubstanceNucleicAcid"
       ],
       "path": "SubstanceSpecification.nucleicAcid",
       "min": 0,
@@ -1621,6 +1649,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "SubstancePolymer"
+      ],
       "path": "SubstanceSpecification.polymer",
       "min": 0,
       "max": "1",
@@ -1635,6 +1666,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "SubstanceProtein"
+      ],
       "path": "SubstanceSpecification.protein",
       "min": 0,
       "max": "1",
@@ -1648,6 +1682,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "SubstanceSourceMaterial"
       ],
       "path": "SubstanceSpecification.sourceMaterial",
       "min": 0,

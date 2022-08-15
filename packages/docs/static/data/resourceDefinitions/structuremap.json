@@ -948,6 +948,7 @@
         "Dosage",
         "Meta"
       ],
+      "referenceTypes": [],
       "path": "StructureMap.group.rule.source.defaultValue[x]",
       "min": 0,
       "max": "1",

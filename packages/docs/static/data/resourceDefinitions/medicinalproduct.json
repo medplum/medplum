@@ -282,6 +282,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "MedicinalProductPharmaceutical"
+      ],
       "path": "MedicinalProduct.pharmaceuticalProduct",
       "min": 0,
       "max": "*",
@@ -295,6 +298,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "MedicinalProductPackaged"
       ],
       "path": "MedicinalProduct.packagedMedicinalProduct",
       "min": 0,
@@ -310,6 +316,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "DocumentReference"
+      ],
       "path": "MedicinalProduct.attachedDocument",
       "min": 0,
       "max": "*",
@@ -323,6 +332,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "DocumentReference"
       ],
       "path": "MedicinalProduct.masterFile",
       "min": 0,
@@ -338,6 +350,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization",
+        "PractitionerRole"
+      ],
       "path": "MedicinalProduct.contact",
       "min": 0,
       "max": "*",
@@ -351,6 +367,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "ResearchStudy"
       ],
       "path": "MedicinalProduct.clinicalTrial",
       "min": 0,
@@ -756,6 +775,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "MedicinalProduct.manufacturingBusinessOperation.manufacturer",
       "min": 0,
       "max": "*",
@@ -769,6 +791,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "MedicinalProduct.manufacturingBusinessOperation.regulator",
       "min": 0,
@@ -885,6 +910,9 @@
       "types": [
         "CodeableConcept",
         "Reference"
+      ],
+      "referenceTypes": [
+        "MedicinalProductIndication"
       ],
       "path": "MedicinalProduct.specialDesignation.indication[x]",
       "min": 0,

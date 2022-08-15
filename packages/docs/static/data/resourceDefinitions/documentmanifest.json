@@ -198,6 +198,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner",
+        "Group",
+        "Device"
+      ],
       "path": "DocumentManifest.subject",
       "min": 0,
       "max": "1",
@@ -226,6 +232,14 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization",
+        "Device",
+        "Patient",
+        "RelatedPerson"
+      ],
       "path": "DocumentManifest.author",
       "min": 0,
       "max": "*",
@@ -239,6 +253,13 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson",
+        "Organization"
       ],
       "path": "DocumentManifest.recipient",
       "min": 0,
@@ -281,6 +302,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "DocumentManifest.content",
       "min": 1,
@@ -368,6 +392,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "DocumentManifest.related.ref",
       "min": 0,

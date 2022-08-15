@@ -184,6 +184,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "CarePlan",
+        "ServiceRequest"
+      ],
       "path": "Procedure.basedOn",
       "min": 0,
       "max": "*",
@@ -197,6 +201,11 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Procedure",
+        "Observation",
+        "MedicationAdministration"
       ],
       "path": "Procedure.partOf",
       "min": 0,
@@ -268,6 +277,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Group"
+      ],
       "path": "Procedure.subject",
       "min": 1,
       "max": "1",
@@ -281,6 +294,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "Procedure.encounter",
       "min": 0,
@@ -314,6 +330,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "RelatedPerson",
+        "Practitioner",
+        "PractitionerRole"
+      ],
       "path": "Procedure.recorder",
       "min": 0,
       "max": "1",
@@ -327,6 +349,12 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Patient",
+        "RelatedPerson",
+        "Practitioner",
+        "PractitionerRole"
       ],
       "path": "Procedure.asserter",
       "min": 0,
@@ -415,6 +443,14 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization",
+        "Patient",
+        "RelatedPerson",
+        "Device"
+      ],
       "path": "Procedure.performer.actor",
       "min": 1,
       "max": "1",
@@ -429,6 +465,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "Procedure.performer.onBehalfOf",
       "min": 0,
       "max": "1",
@@ -442,6 +481,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Location"
       ],
       "path": "Procedure.location",
       "min": 0,
@@ -470,6 +512,13 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Condition",
+        "Observation",
+        "Procedure",
+        "DiagnosticReport",
+        "DocumentReference"
       ],
       "path": "Procedure.reasonReference",
       "min": 0,
@@ -513,6 +562,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "DiagnosticReport",
+        "DocumentReference",
+        "Composition"
+      ],
       "path": "Procedure.report",
       "min": 0,
       "max": "*",
@@ -540,6 +594,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Condition"
       ],
       "path": "Procedure.complicationDetail",
       "min": 0,
@@ -656,6 +713,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Device"
+      ],
       "path": "Procedure.focalDevice.manipulated",
       "min": 1,
       "max": "1",
@@ -669,6 +729,11 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Device",
+        "Medication",
+        "Substance"
       ],
       "path": "Procedure.usedReference",
       "min": 0,

@@ -4,6 +4,7 @@ type PropertyDocInfo = {
   name: string;
   depth: number;
   types: string[];
+  referenceTypes?: string[];
   inherited: boolean;
   base?: string;
 } & Required<Pick<ElementDefinition, 'path' | 'min' | 'max' | 'short' | 'definition' | 'comment'>>;

@@ -184,6 +184,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "CarePlan"
+      ],
       "path": "CarePlan.basedOn",
       "min": 0,
       "max": "*",
@@ -198,6 +201,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "CarePlan"
+      ],
       "path": "CarePlan.replaces",
       "min": 0,
       "max": "*",
@@ -211,6 +217,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "CarePlan"
       ],
       "path": "CarePlan.partOf",
       "min": 0,
@@ -296,6 +305,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Group"
+      ],
       "path": "CarePlan.subject",
       "min": 1,
       "max": "1",
@@ -309,6 +322,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "CarePlan.encounter",
       "min": 0,
@@ -352,6 +368,15 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "Device",
+        "RelatedPerson",
+        "Organization",
+        "CareTeam"
+      ],
       "path": "CarePlan.author",
       "min": 0,
       "max": "1",
@@ -365,6 +390,15 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "Device",
+        "RelatedPerson",
+        "Organization",
+        "CareTeam"
       ],
       "path": "CarePlan.contributor",
       "min": 0,
@@ -380,6 +414,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "CareTeam"
+      ],
       "path": "CarePlan.careTeam",
       "min": 0,
       "max": "*",
@@ -393,6 +430,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Condition"
       ],
       "path": "CarePlan.addresses",
       "min": 0,
@@ -408,6 +448,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "CarePlan.supportingInfo",
       "min": 0,
       "max": "*",
@@ -421,6 +464,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Goal"
       ],
       "path": "CarePlan.goal",
       "min": 0,
@@ -509,6 +555,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "CarePlan.activity.outcomeReference",
       "min": 0,
       "max": "*",
@@ -536,6 +585,17 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Appointment",
+        "CommunicationRequest",
+        "DeviceRequest",
+        "MedicationRequest",
+        "NutritionOrder",
+        "Task",
+        "ServiceRequest",
+        "VisionPrescription",
+        "RequestGroup"
       ],
       "path": "CarePlan.activity.reference",
       "min": 0,
@@ -680,6 +740,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Condition",
+        "Observation",
+        "DiagnosticReport",
+        "DocumentReference"
+      ],
       "path": "CarePlan.activity.detail.reasonReference",
       "min": 0,
       "max": "*",
@@ -693,6 +759,9 @@
       "depth": 3,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Goal"
       ],
       "path": "CarePlan.activity.detail.goal",
       "min": 0,
@@ -766,6 +835,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Location"
+      ],
       "path": "CarePlan.activity.detail.location",
       "min": 0,
       "max": "1",
@@ -779,6 +851,16 @@
       "depth": 3,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization",
+        "RelatedPerson",
+        "Patient",
+        "CareTeam",
+        "HealthcareService",
+        "Device"
       ],
       "path": "CarePlan.activity.detail.performer",
       "min": 0,
@@ -794,6 +876,10 @@
       "types": [
         "CodeableConcept",
         "Reference"
+      ],
+      "referenceTypes": [
+        "Medication",
+        "Substance"
       ],
       "path": "CarePlan.activity.detail.product[x]",
       "min": 0,

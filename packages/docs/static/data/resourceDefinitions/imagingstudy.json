@@ -184,6 +184,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Device",
+        "Group"
+      ],
       "path": "ImagingStudy.subject",
       "min": 1,
       "max": "1",
@@ -197,6 +202,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "ImagingStudy.encounter",
       "min": 0,
@@ -226,6 +234,13 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "CarePlan",
+        "ServiceRequest",
+        "Appointment",
+        "AppointmentResponse",
+        "Task"
+      ],
       "path": "ImagingStudy.basedOn",
       "min": 0,
       "max": "*",
@@ -239,6 +254,10 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole"
       ],
       "path": "ImagingStudy.referrer",
       "min": 0,
@@ -254,6 +273,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole"
+      ],
       "path": "ImagingStudy.interpreter",
       "min": 0,
       "max": "*",
@@ -267,6 +290,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Endpoint"
       ],
       "path": "ImagingStudy.endpoint",
       "min": 0,
@@ -310,6 +336,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Procedure"
+      ],
       "path": "ImagingStudy.procedureReference",
       "min": 0,
       "max": "1",
@@ -338,6 +367,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Location"
+      ],
       "path": "ImagingStudy.location",
       "min": 0,
       "max": "1",
@@ -365,6 +397,13 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Condition",
+        "Observation",
+        "Media",
+        "DiagnosticReport",
+        "DocumentReference"
       ],
       "path": "ImagingStudy.reasonReference",
       "min": 0,
@@ -537,6 +576,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Endpoint"
+      ],
       "path": "ImagingStudy.series.endpoint",
       "min": 0,
       "max": "*",
@@ -578,6 +620,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Specimen"
       ],
       "path": "ImagingStudy.series.specimen",
       "min": 0,
@@ -679,6 +724,15 @@
       "depth": 3,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization",
+        "CareTeam",
+        "Patient",
+        "Device",
+        "RelatedPerson"
       ],
       "path": "ImagingStudy.series.performer.actor",
       "min": 1,

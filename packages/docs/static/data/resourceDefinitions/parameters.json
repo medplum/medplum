@@ -204,6 +204,7 @@
         "Dosage",
         "Meta"
       ],
+      "referenceTypes": [],
       "path": "Parameters.parameter.value[x]",
       "min": 0,
       "max": "1",

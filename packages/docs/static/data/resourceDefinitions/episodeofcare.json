@@ -330,6 +330,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Condition"
+      ],
       "path": "EpisodeOfCare.diagnosis.condition",
       "min": 1,
       "max": "1",
@@ -372,6 +375,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient"
+      ],
       "path": "EpisodeOfCare.patient",
       "min": 1,
       "max": "1",
@@ -385,6 +391,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "EpisodeOfCare.managingOrganization",
       "min": 0,
@@ -414,6 +423,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "ServiceRequest"
+      ],
       "path": "EpisodeOfCare.referralRequest",
       "min": 0,
       "max": "*",
@@ -427,6 +439,10 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole"
       ],
       "path": "EpisodeOfCare.careManager",
       "min": 0,
@@ -442,6 +458,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "CareTeam"
+      ],
       "path": "EpisodeOfCare.team",
       "min": 0,
       "max": "*",
@@ -455,6 +474,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Account"
       ],
       "path": "EpisodeOfCare.account",
       "min": 0,

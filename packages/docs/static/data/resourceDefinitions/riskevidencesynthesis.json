@@ -492,6 +492,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "EvidenceVariable"
+      ],
       "path": "RiskEvidenceSynthesis.population",
       "min": 1,
       "max": "1",
@@ -506,6 +509,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "EvidenceVariable"
+      ],
       "path": "RiskEvidenceSynthesis.exposure",
       "min": 0,
       "max": "1",
@@ -519,6 +525,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "EvidenceVariable"
       ],
       "path": "RiskEvidenceSynthesis.outcome",
       "min": 1,

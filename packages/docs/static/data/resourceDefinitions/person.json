@@ -240,6 +240,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "Person.managingOrganization",
       "min": 0,
       "max": "1",
@@ -326,6 +329,12 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner",
+        "RelatedPerson",
+        "Person"
       ],
       "path": "Person.link.target",
       "min": 1,

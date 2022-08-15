@@ -400,6 +400,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Group"
+      ],
       "path": "Encounter.subject",
       "min": 0,
       "max": "1",
@@ -414,6 +418,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "EpisodeOfCare"
+      ],
       "path": "Encounter.episodeOfCare",
       "min": 0,
       "max": "*",
@@ -427,6 +434,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "ServiceRequest"
       ],
       "path": "Encounter.basedOn",
       "min": 0,
@@ -529,6 +539,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson"
+      ],
       "path": "Encounter.participant.individual",
       "min": 0,
       "max": "1",
@@ -542,6 +557,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Appointment"
       ],
       "path": "Encounter.appointment",
       "min": 0,
@@ -598,6 +616,12 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Condition",
+        "Procedure",
+        "Observation",
+        "ImmunizationRecommendation"
       ],
       "path": "Encounter.reasonReference",
       "min": 0,
@@ -672,6 +696,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Condition",
+        "Procedure"
+      ],
       "path": "Encounter.diagnosis.condition",
       "min": 1,
       "max": "1",
@@ -713,6 +741,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Account"
       ],
       "path": "Encounter.account",
       "min": 0,
@@ -801,6 +832,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Location",
+        "Organization"
+      ],
       "path": "Encounter.hospitalization.origin",
       "min": 0,
       "max": "1",
@@ -884,6 +919,10 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Location",
+        "Organization"
       ],
       "path": "Encounter.hospitalization.destination",
       "min": 0,
@@ -972,6 +1011,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Location"
+      ],
       "path": "Encounter.location.location",
       "min": 1,
       "max": "1",
@@ -1028,6 +1070,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "Encounter.serviceProvider",
       "min": 0,
       "max": "1",
@@ -1041,6 +1086,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "Encounter.partOf",
       "min": 0,

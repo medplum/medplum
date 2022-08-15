@@ -156,6 +156,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Appointment"
+      ],
       "path": "AppointmentResponse.appointment",
       "min": 1,
       "max": "1",
@@ -211,6 +214,15 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson",
+        "Device",
+        "HealthcareService",
+        "Location"
       ],
       "path": "AppointmentResponse.actor",
       "min": 0,

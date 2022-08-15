@@ -156,6 +156,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "RiskAssessment.basedOn",
       "min": 0,
       "max": "1",
@@ -169,6 +172,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "RiskAssessment.parent",
       "min": 0,
@@ -226,6 +232,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Group"
+      ],
       "path": "RiskAssessment.subject",
       "min": 1,
       "max": "1",
@@ -239,6 +249,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "RiskAssessment.encounter",
       "min": 0,
@@ -269,6 +282,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Condition"
+      ],
       "path": "RiskAssessment.condition",
       "min": 0,
       "max": "1",
@@ -282,6 +298,11 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Device"
       ],
       "path": "RiskAssessment.performer",
       "min": 0,
@@ -311,6 +332,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Condition",
+        "Observation",
+        "DiagnosticReport",
+        "DocumentReference"
+      ],
       "path": "RiskAssessment.reasonReference",
       "min": 0,
       "max": "*",
@@ -324,6 +351,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "RiskAssessment.basis",
       "min": 0,

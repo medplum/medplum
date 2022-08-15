@@ -255,6 +255,9 @@
         "CodeableConcept",
         "Reference"
       ],
+      "referenceTypes": [
+        "Group"
+      ],
       "path": "ActivityDefinition.subject[x]",
       "min": 0,
       "max": "1",
@@ -638,6 +641,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Location"
+      ],
       "path": "ActivityDefinition.location",
       "min": 0,
       "max": "1",
@@ -740,6 +746,10 @@
         "Reference",
         "CodeableConcept"
       ],
+      "referenceTypes": [
+        "Medication",
+        "Substance"
+      ],
       "path": "ActivityDefinition.product[x]",
       "min": 0,
       "max": "1",
@@ -796,6 +806,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "SpecimenDefinition"
+      ],
       "path": "ActivityDefinition.specimenRequirement",
       "min": 0,
       "max": "*",
@@ -810,6 +823,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "ObservationDefinition"
+      ],
       "path": "ActivityDefinition.observationRequirement",
       "min": 0,
       "max": "*",
@@ -823,6 +839,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "ObservationDefinition"
       ],
       "path": "ActivityDefinition.observationResultRequirement",
       "min": 0,

@@ -226,6 +226,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient"
+      ],
       "path": "NutritionOrder.patient",
       "min": 1,
       "max": "1",
@@ -239,6 +242,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "NutritionOrder.encounter",
       "min": 0,
@@ -268,6 +274,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole"
+      ],
       "path": "NutritionOrder.orderer",
       "min": 0,
       "max": "1",
@@ -281,6 +291,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "AllergyIntolerance"
       ],
       "path": "NutritionOrder.allergyIntolerance",
       "min": 0,

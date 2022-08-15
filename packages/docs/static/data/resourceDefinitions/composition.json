@@ -198,6 +198,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "Composition.subject",
       "min": 0,
       "max": "1",
@@ -211,6 +214,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "Composition.encounter",
       "min": 0,
@@ -239,6 +245,14 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Device",
+        "Patient",
+        "RelatedPerson",
+        "Organization"
       ],
       "path": "Composition.author",
       "min": 1,
@@ -369,6 +383,13 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "RelatedPerson",
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
+      ],
       "path": "Composition.attester.party",
       "min": 0,
       "max": "1",
@@ -382,6 +403,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "Composition.custodian",
       "min": 0,
@@ -470,6 +494,9 @@
       "types": [
         "Identifier",
         "Reference"
+      ],
+      "referenceTypes": [
+        "Composition"
       ],
       "path": "Composition.relatesTo.target[x]",
       "min": 1,
@@ -572,6 +599,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "Composition.event.detail",
       "min": 0,
       "max": "*",
@@ -673,6 +703,14 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Device",
+        "Patient",
+        "RelatedPerson",
+        "Organization"
+      ],
       "path": "Composition.section.author",
       "min": 0,
       "max": "*",
@@ -686,6 +724,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "Composition.section.focus",
       "min": 0,
@@ -742,6 +783,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "Composition.section.entry",
       "min": 0,

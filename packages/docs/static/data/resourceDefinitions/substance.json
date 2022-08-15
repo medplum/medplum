@@ -387,6 +387,9 @@
         "CodeableConcept",
         "Reference"
       ],
+      "referenceTypes": [
+        "Substance"
+      ],
       "path": "Substance.ingredient.substance[x]",
       "min": 1,
       "max": "1",

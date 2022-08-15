@@ -142,6 +142,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "MedicinalProduct",
+        "Medication"
+      ],
       "path": "MedicinalProductIndication.subject",
       "min": 0,
       "max": "*",
@@ -300,6 +304,12 @@
         "CodeableConcept",
         "Reference"
       ],
+      "referenceTypes": [
+        "MedicinalProduct",
+        "Medication",
+        "Substance",
+        "SubstanceSpecification"
+      ],
       "path": "MedicinalProductIndication.otherTherapy.medication[x]",
       "min": 1,
       "max": "1",
@@ -313,6 +323,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "MedicinalProductUndesirableEffect"
       ],
       "path": "MedicinalProductIndication.undesirableEffect",
       "min": 0,

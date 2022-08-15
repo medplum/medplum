@@ -184,6 +184,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient"
+      ],
       "path": "VisionPrescription.patient",
       "min": 1,
       "max": "1",
@@ -197,6 +200,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "VisionPrescription.encounter",
       "min": 0,
@@ -225,6 +231,10 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole"
       ],
       "path": "VisionPrescription.prescriber",
       "min": 1,

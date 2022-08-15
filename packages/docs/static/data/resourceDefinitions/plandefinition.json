@@ -269,6 +269,9 @@
         "CodeableConcept",
         "Reference"
       ],
+      "referenceTypes": [
+        "Group"
+      ],
       "path": "PlanDefinition.subject[x]",
       "min": 0,
       "max": "1",
@@ -980,6 +983,9 @@
       "types": [
         "CodeableConcept",
         "Reference"
+      ],
+      "referenceTypes": [
+        "Group"
       ],
       "path": "PlanDefinition.action.subject[x]",
       "min": 0,

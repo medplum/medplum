@@ -198,6 +198,15 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "Location",
+        "Device",
+        "RelatedPerson",
+        "Group"
+      ],
       "path": "MeasureReport.subject",
       "min": 0,
       "max": "1",
@@ -225,6 +234,12 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Location",
+        "Organization"
       ],
       "path": "MeasureReport.reporter",
       "min": 0,
@@ -427,6 +442,9 @@
       "depth": 3,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "List"
       ],
       "path": "MeasureReport.group.population.subjectResults",
       "min": 0,
@@ -776,6 +794,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "List"
+      ],
       "path": "MeasureReport.group.stratifier.stratum.population.subjectResults",
       "min": 0,
       "max": "1",
@@ -803,6 +824,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "MeasureReport.evaluatedResource",
       "min": 0,

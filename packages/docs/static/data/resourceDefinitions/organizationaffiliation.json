@@ -184,6 +184,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "OrganizationAffiliation.organization",
       "min": 0,
       "max": "1",
@@ -198,6 +201,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "OrganizationAffiliation.participatingOrganization",
       "min": 0,
       "max": "1",
@@ -211,6 +217,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "OrganizationAffiliation.network",
       "min": 0,
@@ -254,6 +263,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Location"
+      ],
       "path": "OrganizationAffiliation.location",
       "min": 0,
       "max": "*",
@@ -267,6 +279,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "HealthcareService"
       ],
       "path": "OrganizationAffiliation.healthcareService",
       "min": 0,
@@ -295,6 +310,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Endpoint"
       ],
       "path": "OrganizationAffiliation.endpoint",
       "min": 0,

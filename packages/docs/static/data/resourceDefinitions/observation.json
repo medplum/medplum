@@ -156,6 +156,14 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "CarePlan",
+        "DeviceRequest",
+        "ImmunizationRecommendation",
+        "MedicationRequest",
+        "NutritionOrder",
+        "ServiceRequest"
+      ],
       "path": "Observation.basedOn",
       "min": 0,
       "max": "*",
@@ -169,6 +177,14 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "MedicationAdministration",
+        "MedicationDispense",
+        "MedicationStatement",
+        "Procedure",
+        "Immunization",
+        "ImagingStudy"
       ],
       "path": "Observation.partOf",
       "min": 0,
@@ -226,6 +242,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Group",
+        "Device",
+        "Location"
+      ],
       "path": "Observation.subject",
       "min": 0,
       "max": "1",
@@ -240,6 +262,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "Observation.focus",
       "min": 0,
       "max": "*",
@@ -253,6 +278,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "Observation.encounter",
       "min": 0,
@@ -298,6 +326,14 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization",
+        "CareTeam",
+        "Patient",
+        "RelatedPerson"
       ],
       "path": "Observation.performer",
       "min": 0,
@@ -407,6 +443,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Specimen"
+      ],
       "path": "Observation.specimen",
       "min": 0,
       "max": "1",
@@ -420,6 +459,10 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Device",
+        "DeviceMetric"
       ],
       "path": "Observation.device",
       "min": 0,
@@ -578,6 +621,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Observation",
+        "QuestionnaireResponse",
+        "MolecularSequence"
+      ],
       "path": "Observation.hasMember",
       "min": 0,
       "max": "*",
@@ -591,6 +639,14 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "DocumentReference",
+        "ImagingStudy",
+        "Media",
+        "QuestionnaireResponse",
+        "Observation",
+        "MolecularSequence"
       ],
       "path": "Observation.derivedFrom",
       "min": 0,

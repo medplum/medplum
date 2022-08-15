@@ -184,6 +184,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "DeviceRequest.basedOn",
       "min": 0,
       "max": "*",
@@ -197,6 +200,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "DeviceRequest.priorRequest",
       "min": 0,
@@ -268,6 +274,9 @@
       "types": [
         "Reference",
         "CodeableConcept"
+      ],
+      "referenceTypes": [
+        "Device"
       ],
       "path": "DeviceRequest.code[x]",
       "min": 1,
@@ -373,6 +382,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Group",
+        "Location",
+        "Device"
+      ],
       "path": "DeviceRequest.subject",
       "min": 1,
       "max": "1",
@@ -386,6 +401,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "DeviceRequest.encounter",
       "min": 0,
@@ -431,6 +449,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Device",
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
+      ],
       "path": "DeviceRequest.requester",
       "min": 0,
       "max": "1",
@@ -458,6 +482,16 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization",
+        "CareTeam",
+        "HealthcareService",
+        "Patient",
+        "Device",
+        "RelatedPerson"
       ],
       "path": "DeviceRequest.performer",
       "min": 0,
@@ -487,6 +521,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Condition",
+        "Observation",
+        "DiagnosticReport",
+        "DocumentReference"
+      ],
       "path": "DeviceRequest.reasonReference",
       "min": 0,
       "max": "*",
@@ -501,6 +541,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Coverage",
+        "ClaimResponse"
+      ],
       "path": "DeviceRequest.insurance",
       "min": 0,
       "max": "*",
@@ -514,6 +558,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "DeviceRequest.supportingInfo",
       "min": 0,
@@ -542,6 +589,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Provenance"
       ],
       "path": "DeviceRequest.relevantHistory",
       "min": 0,

@@ -170,6 +170,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient"
+      ],
       "path": "RelatedPerson.patient",
       "min": 1,
       "max": "1",

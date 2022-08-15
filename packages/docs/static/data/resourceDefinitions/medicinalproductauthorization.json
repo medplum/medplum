@@ -156,6 +156,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "MedicinalProduct",
+        "MedicinalProductPackaged"
+      ],
       "path": "MedicinalProductAuthorization.subject",
       "min": 0,
       "max": "1",
@@ -439,6 +443,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "MedicinalProductAuthorization.holder",
       "min": 0,
       "max": "1",
@@ -452,6 +459,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "MedicinalProductAuthorization.regulator",
       "min": 0,

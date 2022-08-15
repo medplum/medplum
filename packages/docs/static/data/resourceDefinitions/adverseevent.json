@@ -198,6 +198,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Group",
+        "Practitioner",
+        "RelatedPerson"
+      ],
       "path": "AdverseEvent.subject",
       "min": 1,
       "max": "1",
@@ -211,6 +217,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "AdverseEvent.encounter",
       "min": 0,
@@ -268,6 +277,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Condition"
+      ],
       "path": "AdverseEvent.resultingCondition",
       "min": 0,
       "max": "*",
@@ -281,6 +293,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Location"
       ],
       "path": "AdverseEvent.location",
       "min": 0,
@@ -338,6 +353,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson"
+      ],
       "path": "AdverseEvent.recorder",
       "min": 0,
       "max": "1",
@@ -351,6 +372,11 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Device"
       ],
       "path": "AdverseEvent.contributor",
       "min": 0,
@@ -424,6 +450,15 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Immunization",
+        "Procedure",
+        "Substance",
+        "Medication",
+        "MedicationAdministration",
+        "MedicationStatement",
+        "Device"
       ],
       "path": "AdverseEvent.suspectEntity.instance",
       "min": 1,
@@ -526,6 +561,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole"
+      ],
       "path": "AdverseEvent.suspectEntity.causality.author",
       "min": 0,
       "max": "1",
@@ -554,6 +593,16 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Condition",
+        "Observation",
+        "AllergyIntolerance",
+        "FamilyMemberHistory",
+        "Immunization",
+        "Procedure",
+        "Media",
+        "DocumentReference"
+      ],
       "path": "AdverseEvent.subjectMedicalHistory",
       "min": 0,
       "max": "*",
@@ -568,6 +617,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "DocumentReference"
+      ],
       "path": "AdverseEvent.referenceDocument",
       "min": 0,
       "max": "*",
@@ -581,6 +633,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "ResearchStudy"
       ],
       "path": "AdverseEvent.study",
       "min": 0,

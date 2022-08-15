@@ -243,6 +243,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "DocumentReference"
+      ],
       "path": "SubstanceReferenceInformation.gene.source",
       "min": 0,
       "max": "*",
@@ -343,6 +346,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "DocumentReference"
       ],
       "path": "SubstanceReferenceInformation.geneElement.source",
       "min": 0,
@@ -458,6 +464,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "DocumentReference"
       ],
       "path": "SubstanceReferenceInformation.classification.source",
       "min": 0,
@@ -631,6 +640,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "DocumentReference"
       ],
       "path": "SubstanceReferenceInformation.target.source",
       "min": 0,

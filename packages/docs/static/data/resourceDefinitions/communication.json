@@ -184,6 +184,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "Communication.basedOn",
       "min": 0,
       "max": "*",
@@ -198,6 +201,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "Communication.partOf",
       "min": 0,
       "max": "*",
@@ -211,6 +217,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Communication"
       ],
       "path": "Communication.inResponseTo",
       "min": 0,
@@ -296,6 +305,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Group"
+      ],
       "path": "Communication.subject",
       "min": 0,
       "max": "1",
@@ -324,6 +337,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "Communication.about",
       "min": 0,
       "max": "*",
@@ -337,6 +353,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "Communication.encounter",
       "min": 0,
@@ -380,6 +399,17 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Device",
+        "Organization",
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson",
+        "Group",
+        "CareTeam",
+        "HealthcareService"
+      ],
       "path": "Communication.recipient",
       "min": 0,
       "max": "*",
@@ -393,6 +423,15 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Device",
+        "Organization",
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson",
+        "HealthcareService"
       ],
       "path": "Communication.sender",
       "min": 0,
@@ -421,6 +460,12 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Condition",
+        "Observation",
+        "DiagnosticReport",
+        "DocumentReference"
       ],
       "path": "Communication.reasonReference",
       "min": 0,
@@ -496,6 +541,9 @@
         "string",
         "Attachment",
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "Communication.payload.content[x]",
       "min": 1,

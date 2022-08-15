@@ -240,6 +240,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient"
+      ],
       "path": "BodyStructure.patient",
       "min": 1,
       "max": "1",

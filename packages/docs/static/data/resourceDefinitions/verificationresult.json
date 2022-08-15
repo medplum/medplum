@@ -142,6 +142,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "VerificationResult.target",
       "min": 0,
       "max": "*",
@@ -355,6 +358,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization",
+        "Practitioner",
+        "PractitionerRole"
+      ],
       "path": "VerificationResult.primarySource.who",
       "min": 0,
       "max": "1",
@@ -512,6 +520,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
+      ],
       "path": "VerificationResult.attestation.who",
       "min": 0,
       "max": "1",
@@ -525,6 +538,11 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization",
+        "Practitioner",
+        "PractitionerRole"
       ],
       "path": "VerificationResult.attestation.onBehalfOf",
       "min": 0,
@@ -682,6 +700,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "VerificationResult.validator.organization",
       "min": 1,

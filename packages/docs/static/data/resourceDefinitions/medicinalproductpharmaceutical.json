@@ -184,6 +184,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "MedicinalProductIngredient"
+      ],
       "path": "MedicinalProductPharmaceutical.ingredient",
       "min": 0,
       "max": "*",
@@ -197,6 +200,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "DeviceDefinition"
       ],
       "path": "MedicinalProductPharmaceutical.device",
       "min": 0,

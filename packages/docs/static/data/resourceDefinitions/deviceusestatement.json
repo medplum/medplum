@@ -156,6 +156,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "ServiceRequest"
+      ],
       "path": "DeviceUseStatement.basedOn",
       "min": 0,
       "max": "*",
@@ -184,6 +187,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Group"
+      ],
       "path": "DeviceUseStatement.subject",
       "min": 1,
       "max": "1",
@@ -197,6 +204,14 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "ServiceRequest",
+        "Procedure",
+        "Claim",
+        "Observation",
+        "QuestionnaireResponse",
+        "DocumentReference"
       ],
       "path": "DeviceUseStatement.derivedFrom",
       "min": 0,
@@ -242,6 +257,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson"
+      ],
       "path": "DeviceUseStatement.source",
       "min": 0,
       "max": "1",
@@ -255,6 +276,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Device"
       ],
       "path": "DeviceUseStatement.device",
       "min": 1,
@@ -283,6 +307,13 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Condition",
+        "Observation",
+        "DiagnosticReport",
+        "DocumentReference",
+        "Media"
       ],
       "path": "DeviceUseStatement.reasonReference",
       "min": 0,

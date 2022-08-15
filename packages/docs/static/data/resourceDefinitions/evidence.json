@@ -492,6 +492,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "EvidenceVariable"
+      ],
       "path": "Evidence.exposureBackground",
       "min": 1,
       "max": "1",
@@ -506,6 +509,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "EvidenceVariable"
+      ],
       "path": "Evidence.exposureVariant",
       "min": 0,
       "max": "*",
@@ -519,6 +525,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "EvidenceVariable"
       ],
       "path": "Evidence.outcome",
       "min": 0,

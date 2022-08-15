@@ -198,6 +198,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "Endpoint.managingOrganization",
       "min": 0,
       "max": "1",

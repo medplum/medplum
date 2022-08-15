@@ -226,6 +226,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "InsurancePlan.ownedBy",
       "min": 0,
       "max": "1",
@@ -240,6 +243,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "InsurancePlan.administeredBy",
       "min": 0,
       "max": "1",
@@ -253,6 +259,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Location"
       ],
       "path": "InsurancePlan.coverageArea",
       "min": 0,
@@ -383,6 +392,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Endpoint"
+      ],
       "path": "InsurancePlan.endpoint",
       "min": 0,
       "max": "*",
@@ -396,6 +408,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "InsurancePlan.network",
       "min": 0,
@@ -483,6 +498,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "InsurancePlan.coverage.network",
       "min": 0,
@@ -759,6 +777,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Location"
+      ],
       "path": "InsurancePlan.plan.coverageArea",
       "min": 0,
       "max": "*",
@@ -772,6 +793,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "InsurancePlan.plan.network",
       "min": 0,

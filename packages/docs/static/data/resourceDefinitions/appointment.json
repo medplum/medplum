@@ -254,6 +254,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Condition",
+        "Procedure",
+        "Observation",
+        "ImmunizationRecommendation"
+      ],
       "path": "Appointment.reasonReference",
       "min": 0,
       "max": "*",
@@ -295,6 +301,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "Appointment.supportingInformation",
       "min": 0,
@@ -352,6 +361,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Slot"
+      ],
       "path": "Appointment.slot",
       "min": 0,
       "max": "*",
@@ -407,6 +419,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "ServiceRequest"
       ],
       "path": "Appointment.basedOn",
       "min": 0,
@@ -494,6 +509,15 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson",
+        "Device",
+        "HealthcareService",
+        "Location"
       ],
       "path": "Appointment.participant.actor",
       "min": 0,

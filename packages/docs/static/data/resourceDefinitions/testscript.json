@@ -916,6 +916,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "TestScript.fixture.resource",
       "min": 0,
       "max": "1",
@@ -929,6 +932,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "TestScript.profile",
       "min": 0,

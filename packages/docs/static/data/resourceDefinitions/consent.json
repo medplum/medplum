@@ -198,6 +198,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient"
+      ],
       "path": "Consent.patient",
       "min": 0,
       "max": "1",
@@ -226,6 +229,13 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization",
+        "Patient",
+        "Practitioner",
+        "RelatedPerson",
+        "PractitionerRole"
+      ],
       "path": "Consent.performer",
       "min": 0,
       "max": "*",
@@ -239,6 +249,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "Consent.organization",
       "min": 0,
@@ -254,6 +267,12 @@
       "types": [
         "Attachment",
         "Reference"
+      ],
+      "referenceTypes": [
+        "Consent",
+        "DocumentReference",
+        "Contract",
+        "QuestionnaireResponse"
       ],
       "path": "Consent.source[x]",
       "min": 0,
@@ -443,6 +462,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "RelatedPerson"
+      ],
       "path": "Consent.verification.verifiedWith",
       "min": 0,
       "max": "1",
@@ -631,6 +654,16 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Device",
+        "Group",
+        "CareTeam",
+        "Organization",
+        "Patient",
+        "Practitioner",
+        "RelatedPerson",
+        "PractitionerRole"
+      ],
       "path": "Consent.provision.actor.reference",
       "min": 1,
       "max": "1",
@@ -801,6 +834,9 @@
       "depth": 3,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "Consent.provision.data.reference",
       "min": 1,

@@ -156,6 +156,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "MedicinalProduct"
+      ],
       "path": "MedicinalProductPackaged.subject",
       "min": 0,
       "max": "*",
@@ -212,6 +215,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "MedicinalProductAuthorization"
+      ],
       "path": "MedicinalProductPackaged.marketingAuthorization",
       "min": 0,
       "max": "1",
@@ -225,6 +231,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "MedicinalProductPackaged.manufacturer",
       "min": 0,
@@ -456,6 +465,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "DeviceDefinition"
+      ],
       "path": "MedicinalProductPackaged.packageItem.device",
       "min": 0,
       "max": "*",
@@ -469,6 +481,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "MedicinalProductManufactured"
       ],
       "path": "MedicinalProductPackaged.packageItem.manufacturedItem",
       "min": 0,
@@ -539,6 +554,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "MedicinalProductPackaged.packageItem.manufacturer",
       "min": 0,

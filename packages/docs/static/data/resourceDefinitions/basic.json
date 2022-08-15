@@ -170,6 +170,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "Basic.subject",
       "min": 0,
       "max": "1",
@@ -197,6 +200,13 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Patient",
+        "RelatedPerson",
+        "Organization"
       ],
       "path": "Basic.author",
       "min": 0,

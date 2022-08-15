@@ -517,6 +517,9 @@
         "CodeableConcept",
         "Reference"
       ],
+      "referenceTypes": [
+        "Substance"
+      ],
       "path": "SpecimenDefinition.typeTested.container.additive.additive[x]",
       "min": 1,
       "max": "1",

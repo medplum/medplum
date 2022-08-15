@@ -212,6 +212,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Contract"
+      ],
       "path": "Contract.instantiatesCanonical",
       "min": 0,
       "max": "1",
@@ -296,6 +299,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "Contract.subject",
       "min": 0,
       "max": "*",
@@ -309,6 +315,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "Contract.authority",
       "min": 0,
@@ -324,6 +333,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Location"
+      ],
       "path": "Contract.domain",
       "min": 0,
       "max": "*",
@@ -337,6 +349,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Location"
       ],
       "path": "Contract.site",
       "min": 0,
@@ -408,6 +423,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
+      ],
       "path": "Contract.author",
       "min": 0,
       "max": "1",
@@ -436,6 +457,9 @@
       "types": [
         "CodeableConcept",
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "Contract.topic[x]",
       "min": 0,
@@ -565,6 +589,11 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
       ],
       "path": "Contract.contentDefinition.publisher",
       "min": 0,
@@ -723,6 +752,9 @@
       "types": [
         "CodeableConcept",
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "Contract.term.topic[x]",
       "min": 0,
@@ -1027,6 +1059,15 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "RelatedPerson",
+        "Practitioner",
+        "PractitionerRole",
+        "Device",
+        "Group",
+        "Organization"
+      ],
       "path": "Contract.term.offer.party.reference",
       "min": 1,
       "max": "*",
@@ -1054,6 +1095,9 @@
       "depth": 3,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "Contract.term.offer.topic",
       "min": 0,
@@ -1180,6 +1224,9 @@
         "Coding",
         "Quantity",
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "Contract.term.offer.answer.value[x]",
       "min": 1,
@@ -1324,6 +1371,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "Contract.term.asset.typeReference",
       "min": 0,
       "max": "*",
@@ -1424,6 +1474,9 @@
       "depth": 4,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "Contract.term.asset.context.reference",
       "min": 0,
@@ -1639,6 +1692,9 @@
         "CodeableConcept",
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "Contract.term.asset.valuedItem.entity[x]",
       "min": 0,
       "max": "1",
@@ -1779,6 +1835,13 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization",
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson"
+      ],
       "path": "Contract.term.asset.valuedItem.responsible",
       "min": 0,
       "max": "1",
@@ -1792,6 +1855,13 @@
       "depth": 4,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization",
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson"
       ],
       "path": "Contract.term.asset.valuedItem.recipient",
       "min": 0,
@@ -1981,6 +2051,15 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "RelatedPerson",
+        "Practitioner",
+        "PractitionerRole",
+        "Device",
+        "Group",
+        "Organization"
+      ],
       "path": "Contract.term.action.subject.reference",
       "min": 1,
       "max": "*",
@@ -2051,6 +2130,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Encounter",
+        "EpisodeOfCare"
+      ],
       "path": "Contract.term.action.context",
       "min": 0,
       "max": "1",
@@ -2094,6 +2177,15 @@
       "depth": 3,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Patient",
+        "RelatedPerson",
+        "Practitioner",
+        "PractitionerRole",
+        "Device",
+        "Group",
+        "Organization"
       ],
       "path": "Contract.term.action.requester",
       "min": 0,
@@ -2151,6 +2243,17 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "RelatedPerson",
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "CareTeam",
+        "Device",
+        "Substance",
+        "Organization",
+        "Location"
+      ],
       "path": "Contract.term.action.performer",
       "min": 0,
       "max": "1",
@@ -2192,6 +2295,14 @@
       "depth": 3,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Condition",
+        "Observation",
+        "DiagnosticReport",
+        "DocumentReference",
+        "Questionnaire",
+        "QuestionnaireResponse"
       ],
       "path": "Contract.term.action.reasonReference",
       "min": 0,
@@ -2277,6 +2388,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "Contract.supportingInfo",
       "min": 0,
       "max": "*",
@@ -2290,6 +2404,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Provenance"
       ],
       "path": "Contract.relevantHistory",
       "min": 0,
@@ -2377,6 +2494,13 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization",
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson"
       ],
       "path": "Contract.signer.party",
       "min": 1,
@@ -2466,6 +2590,11 @@
         "Attachment",
         "Reference"
       ],
+      "referenceTypes": [
+        "Composition",
+        "DocumentReference",
+        "QuestionnaireResponse"
+      ],
       "path": "Contract.friendly.content[x]",
       "min": 1,
       "max": "1",
@@ -2539,6 +2668,11 @@
       "types": [
         "Attachment",
         "Reference"
+      ],
+      "referenceTypes": [
+        "Composition",
+        "DocumentReference",
+        "QuestionnaireResponse"
       ],
       "path": "Contract.legal.content[x]",
       "min": 1,
@@ -2614,6 +2748,9 @@
         "Attachment",
         "Reference"
       ],
+      "referenceTypes": [
+        "DocumentReference"
+      ],
       "path": "Contract.rule.content[x]",
       "min": 1,
       "max": "1",
@@ -2628,6 +2765,12 @@
       "types": [
         "Attachment",
         "Reference"
+      ],
+      "referenceTypes": [
+        "Composition",
+        "DocumentReference",
+        "QuestionnaireResponse",
+        "Contract"
       ],
       "path": "Contract.legallyBinding[x]",
       "min": 0,

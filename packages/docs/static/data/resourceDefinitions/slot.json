@@ -212,6 +212,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Schedule"
+      ],
       "path": "Slot.schedule",
       "min": 1,
       "max": "1",

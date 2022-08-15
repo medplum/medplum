@@ -170,6 +170,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "MedicationKnowledge.manufacturer",
       "min": 0,
       "max": "1",
@@ -299,6 +302,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "MedicationKnowledge"
+      ],
       "path": "MedicationKnowledge.relatedMedicationKnowledge.reference",
       "min": 1,
       "max": "*",
@@ -312,6 +318,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Medication"
       ],
       "path": "MedicationKnowledge.associatedMedication",
       "min": 0,
@@ -414,6 +423,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "DocumentReference",
+        "Media"
+      ],
       "path": "MedicationKnowledge.monograph.source",
       "min": 0,
       "max": "1",
@@ -487,6 +500,9 @@
       "types": [
         "CodeableConcept",
         "Reference"
+      ],
+      "referenceTypes": [
+        "Substance"
       ],
       "path": "MedicationKnowledge.ingredient.item[x]",
       "min": 1,
@@ -893,6 +909,9 @@
         "CodeableConcept",
         "Reference"
       ],
+      "referenceTypes": [
+        "ObservationDefinition"
+      ],
       "path": "MedicationKnowledge.administrationGuidelines.indication[x]",
       "min": 0,
       "max": "1",
@@ -1259,6 +1278,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "DetectedIssue"
+      ],
       "path": "MedicationKnowledge.contraindication",
       "min": 0,
       "max": "*",
@@ -1331,6 +1353,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "MedicationKnowledge.regulatory.regulatoryAuthority",
       "min": 1,

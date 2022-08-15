@@ -184,6 +184,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Device"
+      ],
       "path": "DeviceMetric.source",
       "min": 0,
       "max": "1",
@@ -197,6 +200,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Device"
       ],
       "path": "DeviceMetric.parent",
       "min": 0,

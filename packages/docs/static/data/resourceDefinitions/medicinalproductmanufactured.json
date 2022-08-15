@@ -184,6 +184,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "MedicinalProductManufactured.manufacturer",
       "min": 0,
       "max": "*",
@@ -197,6 +200,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "MedicinalProductIngredient"
       ],
       "path": "MedicinalProductManufactured.ingredient",
       "min": 0,

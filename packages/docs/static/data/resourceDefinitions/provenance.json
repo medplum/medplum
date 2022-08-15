@@ -142,6 +142,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "Provenance.target",
       "min": 1,
       "max": "*",
@@ -198,6 +201,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Location"
       ],
       "path": "Provenance.location",
       "min": 0,
@@ -328,6 +334,14 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson",
+        "Patient",
+        "Device",
+        "Organization"
+      ],
       "path": "Provenance.agent.who",
       "min": 1,
       "max": "1",
@@ -341,6 +355,14 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson",
+        "Patient",
+        "Device",
+        "Organization"
       ],
       "path": "Provenance.agent.onBehalfOf",
       "min": 0,
@@ -428,6 +450,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "Provenance.entity.what",
       "min": 1,

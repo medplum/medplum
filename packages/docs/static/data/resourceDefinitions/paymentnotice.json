@@ -170,6 +170,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "PaymentNotice.request",
       "min": 0,
       "max": "1",
@@ -183,6 +186,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "PaymentNotice.response",
       "min": 0,
@@ -212,6 +218,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
+      ],
       "path": "PaymentNotice.provider",
       "min": 0,
       "max": "1",
@@ -225,6 +236,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "PaymentReconciliation"
       ],
       "path": "PaymentNotice.payment",
       "min": 1,
@@ -254,6 +268,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
+      ],
       "path": "PaymentNotice.payee",
       "min": 0,
       "max": "1",
@@ -267,6 +286,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "PaymentNotice.recipient",
       "min": 1,

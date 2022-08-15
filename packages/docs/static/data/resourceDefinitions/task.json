@@ -184,6 +184,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "Task.basedOn",
       "min": 0,
       "max": "*",
@@ -211,6 +214,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Task"
       ],
       "path": "Task.partOf",
       "min": 0,
@@ -324,6 +330,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "Task.focus",
       "min": 0,
       "max": "1",
@@ -338,6 +347,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "Task.for",
       "min": 0,
       "max": "1",
@@ -351,6 +363,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "Task.encounter",
       "min": 0,
@@ -408,6 +423,14 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Device",
+        "Organization",
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson"
+      ],
       "path": "Task.requester",
       "min": 0,
       "max": "1",
@@ -436,6 +459,16 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization",
+        "CareTeam",
+        "HealthcareService",
+        "Patient",
+        "Device",
+        "RelatedPerson"
+      ],
       "path": "Task.owner",
       "min": 0,
       "max": "1",
@@ -449,6 +482,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Location"
       ],
       "path": "Task.location",
       "min": 0,
@@ -478,6 +514,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Resource"
+      ],
       "path": "Task.reasonReference",
       "min": 0,
       "max": "1",
@@ -491,6 +530,10 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Coverage",
+        "ClaimResponse"
       ],
       "path": "Task.insurance",
       "min": 0,
@@ -519,6 +562,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Provenance"
       ],
       "path": "Task.relevantHistory",
       "min": 0,
@@ -620,6 +666,14 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson",
+        "Group",
+        "Organization"
       ],
       "path": "Task.restriction.recipient",
       "min": 0,
@@ -757,6 +811,7 @@
         "Dosage",
         "Meta"
       ],
+      "referenceTypes": [],
       "path": "Task.input.value[x]",
       "min": 1,
       "max": "1",
@@ -893,6 +948,7 @@
         "Dosage",
         "Meta"
       ],
+      "referenceTypes": [],
       "path": "Task.output.value[x]",
       "min": 1,
       "max": "1",

@@ -184,6 +184,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "MedicinalProductIngredient.manufacturer",
       "min": 0,
       "max": "*",

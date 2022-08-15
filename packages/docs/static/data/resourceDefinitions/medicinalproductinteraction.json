@@ -142,6 +142,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "MedicinalProduct",
+        "Medication",
+        "Substance"
+      ],
       "path": "MedicinalProductInteraction.subject",
       "min": 0,
       "max": "*",
@@ -229,6 +234,12 @@
       "types": [
         "Reference",
         "CodeableConcept"
+      ],
+      "referenceTypes": [
+        "MedicinalProduct",
+        "Medication",
+        "Substance",
+        "ObservationDefinition"
       ],
       "path": "MedicinalProductInteraction.interactant.item[x]",
       "min": 1,

@@ -212,6 +212,15 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson",
+        "Device",
+        "HealthcareService",
+        "Location"
+      ],
       "path": "Schedule.actor",
       "min": 1,
       "max": "*",

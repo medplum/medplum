@@ -142,6 +142,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "MedicinalProduct",
+        "Medication"
+      ],
       "path": "MedicinalProductUndesirableEffect.subject",
       "min": 0,
       "max": "*",

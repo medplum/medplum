@@ -255,6 +255,9 @@
         "CodeableConcept",
         "Reference"
       ],
+      "referenceTypes": [
+        "Group"
+      ],
       "path": "EventDefinition.subject[x]",
       "min": 0,
       "max": "1",

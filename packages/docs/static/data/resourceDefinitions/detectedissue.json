@@ -198,6 +198,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient"
+      ],
       "path": "DetectedIssue.patient",
       "min": 0,
       "max": "1",
@@ -227,6 +230,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Device"
+      ],
       "path": "DetectedIssue.author",
       "min": 0,
       "max": "1",
@@ -240,6 +248,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "DetectedIssue.implicated",
       "min": 0,
@@ -327,6 +338,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "DetectedIssue.evidence.detail",
       "min": 0,
@@ -456,6 +470,10 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole"
       ],
       "path": "DetectedIssue.mitigation.author",
       "min": 0,

@@ -156,6 +156,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "MedicationRequest",
+        "CarePlan",
+        "ServiceRequest"
+      ],
       "path": "MedicationStatement.basedOn",
       "min": 0,
       "max": "*",
@@ -169,6 +174,13 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "MedicationAdministration",
+        "MedicationDispense",
+        "MedicationStatement",
+        "Procedure",
+        "Observation"
       ],
       "path": "MedicationStatement.partOf",
       "min": 0,
@@ -227,6 +239,9 @@
         "CodeableConcept",
         "Reference"
       ],
+      "referenceTypes": [
+        "Medication"
+      ],
       "path": "MedicationStatement.medication[x]",
       "min": 1,
       "max": "1",
@@ -241,6 +256,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Group"
+      ],
       "path": "MedicationStatement.subject",
       "min": 1,
       "max": "1",
@@ -254,6 +273,10 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter",
+        "EpisodeOfCare"
       ],
       "path": "MedicationStatement.context",
       "min": 0,
@@ -298,6 +321,13 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson",
+        "Organization"
+      ],
       "path": "MedicationStatement.informationSource",
       "min": 0,
       "max": "1",
@@ -311,6 +341,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "MedicationStatement.derivedFrom",
       "min": 0,
@@ -339,6 +372,11 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Condition",
+        "Observation",
+        "DiagnosticReport"
       ],
       "path": "MedicationStatement.reasonReference",
       "min": 0,

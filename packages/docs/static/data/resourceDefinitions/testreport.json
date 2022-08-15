@@ -184,6 +184,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "TestScript"
+      ],
       "path": "TestReport.testScript",
       "min": 1,
       "max": "1",

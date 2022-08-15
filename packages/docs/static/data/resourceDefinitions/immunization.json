@@ -198,6 +198,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient"
+      ],
       "path": "Immunization.patient",
       "min": 1,
       "max": "1",
@@ -211,6 +214,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "Immunization.encounter",
       "min": 0,
@@ -283,6 +289,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Location"
+      ],
       "path": "Immunization.location",
       "min": 0,
       "max": "1",
@@ -296,6 +305,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "Immunization.manufacturer",
       "min": 0,
@@ -454,6 +466,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
+      ],
       "path": "Immunization.performer.actor",
       "min": 1,
       "max": "1",
@@ -495,6 +512,11 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Condition",
+        "Observation",
+        "DiagnosticReport"
       ],
       "path": "Immunization.reasonReference",
       "min": 0,
@@ -754,6 +776,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Observation"
+      ],
       "path": "Immunization.reaction.detail",
       "min": 0,
       "max": "1",
@@ -854,6 +879,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "Immunization.protocolApplied.authority",
       "min": 0,

@@ -198,6 +198,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Group"
+      ],
       "path": "Invoice.subject",
       "min": 0,
       "max": "1",
@@ -211,6 +215,11 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization",
+        "Patient",
+        "RelatedPerson"
       ],
       "path": "Invoice.recipient",
       "min": 0,
@@ -313,6 +322,14 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "Organization",
+        "Patient",
+        "PractitionerRole",
+        "Device",
+        "RelatedPerson"
+      ],
       "path": "Invoice.participant.actor",
       "min": 1,
       "max": "1",
@@ -327,6 +344,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "Invoice.issuer",
       "min": 0,
       "max": "1",
@@ -340,6 +360,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Account"
       ],
       "path": "Invoice.account",
       "min": 0,
@@ -428,6 +451,9 @@
       "types": [
         "Reference",
         "CodeableConcept"
+      ],
+      "referenceTypes": [
+        "ChargeItem"
       ],
       "path": "Invoice.lineItem.chargeItem[x]",
       "min": 1,

@@ -226,6 +226,12 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Practitioner",
+        "Group",
+        "Device"
+      ],
       "path": "DocumentReference.subject",
       "min": 0,
       "max": "1",
@@ -254,6 +260,14 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization",
+        "Device",
+        "Patient",
+        "RelatedPerson"
+      ],
       "path": "DocumentReference.author",
       "min": 0,
       "max": "*",
@@ -268,6 +282,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
+      ],
       "path": "DocumentReference.authenticator",
       "min": 0,
       "max": "1",
@@ -281,6 +300,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "DocumentReference.custodian",
       "min": 0,
@@ -368,6 +390,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "DocumentReference"
       ],
       "path": "DocumentReference.relatesTo.target",
       "min": 1,
@@ -557,6 +582,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Encounter",
+        "EpisodeOfCare"
+      ],
       "path": "DocumentReference.context.encounter",
       "min": 0,
       "max": "*",
@@ -627,6 +656,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient"
+      ],
       "path": "DocumentReference.context.sourcePatientInfo",
       "min": 0,
       "max": "1",
@@ -640,6 +672,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Resource"
       ],
       "path": "DocumentReference.context.related",
       "min": 0,

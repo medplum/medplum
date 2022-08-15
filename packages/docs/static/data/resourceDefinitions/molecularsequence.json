@@ -184,6 +184,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient"
+      ],
       "path": "MolecularSequence.patient",
       "min": 0,
       "max": "1",
@@ -197,6 +200,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Specimen"
       ],
       "path": "MolecularSequence.specimen",
       "min": 0,
@@ -212,6 +218,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Device"
+      ],
       "path": "MolecularSequence.device",
       "min": 0,
       "max": "1",
@@ -225,6 +234,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "MolecularSequence.performer",
       "min": 0,
@@ -368,6 +380,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "MolecularSequence"
       ],
       "path": "MolecularSequence.referenceSeq.referenceSeqPointer",
       "min": 0,
@@ -567,6 +582,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Observation"
       ],
       "path": "MolecularSequence.variant.variantPointer",
       "min": 0,
@@ -1164,6 +1182,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "MolecularSequence"
       ],
       "path": "MolecularSequence.pointer",
       "min": 0,

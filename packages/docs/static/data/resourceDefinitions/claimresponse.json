@@ -212,6 +212,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient"
+      ],
       "path": "ClaimResponse.patient",
       "min": 1,
       "max": "1",
@@ -240,6 +243,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Organization"
+      ],
       "path": "ClaimResponse.insurer",
       "min": 1,
       "max": "1",
@@ -254,6 +260,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
+      ],
       "path": "ClaimResponse.requestor",
       "min": 0,
       "max": "1",
@@ -267,6 +278,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Claim"
       ],
       "path": "ClaimResponse.request",
       "min": 0,
@@ -857,6 +871,11 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "Organization"
+      ],
       "path": "ClaimResponse.addItem.provider",
       "min": 0,
       "max": "*",
@@ -929,6 +948,9 @@
         "CodeableConcept",
         "Address",
         "Reference"
+      ],
+      "referenceTypes": [
+        "Location"
       ],
       "path": "ClaimResponse.addItem.location[x]",
       "min": 0,
@@ -1799,6 +1821,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "CommunicationRequest"
+      ],
       "path": "ClaimResponse.communicationRequest",
       "min": 0,
       "max": "*",
@@ -1900,6 +1925,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Coverage"
+      ],
       "path": "ClaimResponse.insurance.coverage",
       "min": 1,
       "max": "1",
@@ -1927,6 +1955,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "ClaimResponse"
       ],
       "path": "ClaimResponse.insurance.claimResponse",
       "min": 0,

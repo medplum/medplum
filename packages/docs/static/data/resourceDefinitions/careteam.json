@@ -198,6 +198,10 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Patient",
+        "Group"
+      ],
       "path": "CareTeam.subject",
       "min": 0,
       "max": "1",
@@ -211,6 +215,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Encounter"
       ],
       "path": "CareTeam.encounter",
       "min": 0,
@@ -313,6 +320,14 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Practitioner",
+        "PractitionerRole",
+        "RelatedPerson",
+        "Patient",
+        "Organization",
+        "CareTeam"
+      ],
       "path": "CareTeam.participant.member",
       "min": 0,
       "max": "1",
@@ -326,6 +341,9 @@
       "depth": 2,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "CareTeam.participant.onBehalfOf",
       "min": 0,
@@ -369,6 +387,9 @@
       "types": [
         "Reference"
       ],
+      "referenceTypes": [
+        "Condition"
+      ],
       "path": "CareTeam.reasonReference",
       "min": 0,
       "max": "*",
@@ -382,6 +403,9 @@
       "depth": 1,
       "types": [
         "Reference"
+      ],
+      "referenceTypes": [
+        "Organization"
       ],
       "path": "CareTeam.managingOrganization",
       "min": 0,
