@@ -3,8 +3,8 @@ title: Foo
 sidebar_position: 68
 ---
 
-import data from '@site/static/data/resourceDefinitions/immunization.json';
-import { ResourcePropertiesTable } from '@site/src/components/resourceTables';
+import data from '@site/static/data/resourceDefinitions/appointment.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/resourceTables';
 
 # Foo
 
@@ -12,30 +12,12 @@ import { ResourcePropertiesTable } from '@site/src/components/resourceTables';
 
 ## Properties
 
-<ResourcePropertiesTable properties={data.properties.filter((p) => !p.inherited || p.base === 'Element')} />
+<ResourcePropertiesTable properties={data.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
 ## Search Parameters
 
-| Name             | Type      | Description                                                                                                                                               | Expression                |
-| ---------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| actor            | reference | Any one of the individuals participating in the Foo                                                                                                       | Foo.participant.actor     |
-| Foo-type         | token     | The style of Foo or patient that has been booked in the slot (not service type)                                                                           | Foo.FooType               |
-| based-on         | reference | The service request this Foo is allocated to assess                                                                                                       | Foo.basedOn               |
-| date             | date      | Foo date/time.                                                                                                                                            | Foo.start                 |
-| identifier       | token     | An Identifier of the Foo                                                                                                                                  | Foo.identifier            |
-| location         | reference | This location is listed in the participants of the Foo                                                                                                    | Foo.participant.actor     |
-| part-status      | token     | The Participation status of the subject, or other participant on the Foo. Can be used to locate participants that have not responded to meeting requests. | Foo.participant.status    |
-| patient          | reference | One of the individuals of the Foo is this patient                                                                                                         | Foo.participant.actor     |
-| practitioner     | reference | One of the individuals of the Foo is this practitioner                                                                                                    | Foo.participant.actor     |
-| reason-code      | token     | Coded reason this Foo is scheduled                                                                                                                        | Foo.reasonCode            |
-| reason-reference | reference | Reason the Foo is to take place (resource)                                                                                                                | Foo.reasonReference       |
-| service-category | token     | A broad categorization of the service that is to be performed during this Foo                                                                             | Foo.serviceCategory       |
-| service-type     | token     | The specific service that is to be performed during this Foo                                                                                              | Foo.serviceType           |
-| slot             | reference | The slots that this Foo is filling                                                                                                                        | Foo.slot                  |
-| specialty        | token     | The specialty of a practitioner that would be required to perform the service requested in this Foo                                                       | Foo.specialty             |
-| status           | token     | The overall status of the Foo                                                                                                                             | Foo.status                |
-| supporting-info  | reference | Additional information to support the Foo                                                                                                                 | Foo.supportingInformation |
+<SearchParamsTable searchParams={data.searchParameters} />
 
 ## Inherited Properities
 
-<ResourcePropertiesTable properties={data.properties.filter((p) => p.inherited)} />
+<ResourcePropertiesTable properties={data.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />

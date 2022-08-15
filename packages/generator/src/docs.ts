@@ -1,4 +1,4 @@
-import { isLowerCase } from '@medplum/core';
+import { getExpressionForResourceType, isLowerCase } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import {
   Bundle,
@@ -91,7 +91,7 @@ function buildDocsDefinition(
     name: param.name || '',
     type: param.type || '',
     description: getSearchParamDescription(param, result.resourceName),
-    expression: param.expression || '',
+    expression: getExpressionForResourceType(result.resourceName, param.expression || '') || '',
   }));
   return result;
 }

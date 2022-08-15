@@ -2,7 +2,7 @@ import React from 'react';
 
 import styles from './ResourceTables.module.css';
 import { buildTypeName } from '@medplum/core';
-import { PropertyDocInfo } from '../types/documentationTypes';
+import { PropertyDocInfo, SearchParamDocInfo } from '../types/documentationTypes';
 
 export function ResourcePropertiesTable(props: { properties: PropertyDocInfo[] }): JSX.Element {
   let { properties } = props;
@@ -51,6 +51,32 @@ export function ResourcePropertiesTable(props: { properties: PropertyDocInfo[] }
             <td>
               {property.min}...{property.max}
             </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+export function SearchParamsTable(props: { searchParams: SearchParamDocInfo[] }): JSX.Element {
+  const searchParams = props.searchParams;
+  return (
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Expression</th>
+        </tr>
+      </thead>
+      <tbody>
+        {searchParams.map((param) => (
+          <tr key={param.name}>
+            <td>{param.name}</td>
+            <td>{param.type}</td>
+            <td>{param.description}</td>
+            <td>{param.expression}</td>
           </tr>
         ))}
       </tbody>
