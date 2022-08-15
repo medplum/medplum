@@ -21,13 +21,13 @@
     "serve": "docusaurus serve",
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "@medplum/core": "^0.9.30"
   },
   "devDependencies": {
     "@docusaurus/core": "2.0.1",
     "@docusaurus/module-type-aliases": "2.0.1",
     "@docusaurus/preset-classic": "2.0.1",
-    "@medplum/core": "^0.9.30",
     "@medplum/fhirtypes": "^0.9.30",
     "@svgr/webpack": "6.3.1",
     "@tsconfig/docusaurus": "1.0.6",
