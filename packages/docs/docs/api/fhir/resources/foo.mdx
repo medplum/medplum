@@ -3,7 +3,7 @@ title: Foo
 sidebar_position: 68
 ---
 
-import data from '@site/static/data/resources/immunization.json';
+import data from '@site/static/data/resourceDefinitions/immunization.json';
 import { ResourcePropertiesTable } from '@site/src/components/resourceTables';
 
 # Foo
@@ -12,7 +12,7 @@ import { ResourcePropertiesTable } from '@site/src/components/resourceTables';
 
 ## Properties
 
-<ResourcePropertiesTable data={data} />
+<ResourcePropertiesTable properties={data.properties.filter((p) => !p.inherited || p.base === 'Element')} />
 
 ## Search Parameters
 
@@ -35,3 +35,7 @@ import { ResourcePropertiesTable } from '@site/src/components/resourceTables';
 | specialty        | token     | The specialty of a practitioner that would be required to perform the service requested in this Foo                                                       | Foo.specialty             |
 | status           | token     | The overall status of the Foo                                                                                                                             | Foo.status                |
 | supporting-info  | reference | Additional information to support the Foo                                                                                                                 | Foo.supportingInformation |
+
+## Inherited Properities
+
+<ResourcePropertiesTable properties={data.properties.filter((p) => p.inherited)} />

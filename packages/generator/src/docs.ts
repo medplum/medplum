@@ -83,6 +83,7 @@ function buildDocsDefinition(
       short: short || '',
       definition: definition || '',
       comment: comment || '',
+      ...getInheritance(element),
     });
   }
 
@@ -100,6 +101,7 @@ function writeDocs(definitions: ResourceDocsProps[]): void {
     writeFileSync(
       resolve(__dirname, `../../docs/static/data/resourceDefinitions/${definition.resourceName.toLowerCase()}.json`),
       JSON.stringify(definition, null, 2),
+      // JSON.stringify(definition),
       'utf8'
     );
   }
@@ -131,6 +133,15 @@ function getPropertyType(property: ElementDefinition | undefined): string[] {
   return type
     .map((t) => t.code || '')
     .map((code) => (code === 'http://hl7.org/fhirpath/System.String' ? 'string' : code));
+}
+
+function getInheritance(property: ElementDefinition): { inherited: boolean; base?: string } {
+  const inheritanceBase = property.base?.path?.split('.')[0];
+  const inherited = property.path?.split('.')[0] !== inheritanceBase;
+  if (!inherited) {
+    return { inherited };
+  }
+  return { inherited, base: inheritanceBase };
 }
 
 if (process.argv[1].endsWith('docs.ts')) {
