@@ -1,0 +1,1115 @@
+<!DOCTYPE html><!--  This site was created in Webflow. https://www.webflow.com  -->
+<!--  Last Published: Mon Aug 15 2022 23:41:31 GMT+0000 (Coordinated Universal Time)  -->
+<html data-wf-page="628e9a3b52bd24de5d5fe778" data-wf-site="628e9a3b52bd2456055fe779">
+<head>
+  <meta charset="utf-8">
+  <title>Style Guide</title>
+  <meta content="Style Guide" property="og:title">
+  <meta content="Style Guide" property="twitter:title">
+  <meta content="width=device-width, initial-scale=1" name="viewport">
+  <meta content="Webflow" name="generator">
+  <link href="css/normalize.css" rel="stylesheet" type="text/css">
+  <link href="css/webflow.css" rel="stylesheet" type="text/css">
+  <link href="css/medplum-project.webflow.css" rel="stylesheet" type="text/css">
+  <script src="https://ajax.googleapis.com/ajax/libs/webfont/1.6.26/webfont.js" type="text/javascript"></script>
+  <script type="text/javascript">WebFont.load({  google: {    families: ["Poppins:200,300,regular,italic,500,600,700,800"]  }});</script>
+  <!-- [if lt IE 9]><script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js" type="text/javascript"></script><![endif] -->
+  <script type="text/javascript">!function(o,c){var n=c.documentElement,t=" w-mod-";n.className+=t+"js",("ontouchstart"in o||o.DocumentTouch&&c instanceof DocumentTouch)&&(n.className+=t+"touch")}(window,document);</script>
+  <link href="images/favicon.png" rel="shortcut icon" type="image/x-icon">
+  <link href="images/webclip.png" rel="apple-touch-icon">
+  <style>
+#content.light-mode {} 
+#content.dark-mode {}
+</style>
+</head>
+<body>
+  <div class="light-mode">
+    <div class="global-styles w-embed">
+      <style>
+ html { font-size: calc(0.625rem + 0.41666666666666663vw); }
+  @media screen and (max-width:1920px) { html { font-size: calc(0.625rem + 0.41666666666666674vw); } }
+  @media screen and (max-width:1440px) { html { font-size: calc(0.8126951092611863rem + 0.20811654526534862vw); } }
+  @media screen and (max-width:479px) { html { font-size: calc(0.7494769874476988rem + 0.8368200836820083vw); } }
+/* Snippet gets rid of top margin on first element in any rich text*/
+/* Snippet gets rid of top margin on first element in any rich text*/
+.w-richtext>:first-child {
+	margin-top: 0;
+}
+/* Snippet gets rid of bottom margin on last element in any rich text*/
+.w-richtext>:last-child, .w-richtext ol li:last-child, .w-richtext ul li:last-child {
+    margin-bottom: 0;
+}
+/* Snippet makes all link elements listed below to inherit color from their parent */
+a, 
+.w-tab-link,
+.w-nav-link,
+.w-dropdown-btn,
+.w-dropdown-toggle,
+.w-dropdown-link
+{
+color: inherit;
+}
+/* Snippet prevents all click and hover interaction with an element */
+.clickable-off {
+  pointer-events: none;
+}
+/* Snippet enables all click and hover interaction with an element */
+.clickable-on{
+  pointer-events: auto;
+}
+/* Snippet enables you to add class of div-square which creates and maintains a 1:1 dimension of a div.*/
+.div-square::after {
+  content: "";
+  display: block;
+  padding-bottom: 100%;
+}
+/*Hide focus outline for main content element*/
+    main:focus-visible {
+    outline: -webkit-focus-ring-color auto 0px;
+}
+/* Make sure containers never lose their center alignment*/
+.container-medium, .container-small, .container-large {
+  margin-right: auto !important;
+  margin-left: auto !important;
+}
+/*Reset selects, buttons, and links styles*/
+.w-input, .w-select, a {
+color: inherit;
+text-decoration: inherit;
+font-size: inherit;
+}
+/*Apply "..." after 3 lines of text */
+.text-style-3lines {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+/* Apply "..." after 2 lines of text */
+.text-style-2lines {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+/* Apply "..." at 100% width */
+.truncate-width { 
+		width: 100%; 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+}
+/* Removes native scrollbar */
+.no-scrollbar {
+    -ms-overflow-style: none;  // IE 10+
+    overflow: -moz-scrollbars-none;  // Firefox
+}
+.no-scrollbar::-webkit-scrollbar {
+    display: none; // Safari and Chrome
+}
+.nav-link.w--current.is-dark {
+		background-color: #191919;
+		color: #966DF6;
+}
+</style>
+    </div>
+    <div class="main-wrapper">
+      <div class="page-padding">
+        <div class="container-large">
+          <div class="rl-styleguide-wrapper">
+            <div class="styleguide_heading">Typography</div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">HTML Headings</div>
+              <h1>Heading 1</h1>
+              <h2>Heading 2</h2>
+              <h3>Heading 3</h3>
+              <h4>Heading 4</h4>
+              <h5>Heading 5</h5>
+              <h6>Heading 6</h6>
+            </div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Heading Classes</div>
+              <h2 class="heading-xxlarge">heading-xxlarge</h2>
+              <h2 class="heading-xlarge">heading-xlarge</h2>
+              <h2 class="heading-large">heading-large</h2>
+              <h2 class="heading-medium">heading-medium</h2>
+              <h2 class="heading-small">heading-small</h2>
+              <h2 class="heading-xsmall">heading-xsmall</h2>
+            </div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Other HTML Tags</div>
+              <p>All Paragraph (HTML Tag)A Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat. Aenean faucibus nibh et justo cursus id rutrum lorem imperdiet. Nunc ut sem vitae risus tristique posuere.</p>
+              <a href="#">All Links</a>
+              <blockquote>Block Quote</blockquote>
+              <ul role="list" class="w-list-unstyled">
+                <li>
+                  <p>No bullet list</p>
+                </li>
+                <li>
+                  <p>No bullet list</p>
+                </li>
+              </ul>
+              <ul role="list">
+                <li>
+                  <p>No bullet list</p>
+                </li>
+                <li>
+                  <p>No bullet list</p>
+                </li>
+              </ul>
+              <ol role="list">
+                <li>
+                  <p>No bullet list</p>
+                </li>
+                <li>
+                  <p>No bullet list</p>
+                </li>
+                <li>
+                  <p>No bullet list</p>
+                </li>
+              </ol>
+            </div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Text Sizes</div>
+              <p class="text-size-large">A Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat. Aenean faucibus nibh et justo cursus id rutrum lorem imperdiet. Nunc ut sem vitae risus tristique posuere.</p>
+              <p class="text-size-medium">A Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat. Aenean faucibus nibh et justo cursus id rutrum lorem imperdiet. Nunc ut sem vitae risus tristique posuere.</p>
+              <p class="text-size-regular">A Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat. Aenean faucibus nibh et justo cursus id rutrum lorem imperdiet. Nunc ut sem vitae risus tristique posuere.</p>
+              <p class="text-size-small">A Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat. Aenean faucibus nibh et justo cursus id rutrum lorem imperdiet. Nunc ut sem vitae risus tristique posuere.</p>
+              <p class="text-size-tiny">A Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique. Duis cursus, mi quis viverra ornare, eros dolor interdum nulla, ut commodo diam libero vitae erat. Aenean faucibus nibh et justo cursus id rutrum lorem imperdiet. Nunc ut sem vitae risus tristique posuere.</p>
+            </div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Text Weights</div>
+              <div class="text-weight-xbold">text-weight-xbold</div>
+              <div class="text-weight-bold">text-weight-bold</div>
+              <div class="text-weight-semibold">text-weight-semibold</div>
+              <div class="text-weight-medium">text-weight-medium</div>
+              <div class="text-weight-normal">text-weight-normal</div>
+              <div class="text-weight-light">text-weight-light</div>
+            </div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Text Styles</div>
+              <div class="text-style-italic">text-style-italic</div>
+              <div class="text-style-strikethrough">text-style-strikethrough</div>
+              <div class="text-style-allcaps">text-style-allcaps</div>
+              <div class="text-style-nowrap">text-style-nowrap</div>
+              <div class="text-style-quote">text-style-quote</div>
+              <div class="text-style-link">text-style-link</div>
+              <div id="w-node-a7c4a0cd-9ab3-71e8-a633-d55226f79d19-5d5fe778" class="text-style-2lines">text-style-2lines</div>
+              <div class="text-style-3lines">text-style-3lines</div>
+              <div class="text-style-muted">text-style-muted</div>
+            </div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Text Colours</div>
+              <div class="text-color-black">text-color-black</div>
+              <div class="text-color-custom1">text-color-black</div>
+              <div class="text-color-custom2">text-color-black</div>
+              <div class="background-color-black-2">
+                <div class="text-color-white">text-color-white</div>
+              </div>
+              <div class="background-color-black-2">
+                <div class="text-color-customlight1">text-color-white</div>
+              </div>
+              <div class="background-color-black-2">
+                <div class="text-color-customlight2">text-color-white</div>
+              </div>
+            </div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Text Alignment</div>
+              <div class="text-align-left">text-align-left</div>
+              <div class="text-align-center">text-align-center</div>
+              <div class="text-align-right">text-align-right</div>
+            </div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Rich Text</div>
+              <div class="text-rich-text w-richtext">
+                <h1>Heading 1</h1>
+                <h2>Heading 2</h2>
+                <h3>Heading 3</h3>
+                <h4>Heading 4</h4>
+                <h5>Heading 5</h5>
+                <h6>Heading 6</h6>
+                <blockquote>This is a block quote</blockquote>
+                <p>The rich text element allows you to create and format headings, paragraphs, blockquotes, images, and video all in one place instead of having to add and format them individually. Just double-click and easily create content.</p>
+                <p>
+                  <a href="https://relume.io">This is a link inside of a rich text</a>
+                </p>
+                <ul role="list">
+                  <li>List item</li>
+                  <li>List item</li>
+                  <li>List item</li>
+                </ul>
+                <ol start="" role="list">
+                  <li>List item</li>
+                  <li>List item</li>
+                  <li>List item</li>
+                </ol>
+                <figure class="w-richtext-align-floatleft w-richtext-figure-type-image">
+                  <div><img src="https://uploads-ssl.webflow.com/61161047e8d81ba08206cc1c/61171b3d70d5194fc92fe1db_Placeholder%20Image_Small.svg" loading="lazy" alt=""></div>
+                  <figcaption>Caption goes here</figcaption>
+                </figure>
+              </div>
+            </div>
+          </div>
+          <div class="rl-styleguide-wrapper">
+            <div class="styleguide_heading">Colors</div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Color Swatch</div>
+              <div class="w-layout-grid styleguide_grid-colours">
+                <div class="stylesystem_color-sample black">
+                  <div class="text-color-white">.black</div>
+                </div>
+                <div class="stylesystem_color-sample white">
+                  <div>.white</div>
+                </div>
+                <div class="stylesystem_color-sample lightgrey">
+                  <div>.lightgrey</div>
+                </div>
+                <div class="stylesystem_color-sample radial-purple">
+                  <div>.lightgrey</div>
+                </div>
+                <div class="stylesystem_color-sample lightgrey">
+                  <div>.lightgrey</div>
+                </div>
+                <div class="stylesystem_color-sample lightgrey">
+                  <div>.lightgrey</div>
+                </div>
+              </div>
+            </div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Background Color</div>
+              <div class="w-layout-grid styleguide_list">
+                <div class="background-color-black">
+                  <div class="padding-medium">
+                    <p class="text-color-white">.background-color-black</p>
+                  </div>
+                </div>
+                <div class="background-color-white">
+                  <div class="padding-medium">
+                    <p>.background-color-white</p>
+                  </div>
+                </div>
+                <div class="background-color-lightgrey">
+                  <div class="padding-medium">
+                    <p>.background-color-lightgrey</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="rl-styleguide-wrapper">
+            <div class="styleguide_heading">UI Elements</div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Buttons</div>
+              <div class="w-layout-grid button-row-grid tablet-1-col">
+                <a href="#" class="button w-button">.button</a>
+                <a href="#" class="button-secondary w-button">.button-secondary</a>
+                <a href="#" class="button button-small w-button">.button.button-small</a>
+                <a href="#" class="button-secondary button-small w-button">.button-secondary.button-small</a>
+                <a href="#" class="button-tertiary w-inline-block">
+                  <div>.button-tertiary</div>
+                  <div class="button-tertiary_icon w-embed"><svg width="16" height="16" viewbox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M6 3L11 8L6 13" stroke="CurrentColor" stroke-width="1.5"></path>
+                    </svg></div>
+                </a>
+              </div>
+              <div class="w-layout-grid button-row-grid landscape-1-col hide">
+                <a href="#" class="button w-button">.button</a>
+                <a href="#" class="button-secondary w-button">.button-secondary</a>
+                <a href="#" class="button button-small w-button">.button.button-small</a>
+                <a href="#" class="button-secondary button-small w-button">.button-secondary.button-small</a>
+                <a href="#" class="button-tertiary w-inline-block">
+                  <div>.button-tertiary</div>
+                  <div class="button-tertiary_icon w-embed"><svg width="16" height="16" viewbox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M6 3L11 8L6 13" stroke="CurrentColor" stroke-width="1.5"></path>
+                    </svg></div>
+                </a>
+              </div>
+              <div class="w-layout-grid button-row-grid mobile-1-col hide">
+                <a href="#" class="button w-button">.button</a>
+                <a href="#" class="button-secondary w-button">.button-secondary</a>
+                <a href="#" class="button button-small w-button">.button.button-small</a>
+                <a href="#" class="button-secondary button-small w-button">.button-secondary.button-small</a>
+                <a href="#" class="button-tertiary w-inline-block">
+                  <div>.button-tertiary</div>
+                  <div class="button-tertiary_icon w-embed"><svg width="16" height="16" viewbox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M6 3L11 8L6 13" stroke="CurrentColor" stroke-width="1.5"></path>
+                    </svg></div>
+                </a>
+              </div>
+              <div class="padding-medium background-color-black">
+                <div class="margin-bottom margin-small">
+                  <p class="text-color-white">Use add-on class <span class="stylesystem-class-label">.invert-colors</span> when placing button on dark background</p>
+                </div>
+                <div class="w-layout-grid button-row-grid tablet-1-col">
+                  <a href="#" class="button invert-colors w-button">.button</a>
+                  <a href="#" class="button-secondary invert-colors w-button">.button-secondary</a>
+                  <a href="#" class="button button-small invert-colors w-button">.button.button-small</a>
+                  <a href="#" class="button-secondary button-small invert-colors w-button">.button-secondary.button-small</a>
+                  <a href="#" class="button-tertiary invert-colors w-inline-block">
+                    <div>.button-tertiary</div>
+                    <div class="button-tertiary_icon w-embed"><svg width="16" height="16" viewbox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6 3L11 8L6 13" stroke="CurrentColor" stroke-width="1.5"></path>
+                      </svg></div>
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Form Elements</div>
+              <div class="w-form">
+                <form id="email-form" name="email-form" data-name="Email Form" method="get" class="styleguide-form">
+                  <div id="w-node-a7c4a0cd-9ab3-71e8-a633-d55226f79dc0-5d5fe778" class="form-field-wrapper"><label for="node" class="field-label">.field-label</label><input type="text" class="form-input w-input" maxlength="256" name="field" data-name="" placeholder=".form-input" id="node"></div>
+                  <div class="form-field-wrapper"><label for="Field" class="field-label">.field-label</label><textarea name="field-3" maxlength="5000" id="field-3" placeholder=".form-input.textarea" data-name="field" class="form-input text-area w-input"></textarea></div>
+                  <div class="form-field-wrapper"><label for="Field" class="field-label">.field-label</label><select id="field-4" name="field-4" data-name="field" class="form-input select w-select">
+                      <option value="">Select one...</option>
+                      <option value="First">First Choice</option>
+                      <option value="Second">Second Choice</option>
+                      <option value="Third">Third Choice</option>
+                    </select></div>
+                  <div class="form-field-wrapper">
+                    <div class="w-layout-grid form_grid-1-col"><label class="w-checkbox checkbox-wrapper">
+                        <div class="w-checkbox-input w-checkbox-input--inputType-custom form-checkbox"></div><input type="checkbox" id="checkbox-2" name="checkbox-2" data-name="Checkbox 2" style="opacity:0;position:absolute;z-index:-1"><span class="form-checkbox-label w-form-label" for="checkbox-2">Checkbox</span>
+                      </label></div>
+                  </div>
+                  <div class="form-field-wrapper">
+                    <div class="w-layout-grid form_grid-1-col"><label class="w-checkbox form-radio-wrapper">
+                        <div class="w-checkbox-input w-checkbox-input--inputType-custom form-radio"></div><input type="checkbox" id="Radio 1" name="Radio-1" data-name="Radio 1" style="opacity:0;position:absolute;z-index:-1"><span for="Radio-1" class="form-checkbox-label w-form-label">Radio</span>
+                      </label></div>
+                  </div><input type="submit" value="Submit" data-wait="Please wait..." id="w-node-a7c4a0cd-9ab3-71e8-a633-d55226f79dd8-5d5fe778" class="button w-button">
+                </form>
+                <div class="w-form-done">
+                  <div>Thank you! Your submission has been received!</div>
+                </div>
+                <div class="w-form-fail">
+                  <div>Oops! Something went wrong while submitting the form.</div>
+                </div>
+              </div>
+            </div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Tabs</div>
+              <div data-duration-in="300" data-duration-out="100" data-current="Tab 1" data-easing="ease" class="w-tabs">
+                <div class="tabs-menu no-scrollbar w-tab-menu">
+                  <a data-w-tab="Tab 1" class="tab-link w-inline-block w-tab-link w--current">
+                    <div>Tab 1</div>
+                  </a>
+                  <a data-w-tab="Tab 2" class="tab-link w-inline-block w-tab-link">
+                    <div>Tab 2</div>
+                  </a>
+                  <a data-w-tab="Tab 3" class="tab-link w-inline-block w-tab-link">
+                    <div>Tab 3</div>
+                  </a>
+                  <a data-w-tab="Tab 4" class="tab-link w-inline-block w-tab-link">
+                    <div>Tab 4</div>
+                  </a>
+                  <a data-w-tab="Tab 5" class="tab-link w-inline-block w-tab-link">
+                    <div>Tab 5</div>
+                  </a>
+                  <a data-w-tab="Tab 6" class="tab-link w-inline-block w-tab-link">
+                    <div>Tab 6</div>
+                  </a>
+                </div>
+                <div class="w-tab-content">
+                  <div data-w-tab="Tab 1" class="w-tab-pane w--tab-active"></div>
+                  <div data-w-tab="Tab 2" class="w-tab-pane"></div>
+                  <div data-w-tab="Tab 3" class="w-tab-pane"></div>
+                  <div data-w-tab="Tab 4" class="w-tab-pane"></div>
+                  <div data-w-tab="Tab 5" class="w-tab-pane"></div>
+                  <div data-w-tab="Tab 6" class="w-tab-pane"></div>
+                </div>
+              </div>
+            </div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Icons</div>
+              <div class="styleguide_icons-list">
+                <div>
+                  <div>
+                    <p>.icon-xxsmall</p>
+                  </div><img src="images/profile.png" loading="lazy" sizes="(max-width: 479px) 6vw, (max-width: 767px) 3vw, (max-width: 1919px) 2vw, 1vw" srcset="images/profile-p-500.png 500w, images/profile.png 1000w" alt="" class="icon-xxsmall">
+                </div>
+                <div>
+                  <div>
+                    <p>.icon-xsmall</p>
+                  </div><img src="images/profile.png" loading="lazy" sizes="(max-width: 479px) 9vw, (max-width: 767px) 4vw, (max-width: 991px) 3vw, (max-width: 1919px) 2vw, 1vw" srcset="images/profile-p-500.png 500w, images/profile.png 1000w" alt="" class="icon-xsmall">
+                </div>
+                <div>
+                  <div>
+                    <p>.icon-small</p>
+                  </div><img src="images/profile.png" loading="lazy" sizes="(max-width: 479px) 12vw, (max-width: 767px) 6vw, (max-width: 991px) 4vw, (max-width: 1919px) 3vw, 2vw" srcset="images/profile-p-500.png 500w, images/profile.png 1000w" alt="" class="icon-small">
+                </div>
+                <div>
+                  <div>
+                    <p>.icon-medium</p>
+                  </div><img src="images/profile.png" loading="lazy" sizes="(max-width: 479px) 18vw, (max-width: 767px) 9vw, (max-width: 991px) 6vw, (max-width: 1919px) 5vw, 3vw" srcset="images/profile-p-500.png 500w, images/profile.png 1000w" alt="" class="icon-medium">
+                </div>
+                <div>
+                  <div>
+                    <p>.icon-large</p>
+                  </div><img src="images/profile.png" loading="lazy" sizes="(max-width: 479px) 15vw, (max-width: 767px) 12vw, (max-width: 991px) 10vw, (max-width: 1919px) 8vw, 5vw" srcset="images/profile-p-500.png 500w, images/profile.png 1000w" alt="" class="icon-large">
+                </div>
+                <div>
+                  <div>
+                    <p>.icon-xlarge</p>
+                  </div><img src="images/profile.png" loading="lazy" sizes="(max-width: 479px) 16vw, (max-width: 991px) 12vw, (max-width: 1919px) 10vw, 6vw" srcset="images/profile-p-500.png 500w, images/profile.png 1000w" alt="" class="icon-xlarge">
+                </div>
+              </div>
+              <div class="styleguide_icons-list">
+                <div>
+                  <div>
+                    <p>.icon-1x1-xxsmall</p>
+                  </div><img src="images/profile.png" loading="lazy" sizes="(max-width: 479px) 6vw, (max-width: 767px) 3vw, (max-width: 1919px) 2vw, 1vw" srcset="images/profile-p-500.png 500w, images/profile.png 1000w" alt="" class="icon-1x1-xxsmall">
+                </div>
+                <div>
+                  <div>
+                    <p>.icon-1x1-xsmall</p>
+                  </div><img src="images/profile.png" loading="lazy" sizes="(max-width: 479px) 9vw, (max-width: 767px) 4vw, (max-width: 991px) 3vw, (max-width: 1919px) 2vw, 1vw" srcset="images/profile-p-500.png 500w, images/profile.png 1000w" alt="" class="icon-1x1-xsmall">
+                </div>
+                <div>
+                  <div>
+                    <p>.icon-1x1-small</p>
+                  </div><img src="images/profile.png" loading="lazy" sizes="(max-width: 479px) 12vw, (max-width: 767px) 6vw, (max-width: 991px) 4vw, (max-width: 1919px) 3vw, 2vw" srcset="images/profile-p-500.png 500w, images/profile.png 1000w" alt="" class="icon-1x1-small">
+                </div>
+                <div>
+                  <div>
+                    <p>.icon-1x1-medium</p>
+                  </div><img src="images/profile.png" loading="lazy" sizes="(max-width: 479px) 18vw, (max-width: 767px) 9vw, (max-width: 991px) 6vw, (max-width: 1919px) 5vw, 3vw" srcset="images/profile-p-500.png 500w, images/profile.png 1000w" alt="" class="icon-1x1-medium">
+                </div>
+                <div>
+                  <div>
+                    <p>.icon-1x1-large</p>
+                  </div><img src="images/profile.png" loading="lazy" sizes="(max-width: 479px) 15vw, (max-width: 767px) 12vw, (max-width: 991px) 10vw, (max-width: 1919px) 8vw, 5vw" srcset="images/profile-p-500.png 500w, images/profile.png 1000w" alt="" class="icon-1x1-large">
+                </div>
+                <div>
+                  <div>
+                    <p>.icon-1x1-xlarge</p>
+                  </div><img src="images/profile.png" loading="lazy" sizes="(max-width: 479px) 16vw, (max-width: 991px) 12vw, (max-width: 1919px) 10vw, 6vw" srcset="images/profile-p-500.png 500w, images/profile.png 1000w" alt="" class="icon-1x1-xlarge">
+                </div>
+              </div>
+            </div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Images</div>
+              <div class="w-layout-grid stylesystem-images_layout">
+                <div>
+                  <div class="margin-bottom margin-small">
+                    <p>Image Aspect Ratio 1:1</p>
+                  </div>
+                  <div class="image-wrapper-1-1"><img src="https://d3e54v103j8qbb.cloudfront.net/plugins/Basic/assets/placeholder.60f9b1840c.svg" loading="lazy" alt="" class="image-wrapper_image"></div>
+                </div>
+                <div>
+                  <div class="margin-bottom margin-small">
+                    <p>Image Aspect Ratio 4:3</p>
+                  </div>
+                  <div class="image-wrapper-4-3"><img src="https://d3e54v103j8qbb.cloudfront.net/plugins/Basic/assets/placeholder.60f9b1840c.svg" loading="lazy" alt="" class="image-wrapper_image"></div>
+                </div>
+                <div>
+                  <div class="margin-bottom margin-small">
+                    <p>Image Aspect Ratio 3:2</p>
+                  </div>
+                  <div class="image-wrapper-3-2"><img src="https://d3e54v103j8qbb.cloudfront.net/plugins/Basic/assets/placeholder.60f9b1840c.svg" loading="lazy" alt="" class="image-wrapper_image"></div>
+                </div>
+                <div>
+                  <div class="margin-bottom margin-small">
+                    <p>Image Aspect Ratio 16:9</p>
+                  </div>
+                  <div class="image-wrapper-16-9"><img src="https://d3e54v103j8qbb.cloudfront.net/plugins/Basic/assets/placeholder.60f9b1840c.svg" loading="lazy" alt="" class="image-wrapper_image"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="rl-styleguide-wrapper">
+            <div class="styleguide_heading">Spacing</div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Margin Direction</div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-top">
+                  <div>.margin-top</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-bottom">
+                  <div>.margin-bottom</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-left">
+                  <div>.margin-left</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-right">
+                  <div>.margin-right</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-horizontal">
+                  <div>.margin-horizontal</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-vertical">
+                  <div>.margin-vertical</div>
+                </div>
+              </div>
+            </div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Margin Size</div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-0">
+                  <div>.margin-0</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-tiny">
+                  <div>.margin-tiny</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-xxsmall">
+                  <div>.margin-xxsmall</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-xsmall">
+                  <div>.margin-xsmall</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-small">
+                  <div>.margin-small</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-medium">
+                  <div>.margin-medium</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-large">
+                  <div>.margin-large</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-xlarge">
+                  <div>.margin-xlarge</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-xxlarge">
+                  <div>.margin-xxlarge</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-huge">
+                  <div>.margin-huge</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-xhuge">
+                  <div>.margin-xhuge</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-xxhuge">
+                  <div>.margin-xxhuge</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-custom1">
+                  <div>.margin-custom1</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-custom2">
+                  <div>.margin-custom2</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="margin-custom3">
+                  <div>.margin-custom3</div>
+                </div>
+              </div>
+            </div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Padding Direction</div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-top">
+                  <div>.padding-top</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-bottom">
+                  <div>.padding-bottom</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-left">
+                  <div>.padding-left</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-right">
+                  <div>.padding-right</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-horizontal">
+                  <div>.padding-horizontal</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-vertical">
+                  <div>.padding-vertical</div>
+                </div>
+              </div>
+            </div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Padding Size</div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-0">
+                  <div>.padding-0</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-tiny">
+                  <div>.padding-tiny</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-xxsmall">
+                  <div>.padding-xxsmall</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-xsmall">
+                  <div>.padding-xsmall</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-small">
+                  <div>.padding-small</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-medium">
+                  <div>.padding-medium</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-large">
+                  <div>.padding-large</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-xlarge">
+                  <div>.padding-xlarge</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-xxlarge">
+                  <div>.padding-xxlarge</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-huge">
+                  <div>.padding-huge</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-xhuge">
+                  <div>.padding-xhuge</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-xxhuge">
+                  <div>.padding-xxhuge</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-custom1">
+                  <div>.padding-custom1</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-custom2">
+                  <div>.padding-custom2</div>
+                </div>
+              </div>
+              <div class="stylesystem-spacing-wrapper">
+                <div class="padding-custom3">
+                  <div>.padding-custom3</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="rl-styleguide-wrapper">
+            <div class="styleguide_heading">Layout</div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Container</div>
+              <div class="container-large">
+                <div class="stylesystem-spacing-wrapper">
+                  <div class="padding-medium">
+                    <div>.container-large</div>
+                  </div>
+                </div>
+              </div>
+              <div class="container-medium">
+                <div class="stylesystem-spacing-wrapper">
+                  <div class="padding-medium">
+                    <div>.container-medium</div>
+                  </div>
+                </div>
+              </div>
+              <div class="container-small">
+                <div class="stylesystem-spacing-wrapper">
+                  <div class="padding-medium">
+                    <div>.container-small</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Max-widths</div>
+              <div class="max-width-full">
+                <div class="stylesystem-spacing-wrapper">
+                  <div class="padding-medium">
+                    <div>.max-width-full</div>
+                  </div>
+                </div>
+              </div>
+              <div class="max-width-full-tablet">
+                <div class="stylesystem-spacing-wrapper">
+                  <div class="padding-medium">
+                    <div>.max-width-full-tablet</div>
+                  </div>
+                </div>
+              </div>
+              <div class="max-width-full-mobile-landscape">
+                <div class="stylesystem-spacing-wrapper">
+                  <div class="padding-medium">
+                    <div>.max-width-full-mobile-landscape</div>
+                  </div>
+                </div>
+              </div>
+              <div class="max-width-full-mobile-portrait">
+                <div class="stylesystem-spacing-wrapper">
+                  <div class="padding-medium">
+                    <div>max-width-full-mobile-portrait</div>
+                  </div>
+                </div>
+              </div>
+              <div class="max-width-xxsmall">
+                <div class="stylesystem-spacing-wrapper">
+                  <div class="padding-medium">
+                    <div>.max-width-xxsmall</div>
+                  </div>
+                </div>
+              </div>
+              <div class="max-width-xsmall">
+                <div class="stylesystem-spacing-wrapper">
+                  <div class="padding-medium">
+                    <div>.max-width-xsmall</div>
+                  </div>
+                </div>
+              </div>
+              <div class="max-width-small">
+                <div class="stylesystem-spacing-wrapper">
+                  <div class="padding-medium">
+                    <div>.max-width-small</div>
+                  </div>
+                </div>
+              </div>
+              <div class="max-width-medium">
+                <div class="stylesystem-spacing-wrapper">
+                  <div class="padding-medium">
+                    <div>.max-width-medium</div>
+                  </div>
+                </div>
+              </div>
+              <div class="max-width-large">
+                <div class="stylesystem-spacing-wrapper">
+                  <div class="padding-medium">
+                    <div>.max-width-large</div>
+                  </div>
+                </div>
+              </div>
+              <div class="max-width-xlarge">
+                <div class="stylesystem-spacing-wrapper">
+                  <div class="padding-medium">
+                    <div>.max-width-xlarge</div>
+                  </div>
+                </div>
+              </div>
+              <div class="max-width-xxlarge">
+                <div class="stylesystem-spacing-wrapper">
+                  <div class="padding-medium">
+                    <div>.max-width-xxlarge</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="rl-styleguide-wrapper">
+            <div class="styleguide_heading">Other Classes</div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Responsiveness</div>
+              <div><span class="stylesystem-class-label">.hide</span> - hide on all devices</div>
+              <div><span class="stylesystem-class-label">.hide-tablet</span> - hide starting from tablet resolution</div>
+              <div><span class="stylesystem-class-label">.hide-mobile-landscape</span> - hide starting from mobile landscape resolution</div>
+              <div><span class="stylesystem-class-label">.hide-mobile-portrait</span> - hide starting from mobile portrait resolution</div>
+              <div><span class="stylesystem-class-label">.show</span> - display on all devices</div>
+              <div><span class="stylesystem-class-label">.show-tablet</span> - display starting from tablet resolution</div>
+              <div><span class="stylesystem-class-label">.show-mobile-landscape</span> - display starting from mobile landscape resolution</div>
+              <div><span class="stylesystem-class-label">.show-mobile-portrait</span> - display starting from mobile portrait resolution</div>
+            </div>
+            <div class="w-layout-grid styleguide_list">
+              <div class="styleguide_subheading">Utility</div>
+              <div><span class="stylesystem-class-label">.z-index-1</span> - bring an element closer on the z-index, sets z-index to 1</div>
+              <div><span class="stylesystem-class-label">.z-index-2</span> - bring an element closer on the z-index, sets z-index to 2</div>
+              <div><span class="stylesystem-class-label">.align-center</span> - sets margin left and right to auto, centers an element inside its parent div</div>
+              <div><span class="stylesystem-class-label">.spacing-clean</span> - sets all spacing to 0, including margins and padding</div>
+              <div><span class="stylesystem-class-label">.div-square</span> - creates and maintains a 1:1 dimension of a div. CSS magic</div>
+              <div><span class="stylesystem-class-label">.layer</span> - sets absolute position with 0% on all sides - add this class to a div to make it expand the entire size of the parent element, and make sure the parent div has &#x27;position: relative&#x27;</div>
+              <div><span class="stylesystem-class-label">.clickable-off</span> - sets pointer-events to none, prevents all click and hover interaction with an element</div>
+              <div><span class="stylesystem-class-label">.clickable-on</span> - sets pointer-events to auto, enables all click and hover interaction with an element</div>
+              <div><span class="stylesystem-class-label">.overflow-hidden</span> - sets overflow to hidden</div>
+              <div><span class="stylesystem-class-label">.overflow-scroll</span> - sets overflow to scroll</div>
+              <div><span class="stylesystem-class-label">.overflow-auto</span> - sets overflow to auto</div>
+            </div>
+          </div>
+          <div class="rl-styleguide_classes">
+            <div class="stylesystem_structures">
+              <div class="light-mode"></div>
+              <div class="page-padding"></div>
+              <div class="main-wrapper"></div>
+            </div>
+            <div class="stylesystem_containers">
+              <div class="container-large"></div>
+              <div class="container-medium"></div>
+              <div class="container-small"></div>
+            </div>
+            <div class="stylesystem_max-widths">
+              <div class="max-width-full"></div>
+              <div class="max-width-full-tablet"></div>
+              <div class="max-width-full-mobile-landscape"></div>
+              <div class="max-width-full-mobile-portrait"></div>
+              <div class="max-width-xxlarge"></div>
+              <div class="max-width-xlarge"></div>
+              <div class="max-width-large"></div>
+              <div class="max-width-medium"></div>
+              <div class="max-width-small"></div>
+              <div class="max-width-xsmall"></div>
+              <div class="max-width-xxsmall"></div>
+            </div>
+            <div class="stylesystem_margins">
+              <div class="margin-0"></div>
+              <div class="margin-tiny"></div>
+              <div class="margin-xxsmall"></div>
+              <div class="margin-xsmall"></div>
+              <div class="margin-small"></div>
+              <div class="margin-medium"></div>
+              <div class="margin-large"></div>
+              <div class="margin-xlarge"></div>
+              <div class="margin-xxlarge"></div>
+              <div class="margin-huge"></div>
+              <div class="margin-xhuge"></div>
+              <div class="margin-xxhuge"></div>
+              <div class="margin-custom1"></div>
+              <div class="margin-custom2"></div>
+              <div class="margin-custom3"></div>
+            </div>
+            <div class="stylesystem_paddings">
+              <div class="padding-0"></div>
+              <div class="padding-tiny"></div>
+              <div class="padding-xxsmall"></div>
+              <div class="padding-xsmall"></div>
+              <div class="padding-small"></div>
+              <div class="padding-medium"></div>
+              <div class="padding-large"></div>
+              <div class="padding-xlarge"></div>
+              <div class="padding-xxlarge"></div>
+              <div class="padding-huge"></div>
+              <div class="padding-xhuge"></div>
+              <div class="padding-xxhuge"></div>
+              <div class="padding-custom1"></div>
+              <div class="padding-custom2"></div>
+              <div class="padding-custom3"></div>
+            </div>
+            <div class="stylesystem_margin-directions">
+              <div class="margin-top"></div>
+              <div class="margin-bottom"></div>
+              <div class="margin-left"></div>
+              <div class="margin-right"></div>
+              <div class="margin-vertical"></div>
+              <div class="margin-horizontal"></div>
+            </div>
+            <div class="stylesystem_padding-directions">
+              <div class="padding-top"></div>
+              <div class="padding-bottom"></div>
+              <div class="padding-left"></div>
+              <div class="padding-right"></div>
+              <div class="padding-vertical"></div>
+              <div class="padding-horizontal"></div>
+            </div>
+            <div class="stylesystem_responsiveness">
+              <div class="hide"></div>
+              <div class="hide-tablet"></div>
+              <div class="hide-mobile-landscape"></div>
+              <div class="hide-mobile-portrait"></div>
+              <div class="show"></div>
+              <div class="show-tablet"></div>
+              <div class="show-mobile-landscape"></div>
+              <div class="show-mobile-portrait"></div>
+            </div>
+            <div class="stylesystem_utility">
+              <div class="spacing-clean"></div>
+              <div class="z-index-1"></div>
+              <div class="z-index-2"></div>
+              <div class="align-center"></div>
+              <div class="div-square"></div>
+              <div class="clickable-off">
+                <div class="layer"></div>
+              </div>
+              <div class="clickable-on"></div>
+              <div class="overflow-hidden"></div>
+              <div class="overflow-scroll"></div>
+              <div class="overflow-auto"></div>
+            </div>
+            <div class="stylesystem_symbols">
+              <div class="global-styles w-embed">
+                <style>
+/* Snippet gets rid of top margin on first element in any rich text*/
+.w-richtext>:first-child {
+	margin-top: 0;
+}
+/* Snippet gets rid of bottom margin on last element in any rich text*/
+.w-richtext>:last-child, .w-richtext ol li:last-child, .w-richtext ul li:last-child {
+    margin-bottom: 0;
+}
+/* Snippet makes all link elements listed below to inherit color from their parent */
+a, 
+.w-tab-link,
+.w-nav-link,
+.w-dropdown-btn,
+.w-dropdown-toggle,
+.w-dropdown-link
+{
+color: inherit;
+}
+/* Snippet prevents all click and hover interaction with an element */
+.clickable-off {
+  pointer-events: none;
+}
+/* Snippet enables all click and hover interaction with an element */
+.clickable-on{
+  pointer-events: auto;
+}
+/* Snippet enables you to add class of div-square which creates and maintains a 1:1 dimension of a div.*/
+.div-square::after {
+  content: "";
+  display: block;
+  padding-bottom: 100%;
+}
+/*Hide focus outline for main content element*/
+    main:focus-visible {
+    outline: -webkit-focus-ring-color auto 0px;
+}
+/* Make sure containers never lose their center alignment*/
+.container-medium, .container-small, .container-large {
+  margin-right: auto !important;
+  margin-left: auto !important;
+}
+/*Reset selects, buttons, and links styles*/
+.w-input, .w-select, a {
+color: inherit;
+text-decoration: inherit;
+font-size: inherit;
+}
+/*Apply "..." after 3 lines of text */
+.text-style-3lines {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+/* Apply "..." after 2 lines of text */
+.text-style-2lines {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+/* Apply "..." at 100% width */
+.truncate-width { 
+		width: 100%; 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+}
+/* Removes native scrollbar */
+.no-scrollbar {
+    -ms-overflow-style: none;  // IE 10+
+    overflow: -moz-scrollbars-none;  // Firefox
+}
+.no-scrollbar::-webkit-scrollbar {
+    display: none; // Safari and Chrome
+}
+</style>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="background-color-black">
+      <div data-animation="default" data-collapse="medium" data-duration="400" data-easing="ease" data-easing2="ease" role="banner" class="navbar w-nav">
+        <div class="container-large">
+          <a href="#" class="w-nav-brand"><img src="https://d3e54v103j8qbb.cloudfront.net/plugins/Basic/assets/placeholder.60f9b1840c.svg" loading="lazy" alt="" class="nav-logo"></a>
+          <nav role="navigation" class="nav-menu w-nav-menu">
+            <a href="#" class="_w-nav-link w-nav-link">Home</a>
+            <a href="#" class="_w-nav-link w-nav-link">About</a>
+            <a href="#" class="_w-nav-link w-nav-link">Contact</a>
+          </nav>
+          <div class="menu-button w-nav-button">
+            <div class="burg-lines-wrapper">
+              <div class="top-line-burger"></div>
+              <div class="mid-line-burger"></div>
+              <div class="bot-line-burger"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="https://d3e54v103j8qbb.cloudfront.net/js/jquery-3.5.1.min.dc5e7f18c8.js?site=628e9a3b52bd2456055fe779" type="text/javascript" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+  <script src="js/webflow.js" type="text/javascript"></script>
+  <!-- [if lte IE 9]><script src="https://cdnjs.cloudflare.com/ajax/libs/placeholders/3.0.2/placeholders.min.js"></script><![endif] -->
+  <script>
+/*function setThemeFromCookie() {
+	var themeState = document.getElementById('content');
+	themeState.className = isThemeSelected() ? 'dark-mode' : 'light-mode';
+}
+function setThemeSwitchState() {
+	document.getElementById('toggleTheme').checked = isThemeSelected();
+}
+function isThemeSelected() {
+	return document.cookie.match(/theme=dark/i) != null;
+}
+function toggleTheme() {
+	var themeState = document.getElementById('content');
+	var currentState = themeState.className;
+	var newState = themeState.className == 'dark-mode' ? 'light-mode' : 'dark-mode';
+	themeState.className = newState;
+	document.cookie = 'theme=' + (newState == 'light-mode' ? 'light' : 'dark');
+}
+	if ($.cookie('theme') == 'dark-mode') {
+       	document.querySelectorAll('.button.small').forEach(target => target.classList.add('dark-mode'));
+	} else {
+       	document.querySelectorAll('.button.small').forEach(target => target.classList.remove('dark-mode'));
+	}
+(function() {
+	setThemeFromCookie();
+	setThemeSwitchState();
+	document.getElementById('toggleTheme').onchange=toggleTheme;
+})();*/
+</script>
+</body>
+</html>

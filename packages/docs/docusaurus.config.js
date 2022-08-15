@@ -24,7 +24,7 @@ const config = {
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/medplum/medplum/blob/main/packages/docs/',
-          routeBasePath: '/',
+          routeBasePath: '/docs',
           async sidebarItemsGenerator({ defaultSidebarItemsGenerator, ...args }) {
             // Example: return an hardcoded list of static sidebar items
             let items = await defaultSidebarItemsGenerator(args);
