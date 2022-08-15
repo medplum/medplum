@@ -35,7 +35,9 @@ export function ResourcePropertiesTable(props: { properties: PropertyDocInfo[] }
             </td>
             <td>{property.min > 0 ? 'Y' : ''}</td>
             <td>
-              {property.type === 'BackboneElement' ? buildTypeName(property.path.split('.')) : property.type}
+              {property.types?.[0] === 'BackboneElement'
+                ? buildTypeName(property.path.split('.'))
+                : property.types.join(', ')}
               {property.max === '*' ? '[]' : ''}
             </td>
             <td>

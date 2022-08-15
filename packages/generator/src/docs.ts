@@ -47,6 +47,10 @@ function buildDocsDefinitions(
       resource.resourceType === 'StructureDefinition' &&
       resource.kind === 'resource' &&
       resource.name &&
+      resource.name !== 'Resource' &&
+      resource.name !== 'BackboneElement' &&
+      resource.name !== 'DomainResource' &&
+      resource.name !== 'MetadataResource' &&
       !isLowerCase(resource.name?.[0])
     ) {
       results.push(buildDocsDefinition(resource as StructureDefinition, indexedSearchParams[resource.name as string]));
@@ -72,7 +76,7 @@ function buildDocsDefinition(
     result.properties.push({
       name,
       depth: parts.length - 1,
-      type: getPropertyType(element),
+      types: getPropertyType(element),
       path: path || '',
       min: min || 0,
       max: max || '',
@@ -94,7 +98,7 @@ function buildDocsDefinition(
 function writeDocs(definitions: ResourceDocsProps[]): void {
   for (const definition of definitions) {
     writeFileSync(
-      resolve(__dirname, `../docs/static/data/resourceDefinitions/${definition.resourceName.toLowerCase()}.json`),
+      resolve(__dirname, `../../docs/static/data/resourceDefinitions/${definition.resourceName.toLowerCase()}.json`),
       JSON.stringify(definition, null, 2),
       'utf8'
     );
@@ -118,18 +122,15 @@ function getSearchParamDescription(searchParam: SearchParameter, resourceType: s
   return desc;
 }
 
-function getPropertyType(property: ElementDefinition | undefined): string {
+function getPropertyType(property: ElementDefinition | undefined): string[] {
   const type = property?.type;
   if (!type) {
-    return '';
+    return [''];
   }
 
-  const code = type[0].code;
-  if (code === 'http://hl7.org/fhirpath/System.String') {
-    return 'string';
-  }
-
-  return code || '';
+  return type
+    .map((t) => t.code || '')
+    .map((code) => (code === 'http://hl7.org/fhirpath/System.String' ? 'string' : code));
 }
 
 if (process.argv[1].endsWith('docs.ts')) {

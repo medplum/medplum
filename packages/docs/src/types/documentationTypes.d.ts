@@ -1,6 +1,6 @@
 import { ElementDefinition, SearchParameter } from '@medplum/fhirtypes';
 
-type PropertyDocInfo = { name: string; depth: number; type: string } & Required<
+type PropertyDocInfo = { name: string; depth: number; types: string[] } & Required<
   Pick<ElementDefinition, 'path' | 'min' | 'max' | 'short' | 'definition' | 'comment'>
 >;
 
