@@ -33,7 +33,7 @@ export function ResourcePropertiesTable(props: { properties: PropertyDocInfo[] }
 
               <span style={property.name.length > 20 ? { fontSize: 'calc(0.85 * 14px)' } : {}}>{property.name}</span>
             </td>
-            <td>{property.min > 0 ? 'Y' : ''}</td>
+            <td className={styles.required}>{property.min > 0 ? '✓' : ''}</td>
             <td>
               {renderPropertyTypes(property)}
               {property.max === '*' ? '[]' : ''}
@@ -104,7 +104,7 @@ function renderReferenceType(referenceTypes: string[]): JSX.Element {
   const separator = (i: number): string => {
     if (i < referenceTypes.length - 1) {
       if (referenceTypes && verticalizeLinks) {
-        return ' |\n  ';
+        return '\n |  ';
       }
       return ' | ';
     }
@@ -112,14 +112,19 @@ function renderReferenceType(referenceTypes: string[]): JSX.Element {
   };
   return (
     <>
-      Reference&lt;
+      <span>Reference&lt;</span>
       {referenceTypes?.map((refType, i) => (
         <>
-          {i === 0 && verticalizeLinks ? '\n  ' : ''}
-          {<a href={`./${refType}`}>{refType}</a>} {separator(i)}
+          {
+            <a href={`./${refType}`}>
+              {i === 0 && verticalizeLinks ? '\n  ' : ''}
+              {refType}
+            </a>
+          }
+          <span>{separator(i)}</span>
         </>
       ))}
-      &gt;
+      <span>&gt;</span>
     </>
   );
 }
