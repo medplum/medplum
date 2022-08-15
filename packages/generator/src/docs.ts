@@ -25,9 +25,9 @@ function indexSearchParameters(searchParams: Bundle): Record<string, SearchParam
   const results = {} as Record<string, SearchParameter[]>;
   for (const entry of entries) {
     const searchParam = entry.resource as SearchParameter;
-    for (const resType in searchParam.base || []) {
+    for (const resType of searchParam.base || []) {
       if (!results[resType]) {
-        results.resType = [];
+        results[resType] = [];
       }
       results[resType].push(searchParam);
     }
@@ -41,7 +41,6 @@ function buildDocsDefinitions(
 ): ResourceDocsProps[] {
   const results = [];
   const resourceDefinitions = readJson(`fhir/r4/${fileName}`) as Bundle;
-  console.log('Definitions', resourceDefinitions);
   for (const entry of resourceDefinitions.entry as BundleEntry[]) {
     const resource = entry.resource as Resource;
     if (
@@ -83,23 +82,21 @@ function buildDocsDefinition(
     });
   }
 
-  result.searchParameters = searchParameters.map((param) => ({
+  result.searchParameters = (searchParameters || []).map((param) => ({
     name: param.name || '',
     type: param.type || '',
     description: getSearchParamDescription(param, result.resourceName),
     expression: param.expression || '',
   }));
-  console.log(result);
   return result;
 }
 
 function writeDocs(definitions: ResourceDocsProps[]): void {
   for (const definition of definitions) {
-    console.log(definition);
-    break;
     writeFileSync(
-      resolve(__dirname, `../docs/static/data/resources/${definition.resourceName.toLowerCase()}.json`),
-      JSON.stringify(definition, null, 2)
+      resolve(__dirname, `../docs/static/data/resourceDefinitions/${definition.resourceName.toLowerCase()}.json`),
+      JSON.stringify(definition, null, 2),
+      'utf8'
     );
   }
 }
@@ -133,4 +130,8 @@ function getPropertyType(property: ElementDefinition | undefined): string {
   }
 
   return code || '';
+}
+
+if (process.argv[1].endsWith('docs.ts')) {
+  main();
 }
