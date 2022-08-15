@@ -41,7 +41,7 @@ export function ResourcePropertiesTable(props: { properties: PropertyDocInfo[] }
             <td>
               <p>{property.short}</p>
               <details open={false}>
-                <summary>See More</summary>
+                <summary>Details</summary>
                 <p>{property.definition}</p>
                 <p>{property.comment}</p>
               </details>
