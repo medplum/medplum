@@ -17,7 +17,7 @@ const searchParams = readJson('fhir/r4/search-parameters.json') as Bundle;
 export function main(): void {
   const indexedSearchParams = indexSearchParameters(searchParams);
   const docsDefinitions = buildDocsDefinitions('profiles-resources.json', indexedSearchParams);
-  writeDocs(docsDefinitions);
+  writeDocs(docsDefinitions, 'resource');
 }
 
 function indexSearchParameters(searchParams: Bundle): Record<string, SearchParameter[]> {
@@ -133,17 +133,17 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 `;
 }
 
-function writeDocs(definitions: ResourceDocsProps[]): void {
+function writeDocs(definitions: ResourceDocsProps[], definitionType: string): void {
   definitions.forEach((definition, i) => {
     const resourceName = definition.resourceName.toLowerCase();
     writeFileSync(
-      resolve(__dirname, `../../docs/static/data/resourceDefinitions/${resourceName}.json`),
+      resolve(__dirname, `../../docs/static/data/${definitionType}Definitions/${resourceName}.json`),
       JSON.stringify(definition, null, 2),
       // JSON.stringify(definition),
       'utf8'
     );
     writeFileSync(
-      resolve(__dirname, `../../docs/docs/api/fhir/resources/${resourceName}.mdx`),
+      resolve(__dirname, `../../docs/docs/api/fhir/${definitionType}s/${resourceName}.mdx`),
       buildDocsMarkdown(i, definition),
       'utf8'
     );
