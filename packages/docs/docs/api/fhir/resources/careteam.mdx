@@ -1,0 +1,31 @@
+---
+title: CareTeam
+sidebar_position: 14
+---
+
+import definition from '@site/static/data/resourceDefinitions/careteam.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/resourceTables';
+
+# CareTeam
+
+<p>{definition.description}</p>
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<>
+  {definition.searchParameters.length > 0 ? (
+    <SearchParamsTable searchParams={definition.searchParameters} />
+  ) : (
+    <em>None</em>
+  )}
+</>
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

@@ -1,0 +1,31 @@
+---
+title: ValueSet
+sidebar_position: 143
+---
+
+import definition from '@site/static/data/resourceDefinitions/valueset.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/resourceTables';
+
+# ValueSet
+
+<p>{definition.description}</p>
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<>
+  {definition.searchParameters.length > 0 ? (
+    <SearchParamsTable searchParams={definition.searchParameters} />
+  ) : (
+    <em>None</em>
+  )}
+</>
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

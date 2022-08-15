@@ -1,0 +1,31 @@
+---
+title: Immunization
+sidebar_position: 61
+---
+
+import definition from '@site/static/data/resourceDefinitions/immunization.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/resourceTables';
+
+# Immunization
+
+<p>{definition.description}</p>
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<>
+  {definition.searchParameters.length > 0 ? (
+    <SearchParamsTable searchParams={definition.searchParameters} />
+  ) : (
+    <em>None</em>
+  )}
+</>
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

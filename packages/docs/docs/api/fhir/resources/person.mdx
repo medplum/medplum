@@ -1,0 +1,31 @@
+---
+title: Person
+sidebar_position: 105
+---
+
+import definition from '@site/static/data/resourceDefinitions/person.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/resourceTables';
+
+# Person
+
+<p>{definition.description}</p>
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<>
+  {definition.searchParameters.length > 0 ? (
+    <SearchParamsTable searchParams={definition.searchParameters} />
+  ) : (
+    <em>None</em>
+  )}
+</>
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

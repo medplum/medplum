@@ -1,0 +1,31 @@
+---
+title: CapabilityStatement
+sidebar_position: 12
+---
+
+import definition from '@site/static/data/resourceDefinitions/capabilitystatement.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/resourceTables';
+
+# CapabilityStatement
+
+<p>{definition.description}</p>
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<>
+  {definition.searchParameters.length > 0 ? (
+    <SearchParamsTable searchParams={definition.searchParameters} />
+  ) : (
+    <em>None</em>
+  )}
+</>
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

@@ -96,15 +96,58 @@ function buildDocsDefinition(
   return result;
 }
 
+function buildDocsMarkdown(position: number, definition: ResourceDocsProps): string {
+  const resourceName = definition.resourceName;
+  return `\
+---
+title: ${resourceName}
+sidebar_position: ${position}
+---
+
+import definition from '@site/static/data/resourceDefinitions/${resourceName.toLowerCase()}.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/resourceTables';
+
+# ${resourceName}
+
+<p>{definition.description}</p>
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<>
+  {definition.searchParameters.length > 0 ? (
+    <SearchParamsTable searchParams={definition.searchParameters} />
+  ) : (
+    <em>None</em>
+  )}
+</>
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+
+`;
+}
+
 function writeDocs(definitions: ResourceDocsProps[]): void {
-  for (const definition of definitions) {
+  definitions.forEach((definition, i) => {
+    const resourceName = definition.resourceName.toLowerCase();
     writeFileSync(
-      resolve(__dirname, `../../docs/static/data/resourceDefinitions/${definition.resourceName.toLowerCase()}.json`),
+      resolve(__dirname, `../../docs/static/data/resourceDefinitions/${resourceName}.json`),
       JSON.stringify(definition, null, 2),
       // JSON.stringify(definition),
       'utf8'
     );
-  }
+    writeFileSync(
+      resolve(__dirname, `../../docs/docs/api/fhir/resources/${resourceName}.mdx`),
+      buildDocsMarkdown(i, definition),
+      'utf8'
+    );
+  });
 }
 
 function getSearchParamDescription(searchParam: SearchParameter, resourceType: string): string {

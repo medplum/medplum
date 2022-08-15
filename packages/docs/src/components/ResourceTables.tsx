@@ -15,7 +15,6 @@ export function ResourcePropertiesTable(props: { properties: PropertyDocInfo[] }
           <th>Required</th>
           <th>Type</th>
           <th>Description</th>
-          <th>Card</th>
         </tr>
       </thead>
       <tbody>
@@ -47,9 +46,6 @@ export function ResourcePropertiesTable(props: { properties: PropertyDocInfo[] }
                 <p>{property.definition}</p>
                 <p>{property.comment}</p>
               </details>
-            </td>
-            <td>
-              {property.min}...{property.max}
             </td>
           </tr>
         ))}
