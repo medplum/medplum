@@ -16,6 +16,7 @@ const resourceTypes = [
   'ServiceRequest',
   'Specimen',
   'Bot',
+  'Project',
 ];
 const properties = [
   'resourceType',

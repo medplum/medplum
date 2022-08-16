@@ -79,10 +79,4 @@ describe('ProjectPage', () => {
     await waitFor(() => screen.getByText('Create new bot'));
     expect(screen.getByText('Create new bot')).toBeInTheDocument();
   });
-
-  test('Secrets page', async () => {
-    await setup('/admin/secrets');
-    await waitFor(() => screen.getByText('Coming soon'));
-    expect(screen.getByText('Coming soon')).toBeInTheDocument();
-  });
 });

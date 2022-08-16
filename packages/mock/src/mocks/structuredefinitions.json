@@ -6187,8 +6187,254 @@
   },
   {
     "resourceType": "StructureDefinition",
+    "id": "Project",
+    "name": "Project",
+    "type": "Project",
+    "snapshot": {
+      "element": [
+        {
+          "id": "Project.id",
+          "path": "Project.id",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Project.meta",
+          "path": "Project.meta",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "Project.implicitRules",
+          "path": "Project.implicitRules",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "Project.language",
+          "path": "Project.language",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Project.name",
+          "path": "Project.name",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Project.description",
+          "path": "Project.description",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Project.superAdmin",
+          "path": "Project.superAdmin",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "Project.owner",
+          "path": "Project.owner",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://medplum.com/fhir/StructureDefinition/User"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Project.features",
+          "path": "Project.features",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Project.defaultPatientAccessPolicy",
+          "path": "Project.defaultPatientAccessPolicy",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "https://medplum.com/fhir/StructureDefinition/AccessPolicy"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Project.secret",
+          "path": "Project.secret",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Project.secret.name",
+          "path": "Project.secret.name",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Project.secret.value[x]",
+          "path": "Project.secret.value[x]",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            },
+            {
+              "code": "boolean"
+            },
+            {
+              "code": "decimal"
+            },
+            {
+              "code": "integer"
+            }
+          ]
+        },
+        {
+          "id": "Project.site",
+          "path": "Project.site",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "Project.site.name",
+          "path": "Project.site.name",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Project.site.domain",
+          "path": "Project.site.domain",
+          "min": 1,
+          "max": "*",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Project.site.googleClientId",
+          "path": "Project.site.googleClientId",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Project.site.googleClientSecret",
+          "path": "Project.site.googleClientSecret",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Project.site.recaptchaSiteKey",
+          "path": "Project.site.recaptchaSiteKey",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "Project.site.recaptchaSecretKey",
+          "path": "Project.site.recaptchaSecretKey",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
     "id": "Bot",
     "name": "Bot",
+    "type": "Bot",
     "snapshot": {
       "element": [
         {
