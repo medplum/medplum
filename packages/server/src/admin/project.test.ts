@@ -334,4 +334,36 @@ describe('Project Admin routes', () => {
       ],
     });
   });
+
+  test('Save project secrets', async () => {
+    // Register and create a project
+    const { project, accessToken } = await registerNew({
+      firstName: 'John',
+      lastName: 'Adams',
+      projectName: 'Adams Project',
+      email: `john${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+
+    // Add a secret
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/secrets')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send([
+        {
+          name: 'test_secret',
+          valueString: 'test_value',
+        },
+      ]);
+    expect(res2.status).toBe(200);
+
+    // Verify the secret was added
+    const res3 = await request(app)
+      .get('/admin/projects/' + project.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3.status).toBe(200);
+    expect(res3.body.project.secret).toHaveLength(1);
+    expect(res3.body.project.secret[0].name).toEqual('test_secret');
+    expect(res3.body.project.secret[0].valueString).toEqual('test_value');
+  });
 });
