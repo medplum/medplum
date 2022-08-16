@@ -113,6 +113,7 @@ describe('Batch', () => {
           },
           resource: {
             resourceType: 'Observation',
+            status: 'final',
             id: observationId,
             subject: {
               reference: 'urn:uuid:' + patientId,
@@ -559,6 +560,7 @@ describe('Batch', () => {
     const serviceRequest = await repo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
       status: 'active',
+      intent: 'order',
       subject: { reference: 'Patient/' + randomUUID() },
     });
 
@@ -918,6 +920,7 @@ describe('Batch', () => {
           },
           resource: {
             resourceType: 'Questionnaire',
+            status: 'active',
             name: 'Example Questionnaire',
             title: 'Example Questionnaire',
             item: [
@@ -938,6 +941,7 @@ describe('Batch', () => {
           resource: {
             resourceType: 'Subscription',
             status: 'active',
+            reason: 'Test',
             criteria: 'QuestionnaireResponse?questionnaire=urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
             channel: {
               type: 'rest-hook',

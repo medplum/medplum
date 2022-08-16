@@ -75,6 +75,8 @@ describe('GraphQL', () => {
       .set('Content-Type', 'application/fhir+json')
       .send({
         resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
         code: {
           text: 'Chest CT',
         },
@@ -90,6 +92,7 @@ describe('GraphQL', () => {
       .set('Content-Type', 'application/fhir+json')
       .send({
         resourceType: 'Encounter',
+        status: 'active',
         class: {
           code: 'HH',
         },
@@ -106,6 +109,7 @@ describe('GraphQL', () => {
       .set('Content-Type', 'application/fhir+json')
       .send({
         resourceType: 'Encounter',
+        status: 'active',
         class: {
           code: 'HH',
         },

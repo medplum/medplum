@@ -22,6 +22,8 @@ export async function seedDatabase(): Promise<void> {
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await systemRepo.createResource<User>({
     resourceType: 'User',
+    firstName,
+    lastName,
     email,
     passwordHash,
   });

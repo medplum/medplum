@@ -90,6 +90,7 @@ describe('CSV Export', () => {
     const serviceRequest: ServiceRequest = {
       resourceType: 'ServiceRequest',
       status: 'active',
+      intent: 'order',
       subject: {
         reference: 'Patient/' + randomUUID(),
         display: 'Alice Smith',

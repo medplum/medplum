@@ -56,6 +56,7 @@ describe('Download Worker', () => {
 
     const media = await repo.createResource<Media>({
       resourceType: 'Media',
+      status: 'completed',
       content: {
         contentType: 'text/plain',
         url,
@@ -88,6 +89,7 @@ describe('Download Worker', () => {
 
     const media = await repo.createResource<Media>({
       resourceType: 'Media',
+      status: 'completed',
       content: {
         contentType: 'text/plain',
         url: '',
@@ -105,6 +107,7 @@ describe('Download Worker', () => {
 
     const media = await repo.createResource<Media>({
       resourceType: 'Media',
+      status: 'completed',
       content: {
         contentType: 'text/plain',
         url,
@@ -129,6 +132,7 @@ describe('Download Worker', () => {
 
     const media = await repo.createResource<Media>({
       resourceType: 'Media',
+      status: 'completed',
       content: {
         contentType: 'text/plain',
         url,
@@ -153,6 +157,7 @@ describe('Download Worker', () => {
 
     const media = await repo.createResource<Media>({
       resourceType: 'Media',
+      status: 'completed',
       content: {
         contentType: 'text/plain',
         url: 'https://example.com/download',
@@ -178,6 +183,7 @@ describe('Download Worker', () => {
 
     const media = await repo.createResource<Media>({
       resourceType: 'Media',
+      status: 'completed',
       content: {
         contentType: 'text/plain',
         url: 'https://example.com/download',

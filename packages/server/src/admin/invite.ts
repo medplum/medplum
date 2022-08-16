@@ -103,12 +103,14 @@ export async function inviteUser(request: InviteRequest): Promise<Practitioner> 
 }
 
 async function createUser(request: InviteRequest): Promise<User> {
-  const email = request.email;
+  const { firstName, lastName, email } = request;
   const password = generateSecret(16);
   logger.info('Create user ' + email);
   const passwordHash = await bcrypt.hash(password, 10);
   const result = await systemRepo.createResource<User>({
     resourceType: 'User',
+    firstName,
+    lastName,
     email,
     passwordHash,
   });

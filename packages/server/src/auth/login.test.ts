@@ -317,6 +317,7 @@ describe('Login', () => {
       .type('json')
       .send({
         resourceType: 'Observation',
+        status: 'final',
         code: {
           coding: [
             {

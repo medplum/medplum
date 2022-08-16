@@ -46,6 +46,7 @@ import { logger } from '../logger';
 import { getRedis } from '../redis';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
+import { validateResourceWithJsonSchema } from './jsonschema';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
 import { getPatientId } from './patient';
 import { rewriteAttachments, RewriteMode } from './rewrite';
@@ -98,6 +99,15 @@ export interface RepositoryContext {
    * which grants system-level access.
    */
   superAdmin?: boolean;
+
+  /**
+   * Optional flag to validate resources in strict mode.
+   * Strict mode validates resources against StructureDefinition resources,
+   * which includes strict date validation, backbone elements, and more.
+   * Non-strict mode uses the official FHIR JSONSchema definition, which is
+   * significantly more relaxed.
+   */
+  strictMode?: boolean;
 }
 
 export interface CacheEntry<T extends Resource> {
@@ -156,7 +166,6 @@ export class Repository {
   }
 
   async createResource<T extends Resource>(resource: T): Promise<T> {
-    validateResource(resource);
     return this.#updateResourceImpl(
       {
         ...resource,
@@ -297,7 +306,11 @@ export class Repository {
   }
 
   async #updateResourceImpl<T extends Resource>(resource: T, create: boolean): Promise<T> {
-    validateResource(resource);
+    if (this.#context.strictMode) {
+      validateResource(resource);
+    } else {
+      validateResourceWithJsonSchema(resource);
+    }
 
     const { resourceType, id } = resource;
     if (!id) {
@@ -1568,6 +1581,7 @@ export async function getRepoForLogin(login: Login, membership: ProjectMembershi
 
 export const systemRepo = new Repository({
   superAdmin: true,
+  strictMode: true,
   author: {
     reference: 'system',
   },

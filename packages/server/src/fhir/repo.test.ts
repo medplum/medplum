@@ -411,6 +411,7 @@ describe('FHIR Repo', () => {
 
     const encounter1 = await systemRepo.createResource<Encounter>({
       resourceType: 'Encounter',
+      status: 'active',
       class: {
         code: 'HH',
         display: 'home health',
@@ -422,6 +423,7 @@ describe('FHIR Repo', () => {
 
     const comm1 = await systemRepo.createResource<Communication>({
       resourceType: 'Communication',
+      status: 'active',
       encounter: createReference(encounter1 as Encounter),
       subject: createReference(patient1 as Patient),
       sender: createReference(patient1 as Patient),
@@ -439,6 +441,7 @@ describe('FHIR Repo', () => {
 
     const encounter2 = await systemRepo.createResource<Encounter>({
       resourceType: 'Encounter',
+      status: 'active',
       class: {
         code: 'HH',
         display: 'home health',
@@ -450,6 +453,7 @@ describe('FHIR Repo', () => {
 
     const comm2 = await systemRepo.createResource<Communication>({
       resourceType: 'Communication',
+      status: 'active',
       encounter: createReference(encounter2 as Encounter),
       subject: createReference(patient2 as Patient),
       sender: createReference(patient2 as Patient),
@@ -483,6 +487,8 @@ describe('FHIR Repo', () => {
 
     const serviceRequest1 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       code: {
         text: 'text',
       },
@@ -493,6 +499,7 @@ describe('FHIR Repo', () => {
 
     const comm1 = await systemRepo.createResource<Communication>({
       resourceType: 'Communication',
+      status: 'active',
       basedOn: [createReference(serviceRequest1 as ServiceRequest)],
       subject: createReference(patient1 as Patient),
       sender: createReference(patient1 as Patient),
@@ -510,6 +517,8 @@ describe('FHIR Repo', () => {
 
     const serviceRequest2 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       code: {
         text: 'test',
       },
@@ -520,6 +529,7 @@ describe('FHIR Repo', () => {
 
     const comm2 = await systemRepo.createResource<Communication>({
       resourceType: 'Communication',
+      status: 'active',
       basedOn: [createReference(serviceRequest2 as ServiceRequest)],
       subject: createReference(patient2 as Patient),
       sender: createReference(patient2 as Patient),
@@ -546,15 +556,18 @@ describe('FHIR Repo', () => {
   test('Search for QuestionnaireResponse by Questionnaire', async () => {
     const questionnaire = await systemRepo.createResource<Questionnaire>({
       resourceType: 'Questionnaire',
+      status: 'active',
     });
 
     const response1 = await systemRepo.createResource<QuestionnaireResponse>({
       resourceType: 'QuestionnaireResponse',
+      status: 'completed',
       questionnaire: getReferenceString(questionnaire),
     });
 
     await systemRepo.createResource<QuestionnaireResponse>({
       resourceType: 'QuestionnaireResponse',
+      status: 'completed',
       questionnaire: `Questionnaire/${randomUUID()}`,
     });
 
@@ -1175,6 +1188,7 @@ describe('FHIR Repo', () => {
     for (let i = 0; i < 3; i++) {
       const resource = await systemRepo.createResource<AuditEvent>({
         resourceType: 'AuditEvent',
+        recorded: new Date().toISOString(),
         type: {
           code: randomUUID(),
         },
@@ -1214,6 +1228,8 @@ describe('FHIR Repo', () => {
     // Use code.coding[0].code
     const serviceRequest1 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: createReference(patient),
       code: {
         coding: [
@@ -1227,6 +1243,8 @@ describe('FHIR Repo', () => {
     // Use code.coding[0].display
     const serviceRequest2 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: createReference(patient),
       code: {
         coding: [
@@ -1240,6 +1258,8 @@ describe('FHIR Repo', () => {
     // Use code.text
     const serviceRequest3 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: createReference(patient),
       code: {
         text: x3,
@@ -1302,6 +1322,7 @@ describe('FHIR Repo', () => {
 
     const observation1 = await systemRepo.createResource<Observation>({
       resourceType: 'Observation',
+      status: 'final',
       subject: createReference(patient),
       code: { coding: [{ code }] },
       valueQuantity: { value: 1, unit: 'mg' },
@@ -1309,6 +1330,7 @@ describe('FHIR Repo', () => {
 
     const observation2 = await systemRepo.createResource<Observation>({
       resourceType: 'Observation',
+      status: 'final',
       subject: createReference(patient),
       code: { coding: [{ code }] },
       valueQuantity: { value: 5, unit: 'mg' },
@@ -1316,6 +1338,7 @@ describe('FHIR Repo', () => {
 
     const observation3 = await systemRepo.createResource<Observation>({
       resourceType: 'Observation',
+      status: 'final',
       subject: createReference(patient),
       code: { coding: [{ code }] },
       valueQuantity: { value: 10, unit: 'mg' },
@@ -1449,6 +1472,8 @@ describe('FHIR Repo', () => {
 
     const serviceRequest = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: {
         reference: 'Patient/' + randomUUID(),
       },
@@ -1491,6 +1516,7 @@ describe('FHIR Repo', () => {
 
     const resource1 = await systemRepo.createResource<Questionnaire>({
       resourceType: 'Questionnaire',
+      status: 'active',
       subjectType: [nonce],
     });
 
@@ -1530,6 +1556,8 @@ describe('FHIR Repo', () => {
     for (const code of codes) {
       const serviceRequest = await systemRepo.createResource<ServiceRequest>({
         resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
         subject: { reference: 'Patient/' + randomUUID() },
         category: [{ coding: [{ code: category }] }],
         code: { coding: [{ code: code }] },
@@ -1552,6 +1580,8 @@ describe('FHIR Repo', () => {
 
     const serviceRequest1 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: { reference: 'Patient/' + randomUUID() },
       category: [{ coding: [{ code: category }] }],
       code: { coding: [{ code: code1 }] },
@@ -1559,6 +1589,8 @@ describe('FHIR Repo', () => {
 
     const serviceRequest2 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: { reference: 'Patient/' + randomUUID() },
       category: [{ coding: [{ code: category }] }],
       code: { coding: [{ code: code2 }] },
@@ -1577,6 +1609,8 @@ describe('FHIR Repo', () => {
 
     const serviceRequest1 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: { reference: 'Patient/' + randomUUID() },
       category: [{ coding: [{ code: category1 }] }],
       code: { coding: [{ code }] },
@@ -1584,6 +1618,8 @@ describe('FHIR Repo', () => {
 
     const serviceRequest2 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: { reference: 'Patient/' + randomUUID() },
       category: [{ coding: [{ code: category2 }] }],
       code: { coding: [{ code }] },
@@ -1601,6 +1637,8 @@ describe('FHIR Repo', () => {
 
     const serviceRequest1 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: { reference: 'Patient/' + randomUUID() },
       category: [{ coding: [{ code: category1 }] }],
       code: { coding: [{ code }] },
@@ -1608,6 +1646,8 @@ describe('FHIR Repo', () => {
 
     const serviceRequest2 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: { reference: 'Patient/' + randomUUID() },
       code: { coding: [{ code }] },
     });
@@ -1626,6 +1666,8 @@ describe('FHIR Repo', () => {
 
     const serviceRequest1 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       code: { coding: [{ code }] },
       subject: { reference: 'Patient/' + randomUUID() },
       specimen: [{ reference: 'Specimen/' + randomUUID() }],
@@ -1634,6 +1676,8 @@ describe('FHIR Repo', () => {
 
     const serviceRequest2 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       code: { coding: [{ code }] },
       subject: { reference: 'Patient/' + randomUUID() },
     });
@@ -1861,6 +1905,8 @@ describe('FHIR Repo', () => {
       serviceRequests.push(
         await systemRepo.createResource({
           resourceType: 'ServiceRequest',
+          status: 'active',
+          intent: 'order',
           subject: { reference: 'Patient/' + randomUUID() },
           category: [{ text: category }],
           code: { text: randomUUID() },
@@ -1895,6 +1941,8 @@ describe('FHIR Repo', () => {
       serviceRequests.push(
         await systemRepo.createResource<ServiceRequest>({
           resourceType: 'ServiceRequest',
+          status: 'active',
+          intent: 'order',
           subject: { reference: 'Patient/' + randomUUID() },
           code: { text: randomUUID() },
         })

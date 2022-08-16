@@ -37,7 +37,7 @@ import { JSONSchema4 } from 'json-schema';
 import { asyncWrap } from '../../async';
 import { Repository } from '../repo';
 import { rewriteAttachments, RewriteMode } from '../rewrite';
-import { getResourceTypes, getSchemaDefinition } from '../schema';
+import { getJsonSchemaResourceTypes, getJsonSchemaDefinition } from '../jsonschema';
 import { parseSearchRequest } from '../search';
 import { getSearchParameters } from '../structure';
 import { sendOutcome } from './../outcomes';
@@ -157,7 +157,7 @@ export function getRootSchema(): GraphQLSchema {
 function buildRootSchema(): GraphQLSchema {
   // First, create placeholder types
   // We need this first for circular dependencies
-  for (const resourceType of getResourceTypes()) {
+  for (const resourceType of getJsonSchemaResourceTypes()) {
     const graphQLType = buildGraphQLType(resourceType);
     if (graphQLType) {
       typeCache[resourceType] = graphQLType;
@@ -166,7 +166,7 @@ function buildRootSchema(): GraphQLSchema {
 
   // Next, fill in all of the type properties
   const fields: GraphQLFieldConfigMap<any, any> = {};
-  for (const resourceType of getResourceTypes()) {
+  for (const resourceType of getJsonSchemaResourceTypes()) {
     const graphQLType = getGraphQLType(resourceType);
 
     // Get resource by ID
@@ -214,14 +214,14 @@ function buildGraphQLType(resourceType: string): GraphQLOutputType {
     return new GraphQLUnionType({
       name: 'ResourceList',
       types: () =>
-        getResourceTypes()
+        getJsonSchemaResourceTypes()
           .map(getGraphQLType)
           .filter((t) => !!t) as GraphQLObjectType[],
       resolveType: resolveTypeByReference,
     });
   }
 
-  const schema = getSchemaDefinition(resourceType);
+  const schema = getJsonSchemaDefinition(resourceType);
   return new GraphQLObjectType({
     name: resourceType,
     description: schema.description,
@@ -237,7 +237,7 @@ function buildGraphQLFields(resourceType: string): GraphQLFieldConfigMap<any, an
 }
 
 function buildPropertyFields(resourceType: string, fields: GraphQLFieldConfigMap<any, any>): void {
-  const schema = getSchemaDefinition(resourceType);
+  const schema = getJsonSchemaDefinition(resourceType);
   const properties = schema.properties as { [k: string]: JSONSchema4 };
 
   for (const [propertyName, property] of Object.entries(properties)) {
@@ -284,7 +284,7 @@ function buildPropertyFields(resourceType: string, fields: GraphQLFieldConfigMap
  * @param fields The fields object to add fields to.
  */
 function buildReverseLookupFields(resourceType: string, fields: GraphQLFieldConfigMap<any, any>): void {
-  for (const childResourceType of getResourceTypes()) {
+  for (const childResourceType of getJsonSchemaResourceTypes()) {
     const childGraphQLType = getGraphQLType(childResourceType);
     const childSearchParams = getSearchParameters(childResourceType);
     const enumValues: GraphQLEnumValueConfigMap = {};

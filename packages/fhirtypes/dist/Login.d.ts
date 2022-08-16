@@ -3,6 +3,7 @@
  * Do not edit manually.
  */
 
+import { Bot } from './Bot';
 import { ClientApplication } from './ClientApplication';
 import { Meta } from './Meta';
 import { ProjectMembership } from './ProjectMembership';
@@ -53,7 +54,7 @@ export interface Login {
   /**
    * The user requesting the code.
    */
-  user?: Reference<ClientApplication | User>;
+  user?: Reference<Bot | ClientApplication | User>;
 
   /**
    * Reference to the project membership which includes FHIR identity

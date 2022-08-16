@@ -51,6 +51,8 @@ export async function initTestAuth(): Promise<string> {
 
   const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
+    authMethod: 'client',
+    user: createReference(client),
     client: createReference(client),
     membership: createReference(membership),
     authTime: new Date().toISOString(),
