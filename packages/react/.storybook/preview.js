@@ -7,6 +7,7 @@ import '../src/defaulttheme.css';
 export const parameters = {
   layout: 'fullscreen',
   actions: { argTypesRegex: '^on[A-Z].*' },
+  viewMode: 'docs',
   controls: {
     matchers: {
       color: /(background|color)$/i,
