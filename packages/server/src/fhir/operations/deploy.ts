@@ -28,7 +28,7 @@ const PdfPrinter = require("pdfmake");
 const userCode = require("./user.js");
 
 exports.handler = async (event, context) => {
-  const { accessToken, input, contentType } = event;
+  const { accessToken, input, contentType, secrets } = event;
   const medplum = new MedplumClient({ fetch, createPdf });
   medplum.setAccessToken(accessToken);
   try {
@@ -38,6 +38,7 @@ exports.handler = async (event, context) => {
           ? Hl7Message.parse(input)
           : input,
       contentType,
+      secrets,
     });
   } catch (err) {
     if (err instanceof Error) {
