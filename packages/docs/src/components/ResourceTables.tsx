@@ -55,6 +55,9 @@ export function ResourcePropertiesTable(props: { properties: PropertyDocInfo[] }
 
 export function SearchParamsTable(props: { searchParams: SearchParamDocInfo[] }): JSX.Element {
   const searchParams = props.searchParams;
+  if (!searchParams || searchParams.length === 0) {
+    return <em>None</em>;
+  }
   return (
     <table>
       <thead>

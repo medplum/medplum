@@ -105,7 +105,7 @@ sidebar_position: ${position}
 ---
 
 import definition from '@site/static/data/resourceDefinitions/${resourceName.toLowerCase()}.json';
-import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/resourceTables';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
 # ${resourceName}
 
@@ -117,13 +117,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 ## Search Parameters
 
-<>
-  {definition.searchParameters.length > 0 ? (
-    <SearchParamsTable searchParams={definition.searchParameters} />
-  ) : (
-    <em>None</em>
-  )}
-</>
+<SearchParamsTable searchParams={definition.searchParameters} />
 
 ## Inherited Properties
 

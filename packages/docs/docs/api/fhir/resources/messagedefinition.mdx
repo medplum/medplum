@@ -4,7 +4,7 @@ sidebar_position: 90
 ---
 
 import definition from '@site/static/data/resourceDefinitions/messagedefinition.json';
-import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/resourceTables';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
 # MessageDefinition
 
@@ -16,13 +16,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 ## Search Parameters
 
-<>
-  {definition.searchParameters.length > 0 ? (
-    <SearchParamsTable searchParams={definition.searchParameters} />
-  ) : (
-    <em>None</em>
-  )}
-</>
+<SearchParamsTable searchParams={definition.searchParameters} />
 
 ## Inherited Properties
 
