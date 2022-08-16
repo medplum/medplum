@@ -93,17 +93,17 @@ const config = {
             label: 'Home',
           },
           {
-            to: '/tutorials',
+            to: '/docs/tutorials',
             label: 'Tutorials',
             position: 'left',
           },
           {
-            to: '/api',
+            to: '/docs/api',
             label: 'API',
             position: 'left',
           },
           {
-            to: '/contributing',
+            to: '/docs/contributing',
             label: 'Contributing',
             position: 'left',
           },
@@ -127,7 +127,7 @@ const config = {
             items: [
               {
                 label: 'Tutorial',
-                to: '/tutorials',
+                to: '/docs/tutorials',
               },
             ],
           },
