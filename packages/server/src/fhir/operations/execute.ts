@@ -125,6 +125,7 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
 
   // Get the project secrets
   const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
+  const secrets = Object.fromEntries(project.secret?.map((secret) => [secret.name, secret]) || []);
 
   const client = new LambdaClient({ region: 'us-east-1' });
   const name = `medplum-bot-lambda-${bot.id}`;
@@ -132,7 +133,7 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
     accessToken,
     input: input instanceof Hl7Message ? input.toString() : input,
     contentType,
-    secrets: project.secret,
+    secrets,
   };
 
   // Build the command

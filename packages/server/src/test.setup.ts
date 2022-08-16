@@ -16,6 +16,12 @@ export async function createTestProject(): Promise<{
       reference: 'User/' + randomUUID(),
     },
     features: ['bots', 'email'],
+    secret: [
+      {
+        name: 'foo',
+        valueString: 'bar',
+      },
+    ],
   });
 
   const client = await systemRepo.createResource<ClientApplication>({

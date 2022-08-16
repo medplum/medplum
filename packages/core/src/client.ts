@@ -270,7 +270,7 @@ export interface TokenResponse {
 export interface BotEvent<T = Resource | Hl7Message | string> {
   readonly contentType: string;
   readonly input: T;
-  readonly secrets?: ProjectSecret[];
+  readonly secrets: Record<string, ProjectSecret>;
 }
 
 /**
