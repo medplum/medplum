@@ -11,6 +11,7 @@ import {
   Patient,
   Project,
   ProjectMembership,
+  ProjectSecret,
   Reference,
   Resource,
   ResourceType,
@@ -266,9 +267,10 @@ export interface TokenResponse {
   readonly profile: Reference<ProfileResource>;
 }
 
-export interface BotEvent {
+export interface BotEvent<T = Resource | Hl7Message | string> {
   readonly contentType: string;
-  readonly input: Resource | Hl7Message | string;
+  readonly input: T;
+  readonly secrets: Record<string, ProjectSecret>;
 }
 
 /**
