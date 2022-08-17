@@ -1,6 +1,7 @@
-import { resolveId } from '@medplum/core';
+import { evalFhirPath, resolveId } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { CompartmentDefinition, CompartmentDefinitionResource, Reference, Resource } from '@medplum/fhirtypes';
+import { getSearchParameter } from './structure';
 
 /**
  * Patient compartment definitions.
@@ -20,13 +21,13 @@ function getPatientCompartments(): CompartmentDefinition {
 }
 
 /**
- * Returns the list of patient compartment properties, if the resource type is in a patient compartment.
+ * Returns the list of patient compartment search parameters, if the resource type is in a patient compartment.
  * Returns undefined otherwise.
  * See: https://www.hl7.org/fhir/compartmentdefinition-patient.html
  * @param resourceType The resource type.
  * @returns List of property names if in patient compartment; undefined otherwise.
  */
-export function getPatientCompartmentProperties(resourceType: string): string[] | undefined {
+export function getPatientCompartmentParams(resourceType: string): string[] | undefined {
   const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
   for (const resource of resourceList) {
     if (resource.code === resourceType) {
@@ -49,14 +50,17 @@ export function getPatientId(resource: Resource): string | undefined {
   if (resource.resourceType === 'Patient') {
     return resource.id;
   }
-  const properties = getPatientCompartmentProperties(resource.resourceType);
-  if (properties) {
-    for (const property of properties) {
-      if (property in resource) {
-        const value: Reference | Reference[] | undefined = (resource as any)[property];
-        const patientId = getPatientIdFromReferenceProperty(value);
-        if (patientId) {
-          return patientId;
+  const params = getPatientCompartmentParams(resource.resourceType);
+  if (params) {
+    for (const code of params) {
+      const searchParam = getSearchParameter(resource.resourceType, code);
+      if (searchParam) {
+        const values = evalFhirPath(searchParam.expression as string, resource);
+        for (const value of values) {
+          const patientId = getPatientIdFromUnknownValue(value);
+          if (patientId) {
+            return patientId;
+          }
         }
       }
     }
@@ -65,32 +69,13 @@ export function getPatientId(resource: Resource): string | undefined {
 }
 
 /**
- * Tries to return a patient ID from a reference or array of references.
- * @param reference A FHIR reference or array of references.
+ * Tries to return a patient ID from an unknown value.
+ * @param value The unknown value.
  * @returns The patient ID if found; undefined otherwise.
  */
-function getPatientIdFromReferenceProperty(reference: Reference | Reference[] | undefined): string | undefined {
-  if (!reference) {
-    return undefined;
-  }
-  if (Array.isArray(reference)) {
-    return getPatientIdFromReferenceArray(reference);
-  } else {
-    return getPatientIdFromReference(reference);
-  }
-}
-
-/**
- * Tries to return a patient ID from an array of references.
- * @param references Array of FHIR references.
- * @returns The patient ID if found; undefined otherwise.
- */
-function getPatientIdFromReferenceArray(references: Reference[]): string | undefined {
-  for (const reference of references) {
-    const result = getPatientIdFromReference(reference);
-    if (result) {
-      return result;
-    }
+function getPatientIdFromUnknownValue(value: unknown): string | undefined {
+  if (value && typeof value === 'object') {
+    return getPatientIdFromReference(value as Reference);
   }
   return undefined;
 }
