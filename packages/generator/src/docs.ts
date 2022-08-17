@@ -98,6 +98,7 @@ function buildDocsDefinition(
 
 function buildDocsMarkdown(position: number, definition: ResourceDocsProps): string {
   const resourceName = definition.resourceName;
+  const description = rewriteLinks(definition.description);
   return `\
 ---
 title: ${resourceName}
@@ -109,7 +110,7 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # ${resourceName}
 
-<p>{definition.description}</p>
+${description}
 
 ## Properties
 
@@ -189,6 +190,21 @@ function getInheritance(property: ElementDefinition): { inherited: boolean; base
     return { inherited };
   }
   return { inherited, base: inheritanceBase };
+}
+
+function rewriteLinks(description: string): string {
+  description = description
+    .replace('(operations.html)', '(/api/fhir/operations)')
+    .replace('(terminologies.html)', '(https://www.hl7.org/fhir/terminologies.html)');
+
+  // Replace all the links of [[[Type]]] with internal links
+  const typeLinks = Array.from(description.matchAll(/\[\[\[([A-Z][a-z]*)*\]\]\]/gi));
+  for (const match of typeLinks) {
+    description = description.replace(match[0], `[${match[1]}](./${match[1]})`);
+    console.log(match[0], description);
+  }
+
+  return description;
 }
 
 if (process.argv[1].endsWith('docs.ts')) {
