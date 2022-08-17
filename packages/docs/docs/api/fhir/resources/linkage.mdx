@@ -1,0 +1,25 @@
+---
+title: Linkage
+sidebar_position: 68
+---
+
+import definition from '@site/static/data/resourceDefinitions/linkage.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Linkage
+
+Identifies two or more records (resource instances) that refer to the same real-world "occurrence".
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

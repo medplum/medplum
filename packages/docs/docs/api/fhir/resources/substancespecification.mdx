@@ -1,0 +1,25 @@
+---
+title: SubstanceSpecification
+sidebar_position: 136
+---
+
+import definition from '@site/static/data/resourceDefinitions/substancespecification.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# SubstanceSpecification
+
+The detailed description of a substance, typically at a level beyond what is used for prescribing.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

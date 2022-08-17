@@ -1,0 +1,25 @@
+---
+title: PaymentReconciliation
+sidebar_position: 104
+---
+
+import definition from '@site/static/data/resourceDefinitions/paymentreconciliation.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# PaymentReconciliation
+
+This resource provides the details including amount of a payment and allocates the payment items being paid.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

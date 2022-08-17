@@ -1,0 +1,25 @@
+---
+title: RequestGroup
+sidebar_position: 114
+---
+
+import definition from '@site/static/data/resourceDefinitions/requestgroup.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# RequestGroup
+
+A group of related requests that can be used to capture intended activities that have inter-dependencies such as "give this medication after that one".
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

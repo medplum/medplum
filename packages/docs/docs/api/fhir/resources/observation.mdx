@@ -1,0 +1,25 @@
+---
+title: Observation
+sidebar_position: 95
+---
+
+import definition from '@site/static/data/resourceDefinitions/observation.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Observation
+
+Measurements and simple assertions made about a patient, device or other subject.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

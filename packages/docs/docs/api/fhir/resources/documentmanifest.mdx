@@ -1,0 +1,25 @@
+---
+title: DocumentManifest
+sidebar_position: 40
+---
+
+import definition from '@site/static/data/resourceDefinitions/documentmanifest.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# DocumentManifest
+
+A collection of documents compiled for a purpose together with metadata that applies to the collection.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

@@ -1,0 +1,25 @@
+---
+title: SearchParameter
+sidebar_position: 122
+---
+
+import definition from '@site/static/data/resourceDefinitions/searchparameter.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# SearchParameter
+
+A search parameter that defines a named search item that can be used to search/filter on a resource.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

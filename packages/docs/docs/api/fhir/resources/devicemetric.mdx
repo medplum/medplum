@@ -1,0 +1,25 @@
+---
+title: DeviceMetric
+sidebar_position: 36
+---
+
+import definition from '@site/static/data/resourceDefinitions/devicemetric.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# DeviceMetric
+
+Describes a measurement, calculation or setting capability of a medical device.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

@@ -1,0 +1,25 @@
+---
+title: ImmunizationEvaluation
+sidebar_position: 62
+---
+
+import definition from '@site/static/data/resourceDefinitions/immunizationevaluation.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# ImmunizationEvaluation
+
+Describes a comparison of an immunization event against published recommendations to determine if the administration is "valid" in relation to those  recommendations.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

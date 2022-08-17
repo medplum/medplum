@@ -1,0 +1,25 @@
+---
+title: ObservationDefinition
+sidebar_position: 96
+---
+
+import definition from '@site/static/data/resourceDefinitions/observationdefinition.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# ObservationDefinition
+
+Set of definitional characteristics for a kind of observation or measurement produced or consumed by an orderable health care service.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

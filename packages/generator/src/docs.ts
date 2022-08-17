@@ -1,132 +1,148 @@
-import {
-  getExpressionForResourceType,
-  IndexedStructureDefinition,
-  indexStructureDefinition,
-  isLowerCase,
-  TypeSchema,
-} from '@medplum/core';
+import { getExpressionForResourceType, isLowerCase } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, ElementDefinition, Resource, SearchParameter } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  BundleEntry,
+  ElementDefinition,
+  Resource,
+  SearchParameter,
+  StructureDefinition,
+} from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path/posix';
-import { FileBuilder } from './filebuilder';
+import { PropertyDocInfo, ResourceDocsProps } from '../../docs/src/types/documentationTypes';
 
-const structureDefinitions = { types: {} } as IndexedStructureDefinition;
 const searchParams = readJson('fhir/r4/search-parameters.json') as Bundle;
 
 export function main(): void {
-  buildStructureDefinitions('profiles-types.json');
-  buildStructureDefinitions('profiles-resources.json');
-  writeDocs();
+  const indexedSearchParams = indexSearchParameters(searchParams);
+  const docsDefinitions = buildDocsDefinitions('profiles-resources.json', indexedSearchParams);
+  writeDocs(docsDefinitions, 'resource');
 }
 
-function buildStructureDefinitions(fileName: string): void {
+function indexSearchParameters(searchParams: Bundle): Record<string, SearchParameter[]> {
+  const entries = searchParams.entry || [];
+  const results = {} as Record<string, SearchParameter[]>;
+  for (const entry of entries) {
+    const searchParam = entry.resource as SearchParameter;
+    for (const resType of searchParam.base || []) {
+      if (!results[resType]) {
+        results[resType] = [];
+      }
+      results[resType].push(searchParam);
+    }
+  }
+  return results;
+}
+
+function buildDocsDefinitions(
+  fileName: string,
+  indexedSearchParams: Record<string, SearchParameter[]>
+): ResourceDocsProps[] {
+  const results = [];
   const resourceDefinitions = readJson(`fhir/r4/${fileName}`) as Bundle;
   for (const entry of resourceDefinitions.entry as BundleEntry[]) {
     const resource = entry.resource as Resource;
     if (
       resource.resourceType === 'StructureDefinition' &&
+      resource.kind === 'resource' &&
       resource.name &&
       resource.name !== 'Resource' &&
       resource.name !== 'BackboneElement' &&
       resource.name !== 'DomainResource' &&
       resource.name !== 'MetadataResource' &&
-      !isLowerCase(resource.name[0])
+      !isLowerCase(resource.name?.[0])
     ) {
-      indexStructureDefinition(structureDefinitions, resource);
+      results.push(buildDocsDefinition(resource as StructureDefinition, indexedSearchParams[resource.name as string]));
     }
   }
+  return results;
 }
 
-function writeDocs(): void {
-  const entries = Object.entries(structureDefinitions.types);
-  for (let i = 0; i < entries.length; i++) {
-    const [resourceType, typeSchema] = entries[i];
-    if (isResourceType(typeSchema) && resourceType !== 'Parameters') {
-      writeDocsForType(i, resourceType, typeSchema);
-    }
+function buildDocsDefinition(
+  resourceDefinition: StructureDefinition,
+  searchParameters: SearchParameter[]
+): ResourceDocsProps {
+  const result = {
+    resourceName: resourceDefinition.name as string,
+    description: resourceDefinition.description || '',
+    properties: [] as PropertyDocInfo[],
+  } as ResourceDocsProps;
+  const elements = resourceDefinition.snapshot?.element || [];
+  for (const element of elements) {
+    const parts = element.path?.split('.') || [];
+    const name = parts[parts.length - 1];
+    const { path, min, max, short, definition, comment } = element;
+    result.properties.push({
+      name,
+      depth: parts.length - 1,
+      ...getPropertyTypes(element),
+      path: path || '',
+      min: min || 0,
+      max: max || '',
+      short: short || '',
+      definition: definition || '',
+      comment: comment || '',
+      ...getInheritance(element),
+    });
   }
+
+  result.searchParameters = (searchParameters || []).map((param) => ({
+    name: param.name || '',
+    type: param.type || '',
+    description: getSearchParamDescription(param, result.resourceName),
+    expression: getExpressionForResourceType(result.resourceName, param.expression || '') || '',
+  }));
+  return result;
 }
 
-function writeDocsForType(i: number, resourceType: string, typeSchema: TypeSchema): void {
-  const fileBuilder = new FileBuilder(' ', false);
-  fileBuilder.append('---');
-  fileBuilder.append(`title: ${resourceType}`);
-  fileBuilder.append('sidebar_position: ' + (i + 1));
-  fileBuilder.append('---');
-  fileBuilder.newLine();
+function buildDocsMarkdown(position: number, definition: ResourceDocsProps): string {
+  const resourceName = definition.resourceName;
+  const description = rewriteLinks(definition.description);
+  return `\
+---
+title: ${resourceName}
+sidebar_position: ${position}
+---
 
-  fileBuilder.append(`# ${resourceType}`);
-  fileBuilder.newLine();
-  fileBuilder.append(typeSchema.description as string);
-  fileBuilder.newLine();
+import definition from '@site/static/data/resourceDefinitions/${resourceName.toLowerCase()}.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
-  fileBuilder.append(`## Properties`);
-  fileBuilder.newLine();
-  fileBuilder.append(`| Name | Card | Type | Description |`);
-  fileBuilder.append(`| --- | --- | --- | --- |`);
-  const properties = Object.entries(typeSchema.properties);
-  for (let j = 0; j < properties.length; j++) {
-    const [propertyName, propertySchema] = properties[j];
-    fileBuilder.append(
-      `| ${propertyName} ` +
-        `| ${propertySchema.min}..${propertySchema.max} ` +
-        `| ${getPropertyType(propertySchema)} ` +
-        `| ${escapeTableCell(propertySchema.short)}`
+# ${resourceName}
+
+${description}
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+
+`;
+}
+
+function writeDocs(definitions: ResourceDocsProps[], definitionType: string): void {
+  definitions.forEach((definition, i) => {
+    const resourceName = definition.resourceName.toLowerCase();
+    writeFileSync(
+      resolve(__dirname, `../../docs/static/data/${definitionType}Definitions/${resourceName}.json`),
+      JSON.stringify(definition, null, 2),
+      // JSON.stringify(definition),
+      'utf8'
     );
-  }
-  fileBuilder.newLine();
-
-  fileBuilder.append(`## Search Parameters`);
-  fileBuilder.newLine();
-  fileBuilder.append(`| Name | Type | Description | Expression`);
-  fileBuilder.append(`| --- | --- | --- | --- |`);
-
-  for (const entry of searchParams.entry as BundleEntry[]) {
-    const searchParam = entry.resource as SearchParameter;
-    if (!searchParam.base?.includes(resourceType)) {
-      continue;
-    }
-    fileBuilder.appendNoWrap(
-      `| ${searchParam.name} ` +
-        `| ${searchParam.type} ` +
-        `| ${escapeTableCell(getSearchParamDescription(searchParam, resourceType))} ` +
-        `| ${escapeTableCell(getExpressionForResourceType(resourceType, searchParam.expression as string))}`
+    writeFileSync(
+      resolve(__dirname, `../../docs/docs/api/fhir/${definitionType}s/${resourceName}.mdx`),
+      buildDocsMarkdown(i, definition),
+      'utf8'
     );
-  }
-
-  fileBuilder.newLine();
-  writeFileSync(
-    resolve(__dirname, `../../docs/docs/fhir/${resourceType.toLowerCase()}.md`),
-    fileBuilder.toString(),
-    'utf8'
-  );
-}
-
-function isResourceType(typeSchema: TypeSchema): boolean {
-  if (typeSchema.parentType || !typeSchema.properties) {
-    return false;
-  }
-  for (const propertyName of ['id', 'meta', 'implicitRules', 'language']) {
-    if (!(propertyName in typeSchema.properties)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-function getPropertyType(property: ElementDefinition | undefined): string {
-  const type = property?.type;
-  if (!type) {
-    return '';
-  }
-
-  const code = type[0].code;
-  if (code === 'http://hl7.org/fhirpath/System.String') {
-    return 'string';
-  }
-
-  return code || '';
+  });
 }
 
 function getSearchParamDescription(searchParam: SearchParameter, resourceType: string): string {
@@ -146,11 +162,49 @@ function getSearchParamDescription(searchParam: SearchParameter, resourceType: s
   return desc;
 }
 
-function escapeTableCell(input: string | undefined): string {
-  if (!input) {
-    return '';
+function getPropertyTypes(property: ElementDefinition | undefined): Pick<PropertyDocInfo, 'types' | 'referenceTypes'> {
+  const type = property?.type;
+  if (!type) {
+    return { types: [''] };
   }
-  return input.replaceAll('\n', ' ').replaceAll(/\|/g, '\\|').replaceAll('\\', '/').trim();
+
+  const types = type
+    .map((t) => t.code || '')
+    .map((code) => (code === 'http://hl7.org/fhirpath/System.String' ? 'string' : code));
+
+  const referenceIndex = types.indexOf('Reference');
+  if (referenceIndex >= 0) {
+    const referenceTypes =
+      type[referenceIndex].targetProfile
+        ?.filter((target) => target.startsWith('http://hl7.org/fhir/StructureDefinition/'))
+        .map((target) => target.split('/').pop() || '') || [];
+    return { types, referenceTypes };
+  }
+  return { types };
+}
+
+function getInheritance(property: ElementDefinition): { inherited: boolean; base?: string } {
+  const inheritanceBase = property.base?.path?.split('.')[0];
+  const inherited = property.path?.split('.')[0] !== inheritanceBase;
+  if (!inherited) {
+    return { inherited };
+  }
+  return { inherited, base: inheritanceBase };
+}
+
+function rewriteLinks(description: string): string {
+  description = description
+    .replace('(operations.html)', '(/api/fhir/operations)')
+    .replace('(terminologies.html)', '(https://www.hl7.org/fhir/terminologies.html)');
+
+  // Replace all the links of [[[Type]]] with internal links
+  const typeLinks = Array.from(description.matchAll(/\[\[\[([A-Z][a-z]*)*\]\]\]/gi));
+  for (const match of typeLinks) {
+    description = description.replace(match[0], `[${match[1]}](./${match[1]})`);
+    console.log(match[0], description);
+  }
+
+  return description;
 }
 
 if (process.argv[1].endsWith('docs.ts')) {

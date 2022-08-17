@@ -1,0 +1,25 @@
+---
+title: Contract
+sidebar_position: 29
+---
+
+import definition from '@site/static/data/resourceDefinitions/contract.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Contract
+
+Legally enforceable, formally recorded unilateral or bilateral directive i.e., a policy or agreement.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

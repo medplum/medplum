@@ -1,0 +1,25 @@
+---
+title: PractitionerRole
+sidebar_position: 108
+---
+
+import definition from '@site/static/data/resourceDefinitions/practitionerrole.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# PractitionerRole
+
+A specific set of Roles/Locations/specialties/services that a practitioner may perform at an organization for a period of time.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+
