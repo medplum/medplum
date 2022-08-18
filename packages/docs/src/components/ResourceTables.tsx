@@ -119,7 +119,7 @@ function renderReferenceType(referenceTypes: string[]): JSX.Element {
       {referenceTypes?.map((refType, i) => (
         <>
           {
-            <a href={`./${refType}`}>
+            <a href={`./${refType.toLowerCase()}`}>
               {i === 0 && verticalizeLinks ? '\n  ' : ''}
               {refType}
             </a>
