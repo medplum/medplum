@@ -139,11 +139,11 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.get('/openapi.json', openApiHandler);
   app.use('/.well-known/', wellKnownRouter);
   app.use('/admin/', adminRouter);
-  app.use('/auth/', authRouter); // leak
+  app.use('/auth/', authRouter);
   app.use('/dicom/PS3/', dicomRouter);
   app.use('/email/v1/', emailRouter);
   app.use('/fhir/R4/', fhirRouter);
-  app.use('/oauth2/', oauthRouter); // leak
+  app.use('/oauth2/', oauthRouter);
   app.use('/scim/v2/', scimRouter);
   app.use('/storage/', storageRouter);
   app.use(errorHandler);

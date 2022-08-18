@@ -1,5 +1,22 @@
 import rateLimit, { IncrementResponse, Options, RateLimitRequestHandler, Store } from 'express-rate-limit';
 
+/*
+ * There has been a slow bleed memory leak in server unit tests.
+ * It recently tipped from "annoying" to "blocking", so I dug in.
+ *
+ * The root cause is that express-rate-limit starts a setInterval which is never stopped.
+ * Each one holds a reference to the graph, which increases memory usage by about 50mb per test.
+ *
+ * Unfortunately, the fix is not that simple. express-rate-limit does not provide any stop
+ * or clear or shutdown utilities. In fact, that handle to the timer is discarded as soon as
+ * it is created. That is the reason for the new ratelimit.ts file.
+ *
+ * The MemoryStore is almost 100% copied from the express-rate-limit implementation,
+ * except the memory leak is fixed.
+ *
+ * See: https://github.com/nfriedly/express-rate-limit/blob/master/source/memory-store.ts
+ */
+
 let handler: RateLimitRequestHandler | undefined = undefined;
 let store: MemoryStore | undefined = undefined;
 
@@ -75,7 +92,7 @@ export default class MemoryStore implements Store {
 
     // Reset hit counts for ALL clients every `windowMs` - this will also
     // re-calculate the `resetTime`
-    this.interval = setInterval(async () => await this.resetAll(), this.windowMs);
+    this.interval = setInterval(() => this.resetAll(), this.windowMs);
     this.interval.unref();
   }
 
