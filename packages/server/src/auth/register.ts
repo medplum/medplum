@@ -2,8 +2,8 @@ import { createReference, ProfileResource } from '@medplum/core';
 import { ClientApplication, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
-import { systemRepo } from '../fhir';
-import { getAuthTokens, tryLogin } from '../oauth';
+import { systemRepo } from '../fhir/repo';
+import { getAuthTokens, tryLogin } from '../oauth/utils';
 import { createProject } from './newproject';
 
 /*

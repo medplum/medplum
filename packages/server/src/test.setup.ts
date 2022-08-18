@@ -1,8 +1,8 @@
 import { createReference } from '@medplum/core';
 import { Bundle, ClientApplication, Login, Project, ProjectMembership, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { systemRepo } from './fhir';
-import { generateAccessToken } from './oauth';
+import { systemRepo } from './fhir/repo';
+import { generateAccessToken } from './oauth/keys';
 
 export async function createTestProject(): Promise<{
   project: Project;

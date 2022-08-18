@@ -4,13 +4,9 @@ import express from 'express';
 import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
-import { initApp } from '../app';
+import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { initKeys } from '../oauth';
-import { closeRedis, initRedis } from '../redis';
-import { seedDatabase } from '../seed';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 
 jest.mock('@aws-sdk/client-sesv2');
@@ -22,16 +18,11 @@ const app = express();
 describe('Client admin', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
   });
 
   afterAll(async () => {
-    await closeDatabase();
-    closeRedis();
+    await shutdownApp();
   });
 
   beforeEach(() => {

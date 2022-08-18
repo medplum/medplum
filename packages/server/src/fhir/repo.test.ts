@@ -15,12 +15,9 @@ import {
   StructureDefinition,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { initAppServices, shutdownApp } from '../app';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { initKeys } from '../oauth';
-import { closeRedis, initRedis } from '../redis';
-import { seedDatabase } from '../seed';
 import { bundleContains } from '../test.setup';
 import { processBatch } from './batch';
 import { getRepoForLogin, Repository, systemRepo } from './repo';
@@ -32,15 +29,11 @@ jest.mock('ioredis');
 describe('FHIR Repo', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initKeys(config);
+    await initAppServices(config);
   });
 
   afterAll(async () => {
-    await closeDatabase();
-    closeRedis();
+    await shutdownApp();
   });
 
   test('getRepoForLogin', async () => {
@@ -1192,8 +1185,15 @@ describe('FHIR Repo', () => {
         type: {
           code: randomUUID(),
         },
-        agent: [],
-        source: {},
+        agent: [
+          {
+            who: { reference: 'Practitioner/' + randomUUID() },
+            requestor: true,
+          },
+        ],
+        source: {
+          observer: { reference: 'Practitioner/' + randomUUID() },
+        },
       });
       auditEvents.push(resource);
     }

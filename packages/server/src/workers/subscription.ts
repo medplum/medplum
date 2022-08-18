@@ -4,6 +4,7 @@ import {
   Bot,
   BundleEntry,
   OperationOutcome,
+  Practitioner,
   ProjectMembership,
   Reference,
   Resource,
@@ -14,8 +15,8 @@ import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
 import { URL } from 'url';
 import { MedplumRedisConfig } from '../config';
-import { systemRepo } from '../fhir';
 import { executeBot } from '../fhir/operations/execute';
+import { systemRepo } from '../fhir/repo';
 import { matchesSearchRequest, parseSearchUrl } from '../fhir/search';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
@@ -90,6 +91,15 @@ export async function closeSubscriptionWorker(): Promise<void> {
     await worker.close();
     worker = undefined;
   }
+}
+
+/**
+ * Returns the subscription queue instance.
+ * This is used by the unit tests.
+ * @returns The subscription queue (if available).
+ */
+export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
+  return queue;
 }
 
 /**
@@ -453,6 +463,7 @@ async function createSubscriptionEvent(
     source: {
       // Observer cannot be a Subscription resource
       // observer: createReference(subscription)
+      observer: createReference(subscription) as Reference as Reference<Practitioner>,
     },
     entity: [
       {

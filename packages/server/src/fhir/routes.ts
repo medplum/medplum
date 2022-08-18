@@ -4,7 +4,7 @@ import { NextFunction, Request, Response, Router } from 'express';
 import { Operation } from 'fast-json-patch';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
-import { authenticateToken } from '../oauth';
+import { authenticateToken } from '../oauth/middleware';
 import { processBatch } from './batch';
 import { getCapabilityStatement } from './metadata';
 import { csvHandler } from './operations/csv';

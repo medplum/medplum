@@ -8,7 +8,7 @@ describe('Redis', () => {
     const config = await loadTestConfig();
     initRedis(config.redis);
     expect(getRedis()).toBeDefined();
-    await closeRedis();
+    closeRedis();
   });
 
   test('Not initialized', () => {

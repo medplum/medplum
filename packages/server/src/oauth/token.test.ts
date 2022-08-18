@@ -2,14 +2,11 @@ import { ClientApplication } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import { initApp } from '../app';
+import { initApp, shutdownApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { systemRepo } from '../fhir';
-import { closeRedis, initRedis } from '../redis';
-import { seedDatabase } from '../seed';
+import { systemRepo } from '../fhir/repo';
 import { createTestClient } from '../test.setup';
-import { generateSecret, initKeys } from './keys';
+import { generateSecret } from './keys';
 import { hashCode } from './token';
 
 const app = express();
@@ -19,17 +16,12 @@ let client: ClientApplication;
 describe('OAuth2 Token', () => {
   beforeAll(async () => {
     config = await loadTestConfig();
-    initRedis(config.redis);
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
     client = await createTestClient();
   });
 
   afterAll(async () => {
-    await closeDatabase();
-    closeRedis();
+    await shutdownApp();
   });
 
   test('Token with wrong Content-Type', async () => {

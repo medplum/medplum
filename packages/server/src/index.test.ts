@@ -1,11 +1,8 @@
 import express from 'express';
 import { main } from '.';
-import { closeDatabase } from './database';
-import { closeRedis } from './redis';
+import { shutdownApp } from './app';
 
-jest.mock('bullmq');
 jest.mock('ioredis');
-jest.mock('pg');
 
 jest.mock('express', () => {
   const original = jest.requireActual('express');
@@ -66,7 +63,6 @@ describe('Server', () => {
   test('Main', async () => {
     await main('file:medplum.config.json');
     expect((express as any).listen).toHaveBeenCalledWith(8103);
-    await closeDatabase();
-    closeRedis();
+    await shutdownApp();
   });
 });

@@ -1,7 +1,7 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, Resource, StructureDefinition } from '@medplum/fhirtypes';
 import { getClient } from '../database';
-import { systemRepo } from '../fhir';
+import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 
 /**

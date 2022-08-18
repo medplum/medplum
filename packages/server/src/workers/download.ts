@@ -3,7 +3,8 @@ import { Binary, Meta, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { getConfig, MedplumRedisConfig } from '../config';
-import { getBinaryStorage, systemRepo } from '../fhir';
+import { systemRepo } from '../fhir/repo';
+import { getBinaryStorage } from '../fhir/storage';
 import { logger } from '../logger';
 
 /*
@@ -78,6 +79,15 @@ export async function closeDownloadWorker(): Promise<void> {
     await worker.close();
     worker = undefined;
   }
+}
+
+/**
+ * Returns the download queue instance.
+ * This is used by the unit tests.
+ * @returns The download queue (if available).
+ */
+export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
+  return queue;
 }
 
 /**

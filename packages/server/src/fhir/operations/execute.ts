@@ -1,10 +1,10 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { createReference, Hl7Message, resolveId } from '@medplum/core';
-import { AuditEvent, Bot, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import { AuditEvent, Bot, Login, Organization, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { TextDecoder, TextEncoder } from 'util';
 import { asyncWrap } from '../../async';
-import { generateAccessToken } from '../../oauth';
+import { generateAccessToken } from '../../oauth/keys';
 import { AuditEventOutcome } from '../../util/auditevent';
 import { Repository, systemRepo } from '../repo';
 
@@ -224,8 +224,7 @@ function isJsonContentType(contentType: string): boolean {
 
 /**
  * Creates an AuditEvent for a subscription attempt.
- * @param subscription The rest-hook subscription.
- * @param resource The resource that triggered the subscription.
+ * @param bot The bot that produced the audit event.
  * @param outcome The outcome code.
  * @param outcomeDesc The outcome description text.
  */
@@ -249,8 +248,7 @@ async function createAuditEvent(bot: Bot, outcome: AuditEventOutcome, outcomeDes
       },
     ],
     source: {
-      // Observer cannot be a Bot resource
-      // observer: createReference(bot)
+      observer: createReference(bot) as Reference as Reference<Organization>,
     },
     entity: [
       {

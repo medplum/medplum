@@ -5,12 +5,10 @@ import { mkdtempSync, rmSync, unlinkSync } from 'fs';
 import { resolve, sep } from 'path';
 import { Readable } from 'stream';
 import request from 'supertest';
-import { initApp } from './app';
+import { initApp, shutdownApp } from './app';
 import { loadTestConfig } from './config';
-import { closeDatabase, initDatabase } from './database';
-import { getBinaryStorage, initBinaryStorage, systemRepo } from './fhir';
-import { closeRedis, initRedis } from './redis';
-import { seedDatabase } from './seed';
+import { systemRepo } from './fhir/repo';
+import { getBinaryStorage } from './fhir/storage';
 
 const app = express();
 const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
@@ -19,11 +17,8 @@ let binary: Binary;
 describe('Storage Routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initBinaryStorage('file:' + binaryDir);
+    config.binaryStorage = 'file:' + binaryDir;
+    await initApp(app, config);
 
     binary = await systemRepo.createResource<Binary>({
       resourceType: 'Binary',
@@ -38,8 +33,7 @@ describe('Storage Routes', () => {
   });
 
   afterAll(async () => {
-    await closeDatabase();
-    closeRedis();
+    await shutdownApp();
     rmSync(binaryDir, { recursive: true, force: true });
   });
 

@@ -1,7 +1,7 @@
 import { createReference } from '@medplum/core';
 import { Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
-import { systemRepo } from './fhir';
+import { systemRepo } from './fhir/repo';
 import { logger } from './logger';
 import { createSearchParameters } from './seeds/searchparameters';
 import { createStructureDefinitions } from './seeds/structuredefinitions';

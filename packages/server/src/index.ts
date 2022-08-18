@@ -1,14 +1,8 @@
 import express from 'express';
 import { initApp } from './app';
 import { loadConfig } from './config';
-import { initDatabase } from './database';
-import { initBinaryStorage } from './fhir';
 import { getRootSchema } from './fhir/operations/graphql';
 import { logger } from './logger';
-import { initKeys } from './oauth';
-import { initRedis } from './redis';
-import { seedDatabase } from './seed';
-import { initWorkers } from './workers';
 
 export async function main(configName: string): Promise<void> {
   process.on('unhandledRejection', (err) => {
@@ -25,15 +19,10 @@ export async function main(configName: string): Promise<void> {
   const config = await loadConfig(configName);
   logger.info('config: ' + JSON.stringify(config, undefined, 2));
 
-  await initDatabase(config.database);
-  initRedis(config.redis);
-  await initKeys(config);
-  await seedDatabase();
-  initBinaryStorage(config.binaryStorage);
-  initWorkers(config.redis);
+  // Preload the schema
   getRootSchema();
 
-  const app = await initApp(express());
+  const app = await initApp(express(), config);
   app.listen(config.port);
 }
 

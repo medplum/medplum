@@ -1,7 +1,7 @@
 import { ProfileResource } from '@medplum/core';
 import { ProjectMembership, Reference, UserConfiguration } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { systemRepo } from '../fhir';
+import { systemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 
 export async function meHandler(req: Request, res: Response): Promise<void> {

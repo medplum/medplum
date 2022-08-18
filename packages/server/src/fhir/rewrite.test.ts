@@ -1,10 +1,8 @@
 import { Binary, Practitioner } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { URL } from 'url';
+import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { closeRedis, initRedis } from '../redis';
-import { seedDatabase } from '../seed';
 import { systemRepo } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 
@@ -14,9 +12,7 @@ describe('URL rewrite', () => {
 
   beforeAll(async () => {
     config = await loadTestConfig();
-    initRedis(config.redis);
-    await initDatabase(config.database);
-    await seedDatabase();
+    await initAppServices(config);
 
     const resource = await systemRepo.createResource({
       resourceType: 'Binary',
@@ -26,8 +22,7 @@ describe('URL rewrite', () => {
   });
 
   afterAll(async () => {
-    await closeDatabase();
-    closeRedis();
+    await shutdownApp();
   });
 
   test('Null', async () => {

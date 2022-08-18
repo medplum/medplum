@@ -2,13 +2,9 @@ import { ClientApplication } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { URL, URLSearchParams } from 'url';
-import { initApp } from '../app';
+import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { closeRedis, initRedis } from '../redis';
-import { seedDatabase } from '../seed';
 import { createTestClient } from '../test.setup';
-import { initKeys } from './keys';
 
 const app = express();
 let client: ClientApplication;
@@ -16,17 +12,12 @@ let client: ClientApplication;
 describe('OAuth Authorize', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
     client = await createTestClient();
   });
 
   afterAll(async () => {
-    await closeDatabase();
-    closeRedis();
+    await shutdownApp();
   });
 
   test('Authorize GET client not found', async () => {

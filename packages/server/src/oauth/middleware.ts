@@ -1,7 +1,7 @@
 import { createReference, getReferenceString, unauthorized } from '@medplum/core';
 import { ClientApplication, Login, ProjectMembership } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
-import { getRepoForLogin, systemRepo } from '../fhir';
+import { getRepoForLogin, systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { MedplumAccessTokenClaims, verifyJwt } from './keys';
 import { getUserMemberships, timingSafeEqualStr } from './utils';

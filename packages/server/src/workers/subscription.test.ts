@@ -1,18 +1,15 @@
 import { createReference, getReferenceString, Operator, stringify } from '@medplum/core';
 import { AuditEvent, Bot, Observation, Patient, Project, ProjectMembership, Subscription } from '@medplum/fhirtypes';
-import { Job, Queue } from 'bullmq';
+import { Job } from 'bullmq';
 import { createHmac, randomUUID } from 'crypto';
 import fetch from 'node-fetch';
+import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { closeDatabase, getClient, initDatabase } from '../database';
+import { getClient } from '../database';
 import { Repository, systemRepo } from '../fhir/repo';
-import { initKeys } from '../oauth';
-import { closeRedis, initRedis } from '../redis';
-import { seedDatabase } from '../seed';
 import { createTestProject } from '../test.setup';
-import { closeSubscriptionWorker, execSubscriptionJob, initSubscriptionWorker } from './subscription';
+import { closeSubscriptionWorker, execSubscriptionJob, getSubscriptionQueue } from './subscription';
 
-jest.mock('bullmq');
 jest.mock('node-fetch');
 
 let repo: Repository;
@@ -21,11 +18,7 @@ let botRepo: Repository;
 describe('Subscription Worker', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initKeys(config);
-    await initSubscriptionWorker(config.redis);
+    await initAppServices(config);
 
     // Create one simple project with no advanced features enabled
     const testProject = await systemRepo.createResource<Project>({
@@ -52,9 +45,7 @@ describe('Subscription Worker', () => {
   });
 
   afterAll(async () => {
-    await closeDatabase();
-    closeRedis();
-    await closeSubscriptionWorker();
+    await shutdownApp();
     await closeSubscriptionWorker(); // Double close to ensure quite ignore
   });
 
@@ -78,7 +69,7 @@ describe('Subscription Worker', () => {
     });
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getSubscriptionQueue() as any;
     queue.add.mockClear();
 
     const patient = await repo.createResource<Patient>({
@@ -118,7 +109,7 @@ describe('Subscription Worker', () => {
     });
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getSubscriptionQueue() as any;
     queue.add.mockClear();
 
     const patient = await repo.createResource<Patient>({
@@ -168,7 +159,7 @@ describe('Subscription Worker', () => {
     });
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getSubscriptionQueue() as any;
     queue.add.mockClear();
 
     const patient = await repo.createResource<Patient>({
@@ -211,7 +202,7 @@ describe('Subscription Worker', () => {
     });
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getSubscriptionQueue() as any;
     queue.add.mockClear();
 
     const patient = await repo.createResource<Patient>({
@@ -235,7 +226,7 @@ describe('Subscription Worker', () => {
     });
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getSubscriptionQueue() as any;
     queue.add.mockClear();
 
     const patient = await repo.createResource<Patient>({
@@ -258,7 +249,7 @@ describe('Subscription Worker', () => {
     });
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getSubscriptionQueue() as any;
     queue.add.mockClear();
 
     const patient = await repo.createResource<Patient>({
@@ -282,7 +273,7 @@ describe('Subscription Worker', () => {
     });
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getSubscriptionQueue() as any;
     queue.add.mockClear();
 
     const patient = await repo.createResource<Patient>({
@@ -306,7 +297,7 @@ describe('Subscription Worker', () => {
     });
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getSubscriptionQueue() as any;
     queue.add.mockClear();
 
     await repo.createResource<Observation>({
@@ -339,7 +330,7 @@ describe('Subscription Worker', () => {
     });
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getSubscriptionQueue() as any;
     queue.add.mockClear();
 
     const patient = await repo.createResource<Patient>({
@@ -364,7 +355,7 @@ describe('Subscription Worker', () => {
     });
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getSubscriptionQueue() as any;
     queue.add.mockClear();
 
     // Create a patient in project 2
@@ -398,7 +389,7 @@ describe('Subscription Worker', () => {
     });
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getSubscriptionQueue() as any;
     queue.add.mockClear();
 
     const patient = await repo.createResource<Patient>({
@@ -427,7 +418,7 @@ describe('Subscription Worker', () => {
     });
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getSubscriptionQueue() as any;
     queue.add.mockClear();
 
     const patient = await repo.createResource<Patient>({
@@ -460,7 +451,7 @@ describe('Subscription Worker', () => {
     });
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getSubscriptionQueue() as any;
     queue.add.mockClear();
 
     const patient = await repo.createResource<Patient>({
@@ -514,7 +505,7 @@ describe('Subscription Worker', () => {
       },
     });
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getSubscriptionQueue() as any;
     queue.add.mockClear();
 
     await repo.createResource<Patient>({
@@ -577,7 +568,7 @@ describe('Subscription Worker', () => {
       },
     });
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getSubscriptionQueue() as any;
     queue.add.mockClear();
 
     const patient = await botRepo.createResource<Patient>({
@@ -620,7 +611,7 @@ describe('Subscription Worker', () => {
     });
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getSubscriptionQueue() as any;
     queue.add.mockClear();
 
     const patient = await repo.createResource<Patient>({
@@ -670,7 +661,7 @@ describe('Subscription Worker', () => {
     });
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getSubscriptionQueue() as any;
     queue.add.mockClear();
 
     await repo.createResource<Patient>({
@@ -717,7 +708,7 @@ describe('Subscription Worker', () => {
     });
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getSubscriptionQueue() as any;
     queue.add.mockClear();
 
     const patient = await repo.createResource<Patient>({
@@ -773,7 +764,7 @@ describe('Subscription Worker', () => {
     });
     expect(subscription).toBeDefined();
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getSubscriptionQueue() as any;
     queue.add.mockClear();
 
     const patient = await systemRepo.createResource<Patient>({

@@ -3,13 +3,10 @@ import { ClientApplication, Login, Practitioner, Project, ProjectMembership, Use
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import { initApp } from '../app';
+import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { systemRepo } from '../fhir';
-import { generateAccessToken, initKeys } from '../oauth';
-import { closeRedis, initRedis } from '../redis';
-import { seedDatabase } from '../seed';
+import { systemRepo } from '../fhir/repo';
+import { generateAccessToken } from '../oauth/keys';
 import { createTestProject } from '../test.setup';
 
 const app = express();
@@ -21,11 +18,7 @@ let nonAdminAccessToken: string;
 describe('Super Admin routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
 
     ({ project, client } = await createTestProject());
 
@@ -107,8 +100,7 @@ describe('Super Admin routes', () => {
   });
 
   afterAll(async () => {
-    await closeDatabase();
-    closeRedis();
+    await shutdownApp();
   });
 
   test('Rebuild ValueSetElements as super admin', async () => {

@@ -3,9 +3,10 @@ import { Login, Project, ProjectMembership, Reference, User } from '@medplum/fhi
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { createClient } from '../admin/client';
-import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
-import { setLoginMembership } from '../oauth';
+import { setLoginMembership } from '../oauth/utils';
 import { createProfile, createProjectMembership } from './utils';
 
 export interface NewProjectRequest {

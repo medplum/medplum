@@ -1,19 +1,15 @@
 import { Media } from '@medplum/fhirtypes';
-import { Job, Queue } from 'bullmq';
+import { Job } from 'bullmq';
 import { randomUUID } from 'crypto';
 import { mkdtempSync, rmSync } from 'fs';
 import fetch from 'node-fetch';
 import { sep } from 'path';
 import { Readable } from 'stream';
+import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { initBinaryStorage } from '../fhir';
 import { Repository } from '../fhir/repo';
-import { closeRedis, initRedis } from '../redis';
-import { seedDatabase } from '../seed';
-import { closeDownloadWorker, execDownloadJob, initDownloadWorker } from './download';
+import { closeDownloadWorker, execDownloadJob, getDownloadQueue } from './download';
 
-jest.mock('bullmq');
 jest.mock('node-fetch');
 
 const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
@@ -22,11 +18,7 @@ let repo: Repository;
 describe('Download Worker', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initBinaryStorage('file:' + binaryDir);
-    await initDownloadWorker(config.redis);
+    await initAppServices(config);
 
     repo = new Repository({
       project: randomUUID(),
@@ -37,9 +29,7 @@ describe('Download Worker', () => {
   });
 
   afterAll(async () => {
-    await closeDatabase();
-    closeRedis();
-    await closeDownloadWorker();
+    await shutdownApp();
     await closeDownloadWorker(); // Double close to ensure quite ignore
     rmSync(binaryDir, { recursive: true, force: true });
   });
@@ -51,7 +41,7 @@ describe('Download Worker', () => {
   test('Download external URL', async () => {
     const url = 'https://example.com/download';
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getDownloadQueue() as any;
     queue.add.mockClear();
 
     const media = await repo.createResource<Media>({
@@ -72,7 +62,12 @@ describe('Download Worker', () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
       headers: {
-        get: jest.fn(),
+        get(name: string): string | undefined {
+          return {
+            'content-disposition': 'attachment; filename=download',
+            'content-type': 'text/plain',
+          }[name];
+        },
       },
       body,
     }));
@@ -84,7 +79,7 @@ describe('Download Worker', () => {
   });
 
   test('Ignore media missing URL', async () => {
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getDownloadQueue() as any;
     queue.add.mockClear();
 
     const media = await repo.createResource<Media>({
@@ -102,7 +97,7 @@ describe('Download Worker', () => {
   test('Retry on 400', async () => {
     const url = 'https://example.com/download';
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getDownloadQueue() as any;
     queue.add.mockClear();
 
     const media = await repo.createResource<Media>({
@@ -127,7 +122,7 @@ describe('Download Worker', () => {
   test('Retry on exception', async () => {
     const url = 'https://example.com/download';
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getDownloadQueue() as any;
     queue.add.mockClear();
 
     const media = await repo.createResource<Media>({
@@ -152,7 +147,7 @@ describe('Download Worker', () => {
   });
 
   test('Stop retries if Resource deleted', async () => {
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getDownloadQueue() as any;
     queue.add.mockClear();
 
     const media = await repo.createResource<Media>({
@@ -178,7 +173,7 @@ describe('Download Worker', () => {
   });
 
   test('Stop if URL changed', async () => {
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getDownloadQueue() as any;
     queue.add.mockClear();
 
     const media = await repo.createResource<Media>({

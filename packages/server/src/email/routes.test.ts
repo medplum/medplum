@@ -2,12 +2,8 @@ import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import express from 'express';
 import { simpleParser } from 'mailparser';
 import request from 'supertest';
-import { initApp } from '../app';
+import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { initKeys } from '../oauth';
-import { closeRedis, initRedis } from '../redis';
-import { seedDatabase } from '../seed';
 import { initTestAuth } from '../test.setup';
 
 jest.mock('@aws-sdk/client-sesv2');
@@ -18,11 +14,7 @@ let accessToken: string;
 describe('Email API Routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
     accessToken = await initTestAuth();
   });
 
@@ -32,8 +24,7 @@ describe('Email API Routes', () => {
   });
 
   afterAll(async () => {
-    await closeDatabase();
-    closeRedis();
+    await shutdownApp();
   });
 
   test('Unauthenticated', async () => {

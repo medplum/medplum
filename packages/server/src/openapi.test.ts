@@ -1,25 +1,18 @@
 import express from 'express';
 import request from 'supertest';
-import { initApp } from './app';
+import { initApp, shutdownApp } from './app';
 import { loadTestConfig } from './config';
-import { closeDatabase, initDatabase } from './database';
-import { initKeys } from './oauth';
-import { closeRedis, initRedis } from './redis';
 
 const app = express();
 
 describe('OpenAPI', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
-    await initDatabase(config.database);
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
   });
 
   afterAll(async () => {
-    await closeDatabase();
-    closeRedis();
+    await shutdownApp();
   });
 
   test('Get /openapi.json', async () => {

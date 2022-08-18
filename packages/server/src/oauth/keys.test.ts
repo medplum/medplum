@@ -1,9 +1,8 @@
 import { randomUUID } from 'crypto';
 import { generateKeyPair, SignJWT } from 'jose';
+import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
-import { closeDatabase, getClient, initDatabase } from '../database';
-import { closeRedis, initRedis } from '../redis';
-import { seedDatabase } from '../seed';
+import { getClient } from '../database';
 import {
   generateAccessToken,
   generateIdToken,
@@ -18,14 +17,11 @@ import {
 describe('Keys', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
-    await initDatabase(config.database);
-    await seedDatabase();
+    await initAppServices(config);
   });
 
   afterAll(async () => {
-    await closeDatabase();
-    closeRedis();
+    await shutdownApp();
   });
 
   test('Init keys', async () => {
