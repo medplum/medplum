@@ -200,7 +200,7 @@ function rewriteLinks(description: string): string {
   // Replace all the links of [[[Type]]] with internal links
   const typeLinks = Array.from(description.matchAll(/\[\[\[([A-Z][a-z]*)*\]\]\]/gi));
   for (const match of typeLinks) {
-    description = description.replace(match[0], `[${match[1]}](./${match[1]})`);
+    description = description.replace(match[0], `[${match[1]}](./${match[1].toLowerCase()})`);
     console.log(match[0], description);
   }
 

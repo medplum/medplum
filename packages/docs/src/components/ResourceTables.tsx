@@ -118,12 +118,14 @@ function renderReferenceType(referenceTypes: string[]): JSX.Element {
       <span>Reference&lt;</span>
       {referenceTypes?.map((refType, i) => (
         <>
-          {
+          {refType !== 'Resource' ? (
             <a href={`./${refType.toLowerCase()}`}>
               {i === 0 && verticalizeLinks ? '\n  ' : ''}
               {refType}
             </a>
-          }
+          ) : (
+            <em>Resource</em>
+          )}
           <span>{separator(i)}</span>
         </>
       ))}
