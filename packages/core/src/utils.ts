@@ -502,7 +502,7 @@ export function capitalize(word: string): string {
 }
 
 export function isLowerCase(c: string): boolean {
-  return c === c.toLowerCase();
+  return c === c.toLowerCase() && c !== c.toUpperCase();
 }
 
 /**

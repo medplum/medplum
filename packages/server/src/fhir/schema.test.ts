@@ -25,7 +25,7 @@ describe('FHIR schema', () => {
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('name');
+      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Patient.name');
     }
   });
 
@@ -50,9 +50,9 @@ describe('FHIR schema', () => {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue).toHaveLength(2);
       expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('status');
+      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('DiagnosticReport.status');
       expect(outcome.issue?.[1]?.severity).toEqual('error');
-      expect(outcome.issue?.[1]?.expression?.[0]).toEqual('code');
+      expect(outcome.issue?.[1]?.expression?.[0]).toEqual('DiagnosticReport.code');
     }
   });
 
@@ -149,4 +149,28 @@ describe('FHIR schema', () => {
       expect(outcome.issue?.[0]?.expression?.[0]).toEqual('item[0].item[0].item[0].item[0].item');
     }
   });
+
+  test('Primitive types', () => {
+    try {
+      validateResource({
+        resourceType: 'Slot',
+        schedule: { reference: 'Schedule/1' },
+        status: 'free',
+        start: 'x',
+        end: 'x',
+      });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue).toHaveLength(2);
+      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Slot.start');
+      expect(outcome.issue?.[1]?.severity).toEqual('error');
+      expect(outcome.issue?.[1]?.expression?.[0]).toEqual('Slot.end');
+    }
+  });
 });
+
+function fail(reason = 'fail was called in a test.'): never {
+  throw new Error(reason);
+}

@@ -18,6 +18,9 @@ const patientStructureDefinition: StructureDefinition = {
   snapshot: {
     element: [
       {
+        path: 'Patient',
+      },
+      {
         path: 'Patient.id',
         type: [
           {
