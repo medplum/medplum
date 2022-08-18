@@ -58,7 +58,7 @@ function addStructureDefinitions(fileName: string, output: StructureDefinition[]
 }
 
 function keyReplacer(key: string, value: any): any {
-  if (key !== '' && !key.match(/\d+/) && !properties.includes(key)) {
+  if (key !== '' && !key.match(/\d+/) && !resourceTypes.includes(key) && !properties.includes(key)) {
     return undefined;
   }
   return value;

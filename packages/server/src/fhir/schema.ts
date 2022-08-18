@@ -4,6 +4,7 @@ import {
   isEmpty,
   isLowerCase,
   OperationOutcomeError,
+  PropertyType,
   toTypedValue,
   TypedValue,
 } from '@medplum/core';
@@ -119,52 +120,52 @@ export class FhirSchemaValidator<T extends Resource> {
 
   #validatePrimitiveType(typedValue: TypedValue, elementDefinition: ElementDefinition): void {
     switch (typedValue.type) {
-      case 'base64Binary':
+      case PropertyType.base64Binary:
         this.#validateBase64Binary(typedValue, elementDefinition);
         break;
-      case 'boolean':
+      case PropertyType.boolean:
         this.#validateBoolean(typedValue, elementDefinition);
         break;
-      case 'date':
+      case PropertyType.date:
         this.#validateDate(typedValue, elementDefinition);
         break;
-      case 'dateTime':
+      case PropertyType.dateTime:
         this.#validateDateTime(typedValue, elementDefinition);
         break;
-      case 'decimal':
+      case PropertyType.decimal:
         this.#validateDecimal(typedValue, elementDefinition);
         break;
-      case 'id':
+      case PropertyType.id:
         this.#validateId(typedValue, elementDefinition);
         break;
-      case 'instant':
+      case PropertyType.instant:
         this.#validateInstant(typedValue, elementDefinition);
         break;
-      case 'integer':
+      case PropertyType.integer:
         this.#validateInteger(typedValue, elementDefinition);
         break;
-      case 'oid':
+      case PropertyType.oid:
         this.#validateOid(typedValue, elementDefinition);
         break;
-      case 'positiveInt':
+      case PropertyType.positiveInt:
         this.#validatePositiveInt(typedValue, elementDefinition);
         break;
-      case 'canonical':
-      case 'code':
-      case 'markdown':
-      case 'string':
-      case 'uri':
-      case 'url':
-      case 'http://hl7.org/fhirpath/System.String':
+      case PropertyType.canonical:
+      case PropertyType.code:
+      case PropertyType.markdown:
+      case PropertyType.string:
+      case PropertyType.uri:
+      case PropertyType.url:
+      case PropertyType.SystemString:
         this.#validateString(typedValue, elementDefinition);
         break;
-      case 'time':
+      case PropertyType.time:
         this.#validateTime(typedValue, elementDefinition);
         break;
-      case 'unsignedInt':
+      case PropertyType.unsignedInt:
         this.#validateUnsignedInt(typedValue, elementDefinition);
         break;
-      case 'uuid':
+      case PropertyType.uuid:
         this.#validateUuid(typedValue, elementDefinition);
         break;
       default:
@@ -176,7 +177,7 @@ export class FhirSchemaValidator<T extends Resource> {
     if (!this.#validateString(typedValue, elementDefinition)) {
       return;
     }
-    if (!typedValue.value.match(/[a-zA-Z0-9+/]*={0,2}$/)) {
+    if (!typedValue.value.match(/^[a-zA-Z0-9+/]*={0,2}$/)) {
       this.#createIssue(elementDefinition, 'Invalid base64Binary format');
     }
   }
@@ -192,7 +193,7 @@ export class FhirSchemaValidator<T extends Resource> {
       return;
     }
     const regex = new RegExp(
-      '([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2][0-9]|3[0-1]))?)?'
+      '^([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2][0-9]|3[0-1]))?)?$'
     );
     if (!typedValue.value.match(regex)) {
       this.#createIssue(elementDefinition, 'Invalid date format');
@@ -205,7 +206,7 @@ export class FhirSchemaValidator<T extends Resource> {
       return;
     }
     const regex = new RegExp(
-      '([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2][0-9]|3[0-1])(T([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\\.[0-9]+)?(Z|(\\+|-)((0[0-9]|1[0-3]):[0-5][0-9]|14:00)))?)?)?'
+      '^([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2][0-9]|3[0-1])(T([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\\.[0-9]+)?(Z|(\\+|-)((0[0-9]|1[0-3]):[0-5][0-9]|14:00)))?)?)?$'
     );
     if (!typedValue.value.match(regex)) {
       this.#createIssue(elementDefinition, 'Invalid dateTime format');
@@ -215,11 +216,11 @@ export class FhirSchemaValidator<T extends Resource> {
 
   #validateDecimal(typedValue: TypedValue, elementDefinition: ElementDefinition): boolean {
     if (typeof typedValue.value !== 'number') {
-      this.#createIssue(elementDefinition, 'Invalid type for decimal');
+      this.#createIssue(elementDefinition, 'Invalid type for ' + typedValue.type);
       return false;
     }
     if (isNaN(typedValue.value) || !isFinite(typedValue.value)) {
-      this.#createIssue(elementDefinition, 'Invalid decimal value');
+      this.#createIssue(elementDefinition, 'Invalid ' + typedValue.type + ' value');
       return false;
     }
     return true;
