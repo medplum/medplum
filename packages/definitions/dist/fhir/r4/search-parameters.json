@@ -65768,5 +65768,24 @@
       "xpath" : "f:UserConfiguration/f:name",
       "xpathUsage" : "normal"
     }
+  },
+  {
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/AccessPolicy-name",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "AccessPolicy-name",
+      "url" : "https://medplum.com/fhir/SearchParameter/AccessPolicy-name",
+      "version" : "4.0.1",
+      "name" : "name",
+      "status" : "draft",
+      "publisher" : "Medplum",
+      "description" : "The name of the access policy",
+      "code" : "name",
+      "base" : ["AccessPolicy"],
+      "type" : "string",
+      "expression" : "AccessPolicy.name",
+      "xpath" : "f:AccessPolicy/f:name",
+      "xpathUsage" : "normal"
+    }
   }]
 }
