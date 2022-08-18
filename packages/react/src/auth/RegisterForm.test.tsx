@@ -118,7 +118,7 @@ async function setup(props: RegisterFormProps): Promise<void> {
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <RegisterForm {...props}>
-            <h1>Create new account</h1>
+            <h1>My Register Form</h1>
           </RegisterForm>
         </MedplumProvider>
       </MemoryRouter>
@@ -156,6 +156,8 @@ describe('RegisterForm', () => {
       recaptchaSiteKey,
       onSuccess,
     });
+
+    expect(screen.getByText('My Register Form')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('firstName'), { target: { value: 'First' } });

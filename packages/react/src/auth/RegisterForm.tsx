@@ -53,7 +53,9 @@ export function RegisterForm(props: RegisterFormProps): JSX.Element {
           googleClientId={googleClientId}
           recaptchaSiteKey={recaptchaSiteKey}
           handleAuthResponse={handleAuthResponse}
-        />
+        >
+          {props.children}
+        </NewUserForm>
       )}
       {login && type === 'project' && <NewProjectForm login={login} handleAuthResponse={handleAuthResponse} />}
     </Document>
