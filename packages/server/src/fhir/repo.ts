@@ -1581,7 +1581,6 @@ export async function getRepoForLogin(login: Login, membership: ProjectMembershi
 
 export const systemRepo = new Repository({
   superAdmin: true,
-  strictMode: true,
   author: {
     reference: 'system',
   },
