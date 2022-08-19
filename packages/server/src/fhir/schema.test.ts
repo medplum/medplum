@@ -16,8 +16,13 @@ import { validateResource, validateResourceType } from './schema';
 describe('FHIR schema', () => {
   test('validateResourceType', () => {
     expect(() => validateResourceType('')).toThrow();
+    expect(() => validateResourceType('instant')).toThrow();
     expect(() => validateResourceType('FakeResource')).toThrow();
+    expect(() => validateResourceType('PatientCommunication')).toThrow();
+    expect(() => validateResourceType('Patient_Communication')).toThrow();
+    expect(() => validateResourceType('Observation')).not.toThrow();
     expect(() => validateResourceType('Patient')).not.toThrow();
+    expect(() => validateResourceType('ServiceRequest')).not.toThrow();
   });
 
   test('validateResource', () => {
@@ -330,11 +335,39 @@ describe('FHIR schema', () => {
     appt.minutesDuration = -1;
     expect(() => validateResource(appt)).toThrowError('Number is less than or equal to zero');
 
+    appt.minutesDuration = 0;
+    expect(() => validateResource(appt)).toThrowError('Number is less than or equal to zero');
+
     appt.minutesDuration = 10;
+    expect(() => validateResource(appt)).not.toThrow();
+  });
+
+  test('unsignedInt', () => {
+    const appt: Appointment = { resourceType: 'Appointment', status: 'booked', participant: [{ status: 'accepted' }] };
+
+    appt.priority = 'x' as unknown as number;
+    expect(() => validateResource(appt)).toThrowError('Invalid type for unsignedInt');
+
+    appt.priority = NaN;
+    expect(() => validateResource(appt)).toThrowError('Invalid unsignedInt value');
+
+    appt.priority = Infinity;
+    expect(() => validateResource(appt)).toThrowError('Invalid unsignedInt value');
+
+    appt.priority = 123.5;
+    expect(() => validateResource(appt)).toThrowError('Number is not an integer');
+
+    appt.priority = -1;
+    expect(() => validateResource(appt)).toThrowError('Number is negative');
+
+    appt.priority = 0;
+    expect(() => validateResource(appt)).not.toThrow();
+
+    appt.priority = 10;
     expect(() => validateResource(appt)).not.toThrow();
   });
 });
 
-function fail(reason = 'fail was called in a test.'): never {
+function fail(reason: string): never {
   throw new Error(reason);
 }

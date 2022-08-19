@@ -31,12 +31,13 @@ const OID_REGEX = /^urn:oid:[0-2](\.(0|[1-9][0-9]*))+$/;
 const TIME_REGEX = /^([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\.[0-9]+)?$/;
 const UUID_REGEX = /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-export function getResourceTypes(): string[] {
-  return Object.keys(getStructureDefinitions().types);
-}
-
 export function isResourceType(resourceType: string): boolean {
-  return resourceType in getStructureDefinitions().types;
+  const typeSchema = getStructureDefinitions().types[resourceType];
+  return (
+    typeSchema &&
+    typeSchema.structureDefinition.id === resourceType &&
+    typeSchema.structureDefinition.kind === 'resource'
+  );
 }
 
 export function validateResourceType(resourceType: string): void {
@@ -186,8 +187,6 @@ export class FhirSchemaValidator<T extends Resource> {
       case PropertyType.uuid:
         this.#validateUuid(typedValue, elementDefinition);
         break;
-      default:
-        this.#createIssue(elementDefinition, 'Invalid primitive type');
     }
   }
 
