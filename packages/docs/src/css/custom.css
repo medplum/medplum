@@ -98,3 +98,7 @@ h1 {
 .prism-code {
   box-shadow: var(--code-block-shadow);
 }
+
+div.theme-code-block {
+  margin-bottom: 5ch;
+}
