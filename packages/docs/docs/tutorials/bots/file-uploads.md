@@ -1,6 +1,6 @@
 # Uploading Files
 
-In digital health, a common pattern is to upload PDFs or other files from one system to another. Examples include:
+In digital health, a common requirement is to upload PDFs or other files from one system to another. Examples include:
 
 - Uploading pathology reports into a legacy EHR
 - Uploading service requisitions into an SFTP server
@@ -12,9 +12,9 @@ In this guide, we will show you how to:
 
 ## HTTP File Uploads
 
-To upload to a file using http, you will have to submit an HTTP request with the `Content-Type` `multipart/form-data`. Medplum Bots ship with the npm [`form-data`](https://www.npmjs.com/package/form-data) to make it easier to create form data.
+To upload to a file using http, you will have to submit an HTTP request with the `Content-Type` `multipart/form-data`. Medplum Bots ship with the npm [`form-data`](https://www.npmjs.com/package/form-data) package to make it easier to create form data.
 
-Let's take a look at an example. First, we'll create a pdf (see the [Create a PDF](./creating-a-pdf.md) tutorial for more details)
+Let's take a look at an example. First, we'll create a pdf (see the [Create a PDF tutorial](./creating-a-pdf.md) for more details)
 
 ```ts
 const binary = await medplum.createPdf({
@@ -23,7 +23,7 @@ const binary = await medplum.createPdf({
 console.log('Binary result', JSON.stringify(binary, null, 2));
 ```
 
-[`medplum.createPdf()`]() creates a [`Binary`] resource and stores it on the Medplum server. Our next step will be to `download` the resulting PDF data, and convert it to a stream to send to our 3rd party API.
+[`medplum.createPdf()`](/docs/sdk/classes/MedplumClient.md#createpdf) creates a [`Binary`](/docs/api/fhir/resources/binary.mdx) resource and stores it on the Medplum server. Our next step will be to download the resulting PDF data, and convert it to a stream to send to our 3rd party API.
 
 ```ts
 // Download the PDF
@@ -51,7 +51,7 @@ const response = await fetch('https://httpbin.org/post', {
 });
 ```
 
-This is what it looks like all put together. You can also see this example in our [Medplum Demo Bots](#) repo.
+This is what it looks like all put together. You can also see this example in our [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/form-data-upload.ts) repo.
 
 ```ts
 import { BotEvent, MedplumClient } from '@medplum/core';
@@ -96,4 +96,4 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
 _Coming Soon_
 
-_If you need this feature sooner, please reach out to us at [support@medplum.com](mailto:support@medplum.com) or ping us in our [Discord](support@medplum.com)_
+_If you need this feature sooner, please reach out to us at [support@medplum.com](mailto:support@medplum.com) or ping us in our [Discord](https://discord.gg/UBAWwvrVeN)_
