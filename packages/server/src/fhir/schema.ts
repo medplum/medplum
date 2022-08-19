@@ -13,6 +13,24 @@ import { randomUUID } from 'crypto';
 import { getStructureDefinitions } from './structure';
 import { checkForNull, createStructureIssue, validationError } from './utils';
 
+/*
+ * The regular expressions for FHIR primitives in JSON strings.
+ * Based on the official regular expression in packages/definitions/dist/fhir/r4/profiles-types.json
+ * Added '^' and '$' for start of line and end of line.
+ */
+
+const BASE64_BINARY_REGEX = /^[a-zA-Z0-9+/]*={0,2}$/;
+const DATE_REGEX =
+  /^([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2][0-9]|3[0-1]))?)?$/;
+const DATE_TIME_REGEX =
+  /^([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2][0-9]|3[0-1])(T([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\.[0-9]+)?(Z|(\+|-)((0[0-9]|1[0-3]):[0-5][0-9]|14:00)))?)?)?$/;
+const ID_REGEX = /^[A-Za-z0-9\-.]{1,64}$/;
+const INSTANT_REGEX =
+  /^([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])T([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\.[0-9]+)?(Z|(\+|-)((0[0-9]|1[0-3]):[0-5][0-9]|14:00))$/;
+const OID_REGEX = /^urn:oid:[0-2](\.(0|[1-9][0-9]*))+$/;
+const TIME_REGEX = /^([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\.[0-9]+)?$/;
+const UUID_REGEX = /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
 export function getResourceTypes(): string[] {
   return Object.keys(getStructureDefinitions().types);
 }
@@ -177,7 +195,7 @@ export class FhirSchemaValidator<T extends Resource> {
     if (!this.#validateString(typedValue, elementDefinition)) {
       return;
     }
-    if (!typedValue.value.match(/^[a-zA-Z0-9+/]*={0,2}$/)) {
+    if (!typedValue.value.match(BASE64_BINARY_REGEX)) {
       this.#createIssue(elementDefinition, 'Invalid base64Binary format');
     }
   }
@@ -192,12 +210,8 @@ export class FhirSchemaValidator<T extends Resource> {
     if (!this.#validateString(typedValue, elementDefinition)) {
       return;
     }
-    const regex = new RegExp(
-      '^([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2][0-9]|3[0-1]))?)?$'
-    );
-    if (!typedValue.value.match(regex)) {
+    if (!typedValue.value.match(DATE_REGEX)) {
       this.#createIssue(elementDefinition, 'Invalid date format');
-      return;
     }
   }
 
@@ -205,12 +219,8 @@ export class FhirSchemaValidator<T extends Resource> {
     if (!this.#validateString(typedValue, elementDefinition)) {
       return;
     }
-    const regex = new RegExp(
-      '^([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2][0-9]|3[0-1])(T([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\\.[0-9]+)?(Z|(\\+|-)((0[0-9]|1[0-3]):[0-5][0-9]|14:00)))?)?)?$'
-    );
-    if (!typedValue.value.match(regex)) {
+    if (!typedValue.value.match(DATE_TIME_REGEX)) {
       this.#createIssue(elementDefinition, 'Invalid dateTime format');
-      return;
     }
   }
 
@@ -230,10 +240,8 @@ export class FhirSchemaValidator<T extends Resource> {
     if (!this.#validateString(typedValue, elementDefinition)) {
       return;
     }
-    const regex = new RegExp('[A-Za-z0-9\\-\\.]{1,64}');
-    if (!typedValue.value.match(regex)) {
+    if (!typedValue.value.match(ID_REGEX)) {
       this.#createIssue(elementDefinition, 'Invalid id format');
-      return;
     }
   }
 
@@ -241,12 +249,8 @@ export class FhirSchemaValidator<T extends Resource> {
     if (!this.#validateString(typedValue, elementDefinition)) {
       return;
     }
-    const regex = new RegExp(
-      '([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])T([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\\.[0-9]+)?(Z|(\\+|-)((0[0-9]|1[0-3]):[0-5][0-9]|14:00))'
-    );
-    if (!typedValue.value.match(regex)) {
+    if (!typedValue.value.match(INSTANT_REGEX)) {
       this.#createIssue(elementDefinition, 'Invalid instant format');
-      return;
     }
   }
 
@@ -265,10 +269,8 @@ export class FhirSchemaValidator<T extends Resource> {
     if (!this.#validateString(typedValue, elementDefinition)) {
       return;
     }
-    const regex = new RegExp('urn:oid:[0-2](\\.(0|[1-9][0-9]*))+');
-    if (!typedValue.value.match(regex)) {
+    if (!typedValue.value.match(OID_REGEX)) {
       this.#createIssue(elementDefinition, 'Invalid oid format');
-      return;
     }
   }
 
@@ -297,10 +299,8 @@ export class FhirSchemaValidator<T extends Resource> {
     if (!this.#validateString(typedValue, elementDefinition)) {
       return;
     }
-    const regex = new RegExp('([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\\.[0-9]+)?');
-    if (!typedValue.value.match(regex)) {
+    if (!typedValue.value.match(TIME_REGEX)) {
       this.#createIssue(elementDefinition, 'Invalid time format');
-      return;
     }
   }
 
@@ -317,10 +317,8 @@ export class FhirSchemaValidator<T extends Resource> {
     if (!this.#validateString(typedValue, elementDefinition)) {
       return;
     }
-    const regex = new RegExp('urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}');
-    if (!typedValue.value.match(regex)) {
+    if (!typedValue.value.match(UUID_REGEX)) {
       this.#createIssue(elementDefinition, 'Invalid uuid format');
-      return;
     }
   }
 
