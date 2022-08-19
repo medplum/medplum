@@ -1,20 +1,18 @@
 import { Project } from '@medplum/fhirtypes';
+import { initAppServices, shutdownApp } from './app';
 import { loadTestConfig } from './config';
-import { closeDatabase, getClient, initDatabase } from './database';
+import { getClient } from './database';
 import { Operator, SelectQuery } from './fhir/sql';
-import { closeRedis, initRedis } from './redis';
 import { seedDatabase } from './seed';
 
 describe('Seed', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
-    await initDatabase(config.database);
+    await initAppServices(config);
   });
 
   afterAll(async () => {
-    await closeDatabase();
-    closeRedis();
+    await shutdownApp();
   });
 
   test('Seeder completes successfully', async () => {

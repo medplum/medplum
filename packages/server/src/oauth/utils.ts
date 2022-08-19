@@ -11,7 +11,7 @@ import { BundleEntry, ClientApplication, Login, Project, ProjectMembership, Refe
 import bcrypt from 'bcryptjs';
 import { timingSafeEqual } from 'crypto';
 import { JWTPayload } from 'jose';
-import { systemRepo } from '../fhir';
+import { systemRepo } from '../fhir/repo';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
 
 export interface LoginRequest {

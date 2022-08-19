@@ -8,23 +8,18 @@ import {
   ServiceRequest,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { closeRedis, initRedis } from '../redis';
-import { seedDatabase } from '../seed';
 import { getRepoForLogin, Repository, systemRepo } from './repo';
 
 describe('AccessPolicy', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
-    await initDatabase(config.database);
-    await seedDatabase();
+    await initAppServices(config);
   });
 
   afterAll(async () => {
-    await closeDatabase();
-    closeRedis();
+    await shutdownApp();
   });
 
   test('Access policy restricting read', async () => {

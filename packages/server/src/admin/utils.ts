@@ -1,7 +1,7 @@
 import { Operator } from '@medplum/core';
 import { BundleEntry, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { systemRepo } from '../fhir';
+import { systemRepo } from '../fhir/repo';
 
 /**
  * Verifies that the current user is a project admin.

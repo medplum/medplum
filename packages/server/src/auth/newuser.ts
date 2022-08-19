@@ -6,9 +6,10 @@ import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { getConfig } from '../config';
-import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
-import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth';
+import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
 import { verifyRecaptcha } from './utils';
 
 export const newUserValidators = [

@@ -1,8 +1,8 @@
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { invalidRequest, sendOutcome } from '../fhir';
-import { tryLogin } from '../oauth';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { tryLogin } from '../oauth/utils';
 import { sendLoginResult } from './utils';
 
 export const loginValidators = [

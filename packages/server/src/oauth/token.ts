@@ -3,7 +3,7 @@ import { ClientApplication, Login, ProjectMembership, Reference } from '@medplum
 import { createHash } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
-import { systemRepo } from '../fhir';
+import { systemRepo } from '../fhir/repo';
 import { generateAccessToken, generateSecret, MedplumRefreshTokenClaims, verifyJwt } from './keys';
 import { getAuthTokens, getUserMemberships, revokeLogin, timingSafeEqualStr } from './utils';
 

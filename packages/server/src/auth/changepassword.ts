@@ -4,8 +4,9 @@ import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { pwnedPassword } from 'hibp';
-import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
-import { authenticateTokenImpl } from '../oauth';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { systemRepo } from '../fhir/repo';
+import { authenticateTokenImpl } from '../oauth/middleware';
 
 export const changePasswordValidators = [
   body('oldPassword').notEmpty().withMessage('Missing oldPassword'),

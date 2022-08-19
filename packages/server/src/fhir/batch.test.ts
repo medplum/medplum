@@ -9,10 +9,8 @@ import {
   Subscription,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { closeRedis, initRedis } from '../redis';
-import { seedDatabase } from '../seed';
 import { processBatch } from './batch';
 import { Repository } from './repo';
 
@@ -21,9 +19,7 @@ let repo: Repository;
 describe('Batch', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
-    await initDatabase(config.database);
-    await seedDatabase();
+    await initAppServices(config);
 
     repo = new Repository({
       project: randomUUID(),
@@ -34,8 +30,7 @@ describe('Batch', () => {
   });
 
   afterAll(async () => {
-    await closeDatabase();
-    closeRedis();
+    await shutdownApp();
   });
 
   test('Process batch with missing bundle type', async () => {

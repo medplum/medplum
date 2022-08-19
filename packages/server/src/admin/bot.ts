@@ -2,7 +2,8 @@ import { createReference } from '@medplum/core';
 import { AccessPolicy, Bot, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { invalidRequest, Repository, sendOutcome, systemRepo } from '../fhir';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { Repository, systemRepo } from '../fhir/repo';
 import { verifyProjectAdmin } from './utils';
 
 export const createBotValidators = [body('name').notEmpty().withMessage('Bot name is required')];

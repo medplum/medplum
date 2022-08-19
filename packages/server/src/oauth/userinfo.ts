@@ -9,7 +9,7 @@ import {
 } from '@medplum/core';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
-import { systemRepo } from '../fhir';
+import { systemRepo } from '../fhir/repo';
 
 /**
  * Handles the OAuth/OpenID UserInfo Endpoint.

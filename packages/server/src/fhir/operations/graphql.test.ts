@@ -5,14 +5,9 @@ import express from 'express';
 import { mkdtempSync, rmSync } from 'fs';
 import { sep } from 'path';
 import request from 'supertest';
-import { initApp } from '../../app';
+import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { closeDatabase, initDatabase } from '../../database';
-import { initKeys } from '../../oauth';
-import { closeRedis, initRedis } from '../../redis';
-import { seedDatabase } from '../../seed';
 import { initTestAuth } from '../../test.setup';
-import { initBinaryStorage } from '../storage';
 
 const app = express();
 const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
@@ -26,12 +21,7 @@ let encounter2: Encounter;
 describe('GraphQL', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initBinaryStorage('file:' + binaryDir);
-    await initKeys(config);
+    await initApp(app, config);
     accessToken = await initTestAuth();
 
     // Create a profile picture
@@ -122,8 +112,7 @@ describe('GraphQL', () => {
   });
 
   afterAll(async () => {
-    await closeDatabase();
-    closeRedis();
+    await shutdownApp();
     rmSync(binaryDir, { recursive: true, force: true });
   });
 

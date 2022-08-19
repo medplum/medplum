@@ -2,8 +2,9 @@ import { createReference } from '@medplum/core';
 import { AccessPolicy, ClientApplication, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { invalidRequest, Repository, sendOutcome, systemRepo } from '../fhir';
-import { generateSecret } from '../oauth';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { Repository, systemRepo } from '../fhir/repo';
+import { generateSecret } from '../oauth/keys';
 import { verifyProjectAdmin } from './utils';
 
 export const createClientValidators = [body('name').notEmpty().withMessage('Client name is required')];

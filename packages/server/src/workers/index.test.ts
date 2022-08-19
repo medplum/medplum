@@ -1,11 +1,9 @@
 import { closeWorkers, initWorkers } from '.';
 import { loadTestConfig } from '../config';
 import { closeDatabase, initDatabase } from '../database';
-import { initBinaryStorage } from '../fhir';
+import { initBinaryStorage } from '../fhir/storage';
 import { closeRedis, initRedis } from '../redis';
 import { seedDatabase } from '../seed';
-
-jest.mock('bullmq');
 
 describe('Workers', () => {
   test('Init and close', async () => {
@@ -13,7 +11,7 @@ describe('Workers', () => {
     initRedis(config.redis);
     await initDatabase(config.database);
     await seedDatabase();
-    await initBinaryStorage('file:binary');
+    initBinaryStorage('file:binary');
     initWorkers(config.redis);
     await closeWorkers();
     await closeDatabase();

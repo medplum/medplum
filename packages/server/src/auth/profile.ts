@@ -1,8 +1,9 @@
 import { Login } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
-import { setLoginMembership } from '../oauth';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { systemRepo } from '../fhir/repo';
+import { setLoginMembership } from '../oauth/utils';
 
 /*
  * The profile handler is used during login when a user has multiple profiles.

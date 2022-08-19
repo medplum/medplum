@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import { URL } from 'url';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
-import { systemRepo } from '../fhir';
+import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { MedplumIdTokenClaims, verifyJwt } from './keys';
 

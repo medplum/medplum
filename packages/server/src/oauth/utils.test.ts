@@ -1,11 +1,8 @@
 import { ClientApplication, OperationOutcome } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { closeRedis, initRedis } from '../redis';
-import { seedDatabase } from '../seed';
 import { createTestClient } from '../test.setup';
-import { initKeys } from './keys';
 import { tryLogin, validateLoginRequest } from './utils';
 
 let client: ClientApplication;
@@ -13,16 +10,12 @@ let client: ClientApplication;
 describe('OAuth utils', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initKeys(config);
+    await initAppServices(config);
     client = await createTestClient();
   });
 
   afterAll(async () => {
-    await closeDatabase();
-    closeRedis();
+    await shutdownApp();
   });
 
   test('Login with invalid client ID', async () => {

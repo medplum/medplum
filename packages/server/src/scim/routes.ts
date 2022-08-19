@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express';
-import { authenticateToken } from '../oauth';
+import { authenticateToken } from '../oauth/middleware';
 
 export const scimRouter = Router();
 scimRouter.use(authenticateToken);

@@ -7,9 +7,11 @@ import { resetPassword } from '../auth/resetpassword';
 import { createProfile, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config';
 import { sendEmail } from '../email/email';
-import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
-import { generateSecret, getUserByEmailWithoutProject } from '../oauth';
+import { generateSecret } from '../oauth/keys';
+import { getUserByEmailWithoutProject } from '../oauth/utils';
 import { verifyProjectAdmin } from './utils';
 
 export const inviteValidators = [

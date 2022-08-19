@@ -11,10 +11,10 @@ import {
 } from '@medplum/fhirtypes';
 import { Response } from 'express';
 import fetch from 'node-fetch';
-import { systemRepo } from '../fhir';
+import { systemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { logger } from '../logger';
-import { getUserMemberships } from '../oauth';
+import { getUserMemberships } from '../oauth/utils';
 
 export async function createProfile(
   project: Project,

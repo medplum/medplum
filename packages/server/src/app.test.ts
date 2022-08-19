@@ -1,48 +1,52 @@
 import express from 'express';
 import request from 'supertest';
-import { initApp } from './app';
+import { initApp, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config';
 
 describe('App', () => {
   test('Get HTTP config', async () => {
     const app = express();
-    await loadTestConfig();
-    await initApp(app);
+    const config = await loadTestConfig();
+    await initApp(app, config);
     const res = await request(app).get('/');
     expect(res.status).toBe(200);
     expect(res.headers['cache-control']).toBeDefined();
     expect(res.headers['content-security-policy']).toBeDefined();
     expect(res.headers['referrer-policy']).toBeDefined();
+    await shutdownApp();
   });
 
   test('Get HTTPS config', async () => {
     const app = express();
-    await loadTestConfig();
+    const config = await loadTestConfig();
     getConfig().baseUrl = 'https://example.com/';
-    await initApp(app);
+    await initApp(app, config);
     const res = await request(app).get('/');
     expect(res.status).toBe(200);
     expect(res.headers['cache-control']).toBeDefined();
     expect(res.headers['content-security-policy']).toBeDefined();
     expect(res.headers['strict-transport-security']).toBeDefined();
+    await shutdownApp();
   });
 
   test('robots.txt', async () => {
     const app = express();
-    await loadTestConfig();
-    await initApp(app);
+    const config = await loadTestConfig();
+    await initApp(app, config);
     const res = await request(app).get('/robots.txt');
     expect(res.status).toBe(200);
     expect(res.text).toBe('User-agent: *\nDisallow: /');
+    await shutdownApp();
   });
 
   test('No CORS', async () => {
     const app = express();
-    await loadTestConfig();
-    await initApp(app);
+    const config = await loadTestConfig();
+    await initApp(app, config);
     const res = await request(app).get('/').set('Origin', 'https://blackhat.xyz');
     expect(res.status).toBe(200);
     expect(res.headers['origin']).toBeUndefined();
+    await shutdownApp();
   });
 
   test('Internal Server Error', async () => {
@@ -50,11 +54,12 @@ describe('App', () => {
     app.get('/throw', () => {
       throw new Error('Error');
     });
-    await loadTestConfig();
-    await initApp(app);
+    const config = await loadTestConfig();
+    await initApp(app, config);
     const res = await request(app).get('/throw');
     expect(res.status).toBe(500);
     expect(res.body).toMatchObject({ msg: 'Internal Server Error' });
+    await shutdownApp();
   });
 
   test.skip('Preflight max age', async () => {
@@ -63,5 +68,6 @@ describe('App', () => {
     expect(res.status).toBe(204);
     expect(res.header['access-control-max-age']).toBe('86400');
     expect(res.header['cache-control']).toBe('public, max-age=86400');
+    await shutdownApp();
   });
 });

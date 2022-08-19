@@ -4,13 +4,9 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { inviteUser } from '../admin/invite';
-import { initApp } from '../app';
+import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { systemRepo } from '../fhir';
-import { initKeys } from '../oauth';
-import { closeRedis, initRedis } from '../redis';
-import { seedDatabase } from '../seed';
+import { systemRepo } from '../fhir/repo';
 import { registerNew } from './register';
 
 jest.mock('@aws-sdk/client-sesv2');
@@ -25,11 +21,7 @@ let profile2: ProfileResource;
 describe('Profile', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
 
     // Create a user with multiple profiles
     // Use the same user/email in the same project
@@ -53,8 +45,7 @@ describe('Profile', () => {
   });
 
   afterAll(async () => {
-    await closeDatabase();
-    closeRedis();
+    await shutdownApp();
   });
 
   test('Missing login', async () => {

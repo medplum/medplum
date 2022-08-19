@@ -6,19 +6,29 @@ import { Express, json, NextFunction, Request, Response, text, urlencoded } from
 import { adminRouter } from './admin';
 import { asyncWrap } from './async';
 import { authRouter } from './auth';
-import { getConfig } from './config';
+import { getConfig, MedplumServerConfig } from './config';
 import { corsOptions } from './cors';
-import { dicomRouter } from './dicom/routes';
+import { closeDatabase, initDatabase } from './database';
+import { dicomRouter } from './dicom';
 import { emailRouter } from './email/routes';
-import { binaryRouter, fhirRouter, sendOutcome } from './fhir';
+import { binaryRouter } from './fhir/binary';
+import { sendOutcome } from './fhir/outcomes';
+import { fhirRouter } from './fhir/routes';
+import { initBinaryStorage } from './fhir/storage';
 import { healthcheckHandler } from './healthcheck';
 import { hl7BodyParser } from './hl7/parser';
 import { logger } from './logger';
-import { authenticateToken, oauthRouter } from './oauth';
+import { initKeys } from './oauth/keys';
+import { authenticateToken } from './oauth/middleware';
+import { oauthRouter } from './oauth/routes';
 import { openApiHandler } from './openapi';
+import { closeRateLimiter } from './ratelimit';
+import { closeRedis, initRedis } from './redis';
 import { scimRouter } from './scim';
+import { seedDatabase } from './seed';
 import { storageRouter } from './storage';
 import { wellKnownRouter } from './wellknown';
+import { closeWorkers, initWorkers } from './workers';
 
 /**
  * Sets standard headers for all requests.
@@ -93,8 +103,9 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
   res.status(500).json({ msg: 'Internal Server Error' });
 }
 
-export async function initApp(app: Express): Promise<Express> {
-  const config = getConfig();
+export async function initApp(app: Express, config: MedplumServerConfig): Promise<Express> {
+  await initAppServices(config);
+
   app.set('trust proxy', true);
   app.set('x-powered-by', false);
   app.use(standardHeaders);
@@ -137,4 +148,20 @@ export async function initApp(app: Express): Promise<Express> {
   app.use('/storage/', storageRouter);
   app.use(errorHandler);
   return app;
+}
+
+export async function initAppServices(config: MedplumServerConfig): Promise<void> {
+  initRedis(config.redis);
+  await initDatabase(config.database);
+  await seedDatabase();
+  await initKeys(config);
+  initBinaryStorage(config.binaryStorage);
+  initWorkers(config.redis);
+}
+
+export async function shutdownApp(): Promise<void> {
+  await closeWorkers();
+  await closeDatabase();
+  closeRedis();
+  closeRateLimiter();
 }

@@ -4,8 +4,9 @@ import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { getConfig } from '../config';
 import { sendEmail } from '../email/email';
-import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
-import { generateSecret } from '../oauth';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { systemRepo } from '../fhir/repo';
+import { generateSecret } from '../oauth/keys';
 import { verifyRecaptcha } from './utils';
 
 export const resetPasswordValidators = [
