@@ -146,7 +146,37 @@ describe('Identifier Lookup Table', () => {
     expect(bundle6.entry?.[0]?.resource?.id).toEqual(patient1.id);
   });
 
-  test('Search identifier exact', async () => {
+  test('Implicit exact', async () => {
+    const identifier = randomUUID();
+
+    const patient1 = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      identifier: [{ system: 'https://www.example.com', value: identifier }],
+    });
+
+    const patient2 = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Jones' }],
+      identifier: [{ system: 'https://www.example.com', value: identifier + 'xyz' }],
+    });
+
+    const searchResult1 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value: identifier,
+        },
+      ],
+    });
+    expect(searchResult1?.entry?.length).toEqual(1);
+    expect(bundleContains(searchResult1, patient1)).toBe(true);
+    expect(bundleContains(searchResult1, patient2)).toBe(false);
+  });
+
+  test('Explicit exact', async () => {
     const identifier = randomUUID();
 
     const patient1 = await systemRepo.createResource<Patient>({
@@ -174,6 +204,72 @@ describe('Identifier Lookup Table', () => {
     expect(searchResult1?.entry?.length).toEqual(1);
     expect(bundleContains(searchResult1, patient1)).toBe(true);
     expect(bundleContains(searchResult1, patient2)).toBe(false);
+  });
+
+  test('Contains', async () => {
+    const identifier = randomUUID();
+
+    const patient1 = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      identifier: [{ system: 'https://www.example.com', value: identifier }],
+    });
+
+    const patient2 = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Jones' }],
+      identifier: [{ system: 'https://www.example.com', value: identifier + 'xyz' }],
+    });
+
+    const searchResult1 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.CONTAINS,
+          value: identifier,
+        },
+      ],
+    });
+    expect(searchResult1?.entry?.length).toEqual(2);
+    expect(bundleContains(searchResult1, patient1)).toBe(true);
+    expect(bundleContains(searchResult1, patient2)).toBe(true);
+  });
+
+  test('Not equals', async () => {
+    const identifier = randomUUID();
+    const name = randomUUID();
+
+    const patient1 = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: name }],
+      identifier: [{ system: 'https://www.example.com', value: identifier }],
+    });
+
+    const patient2 = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: name }],
+      identifier: [{ system: 'https://www.example.com', value: identifier + 'xyz' }],
+    });
+
+    const searchResult1 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.NOT_EQUALS,
+          value: identifier,
+        },
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: name,
+        },
+      ],
+    });
+    expect(searchResult1?.entry?.length).toEqual(1);
+    expect(bundleContains(searchResult1, patient1)).toBe(false);
+    expect(bundleContains(searchResult1, patient2)).toBe(true);
   });
 
   test('Search comma separated identifier exact', async () => {
