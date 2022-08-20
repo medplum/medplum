@@ -41,6 +41,7 @@ const fhirTypeToJsType: Record<string, string> = {
   uri: 'string',
   url: 'string',
   uuid: 'string',
+  'http://hl7.org/fhirpath/System.String': 'string',
 };
 
 export function isResourceType(resourceType: string): boolean {
@@ -174,10 +175,9 @@ export class FhirSchemaValidator<T extends Resource> {
     }
 
     // Try to get the regex
-    // const structureDefinition = this.#schema.types[type].structureDefinition;
-    const typeDefinition = this.#schema.types[type].properties['value'];
-    if (typeDefinition.type) {
-      const regex = getExtensionValue(typeDefinition.type[0], 'http://hl7.org/fhir/StructureDefinition/regex');
+    const valueDefinition = this.#schema.types[type]?.properties?.['value'];
+    if (valueDefinition?.type) {
+      const regex = getExtensionValue(valueDefinition.type[0], 'http://hl7.org/fhir/StructureDefinition/regex');
       if (regex) {
         if (!value.match(new RegExp(regex))) {
           this.#createIssue(elementDefinition, 'Invalid ' + type + ' format');
