@@ -2,7 +2,17 @@ import { Filter, Operator as FhirOperator, stringify } from '@medplum/core';
 import { Identifier, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { getClient } from '../../database';
-import { Column, Condition, Conjunction, Disjunction, Expression, InsertQuery, Negation, Operator, SelectQuery } from '../sql';
+import {
+  Column,
+  Condition,
+  Conjunction,
+  Disjunction,
+  Expression,
+  InsertQuery,
+  Negation,
+  Operator,
+  SelectQuery,
+} from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
