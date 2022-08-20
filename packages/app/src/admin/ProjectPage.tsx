@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { getProjectId } from '../utils';
 
-const tabs = ['Details', 'Users', 'Patients', 'Clients', 'Bots', 'Secrets'];
+const tabs = ['Details', 'Users', 'Patients', 'Clients', 'Bots', 'Secrets', 'Sites'];
 
 export function ProjectPage(): JSX.Element {
   const navigate = useNavigate();

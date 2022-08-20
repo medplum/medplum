@@ -46,6 +46,7 @@ projectAdminRouter.get(
         id: project?.id,
         name: project?.name,
         secret: project?.secret,
+        site: project?.site,
       },
       members,
     });
@@ -64,6 +65,24 @@ projectAdminRouter.post(
     const result = await systemRepo.updateResource({
       ...project,
       secret: req.body,
+    });
+
+    res.json(result);
+  })
+);
+
+projectAdminRouter.post(
+  '/:projectId/sites',
+  asyncWrap(async (req: Request, res: Response) => {
+    const project = await verifyProjectAdmin(req, res);
+    if (!project) {
+      res.sendStatus(404);
+      return;
+    }
+
+    const result = await systemRepo.updateResource({
+      ...project,
+      site: req.body,
     });
 
     res.json(result);
