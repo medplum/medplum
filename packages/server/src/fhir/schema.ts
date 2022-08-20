@@ -1,4 +1,5 @@
 import {
+  getExtensionValue,
   getTypedPropertyValue,
   IndexedStructureDefinition,
   isEmpty,
@@ -14,22 +15,33 @@ import { getStructureDefinitions } from './structure';
 import { checkForNull, createStructureIssue, validationError } from './utils';
 
 /*
- * The regular expressions for FHIR primitives in JSON strings.
- * Based on the official regular expression in packages/definitions/dist/fhir/r4/profiles-types.json
- * Added '^' and '$' for start of line and end of line.
+ * This file provides schema validation utilities for FHIR JSON objects.
+ *
+ * See: [JSON Representation of Resources](https://hl7.org/fhir/json.html)
+ * See: [FHIR Data Types](https://www.hl7.org/fhir/datatypes.html)
  */
 
-const BASE64_BINARY_REGEX = /^[a-zA-Z0-9+/]*={0,2}$/;
-const DATE_REGEX =
-  /^([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2][0-9]|3[0-1]))?)?$/;
-const DATE_TIME_REGEX =
-  /^([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2][0-9]|3[0-1])(T([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\.[0-9]+)?(Z|(\+|-)((0[0-9]|1[0-3]):[0-5][0-9]|14:00)))?)?)?$/;
-const ID_REGEX = /^[A-Za-z0-9\-.]{1,64}$/;
-const INSTANT_REGEX =
-  /^([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])T([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\.[0-9]+)?(Z|(\+|-)((0[0-9]|1[0-3]):[0-5][0-9]|14:00))$/;
-const OID_REGEX = /^urn:oid:[0-2](\.(0|[1-9][0-9]*))+$/;
-const TIME_REGEX = /^([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\.[0-9]+)?$/;
-const UUID_REGEX = /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const fhirTypeToJsType: Record<string, string> = {
+  base64Binary: 'string',
+  boolean: 'boolean',
+  canonical: 'string',
+  code: 'string',
+  date: 'string',
+  dateTime: 'string',
+  decimal: 'number',
+  id: 'string',
+  instant: 'string',
+  integer: 'number',
+  markdown: 'string',
+  oid: 'string',
+  positiveInt: 'number',
+  string: 'string',
+  time: 'string',
+  unsignedInt: 'number',
+  uri: 'string',
+  url: 'string',
+  uuid: 'string',
+};
 
 export function isResourceType(resourceType: string): boolean {
   const typeSchema = getStructureDefinitions().types[resourceType];
@@ -96,228 +108,100 @@ export class FhirSchemaValidator<T extends Resource> {
     const propertyDefinitions = definition.properties;
 
     checkForNull(object, path, this.#issues);
-    this.#checkProperties(typedValue, propertyDefinitions);
+    this.#checkProperties(propertyDefinitions, typedValue);
     this.#checkAdditionalProperties(object, propertyDefinitions);
   }
 
-  #checkProperties(typedValue: TypedValue, propertyDefinitions: Record<string, ElementDefinition>): void {
+  #checkProperties(propertyDefinitions: Record<string, ElementDefinition>, typedValue: TypedValue): void {
     for (const elementDefinition of Object.values(propertyDefinitions)) {
-      this.#checkProperty(typedValue, elementDefinition);
+      this.#checkProperty(elementDefinition, typedValue);
     }
   }
 
-  #checkProperty(typedValue: TypedValue, elementDefinition: ElementDefinition): void {
+  #checkProperty(elementDefinition: ElementDefinition, typedValue: TypedValue): void {
     const path = elementDefinition.path as string;
     const propertyName = path.split('.').pop() as string;
     const value = getTypedPropertyValue(typedValue, propertyName);
 
     if (isEmpty(value)) {
       if (elementDefinition.min !== undefined && elementDefinition.min > 0) {
-        this.#issues.push(createStructureIssue(path, `Missing required property "${path}"`));
+        this.#issues.push(createStructureIssue(path, 'Missing required property'));
       }
       return;
     }
 
     if (elementDefinition.max === '*') {
       if (!Array.isArray(value)) {
-        this.#issues.push(createStructureIssue(path, `Expected array for property "${path}"`));
+        this.#issues.push(createStructureIssue(path, 'Expected array for property'));
         return;
       }
       for (const item of value) {
-        this.#checkPropertyValue(item, elementDefinition);
+        this.#checkPropertyValue(elementDefinition, item);
       }
     } else {
-      this.#checkPropertyValue(value as TypedValue, elementDefinition);
+      this.#checkPropertyValue(elementDefinition, value as TypedValue);
     }
   }
 
-  #checkPropertyValue(typedValue: TypedValue, elementDefinition: ElementDefinition): void {
+  #checkPropertyValue(elementDefinition: ElementDefinition, typedValue: TypedValue): void {
     if (isLowerCase(typedValue.type.charAt(0))) {
-      this.#validatePrimitiveType(typedValue, elementDefinition);
+      this.#validatePrimitiveType(elementDefinition, typedValue);
     }
   }
 
-  #validatePrimitiveType(typedValue: TypedValue, elementDefinition: ElementDefinition): void {
-    switch (typedValue.type) {
-      case PropertyType.base64Binary:
-        this.#validateBase64Binary(typedValue, elementDefinition);
-        break;
-      case PropertyType.boolean:
-        this.#validateBoolean(typedValue, elementDefinition);
-        break;
-      case PropertyType.date:
-        this.#validateDate(typedValue, elementDefinition);
-        break;
-      case PropertyType.dateTime:
-        this.#validateDateTime(typedValue, elementDefinition);
-        break;
-      case PropertyType.decimal:
-        this.#validateDecimal(typedValue, elementDefinition);
-        break;
-      case PropertyType.id:
-        this.#validateId(typedValue, elementDefinition);
-        break;
-      case PropertyType.instant:
-        this.#validateInstant(typedValue, elementDefinition);
-        break;
-      case PropertyType.integer:
-        this.#validateInteger(typedValue, elementDefinition);
-        break;
-      case PropertyType.oid:
-        this.#validateOid(typedValue, elementDefinition);
-        break;
-      case PropertyType.positiveInt:
-        this.#validatePositiveInt(typedValue, elementDefinition);
-        break;
-      case PropertyType.canonical:
-      case PropertyType.code:
-      case PropertyType.markdown:
-      case PropertyType.string:
-      case PropertyType.uri:
-      case PropertyType.url:
-      case PropertyType.SystemString:
-        this.#validateString(typedValue, elementDefinition);
-        break;
-      case PropertyType.time:
-        this.#validateTime(typedValue, elementDefinition);
-        break;
-      case PropertyType.unsignedInt:
-        this.#validateUnsignedInt(typedValue, elementDefinition);
-        break;
-      case PropertyType.uuid:
-        this.#validateUuid(typedValue, elementDefinition);
-        break;
-    }
-  }
+  #validatePrimitiveType(elementDefinition: ElementDefinition, typedValue: TypedValue): void {
+    const { type, value } = typedValue;
 
-  #validateBase64Binary(typedValue: TypedValue, elementDefinition: ElementDefinition): void {
-    if (!this.#validateString(typedValue, elementDefinition)) {
+    // First, make sure the value is the correct JS type
+    const expectedType = fhirTypeToJsType[typedValue.type];
+    if (typeof value !== expectedType) {
+      this.#createIssue(elementDefinition, 'Invalid type for ' + type);
       return;
     }
-    if (!typedValue.value.match(BASE64_BINARY_REGEX)) {
-      this.#createIssue(elementDefinition, 'Invalid base64Binary format');
+
+    // Then, perform additional checks for specialty types
+    if (expectedType === 'string') {
+      this.#validateString(elementDefinition, type as PropertyType, value as string);
+    } else if (expectedType === 'number') {
+      this.#validateNumber(elementDefinition, type as PropertyType, value as number);
     }
   }
 
-  #validateBoolean(typedValue: TypedValue, elementDefinition: ElementDefinition): void {
-    if (typeof typedValue.value !== 'boolean') {
-      this.#createIssue(elementDefinition, 'Invalid type for boolean');
-    }
-  }
-
-  #validateDate(typedValue: TypedValue, elementDefinition: ElementDefinition): void {
-    if (!this.#validateString(typedValue, elementDefinition)) {
+  #validateString(elementDefinition: ElementDefinition, type: PropertyType, value: string): void {
+    if (!value.trim()) {
+      this.#createIssue(elementDefinition, 'Invalid empty string');
       return;
     }
-    if (!typedValue.value.match(DATE_REGEX)) {
-      this.#createIssue(elementDefinition, 'Invalid date format');
+
+    // Try to get the regex
+    // const structureDefinition = this.#schema.types[type].structureDefinition;
+    const typeDefinition = this.#schema.types[type].properties['value'];
+    if (typeDefinition.type) {
+      const regex = getExtensionValue(typeDefinition.type[0], 'http://hl7.org/fhir/StructureDefinition/regex');
+      if (regex) {
+        if (!value.match(new RegExp(regex))) {
+          this.#createIssue(elementDefinition, 'Invalid ' + type + ' format');
+        }
+      }
     }
   }
 
-  #validateDateTime(typedValue: TypedValue, elementDefinition: ElementDefinition): void {
-    if (!this.#validateString(typedValue, elementDefinition)) {
+  #validateNumber(elementDefinition: ElementDefinition, type: PropertyType, value: number): void {
+    if (isNaN(value) || !isFinite(value)) {
+      this.#createIssue(elementDefinition, 'Invalid ' + type + ' value');
       return;
     }
-    if (!typedValue.value.match(DATE_TIME_REGEX)) {
-      this.#createIssue(elementDefinition, 'Invalid dateTime format');
-    }
-  }
 
-  #validateDecimal(typedValue: TypedValue, elementDefinition: ElementDefinition): boolean {
-    if (typeof typedValue.value !== 'number') {
-      this.#createIssue(elementDefinition, 'Invalid type for ' + typedValue.type);
-      return false;
-    }
-    if (isNaN(typedValue.value) || !isFinite(typedValue.value)) {
-      this.#createIssue(elementDefinition, 'Invalid ' + typedValue.type + ' value');
-      return false;
-    }
-    return true;
-  }
-
-  #validateId(typedValue: TypedValue, elementDefinition: ElementDefinition): void {
-    if (!this.#validateString(typedValue, elementDefinition)) {
-      return;
-    }
-    if (!typedValue.value.match(ID_REGEX)) {
-      this.#createIssue(elementDefinition, 'Invalid id format');
-    }
-  }
-
-  #validateInstant(typedValue: TypedValue, elementDefinition: ElementDefinition): void {
-    if (!this.#validateString(typedValue, elementDefinition)) {
-      return;
-    }
-    if (!typedValue.value.match(INSTANT_REGEX)) {
-      this.#createIssue(elementDefinition, 'Invalid instant format');
-    }
-  }
-
-  #validateInteger(typedValue: TypedValue, elementDefinition: ElementDefinition): boolean {
-    if (!this.#validateDecimal(typedValue, elementDefinition)) {
-      return false;
-    }
-    if (!Number.isInteger(typedValue.value)) {
+    if (isIntegerType(type) && !Number.isInteger(value)) {
       this.#createIssue(elementDefinition, 'Number is not an integer');
-      return false;
     }
-    return true;
-  }
 
-  #validateOid(typedValue: TypedValue, elementDefinition: ElementDefinition): void {
-    if (!this.#validateString(typedValue, elementDefinition)) {
-      return;
-    }
-    if (!typedValue.value.match(OID_REGEX)) {
-      this.#createIssue(elementDefinition, 'Invalid oid format');
-    }
-  }
-
-  #validatePositiveInt(typedValue: TypedValue, elementDefinition: ElementDefinition): void {
-    if (!this.#validateInteger(typedValue, elementDefinition)) {
-      return;
-    }
-    if (typedValue.value <= 0) {
+    if (type === PropertyType.positiveInt && value <= 0) {
       this.#createIssue(elementDefinition, 'Number is less than or equal to zero');
     }
-  }
 
-  #validateString(typedValue: TypedValue, elementDefinition: ElementDefinition): boolean {
-    if (typeof typedValue.value !== 'string') {
-      this.#createIssue(elementDefinition, 'Invalid type for ' + typedValue.type);
-      return false;
-    }
-    if (typedValue.value.trim() === '') {
-      this.#createIssue(elementDefinition, 'Invalid empty string for ' + typedValue.type);
-      return false;
-    }
-    return true;
-  }
-
-  #validateTime(typedValue: TypedValue, elementDefinition: ElementDefinition): void {
-    if (!this.#validateString(typedValue, elementDefinition)) {
-      return;
-    }
-    if (!typedValue.value.match(TIME_REGEX)) {
-      this.#createIssue(elementDefinition, 'Invalid time format');
-    }
-  }
-
-  #validateUnsignedInt(typedValue: TypedValue, elementDefinition: ElementDefinition): void {
-    if (!this.#validateInteger(typedValue, elementDefinition)) {
-      return;
-    }
-    if (typedValue.value < 0) {
+    if (type === PropertyType.unsignedInt && value < 0) {
       this.#createIssue(elementDefinition, 'Number is negative');
-    }
-  }
-
-  #validateUuid(typedValue: TypedValue, elementDefinition: ElementDefinition): void {
-    if (!this.#validateString(typedValue, elementDefinition)) {
-      return;
-    }
-    if (!typedValue.value.match(UUID_REGEX)) {
-      this.#createIssue(elementDefinition, 'Invalid uuid format');
     }
   }
 
@@ -343,4 +227,12 @@ export class FhirSchemaValidator<T extends Resource> {
   #createIssue(elementDefinition: ElementDefinition, message: string): void {
     this.#issues.push(createStructureIssue(elementDefinition.path as string, message));
   }
+}
+
+function isIntegerType(propertyType: PropertyType): boolean {
+  return (
+    propertyType === PropertyType.integer ||
+    propertyType === PropertyType.positiveInt ||
+    propertyType === PropertyType.unsignedInt
+  );
 }

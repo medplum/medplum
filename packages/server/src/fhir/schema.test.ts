@@ -1,5 +1,6 @@
 import { OperationOutcomeError } from '@medplum/core';
 import {
+  Account,
   Appointment,
   Binary,
   Condition,
@@ -15,14 +16,22 @@ import { validateResource, validateResourceType } from './schema';
 
 describe('FHIR schema', () => {
   test('validateResourceType', () => {
+    // Valid FHIR resource types
+    expect(() => validateResourceType('Observation')).not.toThrow();
+    expect(() => validateResourceType('Patient')).not.toThrow();
+    expect(() => validateResourceType('ServiceRequest')).not.toThrow();
+
+    // Custom Medplum resource types
+    expect(() => validateResourceType('Login')).not.toThrow();
+    expect(() => validateResourceType('User')).not.toThrow();
+    expect(() => validateResourceType('Project')).not.toThrow();
+
+    // Invalid types
     expect(() => validateResourceType('')).toThrow();
     expect(() => validateResourceType('instant')).toThrow();
     expect(() => validateResourceType('FakeResource')).toThrow();
     expect(() => validateResourceType('PatientCommunication')).toThrow();
     expect(() => validateResourceType('Patient_Communication')).toThrow();
-    expect(() => validateResourceType('Observation')).not.toThrow();
-    expect(() => validateResourceType('Patient')).not.toThrow();
-    expect(() => validateResourceType('ServiceRequest')).not.toThrow();
   });
 
   test('validateResource', () => {
@@ -315,6 +324,19 @@ describe('FHIR schema', () => {
 
     sp.numberOfSubunits = 10;
     expect(() => validateResource(sp)).not.toThrow();
+  });
+
+  test('string', () => {
+    const acct: Account = { resourceType: 'Account', status: 'active' };
+
+    acct.name = 123 as unknown as string;
+    expect(() => validateResource(acct)).toThrowError('Invalid type for string');
+
+    acct.name = '    ';
+    expect(() => validateResource(acct)).toThrowError('Invalid empty string');
+
+    acct.name = 'test';
+    expect(() => validateResource(acct)).not.toThrow();
   });
 
   test('positiveInt', () => {
