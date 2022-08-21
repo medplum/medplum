@@ -50,6 +50,10 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
       sendOutcome(res, badRequest('Invalid recaptchaSecretKey'));
       return;
     }
+    if (!project.defaultPatientAccessPolicy) {
+      sendOutcome(res, badRequest('Project does not allow open registration'));
+      return;
+    }
   }
 
   if (!(await verifyRecaptcha(secretKey as string, req.body.recaptchaToken))) {
