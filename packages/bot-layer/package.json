@@ -15,7 +15,9 @@
     "@medplum/core": "0.9.31",
     "form-data": "4.0.0",
     "node-fetch": "2.6.7",
-    "pdfmake": "0.2.5"
+    "pdfmake": "0.2.5",
+    "ssh2": "1.11.0",
+    "ssh2-sftp-client": "9.0.3"
   },
   "keywords": [
     "medplum",
