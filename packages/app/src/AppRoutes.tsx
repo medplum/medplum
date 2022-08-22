@@ -10,6 +10,7 @@ import { PatientsPage } from './admin/PatientsPage';
 import { ProjectDetailsPage } from './admin/ProjectDetailsPage';
 import { ProjectPage } from './admin/ProjectPage';
 import { SecretsPage } from './admin/SecretsPage';
+import { SitesPage } from './admin/SitesPage';
 import { SuperAdminPage } from './admin/SuperAdminPage';
 import { UsersPage } from './admin/UsersPage';
 import { BatchPage } from './BatchPage';
@@ -54,6 +55,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="users" element={<UsersPage />} />
         <Route path="project" element={<ProjectDetailsPage />} />
         <Route path="secrets" element={<SecretsPage />} />
+        <Route path="sites" element={<SitesPage />} />
         <Route path="members/:membershipId" element={<EditMembershipPage />} />
       </Route>
       <Route path="/lab/assays" element={<AssaysPage />} />

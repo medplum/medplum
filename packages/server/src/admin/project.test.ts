@@ -357,4 +357,34 @@ describe('Project Admin routes', () => {
     expect(res3.body.project.secret[0].name).toEqual('test_secret');
     expect(res3.body.project.secret[0].valueString).toEqual('test_value');
   });
+
+  test('Save project sites', async () => {
+    // Register and create a project
+    const { project, accessToken } = await registerNew({
+      firstName: 'John',
+      lastName: 'Adams',
+      projectName: 'Adams Project',
+      email: `john${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+
+    // Add a secret
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/sites')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send([
+        {
+          name: 'test_site',
+        },
+      ]);
+    expect(res2.status).toBe(200);
+
+    // Verify the site was added
+    const res3 = await request(app)
+      .get('/admin/projects/' + project.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3.status).toBe(200);
+    expect(res3.body.project.site).toHaveLength(1);
+    expect(res3.body.project.site[0].name).toEqual('test_site');
+  });
 });

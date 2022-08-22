@@ -20,7 +20,7 @@ async function setup(url: string): Promise<void> {
   });
 }
 
-describe('SecretsPage', () => {
+describe('SitesPage', () => {
   beforeAll(() => {
     medplum.setActiveLoginOverride({
       accessToken: '123',
@@ -35,15 +35,15 @@ describe('SecretsPage', () => {
   });
 
   test('Renders', async () => {
-    await setup('/admin/secrets');
-    await waitFor(() => screen.getByText('Project Secrets'));
-    expect(screen.getByText('Project Secrets')).toBeInTheDocument();
+    await setup('/admin/sites');
+    await waitFor(() => screen.getByText('Project Sites'));
+    expect(screen.getByText('Project Sites')).toBeInTheDocument();
   });
 
   test('Add and submit', async () => {
     toast.success = jest.fn();
 
-    await setup('/admin/secrets');
+    await setup('/admin/sites');
     await waitFor(() => screen.getByText('Add'));
 
     // Click the "Add" button
@@ -51,14 +51,9 @@ describe('SecretsPage', () => {
       fireEvent.click(screen.getByText('Add'));
     });
 
-    // Enter the secret name
+    // Enter the site name
     await act(async () => {
       fireEvent.change(screen.getByTestId('name'), { target: { value: 'foo' } });
-    });
-
-    // Enter the secret value
-    await act(async () => {
-      fireEvent.change(screen.getByTestId('value[x]'), { target: { value: 'bar' } });
     });
 
     // Click the "Save" button
