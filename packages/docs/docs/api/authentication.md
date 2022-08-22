@@ -2,6 +2,9 @@
 sidebar_position: 1
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Authentication
 
 The Medplum API uses standard OAuth2/OpenID authentication. "Client Credentials Flow" is recommended for machine-to-machine access.
@@ -18,18 +21,45 @@ For this example you will need the `ID` and `Secret`.
 
 Execute a HTTP POST request to the OAuth2 Token endpoint:
 
+<Tabs groupId="language">
+  <TabItem value="curl" label="cURL">
+
 ```curl
 curl -X POST https://api.medplum.com/oauth2/token \
     -H "Content-Type: application/x-www-form-urlencoded" \
     -d "grant_type=client_credentials&client_id=$MY_CLIENT_ID&client_secret=$MY_CLIENT_SECRET"
 ```
 
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```py
+def get_auth_token(url, client_id, client_secret):
+
+  # Encode the client ID and client secret
+  authorization = base64.b64encode(bytes(client_id + ":" + client_secret, "ISO-8859-1")).decode("ascii")
+
+  headers = {
+      "Authorization": f"Basic {authorization}",
+      "Content-Type": "application/x-www-form-urlencoded"
+  }
+  body = {
+      "grant_type": "client_credentials"
+  }
+
+  response = requests.post(url, data=body, headers=headers)
+  return response.json()['access_token']
+```
+
+  </TabItem>
+</Tabs>
+
 On success, the response will be a JSON object with the following properties:
 
 ```json
 {
   "token_type": "Bearer",
-  "access_token": "...",
+  "access_token": "<YOUR_AUTH_TOKEN>",
   "expires_in": 3600
 }
 ```
