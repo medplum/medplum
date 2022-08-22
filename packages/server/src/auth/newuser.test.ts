@@ -119,7 +119,7 @@ describe('New user', () => {
     expect(res2.body.issue[0].details.text).toBe('Email already registered');
   });
 
-  test('Custom recaptcha client', async () => {
+  test('Custom recaptcha client success', async () => {
     const email = `recaptcha-client${randomUUID()}@example.com`;
     const password = 'password!@#';
     const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
@@ -135,6 +135,57 @@ describe('New user', () => {
     });
 
     // As a super admin, set the recaptcha site key
+    // and the default access policy
+    await systemRepo.updateResource({
+      ...project,
+      site: [
+        {
+          name: 'Test Site',
+          domain: ['example.com'],
+          recaptchaSiteKey,
+          recaptchaSecretKey,
+        },
+      ],
+      defaultPatientAccessPolicy: {
+        reference: 'AccessPolicy/' + randomUUID(),
+      },
+    });
+
+    const res = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        projectId: project.id,
+        firstName: 'Custom',
+        lastName: 'Recaptcha',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaSiteKey,
+        recaptchaToken: 'xyz',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.login).toBeDefined();
+    expect(res.body.code).toBeUndefined();
+  });
+
+  test('Custom recaptcha client missing access policy', async () => {
+    const email = `recaptcha-client${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
+    const recaptchaSecretKey = 'recaptcha-secret-key-' + randomUUID();
+
+    // Register and create a project
+    const { project } = await registerNew({
+      firstName: 'Google',
+      lastName: 'Google',
+      projectName: 'Require Google Auth',
+      email,
+      password,
+    });
+
+    // As a super admin, set the recaptcha site key
+    // but *not* the access policy
     await systemRepo.updateResource({
       ...project,
       site: [
@@ -160,9 +211,8 @@ describe('New user', () => {
         recaptchaToken: 'xyz',
       });
 
-    expect(res.status).toBe(200);
-    expect(res.body.login).toBeDefined();
-    expect(res.body.code).toBeUndefined();
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toEqual('Project does not allow open registration');
   });
 
   test('Recaptcha site key not found', async () => {
