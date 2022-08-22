@@ -20,12 +20,12 @@ const media: Media = {
   resourceType: 'Media',
   basedOn: [
     {
-      reference: 'ServiceRequest/b321fa65-3b4a-4186-9161-dcb8b0c793dc',
+      reference: 'ServiceRequest/12345',
     },
   ],
   status: 'completed', // `status` is a required field
   content: {
-    title: 'plums.jpg',
+    title: 'plums-ts.jpg',
     contentType: 'image/jpeg',
     url: MEDIA_URL,
   },
