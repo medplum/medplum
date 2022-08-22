@@ -62,5 +62,4 @@ requests.post(f'{API_URL}/Media', json=media, headers={
 ```
 
   </TabItem>
-
 </Tabs>
