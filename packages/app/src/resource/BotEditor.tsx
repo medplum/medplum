@@ -47,24 +47,6 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
     }
   }
 
-  async function simulateBot(): Promise<void> {
-    try {
-      const code = await getCodeOutput();
-      const input = await getSampleInput();
-      const result = await sendCommand(outputFrameRef.current as HTMLIFrameElement, {
-        command: 'execute',
-        baseUrl: medplum.getBaseUrl(),
-        accessToken: medplum.getAccessToken(),
-        code,
-        input,
-      });
-      console.log(result);
-      toast.success('Done');
-    } catch (err) {
-      toast.error((err as OperationOutcome).issue?.[0]?.details?.text);
-    }
-  }
-
   async function deployBot(): Promise<void> {
     try {
       const code = await getCodeOutput();
@@ -125,9 +107,6 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
       <div className="medplum-bot-buttons">
         <Button type="button" onClick={() => saveBot()}>
           Save
-        </Button>
-        <Button type="button" onClick={() => simulateBot()}>
-          Simulate
         </Button>
         <Button type="button" onClick={() => deployBot()}>
           Deploy
