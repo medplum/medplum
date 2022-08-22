@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@medplum/app",
-  "version": "0.9.31",
+  "version": "0.9.32",
   "description": "Medplum App",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -20,10 +20,10 @@
     "source-map-explorer": "source-map-explorer *.js --gzip"
   },
   "devDependencies": {
-    "@medplum/core": "0.9.31",
-    "@medplum/fhirtypes": "0.9.31",
-    "@medplum/mock": "0.9.31",
-    "@medplum/react": "0.9.31",
+    "@medplum/core": "0.9.32",
+    "@medplum/fhirtypes": "0.9.32",
+    "@medplum/mock": "0.9.32",
+    "@medplum/react": "0.9.32",
     "@testing-library/jest-dom": "5.16.5",
     "@testing-library/react": "13.3.0",
     "@types/grecaptcha": "3.0.4",
