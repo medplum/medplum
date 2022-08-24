@@ -1,6 +1,6 @@
 import { Resource } from '@medplum/fhirtypes';
 import { PropertyType } from '../types';
-import { FhirPathFunction } from './functions';
+import { FhirPathFunction, functions } from './functions';
 import {
   booleanToTypedValue,
   fhirPathArrayEquals,
@@ -90,7 +90,7 @@ export class AsAtom implements Atom {
   constructor(public readonly left: Atom, public readonly right: Atom) {}
 
   eval(context: TypedValue[]): TypedValue[] {
-    return this.left.eval(context);
+    return functions.ofType(this.left.eval(context), this.right);
   }
 }
 

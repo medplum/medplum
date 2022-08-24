@@ -290,7 +290,9 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * See: http://hl7.org/fhirpath/#oftypetype-type-specifier-collection
    */
-  ofType: stub,
+  ofType: (input: TypedValue[], criteria: Atom): TypedValue[] => {
+    return input.filter((e) => e.type === (criteria as SymbolAtom).name);
+  },
 
   /*
    * 5.3 Subsetting
