@@ -1,4 +1,4 @@
-import { DrAliceSmithSchedule } from '@medplum/mock';
+import { DrAliceSmithSchedule, ExampleQuestionnaire } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Document } from '../Document';
@@ -11,6 +11,6 @@ export default {
 
 export const Basic = (): JSX.Element => (
   <Document>
-    <Scheduler schedule={DrAliceSmithSchedule} />
+    <Scheduler schedule={DrAliceSmithSchedule} questionnaire={ExampleQuestionnaire} />
   </Document>
 );

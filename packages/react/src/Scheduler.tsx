@@ -1,23 +1,24 @@
 import { getReferenceString } from '@medplum/core';
-import { Reference, Schedule, Slot } from '@medplum/fhirtypes';
+import { Questionnaire, QuestionnaireResponse, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Avatar } from './Avatar';
 import { Button } from './Button';
 import { CalendarInput, getStartMonth } from './CalendarInput';
-import { FormSection } from './FormSection';
-import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
+import { QuestionnaireForm } from './QuestionnaireForm';
 import { ResourceName } from './ResourceName';
-import './Scheduler.css';
 import { useResource } from './useResource';
+import './Scheduler.css';
 
 export interface SchedulerProps {
   schedule: Schedule | Reference<Schedule>;
+  questionnaire: Questionnaire | Reference<Questionnaire>;
 }
 
 export function Scheduler(props: SchedulerProps): JSX.Element | null {
   const medplum = useMedplum();
   const schedule = useResource(props.schedule);
+  const questionnaire = useResource(props.questionnaire);
 
   const [slots, setSlots] = useState<Slot[]>();
   const slotsRef = useRef<Slot[]>();
@@ -26,8 +27,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
   const [month, setMonth] = useState<Date>(getStartMonth());
   const [date, setDate] = useState<Date>();
   const [slot, setSlot] = useState<Slot>();
-  const [info, setInfo] = useState<string>();
-  const [form, setForm] = useState<string>();
+  const [response, setResponse] = useState<QuestionnaireResponse>();
 
   useEffect(() => {
     if (schedule) {
@@ -36,9 +36,10 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
         .searchResources(
           'Slot',
           new URLSearchParams([
+            ['_count', (30 * 24).toString()],
             ['schedule', getReferenceString(schedule)],
-            ['start', 'gt' + month.toISOString()],
-            ['start', 'lt' + new Date(month.getTime() + 31 * 24 * 60 * 60 * 1000).toISOString()],
+            ['start', 'gt' + getStart(month)],
+            ['start', 'lt' + getEnd(month)],
           ])
         )
         .then(setSlots)
@@ -48,7 +49,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
     }
   }, [medplum, schedule, month]);
 
-  if (!schedule || !slots) {
+  if (!schedule || !slots || !questionnaire) {
     return null;
   }
 
@@ -92,38 +93,10 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
             })}
           </div>
         )}
-        {date && slot && !info && (
-          <div>
-            <h3>Enter your info</h3>
-            <FormSection title="Name" htmlFor="name">
-              <Input name="name" />
-            </FormSection>
-            <FormSection title="Email" htmlFor="email">
-              <Input name="email" />
-            </FormSection>
-            <Button primary={true} onClick={() => setInfo('info')}>
-              Next
-            </Button>
-          </div>
+        {date && slot && !response && (
+          <QuestionnaireForm questionnaire={questionnaire} submitButtonText={'Next'} onSubmit={setResponse} />
         )}
-        {date && slot && info && !form && (
-          <div>
-            <h3>Custom questions</h3>
-            <FormSection title="Question 1" htmlFor="q1">
-              <Input name="q1" />
-            </FormSection>
-            <FormSection title="Question 2" htmlFor="q2">
-              <Input name="email" />
-            </FormSection>
-            <FormSection title="Question 3" htmlFor="q3">
-              <Input name="email" />
-            </FormSection>
-            <Button primary={true} onClick={() => setForm('form')}>
-              Next
-            </Button>
-          </div>
-        )}
-        {date && slot && info && form && (
+        {date && slot && response && (
           <div>
             <h3>You're all set!</h3>
             <p>Check your email for a calendar invite.</p>
@@ -132,6 +105,18 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
       </div>
     </div>
   );
+}
+
+function getStart(month: Date): string {
+  return formatSlotInstant(month.getTime());
+}
+
+function getEnd(month: Date): string {
+  return formatSlotInstant(month.getTime() + 31 * 24 * 60 * 60 * 1000);
+}
+
+function formatSlotInstant(time: number): string {
+  return new Date(Math.max(Date.now(), time)).toISOString();
 }
 
 function formatTime(date: Date): string {
