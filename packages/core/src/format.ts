@@ -42,7 +42,7 @@ export function formatAddress(address: Address, options?: AddressFormatOptions):
 export function formatHumanName(name: HumanName, options?: HumanNameFormatOptions): string {
   const builder = [];
 
-  if (name.prefix && (options?.all || options?.prefix)) {
+  if (name.prefix && options?.prefix !== false) {
     builder.push(...name.prefix);
   }
 
@@ -54,7 +54,7 @@ export function formatHumanName(name: HumanName, options?: HumanNameFormatOption
     builder.push(name.family);
   }
 
-  if (name.suffix && (options?.all || options?.suffix)) {
+  if (name.suffix && options?.suffix !== false) {
     builder.push(...name.suffix);
   }
 
