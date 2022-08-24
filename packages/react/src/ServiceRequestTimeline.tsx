@@ -24,19 +24,19 @@ export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.
           {
             request: {
               method: 'GET',
-              url: `Communication?based-on=${getReferenceString(resource)}`,
+              url: `Communication?based-on=${getReferenceString(resource)}&_sort=-_lastUpdated`,
             },
           },
           {
             request: {
               method: 'GET',
-              url: `Media?_count=100&based-on=${getReferenceString(resource)}`,
+              url: `Media?_count=100&based-on=${getReferenceString(resource)}&_sort=-_lastUpdated`,
             },
           },
           {
             request: {
               method: 'GET',
-              url: `DiagnosticReport?based-on=${getReferenceString(resource)}`,
+              url: `DiagnosticReport?based-on=${getReferenceString(resource)}&_sort=-_lastUpdated`,
             },
           },
         ],
