@@ -7,12 +7,12 @@ toc_max_heading_level: 2
 
 ## Introduction
 
-- Bots can be used to connect to 3rd party services via API
-- Often, this involves reading sensitive data, such as API keys
-- To avoid hard-coding this sensitive data in your Bot code, Medplum provides the ability to store secret data on the Bot Resource
-- The advantage of this is
-  - avoiding leaking keys to unauthorized users
-  - Ability to use different keys for development and production projects
+One of the use cases for Bots is to connect to 3rd-party APIs, which often involves using sensitive data, such as API keys. To avoid hard-coding these keys, Medplum provides the ability to store secrets in your Project.
+
+The advantage of handling secrets this way is:
+
+- It avoids leaking keys to unauthorized users
+- You can use different keys for in different projects. For example, you might have a "development" project to prototype your integration, and a "production" that serves your customers.
 
 ## Saving Secrets
 
