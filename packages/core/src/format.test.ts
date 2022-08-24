@@ -108,7 +108,7 @@ test('Format HumanName', () => {
       given: ['Alice'],
       family: 'Smith',
     })
-  ).toEqual('Alice Smith');
+  ).toEqual('Ms. Alice Smith');
 
   expect(
     formatHumanName(
@@ -131,10 +131,10 @@ test('Format HumanName', () => {
         family: 'Smith',
       },
       {
-        prefix: true,
+        prefix: false,
       }
     )
-  ).toEqual('Ms. Alice Smith');
+  ).toEqual('Alice Smith');
 
   expect(
     formatHumanName(
@@ -146,10 +146,10 @@ test('Format HumanName', () => {
         use: 'official',
       },
       {
-        suffix: true,
+        suffix: false,
       }
     )
-  ).toEqual('Alice Gelato Smith III');
+  ).toEqual('Ms. Alice Gelato Smith');
 
   expect(
     formatHumanName(
@@ -164,7 +164,7 @@ test('Format HumanName', () => {
         use: true,
       }
     )
-  ).toEqual('Alice Gelato Smith [official]');
+  ).toEqual('Ms. Alice Gelato Smith III [official]');
 
   expect(
     formatHumanName(
@@ -178,7 +178,7 @@ test('Format HumanName', () => {
         use: true,
       }
     )
-  ).toEqual('Alice Gelato Smith');
+  ).toEqual('Ms. Alice Gelato Smith III');
 
   expect(
     formatHumanName(
