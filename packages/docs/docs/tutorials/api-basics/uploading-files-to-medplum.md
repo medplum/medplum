@@ -14,8 +14,7 @@ For large files such as videos and images, it can be inconvenient to download co
 import { Media } from '@medplum/fhirtypes';
 
 // Create a Media Resource
-const MEDIA_URL =
-  'https://images.unsplash.com/photo-1581385339821-5b358673a883?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=654&q=80';
+const MEDIA_URL = 'https://images.unsplash.com/photo-1581385339821-5b358673a883';
 const media: Media = {
   resourceType: 'Media',
   basedOn: [
@@ -42,7 +41,7 @@ See the [Authentication](../../api/authentication.md) guide for how to obtain an
 ```py
 
 API_URL = 'https://api.medplum.com/fhir/R4'
-MEDIA_URL = 'https://images.unsplash.com/photo-1581385339821-5b358673a883?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=654&q=80'
+MEDIA_URL = 'https://images.unsplash.com/photo-1581385339821-5b358673a883'
 media = {
   'resourceType': 'Media',
   'basedOn': [{
@@ -63,5 +62,4 @@ requests.post(f'{API_URL}/Media', json=media, headers={
 ```
 
   </TabItem>
-
 </Tabs>
