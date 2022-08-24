@@ -1,6 +1,6 @@
 import { createReference } from '@medplum/core';
 import { Reference, Schedule } from '@medplum/fhirtypes';
-import { DrAliceSmithSchedule, MockClient } from '@medplum/mock';
+import { DrAliceSmithSchedule, ExampleQuestionnaire, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -13,7 +13,7 @@ function setup(schedule: Schedule | Reference<Schedule>): void {
   render(
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>
-        <Scheduler schedule={schedule} />
+        <Scheduler schedule={schedule} questionnaire={ExampleQuestionnaire} />
       </MedplumProvider>
     </MemoryRouter>
   );
@@ -59,11 +59,6 @@ describe('Scheduler', () => {
     // Choose a time
     await act(async () => {
       fireEvent.click(screen.getByText('9:00 AM'));
-    });
-
-    // Click next
-    await act(async () => {
-      fireEvent.click(screen.getByText('Next'));
     });
 
     // Click next

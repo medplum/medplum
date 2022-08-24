@@ -41,6 +41,7 @@ import './QuestionnaireForm.css';
 export interface QuestionnaireFormProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;
   subject?: Reference;
+  submitButtonText?: string;
   onSubmit: (response: QuestionnaireResponse) => void;
 }
 
@@ -88,7 +89,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       {questionnaire.title && <h1>{questionnaire.title}</h1>}
       {questionnaire.item && <QuestionnaireFormItemArray items={questionnaire.item} onChange={setItems} />}
       <Button type="submit" size="large">
-        OK
+        {props.submitButtonText || 'OK'}
       </Button>
     </Form>
   );
