@@ -1,5 +1,12 @@
 import { allOk, getReferenceString, Operator, SearchRequest } from '@medplum/core';
-import { Bundle, BundleEntry, CompartmentDefinitionResource, Patient, Resource } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  BundleEntry,
+  CompartmentDefinitionResource,
+  Patient,
+  Resource,
+  ResourceType,
+} from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
 import { getPatientCompartments } from '../patient';
@@ -48,7 +55,7 @@ export async function getPatientEverything(repo: Repository, patient: Patient): 
     }
     for (const code of searchParams) {
       searches.push({
-        resourceType: resource.code as string,
+        resourceType: resource.code as ResourceType,
         count: 1000,
         filters: [
           {

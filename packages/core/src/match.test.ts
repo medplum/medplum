@@ -1,7 +1,7 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { matchesSearchRequest } from './match';
-import { Operator, parseSearchDefinition } from './search';
+import { Operator, parseSearchDefinition, SearchRequest } from './search';
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from './types';
 
 // Dimensions:
@@ -95,17 +95,17 @@ describe('Search matching', () => {
 
     search.filters[0].operator = Operator.EQUALS;
     search.filters[0].value = 'Patient/123';
-    expect(matchesSearchRequest(resource, search)).toBe(true);
+    expect(matchesSearchRequest(resource, search as SearchRequest)).toBe(true);
 
     search.filters[0].value = 'Patient/456';
-    expect(matchesSearchRequest(resource, search)).toBe(false);
+    expect(matchesSearchRequest(resource, search as SearchRequest)).toBe(false);
 
     search.filters[0].operator = Operator.NOT_EQUALS;
     search.filters[0].value = 'Patient/123';
-    expect(matchesSearchRequest(resource, search)).toBe(false);
+    expect(matchesSearchRequest(resource, search as SearchRequest)).toBe(false);
 
     search.filters[0].value = 'Patient/456';
-    expect(matchesSearchRequest(resource, search)).toBe(true);
+    expect(matchesSearchRequest(resource, search as SearchRequest)).toBe(true);
   });
 
   test('Empty reference filter', () => {
@@ -117,17 +117,17 @@ describe('Search matching', () => {
 
     search.filters[0].operator = Operator.EQUALS;
     search.filters[0].value = '';
-    expect(matchesSearchRequest(resource, search)).toBe(true);
+    expect(matchesSearchRequest(resource, search as SearchRequest)).toBe(true);
 
     search.filters[0].value = 'Patient/456';
-    expect(matchesSearchRequest(resource, search)).toBe(false);
+    expect(matchesSearchRequest(resource, search as SearchRequest)).toBe(false);
 
     search.filters[0].operator = Operator.NOT_EQUALS;
     search.filters[0].value = '';
-    expect(matchesSearchRequest(resource, search)).toBe(false);
+    expect(matchesSearchRequest(resource, search as SearchRequest)).toBe(false);
 
     search.filters[0].value = 'Patient/456';
-    expect(matchesSearchRequest(resource, search)).toBe(true);
+    expect(matchesSearchRequest(resource, search as SearchRequest)).toBe(true);
   });
 
   test('Canonical reference filter', () => {
@@ -323,7 +323,7 @@ describe('Search matching', () => {
     describe('equals', () => {
       test('true', () => {
         const patient: Patient = { resourceType: 'Patient', birthDate: '1990-01-01' };
-        const search = {
+        const search: SearchRequest = {
           resourceType: 'Patient',
           filters: [{ code: 'birthdate', operator: Operator.EQUALS, value: '1990-01-01' }],
         };
@@ -332,7 +332,7 @@ describe('Search matching', () => {
 
       test('false', () => {
         const patient: Patient = { resourceType: 'Patient', birthDate: '1990-01-01' };
-        const search = {
+        const search: SearchRequest = {
           resourceType: 'Patient',
           filters: [{ code: 'birthdate', operator: Operator.EQUALS, value: '1990-01-02' }],
         };
@@ -343,7 +343,7 @@ describe('Search matching', () => {
     describe('not equals', () => {
       test('true', () => {
         const patient: Patient = { resourceType: 'Patient', birthDate: '1990-01-01' };
-        const search = {
+        const search: SearchRequest = {
           resourceType: 'Patient',
           filters: [{ code: 'birthdate', operator: Operator.NOT_EQUALS, value: '1990-01-01' }],
         };
@@ -352,7 +352,7 @@ describe('Search matching', () => {
 
       test('false', () => {
         const patient: Patient = { resourceType: 'Patient', birthDate: '1990-01-01' };
-        const search = {
+        const search: SearchRequest = {
           resourceType: 'Patient',
           filters: [{ code: 'birthdate', operator: Operator.NOT_EQUALS, value: '1990-01-02' }],
         };
@@ -363,7 +363,7 @@ describe('Search matching', () => {
     describe('greater than', () => {
       test('true', () => {
         const patient: Patient = { resourceType: 'Patient', birthDate: '1990-01-01' };
-        const search = {
+        const search: SearchRequest = {
           resourceType: 'Patient',
           filters: [{ code: 'birthdate', operator: Operator.GREATER_THAN, value: '1980-01-01' }],
         };
@@ -372,7 +372,7 @@ describe('Search matching', () => {
 
       test('false', () => {
         const patient: Patient = { resourceType: 'Patient', birthDate: '1990-01-01' };
-        const search = {
+        const search: SearchRequest = {
           resourceType: 'Patient',
           filters: [{ code: 'birthdate', operator: Operator.GREATER_THAN, value: '2000-01-01' }],
         };
@@ -381,7 +381,7 @@ describe('Search matching', () => {
 
       test('same value', () => {
         const patient: Patient = { resourceType: 'Patient', birthDate: '1990-01-01' };
-        const search = {
+        const search: SearchRequest = {
           resourceType: 'Patient',
           filters: [{ code: 'birthdate', operator: Operator.GREATER_THAN, value: '1990-01-01' }],
         };
@@ -392,7 +392,7 @@ describe('Search matching', () => {
     describe('greater than or equals', () => {
       test('true', () => {
         const patient: Patient = { resourceType: 'Patient', birthDate: '1990-01-01' };
-        const search = {
+        const search: SearchRequest = {
           resourceType: 'Patient',
           filters: [{ code: 'birthdate', operator: Operator.GREATER_THAN_OR_EQUALS, value: '1980-01-01' }],
         };
@@ -401,7 +401,7 @@ describe('Search matching', () => {
 
       test('false', () => {
         const patient: Patient = { resourceType: 'Patient', birthDate: '1990-01-01' };
-        const search = {
+        const search: SearchRequest = {
           resourceType: 'Patient',
           filters: [{ code: 'birthdate', operator: Operator.GREATER_THAN_OR_EQUALS, value: '2000-01-01' }],
         };
@@ -410,7 +410,7 @@ describe('Search matching', () => {
 
       test('same value', () => {
         const patient: Patient = { resourceType: 'Patient', birthDate: '1990-01-01' };
-        const search = {
+        const search: SearchRequest = {
           resourceType: 'Patient',
           filters: [{ code: 'birthdate', operator: Operator.GREATER_THAN_OR_EQUALS, value: '1990-01-01' }],
         };
@@ -421,7 +421,7 @@ describe('Search matching', () => {
     describe('less than', () => {
       test('true', () => {
         const patient: Patient = { resourceType: 'Patient', birthDate: '1990-01-01' };
-        const search = {
+        const search: SearchRequest = {
           resourceType: 'Patient',
           filters: [{ code: 'birthdate', operator: Operator.LESS_THAN, value: '1980-01-01' }],
         };
@@ -430,7 +430,7 @@ describe('Search matching', () => {
 
       test('false', () => {
         const patient: Patient = { resourceType: 'Patient', birthDate: '1990-01-01' };
-        const search = {
+        const search: SearchRequest = {
           resourceType: 'Patient',
           filters: [{ code: 'birthdate', operator: Operator.LESS_THAN, value: '2000-01-01' }],
         };
@@ -439,7 +439,7 @@ describe('Search matching', () => {
 
       test('same value', () => {
         const patient: Patient = { resourceType: 'Patient', birthDate: '1990-01-01' };
-        const search = {
+        const search: SearchRequest = {
           resourceType: 'Patient',
           filters: [{ code: 'birthdate', operator: Operator.LESS_THAN, value: '1990-01-01' }],
         };
@@ -450,7 +450,7 @@ describe('Search matching', () => {
     describe('less than or equals', () => {
       test('true', () => {
         const patient: Patient = { resourceType: 'Patient', birthDate: '1990-01-01' };
-        const search = {
+        const search: SearchRequest = {
           resourceType: 'Patient',
           filters: [{ code: 'birthdate', operator: Operator.LESS_THAN_OR_EQUALS, value: '1980-01-01' }],
         };
@@ -459,7 +459,7 @@ describe('Search matching', () => {
 
       test('false', () => {
         const patient: Patient = { resourceType: 'Patient', birthDate: '1990-01-01' };
-        const search = {
+        const search: SearchRequest = {
           resourceType: 'Patient',
           filters: [{ code: 'birthdate', operator: Operator.LESS_THAN_OR_EQUALS, value: '2000-01-01' }],
         };
@@ -468,7 +468,7 @@ describe('Search matching', () => {
 
       test('same value', () => {
         const patient: Patient = { resourceType: 'Patient', birthDate: '1990-01-01' };
-        const search = {
+        const search: SearchRequest = {
           resourceType: 'Patient',
           filters: [{ code: 'birthdate', operator: Operator.LESS_THAN_OR_EQUALS, value: '1990-01-01' }],
         };
@@ -488,19 +488,19 @@ describe('Search matching', () => {
       meta: { compartment: [{ reference: 'Organization/456' }] },
     };
 
-    const search1 = {
+    const search1: SearchRequest = {
       resourceType: 'Patient',
       filters: [{ code: '_compartment', operator: Operator.EQUALS, value: 'Organization/123' }],
     };
 
-    const search2 = {
+    const search2: SearchRequest = {
       resourceType: 'Patient',
       filters: [{ code: '_compartment', operator: Operator.EQUALS, value: 'Organization/456' }],
     };
 
     // Backwards compatibility
     // Support matching values without the resourceType prefix
-    const search3 = {
+    const search3: SearchRequest = {
       resourceType: 'Patient',
       filters: [{ code: '_compartment', operator: Operator.EQUALS, value: '123' }],
     };

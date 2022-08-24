@@ -1,5 +1,5 @@
 import { Filter, Operator as FhirOperator, SortRule } from '@medplum/core';
-import { Resource, SearchParameter } from '@medplum/fhirtypes';
+import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
 import { getClient } from '../../database';
 import { Column, Condition, Conjunction, DeleteQuery, Disjunction, InsertQuery, Operator, SelectQuery } from '../sql';
@@ -15,22 +15,23 @@ import { Column, Condition, Conjunction, DeleteQuery, Disjunction, InsertQuery, 
 export abstract class LookupTable<T> {
   /**
    * Returns the unique name of the lookup table.
+   * @param resourceType The resource type.
    * @returns The unique name of the lookup table.
    */
-  abstract getTableName(): string;
+  protected abstract getTableName(resourceType: ResourceType): string;
 
   /**
    * Returns the column name for the given search parameter.
    * @param code The search parameter code.
    */
-  abstract getColumnName(code: string): string;
+  protected abstract getColumnName(code: string): string;
 
   /**
    * Determines if the search parameter is indexed by this index table.
    * @param searchParam The search parameter.
    * @returns True if the search parameter is indexed.
    */
-  abstract isIndexed(searchParam: SearchParameter): boolean;
+  abstract isIndexed(searchParam: SearchParameter, resourceType: string): boolean;
 
   /**
    * Indexes the resource in the lookup table.
@@ -42,11 +43,12 @@ export abstract class LookupTable<T> {
   /**
    * Adds "where" conditions to the select query builder.
    * @param selectQuery The select query builder.
+   * @param resourceType The FHIR resource type.
    * @param predicate The conjunction where conditions should be added.
    * @param filter The search filter details.
    */
-  addWhere(selectQuery: SelectQuery, predicate: Conjunction, filter: Filter): void {
-    const tableName = this.getTableName();
+  addWhere(selectQuery: SelectQuery, resourceType: ResourceType, predicate: Conjunction, filter: Filter): void {
+    const tableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(filter.code);
     const subQuery = new SelectQuery(tableName)
@@ -74,10 +76,11 @@ export abstract class LookupTable<T> {
   /**
    * Adds "order by" clause to the select query builder.
    * @param selectQuery The select query builder.
+   * @param resourceType The FHIR resource type.
    * @param sortRule The sort rule details.
    */
-  addOrderBy(selectQuery: SelectQuery, sortRule: SortRule): void {
-    const tableName = this.getTableName();
+  addOrderBy(selectQuery: SelectQuery, resourceType: ResourceType, sortRule: SortRule): void {
+    const tableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(sortRule.code);
     const subQuery = new SelectQuery(tableName)
@@ -89,11 +92,12 @@ export abstract class LookupTable<T> {
 
   /**
    * Returns the existing list of indexed addresses.
+   * @param resourceType The FHIR resource type.
    * @param resourceId The FHIR resource ID.
    * @returns Promise for the list of indexed addresses.
    */
-  async getExistingValues(resourceId: string): Promise<T[]> {
-    const tableName = this.getTableName();
+  protected async getExistingValues(resourceType: ResourceType, resourceId: string): Promise<T[]> {
+    const tableName = this.getTableName(resourceType);
     return new SelectQuery(tableName)
       .column('content')
       .where('resourceId', Operator.EQUALS, resourceId)
@@ -105,13 +109,18 @@ export abstract class LookupTable<T> {
   /**
    * Inserts values into the lookup table for a resource.
    * @param client The database client.
+   * @param resourceType The resource type.
    * @param values The values to insert.
    */
-  async insertValuesForResource(client: PoolClient, values: Record<string, any>[]): Promise<void> {
+  protected async insertValuesForResource(
+    client: PoolClient,
+    resourceType: ResourceType,
+    values: Record<string, any>[]
+  ): Promise<void> {
     if (values.length === 0) {
       return;
     }
-    const tableName = this.getTableName();
+    const tableName = this.getTableName(resourceType);
     await new InsertQuery(tableName, values).execute(client);
   }
 
@@ -120,7 +129,7 @@ export abstract class LookupTable<T> {
    * @param resource The resource to delete.
    */
   async deleteValuesForResource(resource: Resource): Promise<void> {
-    const tableName = this.getTableName();
+    const tableName = this.getTableName(resource.resourceType);
     const resourceId = resource.id as string;
     const client = getClient();
     await new DeleteQuery(tableName).where('resourceId', Operator.EQUALS, resourceId).execute(client);

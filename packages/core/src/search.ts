@@ -3,7 +3,7 @@ import { ResourceType } from '@medplum/fhirtypes';
 export const DEFAULT_SEARCH_COUNT = 20;
 
 export interface SearchRequest {
-  readonly resourceType: string;
+  readonly resourceType: ResourceType;
   filters?: Filter[];
   sortRules?: SortRule[];
   offset?: number;

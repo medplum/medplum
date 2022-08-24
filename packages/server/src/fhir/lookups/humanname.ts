@@ -66,8 +66,9 @@ export class HumanNameTable extends LookupTable<HumanName> {
       return;
     }
 
+    const resourceType = resource.resourceType;
     const resourceId = resource.id as string;
-    const existing = await this.getExistingValues(resourceId);
+    const existing = await this.getExistingValues(resourceType, resourceId);
 
     if (!compareArrays(names, existing)) {
       if (existing.length > 0) {
@@ -89,7 +90,7 @@ export class HumanNameTable extends LookupTable<HumanName> {
         });
       }
 
-      await this.insertValuesForResource(client, values);
+      await this.insertValuesForResource(client, resourceType, values);
     }
   }
 }

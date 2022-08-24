@@ -1,5 +1,13 @@
 import { badRequest, evalFhirPath, formatAddress, formatHumanName } from '@medplum/core';
-import { Address, BundleEntry, CodeableConcept, ContactPoint, HumanName, Reference } from '@medplum/fhirtypes';
+import {
+  Address,
+  BundleEntry,
+  CodeableConcept,
+  ContactPoint,
+  HumanName,
+  Reference,
+  ResourceType,
+} from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
@@ -13,7 +21,7 @@ import { getSearchParameter } from '../structure';
  * @param res The HTTP response.
  */
 export async function csvHandler(req: Request, res: Response): Promise<void> {
-  const { resourceType } = req.params as { resourceType: string };
+  const { resourceType } = req.params as { resourceType: ResourceType };
   const query = req.query as Record<string, string[] | string | undefined>;
 
   const fields = query['_fields'] as string;

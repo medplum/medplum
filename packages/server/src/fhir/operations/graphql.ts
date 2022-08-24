@@ -404,7 +404,7 @@ async function resolveBySearch(
   info: GraphQLResolveInfo
 ): Promise<Resource[] | undefined> {
   const fieldName = info.fieldName;
-  const resourceType = fieldName.substring(0, fieldName.length - 4); // Remove "List"
+  const resourceType = fieldName.substring(0, fieldName.length - 4) as ResourceType; // Remove "List"
   const repo = ctx.res.locals.repo as Repository;
   const searchRequest = parseSearchArgs(resourceType, source, args);
   const bundle = await repo.search(searchRequest);
@@ -465,7 +465,7 @@ function resolveTypeByReference(resource: Resource | undefined): string | undefi
   return (getGraphQLType(resourceType) as GraphQLObjectType).name;
 }
 
-function parseSearchArgs(resourceType: string, source: any, args: Record<string, string>): SearchRequest {
+function parseSearchArgs(resourceType: ResourceType, source: any, args: Record<string, string>): SearchRequest {
   let referenceFilter: Filter | undefined = undefined;
   if (source) {
     // _reference is a required field for reverse lookup searches

@@ -45,7 +45,7 @@ function writeMigrations(): void {
   const b = new FileBuilder();
   buildMigrationUp(b);
   // writeFileSync(resolve(__dirname, '../../server/src/migrations/init.ts'), b.toString(), 'utf8');
-  writeFileSync(resolve(__dirname, '../../server/src/migrations/v17.ts'), builder.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../server/src/migrations/v28.ts'), builder.toString(), 'utf8');
 }
 
 function buildMigrationUp(b: FileBuilder): void {
@@ -120,8 +120,6 @@ function buildCreateTables(b: FileBuilder, resourceType: string, fhirType: TypeS
 
   b.append(`await client.query('CREATE INDEX ON "${resourceType}" ("lastUpdated")');`);
   b.append(`await client.query('CREATE INDEX ON "${resourceType}" USING GIN("compartments")');`);
-  b.append(`await client.query('CREATE INDEX ON "${resourceType}_History" ("id")');`);
-  b.append(`await client.query('CREATE INDEX ON "${resourceType}_History" ("lastUpdated")');`);
   b.newLine();
 
   buildSearchIndexes(b, resourceType);
@@ -135,6 +133,44 @@ function buildCreateTables(b: FileBuilder, resourceType: string, fhirType: TypeS
   b.indentCount--;
   b.append(')`);');
   b.newLine();
+
+  b.append(`await client.query('CREATE INDEX ON "${resourceType}_History" ("id")');`);
+  b.append(`await client.query('CREATE INDEX ON "${resourceType}_History" ("lastUpdated")');`);
+  b.newLine();
+
+  b.append('await client.query(`CREATE TABLE IF NOT EXISTS "' + resourceType + '_Token" (');
+  b.indentCount++;
+  b.append('"resourceId" UUID NOT NULL,');
+  b.append('"index" INTEGER NOT NULL,');
+  b.append('"code" TEXT NOT NULL,');
+  b.append('"system" TEXT,');
+  b.append('"value" TEXT');
+  b.indentCount--;
+  b.append(')`);');
+  b.newLine();
+
+  b.append(`await client.query('CREATE INDEX ON "${resourceType}_Token" ("resourceId")');`);
+  b.append(`await client.query('CREATE INDEX ON "${resourceType}_Token" ("code")');`);
+  b.append(`await client.query('CREATE INDEX ON "${resourceType}_Token" ("system")');`);
+  b.append(`await client.query('CREATE INDEX ON "${resourceType}_Token" ("value")');`);
+  b.newLine();
+
+  builder.append('await client.query(`CREATE TABLE IF NOT EXISTS "' + resourceType + '_Token" (');
+  builder.indentCount++;
+  builder.append('"resourceId" UUID NOT NULL,');
+  builder.append('"index" INTEGER NOT NULL,');
+  builder.append('"code" TEXT NOT NULL,');
+  builder.append('"system" TEXT,');
+  builder.append('"value" TEXT');
+  builder.indentCount--;
+  builder.append(')`);');
+  builder.newLine();
+
+  builder.append(`await client.query('CREATE INDEX ON "${resourceType}_Token" ("resourceId")');`);
+  builder.append(`await client.query('CREATE INDEX ON "${resourceType}_Token" ("code")');`);
+  builder.append(`await client.query('CREATE INDEX ON "${resourceType}_Token" ("system")');`);
+  builder.append(`await client.query('CREATE INDEX ON "${resourceType}_Token" ("value")');`);
+  builder.newLine();
 }
 
 function buildSearchColumns(resourceType: string): string[] {

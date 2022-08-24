@@ -1311,45 +1311,28 @@ describe('FHIR Repo', () => {
       name: [{ given: ['John'], family: 'CodeableConcept' }],
     });
 
-    // Use code.coding[0].code
     const serviceRequest1 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
       status: 'active',
       intent: 'order',
       subject: createReference(patient),
-      code: {
-        coding: [
-          {
-            code: x1,
-          },
-        ],
-      },
+      code: { coding: [{ code: x1 }] },
     });
 
-    // Use code.coding[0].display
     const serviceRequest2 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
       status: 'active',
       intent: 'order',
       subject: createReference(patient),
-      code: {
-        coding: [
-          {
-            display: x2,
-          },
-        ],
-      },
+      code: { coding: [{ code: x2 }] },
     });
 
-    // Use code.text
     const serviceRequest3 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
       status: 'active',
       intent: 'order',
       subject: createReference(patient),
-      code: {
-        text: x3,
-      },
+      code: { coding: [{ code: x3 }] },
     });
 
     const bundle1 = await systemRepo.search({
@@ -1822,7 +1805,7 @@ describe('FHIR Repo', () => {
     const appt1 = await systemRepo.createResource<Appointment>({
       resourceType: 'Appointment',
       status: 'booked',
-      serviceType: [{ text: code }],
+      serviceType: [{ coding: [{ code }] }],
       participant: [{ status: 'accepted' }],
       start: nowMinus1Second.toISOString(),
     });
@@ -1831,7 +1814,7 @@ describe('FHIR Repo', () => {
     const appt2 = await systemRepo.createResource<Appointment>({
       resourceType: 'Appointment',
       status: 'booked',
-      serviceType: [{ text: code }],
+      serviceType: [{ coding: [{ code }] }],
       participant: [{ status: 'accepted' }],
       start: nowMinus2Seconds.toISOString(),
     });
@@ -1994,8 +1977,8 @@ describe('FHIR Repo', () => {
           status: 'active',
           intent: 'order',
           subject: { reference: 'Patient/' + randomUUID() },
-          category: [{ text: category }],
-          code: { text: randomUUID() },
+          category: [{ coding: [{ code: category }] }],
+          code: { coding: [{ code: randomUUID() }] },
         })
       );
     }
@@ -2013,7 +1996,7 @@ describe('FHIR Repo', () => {
         {
           code: 'code',
           operator: Operator.NOT_EQUALS,
-          value: serviceRequests[0].code.text + ',' + serviceRequests[1].code.text,
+          value: serviceRequests[0].code.coding[0].code + ',' + serviceRequests[1].code.coding[0].code,
         },
       ],
     });

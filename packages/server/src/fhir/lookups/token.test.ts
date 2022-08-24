@@ -1,5 +1,5 @@
 import { Operator } from '@medplum/core';
-import { Patient, SpecimenDefinition } from '@medplum/fhirtypes';
+import { Patient, ServiceRequest, SpecimenDefinition } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
@@ -391,5 +391,37 @@ describe('Identifier Lookup Table', () => {
     });
     expect(searchResult.entry?.length).toEqual(1);
     expect(searchResult.entry?.[0]?.resource?.id).toEqual(resource?.id);
+  });
+
+  test('CodeableConcept text', async () => {
+    const sr1 = await systemRepo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      intent: 'order',
+      status: 'active',
+      subject: { reference: 'Patient/1' },
+      category: [{ text: randomUUID() }],
+    });
+
+    const sr2 = await systemRepo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      intent: 'order',
+      status: 'active',
+      subject: { reference: 'Patient/1' },
+      category: [{ text: randomUUID() }],
+    });
+
+    const searchResult1 = await systemRepo.search({
+      resourceType: 'ServiceRequest',
+      filters: [
+        {
+          code: 'category',
+          operator: Operator.EQUALS,
+          value: sr1.category?.[0]?.text as string,
+        },
+      ],
+    });
+    expect(searchResult1?.entry?.length).toEqual(1);
+    expect(bundleContains(searchResult1, sr1)).toBe(true);
+    expect(bundleContains(searchResult1, sr2)).toBe(false);
   });
 });
