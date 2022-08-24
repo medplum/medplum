@@ -2,7 +2,17 @@ import { Filter, Operator as FhirOperator, stringify } from '@medplum/core';
 import { Identifier, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { getClient } from '../../database';
-import { Column, Condition, Conjunction, Disjunction, Expression, InsertQuery, Operator, SelectQuery } from '../sql';
+import {
+  Column,
+  Condition,
+  Conjunction,
+  Disjunction,
+  Expression,
+  InsertQuery,
+  Negation,
+  Operator,
+  SelectQuery,
+} from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
@@ -86,7 +96,11 @@ export class IdentifierTable extends LookupTable<Identifier> {
     for (const option of filter.value.split(',')) {
       disjunction.expressions.push(this.#buildWhereCondition(filter.operator, option));
     }
-    subQuery.whereExpr(disjunction);
+    if (filter.operator === FhirOperator.NOT_EQUALS) {
+      subQuery.whereExpr(new Negation(disjunction));
+    } else {
+      subQuery.whereExpr(disjunction);
+    }
     selectQuery.join(joinName, 'id', 'resourceId', subQuery);
     predicate.expressions.push(new Condition(new Column(joinName, 'id'), Operator.NOT_EQUALS, null));
   }
@@ -113,10 +127,10 @@ export class IdentifierTable extends LookupTable<Identifier> {
 
   #buildValueCondition(operator: FhirOperator, value: string): Condition {
     const column = new Column(IDENTIFIER_TABLE_NAME, 'value');
-    if (operator === FhirOperator.EXACT) {
-      return new Condition(column, Operator.EQUALS, value.trim());
-    } else {
+    if (operator === FhirOperator.CONTAINS) {
       return new Condition(column, Operator.LIKE, value.trim() + '%');
+    } else {
+      return new Condition(column, Operator.EQUALS, value.trim());
     }
   }
 }
