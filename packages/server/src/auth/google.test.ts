@@ -284,7 +284,7 @@ describe('Google Auth', () => {
     const email = `google-client${randomUUID()}@example.com`;
     const password = 'password!@#';
 
-    const { project, client } = await registerNew({
+    const { client } = await registerNew({
       firstName: 'Google',
       lastName: 'Google',
       projectName: 'Require Google Auth',
@@ -296,7 +296,7 @@ describe('Google Auth', () => {
       .post('/auth/google')
       .type('json')
       .send({
-        projectId: project.id,
+        projectId: randomUUID(),
         clientId: client.id,
         googleClientId: getConfig().googleClientId,
         googleCredential: createCredential('Text', 'User', email),
