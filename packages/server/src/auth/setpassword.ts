@@ -40,8 +40,12 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
     return;
   }
 
-  const passwordHash = await bcrypt.hash(req.body.password, 10);
-  await systemRepo.updateResource<User>({ ...user, passwordHash });
+  await setPassword(user, req.body.password);
   await systemRepo.updateResource<PasswordChangeRequest>({ ...pcr, used: true });
   sendOutcome(res, allOk);
+}
+
+export async function setPassword(user: User, password: string): Promise<void> {
+  const passwordHash = await bcrypt.hash(password, 10);
+  await systemRepo.updateResource<User>({ ...user, passwordHash });
 }

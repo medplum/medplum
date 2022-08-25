@@ -1,5 +1,5 @@
 import { badRequest, createReference } from '@medplum/core';
-import { Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { createClient } from '../admin/client';
@@ -43,7 +43,7 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
   const projectName = req.body.projectName;
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
   const { firstName, lastName } = user;
-  const membership = await createProject(login, projectName, firstName as string, lastName as string);
+  const { membership } = await createProject(login, projectName, firstName as string, lastName as string);
 
   // Update the login
   const updated = await setLoginMembership(login, membership.id as string);
@@ -67,7 +67,7 @@ export async function createProject(
   projectName: string,
   firstName: string,
   lastName: string
-): Promise<ProjectMembership> {
+): Promise<{ project: Project; membership: ProjectMembership; client: ClientApplication }> {
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
 
   logger.info('Create project ' + projectName);
@@ -78,7 +78,7 @@ export async function createProject(
   });
 
   logger.info('Created project: ' + project.id);
-  await createClient(systemRepo, {
+  const client = await createClient(systemRepo, {
     project,
     name: project.name + ' Default Client',
     description: 'Default client for ' + project.name,
@@ -93,5 +93,5 @@ export async function createProject(
     membership: createReference(membership),
   });
 
-  return membership;
+  return { project, membership, client };
 }

@@ -33,7 +33,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  const profile = await inviteUser({
+  const { profile } = await inviteUser({
     ...req.body,
     project: project,
   });
@@ -49,7 +49,7 @@ export interface InviteRequest {
   readonly accessPolicy?: Reference<AccessPolicy>;
 }
 
-export async function inviteUser(request: InviteRequest): Promise<Practitioner> {
+export async function inviteUser(request: InviteRequest): Promise<{ user: User; profile: Practitioner }> {
   const project = request.project;
   let user = await getUserByEmailWithoutProject(request.email);
 
@@ -90,9 +90,9 @@ export async function inviteUser(request: InviteRequest): Promise<Practitioner> 
       ].join('\n'),
     });
   }
-  let practitioner = await searchForExistingPractitioner(project, request.email);
-  if (!practitioner) {
-    practitioner = (await createProfile(
+  let profile = await searchForExistingPractitioner(project, request.email);
+  if (!profile) {
+    profile = (await createProfile(
       project,
       'Practitioner',
       request.firstName,
@@ -100,8 +100,8 @@ export async function inviteUser(request: InviteRequest): Promise<Practitioner> 
       request.email
     )) as Practitioner;
   }
-  await createProjectMembership(user, project, practitioner, request.accessPolicy);
-  return practitioner;
+  await createProjectMembership(user, project, profile, request.accessPolicy);
+  return { user, profile };
 }
 
 async function createUser(request: InviteRequest): Promise<User> {

@@ -26,7 +26,7 @@ export interface RegisterResponse {
   readonly project: Project;
   readonly membership: ProjectMembership;
   readonly profile: ProfileResource;
-  readonly client?: ClientApplication;
+  readonly client: ClientApplication;
 }
 
 /**
@@ -54,7 +54,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     remember: true,
   });
 
-  const membership = await createProject(login, projectName, firstName, lastName);
+  const { membership, client } = await createProject(login, projectName, firstName, lastName);
 
   const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
 
@@ -74,5 +74,6 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     project,
     membership,
     profile,
+    client,
   };
 }

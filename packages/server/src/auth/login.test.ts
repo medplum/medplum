@@ -1,30 +1,48 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { createReference } from '@medplum/core';
-import { ClientApplication } from '@medplum/fhirtypes';
+import { ClientApplication, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
+import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
-import { createTestClient, setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+import { createTestProject, setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { registerNew } from './register';
+import { setPassword } from './setpassword';
 
 jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
 jest.mock('node-fetch');
 
 const app = express();
+const email = randomUUID() + '@example.com';
+const password = randomUUID();
+let project: Project;
 let client: ClientApplication;
 
 describe('Login', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    client = await createTestClient();
+
+    // Create a test project
+    ({ project, client } = await createTestProject());
+
+    // Create a test user
+    const { user } = await inviteUser({
+      project,
+      firstName: 'Test',
+      lastName: 'User',
+      email,
+    });
+
+    // Set the test user password
+    await setPassword(user, password);
   });
 
   afterAll(async () => {
@@ -43,8 +61,8 @@ describe('Login', () => {
   test('Invalid client UUID', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
       clientId: '123',
-      email: 'admin@example.com',
-      password: 'medplum_admin',
+      email,
+      password,
       scope: 'openid',
     });
     expect(res.status).toBe(400);
@@ -55,8 +73,8 @@ describe('Login', () => {
   test('Invalid client ID', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
       clientId: 'e99126bb-c748-4c00-8d28-4e88dfb88278',
-      email: 'admin@example.com',
-      password: 'medplum_admin',
+      email,
+      password,
       scope: 'openid',
     });
     expect(res.status).toBe(404);
@@ -66,9 +84,8 @@ describe('Login', () => {
 
   test('Missing email', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
-      clientId: client.id,
       email: '',
-      password: 'medplum_admin',
+      password,
       scope: 'openid',
     });
     expect(res.status).toBe(400);
@@ -78,9 +95,8 @@ describe('Login', () => {
 
   test('Invalid email', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
-      clientId: client.id,
       email: 'xyz',
-      password: 'medplum_admin',
+      password,
       scope: 'openid',
     });
     expect(res.status).toBe(400);
@@ -90,8 +106,7 @@ describe('Login', () => {
 
   test('Missing password', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
-      clientId: client.id,
-      email: 'admin@example.com',
+      email,
       password: '',
       scope: 'openid',
     });
@@ -102,8 +117,7 @@ describe('Login', () => {
 
   test('Wrong password', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
-      clientId: client.id,
-      email: 'admin@example.com',
+      email,
       password: 'wrong-password',
       scope: 'openid',
     });
@@ -112,11 +126,23 @@ describe('Login', () => {
     expect(res.body.issue[0].details.text).toBe('Email or password is invalid');
   });
 
-  test('Success', async () => {
+  test('Wrong projectId', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
       clientId: client.id,
+      projectId: randomUUID(),
       email: 'admin@example.com',
       password: 'medplum_admin',
+      scope: 'openid',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Invalid projectId');
+  });
+
+  test('Success with custom client', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email,
+      password,
       scope: 'openid',
     });
     expect(res.status).toBe(200);
@@ -125,8 +151,8 @@ describe('Login', () => {
 
   test('Success default client', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
-      email: 'admin@example.com',
-      password: 'medplum_admin',
+      email,
+      password,
       scope: 'openid',
     });
     expect(res.status).toBe(200);
@@ -135,8 +161,8 @@ describe('Login', () => {
 
   test('Success new project', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
-      email: 'admin@example.com',
-      password: 'medplum_admin',
+      email,
+      password,
       scope: 'openid',
       projectId: 'new',
     });
@@ -260,7 +286,6 @@ describe('Login', () => {
 
     // Then login
     const res8 = await request(app).post('/auth/login').type('json').send({
-      clientId: client.id,
       email: memberEmail,
       password: 'my-new-password',
       scope: 'openid',
@@ -272,7 +297,6 @@ describe('Login', () => {
     // Then get access token
     const res9 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
-      clientId: client.id,
       code: res8.body.code,
       code_verifier: 'xyz',
     });
@@ -344,7 +368,6 @@ describe('Login', () => {
     // Then try to login
     // This should fail with error message that google auth is required
     const res8 = await request(app).post('/auth/login').type('json').send({
-      clientId: client.id,
       email,
       password,
       scope: 'openid',

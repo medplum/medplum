@@ -1,5 +1,5 @@
-import { badRequest, createReference, Operator } from '@medplum/core';
-import { Project, User } from '@medplum/fhirtypes';
+import { badRequest, Operator } from '@medplum/core';
+import { ClientApplication, Project, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -45,23 +45,42 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  const googleClientId = req.body.googleClientId;
-  let project: Project | undefined;
+  // Project ID can come from one of three sources
+  // 1) Passed in explicitly as projectId
+  // 2) Implicit with clientId
+  // 3) Implicit with googleClientId
+  // The only rule is that they have to match
+  let projectId = req.body.projectId as string | undefined;
 
+  const googleClientId = req.body.googleClientId;
   if (googleClientId !== getConfig().googleClientId) {
     // If the Google Client ID is not the main Medplum Client ID,
     // then it must be associated with a Project.
     // The user can only authenticate with that project.
-    project = await getProjectByGoogleClientId(googleClientId);
+    const project = await getProjectByGoogleClientId(googleClientId);
     if (!project) {
       sendOutcome(res, badRequest('Invalid googleClientId'));
       return;
     }
+
+    if (projectId !== undefined && project.id !== projectId) {
+      sendOutcome(res, badRequest('Invalid projectId'));
+      return;
+    }
+
+    projectId = project.id;
   }
 
-  if (req.body.projectId && project && req.body.projectId !== project.id) {
-    sendOutcome(res, badRequest('Invalid projectId'));
-    return;
+  // For OAuth2 flow, check the clientId
+  const clientId = req.body.clientId;
+  if (clientId) {
+    const client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+    const clientProjectId = client.meta?.project as string;
+    if (projectId !== undefined && projectId !== clientProjectId) {
+      sendOutcome(res, badRequest('Invalid projectId'));
+      return;
+    }
+    projectId = clientProjectId;
   }
 
   const googleJwt = req.body.googleCredential as string;
@@ -82,7 +101,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
 
   const claims = result.payload as GoogleCredentialClaims;
 
-  const existingUser = await getUserByEmail(claims.email, project?.id);
+  const existingUser = await getUserByEmail(claims.email, projectId);
   if (!existingUser) {
     if (!req.body.createUser) {
       sendOutcome(res, badRequest('User not found'));
@@ -93,7 +112,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       firstName: claims.given_name,
       lastName: claims.family_name,
       email: claims.email,
-      project: project ? createReference(project) : undefined,
+      project: projectId ? { reference: 'Project/' + projectId } : undefined,
     });
   }
 
@@ -102,14 +121,14 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     email: claims.email,
     googleCredentials: claims,
     remember: true,
-    projectId: req.body.projectId || project?.id,
-    clientId: req.body.clientId || undefined,
+    projectId,
+    clientId,
     scope: req.body.scope || 'openid',
     nonce: req.body.nonce || randomUUID(),
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
   });
-  await sendLoginResult(res, login, req.body.projectId === 'new');
+  await sendLoginResult(res, login, projectId);
 }
 
 async function getProjectByGoogleClientId(googleClientId: string): Promise<Project | undefined> {
