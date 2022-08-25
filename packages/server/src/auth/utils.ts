@@ -73,9 +73,10 @@ export async function createProjectMembership(
  * Otherwise, sends the authorization code.
  * @param res The response object.
  * @param login The login details.
+ * @param projectId The optional projectId for scoping.
  */
-export async function sendLoginResult(res: Response, login: Login, newProject: boolean): Promise<void> {
-  if (newProject) {
+export async function sendLoginResult(res: Response, login: Login, projectId: string | undefined): Promise<void> {
+  if (projectId === 'new') {
     // User is creating a new project.
     res.json({ login: login.id });
     return;
@@ -93,7 +94,7 @@ export async function sendLoginResult(res: Response, login: Login, newProject: b
   // User has multiple profiles, so the user needs to select
   // Safe to rewrite attachments,
   // because we know that these are all resources that the user has access to
-  const memberships = await getUserMemberships(login?.user as Reference<User>);
+  const memberships = await getUserMemberships(login?.user as Reference<User>, projectId);
   const redactedMemberships = memberships.map((m) => ({
     id: m.id,
     project: m.project,

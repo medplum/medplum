@@ -41,7 +41,7 @@ describe('Profile', () => {
     });
 
     profile1 = registerResult.profile;
-    profile2 = inviteResult;
+    profile2 = inviteResult.profile;
   });
 
   afterAll(async () => {

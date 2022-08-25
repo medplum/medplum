@@ -1,23 +1,41 @@
-import { ClientApplication } from '@medplum/fhirtypes';
+import { ClientApplication, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
+import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
+import { setPassword } from '../auth/setpassword';
 import { loadTestConfig, MedplumServerConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
-import { createTestClient } from '../test.setup';
+import { createTestProject } from '../test.setup';
 import { generateSecret } from './keys';
 import { hashCode } from './token';
 
 const app = express();
+const email = randomUUID() + '@example.com';
+const password = randomUUID();
 let config: MedplumServerConfig;
+let project: Project;
 let client: ClientApplication;
 
 describe('OAuth2 Token', () => {
   beforeAll(async () => {
     config = await loadTestConfig();
     await initApp(app, config);
-    client = await createTestClient();
+
+    // Create a test project
+    ({ project, client } = await createTestProject());
+
+    // Create a test user
+    const { user } = await inviteUser({
+      project,
+      firstName: 'Test',
+      lastName: 'User',
+      email,
+    });
+
+    // Set the test user password
+    await setPassword(user, password);
   });
 
   afterAll(async () => {
@@ -205,8 +223,8 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         client_id: client.id as string,
         redirect_uri: client.redirectUri as string,
         scope: 'openid',
@@ -234,8 +252,8 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         client_id: client.id as string,
         redirect_uri: client.redirectUri as string,
         scope: 'openid',
@@ -264,8 +282,8 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         clientId: client.id as string,
         redirectUri: client.redirectUri as string,
         scope: 'openid',
@@ -296,8 +314,8 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         client_id: client.id as string,
         redirect_uri: client.redirectUri as string,
         scope: 'openid',
@@ -322,8 +340,8 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         client_id: client.id as string,
         redirect_uri: client.redirectUri as string,
         scope: 'openid',
@@ -379,8 +397,8 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         client_id: client.id as string,
         redirect_uri: client.redirectUri as string,
         scope: 'openid',
@@ -421,8 +439,8 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         client_id: client.id as string,
         redirect_uri: client.redirectUri as string,
         scope: 'openid',
@@ -464,8 +482,8 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         clientId: client.id as string,
         redirectUri: client.redirectUri as string,
         scope: 'openid',
@@ -491,8 +509,8 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         clientId: client.id as string,
         redirectUri: client.redirectUri as string,
         scope: 'openid',
@@ -533,8 +551,8 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         clientId: client.id as string,
         redirectUri: client.redirectUri as string,
         scope: 'openid',
@@ -579,8 +597,8 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         clientId: client.id as string,
         redirectUri: client.redirectUri as string,
         scope: 'openid',
@@ -621,8 +639,8 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         clientId: client.id as string,
         redirectUri: client.redirectUri as string,
         scope: 'openid',
@@ -663,8 +681,8 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         clientId: client.id as string,
         redirectUri: client.redirectUri as string,
         scope: 'openid',
@@ -712,8 +730,8 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         clientId: client.id as string,
         redirectUri: client.redirectUri as string,
         scope: 'openid',
