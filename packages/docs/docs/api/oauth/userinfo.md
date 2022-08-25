@@ -4,9 +4,9 @@ sidebar_position: 3
 
 # UserInfo endpoint
 
-The `/oauth2/userInfo` endpoint returns information about the authenticated user.
+The `/oauth2/userinfo` endpoint returns information about the authenticated user.
 
-## GET /oauth2/userInfo
+## GET /oauth2/userinfo
 
 The user pool client makes requests to this endpoint directly and not through a browser.
 
@@ -21,7 +21,7 @@ Required.
 ## Sample request
 
 ```
-GET https://api.medplum.com/oauth2/userInfo
+GET https://api.medplum.com/oauth2/userinfo
     Authorization: Bearer <access_token>
 ```
 
