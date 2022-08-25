@@ -1,5 +1,6 @@
 {
-  "resourceName": "MedicinalProductUndesirableEffect",
+  "name": "MedicinalProductUndesirableEffect",
+  "type": "resource",
   "description": "Describe the undesirable effects of the medicinal product.",
   "properties": [
     {

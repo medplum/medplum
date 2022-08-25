@@ -1,5 +1,6 @@
 {
-  "resourceName": "MedicinalProductIndication",
+  "name": "MedicinalProductIndication",
+  "type": "resource",
   "description": "Indication for the Medicinal Product.",
   "properties": [
     {

@@ -1,5 +1,6 @@
 {
-  "resourceName": "CoverageEligibilityResponse",
+  "name": "CoverageEligibilityResponse",
+  "type": "resource",
   "description": "This resource provides eligibility and plan details from the processing of an CoverageEligibilityRequest resource.",
   "properties": [
     {

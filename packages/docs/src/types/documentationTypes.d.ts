@@ -12,7 +12,8 @@ type PropertyDocInfo = {
 type SearchParamDocInfo = Required<Pick<SearchParameter, 'name' | 'type' | 'description' | 'expression'>>;
 
 interface ResourceDocsProps {
-  resourceName: string;
+  name: string;
+  type: 'resource' | 'datatype';
   description: string;
   properties: PropertyDocInfo[];
   searchParameters: SearchParamDocInfo[];

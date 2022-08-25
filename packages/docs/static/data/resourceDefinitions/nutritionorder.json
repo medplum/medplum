@@ -1,5 +1,6 @@
 {
-  "resourceName": "NutritionOrder",
+  "name": "NutritionOrder",
+  "type": "resource",
   "description": "A request to supply a diet, formula feeding (enteral) or oral nutritional supplement to a patient/resident.",
   "properties": [
     {

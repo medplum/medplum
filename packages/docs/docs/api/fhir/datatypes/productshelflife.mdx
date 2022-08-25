@@ -1,0 +1,18 @@
+---
+title: ProductShelfLife
+sidebar_position: 27
+---
+
+import definition from '@site/static/data/datatypeDefinitions/productshelflife.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# ProductShelfLife
+
+Base StructureDefinition for ProductShelfLife Type: The shelf-life and storage information for a medicinal product item or container can be described using this class.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

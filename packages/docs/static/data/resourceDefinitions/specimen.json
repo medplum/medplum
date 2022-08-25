@@ -1,5 +1,6 @@
 {
-  "resourceName": "Specimen",
+  "name": "Specimen",
+  "type": "resource",
   "description": "A sample to be used for analysis.",
   "properties": [
     {

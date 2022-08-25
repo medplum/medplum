@@ -1,5 +1,6 @@
 {
-  "resourceName": "MedicinalProductAuthorization",
+  "name": "MedicinalProductAuthorization",
+  "type": "resource",
   "description": "The regulatory authorization of a medicinal product.",
   "properties": [
     {

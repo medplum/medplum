@@ -1,5 +1,6 @@
 {
-  "resourceName": "MedicinalProductPackaged",
+  "name": "MedicinalProductPackaged",
+  "type": "resource",
   "description": "A medicinal product in a container or package.",
   "properties": [
     {

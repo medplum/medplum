@@ -1,5 +1,6 @@
 {
-  "resourceName": "SubstancePolymer",
+  "name": "SubstancePolymer",
+  "type": "resource",
   "description": "Todo.",
   "properties": [
     {
@@ -770,6 +771,5 @@
       "comment": "",
       "inherited": false
     }
-  ],
-  "searchParameters": []
+  ]
 }

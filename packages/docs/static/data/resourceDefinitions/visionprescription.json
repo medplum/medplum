@@ -1,5 +1,6 @@
 {
-  "resourceName": "VisionPrescription",
+  "name": "VisionPrescription",
+  "type": "resource",
   "description": "An authorization for the provision of glasses and/or contact lenses to a patient.",
   "properties": [
     {

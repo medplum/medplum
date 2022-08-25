@@ -1,5 +1,6 @@
 {
-  "resourceName": "AuditEvent",
+  "name": "AuditEvent",
+  "type": "resource",
   "description": "A record of an event made for purposes of maintaining a security log. Typical uses include detection of intrusion attempts and monitoring for inappropriate usage.",
   "properties": [
     {

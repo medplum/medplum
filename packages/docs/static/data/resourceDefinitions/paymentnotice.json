@@ -1,5 +1,6 @@
 {
-  "resourceName": "PaymentNotice",
+  "name": "PaymentNotice",
+  "type": "resource",
   "description": "This resource provides the status of the payment for goods and services rendered, and the request and response resource references.",
   "properties": [
     {

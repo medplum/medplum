@@ -1,0 +1,18 @@
+---
+title: CodeableConcept
+sidebar_position: 4
+---
+
+import definition from '@site/static/data/datatypeDefinitions/codeableconcept.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# CodeableConcept
+
+Base StructureDefinition for CodeableConcept Type: A concept that may be defined by a formal reference to a terminology or ontology or may be provided by text.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

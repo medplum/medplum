@@ -1,5 +1,6 @@
 {
-  "resourceName": "EnrollmentRequest",
+  "name": "EnrollmentRequest",
+  "type": "resource",
   "description": "This resource provides the insurance enrollment details to the insurer regarding a specified coverage.",
   "properties": [
     {

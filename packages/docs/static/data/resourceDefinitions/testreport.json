@@ -1,5 +1,6 @@
 {
-  "resourceName": "TestReport",
+  "name": "TestReport",
+  "type": "resource",
   "description": "A summary of information based on the results of executing a TestScript.",
   "properties": [
     {

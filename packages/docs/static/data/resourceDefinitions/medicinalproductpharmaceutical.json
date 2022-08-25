@@ -1,5 +1,6 @@
 {
-  "resourceName": "MedicinalProductPharmaceutical",
+  "name": "MedicinalProductPharmaceutical",
+  "type": "resource",
   "description": "A pharmaceutical product described in terms of its composition and dose form.",
   "properties": [
     {

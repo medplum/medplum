@@ -1,5 +1,6 @@
 {
-  "resourceName": "DeviceDefinition",
+  "name": "DeviceDefinition",
+  "type": "resource",
   "description": "The characteristics, operational status and capabilities of a medical-related component of a medical device.",
   "properties": [
     {

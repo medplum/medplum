@@ -1,5 +1,6 @@
 {
-  "resourceName": "MedicinalProductManufactured",
+  "name": "MedicinalProductManufactured",
+  "type": "resource",
   "description": "The manufactured item as contained in the packaged medicinal product.",
   "properties": [
     {
@@ -240,6 +241,5 @@
       "comment": "",
       "inherited": false
     }
-  ],
-  "searchParameters": []
+  ]
 }

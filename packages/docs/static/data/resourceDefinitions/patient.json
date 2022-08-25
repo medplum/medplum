@@ -1,5 +1,6 @@
 {
-  "resourceName": "Patient",
+  "name": "Patient",
+  "type": "resource",
   "description": "Demographics and other administrative information about an individual or animal receiving care or other health-related services.",
   "properties": [
     {

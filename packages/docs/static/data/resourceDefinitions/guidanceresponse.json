@@ -1,5 +1,6 @@
 {
-  "resourceName": "GuidanceResponse",
+  "name": "GuidanceResponse",
+  "type": "resource",
   "description": "A guidance response is the formal response to a guidance request, including any output parameters returned by the evaluation, as well as the description of any proposed actions to be taken.",
   "properties": [
     {

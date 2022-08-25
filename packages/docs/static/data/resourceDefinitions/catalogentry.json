@@ -1,5 +1,6 @@
 {
-  "resourceName": "CatalogEntry",
+  "name": "CatalogEntry",
+  "type": "resource",
   "description": "Catalog entries are wrappers that contextualize items included in a catalog.",
   "properties": [
     {
@@ -407,6 +408,5 @@
       "comment": "",
       "inherited": false
     }
-  ],
-  "searchParameters": []
+  ]
 }

@@ -1,5 +1,6 @@
 {
-  "resourceName": "MedicationKnowledge",
+  "name": "MedicationKnowledge",
+  "type": "resource",
   "description": "Information about a medication that is used to support knowledge.",
   "properties": [
     {

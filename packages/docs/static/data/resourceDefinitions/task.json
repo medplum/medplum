@@ -1,5 +1,6 @@
 {
-  "resourceName": "Task",
+  "name": "Task",
+  "type": "resource",
   "description": "A task to be performed.",
   "properties": [
     {

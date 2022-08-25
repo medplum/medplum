@@ -1,5 +1,6 @@
 {
-  "resourceName": "Substance",
+  "name": "Substance",
+  "type": "resource",
   "description": "A homogeneous material with a definite composition.",
   "properties": [
     {

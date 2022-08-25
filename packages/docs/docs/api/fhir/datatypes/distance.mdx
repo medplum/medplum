@@ -1,0 +1,18 @@
+---
+title: Distance
+sidebar_position: 11
+---
+
+import definition from '@site/static/data/datatypeDefinitions/distance.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Distance
+
+Base StructureDefinition for Distance Type: A length - a value with a unit that is a physical distance.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

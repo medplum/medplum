@@ -1,0 +1,18 @@
+---
+title: Population
+sidebar_position: 25
+---
+
+import definition from '@site/static/data/datatypeDefinitions/population.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Population
+
+Base StructureDefinition for Population Type: A populatioof people with some set of grouping criteria.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

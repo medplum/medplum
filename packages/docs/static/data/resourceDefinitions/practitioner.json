@@ -1,5 +1,6 @@
 {
-  "resourceName": "Practitioner",
+  "name": "Practitioner",
+  "type": "resource",
   "description": "A person who is directly or indirectly involved in the provisioning of healthcare.",
   "properties": [
     {

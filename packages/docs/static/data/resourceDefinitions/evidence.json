@@ -1,5 +1,6 @@
 {
-  "resourceName": "Evidence",
+  "name": "Evidence",
+  "type": "resource",
   "description": "The Evidence resource describes the conditional state (population and any exposures being compared within the population) and outcome (if specified) that the knowledge (evidence, assertion, recommendation) is about.",
   "properties": [
     {

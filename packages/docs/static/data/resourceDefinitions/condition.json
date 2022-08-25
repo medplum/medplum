@@ -1,5 +1,6 @@
 {
-  "resourceName": "Condition",
+  "name": "Condition",
+  "type": "resource",
   "description": "A clinical condition, problem, diagnosis, or other event, situation, issue, or clinical concept that has risen to a level of concern.",
   "properties": [
     {

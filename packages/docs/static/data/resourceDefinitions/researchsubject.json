@@ -1,5 +1,6 @@
 {
-  "resourceName": "ResearchSubject",
+  "name": "ResearchSubject",
+  "type": "resource",
   "description": "A physical entity which is the primary unit of operational and/or administrative interest in a study.",
   "properties": [
     {

@@ -1,0 +1,18 @@
+---
+title: RelatedArtifact
+sidebar_position: 32
+---
+
+import definition from '@site/static/data/datatypeDefinitions/relatedartifact.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# RelatedArtifact
+
+Base StructureDefinition for RelatedArtifact Type: Related artifacts such as additional documentation, justification, or bibliographic references.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

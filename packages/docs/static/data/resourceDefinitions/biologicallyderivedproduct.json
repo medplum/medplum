@@ -1,5 +1,6 @@
 {
-  "resourceName": "BiologicallyDerivedProduct",
+  "name": "BiologicallyDerivedProduct",
+  "type": "resource",
   "description": "A material substance originating from a biological entity intended to be transplanted or infused\ninto another (possibly the same) biological entity.",
   "properties": [
     {
@@ -672,6 +673,5 @@
       "comment": "",
       "inherited": false
     }
-  ],
-  "searchParameters": []
+  ]
 }

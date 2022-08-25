@@ -1,5 +1,6 @@
 {
-  "resourceName": "Measure",
+  "name": "Measure",
+  "type": "resource",
   "description": "The Measure resource provides the definition of a quality measure.",
   "properties": [
     {

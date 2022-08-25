@@ -1,5 +1,6 @@
 {
-  "resourceName": "Linkage",
+  "name": "Linkage",
+  "type": "resource",
   "description": "Identifies two or more records (resource instances) that refer to the same real-world \"occurrence\".",
   "properties": [
     {

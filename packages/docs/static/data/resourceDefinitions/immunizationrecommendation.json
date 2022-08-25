@@ -1,5 +1,6 @@
 {
-  "resourceName": "ImmunizationRecommendation",
+  "name": "ImmunizationRecommendation",
+  "type": "resource",
   "description": "A patient's point-in-time set of recommendations (i.e. forecasting) according to a published schedule with optional supporting justification.",
   "properties": [
     {

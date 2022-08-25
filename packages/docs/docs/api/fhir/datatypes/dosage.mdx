@@ -1,0 +1,18 @@
+---
+title: Dosage
+sidebar_position: 12
+---
+
+import definition from '@site/static/data/datatypeDefinitions/dosage.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Dosage
+
+Base StructureDefinition for Dosage Type: Indicates how the medication is/was taken or should be taken by the patient.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

@@ -1,5 +1,6 @@
 {
-  "resourceName": "Schedule",
+  "name": "Schedule",
+  "type": "resource",
   "description": "A container for slots of time that may be available for booking appointments.",
   "properties": [
     {

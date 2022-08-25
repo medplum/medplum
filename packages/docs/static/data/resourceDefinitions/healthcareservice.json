@@ -1,5 +1,6 @@
 {
-  "resourceName": "HealthcareService",
+  "name": "HealthcareService",
+  "type": "resource",
   "description": "The details of a healthcare service available at a location.",
   "properties": [
     {

@@ -1,5 +1,6 @@
 {
-  "resourceName": "SubstanceReferenceInformation",
+  "name": "SubstanceReferenceInformation",
+  "type": "resource",
   "description": "Todo.",
   "properties": [
     {
@@ -652,6 +653,5 @@
       "comment": "",
       "inherited": false
     }
-  ],
-  "searchParameters": []
+  ]
 }

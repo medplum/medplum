@@ -1,5 +1,6 @@
 {
-  "resourceName": "VerificationResult",
+  "name": "VerificationResult",
+  "type": "resource",
   "description": "Describes validation requirements, source(s), status and dates for one or more elements.",
   "properties": [
     {

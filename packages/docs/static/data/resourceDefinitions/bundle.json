@@ -1,5 +1,6 @@
 {
-  "resourceName": "Bundle",
+  "name": "Bundle",
+  "type": "resource",
   "description": "A container for a collection of resources.",
   "properties": [
     {

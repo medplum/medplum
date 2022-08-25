@@ -1,5 +1,6 @@
 {
-  "resourceName": "EffectEvidenceSynthesis",
+  "name": "EffectEvidenceSynthesis",
+  "type": "resource",
   "description": "The EffectEvidenceSynthesis resource describes the difference in an outcome between exposures states in a population where the effect estimate is derived from a combination of research studies.",
   "properties": [
     {

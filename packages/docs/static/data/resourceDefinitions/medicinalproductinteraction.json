@@ -1,5 +1,6 @@
 {
-  "resourceName": "MedicinalProductInteraction",
+  "name": "MedicinalProductInteraction",
+  "type": "resource",
   "description": "The interactions of the medicinal product with other medicinal products, or other forms of interactions.",
   "properties": [
     {

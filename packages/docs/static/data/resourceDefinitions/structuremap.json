@@ -1,5 +1,6 @@
 {
-  "resourceName": "StructureMap",
+  "name": "StructureMap",
+  "type": "resource",
   "description": "A Map of relationships between 2 structures that can be used to transform data.",
   "properties": [
     {

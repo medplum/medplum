@@ -1,5 +1,6 @@
 {
-  "resourceName": "List",
+  "name": "List",
+  "type": "resource",
   "description": "A list is a curated collection of resources.",
   "properties": [
     {

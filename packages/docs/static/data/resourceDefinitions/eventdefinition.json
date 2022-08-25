@@ -1,5 +1,6 @@
 {
-  "resourceName": "EventDefinition",
+  "name": "EventDefinition",
+  "type": "resource",
   "description": "The EventDefinition resource provides a reusable description of when a particular event can occur.",
   "properties": [
     {

@@ -1,0 +1,18 @@
+---
+title: Range
+sidebar_position: 29
+---
+
+import definition from '@site/static/data/datatypeDefinitions/range.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Range
+
+Base StructureDefinition for Range Type: A set of ordered Quantities defined by a low and high limit.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

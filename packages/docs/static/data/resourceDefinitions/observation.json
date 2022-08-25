@@ -1,5 +1,6 @@
 {
-  "resourceName": "Observation",
+  "name": "Observation",
+  "type": "resource",
   "description": "Measurements and simple assertions made about a patient, device or other subject.",
   "properties": [
     {

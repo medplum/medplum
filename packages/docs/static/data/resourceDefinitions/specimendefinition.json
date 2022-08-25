@@ -1,5 +1,6 @@
 {
-  "resourceName": "SpecimenDefinition",
+  "name": "SpecimenDefinition",
+  "type": "resource",
   "description": "A kind of specimen with associated set of requirements.",
   "properties": [
     {

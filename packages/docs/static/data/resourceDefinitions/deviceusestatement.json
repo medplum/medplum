@@ -1,5 +1,6 @@
 {
-  "resourceName": "DeviceUseStatement",
+  "name": "DeviceUseStatement",
+  "type": "resource",
   "description": "A record of a device being used by a patient where the record is the result of a report from the patient or another clinician.",
   "properties": [
     {

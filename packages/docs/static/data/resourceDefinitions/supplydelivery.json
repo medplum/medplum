@@ -1,5 +1,6 @@
 {
-  "resourceName": "SupplyDelivery",
+  "name": "SupplyDelivery",
+  "type": "resource",
   "description": "Record of delivery of what is supplied.",
   "properties": [
     {

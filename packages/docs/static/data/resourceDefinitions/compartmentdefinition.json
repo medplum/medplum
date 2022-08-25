@@ -1,5 +1,6 @@
 {
-  "resourceName": "CompartmentDefinition",
+  "name": "CompartmentDefinition",
+  "type": "resource",
   "description": "A compartment definition that defines how resources are accessed on a server.",
   "properties": [
     {

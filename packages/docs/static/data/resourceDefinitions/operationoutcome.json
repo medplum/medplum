@@ -1,5 +1,6 @@
 {
-  "resourceName": "OperationOutcome",
+  "name": "OperationOutcome",
+  "type": "resource",
   "description": "A collection of error, warning, or information messages that result from a system action.",
   "properties": [
     {
@@ -279,6 +280,5 @@
       "comment": "The root of the FHIRPath is the resource or bundle that generated OperationOutcome.  Each FHIRPath SHALL resolve to a single node.",
       "inherited": false
     }
-  ],
-  "searchParameters": []
+  ]
 }

@@ -1,5 +1,6 @@
 {
-  "resourceName": "DeviceMetric",
+  "name": "DeviceMetric",
+  "type": "resource",
   "description": "Describes a measurement, calculation or setting capability of a medical device.",
   "properties": [
     {

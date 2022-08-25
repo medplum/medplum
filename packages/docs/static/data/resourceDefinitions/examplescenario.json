@@ -1,5 +1,6 @@
 {
-  "resourceName": "ExampleScenario",
+  "name": "ExampleScenario",
+  "type": "resource",
   "description": "Example of workflow instance.",
   "properties": [
     {

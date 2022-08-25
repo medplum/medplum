@@ -1,5 +1,6 @@
 {
-  "resourceName": "MolecularSequence",
+  "name": "MolecularSequence",
+  "type": "resource",
   "description": "Raw data describing a biological sequence.",
   "properties": [
     {

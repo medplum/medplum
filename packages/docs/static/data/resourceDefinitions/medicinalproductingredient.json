@@ -1,5 +1,6 @@
 {
-  "resourceName": "MedicinalProductIngredient",
+  "name": "MedicinalProductIngredient",
+  "type": "resource",
   "description": "An ingredient of a manufactured item or pharmaceutical product.",
   "properties": [
     {
@@ -655,6 +656,5 @@
       "comment": "",
       "inherited": false
     }
-  ],
-  "searchParameters": []
+  ]
 }

@@ -1,5 +1,6 @@
 {
-  "resourceName": "Flag",
+  "name": "Flag",
+  "type": "resource",
   "description": "Prospective warnings of potential issues when providing care to the patient.",
   "properties": [
     {

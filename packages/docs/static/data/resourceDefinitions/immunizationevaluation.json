@@ -1,5 +1,6 @@
 {
-  "resourceName": "ImmunizationEvaluation",
+  "name": "ImmunizationEvaluation",
+  "type": "resource",
   "description": "Describes a comparison of an immunization event against published recommendations to determine if the administration is \"valid\" in relation to those  recommendations.",
   "properties": [
     {

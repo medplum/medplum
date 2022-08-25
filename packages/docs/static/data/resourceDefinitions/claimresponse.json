@@ -1,5 +1,6 @@
 {
-  "resourceName": "ClaimResponse",
+  "name": "ClaimResponse",
+  "type": "resource",
   "description": "This resource provides the adjudication details from the processing of a Claim resource.",
   "properties": [
     {

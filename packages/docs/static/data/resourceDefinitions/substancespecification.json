@@ -1,5 +1,6 @@
 {
-  "resourceName": "SubstanceSpecification",
+  "name": "SubstanceSpecification",
+  "type": "resource",
   "description": "The detailed description of a substance, typically at a level beyond what is used for prescribing.",
   "properties": [
     {
