@@ -1,6 +1,6 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { createReference } from '@medplum/core';
-import { Project } from '@medplum/fhirtypes';
+import { ClientApplication, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -23,6 +23,7 @@ const app = express();
 const email = randomUUID() + '@example.com';
 const password = randomUUID();
 let project: Project;
+let client: ClientApplication;
 
 describe('Login', () => {
   beforeAll(async () => {
@@ -30,7 +31,7 @@ describe('Login', () => {
     await initApp(app, config);
 
     // Create a test project
-    ({ project } = await createTestProject());
+    ({ project, client } = await createTestProject());
 
     // Create a test user
     const { user } = await inviteUser({
@@ -125,8 +126,21 @@ describe('Login', () => {
     expect(res.body.issue[0].details.text).toBe('Email or password is invalid');
   });
 
-  test('Success', async () => {
+  test('Wrong projectId', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      projectId: randomUUID(),
+      email: 'admin@example.com',
+      password: 'medplum_admin',
+      scope: 'openid',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Invalid projectId');
+  });
+
+  test('Success with custom client', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
       email,
       password,
       scope: 'openid',
