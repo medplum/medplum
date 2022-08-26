@@ -218,7 +218,52 @@ describe('OAuth2 Token', () => {
     expect(res.body.error_description).toBe('Missing code');
   });
 
-  test('Authorization code token success', async () => {
+  test('Token for authorization_code with invalid authorization header', async () => {
+    const res = await request(app).post('/oauth2/token').set('Authorization', 'Bearer xyz').type('form').send({
+      grant_type: 'authorization_code',
+      code: '',
+      code_verifier: 'xyz',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid authorization header');
+  });
+
+  test('Authorization code missing verification', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+    });
+    expect(res2.status).toBe(400);
+    expect(res2.body.error).toBe('invalid_request');
+    expect(res2.body.error_description).toBe('Missing verification context');
+  });
+
+  test('Authorization code missing code_verifier', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+    });
+    expect(res2.status).toBe(400);
+    expect(res2.body.error).toBe('invalid_request');
+    expect(res2.body.error_description).toBe('Missing code verifier');
+  });
+
+  test('Authorization code token with code verifier success', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
       email,
       password,
@@ -231,6 +276,48 @@ describe('OAuth2 Token', () => {
       grant_type: 'authorization_code',
       code: res.body.code,
       code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeUndefined();
+  });
+
+  test('Authorization code token with wrong client secret', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email,
+      password,
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      client_id: client.id,
+      client_secret: 'wrong',
+    });
+    expect(res2.status).toBe(400);
+    expect(res2.body.error).toBe('invalid_request');
+    expect(res2.body.error_description).toBe('Invalid secret');
+  });
+
+  test('Authorization code token with client secret success', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email,
+      password,
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      client_id: client.id,
+      client_secret: client.secret,
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
