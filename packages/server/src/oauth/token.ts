@@ -295,7 +295,6 @@ function getClientIdAndSecret(req: Request): { invalidAuthHeader?: boolean; clie
   const authHeader = req.headers.authorization;
   if (authHeader) {
     if (!authHeader.startsWith('Basic ')) {
-      // sendTokenError(res, 'invalid_request', 'Invalid authorization header');
       return { invalidAuthHeader: true };
     }
     const base64Credentials = authHeader.split(' ')[1];
