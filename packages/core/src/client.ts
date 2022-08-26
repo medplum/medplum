@@ -233,6 +233,8 @@ export interface GoogleLoginRequest {
   readonly clientId?: string;
   readonly scope?: string;
   readonly nonce?: string;
+  readonly codeChallenge?: string;
+  readonly codeChallengeMethod?: string;
   readonly createUser?: boolean;
 }
 
@@ -681,11 +683,15 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to the authentication response.
    */
   async startGoogleLogin(loginRequest: GoogleLoginRequest): Promise<LoginAuthenticationResponse> {
-    await this.#startPkce();
+    if (!loginRequest.codeChallenge || !loginRequest.codeChallengeMethod) {
+      await this.#startPkce();
+    }
     return this.post('auth/google', {
       ...loginRequest,
       clientId: loginRequest.clientId ?? this.#clientId,
       scope: loginRequest.scope ?? DEFAULT_SCOPE,
+      codeChallengeMethod: loginRequest.codeChallengeMethod || 'S256',
+      codeChallenge: loginRequest.codeChallenge || (this.#storage.getString('codeChallenge') as string),
     }) as Promise<LoginAuthenticationResponse>;
   }
 

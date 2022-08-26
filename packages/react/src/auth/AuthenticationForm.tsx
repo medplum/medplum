@@ -72,6 +72,8 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
                     clientId: props.clientId,
                     scope: props.scope,
                     nonce: props.nonce,
+                    codeChallenge: props.codeChallenge,
+                    codeChallengeMethod: props.codeChallengeMethod,
                     googleClientId: response.clientId,
                     googleCredential: response.credential,
                   })
