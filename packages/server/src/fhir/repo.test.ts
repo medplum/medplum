@@ -110,6 +110,44 @@ describe('FHIR Repo', () => {
     expect(result1.link?.length).toBe(1);
   });
 
+  test('Search next link', async () => {
+    const family = randomUUID();
+
+    for (let i = 0; i < 2; i++) {
+      await systemRepo.createResource({
+        resourceType: 'Patient',
+        name: [{ family }],
+      });
+    }
+
+    const result1 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: family }],
+      count: 1,
+    });
+    expect(result1.entry).toHaveLength(1);
+    expect(result1.link).toBeDefined();
+    expect(result1.link?.find((e) => e.relation === 'next')).toBeDefined();
+
+    const result2 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: family }],
+      count: 2,
+    });
+    expect(result2.entry).toHaveLength(2);
+    expect(result2.link).toBeDefined();
+    expect(result2.link?.find((e) => e.relation === 'next')).toBeUndefined();
+
+    const result3 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: family }],
+      count: 3,
+    });
+    expect(result3.entry).toHaveLength(2);
+    expect(result3.link).toBeDefined();
+    expect(result3.link?.find((e) => e.relation === 'next')).toBeUndefined();
+  });
+
   test('Repo read malformed reference', async () => {
     try {
       await systemRepo.readReference({ reference: undefined });

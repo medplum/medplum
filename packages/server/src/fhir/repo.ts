@@ -559,9 +559,18 @@ export class Repository {
       throw forbidden;
     }
 
+    // Ensure that "count" is set.
+    // Count is an optional field.  From this point on, it is safe to assume it is a number.
+    if (searchRequest.count === undefined) {
+      searchRequest.count = DEFAULT_SEARCH_COUNT;
+    } else if (searchRequest.count > maxSearchResults) {
+      searchRequest.count = maxSearchResults;
+    }
+
     let entry = undefined;
-    if (searchRequest.count === undefined || searchRequest.count > 0) {
-      entry = await this.#getSearchEntries<T>(searchRequest);
+    let hasMore = false;
+    if (searchRequest.count > 0) {
+      ({ entry, hasMore } = await this.#getSearchEntries<T>(searchRequest));
     }
 
     let total = undefined;
@@ -574,7 +583,7 @@ export class Repository {
       type: 'searchest',
       entry,
       total,
-      link: this.#getSearchLinks(searchRequest),
+      link: this.#getSearchLinks(searchRequest, hasMore),
     };
   }
 
@@ -583,7 +592,9 @@ export class Repository {
    * @param searchRequest The search request.
    * @returns The bundle entries for the search result.
    */
-  async #getSearchEntries<T extends Resource>(searchRequest: SearchRequest): Promise<BundleEntry<T>[]> {
+  async #getSearchEntries<T extends Resource>(
+    searchRequest: SearchRequest
+  ): Promise<{ entry: BundleEntry<T>[]; hasMore: boolean }> {
     const resourceType = searchRequest.resourceType;
     const client = getClient();
     const builder = new SelectQuery(resourceType)
@@ -595,13 +606,17 @@ export class Repository {
     this.#addSearchFilters(builder, builder.predicate, searchRequest);
     this.#addSortRules(builder, searchRequest);
 
-    builder.limit(Math.min(searchRequest.count || 20, maxSearchResults));
+    const count = searchRequest.count as number;
+    builder.limit(count + 1); // Request one extra to test if there are more results
     builder.offset(searchRequest.offset || 0);
 
     const rows = await builder.execute(client);
-    return rows.map((row) => ({
-      resource: this.#removeHiddenFields(JSON.parse(row.content as string)),
-    }));
+    return {
+      entry: rows.slice(0, count).map((row) => ({
+        resource: this.#removeHiddenFields(JSON.parse(row.content as string)),
+      })),
+      hasMore: rows.length > count,
+    };
   }
 
   /**
@@ -609,9 +624,10 @@ export class Repository {
    * At minimum, the 'self' link will be returned.
    * If "count" does not equal zero, then 'first', 'next', and 'previous' links will be included.
    * @param searchRequest The search request.
+   * @param hasMore True if there are more entries after the current page.
    * @returns The search bundle links.
    */
-  #getSearchLinks(searchRequest: SearchRequest): BundleLink[] {
+  #getSearchLinks(searchRequest: SearchRequest, hasMore: boolean | undefined): BundleLink[] {
     const result: BundleLink[] = [
       {
         relation: 'self',
@@ -619,8 +635,8 @@ export class Repository {
       },
     ];
 
-    if (searchRequest.count === undefined || searchRequest.count > 0) {
-      const count = searchRequest.count || DEFAULT_SEARCH_COUNT;
+    const count = searchRequest.count as number;
+    if (count > 0) {
       const offset = searchRequest.offset || 0;
 
       result.push({
@@ -628,10 +644,12 @@ export class Repository {
         url: this.#getSearchUrl({ ...searchRequest, offset: 0 }),
       });
 
-      result.push({
-        relation: 'next',
-        url: this.#getSearchUrl({ ...searchRequest, offset: offset + count }),
-      });
+      if (hasMore) {
+        result.push({
+          relation: 'next',
+          url: this.#getSearchUrl({ ...searchRequest, offset: offset + count }),
+        });
+      }
 
       if (offset > 0) {
         result.push({
