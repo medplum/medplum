@@ -36,7 +36,7 @@ await medplum.createResource(media);
   </TabItem>
   <TabItem value="python" label="Python">
 
-See the [Authentication](../../api/authentication.md) guide for how to obtain an authentication token
+See the [**Client Credentials tutorial**](../../tutorials/security/client-credentials.md) guide for how to obtain an access token
 
 ```py
 
