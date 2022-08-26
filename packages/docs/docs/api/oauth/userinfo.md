@@ -6,7 +6,7 @@ sidebar_position: 3
 
 The `/oauth2/userinfo` endpoint returns information about the authenticated user.
 
-## GET /oauth2/userinfo
+## GET `/oauth2/userinfo`
 
 The user pool client makes requests to this endpoint directly and not through a browser.
 
@@ -14,18 +14,24 @@ For more information, see [UserInfo Endpoint](http://openid.net/specs/openid-con
 
 ## Request parameters in header
 
-_Authorization: Bearer _<access*token>*
-Pass the access token using the authorization header field.
-Required.
+#### `Authorization` (Required)
 
-## Sample request
+Pass the access token using the authorization header field.
+
+```
+Authorization: Bearer <ACCESS_TOKEN>
+```
+
+## Examples positive responses
+
+#### Sample request
 
 ```
 GET https://api.medplum.com/oauth2/userinfo
     Authorization: Bearer <access_token>
 ```
 
-## Sample positive response
+#### Sample response
 
 ```
 HTTP/1.1 200 OK
@@ -45,7 +51,7 @@ For a list of OIDC claims, see [Standard Claims](http://openid.net/specs/openid-
 
 ## Sample negative responses
 
-### Invalid request
+#### Invalid request
 
 ```
 HTTP/1.1 400 Bad Request
@@ -53,10 +59,11 @@ HTTP/1.1 400 Bad Request
     error_description="Bad OAuth2 request at UserInfo Endpoint"
 ```
 
-_invalid_request_
+##### `invalid_request`
+
 The request is missing a required parameter, includes an unsupported parameter value, or is otherwise malformed.
 
-### Invalid token
+#### Invalid token
 
 ```
 HTTP/1.1 401 Unauthorized
@@ -64,5 +71,6 @@ HTTP/1.1 401 Unauthorized
     error_description="Access token is expired, disabled, or deleted, or the user has globally signed out."
 ```
 
-_invalid_token_
+##### `invalid_token`
+
 The access token is expired, revoked, malformed, or invalid.
