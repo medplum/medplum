@@ -3,10 +3,10 @@ import { ProjectMembership } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { Document } from '../Document';
 import { useMedplum } from '../MedplumProvider';
+import '../util.css';
 import { AuthenticationForm } from './AuthenticationForm';
 import { ChooseProfileForm } from './ChooseProfileForm';
 import { NewProjectForm } from './NewProjectForm';
-import '../util.css';
 import './SignInForm.css';
 
 export interface SignInFormProps {
@@ -16,6 +16,8 @@ export interface SignInFormProps {
   readonly clientId?: string;
   readonly scope?: string;
   readonly nonce?: string;
+  readonly codeChallenge?: string;
+  readonly codeChallengeMethod?: string;
   readonly onSuccess?: () => void;
   readonly onForgotPassword?: () => void;
   readonly onRegister?: () => void;
@@ -64,6 +66,8 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
               scope={props.scope}
               nonce={props.nonce}
               googleClientId={props.googleClientId}
+              codeChallenge={props.codeChallenge}
+              codeChallengeMethod={props.codeChallengeMethod}
               onForgotPassword={props.onForgotPassword}
               onRegister={props.onRegister}
               handleAuthResponse={handleAuthResponse}

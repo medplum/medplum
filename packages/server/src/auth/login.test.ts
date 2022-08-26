@@ -290,6 +290,8 @@ describe('Login', () => {
       password: 'my-new-password',
       scope: 'openid',
       remember: true,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
     });
     expect(res8.status).toBe(200);
     expect(res8.body.code).toBeDefined();

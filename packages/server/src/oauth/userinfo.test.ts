@@ -22,6 +22,8 @@ describe('OAuth2 UserInfo', () => {
       email: 'admin@example.com',
       password: 'medplum_admin',
       scope: 'openid profile email phone address',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
     });
     expect(res.status).toBe(200);
 
@@ -50,6 +52,8 @@ describe('OAuth2 UserInfo', () => {
       email: 'admin@example.com',
       password: 'medplum_admin',
       scope: 'openid profile email phone address',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
     });
     expect(res.status).toBe(200);
 
@@ -97,6 +101,8 @@ describe('OAuth2 UserInfo', () => {
       email: 'admin@example.com',
       password: 'medplum_admin',
       scope: 'openid profile email phone address',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
     });
     expect(res.status).toBe(200);
 
@@ -138,6 +144,8 @@ describe('OAuth2 UserInfo', () => {
       email: 'admin@example.com',
       password: 'medplum_admin',
       scope: 'openid',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
     });
     expect(res.status).toBe(200);
 

@@ -171,6 +171,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
     return sendTokenError(res, 'invalid_grant', 'Token revoked');
   }
 
+  // Authorization code flow requires either PKCE or client ID/secret
   if (login.codeChallenge) {
     const codeVerifier = req.body.code_verifier;
     if (!codeVerifier) {
@@ -180,6 +181,11 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
     if (!verifyCode(login.codeChallenge, login.codeChallengeMethod as string, codeVerifier)) {
       return sendTokenError(res, 'invalid_grant', 'Invalid code verifier');
     }
+  } else if (req.body.client_id && req.body.client_secret) {
+    // TODO
+  } else {
+    console.log(JSON.stringify(login, null, 2));
+    return sendTokenError(res, 'invalid_request', 'Missing validation context');
   }
 
   const membership = await systemRepo.readReference<ProjectMembership>(login.membership);

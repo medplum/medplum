@@ -219,18 +219,12 @@ describe('OAuth2 Token', () => {
   });
 
   test('Authorization code token success', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email,
-        password,
-        client_id: client.id as string,
-        redirect_uri: client.redirectUri as string,
-        scope: 'openid',
-        code_challenge: 'xyz',
-        code_challenge_method: 'plain',
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
     expect(res.status).toBe(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -248,19 +242,13 @@ describe('OAuth2 Token', () => {
   });
 
   test('Authorization code token success with refresh', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email,
-        password,
-        client_id: client.id as string,
-        redirect_uri: client.redirectUri as string,
-        scope: 'openid',
-        code_challenge: 'xyz',
-        code_challenge_method: 'plain',
-        remember: true,
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      remember: true,
+    });
     expect(res.status).toBe(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -285,8 +273,8 @@ describe('OAuth2 Token', () => {
         email,
         password,
         clientId: client.id as string,
-        redirectUri: client.redirectUri as string,
-        scope: 'openid',
+        // redirectUri: client.redirectUri as string,
+        // scope: 'openid',
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
       });
@@ -310,18 +298,12 @@ describe('OAuth2 Token', () => {
   });
 
   test('Authorization code token failure with client ID', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email,
-        password,
-        client_id: client.id as string,
-        redirect_uri: client.redirectUri as string,
-        scope: 'openid',
-        code_challenge: 'xyz',
-        code_challenge_method: 'plain',
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
     expect(res.status).toBe(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -336,18 +318,12 @@ describe('OAuth2 Token', () => {
   });
 
   test('Authorization code token failure already granted', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email,
-        password,
-        client_id: client.id as string,
-        redirect_uri: client.redirectUri as string,
-        scope: 'openid',
-        code_challenge: 'xyz',
-        code_challenge_method: 'plain',
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
     expect(res.status).toBe(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -393,19 +369,13 @@ describe('OAuth2 Token', () => {
   });
 
   test('Refresh token success', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email,
-        password,
-        client_id: client.id as string,
-        redirect_uri: client.redirectUri as string,
-        scope: 'openid',
-        code_challenge: 'xyz',
-        code_challenge_method: 'plain',
-        remember: true,
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      remember: true,
+    });
     expect(res.status).toBe(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -435,19 +405,13 @@ describe('OAuth2 Token', () => {
   });
 
   test('Refresh token failed for no refresh secret', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email,
-        password,
-        client_id: client.id as string,
-        redirect_uri: client.redirectUri as string,
-        scope: 'openid',
-        code_challenge: 'xyz',
-        code_challenge_method: 'plain',
-        remember: false,
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      remember: false,
+    });
     expect(res.status).toBe(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -485,8 +449,6 @@ describe('OAuth2 Token', () => {
         email,
         password,
         clientId: client.id as string,
-        redirectUri: client.redirectUri as string,
-        scope: 'openid',
         codeChallenge: codeHash,
         codeChallengeMethod: 'S256',
         remember: true,
@@ -512,8 +474,6 @@ describe('OAuth2 Token', () => {
         email,
         password,
         clientId: client.id as string,
-        redirectUri: client.redirectUri as string,
-        scope: 'openid',
         codeChallenge: codeHash,
         codeChallengeMethod: 'S256',
         remember: true,
@@ -554,8 +514,6 @@ describe('OAuth2 Token', () => {
         email,
         password,
         clientId: client.id as string,
-        redirectUri: client.redirectUri as string,
-        scope: 'openid',
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
         remember: true,
@@ -600,8 +558,6 @@ describe('OAuth2 Token', () => {
         email,
         password,
         clientId: client.id as string,
-        redirectUri: client.redirectUri as string,
-        scope: 'openid',
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
         remember: true,
@@ -642,8 +598,6 @@ describe('OAuth2 Token', () => {
         email,
         password,
         clientId: client.id as string,
-        redirectUri: client.redirectUri as string,
-        scope: 'openid',
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
         remember: true,
@@ -684,8 +638,6 @@ describe('OAuth2 Token', () => {
         email,
         password,
         clientId: client.id as string,
-        redirectUri: client.redirectUri as string,
-        scope: 'openid',
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
         remember: true,
@@ -733,8 +685,6 @@ describe('OAuth2 Token', () => {
         email,
         password,
         clientId: client.id as string,
-        redirectUri: client.redirectUri as string,
-        scope: 'openid',
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
         remember: true,

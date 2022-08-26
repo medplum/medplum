@@ -39,6 +39,8 @@ describe('New project', () => {
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
         recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
       });
     expect(res1.status).toBe(200);
 
@@ -90,6 +92,8 @@ describe('New project', () => {
         email: `user1-${randomUUID()}@example.com`,
         password: 'password!@#',
         recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
       });
     expect(user1_res1.status).toBe(200);
 
@@ -132,6 +136,8 @@ describe('New project', () => {
         email: `user2-${randomUUID()}@example.com`,
         password: 'password!@#',
         recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
       });
     expect(user2_res1.status).toBe(200);
 
@@ -205,6 +211,8 @@ describe('New project', () => {
         email: `user1-${randomUUID()}@example.com`,
         password: 'password!@#',
         recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
       });
     expect(user1_res1.status).toBe(200);
 
@@ -245,6 +253,8 @@ describe('New project', () => {
         email: `user2-${randomUUID()}@example.com`,
         password: 'password!@#',
         recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
       });
     expect(user2_res1.status).toBe(200);
 
