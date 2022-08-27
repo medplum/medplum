@@ -7,15 +7,19 @@ import {
   Operator,
   SearchRequest,
 } from '@medplum/core';
-import { Reference, Resource } from '@medplum/fhirtypes';
+import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import {
+  ASTNode,
+  ASTVisitor,
   DocumentNode,
   execute,
   ExecutionResult,
   GraphQLBoolean,
   GraphQLEnumType,
   GraphQLEnumValueConfigMap,
+  GraphQLError,
   GraphQLFieldConfig,
   GraphQLFieldConfigArgumentMap,
   GraphQLFieldConfigMap,
@@ -31,13 +35,15 @@ import {
   GraphQLString,
   GraphQLUnionType,
   parse,
+  specifiedRules,
   validate,
+  ValidationContext,
 } from 'graphql';
 import { JSONSchema4 } from 'json-schema';
 import { asyncWrap } from '../../async';
+import { getJsonSchemaDefinition, getJsonSchemaResourceTypes } from '../jsonschema';
 import { Repository } from '../repo';
 import { rewriteAttachments, RewriteMode } from '../rewrite';
-import { getJsonSchemaResourceTypes, getJsonSchemaDefinition } from '../jsonschema';
 import { parseSearchRequest } from '../search';
 import { getSearchParameters } from '../structure';
 import { sendOutcome } from './../outcomes';
@@ -98,9 +104,10 @@ export const graphqlHandler = asyncWrap(async (req: Request, res: Response) => {
   }
 
   const schema = getRootSchema();
-  const validationErrors = validate(schema, document);
+  const validationRules = [...specifiedRules, MaxDepthRule];
+  const validationErrors = validate(schema, document, validationRules);
   if (validationErrors.length > 0) {
-    sendOutcome(res, badRequest('GraphQL validation error.'));
+    sendOutcome(res, invalidRequest(validationErrors));
     return;
   }
 
@@ -493,4 +500,61 @@ function fhirParamToGraphQLField(code: string): string {
 
 function graphQLFieldToFhirParam(code: string): string {
   return code.startsWith('_') ? code : code.replaceAll('_', '-');
+}
+
+/**
+ * Custom GraphQL rule that enforces max depth constraint.
+ * @param context The validation context.
+ * @returns An ASTVisitor that validates the maximum depth rule.
+ */
+const MaxDepthRule = (context: ValidationContext): ASTVisitor => ({
+  Field(
+    /** The current node being visiting. */
+    node: any,
+    /** The index or key to this node from the parent node or Array. */
+    _key: string | number | undefined,
+    /** The parent immediately above this node, which may be an Array. */
+    _parent: ASTNode | ReadonlyArray<ASTNode> | undefined,
+    /** The key path to get to this node from the root node. */
+    path: ReadonlyArray<string | number>
+  ): any {
+    const depth = getDepth(path);
+    const maxDepth = 8;
+    if (depth > maxDepth) {
+      const fieldName = node.name.value;
+      context.reportError(
+        new GraphQLError(`Field "${fieldName}" exceeds max depth (depth=${depth}, max=${maxDepth})`, {
+          nodes: node,
+        })
+      );
+    }
+  },
+});
+
+/**
+ * Returns the depth of the GraphQL node in a query.
+ * We use "selections" as the representation of depth.
+ * As a rough approximation, it's the number of indentations in a well formatted query.
+ * @param path The GraphQL node path.
+ * @returns The "depth" of the node.
+ */
+function getDepth(path: ReadonlyArray<string | number>): number {
+  return path.filter((p) => p === 'selections').length;
+}
+
+/**
+ * Returns an OperationOutcome for GraphQL errors.
+ * @param errors Array of GraphQL errors.
+ * @returns OperationOutcome with the GraphQL errors as OperationOutcome issues.
+ */
+function invalidRequest(errors: ReadonlyArray<GraphQLError>): OperationOutcome {
+  return {
+    resourceType: 'OperationOutcome',
+    id: randomUUID(),
+    issue: errors.map((error) => ({
+      severity: 'error',
+      code: 'invalid',
+      details: { text: error.message },
+    })),
+  };
 }

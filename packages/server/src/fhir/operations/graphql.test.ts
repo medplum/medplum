@@ -552,4 +552,77 @@ describe('GraphQL', () => {
       });
     expect(res.status).toBe(400);
   });
+
+  test('Max depth', async () => {
+    // The definition of "depth" is a little abstract in GraphQL
+    // We use "selection", which, in a well formatted query, is the level of indentation
+
+    // 8 levels of depth is ok
+    const res1 = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
+        {
+          ServiceRequestList {
+            id
+            basedOn {
+              resource {
+                ...on ServiceRequest {
+                  id
+                  basedOn {
+                    resource {
+                      ...on ServiceRequest {
+                        id
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    `,
+      });
+    expect(res1.status).toBe(200);
+
+    // 10 levels of nesting is too much
+    const res2 = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
+        {
+          ServiceRequestList {
+            id
+            basedOn {
+              resource {
+                ...on ServiceRequest {
+                  id
+                  basedOn {
+                    resource {
+                      ...on ServiceRequest {
+                        id
+                        basedOn {
+                          resource {
+                            ...on ServiceRequest {
+                              id
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    `,
+      });
+    expect(res2.status).toBe(400);
+    expect(res2.body.issue[0].details.text).toEqual('Field "resource" exceeds max depth (depth=9, max=8)');
+  });
 });
