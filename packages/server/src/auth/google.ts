@@ -125,6 +125,8 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     clientId,
     scope: req.body.scope || 'openid',
     nonce: req.body.nonce || randomUUID(),
+    codeChallenge: req.body.codeChallenge,
+    codeChallengeMethod: req.body.codeChallengeMethod,
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
   });

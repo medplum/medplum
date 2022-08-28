@@ -43,6 +43,8 @@ describe('New patient', () => {
         email: `christina${randomUUID()}@example.com`,
         password: 'password!@#',
         recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
       });
     expect(res1.status).toBe(200);
 
@@ -73,6 +75,8 @@ describe('New patient', () => {
         email: `peggy${randomUUID()}@example.com`,
         password: 'password!@#',
         recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
       });
     expect(res4.status).toBe(200);
 

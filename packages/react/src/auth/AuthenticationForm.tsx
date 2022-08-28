@@ -16,6 +16,8 @@ export interface AuthenticationFormProps {
   readonly scope?: string;
   readonly nonce?: string;
   readonly googleClientId?: string;
+  readonly codeChallenge?: string;
+  readonly codeChallengeMethod?: string;
   readonly onForgotPassword?: () => void;
   readonly onRegister?: () => void;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
@@ -38,6 +40,8 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
             clientId: props.clientId,
             scope: props.scope,
             nonce: props.nonce,
+            codeChallenge: props.codeChallenge,
+            codeChallengeMethod: props.codeChallengeMethod,
             email: formData.email,
             password: formData.password,
             remember: formData.remember === 'true',
@@ -68,6 +72,8 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
                     clientId: props.clientId,
                     scope: props.scope,
                     nonce: props.nonce,
+                    codeChallenge: props.codeChallenge,
+                    codeChallengeMethod: props.codeChallengeMethod,
                     googleClientId: response.clientId,
                     googleCredential: response.credential,
                   })

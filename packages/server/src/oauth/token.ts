@@ -19,23 +19,28 @@ import { getAuthTokens, getUserMemberships, revokeLogin, timingSafeEqualStr } fr
  */
 export const tokenHandler: RequestHandler = asyncWrap(async (req: Request, res: Response) => {
   if (!req.is('application/x-www-form-urlencoded')) {
-    return res.status(400).send('Unsupported content type');
+    res.status(400).send('Unsupported content type');
+    return;
   }
 
   const grantType = req.body.grant_type;
   if (!grantType) {
-    return sendTokenError(res, 'invalid_request', 'Missing grant_type');
+    sendTokenError(res, 'invalid_request', 'Missing grant_type');
+    return;
   }
 
   switch (grantType) {
     case 'client_credentials':
-      return handleClientCredentials(req, res);
+      await handleClientCredentials(req, res);
+      break;
     case 'authorization_code':
-      return handleAuthorizationCode(req, res);
+      await handleAuthorizationCode(req, res);
+      break;
     case 'refresh_token':
-      return handleRefreshToken(req, res);
+      await handleRefreshToken(req, res);
+      break;
     default:
-      return sendTokenError(res, 'invalid_request', 'Unsupported grant_type');
+      sendTokenError(res, 'invalid_request', 'Unsupported grant_type');
   }
 });
 
@@ -44,50 +49,33 @@ export const tokenHandler: RequestHandler = asyncWrap(async (req: Request, res: 
  * See: https://datatracker.ietf.org/doc/html/rfc6749#section-4.4
  * @param req The HTTP request.
  * @param res The HTTP response.
- * @returns Async promise to the response.
  */
-async function handleClientCredentials(req: Request, res: Response): Promise<Response> {
-  let clientId = req.body.client_id;
-  let clientSecret = req.body.client_secret;
-
-  const authHeader = req.headers.authorization;
-  if (authHeader) {
-    if (!authHeader.startsWith('Basic ')) {
-      return sendTokenError(res, 'invalid_request', 'Invalid authorization header');
-    }
-    const base64Credentials = authHeader.split(' ')[1];
-    const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
-    [clientId, clientSecret] = credentials.split(':');
+async function handleClientCredentials(req: Request, res: Response): Promise<void> {
+  const { clientId, clientSecret, invalidAuthHeader } = getClientIdAndSecret(req);
+  if (invalidAuthHeader) {
+    sendTokenError(res, 'invalid_request', 'Invalid authorization header');
+    return;
   }
 
   if (!clientId) {
-    return sendTokenError(res, 'invalid_request', 'Missing client_id');
+    sendTokenError(res, 'invalid_request', 'Missing client_id');
+    return;
   }
 
   if (!clientSecret) {
-    return sendTokenError(res, 'invalid_request', 'Missing client_secret');
+    sendTokenError(res, 'invalid_request', 'Missing client_secret');
+    return;
   }
 
-  let client;
-  try {
-    client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
-  } catch (err) {
-    return sendTokenError(res, 'invalid_request', 'Invalid client');
-  }
-
-  if (!client.secret) {
-    return sendTokenError(res, 'invalid_request', 'Invalid client');
-  }
-
-  // Use a timing-safe-equal here so that we don't expose timing information which could be
-  // used to infer the secret value
-  if (!timingSafeEqualStr(client.secret, clientSecret)) {
-    return sendTokenError(res, 'invalid_request', 'Invalid secret');
+  const client = await validateClientIdAndSecret(res, clientId, clientSecret);
+  if (!client) {
+    return;
   }
 
   const memberships = await getUserMemberships(createReference(client));
   if (!memberships || memberships.length !== 1) {
-    return sendTokenError(res, 'invalid_request', 'Invalid client');
+    sendTokenError(res, 'invalid_request', 'Invalid client');
+    return;
   }
 
   const membership = memberships[0];
@@ -114,7 +102,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
     scope: scope,
   });
 
-  return res.status(200).json({
+  res.status(200).json({
     token_type: 'Bearer',
     access_token: accessToken,
     expires_in: 3600,
@@ -129,12 +117,18 @@ async function handleClientCredentials(req: Request, res: Response): Promise<Res
  * See: https://datatracker.ietf.org/doc/html/rfc6749#section-4.1
  * @param req The HTTP request.
  * @param res The HTTP response.
- * @returns Async promise to the response.
  */
-async function handleAuthorizationCode(req: Request, res: Response): Promise<Response> {
+async function handleAuthorizationCode(req: Request, res: Response): Promise<void> {
+  const { clientId, clientSecret, invalidAuthHeader } = getClientIdAndSecret(req);
+  if (invalidAuthHeader) {
+    sendTokenError(res, 'invalid_request', 'Invalid authorization header');
+    return;
+  }
+
   const code = req.body.code;
   if (!code) {
-    return sendTokenError(res, 'invalid_request', 'Missing code');
+    sendTokenError(res, 'invalid_request', 'Missing code');
+    return;
   }
 
   const searchResult = await systemRepo.search({
@@ -149,44 +143,60 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<Res
   });
 
   if (!searchResult.entry || searchResult.entry.length === 0) {
-    return sendTokenError(res, 'invalid_request', 'Invalid code');
+    sendTokenError(res, 'invalid_request', 'Invalid code');
+    return;
   }
 
   const login = searchResult.entry[0].resource as Login;
 
-  if (req.body.client_id && login.client?.reference !== 'ClientApplication/' + req.body.client_id) {
-    return sendTokenError(res, 'invalid_request', 'Invalid client');
+  if (clientId && login.client?.reference !== 'ClientApplication/' + clientId) {
+    sendTokenError(res, 'invalid_request', 'Invalid client');
+    return;
   }
 
   if (!login.membership) {
-    return sendTokenError(res, 'invalid_request', 'Invalid profile');
+    sendTokenError(res, 'invalid_request', 'Invalid profile');
+    return;
   }
 
   if (login.granted) {
     await revokeLogin(login);
-    return sendTokenError(res, 'invalid_grant', 'Token already granted');
+    sendTokenError(res, 'invalid_grant', 'Token already granted');
+    return;
   }
 
   if (login.revoked) {
-    return sendTokenError(res, 'invalid_grant', 'Token revoked');
+    sendTokenError(res, 'invalid_grant', 'Token revoked');
+    return;
   }
 
+  // Authorization code flow requires either PKCE or client ID/secret
   if (login.codeChallenge) {
     const codeVerifier = req.body.code_verifier;
     if (!codeVerifier) {
-      return sendTokenError(res, 'invalid_grant', 'Missing code verifier');
+      sendTokenError(res, 'invalid_request', 'Missing code verifier');
+      return;
     }
 
     if (!verifyCode(login.codeChallenge, login.codeChallengeMethod as string, codeVerifier)) {
-      return sendTokenError(res, 'invalid_grant', 'Invalid code verifier');
+      sendTokenError(res, 'invalid_request', 'Invalid code verifier');
+      return;
     }
+  } else if (clientId && clientSecret) {
+    const client = await validateClientIdAndSecret(res, clientId, clientSecret);
+    if (!client) {
+      return;
+    }
+  } else {
+    sendTokenError(res, 'invalid_request', 'Missing verification context');
+    return;
   }
 
   const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
 
   const token = await getAuthTokens(login, membership.profile as Reference<ProfileResource>);
 
-  return res.status(200).json({
+  res.status(200).json({
     token_type: 'Bearer',
     scope: login.scope,
     expires_in: 3600,
@@ -276,6 +286,51 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
     project: membership.project,
     profile: membership.profile,
   });
+}
+
+function getClientIdAndSecret(req: Request): { invalidAuthHeader?: boolean; clientId?: string; clientSecret?: string } {
+  let clientId = req.body.client_id;
+  let clientSecret = req.body.client_secret;
+
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    if (!authHeader.startsWith('Basic ')) {
+      return { invalidAuthHeader: true };
+    }
+    const base64Credentials = authHeader.split(' ')[1];
+    const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
+    [clientId, clientSecret] = credentials.split(':');
+  }
+
+  return { clientId, clientSecret };
+}
+
+async function validateClientIdAndSecret(
+  res: Response,
+  clientId: string,
+  clientSecret: string
+): Promise<ClientApplication | undefined> {
+  let client;
+  try {
+    client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+  } catch (err) {
+    sendTokenError(res, 'invalid_request', 'Invalid client');
+    return undefined;
+  }
+
+  if (!client.secret) {
+    sendTokenError(res, 'invalid_request', 'Invalid client');
+    return undefined;
+  }
+
+  // Use a timing-safe-equal here so that we don't expose timing information which could be
+  // used to infer the secret value
+  if (!timingSafeEqualStr(client.secret, clientSecret)) {
+    sendTokenError(res, 'invalid_request', 'Invalid secret');
+    return undefined;
+  }
+
+  return client;
 }
 
 /**
