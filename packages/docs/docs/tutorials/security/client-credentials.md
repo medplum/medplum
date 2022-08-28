@@ -5,7 +5,7 @@ sidebar_position: 2
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# Authentication
+# Client Credentials Authentication
 
 The Medplum API uses standard OAuth2/OpenID authentication. "Client Credentials Flow" is recommended for machine-to-machine access.
 
