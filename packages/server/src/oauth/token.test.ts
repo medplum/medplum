@@ -360,8 +360,6 @@ describe('OAuth2 Token', () => {
         email,
         password,
         clientId: client.id as string,
-        // redirectUri: client.redirectUri as string,
-        // scope: 'openid',
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
       });
