@@ -373,13 +373,12 @@ export function isQuantityEquivalent(x: Quantity, y: Quantity): boolean {
 
 /**
  * Resource equality.
- * Ignores meta.versionId and meta.lastUpdated.
  * See: https://dmitripavlutin.com/how-to-compare-objects-in-javascript/#4-deep-equality
  * @param object1 The first object.
  * @param object2 The second object.
  * @returns True if the objects are equal.
  */
-function deepEquals<T1, T2>(object1: T1, object2: T2): boolean {
+function deepEquals<T1 extends object, T2 extends object>(object1: T1, object2: T2): boolean {
   const keys1 = Object.keys(object1) as (keyof T1)[];
   const keys2 = Object.keys(object2) as (keyof T2)[];
   if (keys1.length !== keys2.length) {
@@ -401,6 +400,6 @@ function deepEquals<T1, T2>(object1: T1, object2: T2): boolean {
   return true;
 }
 
-function isObject(object: unknown): boolean {
-  return object !== null && typeof object === 'object';
+function isObject(obj: unknown): obj is object {
+  return obj !== null && typeof obj === 'object';
 }
