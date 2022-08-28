@@ -114,6 +114,8 @@ export interface IndexedStructureDefinition {
  *   4) Patient_Link
  */
 export interface TypeSchema {
+  structureDefinition: StructureDefinition;
+  elementDefinition: ElementDefinition;
   display: string;
   properties: { [name: string]: ElementDefinition };
   searchParams?: { [code: string]: SearchParameter };
@@ -130,19 +132,17 @@ export function createSchema(): IndexedStructureDefinition {
   return { types: {} };
 }
 
-export function createTypeSchema(typeName: string, description: string | undefined): TypeSchema {
+function createTypeSchema(
+  typeName: string,
+  structureDefinition: StructureDefinition,
+  elementDefinition: ElementDefinition
+): TypeSchema {
   return {
+    structureDefinition,
+    elementDefinition,
     display: typeName,
-    description,
+    description: elementDefinition.definition,
     properties: {},
-    searchParams: {
-      _lastUpdated: {
-        base: [typeName],
-        code: '_lastUpdated',
-        type: 'date',
-        expression: typeName + '.meta.lastUpdated',
-      } as SearchParameter,
-    },
   };
 }
 
@@ -174,20 +174,13 @@ export function indexStructureDefinition(
     return;
   }
 
-  if (!(typeName in schema.types)) {
-    schema.types[typeName] = createTypeSchema(typeName, structureDefinition.description);
-  }
-
   const elements = structureDefinition.snapshot?.element;
   if (elements) {
-    // Filter out any elements missing path or type
-    const filtered = elements.filter((e) => e.path !== typeName && e.path);
-
     // First pass, build types
-    filtered.forEach((element) => indexType(schema, element));
+    elements.forEach((element) => indexType(schema, structureDefinition, element));
 
     // Second pass, build properties
-    filtered.forEach((element) => indexProperty(schema, element));
+    elements.forEach((element) => indexProperty(schema, element));
   }
 }
 
@@ -198,18 +191,20 @@ export function indexStructureDefinition(
  * @param schema The output IndexedStructureDefinition.
  * @param element The input ElementDefinition.
  */
-function indexType(schema: IndexedStructureDefinition, element: ElementDefinition): void {
-  const path = element.path as string;
-  const typeCode = element.type?.[0]?.code;
-  if (typeCode !== 'Element' && typeCode !== 'BackboneElement') {
+function indexType(
+  schema: IndexedStructureDefinition,
+  structureDefinition: StructureDefinition,
+  elementDefinition: ElementDefinition
+): void {
+  const path = elementDefinition.path as string;
+  const typeCode = elementDefinition.type?.[0]?.code;
+  if (typeCode !== undefined && typeCode !== 'Element' && typeCode !== 'BackboneElement') {
     return;
   }
   const parts = path.split('.');
   const typeName = buildTypeName(parts);
-  if (!(typeName in schema.types)) {
-    schema.types[typeName] = createTypeSchema(typeName, element.definition);
-    schema.types[typeName].parentType = buildTypeName(parts.slice(0, parts.length - 1));
-  }
+  schema.types[typeName] = createTypeSchema(typeName, structureDefinition, elementDefinition);
+  schema.types[typeName].parentType = buildTypeName(parts.slice(0, parts.length - 1));
 }
 
 /**
@@ -250,7 +245,14 @@ export function indexSearchParameter(schema: IndexedStructureDefinition, searchP
     }
 
     if (!typeSchema.searchParams) {
-      typeSchema.searchParams = {};
+      typeSchema.searchParams = {
+        _lastUpdated: {
+          base: [resourceType],
+          code: '_lastUpdated',
+          type: 'date',
+          expression: resourceType + '.meta.lastUpdated',
+        } as SearchParameter,
+      };
     }
 
     typeSchema.searchParams[searchParam.code as string] = searchParam;
@@ -258,6 +260,9 @@ export function indexSearchParameter(schema: IndexedStructureDefinition, searchP
 }
 
 export function buildTypeName(components: string[]): string {
+  if (components.length === 1) {
+    return components[0];
+  }
   return components.map(capitalize).join('');
 }
 
@@ -289,4 +294,4 @@ export function getPropertyDisplayName(path: string): string {
 /**
  * Global schema singleton.
  */
-export const globalSchema = baseSchema as IndexedStructureDefinition;
+export const globalSchema = baseSchema as unknown as IndexedStructureDefinition;

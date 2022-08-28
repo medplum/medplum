@@ -23,6 +23,10 @@ describe('Type Utils', () => {
       snapshot: {
         element: [
           {
+            id: 'Patient',
+            path: 'Patient',
+          },
+          {
             id: 'Patient.name',
             path: 'Patient.name',
             type: [

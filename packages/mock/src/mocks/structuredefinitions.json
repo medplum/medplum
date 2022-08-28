@@ -6193,6 +6193,12 @@
     "snapshot": {
       "element": [
         {
+          "id": "Project",
+          "path": "Project",
+          "min": 0,
+          "max": "*"
+        },
+        {
           "id": "Project.id",
           "path": "Project.id",
           "min": 0,
@@ -6437,6 +6443,12 @@
     "type": "Bot",
     "snapshot": {
       "element": [
+        {
+          "id": "Bot",
+          "path": "Bot",
+          "min": 0,
+          "max": "*"
+        },
         {
           "id": "Bot.id",
           "path": "Bot.id",

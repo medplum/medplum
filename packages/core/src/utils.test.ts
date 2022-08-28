@@ -420,6 +420,7 @@ describe('Core Utils', () => {
   test('isLowerCase', () => {
     expect(isLowerCase('a')).toEqual(true);
     expect(isLowerCase('A')).toEqual(false);
+    expect(isLowerCase('3')).toEqual(false);
   });
 
   test('isUUID', () => {

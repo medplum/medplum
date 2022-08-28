@@ -291,7 +291,7 @@ export function getIdentifier(resource: Resource, system: string): string | unde
  * @param urls Array of extension URLs.  Each entry represents a nested extension.
  * @returns The extension value if found; undefined otherwise.
  */
-export function getExtensionValue(resource: Resource, ...urls: string[]): string | undefined {
+export function getExtensionValue(resource: any, ...urls: string[]): string | undefined {
   // Let curr be the current resource or extension. Extensions can be nested.
   let curr: any = resource;
 
@@ -502,7 +502,7 @@ export function capitalize(word: string): string {
 }
 
 export function isLowerCase(c: string): boolean {
-  return c === c.toLowerCase();
+  return c === c.toLowerCase() && c !== c.toUpperCase();
 }
 
 /**

@@ -19,6 +19,14 @@
       "snapshot" : {
         "element" : [
           {
+            "id" : "Project",
+            "path" : "Project",
+            "short" : "Encapsulation of resources for a specific project or organization.",
+            "definition" : "Encapsulation of resources for a specific project or organization.",
+            "min" : 0,
+            "max" : "*"
+          },
+          {
             "id" : "Project.id",
             "path" : "Project.id",
             "short" : "Logical id of this artifact",
@@ -249,6 +257,14 @@
       "snapshot" : {
         "element" : [
           {
+            "id" : "ClientApplication",
+            "path" : "ClientApplication",
+            "short" : "Medplum client application for automated access.",
+            "definition" : "Medplum client application for automated access.",
+            "min" : 0,
+            "max" : "*"
+          },
+          {
             "id" : "ClientApplication.id",
             "path" : "ClientApplication.id",
             "short" : "Logical id of this artifact",
@@ -344,9 +360,17 @@
       "kind" : "resource",
       "abstract" : false,
       "type" : "User",
-      "description" : "OAuth user.",
+      "description" : "Representation of a human user of the system.",
       "snapshot" : {
         "element" : [
+          {
+            "id" : "User",
+            "path" : "User",
+            "short" : "Representation of a human user of the system",
+            "definition" : "Representation of a human user of the system.",
+            "min" : 0,
+            "max" : "*"
+          },
           {
             "id" : "User.id",
             "path" : "User.id",
@@ -479,6 +503,14 @@
       "snapshot" : {
         "element" : [
           {
+            "id" : "ProjectMembership",
+            "path" : "ProjectMembership",
+            "short" : "Medplum project membership. A project membership grants a user access to a project.",
+            "definition" : "Medplum project membership. A project membership grants a user access to a project.",
+            "min" : 0,
+            "max" : "*"
+          },
+          {
             "id" : "ProjectMembership.id",
             "path" : "ProjectMembership.id",
             "short" : "Logical id of this artifact",
@@ -610,6 +642,14 @@
       "snapshot" : {
         "element" : [
           {
+            "id" : "Bot",
+            "path" : "Bot",
+            "short" : "Bot account for automated actions.",
+            "definition" : "Bot account for automated actions.",
+            "min" : 0,
+            "max" : "*"
+          },
+          {
             "id" : "Bot.id",
             "path" : "Bot.id",
             "short" : "Logical id of this artifact",
@@ -725,9 +765,17 @@
       "kind" : "resource",
       "abstract" : false,
       "type" : "Login",
-      "description" : "OAuth login.",
+      "description" : "Login event and session details.",
       "snapshot" : {
         "element" : [
+          {
+            "id" : "Login",
+            "path" : "Login",
+            "short" : "Login event and session details.",
+            "definition" : "Login event and session details.",
+            "min" : 0,
+            "max" : "*"
+          },
           {
             "id" : "Login.id",
             "path" : "Login.id",
@@ -808,7 +856,7 @@
             "id" : "Login.scope",
             "path" : "Login.scope",
             "definition" : "OAuth scope or scopes.",
-            "min" : 1,
+            "min" : 0,
             "max" : "1",
             "type" : [{
               "code" : "string"
@@ -973,6 +1021,14 @@
       "snapshot" : {
         "element" : [
           {
+            "id" : "PasswordChangeRequest",
+            "path" : "PasswordChangeRequest",
+            "short" : "Password change request for the 'forgot password' flow.",
+            "definition" : "Password change request for the 'forgot password' flow.",
+            "min" : 0,
+            "max" : "*"
+          },
+          {
             "id" : "PasswordChangeRequest.id",
             "path" : "PasswordChangeRequest.id",
             "short" : "Logical id of this artifact",
@@ -1072,6 +1128,14 @@
       "description" : "A JSON object that represents a cryptographic key. The members of the object represent properties of the key, including its value.",
       "snapshot" : {
         "element" : [
+          {
+            "id" : "JsonWebKey",
+            "path" : "JsonWebKey",
+            "short" : "A JSON object that represents a cryptographic key.",
+            "definition" : "A JSON object that represents a cryptographic key. The members of the object represent properties of the key, including its value.",
+            "min" : 0,
+            "max" : "*"
+          },
           {
             "id" : "JsonWebKey.id",
             "path" : "JsonWebKey.id",
@@ -1324,6 +1388,14 @@
       "snapshot" : {
         "element" : [
           {
+            "id" : "AccessPolicy",
+            "path" : "AccessPolicy",
+            "short" : "Access Policy for user or user group that defines how entities can or cannot access resources.",
+            "definition" : "Access Policy for user or user group that defines how entities can or cannot access resources.",
+            "min" : 0,
+            "max" : "*"
+          },
+          {
             "id" : "AccessPolicy.id",
             "path" : "AccessPolicy.id",
             "short" : "Logical id of this artifact",
@@ -1473,6 +1545,14 @@
       "description" : "User specific configuration for the Medplum application.",
       "snapshot" : {
         "element" : [
+          {
+            "id" : "UserConfiguration",
+            "path" : "UserConfiguration",
+            "short" : "User specific configuration for the Medplum application.",
+            "definition" : "User specific configuration for the Medplum application.",
+            "min" : 0,
+            "max" : "*"
+          },
           {
             "id" : "UserConfiguration.id",
             "path" : "UserConfiguration.id",
