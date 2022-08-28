@@ -21,26 +21,26 @@ The first step is to configure a [Medplum Client Application](https://app.medplu
 2. Click on the "Secrets" tab
 3. Click "Create New Client" to create your new ClientApplication resource
 4. Set the `Redirect Uri` to the URL to where you would like Medplum to redirect the user after login.
-5. **(Optional but recommended)** Assign an [Access Policy](./access-control.md) to your client to restrict the data your application has access to
+5. **(Optional but recommended)** Assign an [Access Policy](./access-control) to your client to restrict the data your application has access to
 
 ![Create Client App](/img/create-client-app.png)
 
 ## Authorize your client
 
-Next your application will need to make an `HTTPS GET` request to the Medplum Server's [`/oauth2/authorize`](../../api/oauth/authorize.md) endpoint wth the following URL parameters:
+Next your application will need to make an `HTTPS GET` request to the Medplum Server's [`/oauth2/authorize`](../../api/oauth/authorize) endpoint wth the following URL parameters:
 
 | Parameter                                                             | Value                                                                                                                                                                                                     |
 | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`client_id`](../../api/oauth/authorize.md#clientid-required)         | The ID of your new Client Application                                                                                                                                                                     |
-| [`redirect_uri`](../../api/oauth/authorize.md#redirecturi-required)   | **Must match exactly** to the uri registered in the Medplum App (including trailing slashes, punctuation, etc.), as detailed in the [OAuth2 Spec](https://www.rfc-editor.org/rfc/rfc6749#section-3.1.2.3) |
-| [`response_type`](../../api/oauth/authorize.md#responsetype-required) | Fixed value: `code`                                                                                                                                                                                       |
-| [`scope`](../../api/oauth/authorize.md#scope-required)                | Fixed value: `openid`                                                                                                                                                                                     |
+| [`client_id`](../../api/oauth/authorize#clientid-required)         | The ID of your new Client Application                                                                                                                                                                     |
+| [`redirect_uri`](../../api/oauth/authorize#redirecturi-required)   | **Must match exactly** to the uri registered in the Medplum App (including trailing slashes, punctuation, etc.), as detailed in the [OAuth2 Spec](https://www.rfc-editor.org/rfc/rfc6749#section-3.1.2.3) |
+| [`response_type`](../../api/oauth/authorize#responsetype-required) | Fixed value: `code`                                                                                                                                                                                       |
+| [`scope`](../../api/oauth/authorize#scope-required)                | Fixed value: `openid`                                                                                                                                                                                     |
 
-See the [`oauth/authorize` API documentation](../../api/oauth/authorize.md) for more details about the possible request parameters.
+See the [`oauth/authorize` API documentation](../../api/oauth/authorize) for more details about the possible request parameters.
 
 ## Fetch your token
 
-After your user successfully authenticates, they will get an [HTTP redirect response](../../api/oauth/authorize.md#authorization-code-grant) that is similar to this:
+After your user successfully authenticates, they will get an [HTTP redirect response](../../api/oauth/authorize#authorization-code-grant) that is similar to this:
 
 ```
 HTTP/1.1 302 Found
@@ -50,14 +50,14 @@ Location: https://YOUR_APP/redirect_uri?code=AUTHORIZATION_CODE
 The last step of this flow is for your application to trade in the `AUTHORIZATION_CODE` for an access token.
 
 1. Read the `code` parameter from the query string to get the `AUTHORIZATION_CODE`
-2. Call the [`oauth/token` endpoint](../../api/oauth/token.md) with the body parameters (details: [API Docs](../../api/oauth/token.md#request-parameters-in-body))
+2. Call the [`oauth/token` endpoint](../../api/oauth/token) with the body parameters (details: [API Docs](../../api/oauth/token#request-parameters-in-body))
    - `grant_type=authorization_code`
    - `client_id=YOUR_CLIENT_ID`
    - `code=AUTHORIZATION_CODE`
-3. Use the `access_token` received in the [response](../../api/oauth/token.md#sample-response) to make future API calls (See the [**Client Credentials tutorial**](./client-credentials.md) for more details)
+3. Use the `access_token` received in the [response](../../api/oauth/token#sample-response) to make future API calls (See the [**Client Credentials tutorial**](./client-credentials) for more details)
 
 ## See Also
 
-- [`oauth/authorize`](../../api/oauth/authorize.md)
-- [`oauth/token`](../../api/oauth/token.md)
-- [`oauth/userinfo`](../../api/oauth/userinfo.md)
+- [Authorize endpoint](../../api/oauth/authorize)
+- [Token endpoint](../../api/oauth/token)
+- [UserInfo endpoint](../../api/oauth/userinfo)

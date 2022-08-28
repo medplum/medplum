@@ -36,8 +36,6 @@ await medplum.createResource(media);
   </TabItem>
   <TabItem value="python" label="Python">
 
-See the [**Client Credentials tutorial**](../../tutorials/security/client-credentials.md) guide for how to obtain an access token
-
 ```py
 
 API_URL = 'https://api.medplum.com/fhir/R4'
@@ -63,3 +61,5 @@ requests.post(f'{API_URL}/Media', json=media, headers={
 
   </TabItem>
 </Tabs>
+
+See the [**Client Credentials tutorial**](../../tutorials/security/client-credentials) guide for how to obtain an access token
