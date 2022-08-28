@@ -58,6 +58,6 @@ The last step of this flow is for your application to trade in the `AUTHORIZATIO
 
 ## See Also
 
-- [`oauth/authorize`](../../api/oauth/authorize)
-- [`oauth/token`](../../api/oauth/token)
-- [`oauth/userinfo`](../../api/oauth/userinfo)
+- [Authorize endpoint](../../api/oauth/authorize)
+- [Token endpoint](../../api/oauth/token)
+- [UserInfo endpoint](../../api/oauth/userinfo)
