@@ -32,7 +32,7 @@
     "@types/react-router-dom": "5.3.3",
     "babel-loader": "8.2.5",
     "css-loader": "6.7.1",
-    "dotenv-webpack": "8.0.0",
+    "dotenv-webpack": "8.0.1",
     "html-webpack-plugin": "5.5.0",
     "identity-obj-proxy": "3.0.0",
     "mini-css-extract-plugin": "2.6.1",
