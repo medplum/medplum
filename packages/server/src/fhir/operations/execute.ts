@@ -1,11 +1,12 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { createReference, Hl7Message, resolveId } from '@medplum/core';
+import { badRequest, createReference, Hl7Message, resolveId } from '@medplum/core';
 import { AuditEvent, Bot, Login, Organization, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { TextDecoder, TextEncoder } from 'util';
 import { asyncWrap } from '../../async';
 import { generateAccessToken } from '../../oauth/keys';
 import { AuditEventOutcome } from '../../util/auditevent';
+import { sendOutcome } from '../outcomes';
 import { Repository, systemRepo } from '../repo';
 
 export const EXECUTE_CONTENT_TYPES = [
@@ -39,6 +40,11 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   const { id } = req.params;
   const repo = res.locals.repo as Repository;
   const bot = await repo.readResource<Bot>('Bot', id);
+
+  if (!(await isBotEnabled(bot))) {
+    sendOutcome(res, badRequest('Bots not enabled'));
+    return;
+  }
 
   // Execute the bot
   const result = await executeBot({
@@ -75,10 +81,6 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
     return { success: false, logResult: 'Ignore bots with no code' };
   }
 
-  if (!(await isBotEnabled(bot))) {
-    return { success: false, logResult: 'Bots not enabled' };
-  }
-
   if (bot.runtimeVersion === 'awslambda') {
     return runInLambda(request);
   } else {
@@ -91,7 +93,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
  * @param bot The bot resource.
  * @returns True if the bot is enabled.
  */
-async function isBotEnabled(bot: Bot): Promise<boolean> {
+export async function isBotEnabled(bot: Bot): Promise<boolean> {
   const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
   return !!project.features?.includes('bots');
 }
