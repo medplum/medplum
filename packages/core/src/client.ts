@@ -944,7 +944,7 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "read" operation for full details: https://www.hl7.org/fhir/http.html#read
    *
-   * @category Caching
+   * @category Read
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
    * @returns The resource if available; undefined otherwise.
@@ -1528,6 +1528,25 @@ export class MedplumClient extends EventTarget {
    */
   graphql(query: string, operationName?: string | null, variables?: any, options?: RequestInit): Promise<any> {
     return this.post(this.fhirUrl('$graphql'), { query, operationName, variables }, JSON_CONTENT_TYPE, options);
+  }
+
+  /**
+   *
+   * Executes the $graph operation on this resource to fetch a Bundle of resources linked to the target resource
+   * according to a graph definition
+
+   * @category Read
+   * @param resourceType The FHIR resource type.
+   * @param id The resource ID.
+   * @param graphName `name` parameter of the GraphDefinition
+   * @returns A Bundle
+   */
+  readResourceGraph<K extends ResourceType>(
+    resourceType: K,
+    id: string,
+    graphName: string
+  ): ReadablePromise<Bundle<Resource>> {
+    return this.get<Bundle<Resource>>(`${this.fhirUrl(resourceType, id)}/$graph?graph=${graphName}`);
   }
 
   /**
