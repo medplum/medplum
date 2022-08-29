@@ -1,10 +1,21 @@
 import { createReference } from '@medplum/core';
-import { Bundle, ClientApplication, Login, Project, ProjectMembership, Resource } from '@medplum/fhirtypes';
+import {
+  AccessPolicy,
+  Bundle,
+  ClientApplication,
+  Login,
+  Project,
+  ProjectMembership,
+  Resource,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { systemRepo } from './fhir/repo';
 import { generateAccessToken } from './oauth/keys';
+interface TestAuthOptions {
+  accessPolicy?: AccessPolicy;
+}
 
-export async function createTestProject(): Promise<{
+export async function createTestProject(options?: TestAuthOptions): Promise<{
   project: Project;
   client: ClientApplication;
   membership: ProjectMembership;
@@ -33,11 +44,14 @@ export async function createTestProject(): Promise<{
     },
   });
 
+  const accessPolicy = options?.accessPolicy && (await systemRepo.createResource<AccessPolicy>(options.accessPolicy));
+
   const membership = await systemRepo.createResource<ProjectMembership>({
     resourceType: 'ProjectMembership',
     user: createReference(client),
     profile: createReference(client),
     project: createReference(project),
+    ...(accessPolicy && { accessPolicy: createReference(accessPolicy) }),
   });
 
   return {
@@ -47,12 +61,12 @@ export async function createTestProject(): Promise<{
   };
 }
 
-export async function createTestClient(): Promise<ClientApplication> {
-  return (await createTestProject()).client;
+export async function createTestClient(options?: TestAuthOptions): Promise<ClientApplication> {
+  return (await createTestProject(options)).client;
 }
 
-export async function initTestAuth(): Promise<string> {
-  const { client, membership } = await createTestProject();
+export async function initTestAuth(options?: TestAuthOptions): Promise<string> {
+  const { client, membership } = await createTestProject(options);
   const scope = 'openid';
 
   const login = await systemRepo.createResource<Login>({

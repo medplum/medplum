@@ -1,5 +1,6 @@
-import { createReference } from '@medplum/core';
+import { createReference, normalizeErrorString } from '@medplum/core';
 import {
+  AccessPolicy,
   ActivityDefinition,
   Bundle,
   DiagnosticReport,
@@ -18,27 +19,17 @@ import express from 'express';
 import request from 'supertest';
 import { initApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { closeDatabase, initDatabase } from '../../database';
-import { initKeys } from '../../oauth';
-import { initRedis } from '../../redis';
-import { seedDatabase } from '../../seed';
+import { closeDatabase } from '../../database';
 import { initTestAuth } from '../../test.setup';
-import { getStructureDefinitions } from '../structure';
-import { normalizeErrorString } from '@medplum/core';
 
 const app = express();
-let accessToken: string;
+let defaultAccessToken: string;
 
 describe('Resource $graph', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    initRedis(config.redis);
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
-    getStructureDefinitions();
-    accessToken = await initTestAuth();
+    await initApp(app, config);
+    defaultAccessToken = await initTestAuth();
   });
 
   afterAll(async () => {
@@ -448,27 +439,148 @@ describe('Resource $graph', () => {
 
     expect(resources?.filter((res) => res?.resourceType === 'Organization')).toMatchObject([performer]);
   });
+
+  test.only('Access Policies', async () => {
+    let accessPolicy = {
+      resourceType: 'AccessPolicy',
+      name: 'PlanDefintionAccessPolicy',
+      resource: [
+        {
+          resourceType: 'PlanDefinition',
+        },
+        {
+          resourceType: 'GraphDefinition',
+        },
+        {
+          resourceType: 'ActivityDefinition',
+        },
+        {
+          resourceType: 'ObservationDefinition',
+        },
+        {
+          resourceType: 'AccessPolicy',
+        },
+      ],
+    } as AccessPolicy;
+
+    const restrictedToken = await initTestAuth({ accessPolicy });
+
+    const graphName = 'example-access-policies';
+    await createResource(
+      {
+        resourceType: 'GraphDefinition',
+        name: graphName,
+        start: 'PlanDefinition',
+        link: [
+          {
+            path: 'PlanDefinition.action.definition',
+            target: [
+              {
+                type: 'ActivityDefinition',
+                link: [
+                  {
+                    path: 'ActivityDefinition.observationResultRequirement',
+                    target: [{ type: 'ObservationDefinition' }],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      } as GraphDefinition,
+      restrictedToken
+    );
+
+    const obsDefs = await Promise.all(
+      ['ACT', 'BUN', 'HEM'].map((code) =>
+        createResource<ObservationDefinition>(
+          { resourceType: 'ObservationDefinition', code: { text: code } },
+          restrictedToken
+        )
+      )
+    );
+
+    const a1 = await createResource(
+      {
+        resourceType: 'ActivityDefinition',
+        name: 'ACT Test',
+        title: 'ACT Test',
+        url: `http://example.com/ActTest-${graphName}`,
+        observationResultRequirement: [createReference(obsDefs[0])],
+      } as ActivityDefinition,
+      restrictedToken
+    );
+
+    const a2 = await createResource(
+      {
+        resourceType: 'ActivityDefinition',
+        name: 'BUN Panel',
+        title: 'BUN Panel',
+        url: `http://example.com/BunPanel-${graphName}`,
+        observationResultRequirement: [createReference(obsDefs[1]), createReference(obsDefs[2])],
+      } as ActivityDefinition,
+      restrictedToken
+    );
+
+    // 3. Create a PlanDefinition
+    const planDefinition = await createResource(
+      {
+        resourceType: 'PlanDefinition',
+        action: [
+          { definitionCanonical: `http://example.com/ActTest-${graphName}` },
+          { definitionCanonical: `http://example.com/BunPanel-${graphName}` },
+        ],
+      } as PlanDefinition,
+      restrictedToken
+    );
+
+    accessPolicy.resource = [
+      {
+        resourceType: 'PlanDefinition',
+      },
+    ];
+
+    accessPolicy = (
+      await request(app)
+        .get(`/fhir/R4/AccessPolicy`)
+        .set('Authorization', 'Bearer ' + restrictedToken)
+    ).body as AccessPolicy;
+    console.log('Access', accessPolicy);
+    await updateResource(accessPolicy, restrictedToken);
+
+    // 4. Apply the PlanDefinition to create the Task and RequestGroup
+    const bundle = await getResourceGraph(planDefinition, graphName, 200, restrictedToken);
+    const resources = bundle.entry?.map((entry) => entry?.resource);
+
+    expect(resources).toHaveLength(1);
+    expect(resources?.[0]).toMatchObject(planDefinition);
+    expect(resources?.filter((e) => e?.resourceType === 'ActivityDefinition')).toMatchObject([a1, a2]);
+    expect(resources?.filter((e) => e?.resourceType === 'ObservationDefinition')).toMatchObject(obsDefs);
+  });
 });
 
 async function getResourceGraph<T extends Resource>(
   resource: T | undefined,
   graphName: string,
-  expectedReturnCode = 200
+  expectedReturnCode = 200,
+  token?: string
 ): Promise<Bundle> {
   const url = `/fhir/R4/${resource?.resourceType}/${resource?.id}/$graph?graph=${graphName}`;
+  const currentToken = token || defaultAccessToken;
 
   const res = await request(app)
     .get(url)
-    .set('Authorization', 'Bearer ' + accessToken);
+    .set('Authorization', 'Bearer ' + currentToken);
 
   expect(res.status).toBe(expectedReturnCode);
   return res.body as Bundle;
 }
 
-async function createResource<T extends Resource>(resource: T): Promise<T> {
+async function createResource<T extends Resource>(resource: T, token?: string): Promise<T> {
+  const currentToken = token || defaultAccessToken;
   const res = await request(app)
     .post(`/fhir/R4/${resource.resourceType}`)
-    .set('Authorization', 'Bearer ' + accessToken)
+    .set('Authorization', 'Bearer ' + currentToken)
     .set('Content-Type', 'application/fhir+json')
     .send(resource);
   if (!res.ok) {
@@ -476,5 +588,20 @@ async function createResource<T extends Resource>(resource: T): Promise<T> {
   }
 
   expect(res.status).toBe(201);
+  return res.body;
+}
+
+async function updateResource<T extends Resource>(resource: T, token?: string): Promise<T> {
+  const currentToken = token || defaultAccessToken;
+  const res = await request(app)
+    .put(`/fhir/R4/${resource.resourceType}/${resource.id}`)
+    .set('Authorization', 'Bearer ' + currentToken)
+    .set('Content-Type', 'application/fhir+json')
+    .send(resource);
+  if (!res.ok) {
+    console.error(JSON.stringify(res.body, null, 2));
+  }
+
+  expect(res.status).toBe(200);
   return res.body;
 }
