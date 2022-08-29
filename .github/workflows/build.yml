@@ -79,6 +79,7 @@ jobs:
         run: ./scripts/cicd-deploy.sh
         env:
           AWS_REGION: ${{ secrets.AWS_REGION }}
+          DOCKERHUB_REPOSITORY: ${{ secrets.DOCKERHUB_REPOSITORY }}
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
           ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
           ECS_SERVICE: ${{ secrets.ECS_SERVICE }}

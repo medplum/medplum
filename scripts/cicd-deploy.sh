@@ -20,6 +20,10 @@ DEPLOY_STORYBOOK=false
 # Inspect files changed
 #
 
+if [[ "$FILES_CHANGED" =~ build.yml ]]; then
+  DEPLOY_SERVER=true
+fi
+
 if [[ "$FILES_CHANGED" =~ Dockerfile ]]; then
   DEPLOY_SERVER=true
 fi
