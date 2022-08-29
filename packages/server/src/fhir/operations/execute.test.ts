@@ -177,9 +177,9 @@ describe('Execute', () => {
     // This should fail because bots are not enabled
     const res3 = await request(app)
       .post(`/fhir/R4/Bot/${res2.body.id}/$execute`)
-      .set('Content-Type', 'text/plain')
+      .set('Content-Type', 'application/fhir+json')
       .set('Authorization', 'Bearer ' + accessToken)
-      .send('input');
+      .send({});
     expect(res3.status).toBe(400);
     expect(res3.body.issue[0].details.text).toEqual('Bots not enabled');
   });

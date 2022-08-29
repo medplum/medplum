@@ -6,7 +6,6 @@ import { TextDecoder, TextEncoder } from 'util';
 import { asyncWrap } from '../../async';
 import { generateAccessToken } from '../../oauth/keys';
 import { AuditEventOutcome } from '../../util/auditevent';
-import { sendOutcome } from '../outcomes';
 import { Repository, systemRepo } from '../repo';
 
 export const EXECUTE_CONTENT_TYPES = [
@@ -41,11 +40,6 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   const repo = res.locals.repo as Repository;
   const bot = await repo.readResource<Bot>('Bot', id);
 
-  if (!(await isBotEnabled(bot))) {
-    sendOutcome(res, badRequest('Bots not enabled'));
-    return;
-  }
-
   // Execute the bot
   const result = await executeBot({
     bot,
@@ -65,7 +59,7 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   res
     .status(result.success ? 200 : 400)
     .type(getResponseContentType(req))
-    .send(result.returnValue);
+    .send(result.returnValue || badRequest(result.logResult));
 });
 
 /**
@@ -77,6 +71,11 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
  */
 export async function executeBot(request: BotExecutionRequest): Promise<BotExecutionResult> {
   const { bot } = request;
+
+  if (!(await isBotEnabled(bot))) {
+    return { success: false, logResult: 'Bots not enabled' };
+  }
+
   if (!bot.code) {
     return { success: false, logResult: 'Ignore bots with no code' };
   }
