@@ -1,18 +1,11 @@
-import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { pwnedPassword } from 'hibp';
-import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { getUserByEmail } from '../oauth/utils';
-import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { registerNew } from './register';
-
-jest.mock('hibp');
-jest.mock('node-fetch');
 
 jest.mock('jose', () => {
   const original = jest.requireActual('jose');
@@ -42,15 +35,6 @@ describe('Google Auth', () => {
 
   afterAll(async () => {
     await shutdownApp();
-  });
-
-  beforeEach(() => {
-    (SESv2Client as unknown as jest.Mock).mockClear();
-    (SendEmailCommand as unknown as jest.Mock).mockClear();
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
   });
 
   test('Missing client ID', async () => {
