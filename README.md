@@ -68,6 +68,7 @@ Here is a list of all the big technologies we use:
 medplum/
 ├── packages
 │   ├── app          # Frontend web app
+│   ├── bot-layer    # AWS Lambda Layer for Bots
 │   ├── cli          # Command line interface
 │   ├── core         # Core shared library
 │   ├── definitions  # Data definitions
