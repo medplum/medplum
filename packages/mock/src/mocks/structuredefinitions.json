@@ -5076,6 +5076,431 @@
   },
   {
     "resourceType": "StructureDefinition",
+    "id": "QuestionnaireResponse",
+    "name": "QuestionnaireResponse",
+    "type": "QuestionnaireResponse",
+    "snapshot": {
+      "element": [
+        {
+          "id": "QuestionnaireResponse",
+          "path": "QuestionnaireResponse",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "QuestionnaireResponse.id",
+          "path": "QuestionnaireResponse.id",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.meta",
+          "path": "QuestionnaireResponse.meta",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.implicitRules",
+          "path": "QuestionnaireResponse.implicitRules",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.language",
+          "path": "QuestionnaireResponse.language",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.text",
+          "path": "QuestionnaireResponse.text",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.contained",
+          "path": "QuestionnaireResponse.contained",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.extension",
+          "path": "QuestionnaireResponse.extension",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.modifierExtension",
+          "path": "QuestionnaireResponse.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.identifier",
+          "path": "QuestionnaireResponse.identifier",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.basedOn",
+          "path": "QuestionnaireResponse.basedOn",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/CarePlan",
+                "http://hl7.org/fhir/StructureDefinition/ServiceRequest"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.partOf",
+          "path": "QuestionnaireResponse.partOf",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Observation",
+                "http://hl7.org/fhir/StructureDefinition/Procedure"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.questionnaire",
+          "path": "QuestionnaireResponse.questionnaire",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "canonical",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Questionnaire"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.status",
+          "path": "QuestionnaireResponse.status",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.subject",
+          "path": "QuestionnaireResponse.subject",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Resource"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.encounter",
+          "path": "QuestionnaireResponse.encounter",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Encounter"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.authored",
+          "path": "QuestionnaireResponse.authored",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.author",
+          "path": "QuestionnaireResponse.author",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Device",
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson",
+                "http://hl7.org/fhir/StructureDefinition/Organization"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.source",
+          "path": "QuestionnaireResponse.source",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.item",
+          "path": "QuestionnaireResponse.item",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.item.id",
+          "path": "QuestionnaireResponse.item.id",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.item.extension",
+          "path": "QuestionnaireResponse.item.extension",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.item.modifierExtension",
+          "path": "QuestionnaireResponse.item.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.item.linkId",
+          "path": "QuestionnaireResponse.item.linkId",
+          "min": 1,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.item.definition",
+          "path": "QuestionnaireResponse.item.definition",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.item.text",
+          "path": "QuestionnaireResponse.item.text",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.item.answer",
+          "path": "QuestionnaireResponse.item.answer",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.item.answer.id",
+          "path": "QuestionnaireResponse.item.answer.id",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.item.answer.extension",
+          "path": "QuestionnaireResponse.item.answer.extension",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.item.answer.modifierExtension",
+          "path": "QuestionnaireResponse.item.answer.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.item.answer.value[x]",
+          "path": "QuestionnaireResponse.item.answer.value[x]",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            },
+            {
+              "code": "decimal"
+            },
+            {
+              "code": "integer"
+            },
+            {
+              "code": "date"
+            },
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "time"
+            },
+            {
+              "code": "string"
+            },
+            {
+              "code": "uri"
+            },
+            {
+              "code": "Attachment"
+            },
+            {
+              "code": "Coding"
+            },
+            {
+              "code": "Quantity"
+            },
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Resource"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "QuestionnaireResponse.item.answer.item",
+          "path": "QuestionnaireResponse.item.answer.item",
+          "min": 0,
+          "max": "*"
+        },
+        {
+          "id": "QuestionnaireResponse.item.item",
+          "path": "QuestionnaireResponse.item.item",
+          "min": 0,
+          "max": "*"
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
     "id": "ServiceRequest",
     "name": "ServiceRequest",
     "type": "ServiceRequest",

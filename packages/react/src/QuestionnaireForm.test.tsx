@@ -646,4 +646,64 @@ describe('QuestionnaireForm', () => {
     expect(dropDown).toBeInstanceOf(HTMLSelectElement);
     expect((dropDown as HTMLSelectElement).value).toBe('a2');
   });
+
+  test('Conditional question', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'enable-when',
+        title: 'Enable When Example',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Question 1',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Yes',
+              },
+              {
+                valueString: 'No',
+              },
+            ],
+          },
+          {
+            linkId: 'q2',
+            type: 'display',
+            text: 'Hidden Text',
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: '=',
+                answerString: 'Yes',
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    // The form should render
+    expect(screen.getByText('Question 1')).toBeInTheDocument();
+
+    // The hidden text should be hidden
+    expect(screen.queryByText('Hidden Text')).not.toBeInTheDocument();
+
+    // Click on "No"
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('No'));
+    });
+
+    // The hidden text should still be hidden
+    expect(screen.queryByText('Hidden Text')).not.toBeInTheDocument();
+
+    // Click on "Yes"
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Yes'));
+    });
+
+    // Now the hidden text should be visible
+    expect(screen.queryByText('Hidden Text')).toBeInTheDocument();
+  });
 });
