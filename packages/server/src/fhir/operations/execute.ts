@@ -4,6 +4,7 @@ import { AuditEvent, Bot, Login, Organization, Project, ProjectMembership, Refer
 import { Request, Response } from 'express';
 import { TextDecoder, TextEncoder } from 'util';
 import { asyncWrap } from '../../async';
+import { getConfig } from '../../config';
 import { generateAccessToken } from '../../oauth/keys';
 import { AuditEventOutcome } from '../../util/auditevent';
 import { Repository, systemRepo } from '../repo';
@@ -131,6 +132,7 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
   const client = new LambdaClient({ region: 'us-east-1' });
   const name = `medplum-bot-lambda-${bot.id}`;
   const payload = {
+    baseUrl: getConfig().baseUrl,
     accessToken,
     input: input instanceof Hl7Message ? input.toString() : input,
     contentType,

@@ -31,8 +31,12 @@ const PdfPrinter = require("pdfmake");
 const userCode = require("./user.js");
 
 exports.handler = async (event, context) => {
-  const { accessToken, input, contentType, secrets } = event;
-  const medplum = new MedplumClient({ fetch, createPdf });
+  const { baseUrl, accessToken, input, contentType, secrets } = event;
+  const medplum = new MedplumClient({
+    baseUrl,
+    fetch,
+    createPdf,
+  });
   medplum.setAccessToken(accessToken);
   try {
     return await userCode.handler(medplum, {
