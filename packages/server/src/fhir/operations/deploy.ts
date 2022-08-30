@@ -22,6 +22,8 @@ const LAMBDA_RUNTIME = 'nodejs16.x';
 
 const LAMBDA_HANDLER = 'index.handler';
 
+const LAMBDA_MEMORY = 1024;
+
 const WRAPPER_CODE = `const { Hl7Message, MedplumClient } = require("@medplum/core");
 const fetch = require("node-fetch");
 const PdfPrinter = require("pdfmake");
@@ -159,6 +161,7 @@ async function createLambda(client: LambdaClient, name: string, zipFile: Uint8Ar
       Role: getConfig().botLambdaRoleArn,
       Runtime: LAMBDA_RUNTIME,
       Handler: LAMBDA_HANDLER,
+      MemorySize: LAMBDA_MEMORY,
       PackageType: PackageType.Zip,
       Layers: [layerVersion],
       Code: {
