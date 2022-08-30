@@ -207,18 +207,18 @@ In Medplum, a powerful feature is to to **use a [Medplum Bot](/tutorials/bots)**
 
 ## Codeable Concepts: Standarding Data
 
-The healthcare system commonly uses standardized coding systems to describe healthcare concepts such as **diagnoses**, **procedures**, **medical equipment**, and **billing information**. These coding systems are crucial for sharing data between systems because they provide standardized values that organizations know how to process. Some common coding systems include [LOINC](https://loinc.org/), [SNOWMED](https://www.snomed.org/), [CPT](https://www.ama-assn.org/amaone/cpt-current-procedural-terminology), [ICD](https://www.cms.gov/Medicare/Coding/ICD10), and [HCPCS](https://www.cms.gov/medicare/coding/medhcpcsgeninfo).
+The healthcare system commonly uses standardized coding systems to describe healthcare concepts such as **diagnoses**, **procedures**, **medical equipment**, and **billing information**. These coding systems are crucial for sharing data between systems because they provide standardized values that organizations know how to process. Some common coding systems include [LOINC](https://loinc.org/), [SNOMED](https://www.snomed.org/), [CPT](https://www.ama-assn.org/amaone/cpt-current-procedural-terminology), [ICD](https://www.cms.gov/Medicare/Coding/ICD10), and [HCPCS](https://www.cms.gov/medicare/coding/medhcpcsgeninfo).
 
 The same concept being defined in mulitple coding systems. To handle this mapping from concept to system, the FHIR standard defines a data structure called a `CodeableConcept`. A `CodeableConcept` contrains an array of `(system, code)` pairs, along with a text field to describe the overall concept.
 
-Below is an example `CodeableConcept`, that defines a negative test result outcome in the **SNOWMED** and **ACME Lab** systems.
+Below is an example `CodeableConcept`, that defines a negative test result outcome in the **SNOMED** and **ACME Lab** systems.
 
 ```javascript
 {
   // Text description of the concept
   "text": "Negative for Chlamydia Trachomatis rRNA",
   "coding": [
-    // Encoding of the value in SNOWMED system
+    // Encoding of the value in SNOMED system
     {
       "system": "http://snomed.info/sct",
       "code": "260385009",
